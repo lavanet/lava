@@ -177,7 +177,12 @@ type rpcConsumerOptions struct {
 	cacheListenAddress    string
 }
 
-func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpcConsumerOptions) (*rpcconsumer.RPCConsumerServer, *mockConsumerStateTracker) {
+type rpcConsumerOut struct {
+	rpcConsumerServer        *rpcconsumer.RPCConsumerServer
+	mockConsumerStateTracker *mockConsumerStateTracker
+}
+
+func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpcConsumerOptions) rpcConsumerOut {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
@@ -234,7 +239,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		require.True(t, consumerUp)
 	}
 
-	return rpcConsumerServer, consumerStateTracker
+	return rpcConsumerOut{rpcConsumerServer, consumerStateTracker}
 }
 
 type rpcProviderOptions struct {
@@ -430,8 +435,8 @@ func TestConsumerProviderBasic(t *testing.T) {
 		requiredResponses:     1,
 		lavaChainID:           lavaChainID,
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcconsumerServer)
+	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 	client := http.Client{}
 	resp, err := client.Get("http://" + consumerListenAddress + "/cosmos/base/tendermint/v1beta1/blocks/latest")
 	require.NoError(t, err)
@@ -527,8 +532,8 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 			if play.scenario != 1 {
 				counter := map[int]int{}
 				for i := 0; i <= 1000; i++ {
@@ -682,8 +687,8 @@ func TestConsumerProviderTx(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			for i := 0; i < numProviders; i++ {
 				replySetter := providers[i].replySetter
@@ -808,8 +813,8 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			for i := 0; i < numProviders; i++ {
 				handler := func(req []byte, header http.Header) (data []byte, status int) {
@@ -938,8 +943,8 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			for i := 0; i < numProviders; i++ {
 				handler := func(req []byte, header http.Header) (data []byte, status int) {
@@ -1076,8 +1081,8 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			// Set first provider as a "liar", to return wrong block hashes
 			getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
@@ -1241,8 +1246,8 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				requiredResponses:     1,
 				lavaChainID:           lavaChainID,
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcconsumerServer)
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			client := http.Client{Timeout: 1000 * time.Millisecond}
 			req, err := http.NewRequest(http.MethodGet, "http://"+consumerListenAddress+"/lavanet/lava/conflict/params", nil)
@@ -1353,7 +1358,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			requiredResponses:     1,
 			lavaChainID:           lavaChainID,
 		}
-		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, rpcConsumerOptions)
+		rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 
 		conflictSent := false
 		wg := sync.WaitGroup{}
@@ -1377,8 +1382,8 @@ func TestSameProviderConflictReport(t *testing.T) {
 			conflictSent = true
 			return nil
 		}
-		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
-		require.NotNil(t, rpcconsumerServer)
+		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
 		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
@@ -1433,7 +1438,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			requiredResponses:     1,
 			lavaChainID:           lavaChainID,
 		}
-		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, rpcConsumerOptions)
+		rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 
 		twoProvidersConflictSent := false
 		sameProviderConflictSent := false
@@ -1464,8 +1469,8 @@ func TestSameProviderConflictReport(t *testing.T) {
 			reported <- true
 			return nil
 		}
-		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
-		require.NotNil(t, rpcconsumerServer)
+		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
 		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
@@ -1571,8 +1576,8 @@ func TestConsumerProviderStatic(t *testing.T) {
 		requiredResponses:     1,
 		lavaChainID:           lavaChainID,
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcconsumerServer)
+	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 	client := http.Client{}
 	// consumer sends the relay to a provider with an address BANANA+%d so the provider needs to skip validations for this to work
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
@@ -1671,8 +1676,8 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 		lavaChainID:           lavaChainID,
 		cacheListenAddress:    cacheListenAddress,
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcconsumerServer)
+	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 	client := http.Client{}
 	id := 0
@@ -1788,8 +1793,8 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 		requiredResponses:     1,
 		lavaChainID:           lavaChainID,
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcconsumerServer)
+	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 	client := http.Client{}
 	sendMessage := func(method string, params []string) http.Header {
@@ -1906,8 +1911,8 @@ func TestConsumerProviderWithConsumerAndProviderSideCache(t *testing.T) {
 		lavaChainID:           lavaChainID,
 		cacheListenAddress:    consumerCacheListenAddress,
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcconsumerServer)
+	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 	client := http.Client{}
 	sendMessage := func(method string, params []string) http.Header {
