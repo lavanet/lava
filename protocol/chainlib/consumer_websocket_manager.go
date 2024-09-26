@@ -223,7 +223,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 						if err != nil {
 							continue
 						}
-
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
 					}
 				}
@@ -241,17 +240,18 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 					if formatterMsg != nil {
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
-						continue
 					}
+					continue
 				}
 
 				relayResultReply := relayResult.GetReply()
 				if relayResultReply != nil {
 					// No need to verify signature since this is already happening inside the SendParsedRelay flow
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
-					continue
+				} else {
+					utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
 				}
-				utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
+				continue
 			}
 		}
 

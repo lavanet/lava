@@ -139,13 +139,14 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)
 
-		jsonResponse, _ := json.Marshal(fiber.Map{
+		jsonResponse, err := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
-
+		if err != nil {
+			utils.LavaFormatError("AnalyzeWebSocketErrorAndGetFormattedMessage unexpected behavior, failed marshalling json response", err, utils.LogAttr("seed", msgSeed))
+		}
 		return jsonResponse
 	}
-
 	return nil
 }
 
