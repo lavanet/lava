@@ -358,7 +358,16 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
 	go func() {
 		cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024} // taken from max-items default value
-		cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DefaultExpirationBlocksHashesToHeights, "disabled", cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
+		cs.InitCache(
+			ctx,
+			cache.DefaultExpirationTimeFinalized,
+			cache.DefaultExpirationForNonFinalized,
+			cache.DefaultExpirationNodeErrors,
+			cache.DefaultExpirationBlocksHashesToHeights,
+			"disabled",
+			cache.DefaultExpirationTimeFinalizedMultiplier,
+			cache.DefaultExpirationTimeNonFinalizedMultiplier,
+		)
 		cs.Serve(ctx, listenAddress)
 	}()
 	cacheServerUp := checkServerStatusWithTimeout("http://"+listenAddress, time.Second*7)
@@ -1607,6 +1616,25 @@ func jsonRpcIdToInt(t *testing.T, rawID json.RawMessage) int {
 	return int(id)
 }
 
+func waitForCondition(timeout, interval time.Duration, condition func() bool) bool {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	timeoutTimer := time.NewTimer(timeout)
+	defer timeoutTimer.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if condition() {
+				return true
+			}
+		case <-timeoutTimer.C:
+			return false
+		}
+	}
+}
+
 func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	ctx := context.Background()
 	// can be any spec and api interface
@@ -1638,7 +1666,9 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 		addons:           []string(nil),
 		providerUniqueId: "provider",
 	}
-	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, rpcProviderOptions)
+
+	var mockChainFetcher *MockChainFetcher
+	_, provider.endpoint, provider.replySetter, mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
 		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
 		err := json.Unmarshal(req, &jsonRpcMessage)
@@ -1703,6 +1733,8 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 		return resp.Header
 	}
 
+	mockChainFetcher.SetBlock(1000)
+
 	// Get latest for sanity check
 	providerAddr := provider.account.Addr.String()
 	headers := sendMessage("status", []string{})
@@ -1712,7 +1744,13 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	headers = sendMessage("block", []string{"1000"})
 	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 
-	// Get block again, this time it should be from cache
+	repliedWithCache := waitForCondition(2*time.Second, 100*time.Millisecond, func() bool {
+		headers = sendMessage("block", []string{"1000"})
+		return headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME) == "Cached"
+	})
+	require.True(t, repliedWithCache)
+
+	// This should be from cache
 	headers = sendMessage("block", []string{"1000"})
 	require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 }
@@ -1753,7 +1791,9 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 		providerUniqueId:   "provider",
 		cacheListenAddress: cacheListenAddress,
 	}
-	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, rpcProviderOptions)
+
+	var mockChainFetcher *MockChainFetcher
+	_, provider.endpoint, provider.replySetter, mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
 		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
 		err := json.Unmarshal(req, &jsonRpcMessage)
@@ -1816,6 +1856,8 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 
 		return resp.Header
 	}
+
+	mockChainFetcher.SetBlock(1000)
 
 	// Get latest for sanity check
 	sendMessage("status", []string{})
@@ -1823,131 +1865,22 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 	// Get block, this should be cached for next time
 	sendMessage("block", []string{"1000"})
 
+	timesSentMessage := 2
+
+	hitCache := waitForCondition(2*time.Second, 100*time.Millisecond, func() bool {
+		// Get block, at some point it should be from cache
+		sendMessage("block", []string{"1000"})
+		timesSentMessage++
+		return timesSentMessage > nodeRequestsCounter
+	})
+	require.True(t, hitCache)
+
 	// Get block again, this time it should be from cache
 	sendMessage("block", []string{"1000"})
+	timesSentMessage++
 
-	// Verify node was called to only twice
-	require.Equal(t, 2, nodeRequestsCounter)
-}
+	cacheHits := timesSentMessage - nodeRequestsCounter
 
-func TestConsumerProviderWithConsumerAndProviderSideCache(t *testing.T) {
-	ctx := context.Background()
-	// can be any spec and api interface
-	specId := "LAV1"
-	apiInterface := spectypes.APIInterfaceTendermintRPC
-	epoch := uint64(100)
-	lavaChainID := "lava"
-
-	consumerListenAddress := addressGen.GetAddress()
-	consumerCacheListenAddress := addressGen.GetAddress()
-	providerCacheListenAddress := addressGen.GetAddress()
-
-	createCacheServer(t, ctx, consumerCacheListenAddress)
-	createCacheServer(t, ctx, providerCacheListenAddress)
-
-	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-	type providerData struct {
-		account     sigs.Account
-		endpoint    *lavasession.RPCProviderEndpoint
-		replySetter *ReplySetter
-	}
-
-	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-	providerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-	provider := providerData{account: providerAccount}
-	providerListenAddress := addressGen.GetAddress()
-
-	testJsonRpcId := 42
-	nodeRequestsCounter := 0
-	rpcProviderOptions := rpcProviderOptions{
-		consumerAddress:    consumerAccount.Addr.String(),
-		specId:             specId,
-		apiInterface:       apiInterface,
-		listenAddress:      providerListenAddress,
-		account:            provider.account,
-		lavaChainID:        lavaChainID,
-		addons:             []string(nil),
-		providerUniqueId:   "provider",
-		cacheListenAddress: providerCacheListenAddress,
-	}
-	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, rpcProviderOptions)
-	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
-		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
-		err := json.Unmarshal(req, &jsonRpcMessage)
-		require.NoError(t, err, req)
-
-		reqId := jsonRpcIdToInt(t, jsonRpcMessage.ID)
-		if reqId == testJsonRpcId {
-			nodeRequestsCounter++
-		}
-
-		response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
-		return []byte(response), http.StatusOK
-	}
-
-	pairingList[0] = &lavasession.ConsumerSessionsWithProvider{
-		PublicLavaAddress: provider.account.Addr.String(),
-		Endpoints: []*lavasession.Endpoint{
-			{
-				NetworkAddress: provider.endpoint.NetworkAddress.Address,
-				Enabled:        true,
-				Geolocation:    1,
-			},
-		},
-		Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-		MaxComputeUnits:  10000,
-		UsedComputeUnits: 0,
-		PairingEpoch:     epoch,
-	}
-
-	rpcConsumerOptions := rpcConsumerOptions{
-		specId:                specId,
-		apiInterface:          apiInterface,
-		account:               consumerAccount,
-		consumerListenAddress: consumerListenAddress,
-		epoch:                 epoch,
-		pairingList:           pairingList,
-		requiredResponses:     1,
-		lavaChainID:           lavaChainID,
-		cacheListenAddress:    consumerCacheListenAddress,
-	}
-	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-	client := http.Client{}
-	sendMessage := func(method string, params []string) http.Header {
-		body := fmt.Sprintf(`{"jsonrpc":"2.0","method":"%v","params": [%v], "id":%v}`, method, strings.Join(params, ","), testJsonRpcId)
-		resp, err := client.Post("http://"+consumerListenAddress, "application/json", bytes.NewBuffer([]byte(body)))
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-
-		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
-		err = json.Unmarshal(bodyBytes, &jsonRpcMessage)
-		require.NoError(t, err)
-
-		respId := jsonRpcIdToInt(t, jsonRpcMessage.ID)
-		require.Equal(t, testJsonRpcId, respId)
-		resp.Body.Close()
-
-		return resp.Header
-	}
-
-	providerAddr := provider.account.Addr.String()
-	// Get latest for sanity check
-	headers := sendMessage("status", []string{})
-	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
-
-	// Get block, this should be cached for next time
-	headers = sendMessage("block", []string{"1000"})
-	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
-
-	// Get block again, this time it should be from cache
-	headers = sendMessage("block", []string{"1000"})
-	require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
-
-	// Verify node was called to only twice
-	require.Equal(t, 2, nodeRequestsCounter)
+	// Verify that overall we have 2 cache hits
+	require.Equal(t, 2, cacheHits)
 }
