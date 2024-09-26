@@ -10,6 +10,7 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/protocol/common"
 	metrics "github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
@@ -59,6 +60,7 @@ type ConsumerSessionManager struct {
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
 	providerOptimizer                  ProviderOptimizer
 	consumerMetricsManager             *metrics.ConsumerMetricsManager
+	consumerOptimizerQoSClient         *metrics.ConsumerOptimizerQoSClient
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
@@ -72,6 +74,14 @@ func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
 // this is being read in multiple locations and but never changes so no need to lock.
 func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
+}
+
+func GetStakeMapFromPairingList(pairingList map[uint64]*ConsumerSessionsWithProvider) map[string]sdk.Coin {
+	retMap := make(map[string]sdk.Coin)
+	for _, consumerSessionWithProvider := range pairingList {
+		retMap[consumerSessionWithProvider.PublicLavaAddress] = consumerSessionWithProvider.stakeSize
+	}
+	return retMap
 }
 
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
@@ -115,6 +125,11 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList))
+
+	// Update the stake map for metrics
+	stakeMapForMetrics := GetStakeMapFromPairingList(pairingList)
+	go csm.consumerOptimizerQoSClient.UpdatePairingListStake(stakeMapForMetrics, csm.rpcEndpoint.ChainID, epoch)
+
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -1126,11 +1141,20 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
+func NewConsumerSessionManager(
+	rpcEndpoint *RPCEndpoint,
+	providerOptimizer ProviderOptimizer,
+	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	reporter metrics.Reporter,
+	consumerPublicAddress string,
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
+	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
+) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
-		consumerMetricsManager: consumerMetricsManager,
-		consumerPublicAddress:  consumerPublicAddress,
+		reportedProviders:          NewReportedProviders(reporter, rpcEndpoint.ChainID),
+		consumerMetricsManager:     consumerMetricsManager,
+		consumerPublicAddress:      consumerPublicAddress,
+		consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

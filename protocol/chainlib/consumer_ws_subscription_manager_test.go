@@ -718,5 +718,6 @@ func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress s
 		provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1),
 		nil, nil, consumerPublicAddress,
 		lavasession.NewActiveSubscriptionProvidersStorage(),
+		nil,
 	)
 }

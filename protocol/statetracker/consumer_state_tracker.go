@@ -93,19 +93,6 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	}
 }
 
-func (cst *ConsumerStateTracker) RegisterForPairingStakeEntriesUpdates(ctx context.Context, pairingUpdatable updaters.PairingStakeEntriesUpdatable, specId string) {
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, specId)
-	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
-	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
-	}
-	err := pairingUpdater.RegisterPairingStakeEntryUpdatable(ctx, &pairingUpdatable)
-	if err != nil {
-		utils.LavaFormatError("failed registering updatable for pairing stake entries updates", err)
-	}
-}
-
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
 	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery, finalizationConsensus.SpecId)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)

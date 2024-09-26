@@ -22,10 +22,6 @@ type PairingUpdatable interface {
 	UpdateEpoch(epoch uint64)
 }
 
-type PairingStakeEntriesUpdatable interface {
-	UpdatePairingStakeEntries(pairingList []epochstoragetypes.StakeEntry, epoch uint64)
-}
-
 type ConsumerStateQueryInf interface {
 	GetPairing(ctx context.Context, chainID string, blockHeight int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error)
 	GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (uint64, error)
@@ -37,14 +33,13 @@ type ConsumerSessionManagerInf interface {
 }
 
 type PairingUpdater struct {
-	lock                          sync.RWMutex
-	consumerSessionManagersMap    map[string][]ConsumerSessionManagerInf // key is chainID so we don;t run getPairing more than once per chain
-	nextBlockForUpdate            uint64
-	stateQuery                    ConsumerStateQueryInf
-	pairingUpdatables             []*PairingUpdatable
-	pairingStakeEntriesUpdatables []*PairingStakeEntriesUpdatable
-	specId                        string
-	staticProviders               []*lavasession.RPCProviderEndpoint
+	lock                       sync.RWMutex
+	consumerSessionManagersMap map[string][]ConsumerSessionManagerInf // key is chainID so we don;t run getPairing more than once per chain
+	nextBlockForUpdate         uint64
+	stateQuery                 ConsumerStateQueryInf
+	pairingUpdatables          []*PairingUpdatable
+	specId                     string
+	staticProviders            []*lavasession.RPCProviderEndpoint
 }
 
 func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *PairingUpdater {
@@ -101,19 +96,6 @@ func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingU
 	return nil
 }
 
-func (pu *PairingUpdater) RegisterPairingStakeEntryUpdatable(ctx context.Context, pairingStakeEntriesUpdatable *PairingStakeEntriesUpdatable) error {
-	pu.lock.Lock()
-	defer pu.lock.Unlock()
-	pairingList, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
-	if err != nil {
-		return err
-	}
-
-	(*pairingStakeEntriesUpdatable).UpdatePairingStakeEntries(pairingList, epoch)
-	pu.pairingStakeEntriesUpdatables = append(pu.pairingStakeEntriesUpdatables, pairingStakeEntriesUpdatable)
-	return nil
-}
-
 func (pu *PairingUpdater) UpdaterKey() string {
 	return CallbackKeyForPairingUpdate
 }
@@ -146,10 +128,6 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 				utils.LavaFormatError("failed updating consumer session manager", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "apiInterface", Value: consumerSessionManager.RPCEndpoint().ApiInterface}, utils.Attribute{Key: "pairingListLen", Value: len(pairingList)})
 				continue
 			}
-		}
-
-		for _, updatable := range pu.pairingStakeEntriesUpdatables {
-			(*updatable).UpdatePairingStakeEntries(pairingList, epoch)
 		}
 	}
 

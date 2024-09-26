@@ -288,10 +288,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			// Create active subscription provider storage for each unique chain
 			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage, consumerOptimizerQoSClient)
 			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
-			consumerStateTracker.RegisterForPairingStakeEntriesUpdates(ctx, consumerOptimizerQoSClient, chainID)
 
 			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 

@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v3/utils"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"golang.org/x/exp/maps"
 )
@@ -262,7 +262,7 @@ func (coqc *ConsumerOptimizerQoSClient) setProviderStake(chainId, providerAddres
 	epochMap[epoch] = stake
 }
 
-func (coqc *ConsumerOptimizerQoSClient) UpdatePairingStakeEntries(pairingList []epochstoragetypes.StakeEntry, epoch uint64) {
+func (coqc *ConsumerOptimizerQoSClient) UpdatePairingListStake(stakeMap map[string]sdk.Coin, chainId string, epoch uint64) {
 	if coqc == nil {
 		return
 	}
@@ -270,7 +270,7 @@ func (coqc *ConsumerOptimizerQoSClient) UpdatePairingStakeEntries(pairingList []
 	coqc.lock.Lock()
 	defer coqc.lock.Unlock()
 
-	for _, pairing := range pairingList {
-		coqc.setProviderStake(pairing.Chain, pairing.Address, epoch, pairing.Stake.Amount.Uint64())
+	for providerAddr, stake := range stakeMap {
+		coqc.setProviderStake(chainId, providerAddr, epoch, stake.Amount.Uint64())
 	}
 }
