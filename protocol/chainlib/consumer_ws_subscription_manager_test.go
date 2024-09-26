@@ -2,9 +2,11 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,6 +29,9 @@ import (
 const (
 	numberOfParallelSubscriptions = 10
 	uniqueId                      = "1234"
+	projectHashTest               = "test_projecthash"
+	chainIdTest                   = "test_chainId"
+	apiTypeTest                   = "test_apiType"
 )
 
 func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *testing.T) {
@@ -51,7 +56,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":4,"result":{}}`),
 		},
 	}
-
+	metricsData := metrics.NewRelayAnalytics(projectHashTest, chainIdTest, apiTypeTest)
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
 			ts := SetupForTests(t, 1, play.specId, "../../")
@@ -136,7 +141,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfParallelSubscriptions)
@@ -151,7 +156,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 					var repliesChan <-chan *pairingtypes.RelayReply
 					var firstReply *pairingtypes.RelayReply
 
-					firstReply, repliesChan, err = manager.StartSubscription(ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[index], nil)
+					firstReply, repliesChan, err = manager.StartSubscription(ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[index], metricsData)
 					go func() {
 						for subMsg := range repliesChan {
 							// utils.LavaFormatInfo("got reply for index", utils.LogAttr("index", index))
@@ -169,7 +174,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			// now we have numberOfParallelSubscriptions subscriptions currently running
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions)
 			// remove one
-			err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], nil)
+			err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], metricsData)
 			require.NoError(t, err)
 			// now we have numberOfParallelSubscriptions - 1
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-1)
@@ -177,7 +182,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			require.Len(t, manager.activeSubscriptions, 1)
 
 			// same flow for unsubscribe all
-			err = manager.UnsubscribeAll(ts.Ctx, dapp, ip, uniqueIdentifiers[1], nil)
+			err = manager.UnsubscribeAll(ts.Ctx, dapp, ip, uniqueIdentifiers[1], metricsData)
 			require.NoError(t, err)
 			// now we have numberOfParallelSubscriptions - 2
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-2)
@@ -209,7 +214,6 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":4,"result":{}}`),
 		},
 	}
-
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
 			ts := SetupForTests(t, 1, play.specId, "../../")
@@ -291,9 +295,9 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
-
+			metricsData := metrics.NewRelayAnalytics(projectHashTest, chainIdTest, apiTypeTest)
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			wg := sync.WaitGroup{}
 			wg.Add(10)
@@ -305,7 +309,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 					ctx := utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 					var repliesChan <-chan *pairingtypes.RelayReply
 					var firstReply *pairingtypes.RelayReply
-					firstReply, repliesChan, err = manager.StartSubscription(ctx, protocolMessage1, dapp+strconv.Itoa(index), ts.Consumer.Addr.String(), uniqueId, nil)
+					firstReply, repliesChan, err = manager.StartSubscription(ctx, protocolMessage1, dapp+strconv.Itoa(index), ts.Consumer.Addr.String(), uniqueId, metricsData)
 					go func() {
 						for subMsg := range repliesChan {
 							require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
@@ -320,6 +324,11 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			wg.Wait()
 		})
 	}
+}
+
+func TestRateLimit(t *testing.T) {
+	numberOfRequests := &atomic.Uint64{}
+	fmt.Println(numberOfRequests.Load())
 }
 
 func TestConsumerWSSubscriptionManager(t *testing.T) {
@@ -379,6 +388,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			unsubscribeMessage2:      []byte(`{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2134567890"],"id":1}`),
 		},
 	}
+	metricsData := metrics.NewRelayAnalytics(projectHashTest, chainIdTest, apiTypeTest)
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
@@ -538,12 +548,12 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 
-			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
@@ -559,7 +569,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, same dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.Nil(t, repliesChan2) // Same subscription, same dappKey, no need for a new channel
@@ -568,7 +578,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, different dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.NotNil(t, repliesChan3) // Same subscription, but different dappKey, so will create new channel
@@ -652,7 +662,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			// Start a subscription again, different params, same dappKey, should call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 
-			firstReply, repliesChan4, err := manager.StartSubscription(ctx, subscribeProtocolMessage2, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan4, err := manager.StartSubscription(ctx, subscribeProtocolMessage2, dapp1, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
 			assert.Equal(t, string(play.subscriptionFirstReply2), string(firstReply.Data))
@@ -671,7 +681,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			unsubProtocolMessage := NewProtocolMessage(unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String())
-			err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
+			err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			require.NoError(t, err)
 
 			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
@@ -697,7 +707,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				Times(2) // Should call SendParsedRelay, because it unsubscribed
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			require.NoError(t, err)
 
 			expectNoMoreMessages(ctx, repliesChan1)
