@@ -17,8 +17,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var WebSocketRateLimit = -1                 // rate limit requests per second on websocket connection
-var WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
+var (
+	WebSocketRateLimit   = -1               // rate limit requests per second on websocket connection
+	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
+)
 
 type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
