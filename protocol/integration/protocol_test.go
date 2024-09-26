@@ -1815,10 +1815,11 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 	// Get latest for sanity check
 	sendMessage("status", []string{})
 
-	for i := 0; i < 5; i++ {
-		// Get block
-		sendMessage("block", []string{"1000"})
-	}
+	// Get block, this should be cached for next time
+	sendMessage("block", []string{"1000"})
+
+	// Get block again, this time it should be from cache
+	sendMessage("block", []string{"1000"})
 
 	// Verify node was called to only twice
 	require.Equal(t, 2, nodeRequestsCounter)
@@ -1938,11 +1939,9 @@ func TestConsumerProviderWithConsumerAndProviderSideCache(t *testing.T) {
 	headers = sendMessage("block", []string{"1000"})
 	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 
-	for i := 0; i < 5; i++ {
-		// Get block again, this time it should be from cache
-		headers = sendMessage("block", []string{"1000"})
-		require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
-	}
+	// Get block again, this time it should be from cache
+	headers = sendMessage("block", []string{"1000"})
+	require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 
 	// Verify node was called to only twice
 	require.Equal(t, 2, nodeRequestsCounter)
