@@ -37,6 +37,7 @@ require (
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/goccy/go-json v0.10.2
 	github.com/gogo/status v1.1.0
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/itchyny/gojq v0.12.16
 	github.com/jhump/protoreflect v1.15.1
@@ -85,7 +86,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.2.0 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
