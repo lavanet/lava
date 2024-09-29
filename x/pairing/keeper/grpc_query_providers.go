@@ -27,6 +27,7 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 				return nil, err
 			}
 			stakeEntries[i].DelegateCommission = metadata.DelegateCommission
+			stakeEntries[i].Description = metadata.Description
 			stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
 
 			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)

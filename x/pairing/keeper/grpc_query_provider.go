@@ -35,6 +35,7 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 		}
 		stakeEntry.Moniker = stakeEntry.Description.Moniker
 		stakeEntry.DelegateCommission = metadata.DelegateCommission
+		stakeEntry.Description = metadata.Description
 		stakeEntries = append(stakeEntries, stakeEntry)
 	}
 

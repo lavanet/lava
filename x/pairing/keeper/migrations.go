@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
@@ -41,6 +42,9 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// find the bigest vault
 		var biggestVault *epochstoragetypes.StakeEntry
 		for i := range entries {
+			if metadata.Description.Moniker == "" {
+				metadata.Description = entries[i].Description
+			}
 			e := entries[i]
 			if e.Vault != e.Address {
 				if biggestVault == nil {
@@ -88,6 +92,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		for _, entry := range entries {
 			metadata.Chains = lavaslices.AddUnique(metadata.Chains, entry.Chain)
 			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+			entry.Description = types1.Description{}
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 		}
 
