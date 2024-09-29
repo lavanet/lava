@@ -110,6 +110,7 @@ type DualstakingKeeper interface {
 	GetProviderDelegators(ctx sdk.Context, provider string) ([]dualstakingtypes.Delegation, error)
 	MinSelfDelegation(ctx sdk.Context) sdk.Coin
 	GetDelegation(ctx sdk.Context, provider, delegator string) (dualstakingtypes.Delegation, bool)
+	AfterDelegationModified(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase, stake bool) (err error)
 }
 
 type FixationStoreKeeper interface {

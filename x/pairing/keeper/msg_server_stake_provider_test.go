@@ -1013,7 +1013,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 
 	provider := acc.Addr.String()
 	vault := acc.GetVaultAddr()
-	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())
 	require.True(t, found)
@@ -1055,7 +1054,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := types.MsgStakeProvider{
 				Creator:            tt.creator,
-				Validator:          sdk.ValAddress(valAcc.Addr).String(),
 				ChainID:            stakeEntry.Chain,
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,

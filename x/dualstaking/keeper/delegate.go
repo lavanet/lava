@@ -116,37 +116,39 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	}
 
 	// regular delegation
-	if delegator != metadata.Vault {
-		if increase {
-			metadata.TotalDelegations = metadata.TotalDelegations.Add(amount)
-		} else {
-			metadata.TotalDelegations, err = metadata.TotalDelegations.SafeSub(amount)
-		}
-	} else if !stake {
-		// distribute self delegations if done through the dualstaking tx
-		total := amount.Amount
-		count := int64(len(entries))
-		for _, entry := range entries {
-			part := total.QuoRaw(count)
+	if !amount.IsZero() {
+		if delegator != metadata.Vault {
 			if increase {
-				entry.Stake = entry.Stake.AddAmount(part)
-				TotalSelfDelegation = TotalSelfDelegation.Add(part)
+				metadata.TotalDelegations = metadata.TotalDelegations.Add(amount)
 			} else {
-				entry.Stake = entry.Stake.SubAmount(part)
-				TotalSelfDelegation = TotalSelfDelegation.Sub(part)
-				if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-					return utils.LavaFormatError("self delegation below minimum, use unstake tx", nil, utils.LogAttr("chainID", entry.Chain))
-				}
+				metadata.TotalDelegations, err = metadata.TotalDelegations.SafeSub(amount)
 			}
-			total = total.Sub(part)
-			count--
+		} else if !stake {
+			// distribute self delegations if done through the dualstaking tx
+			total := amount.Amount
+			count := int64(len(entries))
+			for _, entry := range entries {
+				part := total.QuoRaw(count)
+				if increase {
+					entry.Stake = entry.Stake.AddAmount(part)
+					TotalSelfDelegation = TotalSelfDelegation.Add(part)
+				} else {
+					entry.Stake = entry.Stake.SubAmount(part)
+					TotalSelfDelegation = TotalSelfDelegation.Sub(part)
+					if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
+						return utils.LavaFormatError("self delegation below minimum, use unstake tx", nil, utils.LogAttr("chainID", entry.Chain))
+					}
+				}
+				total = total.Sub(part)
+				count--
+			}
 		}
-	}
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		k.epochstorageKeeper.SetMetadata(ctx, metadata)
 	}
-	k.epochstorageKeeper.SetMetadata(ctx, metadata)
 
 	details := map[string]string{
 		"provider": provider,
@@ -154,7 +156,7 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 
 	for _, entry := range entries {
 		details[entry.Chain] = entry.Chain
-		entry.DelegateTotal = sdk.NewCoin(amount.Denom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+		entry.DelegateTotal = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
 		if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
 			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
