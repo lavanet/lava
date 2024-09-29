@@ -1306,6 +1306,15 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			})
 	}
 
+	// add stateful API (hanging, transactions)
+	if protocolMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.STATEFUL_API_HEADER,
+				Value: "true",
+			})
+	}
+
 	// add user requested API
 	metadataReply = append(metadataReply,
 		pairingtypes.Metadata{

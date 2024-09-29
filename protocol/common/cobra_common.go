@@ -33,6 +33,15 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+
+	// optimizer flags
+	SetProviderOptimizerBestTierPickChance    = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance   = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
+
+	// websocket flags
+	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
+	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
 )
 
 const (

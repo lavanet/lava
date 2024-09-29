@@ -27,6 +27,15 @@ var JsonRpcMethodNotFoundError = JsonRPCErrorMessage{
 	},
 }
 
+var JsonRpcRateLimitError = JsonRPCErrorMessage{
+	JsonRPC: "2.0",
+	Id:      1,
+	Error: JsonRPCError{
+		Code:    429,
+		Message: "Too Many Requests",
+	},
+}
+
 var JsonRpcSubscriptionNotFoundError = JsonRPCErrorMessage{
 	JsonRPC: "2.0",
 	Id:      1,
