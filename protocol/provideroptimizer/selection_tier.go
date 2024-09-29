@@ -14,7 +14,13 @@ type Entry struct {
 	Part    float64
 }
 
-// selectionTier is a utility to get a tier of addresses based on their scores
+// selectionTier is a utility to categorize provider addresses based on their
+// relative stakes. This mechanism ensures that providers with similar stakes
+// compete for relays based on their service quality. For example, if there are
+// multiple providers with low stakes but good service, they will compete more
+// directly with each other than with a provider with a high stake but poor service.
+// This helps prevent providers with large stakes from monopolizing relay
+// services.
 type SelectionTier interface {
 	AddScore(entry string, score float64)
 	GetTier(tier int, numTiers int, minimumEntries int) []Entry
