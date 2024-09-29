@@ -3,9 +3,10 @@ package chainlib
 import (
 	"context"
 	"strconv"
+	"sync/atomic"
 	"time"
 
-	gojson "github.com/goccy/go-json"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
 	formatter "github.com/lavanet/lava/v3/ecosystem/cache/format"
 	"github.com/lavanet/lava/v3/protocol/common"
@@ -13,6 +14,12 @@ import (
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/rand"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/tidwall/gjson"
+)
+
+var (
+	WebSocketRateLimit   = -1               // rate limit requests per second on websocket connection
+	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
 )
 
 type ConsumerWebsocketManager struct {
@@ -67,6 +74,27 @@ func (cwm *ConsumerWebsocketManager) GetWebSocketConnectionUniqueId(dappId, user
 	return dappId + "__" + userIp + "__" + cwm.WebsocketConnectionUID
 }
 
+func (cwm *ConsumerWebsocketManager) handleRateLimitReached(inpData []byte) ([]byte, error) {
+	rateLimitError := common.JsonRpcRateLimitError
+	id := 0
+	result := gjson.GetBytes(inpData, "id")
+	switch result.Type {
+	case gjson.Number:
+		id = int(result.Int())
+	case gjson.String:
+		idParsed, err := strconv.Atoi(result.Raw)
+		if err == nil {
+			id = idParsed
+		}
+	}
+	rateLimitError.Id = id
+	bytesRateLimitError, err := json.Marshal(rateLimitError)
+	if err != nil {
+		return []byte{}, utils.LavaFormatError("failed marshalling jsonrpc rate limit error", err)
+	}
+	return bytesRateLimitError, nil
+}
+
 func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 	var (
 		messageType int
@@ -110,6 +138,33 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 	}()
 
+	// rate limit routine
+	requestsPerSecond := &atomic.Uint64{}
+	go func() {
+		if WebSocketRateLimit <= 0 {
+			return
+		}
+		ticker := time.NewTicker(time.Second) // rate limit per second.
+		defer ticker.Stop()
+		for {
+			select {
+			case <-webSocketCtx.Done():
+				return
+			case <-ticker.C:
+				// check if rate limit reached, and ban is required
+				if WebSocketBanDuration > 0 && requestsPerSecond.Load() > uint64(WebSocketRateLimit) {
+					// wait the ban duration before resetting the store.
+					select {
+					case <-webSocketCtx.Done():
+						return
+					case <-time.After(WebSocketBanDuration): // just continue
+					}
+				}
+				requestsPerSecond.Store(0)
+			}
+		}
+	}()
+
 	for {
 		startTime := time.Now()
 		msgSeed := guidString + "_" + strconv.Itoa(rand.Intn(10000000000)) // use message seed with original guid and new int
@@ -123,6 +178,15 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
 			}
 			break
+		}
+
+		// Check rate limit is met
+		if WebSocketRateLimit > 0 && requestsPerSecond.Add(1) > uint64(WebSocketRateLimit) {
+			rateLimitResponse, err := cwm.handleRateLimitReached(msg)
+			if err == nil {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: rateLimitResponse}
+			}
+			continue
 		}
 
 		dappID, ok := websocketConn.Locals("dapp-id").(string)
@@ -160,18 +224,17 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			continue
 		}
 
-		// check whether its a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
+		// check whether it's a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
 		if !IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, protocolMessage, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 					if err == common.SubscriptionNotFoundError {
-						msgData, err := gojson.Marshal(common.JsonRpcSubscriptionNotFoundError)
+						msgData, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
 						if err != nil {
 							continue
 						}
-
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
 					}
 				}
@@ -189,17 +252,18 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 					if formatterMsg != nil {
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
-						continue
 					}
+					continue
 				}
 
 				relayResultReply := relayResult.GetReply()
 				if relayResultReply != nil {
 					// No need to verify signature since this is already happening inside the SendParsedRelay flow
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
-					continue
+				} else {
+					utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
 				}
-				utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
+				continue
 			}
 		}
 
@@ -224,7 +288,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 			// Handle the case when the error is a method not found error
 			if common.APINotSupportedError.Is(err) {
-				msgData, err := gojson.Marshal(common.JsonRpcMethodNotFoundError)
+				msgData, err := json.Marshal(common.JsonRpcMethodNotFoundError)
 				if err != nil {
 					continue
 				}

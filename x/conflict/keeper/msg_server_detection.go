@@ -14,6 +14,9 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// DetectionIndex creates an index for detection instances.
+// WARNING: the detection index should not be used for prefixed iteration since it doesn't contain delimeters
+// thus it's not sanitized for such iterations and could cause issues in the future as the codebase evolves.
 func DetectionIndex(creatorAddr string, conflict *types.ResponseConflict, epochStart uint64) string {
 	return creatorAddr + conflict.ConflictRelayData0.Request.RelaySession.Provider + conflict.ConflictRelayData1.Request.RelaySession.Provider + strconv.FormatUint(epochStart, 10)
 }
