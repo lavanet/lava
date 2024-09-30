@@ -755,3 +755,39 @@ func TestCommunityTaxOne(t *testing.T) {
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.Equal(t, expectedReward, communityBalance)
 }
+
+// TestEstimateRewardsQuery tests that the subscription module's estimate-rewards query works as expected
+// The test lets a provider get subscription, bonus and iprpc rewards. Before advancing a month, the
+// query should present the expected rewards amount
+func TestEstimateRewardsQuery(t *testing.T) {
+	ts := newTester(t, true)
+
+	// stake and buy iprpc-eligible subcription
+	ts.setupForIprpcTests(true)
+	consumerAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
+
+	// send relay on specs[1] (the iprpc eligible spec)
+	cu := uint64(100)
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[1].Index}, cu)
+	_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.NoError(t, err)
+
+	ts.AdvanceBlock()
+
+	// subscription expected rewards
+	expectedSub := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
+	expectedSubNoTax, _, _ := ts.DeductParticipationFees(expectedSub)
+
+	// providers bonus expected rewards (basic bonus of single provider are the same as sub rewards but without tax)
+	expectedBonus := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
+
+	// iprpc expected rewards
+	expectedIprpc := iprpcFunds.AmountOf(ts.BondDenom()).Sub(minIprpcCost.Amount)
+	expectedIprpcNoTax, _, _ := ts.DeductParticipationFees(expectedIprpc)
+
+	// run the estimated rewards query, should be the same as the expected
+	expected := expectedSubNoTax.Add(expectedBonus).Add(expectedIprpcNoTax)
+	estimated := ts.EstimateProviderRewards(providerAcc.Addr.String(), "", false)
+	require.True(t, expected.Equal(estimated))
+}
