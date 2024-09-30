@@ -58,13 +58,8 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		k.advanceMonth(ctx, []byte(sub))
 	}
 
-	// get all CU tracker timers (used to keep data on subscription rewards)
+	// get all CU tracker timers (used to keep data on subscription rewards) and distribute all subscription rewards
 	gs := k.ExportCuTrackerTimers(ctx)
-	if len(gs.BlockEntries) == 0 {
-		return nil, utils.LavaFormatWarning("cannot estimate rewards", fmt.Errorf("no tracked CU timer, no rewards are given"), details...)
-	}
-
-	// distribute all subscription rewards
 	for _, timer := range gs.BlockEntries {
 		k.RewardAndResetCuTracker(ctx, []byte(timer.Key), timer.Data)
 	}
