@@ -122,7 +122,7 @@ func CmdModifyProvider() *cobra.Command {
 
 				if !providerEntry.Stake.IsEqual(newStake) {
 					if cmd.Flags().Changed(ValidatorFlag) {
-						validator, err = cmd.Flags().GetString(types.FlagMoniker)
+						validator, err = cmd.Flags().GetString(ValidatorFlag)
 						if err != nil {
 							return err
 						}
