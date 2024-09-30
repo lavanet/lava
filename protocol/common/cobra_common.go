@@ -42,7 +42,7 @@ const (
 	// websocket flags
 	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
-	MaxProviderConcurrentRelayRequestsFlag = "relay-concurrent-load-limit"
+	MaxProviderConcurrentRelayRequestsFlag       = "relay-concurrent-load-limit"
 )
 
 const (
