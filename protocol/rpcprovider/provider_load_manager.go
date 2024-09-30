@@ -18,7 +18,7 @@ func (loadManager *ProviderLoadManager) removeRelayCall() {
 }
 
 func (loadManager *ProviderLoadManager) getRelayCallCount() int64 {
-	totalRelays := atomic.LoadInt64(&loadManager.TotalSimultaneousRelays)
+	totalRelays := atomic.LoadInt64(&loadManager.ActiveRequestsPerSecond)
 	return totalRelays
 }
 
