@@ -168,8 +168,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
 	rpcp.providerLoadManager = &ProviderLoadManager{
-		totalSimultaneousRelays: int64(options.relayLoadLimit),
-		activeRequestsPerSecond: 0,
+		TotalSimultaneousRelays: int64(options.relayLoadLimit),
+		ActiveRequestsPerSecond: 0,
 	}
 
 	// single state tracker
