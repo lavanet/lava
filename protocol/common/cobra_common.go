@@ -40,7 +40,8 @@ const (
 	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
 
 	// websocket flags
-	RateLimitWebSocketFlag = "rate-limit-websocket-requests-per-connection"
+	RateLimitWebSocketFlag                 = "rate-limit-websocket-requests-per-connection"
+	MaxProviderConcurrentRelayRequestsFlag = "relay-concurrent-load-limit"
 )
 
 const (

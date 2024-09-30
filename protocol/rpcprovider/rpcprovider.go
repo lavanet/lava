@@ -110,6 +110,7 @@ type rpcProviderStartOptions struct {
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
 	staticSpecPath            string
+	relayLoadLimit            uint
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -141,6 +142,7 @@ type RPCProvider struct {
 	providerUniqueId          string
 	staticProvider            bool
 	staticSpecPath            string
+	providerLoadManager       *ProviderLoadManager
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -165,6 +167,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
+	rpcp.providerLoadManager = &ProviderLoadManager{
+		totalSimultaneousRelays: int64(options.relayLoadLimit),
+		activeRequestsPerSecond: 0,
+	}
 
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -486,7 +492,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, rpcp.providerLoadManager)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -717,6 +723,11 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if stickinessHeaderName != "" {
 				RPCProviderStickinessHeaderName = stickinessHeaderName
 			}
+			relay_load_limit, err := cmd.Flags().GetUint(common.MaxProviderConcurrentRelayRequestsFlag)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read relay concurrent loadl limit flag", err)
+			}
+			utils.SetGlobalLoggingLevel(logLevel)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
@@ -754,6 +765,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
 				offlineSpecPath,
+				relay_load_limit,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -790,7 +802,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
-
+	cmdRPCProvider.Flags().Uint(common.MaxProviderConcurrentRelayRequestsFlag, 0, "Simultanius relay load count limit")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }
