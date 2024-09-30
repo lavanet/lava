@@ -10,18 +10,22 @@ import (
 
 func CmdEstimatedRewards() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "estimated-rewards [provider] [chainid] {optional: amount/delegator}",
-		Short: "calculates the rewards estimation for a provider delegation",
-		Long: `Query to estimate the rewards a delegator will get for 1 month from the provider, if used without optional args the calculations will be for the provider.
-		optional args can be amount for new delegation or address for an existing one.
-		The estimation takes into account subscription rewards, bonus rewards and iprpc rewards, as well as the provider delegation limit, spec contribution and tax.
-		The query does not take into account the likes of addons, geolocation and the quality of the provider services.
-		args: 
-		[provider] provider address.
-		[chain-id] provider chain id.
-		[amount/delegator] optional: delegation amount for the estimation Or delegator address for existing delegation. if not used the rewards will be calculated for the provider.
+		Use:   "estimated-rewards [provider] {optional: amount/delegator}",
+		Short: "Calculates estimated rewards for a provider delegation.",
+		Long: `Estimates the rewards a delegator will earn from a provider over one month. If no optional arguments are provided, the calculation is for the provider itself.
+		The estimation considers subscription rewards, bonus rewards, IPRPC rewards, provider delegation limits, spec contribution, and tax.
+		It does not factor in addons, geolocation, or provider service quality.
+		
+		The optional argument can either be: 
+			- amount: The delegation amount for a new delegation
+			- delegator: The address of an existing delegator.
 		`,
-		Args: cobra.RangeArgs(2, 3),
+		Example: ` The query can be used in 3 ways:
+		1. estimated-rewards <provider_address>: estimates the monthly reward of a provider.
+		2. estimated-rewards <provider_address> <delegator_address>: estimates the monthly reward of a delegator from a specific provider.
+		3. estimated-rewards <provider_address> <delegation_amount>: estimates the monthly reward of a delegator that has a specific amount of delegation to a specific provider.
+		`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -31,13 +35,15 @@ func CmdEstimatedRewards() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			req := types.QueryEstimatedRewardsRequest{}
-			req.Provider = args[0]
-			req.ChainId = args[1]
+			req.Provider, err = utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 
-			if len(args) == 3 {
-				address, err := utils.ParseCLIAddress(clientCtx, args[2])
+			if len(args) == 2 {
+				address, err := utils.ParseCLIAddress(clientCtx, args[1])
 				if err != nil {
-					req.AmountDelegator = args[2]
+					req.AmountDelegator = args[1]
 				} else {
 					req.AmountDelegator = address
 				}

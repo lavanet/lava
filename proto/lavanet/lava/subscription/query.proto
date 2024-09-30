@@ -46,7 +46,7 @@ service Query {
 
 // Queries a rewards estimation.
 rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
-  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{amount_delegator}";
 }
 
 rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
@@ -126,22 +126,11 @@ message QuerySubscriptionTrackedUsageResponse {
 
 message QueryEstimatedRewardsRequest {
   string provider = 1;
-  string chain_id = 2;
-  string amount_delegator = 3; 
-}
-
-message EstimatedRewardInfo {
-  string source =1;
-  repeated cosmos.base.v1beta1.DecCoin amount = 2 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
-    (gogoproto.nullable)     = false,
-    (amino.dont_omitempty)   = true
-  ];
+  string amount_delegator = 2; 
 }
 
 message QueryEstimatedRewardsResponse {
-  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
-  repeated cosmos.base.v1beta1.DecCoin total = 2 [
+  repeated cosmos.base.v1beta1.DecCoin rewards = 1 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true
@@ -151,6 +140,15 @@ message QueryEstimatedRewardsResponse {
 message QueryEstimatedValidatorRewardsRequest {
   string validator = 1;
   string amount_delegator = 2; 
+}
+
+message EstimatedRewardInfo {
+  string source = 1;
+  repeated cosmos.base.v1beta1.DecCoin amount = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
 }
 
 message QueryEstimatedValidatorRewardsResponse {

@@ -86,7 +86,7 @@ func NewKeeper(
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
-		keeper.distributeMonthlyBonusRewards(ctx)
+		keeper.DistributeMonthlyBonusRewards(ctx)
 		keeper.RefillRewardsPools(ctx, subkey, data)
 	}
 

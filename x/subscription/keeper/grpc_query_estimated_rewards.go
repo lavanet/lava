@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
+	"github.com/lavanet/lava/v3/testutil/sample"
+	"github.com/lavanet/lava/v3/utils"
+	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
 	"github.com/lavanet/lava/v3/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,113 +17,105 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	res := types.QueryEstimatedRewardsResponse{}
 
-	_, specContribut := k.specKeeper.GetContributorReward(ctx, req.ChainId)
-
-	storage := k.epochstorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainId)
-
-	totalStake := math.ZeroInt()
-	var entry epochstoragetypes.StakeEntry
-	found := false
-	for _, e := range storage {
-		totalStake = totalStake.Add(e.TotalStake())
-		if e.Address == req.Provider {
-			found = true
-			entry = e
-		}
-	}
-	if !found {
-		return nil, fmt.Errorf("provider not found in stake entries for chain ID: %s", req.ChainId)
+	details := []utils.Attribute{
+		utils.LogAttr("block", ctx.BlockHeight()),
+		utils.LogAttr("provider", req.Provider),
+		utils.LogAttr("delegator_amount", req.AmountDelegator),
 	}
 
-	// delegation of the provider
-	delegationAmount := entry.Stake
-	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake)
+	// parse the delegator/delegation optional argument (delegate if needed)
+	delegator := req.AmountDelegator
 	if req.AmountDelegator != "" {
-		_, err := sdk.AccAddressFromBech32(req.AmountDelegator)
-		if err == nil {
-			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.AmountDelegator, req.Provider)
-			if !found {
-				return nil, fmt.Errorf("could not find delegator")
-			}
-			delegationAmount = d.Amount
-		} else {
-			var err error
-			delegationAmount, err = sdk.ParseCoinNormalized(req.AmountDelegator)
+		delegation, err := sdk.ParseCoinNormalized(req.AmountDelegator)
+		if err != nil {
+			// arg is not delegation, check if it's an address
+			_, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 			if err != nil {
-				return nil, err
+				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation", fmt.Errorf("delegator/delegation argument is neither a valid coin or a valid bech32 address"), details...)
 			}
-			entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
-		}
-
-		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(100 - entry.DelegateCommission)).QuoInt64(100)
-	} else {
-		totalDelegations := entry.DelegateTotal.Amount
-		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
-		delegatorPart = delegatorPart.Add(commission)
-	}
-	delegatorPart = delegatorPart.Mul(sdk.OneDec().Sub(specContribut))
-
-	totalSubsRewards := sdk.Coins{}
-	subsIndices := k.GetAllSubscriptionsIndices(ctx)
-	for _, subIndex := range subsIndices {
-		sub, found := k.GetSubscription(ctx, subIndex)
-		if found {
-			sub.Credit.Amount = sub.Credit.Amount.Quo(sdk.NewIntFromUint64(sub.DurationLeft))
-			totalSubsRewards = totalSubsRewards.Add(sub.Credit)
+		} else {
+			// arg is delegation, assign arbitrary delegator address and delegate the amount
+			delegator = sample.AccAddress()
+			err := k.dualstakingKeeper.DelegateFull(ctx, delegator, sample.ValAddress(), req.Provider, delegation, false)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("cannot estimate rewards, delegation simulation failed", err, details...)
+			}
 		}
 	}
 
-	emissions := k.rewardsKeeper.SpecEmissionParts(ctx)
-	var specEmission rewardstypes.SpecEmissionPart
-	found = false
-	for _, k := range emissions {
-		if k.ChainID == req.ChainId {
-			specEmission = k
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return nil, fmt.Errorf("spec emission part not found for chain ID: %s", req.ChainId)
-	}
-
-	subscriptionRewards, _ := sdk.NewDecCoinsFromCoins(totalSubsRewards...).MulDec(specEmission.Emission).TruncateDecimal()
-	valRewards, comRewards, err := k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, subscriptionRewards[0])
+	// get claimable rewards before the rewards distribution
+	before, err := k.getClaimableRewards(goCtx, req.Provider, delegator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to calculate Validators And Community Participation Rewards")
+		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards before distribution", err, details...)
 	}
 
-	coins := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ProviderRewardsDistributionPool)
-	TotalPoolTokens := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
-
-	bonusRewards := k.rewardsKeeper.SpecTotalPayout(ctx,
-		TotalPoolTokens,
-		sdk.NewDecFromInt(subscriptionRewards.AmountOf(k.stakingKeeper.BondDenom(ctx))),
-		specEmission)
-
-	subscriptionRewards = subscriptionRewards.Sub(valRewards...).Sub(comRewards...)
-
-	iprpcReward, found := k.rewardsKeeper.GetIprpcReward(ctx, k.rewardsKeeper.GetIprpcRewardsCurrentId(ctx))
-	if found {
-		for _, fund := range iprpcReward.SpecFunds {
-			if fund.Spec == req.ChainId {
-				res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "iprpc", Amount: sdk.NewDecCoinsFromCoins(fund.Fund...).MulDec(delegatorPart)})
-			}
-		}
+	// trigger subs
+	subs := k.GetAllSubscriptionsIndices(ctx)
+	for _, sub := range subs {
+		k.advanceMonth(ctx, []byte(sub))
 	}
 
-	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "subscriptions", Amount: sdk.NewDecCoinsFromCoins(subscriptionRewards...).MulDec(delegatorPart)})
-	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "boost", Amount: sdk.NewDecCoins(sdk.NewDecCoinFromDec(k.stakingKeeper.BondDenom(ctx), bonusRewards.Mul(delegatorPart)))})
-
-	res.Total = sdk.NewDecCoins()
-	for _, k := range res.Info {
-		res.Total = res.Total.Add(k.Amount...)
+	// get all CU tracker timers (used to keep data on subscription rewards)
+	gs := k.ExportCuTrackerTimers(ctx)
+	if len(gs.BlockEntries) == 0 {
+		return nil, utils.LavaFormatWarning("cannot estimate rewards", fmt.Errorf("no tracked CU timer, no rewards are given"), details...)
 	}
+
+	// distribute all subscription rewards
+	for _, timer := range gs.BlockEntries {
+		k.RewardAndResetCuTracker(ctx, []byte(timer.Key), timer.Data)
+	}
+
+	// distribute bonus and IPRPC rewards
+	k.rewardsKeeper.DistributeMonthlyBonusRewards(ctx)
+
+	// get claimable rewards after the rewards distribution
+	after, err := k.getClaimableRewards(goCtx, req.Provider, delegator)
+	if err != nil {
+		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards after distribution", err, details...)
+	}
+
+	// calculate the claimable rewards difference
+	res.Rewards = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
 
 	return &res, nil
+}
+
+// helper function that returns a map of provider->rewards
+func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, delegator string) (rewards sdk.Coins, err error) {
+	var qRes *dualstakingtypes.QueryDelegatorRewardsResponse
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// get delegator rewards
+	if delegator == "" {
+		// self delegation
+		md, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
+		if err != nil {
+			return nil, err
+		}
+		qRes, err = k.dualstakingKeeper.DelegatorRewards(goCtx, &dualstakingtypes.QueryDelegatorRewardsRequest{
+			Delegator: md.Vault,
+			Provider:  md.Provider,
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		qRes, err = k.dualstakingKeeper.DelegatorRewards(goCtx, &dualstakingtypes.QueryDelegatorRewardsRequest{
+			Delegator: delegator,
+			Provider:  provider,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(qRes.Rewards) == 0 {
+		return sdk.NewCoins(), nil
+	}
+
+	return qRes.Rewards[0].Amount, nil
 }

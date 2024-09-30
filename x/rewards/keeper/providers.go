@@ -48,7 +48,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 }
 
 // Distribute bonus rewards to providers across all chains based on performance
-func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
+func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 	coins := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	totalRewarded := sdk.ZeroInt()
