@@ -23,7 +23,7 @@ func (loadManager *ProviderLoadManager) getRelayCallCount() int64 {
 }
 
 func (loadManager *ProviderLoadManager) getProviderLoad() float64 {
-	if loadManager.getRelayCallCount() == 0 {
+	if loadManager.TotalSimultaneousRelays == 0 {
 		return 0
 	}
 
