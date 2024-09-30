@@ -183,7 +183,7 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	// count the number of simultanious relay calls
+	// count the number of simultaneous relay calls
 	rpcps.providerLoadManager.addRelayCall()
 	defer rpcps.providerLoadManager.removeRelayCall()
 	provider_relay_load := strconv.FormatFloat(rpcps.providerLoadManager.getProviderLoad(), 'f', -1, 64)
