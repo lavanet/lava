@@ -723,7 +723,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if stickinessHeaderName != "" {
 				RPCProviderStickinessHeaderName = stickinessHeaderName
 			}
-			relay_load_limit, err := cmd.Flags().GetUint(common.MaxProviderConcurrentRelayRequestsFlag)
+			relay_load_limit, err := cmd.Flags().GetUint(common.RateLimitRequestPerSecondFlag)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read relay concurrent loadl limit flag", err)
 			}
@@ -802,7 +802,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
-	cmdRPCProvider.Flags().Uint(common.MaxProviderConcurrentRelayRequestsFlag, 0, "Simultanius relay load count limit")
+	cmdRPCProvider.Flags().Uint(common.RateLimitRequestPerSecondFlag, 0, "Simultanius relay load count limit")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }
