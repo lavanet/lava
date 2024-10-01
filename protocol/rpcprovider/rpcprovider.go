@@ -761,7 +761,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
 				offlineSpecPath,
-				relayLoadLimit,
+				uint64(relayLoadLimit),
 			}
 
 			rpcProvider := RPCProvider{}
