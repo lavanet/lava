@@ -38,7 +38,7 @@ func (loadManager *ProviderLoadManager) subtractRelayCall() {
 
 func (loadManager *ProviderLoadManager) getProviderLoad() string {
 	if loadManager == nil {
-		return "0"
+		return ""
 	}
 	loadedRateLimitThreshold := loadManager.rateLimitThreshold.Load()
 	if loadedRateLimitThreshold == 0 {

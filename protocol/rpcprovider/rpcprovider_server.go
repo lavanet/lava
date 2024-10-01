@@ -185,10 +185,10 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	// count the number of simultaneous relay calls
 	rpcps.providerLoadManager.addRelayCall()
-	defer rpcps.providerLoadManager.subtractRelayCall()
-	provider_relay_load := rpcps.providerLoadManager.getProviderLoad()
-	trailer_md := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId, chainlib.RpcProviderLoadRateHeader, provider_relay_load)
-	grpc.SetTrailer(ctx, trailer_md)
+	defer func() { go rpcps.providerLoadManager.subtractRelayCall() }()
+	provideRelayLoad := rpcps.providerLoadManager.getProviderLoad()
+	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId, chainlib.RpcProviderLoadRateHeader, provideRelayLoad)
+	grpc.SetTrailer(ctx, trailerMd)
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
