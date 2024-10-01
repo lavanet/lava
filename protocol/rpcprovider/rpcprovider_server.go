@@ -113,7 +113,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
-	relayLoadLimit uint64,
+	providerLoadManager *ProviderLoadManager,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -136,7 +136,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
 	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
-	rpcps.providerLoadManager = NewProviderLoadManager(relayLoadLimit)
+	rpcps.providerLoadManager = providerLoadManager
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -186,8 +186,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	// count the number of simultaneous relay calls
 	rpcps.providerLoadManager.addRelayCall()
 	defer func() { go rpcps.providerLoadManager.subtractRelayCall() }()
-	provideRelayLoad := rpcps.providerLoadManager.getProviderLoad()
-	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId, chainlib.RpcProviderLoadRateHeader, provideRelayLoad)
+	rpcps.providerLoadManager.applyProviderLoadMetadataToContextTrailer(ctx)
+	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
 	grpc.SetTrailer(ctx, trailerMd)
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)

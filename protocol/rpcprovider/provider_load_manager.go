@@ -1,8 +1,13 @@
 package rpcprovider
 
 import (
+	"context"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type ProviderLoadManager struct {
@@ -41,4 +46,14 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 	}
 
 	return strconv.FormatUint(loadManager.activeRequestsPerSecond.Load()/loadManager.rateLimitThreshold.Load(), 10)
+}
+
+func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) {
+	provideRelayLoad := loadManager.getProviderLoad()
+	if provideRelayLoad == "" {
+		return
+	}
+
+	trailerMd := metadata.Pairs(chainlib.RpcProviderLoadRateHeader, provideRelayLoad)
+	grpc.SetTrailer(ctx, trailerMd)
 }
