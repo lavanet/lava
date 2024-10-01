@@ -722,7 +722,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			}
 			relayLoadLimit, err := cmd.Flags().GetUint64(common.RateLimitRequestPerSecondFlag)
 			if err != nil {
-				utils.LavaFormatFatal("failed to read relay concurrent loadl limit flag", err)
+				utils.LavaFormatFatal("failed to read relay concurrent load limit flag", err)
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
