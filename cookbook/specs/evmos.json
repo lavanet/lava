@@ -1603,7 +1603,7 @@
                     "parser_func": "PARSE_BY_ARG",
                     "encoding": "hex"
                   },
-                  "api_name": "debug_getRawHeader"
+                  "api_name": "debug_traceBlockByNumber"
                 },
                 "values": [
                   {
