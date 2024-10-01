@@ -40,6 +40,7 @@ type TimerStoreKeeper interface {
 type EpochstorageKeeper interface {
 	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
 	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
+	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
 }
 
 type DowntimeKeeper interface {

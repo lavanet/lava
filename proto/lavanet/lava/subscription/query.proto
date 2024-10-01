@@ -135,6 +135,7 @@ message QueryEstimatedRewardsResponse {
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true
   ];
+  uint64 recommended_block = 2;
 }
 
 message QueryEstimatedValidatorRewardsRequest {

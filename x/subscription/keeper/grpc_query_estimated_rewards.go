@@ -76,6 +76,18 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	// calculate the claimable rewards difference
 	res.Rewards = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
 
+	// get the last IPRPC rewards distribution block
+	rewardsDistributionBlock, after24HoursBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get last rewards block", err)
+	}
+
+	// if the query was sent within the first 24 hours of the month,
+	// make the recommended block be the rewards distribution block - 1
+	if uint64(ctx.BlockHeight()) <= after24HoursBlock {
+		res.RecommendedBlock = rewardsDistributionBlock - 1
+	}
+
 	return &res, nil
 }
 

@@ -93,6 +93,7 @@ type RewardsKeeper interface {
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64
 	GetCommunityTax(ctx sdk.Context) math.LegacyDec
 	DistributeMonthlyBonusRewards(ctx sdk.Context)
+	GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, after24HoursBlock uint64, err error)
 }
 
 type StakingKeeper interface {

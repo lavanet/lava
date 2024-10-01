@@ -159,7 +159,12 @@ The subscription module supports the following queries:
 | `list`                 | subscription (string) | Shows all current subscriptions                                |
 | `list-projects`        | none                  | Shows all the subscription's projects                          |
 | `next-to-month-expiry` | none                  | Shows the subscriptions with the closest month expiry          |
+| `tracked-cu-usage`     | subscription (string) | Shows the monthly CU usage of a specific subscription by provider          |
+| `estimated-rewards`    | provider (string), delegator/delegation_amount (optional, string/Coin)                  | Shows the estimated monthly rewards for a specific provider. Using the optional argument, the query can return the estimated rewards of a specific delegator or the estimated rewards a delegator will get for a specific delegation amount          |
+| `estimated-validator-rewards`    | validator (string), delegator/delegation_amount (optional, string/Coin)     | like the estimated-rewards query, but for validators          |
 | `params`               | none                  | Shows the parameters of the module                             |
+
+Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument.
 
 ## Transactions
 
