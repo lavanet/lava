@@ -17,7 +17,6 @@ func NewProviderLoadManager(rateLimitThreshold uint64) *ProviderLoadManager {
 	loadManager := &ProviderLoadManager{}
 
 	loadManager.rateLimitThreshold.Store(rateLimitThreshold)
-	loadManager.activeRequestsPerSecond.Store(0)
 
 	return loadManager
 }
@@ -40,10 +39,6 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 	if loadManager == nil {
 		return ""
 	}
-	loadedRateLimitThreshold := loadManager.rateLimitThreshold.Load()
-	if loadedRateLimitThreshold == 0 {
-		return "0"
-	}
 
-	return strconv.FormatUint(loadManager.activeRequestsPerSecond.Load()/loadedRateLimitThreshold, 10)
+	return strconv.FormatUint(loadManager.activeRequestsPerSecond.Load()/loadManager.rateLimitThreshold.Load(), 10)
 }
