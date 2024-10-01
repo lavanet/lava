@@ -113,7 +113,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
-	providerLoadManager *ProviderLoadManager,
+	relayLoadLimit uint64,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -136,7 +136,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
 	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
-	rpcps.providerLoadManager = providerLoadManager
+	rpcps.providerLoadManager = NewProviderLoadManager(relayLoadLimit)
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -185,8 +185,8 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	// count the number of simultaneous relay calls
 	rpcps.providerLoadManager.addRelayCall()
-	defer rpcps.providerLoadManager.removeRelayCall()
-	provider_relay_load := strconv.FormatFloat(rpcps.providerLoadManager.getProviderLoad(), 'f', -1, 64)
+	defer rpcps.providerLoadManager.subtractRelayCall()
+	provider_relay_load := rpcps.providerLoadManager.getProviderLoad()
 	trailer_md := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId, chainlib.RpcProviderLoadRateHeader, provider_relay_load)
 	grpc.SetTrailer(ctx, trailer_md)
 	if request.RelayData == nil || request.RelaySession == nil {

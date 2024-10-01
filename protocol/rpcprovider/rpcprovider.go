@@ -110,7 +110,7 @@ type rpcProviderStartOptions struct {
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
 	staticSpecPath            string
-	relayLoadLimit            uint
+	relayLoadLimit            uint64
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -142,7 +142,7 @@ type RPCProvider struct {
 	providerUniqueId          string
 	staticProvider            bool
 	staticSpecPath            string
-	providerLoadManager       *ProviderLoadManager
+	relayLoadLimit            uint64
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -167,10 +167,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
-	rpcp.providerLoadManager = &ProviderLoadManager{
-		TotalSimultaneousRelays: int64(options.relayLoadLimit),
-		ActiveRequestsPerSecond: 0,
-	}
+	rpcp.relayLoadLimit = options.relayLoadLimit
 
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -492,7 +489,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, rpcp.providerLoadManager)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, rpcp.relayLoadLimit)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {

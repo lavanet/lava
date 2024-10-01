@@ -1,31 +1,49 @@
 package rpcprovider
 
 import (
+	"strconv"
 	"sync/atomic"
 )
 
 type ProviderLoadManager struct {
-	TotalSimultaneousRelays int64
-	ActiveRequestsPerSecond int64
+	rateLimitThreshold      atomic.Uint64
+	activeRequestsPerSecond atomic.Uint64
+}
+
+func NewProviderLoadManager(rateLimitThreshold uint64) *ProviderLoadManager {
+	if rateLimitThreshold == 0 {
+		return nil
+	}
+	loadManager := &ProviderLoadManager{}
+
+	loadManager.rateLimitThreshold.Store(rateLimitThreshold)
+	loadManager.activeRequestsPerSecond.Store(0)
+
+	return loadManager
 }
 
 func (loadManager *ProviderLoadManager) addRelayCall() {
-	atomic.AddInt64(&loadManager.ActiveRequestsPerSecond, 1)
+	if loadManager == nil {
+		return
+	}
+	loadManager.activeRequestsPerSecond.Add(1)
 }
 
-func (loadManager *ProviderLoadManager) removeRelayCall() {
-	atomic.AddInt64(&loadManager.ActiveRequestsPerSecond, -1)
+func (loadManager *ProviderLoadManager) subtractRelayCall() {
+	if loadManager == nil {
+		return
+	}
+	loadManager.activeRequestsPerSecond.Add(^uint64(0))
 }
 
-func (loadManager *ProviderLoadManager) getRelayCallCount() int64 {
-	totalRelays := atomic.LoadInt64(&loadManager.ActiveRequestsPerSecond)
-	return totalRelays
-}
-
-func (loadManager *ProviderLoadManager) getProviderLoad() float64 {
-	if loadManager.TotalSimultaneousRelays == 0 {
-		return 0
+func (loadManager *ProviderLoadManager) getProviderLoad() string {
+	if loadManager == nil {
+		return "0"
+	}
+	loadedRateLimitThreshold := loadManager.rateLimitThreshold.Load()
+	if loadedRateLimitThreshold == 0 {
+		return "0"
 	}
 
-	return float64(loadManager.getRelayCallCount() / loadManager.TotalSimultaneousRelays)
+	return strconv.FormatUint(loadManager.activeRequestsPerSecond.Load()/loadedRateLimitThreshold, 10)
 }
