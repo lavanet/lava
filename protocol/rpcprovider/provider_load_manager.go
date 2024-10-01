@@ -49,6 +49,10 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 }
 
 func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) {
+	if loadManager == nil {
+		return
+	}
+
 	provideRelayLoad := loadManager.getProviderLoad()
 	if provideRelayLoad == "" {
 		return
