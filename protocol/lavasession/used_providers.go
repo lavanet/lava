@@ -128,12 +128,13 @@ func (up *UsedProviders) UnwantedAddresses() []string {
 func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *UniqueUsedProviders {
 	uniqueUsedProviders, ok := up.uniqueUsedProviders[key]
 	if !ok {
-		up.uniqueUsedProviders[key] = &UniqueUsedProviders{
+		uniqueUsedProviders = &UniqueUsedProviders{
 			providers:         map[string]struct{}{},
 			unwantedProviders: up.originalUnwantedProviders,
 			blockOnSyncLoss:   map[string]struct{}{},
 			erroredProviders:  map[string]struct{}{},
 		}
+		up.uniqueUsedProviders[key] = uniqueUsedProviders
 	}
 	return uniqueUsedProviders
 }
