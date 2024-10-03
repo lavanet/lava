@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	common "github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
 	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
@@ -19,7 +20,13 @@ type RelayStateMachine interface {
 	UpdateBatch(err error)
 	GetSelection() Selection
 	GetUsedProviders() *lavasession.UsedProviders
-	SetRelayProcessor(relayProcessor *RelayProcessor)
+	SetResultsChecker(resultsChecker ResultsCheckerInf)
+	SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager)
+}
+
+type ResultsCheckerInf interface {
+	WaitForResults(ctx context.Context) error
+	HasRequiredNodeResults() (bool, int)
 }
 
 type ConsumerRelaySender interface {
@@ -32,16 +39,17 @@ type tickerMetricSetterInf interface {
 }
 
 type ConsumerRelayStateMachine struct {
-	ctx                  context.Context // same context as user context.
-	relaySender          ConsumerRelaySender
-	parentRelayProcessor *RelayProcessor
-	protocolMessage      chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
-	analytics            *metrics.RelayMetrics    // first relay metrics
-	selection            Selection
-	debugRelays          bool
-	tickerMetricSetter   tickerMetricSetterInf
-	batchUpdate          chan error
-	usedProviders        *lavasession.UsedProviders
+	ctx                 context.Context // same context as user context.
+	relaySender         ConsumerRelaySender
+	resultsChecker      ResultsCheckerInf
+	protocolMessage     chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
+	analytics           *metrics.RelayMetrics    // first relay metrics
+	selection           Selection
+	debugRelays         bool
+	tickerMetricSetter  tickerMetricSetterInf
+	batchUpdate         chan error
+	usedProviders       *lavasession.UsedProviders
+	relayRetriesManager *lavaprotocol.RelayRetriesManager
 }
 
 func NewRelayStateMachine(
@@ -71,8 +79,12 @@ func NewRelayStateMachine(
 	}
 }
 
-func (crsm *ConsumerRelayStateMachine) SetRelayProcessor(relayProcessor *RelayProcessor) {
-	crsm.parentRelayProcessor = relayProcessor
+func (crsm *ConsumerRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
+	crsm.relayRetriesManager = relayRetriesManager
+}
+
+func (crsm *ConsumerRelayStateMachine) SetResultsChecker(resultsChecker ResultsCheckerInf) {
+	crsm.resultsChecker = resultsChecker
 }
 
 func (crsm *ConsumerRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
@@ -87,9 +99,18 @@ func (crsm *ConsumerRelayStateMachine) shouldRetryOnResult(numberOfRetriesLaunch
 	shouldRetry := crsm.shouldRetryInner(numberOfRetriesLaunched)
 	if shouldRetry {
 		// retry archive logic
-		if len(crsm.GetProtocolMessage().GetRequestedBlocksHashes()) > 0 && numberOfNodeErrors > 0 {
-			// we had node error, and we have a hash parsed.
+		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
+		if len(hashes) > 0 && numberOfNodeErrors > 0 {
+			// iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
+			// if we are familiar with all, we don't want to allow archive.
+			for _, hash := range hashes {
+				if !crsm.relayRetriesManager.CheckHashInCache(hash) {
+					// if we didn't find the hash in the cache we can try archive relay.
 
+					break
+				}
+			}
+			// we had node error, and we have a hash parsed.
 		}
 	}
 	return crsm.shouldRetryInner(numberOfRetriesLaunched)
@@ -143,9 +164,9 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 		readResultsFromProcessor := func() {
 			// ProcessResults is reading responses while blocking until the conditions are met
 			utils.LavaFormatTrace("[StateMachine] Waiting for results", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()))
-			crsm.parentRelayProcessor.WaitForResults(processingCtx)
+			crsm.resultsChecker.WaitForResults(processingCtx)
 			// Decide if we need to resend or not
-			metRequiredNodeResults, numberOfNodeErrors := crsm.parentRelayProcessor.HasRequiredNodeResults()
+			metRequiredNodeResults, numberOfNodeErrors := crsm.resultsChecker.HasRequiredNodeResults()
 			numberOfNodeErrorsAtomic.Store(uint64(numberOfNodeErrors))
 			if metRequiredNodeResults {
 				gotResults <- true
