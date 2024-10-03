@@ -95,37 +95,39 @@ func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
 	return crsm.selection
 }
 
-func (crsm *ConsumerRelayStateMachine) shouldRetryOnResult(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
-	shouldRetry := crsm.shouldRetryInner(numberOfRetriesLaunched)
+func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
+	shouldRetry := crsm.retryCondition(numberOfRetriesLaunched)
 	if shouldRetry {
 		// retry archive logic
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
 		if len(hashes) > 0 && numberOfNodeErrors > 0 {
-			// iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
-			// if we are familiar with all, we don't want to allow archive.
-			for _, hash := range hashes {
-				if !crsm.relayRetriesManager.CheckHashInCache(hash) {
-					// if we didn't find the hash in the cache we can try archive relay.
+			// launch archive only on the first retry attempt.
+			if numberOfRetriesLaunched == 1 {
+				// iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
+				// if we are familiar with all, we don't want to allow archive.
+				for _, hash := range hashes {
+					if !crsm.relayRetriesManager.CheckHashInCache(hash) {
+						// if we didn't find the hash in the cache we can try archive relay.
 
-					break
+						break
+					}
 				}
+				// we had node error, and we have a hash parsed.
+			} else {
+				// return to original protocol message.
+
 			}
-			// we had node error, and we have a hash parsed.
 		}
 	}
-	return crsm.shouldRetryInner(numberOfRetriesLaunched)
+	return shouldRetry
 }
 
-func (crsm *ConsumerRelayStateMachine) shouldRetryInner(numberOfRetriesLaunched int) bool {
+func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
 	// best result sends to top 10 providers anyway.
 	return crsm.selection != BestResult
-}
-
-func (crsm *ConsumerRelayStateMachine) shouldRetryTicker(numberOfRetriesLaunched int) bool {
-	return crsm.shouldRetryInner(numberOfRetriesLaunched)
 }
 
 func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
@@ -232,7 +234,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 					return
 				}
 				// If should retry == true, send a new batch. (success == false)
-				if crsm.shouldRetryOnResult(crsm.usedProviders.BatchNumber(), numberOfNodeErrorsAtomic.Load()) {
+				if crsm.shouldRetry(crsm.usedProviders.BatchNumber(), numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()))
 					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 				} else {
@@ -241,7 +243,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
-				if crsm.shouldRetryTicker(crsm.usedProviders.BatchNumber()) {
+				if crsm.shouldRetry(crsm.usedProviders.BatchNumber(), numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()))
 					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 					// Add ticker launch metrics
