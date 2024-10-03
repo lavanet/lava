@@ -124,6 +124,13 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
+func (pst *ProviderStateTracker) RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint) {
+	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		availabilityUpdater := updaters.NewProviderAvailabilityUpdater(pst.stateQuery.PairingQueryClient, rpcProviderEndpoint, clientCtx)
+		pst.RegisterForEpochUpdates(ctx, availabilityUpdater)
+	}
+}
+
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }

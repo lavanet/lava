@@ -41,6 +41,7 @@ type ProviderMetricsManager struct {
 	endpointsHealthChecksOk       uint64
 	relaysMonitors                map[string]*RelaysMonitor
 	relaysMonitorsLock            sync.RWMutex
+	frozenStatusMetric            *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -119,6 +120,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "lava_provider_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
+	frozenStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_frozen_status",
+		Help: "At least one endpoint is healthy",
+	}, []string{"spec"})
 	endpointsHealthChecksOkMetric.Set(1)
 
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -161,6 +166,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
 		relaysMonitors:                map[string]*RelaysMonitor{},
+		frozenStatusMetric:            frozenStatusMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -349,4 +355,12 @@ func (pme *ProviderMetricsManager) RegisterRelaysMonitor(chainID, apiInterface s
 	pme.relaysMonitorsLock.Lock()
 	defer pme.relaysMonitorsLock.Unlock()
 	pme.relaysMonitors[chainID+apiInterface] = relaysMonitor
+}
+
+func (pme *ProviderMetricsManager) SetFrozenStatus(frozenStatus float64, chain string, address string) {
+	if pme == nil {
+		return
+	}
+
+	pme.frozenStatusMetric.WithLabelValues(chain, address).Set(frozenStatus)
 }
