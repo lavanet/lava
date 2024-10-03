@@ -310,21 +310,25 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
-	chainIds := make(map[string]struct{})
+	chainIds := make(map[string]*ProviderLoadManager)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
-		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
+		providerLoadManager, keyExists := chainIds[rpcProviderEndpoint.ChainID]
+		if !keyExists {
+			providerLoadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
+			chainIds[rpcProviderEndpoint.ChainID] = providerLoadManager
+		}
+		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator, providerLoadManager *ProviderLoadManager) {
 			defer wg.Done()
-			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
+			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator, providerLoadManager)
 			if err != nil {
 				rpcp.providerMetricsManager.SetDisabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 				disabledEndpoints <- rpcProviderEndpoint
 			}
 		}
 		if parallel {
-			go setupEndpoint(rpcProviderEndpoint, specValidator)
+			go setupEndpoint(rpcProviderEndpoint, specValidator, providerLoadManager)
 		} else {
-			setupEndpoint(rpcProviderEndpoint, specValidator)
+			setupEndpoint(rpcProviderEndpoint, specValidator, providerLoadManager)
 		}
 	}
 	wg.Wait()
@@ -344,7 +348,7 @@ func GetAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *Provi
 	return policy
 }
 
-func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
+func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator, providerLoadManager *ProviderLoadManager) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
@@ -488,8 +492,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-	relayLoadProvider := NewProviderLoadManager(rpcp.relayLoadLimit)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, relayLoadProvider)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, providerLoadManager)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
