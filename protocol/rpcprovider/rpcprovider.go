@@ -310,14 +310,14 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
-	chainIds := make(map[string]*ProviderLoadManager)
+	providerLoadManagersPerChain := make(map[string]*ProviderLoadManager)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerLoadManager, keyExists := chainIds[rpcProviderEndpoint.ChainID]
+		providerLoadManager, keyExists := providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
 		if !keyExists {
 			providerLoadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
-			chainIds[rpcProviderEndpoint.ChainID] = providerLoadManager
+			providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = providerLoadManager
 		}
-		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator, providerLoadManager *ProviderLoadManager) {
+		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator, providerLoadManager)
 			if err != nil {
@@ -326,9 +326,9 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 			}
 		}
 		if parallel {
-			go setupEndpoint(rpcProviderEndpoint, specValidator, providerLoadManager)
+			go setupEndpoint(rpcProviderEndpoint, specValidator)
 		} else {
-			setupEndpoint(rpcProviderEndpoint, specValidator, providerLoadManager)
+			setupEndpoint(rpcProviderEndpoint, specValidator)
 		}
 	}
 	wg.Wait()
