@@ -120,11 +120,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "lava_provider_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
+	endpointsHealthChecksOkMetric.Set(1)
 	frozenStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_frozen_status",
 		Help: "At least one endpoint is healthy",
-	}, []string{"spec"})
-	endpointsHealthChecksOkMetric.Set(1)
+	}, []string{"chainID", "Address"})
 
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
@@ -146,6 +146,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
+	prometheus.MustRegister(frozenStatusMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:               map[string]*ProviderMetrics{},

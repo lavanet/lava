@@ -124,9 +124,9 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint) {
+func (pst *ProviderStateTracker) RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, metrics *metrics.ProviderMetricsManager) {
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		availabilityUpdater := updaters.NewProviderAvailabilityUpdater(pst.stateQuery.PairingQueryClient, rpcProviderEndpoint, clientCtx)
+		availabilityUpdater := updaters.NewProviderAvailabilityUpdater(pst.stateQuery.PairingQueryClient, rpcProviderEndpoint, clientCtx, metrics)
 		pst.RegisterForEpochUpdates(ctx, availabilityUpdater)
 	}
 }

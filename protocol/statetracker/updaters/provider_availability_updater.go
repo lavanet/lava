@@ -12,7 +12,7 @@ import (
 )
 
 type ProviderPairingStatusStateQueryInf interface {
-	Provider(ctx context.Context, in *types.QueryProviderRequest, opts ...grpc.CallOption) (*types.QueryProviderResponse, error)
+	Providers(ctx context.Context, in *types.QueryProvidersRequest, opts ...grpc.CallOption) (*types.QueryProvidersResponse, error)
 }
 
 type AvailabilityStatus uint64
@@ -31,11 +31,17 @@ type ProviderAvailabilityUpdater struct {
 	rpcProviderEndpoint *lavasession.RPCProviderEndpoint
 }
 
-func NewProviderAvailabilityUpdater(stateQuery ProviderPairingStatusStateQueryInf, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, clientCtx client.Context) *ProviderAvailabilityUpdater {
+func NewProviderAvailabilityUpdater(
+	stateQuery ProviderPairingStatusStateQueryInf,
+	rpcProviderEndpoint *lavasession.RPCProviderEndpoint,
+	clientCtx client.Context,
+	metricsManager *metrics.ProviderMetricsManager,
+) *ProviderAvailabilityUpdater {
 	return &ProviderAvailabilityUpdater{
 		pairingQueryClient:  stateQuery,
 		clientCtx:           clientCtx,
 		rpcProviderEndpoint: rpcProviderEndpoint,
+		metricsManager:      metricsManager,
 	}
 }
 
@@ -59,12 +65,12 @@ func (pau *ProviderAvailabilityUpdater) runProviderAvailabilityUpdate(epoch uint
 	}
 	currentBlock := resultStatus.SyncInfo.LatestBlockHeight
 
-	response, err := pau.pairingQueryClient.Provider(ctx, &types.QueryProviderRequest{
-		Address: pau.rpcProviderEndpoint.NetworkAddress.Address,
-		ChainID: pau.rpcProviderEndpoint.ChainID,
+	response, err := pau.pairingQueryClient.Providers(ctx, &types.QueryProvidersRequest{
+		ChainID:    pau.rpcProviderEndpoint.ChainID,
+		ShowFrozen: true,
 	})
-	if err == nil && len(response.StakeEntries) > 0 {
-		for _, provider := range response.StakeEntries {
+	if err == nil && len(response.StakeEntry) > 0 {
+		for _, provider := range response.StakeEntry {
 			if !provider.IsAddressVaultOrProvider(provider.Address) {
 				continue
 			}

@@ -92,7 +92,7 @@ type ProviderStateTrackerInf interface {
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetVirtualEpoch(epoch uint64) uint64
 	GetAverageBlockTime() time.Duration
-	RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, chainMap []*lavasession.RPCProviderEndpoint)
+	RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, chainMap []*lavasession.RPCProviderEndpoint, metrics *metrics.ProviderMetricsManager)
 }
 
 type rpcProviderStartOptions struct {
@@ -189,7 +189,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp)
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
-		rpcp.providerStateTracker.RegisterAvailabilityStateUpdatesForEpoch(ctx, options.clientCtx, options.rpcProviderEndpoints)
+		rpcp.providerStateTracker.RegisterAvailabilityStateUpdatesForEpoch(ctx, options.clientCtx, options.rpcProviderEndpoints, rpcp.providerMetricsManager)
 	}
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
