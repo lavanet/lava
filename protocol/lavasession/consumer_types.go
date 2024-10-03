@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/v3/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -51,11 +52,11 @@ var (
 )
 
 type UsedProvidersInf interface {
-	RemoveUsed(providerAddress string, err error)
+	RemoveUsed(providerAddress string, extensions []*spectypes.Extension, err error)
 	TryLockSelection(context.Context) error
-	AddUsed(ConsumerSessionsMap, error)
-	GetUnwantedProvidersToSend() map[string]struct{}
-	AddUnwantedAddresses(address string)
+	AddUsed(ConsumerSessionsMap, []*spectypes.Extension, error)
+	GetUnwantedProvidersToSend(extensions []*spectypes.Extension) map[string]struct{}
+	AddUnwantedAddresses(address string, extensions []string)
 	CurrentlyUsed() int
 }
 

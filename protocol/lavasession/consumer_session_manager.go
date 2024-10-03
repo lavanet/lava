@@ -431,8 +431,8 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		}
 		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
 	}
-	defer func() { usedProviders.AddUsed(consumerSessionMap, errRet) }()
-	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend()
+	defer func() { usedProviders.AddUsed(consumerSessionMap, extensions, errRet) }()
+	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend(extensions)
 
 	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
@@ -528,7 +528,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				if MaxComputeUnitsExceededError.Is(err) {
 					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 					// We must unlock the consumer session before continuing.
-					consumerSession.Free(nil)
+					consumerSession.Free(nil, extensions)
 					continue
 				} else {
 					utils.LavaFormatFatal("Unsupported Error", err)
@@ -696,7 +696,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 		consumerSessionsWithProvider := csm.pairing[providerAddress]
 		// Add to ignored (no matter what)
 		ignoredProviders.providers[providerAddress] = struct{}{}
-		usedProviders.AddUnwantedAddresses(providerAddress) // add the address to our unwanted providers to avoid infinite recursion
+		usedProviders.AddUnwantedAddresses(providerAddress, extensions) // add the address to our unwanted providers to avoid infinite recursion
 
 		// validate this provider has enough cu to be used
 		if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {
@@ -893,9 +893,9 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 }
 
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
-func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
+func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error, extensions []*spectypes.Extension) error {
 	// consumerSession must be locked when getting here.
-	if err := consumerSession.VerifyLock(); err != nil {
+	if err := consumerSession.VerifyLock(extensions); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
 	// redemptionSession = true, if we got this provider from the blocked provider list.
@@ -964,7 +964,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
 	csm.updateMetricsManager(consumerSession, time.Duration(0), false)
 	// finished with consumerSession here can unlock.
-	consumerSession.Free(errorReceived) // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+	consumerSession.Free(errorReceived, extensions) // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
 	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
 	if err != nil {
@@ -1018,9 +1018,10 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	numOfProviders int,
 	providersCount uint64,
 	isHangingApi bool,
+	extensions []*spectypes.Extension,
 ) error {
 	// release locks, update CU, relaynum etc..
-	if err := consumerSession.VerifyLock(); err != nil {
+	if err := consumerSession.VerifyLock(extensions); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDone, consumerSession.lock must be locked before accessing this method")
 	}
 
@@ -1034,7 +1035,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 		defer func() { go csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress) }()
 	}
 
-	defer consumerSession.Free(nil)                        // we need to be locked here, if we didn't get it locked we try lock anyway
+	defer consumerSession.Free(nil, extensions)            // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveErrors = []error{}
@@ -1101,12 +1102,12 @@ func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
 }
 
 // On a successful Subscribe relay
-func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession, latestServicedBlock int64) error {
-	if err := consumerSession.VerifyLock(); err != nil {
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession, latestServicedBlock int64, extensions []*spectypes.Extension) error {
+	if err := consumerSession.VerifyLock(extensions); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.Free(nil) // we need to be locked here, if we didn't get it locked we try lock anyway
+	defer consumerSession.Free(nil, extensions) // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.LatestBlock = latestServicedBlock
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case

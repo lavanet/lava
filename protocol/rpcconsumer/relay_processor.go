@@ -214,9 +214,9 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	return true
 }
 
-func (rp *RelayProcessor) HasRequiredNodeResults() bool {
+func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	if rp == nil {
-		return false
+		return false, 0
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
@@ -236,17 +236,17 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
 			}
 		}
-		return true
+		return true, nodeErrors
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
-			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash)
+			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
-	return false
+	return false, nodeErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *relayResponse) {

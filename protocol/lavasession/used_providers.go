@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v3/utils"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 const MaximumNumberOfSelectionLockAttempts = 500
@@ -25,22 +26,34 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		}
 	}
 	return &UsedProviders{
-		providers:         map[string]struct{}{},
-		unwantedProviders: unwantedProviders,
-		blockOnSyncLoss:   map[string]struct{}{},
-		erroredProviders:  map[string]struct{}{},
+		uniqueUsedProviders: map[RouterKey]*UniqueUsedProviders{NewRouterKey([]string{}): &UniqueUsedProviders{
+			providers:         map[string]struct{}{},
+			unwantedProviders: unwantedProviders,
+			blockOnSyncLoss:   map[string]struct{}{},
+			erroredProviders:  map[string]struct{}{},
+		}},
+		// we keep the original unwanted providers so when we create more unique used providers
+		// we can reuse it as its the user's instructions.
+		originalUnwantedProviders: unwantedProviders,
 	}
 }
 
+// unique used providers are specific for an extension router key.
+// meaning each extension router key has a different used providers struct
+type UniqueUsedProviders struct {
+	providers         map[string]struct{}
+	unwantedProviders map[string]struct{}
+	erroredProviders  map[string]struct{} // providers who returned protocol errors (used to debug relays for now)
+	blockOnSyncLoss   map[string]struct{}
+}
+
 type UsedProviders struct {
-	lock                sync.RWMutex
-	providers           map[string]struct{}
-	selecting           bool
-	unwantedProviders   map[string]struct{}
-	erroredProviders    map[string]struct{} // providers who returned protocol errors (used to debug relays for now)
-	blockOnSyncLoss     map[string]struct{}
-	sessionsLatestBatch int
-	batchNumber         int
+	lock                      sync.RWMutex
+	uniqueUsedProviders       map[RouterKey]*UniqueUsedProviders
+	originalUnwantedProviders map[string]struct{}
+	selecting                 bool
+	sessionsLatestBatch       int
+	batchNumber               int
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
@@ -50,7 +63,11 @@ func (up *UsedProviders) CurrentlyUsed() int {
 	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
-	return len(up.providers)
+	currentlyUsed := 0
+	for _, uniqueUsedProviders := range up.uniqueUsedProviders {
+		currentlyUsed += len(uniqueUsedProviders.providers)
+	}
+	return currentlyUsed
 }
 
 func (up *UsedProviders) SessionsLatestBatch() int {
@@ -81,8 +98,10 @@ func (up *UsedProviders) CurrentlyUsedAddresses() []string {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	addresses := []string{}
-	for addr := range up.providers {
-		addresses = append(addresses, addr)
+	for _, uniqueUsedProviders := range up.uniqueUsedProviders {
+		for addr := range uniqueUsedProviders.providers {
+			addresses = append(addresses, addr)
+		}
 	}
 	return addresses
 }
@@ -95,46 +114,69 @@ func (up *UsedProviders) UnwantedAddresses() []string {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	addresses := []string{}
-	for addr := range up.unwantedProviders {
-		addresses = append(addresses, addr)
+	for _, uniqueUsedProviders := range up.uniqueUsedProviders {
+		for addr := range uniqueUsedProviders.unwantedProviders {
+			addresses = append(addresses, addr)
+		}
 	}
 	return addresses
 }
 
-func (up *UsedProviders) AddUnwantedAddresses(address string) {
+// Use when locked. Checking wether a router key exists in unique used providers,
+// if it does, return it. If it doesn't
+// creating a new instance and returning it.
+func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *UniqueUsedProviders {
+	uniqueUsedProviders, ok := up.uniqueUsedProviders[key]
+	if !ok {
+		up.uniqueUsedProviders[key] = &UniqueUsedProviders{
+			providers:         map[string]struct{}{},
+			unwantedProviders: up.originalUnwantedProviders,
+			blockOnSyncLoss:   map[string]struct{}{},
+			erroredProviders:  map[string]struct{}{},
+		}
+	}
+	return uniqueUsedProviders
+}
+
+func (up *UsedProviders) AddUnwantedAddresses(address string, extensions []string) {
 	if up == nil {
 		utils.LavaFormatError("UsedProviders.AddUnwantedAddresses is nil, misuse detected", nil)
 		return
 	}
+	routerKey := NewRouterKey(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
-	up.unwantedProviders[address] = struct{}{}
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
+	uniqueUsedProviders.unwantedProviders[address] = struct{}{}
 }
 
-func (up *UsedProviders) RemoveUsed(provider string, err error) {
+func (up *UsedProviders) RemoveUsed(provider string, extensions []*spectypes.Extension, err error) {
 	if up == nil {
 		return
 	}
+	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
+
 	if err != nil {
-		up.erroredProviders[provider] = struct{}{}
+		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
 		if shouldRetryWithThisError(err) {
-			_, ok := up.blockOnSyncLoss[provider]
+			_, ok := uniqueUsedProviders.blockOnSyncLoss[provider]
 			if !ok && IsSessionSyncLoss(err) {
-				up.blockOnSyncLoss[provider] = struct{}{}
+				uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
 				utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
 			} else {
-				up.setUnwanted(provider)
+				up.setUnwanted(uniqueUsedProviders, provider)
 			}
 		} else {
-			up.setUnwanted(provider)
+			up.setUnwanted(uniqueUsedProviders, provider)
 		}
 	} else {
 		// we got a valid response from this provider, no reason to keep using it
-		up.setUnwanted(provider)
+		up.setUnwanted(uniqueUsedProviders, provider)
 	}
-	delete(up.providers, provider)
+	delete(uniqueUsedProviders.providers, provider)
 }
 
 func (up *UsedProviders) ClearUnwanted() {
@@ -144,20 +186,24 @@ func (up *UsedProviders) ClearUnwanted() {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	// this is nil safe
-	up.unwantedProviders = map[string]struct{}{}
+	for _, uniqueUsedProviders := range up.uniqueUsedProviders {
+		uniqueUsedProviders.unwantedProviders = map[string]struct{}{}
+	}
 }
 
-func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
+func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, extensions []*spectypes.Extension, err error) {
 	if up == nil {
 		return
 	}
+	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 	// this is nil safe
 	if len(sessions) > 0 && err == nil {
 		up.sessionsLatestBatch = 0
 		for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
-			up.providers[provider] = struct{}{}
+			uniqueUsedProviders.providers[provider] = struct{}{}
 			up.sessionsLatestBatch++
 		}
 		// increase batch number
@@ -167,11 +213,8 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 }
 
 // called when already locked.
-func (up *UsedProviders) setUnwanted(provider string) {
-	if up == nil {
-		return
-	}
-	up.unwantedProviders[provider] = struct{}{}
+func (up *UsedProviders) setUnwanted(uniqueUsedProviders *UniqueUsedProviders, provider string) {
+	uniqueUsedProviders.unwantedProviders[provider] = struct{}{}
 }
 
 func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
@@ -206,28 +249,32 @@ func (up *UsedProviders) tryLockSelection() bool {
 	return false
 }
 
-func (up *UsedProviders) GetErroredProviders() map[string]struct{} {
+func (up *UsedProviders) GetErroredProviders(extensions []*spectypes.Extension) map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
 	}
-	up.lock.RLock()
-	defer up.lock.RUnlock()
-	return up.erroredProviders
+	routerKey := NewRouterKeyFromExtensions(extensions)
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
+	return uniqueUsedProviders.erroredProviders
 }
 
-func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {
+func (up *UsedProviders) GetUnwantedProvidersToSend(extensions []*spectypes.Extension) map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
 	}
-	up.lock.RLock()
-	defer up.lock.RUnlock()
+	routerKey := NewRouterKeyFromExtensions(extensions)
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 	unwantedProvidersToSend := map[string]struct{}{}
 	// block the currently used providers
-	for provider := range up.providers {
+	for provider := range uniqueUsedProviders.providers {
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
 	// block providers that we have a response for
-	for provider := range up.unwantedProviders {
+	for provider := range uniqueUsedProviders.unwantedProviders {
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
 	return unwantedProvidersToSend
