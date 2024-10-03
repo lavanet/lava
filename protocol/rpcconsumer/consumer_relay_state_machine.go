@@ -85,14 +85,8 @@ func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
 
 func (crsm *ConsumerRelayStateMachine) shouldRetryOnResult(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
 	shouldRetry := crsm.shouldRetryInner(numberOfRetriesLaunched)
-	if shouldRetry {
-		// retry archive logic
-		if len(crsm.GetProtocolMessage().GetRequestedBlocksHashes()) > 0 && numberOfNodeErrors > 0 {
-			// we had node error, and we have a hash parsed.
-
-		}
-	}
-	return crsm.shouldRetryInner(numberOfRetriesLaunched)
+	// archive functionality will be added here.
+	return shouldRetry
 }
 
 func (crsm *ConsumerRelayStateMachine) shouldRetryInner(numberOfRetriesLaunched int) bool {

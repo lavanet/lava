@@ -26,7 +26,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		}
 	}
 	return &UsedProviders{
-		uniqueUsedProviders: map[RouterKey]*UniqueUsedProviders{NewRouterKey([]string{}): &UniqueUsedProviders{
+		uniqueUsedProviders: map[RouterKey]*UniqueUsedProviders{NewRouterKey([]string{}): {
 			providers:         map[string]struct{}{},
 			unwantedProviders: unwantedProviders,
 			blockOnSyncLoss:   map[string]struct{}{},
