@@ -37,7 +37,6 @@ func NewProviderAvailabilityUpdater(stateQuery ProviderPairingStatusStateQueryIn
 		clientCtx:           clientCtx,
 		rpcProviderEndpoint: rpcProviderEndpoint,
 	}
-
 }
 
 func (pau *ProviderAvailabilityUpdater) UpdateEpoch(epoch uint64) {
