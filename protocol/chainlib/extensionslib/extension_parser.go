@@ -4,6 +4,8 @@ import (
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
+const ArchiveExtension = "archive"
+
 type ExtensionInfo struct {
 	ExtensionOverride    []string
 	LatestBlock          uint64
@@ -77,7 +79,7 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 
 func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule {
 	switch extension.Name {
-	case "archive":
+	case ArchiveExtension:
 		return ArchiveParserRule{extension: extension}
 	default:
 		// unsupported rule

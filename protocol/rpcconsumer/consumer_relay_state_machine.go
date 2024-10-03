@@ -5,7 +5,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	slices "github.com/lavanet/lava/v3/utils/lavaslices"
+
 	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	common "github.com/lavanet/lava/v3/protocol/common"
 	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
 	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
@@ -39,17 +42,19 @@ type tickerMetricSetterInf interface {
 }
 
 type ConsumerRelayStateMachine struct {
-	ctx                 context.Context // same context as user context.
-	relaySender         ConsumerRelaySender
-	resultsChecker      ResultsCheckerInf
-	protocolMessage     chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
-	analytics           *metrics.RelayMetrics    // first relay metrics
-	selection           Selection
-	debugRelays         bool
-	tickerMetricSetter  tickerMetricSetterInf
-	batchUpdate         chan error
-	usedProviders       *lavasession.UsedProviders
-	relayRetriesManager *lavaprotocol.RelayRetriesManager
+	ctx                     context.Context // same context as user context.
+	relaySender             ConsumerRelaySender
+	resultsChecker          ResultsCheckerInf
+	protocolMessage         chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
+	originalProtocolMessage chainlib.ProtocolMessage
+	appliedArchiveExtension bool
+	analytics               *metrics.RelayMetrics // first relay metrics
+	selection               Selection
+	debugRelays             bool
+	tickerMetricSetter      tickerMetricSetterInf
+	batchUpdate             chan error
+	usedProviders           *lavasession.UsedProviders
+	relayRetriesManager     *lavaprotocol.RelayRetriesManager
 }
 
 func NewRelayStateMachine(
@@ -67,15 +72,16 @@ func NewRelayStateMachine(
 	}
 
 	return &ConsumerRelayStateMachine{
-		ctx:                ctx,
-		usedProviders:      usedProviders,
-		relaySender:        relaySender,
-		protocolMessage:    protocolMessage,
-		analytics:          analytics,
-		selection:          selection,
-		debugRelays:        debugRelays,
-		tickerMetricSetter: tickerMetricSetter,
-		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
+		ctx:                     ctx,
+		usedProviders:           usedProviders,
+		relaySender:             relaySender,
+		protocolMessage:         protocolMessage,
+		originalProtocolMessage: protocolMessage,
+		analytics:               analytics,
+		selection:               selection,
+		debugRelays:             debugRelays,
+		tickerMetricSetter:      tickerMetricSetter,
+		batchUpdate:             make(chan error, MaximumNumberOfTickerRelayRetries),
 	}
 }
 
@@ -95,27 +101,55 @@ func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
 	return crsm.selection
 }
 
+// Should retry implements the logic for when to send another relay.
+// As well as the decision of changing the protocol message,
+// into different extensions or addons based on certain conditions
 func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
 	shouldRetry := crsm.retryCondition(numberOfRetriesLaunched)
 	if shouldRetry {
-		// retry archive logic
+		// Retry archive logic
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
 		if len(hashes) > 0 && numberOfNodeErrors > 0 {
-			// launch archive only on the first retry attempt.
+			// Launch archive only on the first retry attempt.
 			if numberOfRetriesLaunched == 1 {
-				// iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
-				// if we are familiar with all, we don't want to allow archive.
+				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
+				// If we are familiar with all, we don't want to allow archive.
 				for _, hash := range hashes {
 					if !crsm.relayRetriesManager.CheckHashInCache(hash) {
-						// if we didn't find the hash in the cache we can try archive relay.
-
+						// If we didn't find the hash in the cache we can try archive relay.
+						privateData := crsm.protocolMessage.RelayPrivateData()
+						// Create a new array of extensions. validate it doesn't already have archive in it.
+						// If it does just break. if it doesn't add it
+						extensions := append([]string{}, privateData.Extensions...)
+						if slices.Contains(extensions, extensionslib.ArchiveExtension) {
+							break // Do nothing its already archive.
+						}
+						extensions = append(extensions, extensionslib.ArchiveExtension)
+						// We need to set archive.
+						// Create a new relay private data containing the extension.
+						relayRequestData := lavaprotocol.NewRelayData(crsm.ctx, privateData.ConnectionType, privateData.ApiUrl, privateData.Data, privateData.SeenBlock, privateData.RequestBlock, privateData.ApiInterface, privateData.Metadata, privateData.Addon, extensions)
+						userData := crsm.protocolMessage.GetUserData()
+						// Creating an archive protocol message, and set it to current portocol message
+						crsm.protocolMessage = chainlib.NewProtocolMessage(crsm.protocolMessage, crsm.protocolMessage.GetDirectiveHeaders(), relayRequestData, userData.DappId, userData.ConsumerIp)
+						// for future batches.
+						crsm.appliedArchiveExtension = true
 						break
 					}
 				}
-				// we had node error, and we have a hash parsed.
+				// We had node error, and we have a hash parsed.
 			} else {
-				// return to original protocol message.
-
+				// Validate the following.
+				// 1. That we have applied archive
+				// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
+				if crsm.appliedArchiveExtension && numberOfNodeErrors >= 2 {
+					// We know we have applied archive and failed.
+					// 1. We can remove the archive, return to the original protocol message,
+					// 2. Set all hashes as irrelevant for future queries.
+					crsm.protocolMessage = crsm.originalProtocolMessage
+					for _, hash := range hashes {
+						crsm.relayRetriesManager.AddHashToCache(hash)
+					}
+				}
 			}
 		}
 	}
