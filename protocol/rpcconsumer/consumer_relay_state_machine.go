@@ -137,19 +137,19 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 					}
 				}
 				// We had node error, and we have a hash parsed.
-			} else {
+			} else if crsm.appliedArchiveExtension && numberOfNodeErrors >= 2 {
 				// Validate the following.
 				// 1. That we have applied archive
 				// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
-				if crsm.appliedArchiveExtension && numberOfNodeErrors >= 2 {
-					// We know we have applied archive and failed.
-					// 1. We can remove the archive, return to the original protocol message,
-					// 2. Set all hashes as irrelevant for future queries.
-					crsm.protocolMessage = crsm.originalProtocolMessage
-					for _, hash := range hashes {
-						crsm.relayRetriesManager.AddHashToCache(hash)
-					}
+				// Now -
+				// We know we have applied archive and failed.
+				// 1. We can remove the archive, return to the original protocol message,
+				// 2. Set all hashes as irrelevant for future queries.
+				crsm.protocolMessage = crsm.originalProtocolMessage
+				for _, hash := range hashes {
+					crsm.relayRetriesManager.AddHashToCache(hash)
 				}
+				crsm.appliedArchiveExtension = false // so we don't get here again
 			}
 		}
 	}
