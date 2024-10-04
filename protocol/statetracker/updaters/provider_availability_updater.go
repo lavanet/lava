@@ -53,7 +53,6 @@ func (pau *ProviderAvailabilityUpdater) runProviderAvailabilityUpdate(epoch uint
 	pau.lock.Lock()
 	defer pau.lock.Unlock()
 
-	// get jail
 	if epoch <= pau.latestEpoch {
 		return
 	}
