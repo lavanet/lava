@@ -583,16 +583,16 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		for _, key := range input[1:] {
 			// type assertion for blockContainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, fmt.Errorf("invalid parser input format, blockContainer is not map[string]interface{}. "+
-					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v err=%w", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped, ValueNotSetError)
+				return nil, ValueNotSetError.Wrapf("invalid parser input format, blockContainer is not map[string]interface{}. "+
+					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, fmt.Errorf("invalid parser input format, blockContainer does not have the field searched inside."+
-					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v err=%w", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped, ValueNotSetError)
+				return nil, ValueNotSetError.Wrapf("invalid parser input format, blockContainer does not have the field searched inside."+
+					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped)
 			}
 		}
 		retArr := make([]interface{}, 0)
