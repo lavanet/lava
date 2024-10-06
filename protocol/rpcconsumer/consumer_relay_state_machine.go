@@ -109,9 +109,9 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 	if shouldRetry {
 		// Retry archive logic
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
-		if len(hashes) > 0 && numberOfNodeErrors > 0 {
-			// Launch archive only on the first retry attempt.
-			if numberOfRetriesLaunched == 1 {
+		if len(hashes) > 0 && numberOfNodeErrors > 1 {
+			// Launch archive only on the second retry attempt.
+			if numberOfRetriesLaunched == 2 {
 				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
 				// If we are familiar with all, we don't want to allow archive.
 				for _, hash := range hashes {
@@ -131,6 +131,8 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 						userData := crsm.protocolMessage.GetUserData()
 						// Creating an archive protocol message, and set it to current portocol message
 						crsm.protocolMessage = chainlib.NewProtocolMessage(crsm.protocolMessage, crsm.protocolMessage.GetDirectiveHeaders(), relayRequestData, userData.DappId, userData.ConsumerIp)
+						// TODO: need to set cu for the extension.
+
 						// for future batches.
 						crsm.appliedArchiveExtension = true
 						break
