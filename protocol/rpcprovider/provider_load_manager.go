@@ -37,15 +37,16 @@ func (loadManager *ProviderLoadManager) subtractRelayCall() {
 	if loadManager == nil {
 		return
 	}
-	loadManager.activeRequestsPerSecond.Add(^uint64(0))
+	loadManager.activeRequestsPerSecond.Add(uint64(0))
 }
 
 func (loadManager *ProviderLoadManager) getProviderLoad() string {
 	if loadManager == nil {
 		return ""
 	}
-
-	return strconv.FormatUint(loadManager.activeRequestsPerSecond.Load()/loadManager.rateLimitThreshold.Load(), 10)
+	activeRequests := loadManager.activeRequestsPerSecond.Load()
+	rateLimitThreshold := loadManager.rateLimitThreshold.Load()
+	return strconv.FormatUint(activeRequests/rateLimitThreshold, 10)
 }
 
 func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) {
