@@ -51,7 +51,7 @@ func NewProviderFreezeUpdater(
 }
 
 func (pfu *ProviderFreezeUpdater) UpdaterKey() string {
-	return CallbackKeyForSpecUpdate + pfu.chainId + pfu.publicAddress
+	return CallbackKeyForSpecUpdate + pfu.chainId
 }
 
 func (pfu *ProviderFreezeUpdater) UpdateEpoch(epoch uint64) {
