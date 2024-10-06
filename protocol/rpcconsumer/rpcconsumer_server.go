@@ -469,6 +469,42 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 	}
 }
 
+func (rpccs *RPCConsumerServer) getEarliestBlockHashRequestedFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) (int64, int64) {
+	blocksHashesToHeights := cacheReply.GetBlocksHashesToHeights()
+	earliestRequestedBlock := spectypes.NOT_APPLICABLE
+	latestRequestedBlock := spectypes.NOT_APPLICABLE
+
+	for _, blockHashToHeight := range blocksHashesToHeights {
+		if blockHashToHeight.Height >= 0 && (earliestRequestedBlock == spectypes.NOT_APPLICABLE || blockHashToHeight.Height < earliestRequestedBlock) {
+			earliestRequestedBlock = blockHashToHeight.Height
+		}
+		if blockHashToHeight.Height >= 0 && (latestRequestedBlock == spectypes.NOT_APPLICABLE || blockHashToHeight.Height > latestRequestedBlock) {
+			latestRequestedBlock = blockHashToHeight.Height
+		}
+	}
+	return latestRequestedBlock, earliestRequestedBlock
+}
+
+func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock int64, seenBlock int64, latestBlockHashRequested, earliestBlockHashRequested int64, addon string, protocolMessage chainlib.ProtocolMessage) int64 {
+	if reqBlock == spectypes.LATEST_BLOCK && seenBlock != 0 {
+		// make optimizer select a provider that is likely to have the latest seen block
+		reqBlock = seenBlock
+	}
+	// If latestBlockHashRequested provides more info on the relay we can set it as reqBlock
+	if latestBlockHashRequested >= 0 && (reqBlock == spectypes.LATEST_BLOCK || reqBlock < latestBlockHashRequested) {
+		reqBlock = latestBlockHashRequested
+	}
+
+	if earliestBlockHashRequested >= 0 {
+		// change earliest requested block if applicable
+		success := protocolMessage.UpdateEarliestInMessage(earliestBlockHashRequested)
+		if success {
+			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, protocolMessage, uint64(seenBlock))
+		}
+	}
+	return reqBlock
+}
+
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
 	protocolMessage chainlib.ProtocolMessage,
@@ -500,6 +536,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	reqBlock, _ := protocolMessage.RequestedBlock()
 
 	// try using cache before sending relay
+	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
+	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
 	if rpccs.cache.CacheActive() { // use cache only if its defined.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
@@ -553,6 +591,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						})
 						return nil
 					}
+
+					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
+
 					// cache failed, move on to regular relay
 					if performance.NotConnectedError.Is(cacheError) {
 						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
@@ -564,13 +605,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		}
 	}
 
+	addon := chainlib.GetAddon(protocolMessage)
 	if reqBlock == spectypes.LATEST_BLOCK && protocolMessage.RelayPrivateData().SeenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = protocolMessage.RelayPrivateData().SeenBlock
 	}
+	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, earliestBlockHashRequested, addon, protocolMessage)
+
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
-	addon := chainlib.GetAddon(protocolMessage)
 	extensions := protocolMessage.GetExtensions()
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch)

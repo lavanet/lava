@@ -109,7 +109,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 	if shouldRetry {
 		// Retry archive logic
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
-		if len(hashes) > 0 && numberOfNodeErrors > 0 {
+		if len(hashes) > 0 && numberOfNodeErrors > 1 { // retry attempt is only on the 3rd attempt (2 normal failures)
 			// Launch archive only on the first retry attempt.
 			if numberOfRetriesLaunched == 1 {
 				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
@@ -150,6 +150,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 					crsm.relayRetriesManager.AddHashToCache(hash)
 				}
 				crsm.appliedArchiveExtension = false // so we don't get here again
+
 			}
 		}
 	}

@@ -38,6 +38,18 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
+func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	updatedSuccessfully := false
+	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
+		// check earliest is not unset (0) or incoming is lower than current value
+		if bcmc.earliestRequestedBlock == 0 || bcmc.earliestRequestedBlock > incomingEarliest {
+			bcmc.earliestRequestedBlock = incomingEarliest
+			updatedSuccessfully = true
+		}
+	}
+	return updatedSuccessfully
+}
+
 func (bcnc *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
 	return bcnc.requestedBlockHashes
 }
