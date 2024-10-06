@@ -126,6 +126,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "lava_provider_frozen_status",
 		Help: "Frozen: 1, Healthy: 0",
 	}, []string{"chainID", "Address"})
+
 	jailedStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_jailed_status",
 		Help: "The amount of times the provider was jailed in the last 24 hours",
