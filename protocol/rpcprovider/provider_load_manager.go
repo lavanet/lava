@@ -58,3 +58,8 @@ func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTraile
 	trailerMd := metadata.Pairs(chainlib.RpcProviderLoadRateHeader, provideRelayLoad)
 	grpc.SetTrailer(ctx, trailerMd)
 }
+
+func (loadManager *ProviderLoadManager) addAndSetRelayLoadToContextTrailer(ctx context.Context) {
+	loadManager.addRelayCall()
+	loadManager.applyProviderLoadMetadataToContextTrailer(ctx)
+}
