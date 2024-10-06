@@ -37,7 +37,7 @@ func (loadManager *ProviderLoadManager) subtractRelayCall() {
 	if loadManager == nil {
 		return
 	}
-	loadManager.activeRequestsPerSecond.Add(uint64(0))
+	loadManager.activeRequestsPerSecond.Add(^uint64(0))
 }
 
 func (loadManager *ProviderLoadManager) getProviderLoad() string {
