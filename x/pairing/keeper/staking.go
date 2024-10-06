@@ -33,8 +33,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			Chains:           []string{chainID},
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
+	} else {
+		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 	}
-	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
@@ -236,6 +237,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	stakeAmount := amount
+	// creating a new provider, fetch old delegation
 	if len(metadata.Chains) == 1 {
 		delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
 		if err == nil {

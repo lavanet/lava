@@ -64,16 +64,16 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfdelegation types.Delegation, delegations []types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
+func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfDelegation types.Delegation, delegations []types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
 	zeroCoins := sdk.NewCoins()
-	totalDelegationsWithSelf := totalDelegations.Add(selfdelegation.Amount.Amount)
+	totalDelegationsWithSelf := totalDelegations.Add(selfDelegation.Amount.Amount)
 
 	// Sanity check - effectiveStake != 0
 	if totalDelegationsWithSelf.IsZero() {
 		return zeroCoins, zeroCoins
 	}
 
-	providerReward = totalReward.MulInt(selfdelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
+	providerReward = totalReward.MulInt(selfDelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
 	if !totalDelegations.IsZero() && commission != 0 {
 		rawDelegatorsReward := totalReward.MulInt(totalDelegations).QuoInt(totalDelegationsWithSelf)
 		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(commission)).QuoInt(sdk.NewInt(100))
@@ -140,16 +140,10 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
 func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
-	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
-	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
+
+	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
-		return zeroCoins, zeroCoins, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
-			utils.Attribute{Key: "block", Value: block},
-		)
-	}
-	stakeEntry, found := k.epochstorageKeeper.GetStakeEntry(ctx, epoch, chainID, provider)
-	if !found {
 		return zeroCoins, zeroCoins, err
 	}
 
@@ -177,8 +171,9 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 	relevantDelegations := []types.Delegation{}
 	totalDelegations := sdk.ZeroInt()
 	var selfdelegation types.Delegation
+	// fetch relevant delegations (those who are passed the first week of delegation), self delegation and sum the total delegations
 	for _, d := range delegations {
-		if d.Delegator == stakeEntry.Vault {
+		if d.Delegator == metadata.Vault {
 			selfdelegation = d
 		} else if d.IsFirstWeekPassed(ctx.BlockTime().UTC().Unix()) {
 			relevantDelegations = append(relevantDelegations, d)
@@ -186,10 +181,6 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		}
 	}
 
-	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
-	if err != nil {
-		return zeroCoins, zeroCoins, err
-	}
 	providerReward, delegatorsReward := k.CalcRewards(ctx, claimableRewards, totalDelegations, selfdelegation, relevantDelegations, metadata.DelegateCommission)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
@@ -197,7 +188,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	if !calcOnlyProvider {
 		// reward provider's vault
-		k.rewardDelegator(ctx, types.Delegation{Provider: stakeEntry.Address, Delegator: stakeEntry.Vault}, fullProviderReward, senderModule)
+		k.rewardDelegator(ctx, types.Delegation{Provider: metadata.Provider, Delegator: metadata.Vault}, fullProviderReward, senderModule)
 	}
 
 	return fullProviderReward, claimableRewards, nil

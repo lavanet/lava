@@ -28,7 +28,8 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 			}
 			stakeEntries[i].DelegateCommission = metadata.DelegateCommission
 			stakeEntries[i].Description = metadata.Description
-			stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
+			stakeEntries[i].Moniker = metadata.Description.Moniker
+			stakeEntries[i].Vault = metadata.Vault
 
 			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
 			if stakeEntries[i].GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
