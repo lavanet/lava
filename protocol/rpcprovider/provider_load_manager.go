@@ -44,8 +44,11 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 	if loadManager == nil {
 		return ""
 	}
-	activeRequests := loadManager.activeRequestsPerSecond.Load()
 	rateLimitThreshold := loadManager.rateLimitThreshold.Load()
+	if rateLimitThreshold == 0 {
+		return ""
+	}
+	activeRequests := loadManager.activeRequestsPerSecond.Load()
 	return strconv.FormatUint(activeRequests/rateLimitThreshold, 10)
 }
 
