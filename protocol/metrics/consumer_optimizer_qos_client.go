@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v3/utils"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
@@ -26,7 +25,7 @@ type ConsumerOptimizerQoSClient struct {
 	// keys are chain ids, values are maps with provider addresses as keys
 	chainIdToProviderToRelaysCount     map[string]map[string]uint64
 	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
-	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]uint64 // third key is epoch
+	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
 	atomicCurrentEpoch                 uint64
 	lock                               sync.RWMutex
 }
@@ -50,7 +49,7 @@ type optimizerQoSReportToSend struct {
 	ChainId           string    `json:"chain_id"`
 	NodeErrorRate     float64   `json:"node_error_rate"`
 	Epoch             uint64    `json:"epoch"`
-	ProviderStake     uint64    `json:"provider_stake"`
+	ProviderStake     int64     `json:"provider_stake"`
 }
 
 func (oqosr optimizerQoSReportToSend) String() string {
@@ -78,7 +77,7 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 		optimizers:                         map[string]OptimizerInf{},
 		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
 		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
-		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]uint64{},
+		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
 	}
 }
 
@@ -100,7 +99,7 @@ func (coqc *ConsumerOptimizerQoSClient) getProviderChainNodeErrorsCount(chainId,
 	return coqc.getProviderChainMapCounterValue(coqc.chainIdToProviderToNodeErrorsCount, chainId, providerAddress)
 }
 
-func (coqc *ConsumerOptimizerQoSClient) getProviderChainStake(chainId, providerAddress string, epoch uint64) uint64 {
+func (coqc *ConsumerOptimizerQoSClient) getProviderChainStake(chainId, providerAddress string, epoch uint64) int64 {
 	// must be called under read lock
 	if providersMap, found := coqc.chainIdToProviderToEpochToStake[chainId]; found {
 		if epochMap, found := providersMap[providerAddress]; found {
@@ -243,26 +242,26 @@ func (coqc *ConsumerOptimizerQoSClient) SetNodeErrorToProvider(providerAddress s
 	coqc.incrementStoreCounter(coqc.chainIdToProviderToNodeErrorsCount, chainId, providerAddress)
 }
 
-func (coqc *ConsumerOptimizerQoSClient) setProviderStake(chainId, providerAddress string, epoch, stake uint64) {
+func (coqc *ConsumerOptimizerQoSClient) setProviderStake(chainId, providerAddress string, epoch uint64, stake int64) {
 	// must be called under write lock
 	atomic.StoreUint64(&coqc.atomicCurrentEpoch, epoch)
 
 	providersMap, found := coqc.chainIdToProviderToEpochToStake[chainId]
 	if !found {
-		coqc.chainIdToProviderToEpochToStake[chainId] = map[string]map[uint64]uint64{providerAddress: {epoch: stake}}
+		coqc.chainIdToProviderToEpochToStake[chainId] = map[string]map[uint64]int64{providerAddress: {epoch: stake}}
 		return
 	}
 
 	epochMap, found := providersMap[providerAddress]
 	if !found {
-		coqc.chainIdToProviderToEpochToStake[chainId][providerAddress] = map[uint64]uint64{epoch: stake}
+		coqc.chainIdToProviderToEpochToStake[chainId][providerAddress] = map[uint64]int64{epoch: stake}
 		return
 	}
 
 	epochMap[epoch] = stake
 }
 
-func (coqc *ConsumerOptimizerQoSClient) UpdatePairingListStake(stakeMap map[string]sdk.Coin, chainId string, epoch uint64) {
+func (coqc *ConsumerOptimizerQoSClient) UpdatePairingListStake(stakeMap map[string]int64, chainId string, epoch uint64) {
 	if coqc == nil {
 		return
 	}
@@ -271,6 +270,6 @@ func (coqc *ConsumerOptimizerQoSClient) UpdatePairingListStake(stakeMap map[stri
 	defer coqc.lock.Unlock()
 
 	for providerAddr, stake := range stakeMap {
-		coqc.setProviderStake(chainId, providerAddr, epoch, stake.Amount.Uint64())
+		coqc.setProviderStake(chainId, providerAddr, epoch, stake)
 	}
 }
