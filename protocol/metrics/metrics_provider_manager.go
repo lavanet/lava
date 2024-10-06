@@ -42,6 +42,7 @@ type ProviderMetricsManager struct {
 	relaysMonitors                map[string]*RelaysMonitor
 	relaysMonitorsLock            sync.RWMutex
 	frozenStatusMetric            *prometheus.GaugeVec
+	jailedStatusMetric            *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -125,6 +126,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "lava_provider_frozen_status",
 		Help: "Frozen: 1, Healthy: 0",
 	}, []string{"chainID", "Address"})
+	jailedStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_jailed_status",
+		Help: "The amount of times the provider was jailed in the last 24 hours",
+	}, []string{"chainID", "Address"})
 
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
@@ -147,6 +152,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	prometheus.MustRegister(frozenStatusMetric)
+	prometheus.MustRegister(jailedStatusMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:               map[string]*ProviderMetrics{},
@@ -168,6 +174,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		protocolVersionMetric:         protocolVersionMetric,
 		relaysMonitors:                map[string]*RelaysMonitor{},
 		frozenStatusMetric:            frozenStatusMetric,
+		jailedStatusMetric:            jailedStatusMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -364,4 +371,12 @@ func (pme *ProviderMetricsManager) SetFrozenStatus(frozenStatus float64, chain s
 	}
 
 	pme.frozenStatusMetric.WithLabelValues(chain, address).Set(frozenStatus)
+}
+
+func (pme *ProviderMetricsManager) SetJailedStatus(jailedCounter uint64, chain string, address string) {
+	if pme == nil {
+		return
+	}
+
+	pme.jailedStatusMetric.WithLabelValues(chain, address).Set(float64(jailedCounter))
 }

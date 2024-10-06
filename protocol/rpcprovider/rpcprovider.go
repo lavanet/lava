@@ -92,7 +92,6 @@ type ProviderStateTrackerInf interface {
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetVirtualEpoch(epoch uint64) uint64
 	GetAverageBlockTime() time.Duration
-	RegisterAvailabilityStateUpdatesForEpoch(ctx context.Context, clientCtx client.Context, chainMap []*lavasession.RPCProviderEndpoint, metrics *metrics.ProviderMetricsManager)
 }
 
 type rpcProviderStartOptions struct {
@@ -189,7 +188,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp)
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
-		rpcp.providerStateTracker.RegisterAvailabilityStateUpdatesForEpoch(ctx, options.clientCtx, options.rpcProviderEndpoints, rpcp.providerMetricsManager)
+		rpcp.createAndRegisterFreezeUpdatersByOptions(options, ctx)
 	}
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
@@ -271,6 +270,19 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	}
 
 	return nil
+}
+
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(options *rpcProviderStartOptions, ctx context.Context) {
+	providerFreezeUpdaterByChainId := make(map[string]*updaters.ProviderFreezeUpdater)
+	for _, rpcProviderEndpoint := range options.rpcProviderEndpoints {
+		_, freezeUpdaterExists := providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID]
+		if !freezeUpdaterExists {
+			stateQuery := updaters.NewProviderStateQuery(ctx, options.clientCtx)
+			freezeUpdater := updaters.NewProviderFreezeUpdater(stateQuery.PairingQueryClient, rpcProviderEndpoint.ChainID, rpcProviderEndpoint.NetworkAddress.Address, rpcp.providerMetricsManager)
+			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeUpdater)
+			providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID] = freezeUpdater
+		}
+	}
 }
 
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
