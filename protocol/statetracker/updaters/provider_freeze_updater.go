@@ -78,13 +78,12 @@ func (pfu *ProviderFreezeUpdater) UpdateEpoch(epoch uint64) {
 		}
 
 		pfu.metricsManager.SetJailedStatus(provider.Jails, provider.Chain, provider.Address)
-		if provider.StakeAppliedBlock > uint64(epoch) || provider.IsJailed(time.Now().UTC().Unix()) {
+		if provider.StakeAppliedBlock > epoch || provider.IsJailed(time.Now().UTC().Unix()) {
 			pfu.setProviderFreezeMetric(FROZEN, provider.Chain, provider.Address)
 			continue
 		}
 		pfu.setProviderFreezeMetric(AVAILABLE, provider.Chain, provider.Address)
 	}
-
 }
 
 func (pfu *ProviderFreezeUpdater) setProviderFreezeMetric(isFrozen AvailabilityStatus, chain string, address string) {
