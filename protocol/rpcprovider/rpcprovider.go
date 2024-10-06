@@ -278,7 +278,7 @@ func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(options *rpcPr
 		_, freezeUpdaterExists := providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID]
 		if !freezeUpdaterExists {
 			stateQuery := updaters.NewProviderStateQuery(ctx, options.clientCtx)
-			freezeUpdater := updaters.NewProviderFreezeUpdater(stateQuery.PairingQueryClient, rpcProviderEndpoint.ChainID, rpcProviderEndpoint.NetworkAddress.Address, rpcp.providerMetricsManager)
+			freezeUpdater := updaters.NewProviderFreezeUpdater(stateQuery.PairingQueryClient, rpcProviderEndpoint.ChainID, options.clientCtx.FromAddress.String(), rpcp.providerMetricsManager)
 			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeUpdater)
 			providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID] = freezeUpdater
 		}
