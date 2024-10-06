@@ -42,6 +42,7 @@ func NewProviderAvailabilityUpdater(
 		clientCtx:           clientCtx,
 		rpcProviderEndpoint: rpcProviderEndpoint,
 		metricsManager:      metricsManager,
+		latestEpoch:         0,
 	}
 }
 
@@ -56,6 +57,7 @@ func (pau *ProviderAvailabilityUpdater) runProviderAvailabilityUpdate(epoch uint
 	if epoch <= pau.latestEpoch {
 		return
 	}
+	pau.latestEpoch = epoch
 	ctx := context.Background()
 
 	resultStatus, err := pau.clientCtx.Client.Status(ctx)
