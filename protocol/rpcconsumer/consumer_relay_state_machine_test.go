@@ -40,7 +40,7 @@ func (crsm *ConsumerRelaySenderMock) ParseRelay(
 	consumerIp string,
 	metadata []pairingtypes.Metadata,
 ) (protocolMessage chainlib.ProtocolMessage, err error) {
-	return nil, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
