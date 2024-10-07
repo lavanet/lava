@@ -118,14 +118,17 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 	shouldRetry := crsm.retryCondition(numberOfRetriesLaunched)
 	if shouldRetry {
 		// Retry archive logic
+		utils.LavaFormatTrace("[Archive Debug] Got Results", utils.LogAttr("Batch", numberOfRetriesLaunched), utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors))
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
 		if len(hashes) > 0 && numberOfNodeErrors > 0 {
+			utils.LavaFormatTrace("[Archive Debug] found hashes", utils.LogAttr("Batch", numberOfRetriesLaunched), utils.LogAttr("len(hashes)", len(hashes)))
 			// Launch archive only on the second retry attempt.
 			if numberOfRetriesLaunched == 1 {
 				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
 				// If we are familiar with all, we don't want to allow archive.
 				for _, hash := range hashes {
 					if !crsm.relayRetriesManager.CheckHashInCache(hash) {
+						utils.LavaFormatTrace("[Archive Debug] no hash in cache", utils.LogAttr("Batch", numberOfRetriesLaunched))
 						// If we didn't find the hash in the cache we can try archive relay.
 						relayRequestData := crsm.protocolMessage.RelayPrivateData()
 						// Validate we're not already archive
@@ -144,7 +147,10 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 						crsm.protocolMessage = newProtocolMessage
 						// for future batches.
 						crsm.appliedArchiveExtension = true
+						utils.LavaFormatTrace("[Archive Debug] SET ARCHIVE RELAY NEXT", utils.LogAttr("Batch", numberOfRetriesLaunched))
 						break
+					} else {
+						utils.LavaFormatTrace("[Archive Debug] YES hash in cache!!", utils.LogAttr("Batch", numberOfRetriesLaunched))
 					}
 				}
 				// We had node error, and we have a hash parsed.
@@ -156,6 +162,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 				// We know we have applied archive and failed.
 				// 1. We can remove the archive, return to the original protocol message,
 				// 2. Set all hashes as irrelevant for future queries.
+				utils.LavaFormatTrace("[Archive Debug] HASHES ARE SHIT, BAN.", utils.LogAttr("Batch", numberOfRetriesLaunched))
 				crsm.protocolMessage = crsm.originalProtocolMessage
 				for _, hash := range hashes {
 					crsm.relayRetriesManager.AddHashToCache(hash)

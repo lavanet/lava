@@ -493,14 +493,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 	if latestBlockHashRequested >= 0 && (reqBlock == spectypes.LATEST_BLOCK || reqBlock < latestBlockHashRequested) {
 		reqBlock = latestBlockHashRequested
 	}
-
-	if earliestBlockHashRequested >= 0 {
-		// change earliest requested block if applicable
-		success := protocolMessage.UpdateEarliestInMessage(earliestBlockHashRequested)
-		if success {
-			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, protocolMessage, uint64(seenBlock))
-		}
-	}
+	protocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, seenBlock)
 	return reqBlock
 }
 
@@ -642,6 +635,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						return nil
 					}
 					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
+					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested))
 					// cache failed, move on to regular relay
 					if performance.NotConnectedError.Is(cacheError) {
 						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
@@ -659,6 +653,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
+	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions))
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch)
 	if err != nil {
@@ -884,8 +879,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						} else {
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
 						}
-
 						blockHashesToHeights = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock)
+						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights))
 
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
