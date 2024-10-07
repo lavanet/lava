@@ -98,20 +98,20 @@ func filterGenericParsersByType(genericParsers []spectypes.GenericParser, filter
 }
 
 func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, bool) {
-	parsedSuccessfully := false
+	managedToParseRawBlock := false
 	if len(genericParsers) == 0 {
-		return nil, parsedSuccessfully
+		return nil, managedToParseRawBlock
 	}
 
 	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, filterGenericParsersByType(genericParsers, getParserTypeMap(PARSE_PARAMS)))
 	if genericParserErr != nil {
-		return nil, parsedSuccessfully
+		return nil, managedToParseRawBlock
 	}
 
 	parsed := NewParsedInput()
 	rawParsedData := genericParserResult.GetRawParsedData()
 	if rawParsedData != "" {
-		parsedSuccessfully = true
+		managedToParseRawBlock = true
 		parsed.parsedDataRaw = rawParsedData
 	}
 
@@ -120,7 +120,7 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 		parsed.parsedHashes = parsedBlockHashes
 	}
 
-	return parsed, parsedSuccessfully
+	return parsed, managedToParseRawBlock
 }
 
 // ParseRawBlock attempts to parse a block from rpcInput and store it in parsedInput.
@@ -187,8 +187,8 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 // Returns:
 // - A pointer to a ParsedInput struct containing the parsed data.
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
-	parsedBlockInfo, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
-	if parsedSuccessfully {
+	parsedBlockInfo, managedToParseRawBlock := parseInputWithGenericParsers(rpcInput, genericParsers)
+	if managedToParseRawBlock {
 		parsedBlockInfo.parsedDataRaw = unquoteString(parsedBlockInfo.parsedDataRaw)
 		return parsedBlockInfo
 	}
