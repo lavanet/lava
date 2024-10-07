@@ -185,10 +185,6 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 	return parsedBlockInfo
 }
 
-func ParseRawBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
-	return parseBlock(rpcInput, blockParser, genericParsers, PARSE_PARAMS)
-}
-
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_PARAMS)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
