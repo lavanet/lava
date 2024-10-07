@@ -778,7 +778,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
 					)
 				}
-
 				return
 			}
 
