@@ -123,6 +123,9 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 	return parsed, parsedSuccessfully
 }
 
+// ParseRawBlock attempts to parse a block from rpcInput and store it in parsedInput.
+// If parsing fails or rawBlock is empty, it uses defaultValue if provided.
+// If parsing the defaultValue also fails, it sets the block to NOT_APPLICABLE.
 func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue string) {
 	rawBlock := parsedInput.GetRawParsedData()
 	var parsedBlock int64
