@@ -312,8 +312,9 @@ func (p *ParsedInput) GetBlockHashes() ([]string, error) {
 
 func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 	var result map[string]interface{}
-	if rpcInput.GetResult() != nil {
-		json.Unmarshal(rpcInput.GetResult(), &result)
+	rpcInputResult := rpcInput.GetResult()
+	if rpcInputResult != nil {
+		json.Unmarshal(rpcInputResult, &result)
 	}
 	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result}
 }
