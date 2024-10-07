@@ -170,6 +170,19 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 	return resString, nil
 }
 
+// parseBlock processes the given RPC input using either generic parsers or a legacy block parser.
+// It first attempts to parse the input with the provided generic parsers. If successful, it returns
+// the parsed information after unquoting the raw parsed data. If the generic parsing fails, it falls
+// back to using a legacy block parser.
+//
+// Parameters:
+// - rpcInput: The input data to be parsed.
+// - blockParser: The legacy block parser to use if generic parsing fails.
+// - genericParsers: A slice of generic parsers to attempt first.
+// - source: An integer representing the source of the input: either PARSE_PARAMS or PARSE_RESULT.
+//
+// Returns:
+// - A pointer to a ParsedInput struct containing the parsed data.
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
 	parsedBlockInfo, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedSuccessfully {
