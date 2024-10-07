@@ -497,7 +497,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 	return reqBlock
 }
 
-func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64) []*pairingtypes.BlockHashToHeight {
+func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool) ([]*pairingtypes.BlockHashToHeight, bool) {
 	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
 	// 1. The current extension is archive.
 	// 2. The user requested a single block hash.
@@ -525,10 +525,12 @@ func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions [
 				Hash:   requestedBlocksHashes[0],
 				Height: height,
 			})
+			// we can assume this result is finalized.
+			finalized = true
 		}
 	}
 
-	return blockHashesToHeights
+	return blockHashesToHeights, finalized
 }
 
 func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
@@ -879,7 +881,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						} else {
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
 						}
-						blockHashesToHeights = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock)
+						var finalized bool
+						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized)
 						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights))
 
 						new_ctx := context.Background()
@@ -893,7 +896,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							SeenBlock:             seenBlock,
 							BlockHash:             nil, // consumer cache doesn't care about block hashes
 							Response:              copyReply,
-							Finalized:             localRelayResult.Finalized,
+							Finalized:             finalized,
 							OptionalMetadata:      nil,
 							SharedStateId:         sharedStateId,
 							AverageBlockTime:      int64(averageBlockTime), // by using average block time we can set longer TTL
