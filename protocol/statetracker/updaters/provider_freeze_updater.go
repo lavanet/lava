@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 	"google.golang.org/grpc"
@@ -19,10 +18,15 @@ type ProviderPairingStatusStateQueryInf interface {
 	Providers(ctx context.Context, in *types.QueryProvidersRequest, opts ...grpc.CallOption) (*types.QueryProvidersResponse, error)
 }
 
-type AvailabilityStatus uint64
+type ProviderMetricsManagerInf interface {
+	SetFrozenStatus(float64, string, string)
+	SetJailedStatus(uint64, string, string)
+}
+
+type FrozenStatus uint64
 
 const (
-	AVAILABLE AvailabilityStatus = iota
+	AVAILABLE FrozenStatus = iota
 	FROZEN
 )
 
@@ -30,7 +34,7 @@ type ProviderFreezeUpdater struct {
 	lock               sync.RWMutex
 	latestEpoch        uint64
 	pairingQueryClient ProviderPairingStatusStateQueryInf
-	metricsManager     *metrics.ProviderMetricsManager
+	metricsManager     ProviderMetricsManagerInf
 	chainId            string
 	publicAddress      string
 }
@@ -39,7 +43,7 @@ func NewProviderFreezeUpdater(
 	stateQuery ProviderPairingStatusStateQueryInf,
 	chainId string,
 	publicAddress string,
-	metricsManager *metrics.ProviderMetricsManager,
+	metricsManager ProviderMetricsManagerInf,
 ) *ProviderFreezeUpdater {
 	return &ProviderFreezeUpdater{
 		pairingQueryClient: stateQuery,
@@ -86,6 +90,6 @@ func (pfu *ProviderFreezeUpdater) UpdateEpoch(epoch uint64) {
 	}
 }
 
-func (pfu *ProviderFreezeUpdater) setProviderFreezeMetric(isFrozen AvailabilityStatus, chain string, address string) {
+func (pfu *ProviderFreezeUpdater) setProviderFreezeMetric(isFrozen FrozenStatus, chain string, address string) {
 	pfu.metricsManager.SetFrozenStatus(float64(isFrozen), chain, address)
 }
