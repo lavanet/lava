@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
@@ -62,22 +63,28 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		// distribute stake between other chains
 		metadata, err := k.epochStorageKeeper.GetMetadata(ctx, existingEntry.Address)
 		if err == nil {
-			total := amount.Amount
-			count := int64(len(metadata.Chains))
+
+			entries := []*epochstoragetypes.StakeEntry{}
 			for _, chain := range metadata.Chains {
 				entry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, existingEntry.Address)
-				if !found {
+				if found {
+					entries = append(entries, &entry)
+				} else {
 					utils.LavaFormatError("did not find stake entry that exists in metadata", nil,
 						utils.LogAttr("provider", existingEntry.Address),
 						utils.LogAttr("chain", chain),
 					)
-					continue
 				}
+			}
+
+			total := amount.Amount
+			count := int64(len(entries))
+			for _, entry := range entries {
 				part := total.QuoRaw(count)
 				entry.Stake = entry.Stake.AddAmount(part)
 				total = total.Sub(part)
 				count--
-				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, entry)
+				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 			}
 		}
 	}
