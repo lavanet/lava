@@ -326,7 +326,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
-	protocolMessage, err := rpccs.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	protocolMessage, err := rpccs.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,6 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 	connectionType string,
 	dappID string,
 	consumerIp string,
-	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (protocolMessage chainlib.ProtocolMessage, err error) {
 	// gets the relay request data from the ChainListener

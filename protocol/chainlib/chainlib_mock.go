@@ -714,9 +714,9 @@ func (mr *MockRelaySenderMockRecorder) CreateDappKey(userData interface{}) *gomo
 }
 
 // ParseRelay mocks base method.
-func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, analytics *metrics.RelayMetrics, metadata []types.Metadata) (ProtocolMessage, error) {
+func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, metadata []types.Metadata) (ProtocolMessage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	ret0, _ := ret[0].(ProtocolMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1

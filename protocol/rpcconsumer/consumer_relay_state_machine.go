@@ -6,6 +6,7 @@ import (
 	"time"
 
 	slices "github.com/lavanet/lava/v3/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
@@ -35,6 +36,15 @@ type ResultsCheckerInf interface {
 type ConsumerRelaySender interface {
 	getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
 	GetChainIdAndApiInterface() (string, string)
+	ParseRelay(
+		ctx context.Context,
+		url string,
+		req string,
+		connectionType string,
+		dappID string,
+		consumerIp string,
+		metadata []pairingtypes.Metadata,
+	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
 type tickerMetricSetterInf interface {
@@ -109,28 +119,29 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 	if shouldRetry {
 		// Retry archive logic
 		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
-		if len(hashes) > 0 && numberOfNodeErrors > 1 { // retry attempt is only on the 3rd attempt (2 normal failures)
-			// Launch archive only on the first retry attempt.
+		if len(hashes) > 0 && numberOfNodeErrors > 0 {
+			// Launch archive only on the second retry attempt.
 			if numberOfRetriesLaunched == 1 {
 				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
 				// If we are familiar with all, we don't want to allow archive.
 				for _, hash := range hashes {
 					if !crsm.relayRetriesManager.CheckHashInCache(hash) {
 						// If we didn't find the hash in the cache we can try archive relay.
-						privateData := crsm.protocolMessage.RelayPrivateData()
-						// Create a new array of extensions. validate it doesn't already have archive in it.
-						// If it does just break. if it doesn't add it
-						extensions := append([]string{}, privateData.Extensions...)
-						if slices.Contains(extensions, extensionslib.ArchiveExtension) {
+						relayRequestData := crsm.protocolMessage.RelayPrivateData()
+						// Validate we're not already archive
+						if slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
 							break // Do nothing its already archive.
 						}
-						extensions = append(extensions, extensionslib.ArchiveExtension)
 						// We need to set archive.
 						// Create a new relay private data containing the extension.
-						relayRequestData := lavaprotocol.NewRelayData(crsm.ctx, privateData.ConnectionType, privateData.ApiUrl, privateData.Data, privateData.SeenBlock, privateData.RequestBlock, privateData.ApiInterface, privateData.Metadata, privateData.Addon, extensions)
 						userData := crsm.protocolMessage.GetUserData()
-						// Creating an archive protocol message, and set it to current portocol message
-						crsm.protocolMessage = chainlib.NewProtocolMessage(crsm.protocolMessage, crsm.protocolMessage.GetDirectiveHeaders(), relayRequestData, userData.DappId, userData.ConsumerIp)
+						metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: extensionslib.ArchiveExtension}}
+						newProtocolMessage, err := crsm.relaySender.ParseRelay(crsm.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
+						if err != nil {
+							utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+						}
+						// Creating an archive protocol message, and set it to current protocol message
+						crsm.protocolMessage = newProtocolMessage
 						// for future batches.
 						crsm.appliedArchiveExtension = true
 						break
@@ -150,7 +161,8 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 					crsm.relayRetriesManager.AddHashToCache(hash)
 				}
 				crsm.appliedArchiveExtension = false // so we don't get here again
-
+				// We do not want to send additional relays after archive attempt. return false.
+				return false
 			}
 		}
 	}

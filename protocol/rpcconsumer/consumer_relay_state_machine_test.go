@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -28,6 +29,18 @@ func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.
 
 func (crsm *ConsumerRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
 	return "testUno", "testDos"
+}
+
+func (crsm *ConsumerRelaySenderMock) ParseRelay(
+	ctx context.Context,
+	url string,
+	req string,
+	connectionType string,
+	dappID string,
+	consumerIp string,
+	metadata []pairingtypes.Metadata,
+) (protocolMessage chainlib.ProtocolMessage, err error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
