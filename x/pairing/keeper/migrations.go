@@ -39,13 +39,14 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 	for address, entries := range providerMap {
 		metadata := epochstoragetypes.ProviderMetadata{Provider: address}
 
-		// find the bigest vault
+		// find the biggest vault
 		var biggestVault *epochstoragetypes.StakeEntry
+		biggestEntry := entries[0]
 		for i := range entries {
-			if metadata.Description.Moniker == "" {
-				metadata.Description = entries[i].Description
-			}
 			e := entries[i]
+			if biggestEntry.Stake.Amount.LT(e.Stake.Amount) {
+				biggestEntry = e
+			}
 			if e.Vault != e.Address {
 				if biggestVault == nil {
 					biggestVault = e
@@ -58,6 +59,8 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// if no vault was found the vault is the address
 		if biggestVault != nil {
 			metadata.Vault = biggestVault.Vault
+			metadata.Description = biggestEntry.Description
+			metadata.DelegateCommission = biggestEntry.DelegateCommission
 		} else {
 			metadata.Vault = address
 		}
@@ -65,7 +68,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// get all delegations and sum
 		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, metadata.Provider)
 		if err != nil {
-			panic("ahahahaha")
+			return err
 		}
 
 		metadata.TotalDelegations = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
