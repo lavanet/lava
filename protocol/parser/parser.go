@@ -109,10 +109,10 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 	}
 
 	parsed := NewParsedInput()
-	parsedBlock := genericParserResult.GetRawParsedData()
-	if parsedBlock != "" {
+	rawParsedData := genericParserResult.GetRawParsedData()
+	if rawParsedData != "" {
 		parsedSuccessfully = true
-		parsed.parsedDataRaw = parsedBlock
+		parsed.parsedDataRaw = rawParsedData
 	}
 
 	parsedBlockHashes, err := genericParserResult.GetBlockHashes()
