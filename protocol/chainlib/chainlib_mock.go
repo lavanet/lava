@@ -723,9 +723,9 @@ func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionTy
 }
 
 // ParseRelay indicates an expected call of ParseRelay.
-func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, metadata)
 }
 
 // SendParsedRelay mocks base method.
