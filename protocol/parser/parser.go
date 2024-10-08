@@ -292,6 +292,7 @@ const RAW_NOT_APPLICABLE = "-1"
 func NewParsedInput() *ParsedInput {
 	return &ParsedInput{
 		parsedDataRaw: RAW_NOT_APPLICABLE,
+		parsedBlock:   spectypes.NOT_APPLICABLE,
 		parsedHashes:  make([]string, 0),
 	}
 }
