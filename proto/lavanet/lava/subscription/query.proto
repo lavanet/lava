@@ -45,8 +45,15 @@ service Query {
   }
 
 // Queries a rewards estimation.
+// Deprecated: please use EstimatedRewardsV2
 rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option deprecated = true;
   option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
+}
+
+// Queries a rewards estimation.
+rpc EstimatedRewardsV2(QueryEstimatedRewardsV2Request) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{amount_delegator}";
 }
 
 rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
@@ -125,9 +132,15 @@ message QuerySubscriptionTrackedUsageResponse {
 }
 
 message QueryEstimatedRewardsRequest {
+  option deprecated = true;
   string provider = 1;
-  string chain_id = 2;
+  string chain_id = 2 [(gogoproto.moretags) = "yaml:\"chain_id\",deprecated:\"true\"", deprecated = true];
   string amount_delegator = 3; 
+}
+
+message QueryEstimatedRewardsV2Request {
+  string provider = 1;
+  string amount_delegator = 2; 
 }
 
 message EstimatedRewardInfo {
@@ -146,7 +159,9 @@ message QueryEstimatedRewardsResponse {
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true
   ];
-  uint64 recommended_block = 3;
+  uint64 recommended_block = 3; // if the query is run in the first 24H of the month, recommended_block will be non-zero.
+                                // The IPRPC estimation might be misleading in the first 24H since it's dependent on CU count
+                                // so the user should run the query again using the --height flag with the recommended_block
 }
 
 message QueryEstimatedValidatorRewardsRequest {

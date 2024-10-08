@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimatedRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
+func (k Keeper) EstimatedRewardsV2(goCtx context.Context, req *types.QueryEstimatedRewardsV2Request) (*types.QueryEstimatedRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -77,15 +77,16 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	res.Total = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
 
 	// get the last IPRPC rewards distribution block
+	// note: on error we simply leave RecommendedBlock to be zero since until the
+	// upcoming IPRPC rewards will be distributed (from the time this query is merged in main)
+	// there will be no LastRewardsBlock set
 	rewardsDistributionBlock, after24HoursBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
-	if err != nil {
-		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get last rewards block", err)
-	}
-
-	// if the query was sent within the first 24 hours of the month,
-	// make the recommended block be the rewards distribution block - 1
-	if uint64(ctx.BlockHeight()) <= after24HoursBlock {
-		res.RecommendedBlock = rewardsDistributionBlock - 1
+	if err == nil {
+		// if the query was sent within the first 24 hours of the month,
+		// make the recommended block be the rewards distribution block - 1
+		if uint64(ctx.BlockHeight()) <= after24HoursBlock {
+			res.RecommendedBlock = rewardsDistributionBlock - 1
+		}
 	}
 
 	return &res, nil
@@ -125,4 +126,9 @@ func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, dele
 	}
 
 	return qRes.Rewards[0].Amount, nil
+}
+
+func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimatedRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
+	newReq := types.QueryEstimatedRewardsV2Request{Provider: req.Provider, AmountDelegator: req.AmountDelegator}
+	return k.EstimatedRewardsV2(goCtx, &newReq)
 }

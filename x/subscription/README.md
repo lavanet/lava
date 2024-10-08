@@ -166,6 +166,8 @@ The subscription module supports the following queries:
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument.
 
+Also, note that the `estimated-rewards` query might return a non-zero "recommended_block". Part of the calculated rewards are the IPRPC rewards. These IPRPC rewards estimation might be misleading in the first 24H since it's dependent on CU count, so the user should run the query again using the `--height` flag with the recommended_block.
+
 ## Transactions
 
 All the transactions below require setting the `--from` flag and gas related flags.

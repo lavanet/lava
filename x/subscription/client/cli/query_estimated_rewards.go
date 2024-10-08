@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdEstimatedRewards() *cobra.Command {
+func CmdEstimatedRewardsV2() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "estimated-rewards [provider] {optional: amount/delegator}",
 		Short: "Calculates estimated rewards for a provider delegation.",
@@ -34,7 +34,7 @@ func CmdEstimatedRewards() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryEstimatedRewardsRequest{}
+			req := types.QueryEstimatedRewardsV2Request{}
 			req.Provider, err = utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
@@ -49,7 +49,7 @@ func CmdEstimatedRewards() *cobra.Command {
 				}
 			}
 
-			res, err := queryClient.EstimatedRewards(cmd.Context(), &req)
+			res, err := queryClient.EstimatedRewardsV2(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
