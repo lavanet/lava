@@ -22,6 +22,7 @@ type ProviderMetrics struct {
 	totalRelaysServicedMetric *prometheus.CounterVec
 	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
+	loadRateMetric            *prometheus.GaugeVec
 }
 
 func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport) {
@@ -49,6 +50,10 @@ func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pair
 	}
 }
 
+func (pm *ProviderMetrics) SetLoadRate(loatRate float64) {
+	pm.loadRateMetric.WithLabelValues(pm.specID).Set(loatRate)
+}
+
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
 	if pm == nil {
 		return
@@ -72,6 +77,7 @@ func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prom
 	totalRelaysServicedMetric *prometheus.CounterVec,
 	totalErroredMetric *prometheus.CounterVec,
 	consumerQoSMetric *prometheus.GaugeVec,
+	loadRateMetric *prometheus.GaugeVec,
 ) *ProviderMetrics {
 	pm := &ProviderMetrics{
 		specID:                    specID,
@@ -82,6 +88,7 @@ func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prom
 		totalRelaysServicedMetric: totalRelaysServicedMetric,
 		totalErroredMetric:        totalErroredMetric,
 		consumerQoSMetric:         consumerQoSMetric,
+		loadRateMetric:            loadRateMetric,
 	}
 	return pm
 }

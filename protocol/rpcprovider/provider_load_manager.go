@@ -49,20 +49,25 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 		return ""
 	}
 	activeRequests := loadManager.activeRequestsPerSecond.Load()
-	return strconv.FormatUint(activeRequests/rateLimitThreshold, 10)
+	return strconv.FormatFloat(float64(activeRequests/rateLimitThreshold), 'f', -1, 64)
 }
 
-func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) {
+func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) bool {
 	provideRelayLoad := loadManager.getProviderLoad()
 	if provideRelayLoad == "" {
-		return
+		return false
 	}
 
 	trailerMd := metadata.Pairs(chainlib.RpcProviderLoadRateHeader, provideRelayLoad)
 	grpc.SetTrailer(ctx, trailerMd)
+	return true
 }
 
-func (loadManager *ProviderLoadManager) addAndSetRelayLoadToContextTrailer(ctx context.Context) {
+func (loadManager *ProviderLoadManager) addAndSetRelayLoadToContextTrailer(ctx context.Context) bool {
 	loadManager.addRelayCall()
-	loadManager.applyProviderLoadMetadataToContextTrailer(ctx)
+	return loadManager.applyProviderLoadMetadataToContextTrailer(ctx)
+}
+
+func (loadManager *ProviderLoadManager) getActiveRequestsPerSecond() uint64 {
+	return loadManager.activeRequestsPerSecond.Load()
 }

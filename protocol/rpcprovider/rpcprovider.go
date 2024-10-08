@@ -124,25 +124,26 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 	// all of the following members need to be concurrency proof
-	providerMetricsManager    *metrics.ProviderMetricsManager
-	rewardServer              *rewardserver.RewardServer
-	privKey                   *btcec.PrivateKey
-	lavaChainID               string
-	addr                      sdk.AccAddress
-	blockMemorySize           uint64
-	chainMutexes              map[string]*sync.Mutex
-	parallelConnections       uint
-	cache                     *performance.Cache
-	shardID                   uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers             *common.SafeSyncMap[string, *chaintracker.ChainTracker]
-	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
-	relaysHealthCheckEnabled  bool
-	relaysHealthCheckInterval time.Duration
-	grpcHealthCheckEndpoint   string
-	providerUniqueId          string
-	staticProvider            bool
-	staticSpecPath            string
-	relayLoadLimit            uint64
+	providerMetricsManager       *metrics.ProviderMetricsManager
+	rewardServer                 *rewardserver.RewardServer
+	privKey                      *btcec.PrivateKey
+	lavaChainID                  string
+	addr                         sdk.AccAddress
+	blockMemorySize              uint64
+	chainMutexes                 map[string]*sync.Mutex
+	parallelConnections          uint
+	cache                        *performance.Cache
+	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers                *common.SafeSyncMap[string, *chaintracker.ChainTracker]
+	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
+	relaysHealthCheckEnabled     bool
+	relaysHealthCheckInterval    time.Duration
+	grpcHealthCheckEndpoint      string
+	providerUniqueId             string
+	staticProvider               bool
+	staticSpecPath               string
+	relayLoadLimit               uint64
+	providerLoadManagersPerChain map[string]*ProviderLoadManager
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -168,6 +169,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
 	rpcp.relayLoadLimit = options.relayLoadLimit
+	rpcp.providerLoadManagersPerChain = make(map[string]*ProviderLoadManager)
 
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -310,16 +312,10 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
-	providerLoadManagersPerChain := make(map[string]*ProviderLoadManager)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerLoadManager, keyExists := providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
-		if !keyExists {
-			providerLoadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
-			providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = providerLoadManager
-		}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
-			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator, providerLoadManager)
+			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
 			if err != nil {
 				rpcp.providerMetricsManager.SetDisabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 				disabledEndpoints <- rpcProviderEndpoint
@@ -348,7 +344,7 @@ func GetAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *Provi
 	return policy
 }
 
-func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator, providerLoadManager *ProviderLoadManager) error {
+func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
@@ -411,6 +407,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
+	var providerLoadManager *ProviderLoadManager
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	chainCommonSetup := func() error {
@@ -456,6 +453,14 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		} else { // loaded an existing chain tracker. use the same one instead
 			chainTracker = chainTrackerLoaded
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+		}
+
+		// create provider load manager per chain ID
+		var keyExists bool
+		providerLoadManager, keyExists = rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
+		if !keyExists {
+			providerLoadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
+			rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = providerLoadManager
 		}
 		return nil
 	}

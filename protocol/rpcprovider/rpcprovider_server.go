@@ -159,6 +159,11 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	rpcps.relaysMonitor.Start(ctx)
 }
 
+func (rpcps *RPCProviderServer) setLoadMetric() {
+	loadRate := rpcps.providerLoadManager.getActiveRequestsPerSecond()
+	rpcps.metrics.SetLoadRate(float64(loadRate))
+}
+
 func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.ChainMessage, err error) {
 	parsing, apiCollection, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
@@ -184,8 +189,11 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	// count the number of simultaneous relay calls
-	rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
+	isLoadRateSet := rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
 	defer func() { go rpcps.providerLoadManager.subtractRelayCall() }()
+	if isLoadRateSet {
+		go rpcps.setLoadMetric()
+	}
 	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
 	grpc.SetTrailer(ctx, trailerMd)
 	if request.RelayData == nil || request.RelaySession == nil {
