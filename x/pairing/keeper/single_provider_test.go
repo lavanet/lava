@@ -287,3 +287,37 @@ func TestUnstakeWithOperator(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, testStake*5+1, res.StakeEntries[0].Stake.Amount.Int64())
 }
+
+func TestChangeCommisionAndDescription(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 0, 5, 0)
+	provider, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
+
+	d := common.MockDescription()
+	err := ts.StakeProviderFull(provider.GetVaultAddr(), provider.Addr.String(), ts.Spec(SpecName(0)), 100, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, 50)
+	require.NoError(ts.T, err)
+
+	md, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider.Addr.String())
+	require.NoError(ts.T, err)
+	require.Equal(t, d, md.Description)
+	require.Equal(t, md.DelegateCommission, uint64(50))
+
+	d.Moniker = "test2"
+	err = ts.StakeProviderFull(provider.GetVaultAddr(), provider.Addr.String(), ts.Spec(SpecName(1)), 100, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, 49)
+	require.NoError(ts.T, err)
+
+	md, err = ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider.Addr.String())
+	require.NoError(ts.T, err)
+	require.Equal(t, d, md.Description)
+	require.Equal(t, md.DelegateCommission, uint64(49))
+
+	res, err := ts.QueryPairingProviders(ts.Spec(SpecName(0)).Index, true)
+	require.NoError(ts.T, err)
+	require.Equal(t, d, res.StakeEntry[0].Description)
+	require.Equal(t, uint64(49), res.StakeEntry[0].DelegateCommission)
+
+	res1, err := ts.QueryPairingProvider(provider.Addr.String(), "")
+	require.NoError(ts.T, err)
+	require.Equal(t, d, res1.StakeEntries[0].Description)
+	require.Equal(t, uint64(49), res1.StakeEntries[0].DelegateCommission)
+}
