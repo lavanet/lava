@@ -49,7 +49,7 @@ func (loadManager *ProviderLoadManager) getProviderLoad() string {
 		return ""
 	}
 	activeRequests := loadManager.activeRequestsPerSecond.Load()
-	return strconv.FormatFloat(float64(activeRequests/rateLimitThreshold), 'f', -1, 64)
+	return strconv.FormatFloat(float64(activeRequests)/float64(rateLimitThreshold), 'f', -1, 64)
 }
 
 func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) bool {
