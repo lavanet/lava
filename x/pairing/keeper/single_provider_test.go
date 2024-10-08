@@ -54,6 +54,14 @@ func TestUnstakeStake(t *testing.T) {
 		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
 	}
 
+	ts.AdvanceEpoch()
+
+	for i := 0; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	}
+
 	// unstake spec0 provider
 	_, err = ts.TxPairingUnstakeProvider(provider0.GetVaultAddr(), SpecName(0))
 	require.NoError(t, err)
@@ -88,6 +96,79 @@ func TestUnstakeStake(t *testing.T) {
 
 	// stake again on spec1 and check delegations
 	err = ts.StakeProviderExtra(provider0.GetVaultAddr(), provider0.Addr.String(), ts.Spec(SpecName(1)), testStake, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+	require.NoError(ts.T, err)
+
+	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(1))
+	require.NoError(t, err)
+	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	ts.AdvanceEpoch()
+
+	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(1))
+	require.NoError(t, err)
+	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+}
+
+// * unstake to see the delegations distributions
+// * unstake from the rest of the chains
+// * stake to get all delegations back with a new vault
+func TestUnstakeStakeNewVault(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 1, 5, 0)
+
+	delegator, _ := ts.AddAccount("del", 1, 1000000000)
+	provider0, _ := ts.GetAccount(common.PROVIDER, 0)
+	provider1, _ := ts.AddAccount(common.PROVIDER, 1, 1000000000)
+
+	// delegate and check delegatetotal
+	_, err := ts.TxDualstakingDelegate(delegator.Addr.String(), provider0.Addr.String(), types.NewInt64Coin(ts.TokenDenom(), 5000))
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	}
+
+	ts.AdvanceEpoch()
+
+	for i := 0; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	}
+
+	// unstake all
+	for i := 0; i < 5; i++ {
+		_, err = ts.TxPairingUnstakeProvider(provider0.GetVaultAddr(), SpecName(i))
+		require.NoError(t, err)
+	}
+
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
+	require.NoError(t, err)
+	require.Len(t, res.Delegations, 1)
+	require.Equal(t, provider0.Addr.String(), res.Delegations[0].Provider)
+	require.Equal(t, int64(5000), res.Delegations[0].Amount.Amount.Int64())
+
+	// stake again and check we got the delegation back
+	d := common.MockDescription()
+	err = ts.StakeProviderExtra(provider1.GetVaultAddr(), provider0.Addr.String(), ts.Spec(SpecName(0)), testStake, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+	require.NoError(ts.T, err)
+
+	res1, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+	require.Equal(t, int64(5000), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	// stake again on spec1 and check delegations
+	err = ts.StakeProviderExtra(provider1.GetVaultAddr(), provider0.Addr.String(), ts.Spec(SpecName(1)), testStake, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 	require.NoError(ts.T, err)
 
 	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
@@ -173,7 +254,6 @@ func TestUnstakeWithOperator(t *testing.T) {
 	ts := newTester(t)
 	SetupForSingleProviderTests(ts, 1, 5, 0)
 
-	// delegator, _ := ts.AddAccount("del", 1, 1000000000)
 	provider, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// unstake one chain
