@@ -1502,8 +1502,6 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
 
-	lt.lavaOverLava(ctx)
-
 	// staked client then with subscription
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
@@ -1514,14 +1512,15 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("REST TEST OK")
 
 	// staked client then with subscription
-	// TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
-		if err := grpcTests(url, time.Second*5); err != nil {
+		if err := grpcTests(url, time.Second*30); err != nil {
 			panic(err)
 		}
 	})
 	utils.LavaFormatInfo("GRPC TEST OK")
+
+	lt.lavaOverLava(ctx)
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
 
