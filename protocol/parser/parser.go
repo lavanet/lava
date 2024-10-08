@@ -117,6 +117,7 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 
 	parsedBlockHashes, err := genericParserResult.GetBlockHashes()
 	if err == nil {
+		managedToParseRawBlock = true
 		parsed.parsedHashes = parsedBlockHashes
 	}
 
@@ -187,13 +188,15 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 // Returns:
 // - A pointer to a ParsedInput struct containing the parsed data.
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
-	parsedBlockInfo, managedToParseRawBlock := parseInputWithGenericParsers(rpcInput, genericParsers)
-	if managedToParseRawBlock {
-		parsedBlockInfo.parsedDataRaw = unquoteString(parsedBlockInfo.parsedDataRaw)
-		return parsedBlockInfo
-	}
+	parsedBlockInfo, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedBlockInfo == nil {
 		parsedBlockInfo = NewParsedInput()
+	} else {
+		rawBlockFromGenericParser := parsedBlockInfo.parsedDataRaw
+		if rawBlockFromGenericParser != "" {
+			parsedBlockInfo.parsedDataRaw = unquoteString(rawBlockFromGenericParser)
+			return parsedBlockInfo
+		}
 	}
 
 	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
