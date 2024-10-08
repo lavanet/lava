@@ -131,6 +131,18 @@ func CmdDistributeProviderStake() *cobra.Command {
 				}
 			}
 
+			for _, item := range deficits {
+				if !item.diff.IsZero() {
+					return fmt.Errorf("failed to distribute provider stake")
+				}
+			}
+
+			for _, item := range excesses {
+				if !item.diff.IsZero() {
+					return fmt.Errorf("failed to distribute provider stake")
+				}
+			}
+
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
 		},
 	}
