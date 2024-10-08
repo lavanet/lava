@@ -74,7 +74,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	}
 
 	// calculate the claimable rewards difference
-	res.Rewards = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
+	res.Total = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
 
 	// get the last IPRPC rewards distribution block
 	rewardsDistributionBlock, after24HoursBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)

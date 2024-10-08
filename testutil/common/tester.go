@@ -1248,7 +1248,7 @@ func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount strin
 	ts.Ctx = ctx
 	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
 
-	reward := res.Rewards.AmountOf(ts.BondDenom()).TruncateInt()
+	reward := res.Total.AmountOf(ts.BondDenom()).TruncateInt()
 	if deductTax {
 		reward, _, _ = ts.DeductParticipationFees(reward)
 	}
