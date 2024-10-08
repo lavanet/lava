@@ -715,6 +715,17 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
+// TxPairingMoveStake: implement 'tx pairing move-provider-stake'
+func (ts *Tester) TxPairingMoveStake(provider, src, dst string, amount int64) (*pairingtypes.MsgMoveProviderStakeResponse, error) {
+	msg := &pairingtypes.MsgMoveProviderStake{
+		Creator:  provider,
+		SrcChain: src,
+		DstChain: dst,
+		Amount:   NewCoin(ts.BondDenom(), amount),
+	}
+	return ts.Servers.PairingServer.MoveProviderStake(ts.GoCtx, msg)
+}
+
 func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
 	msg := rewardstypes.NewMsgSetIprpcData(authority, cost, subs)
 	return ts.Servers.RewardsServer.SetIprpcData(ts.GoCtx, msg)

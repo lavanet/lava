@@ -321,3 +321,38 @@ func TestChangeCommisionAndDescription(t *testing.T) {
 	require.Equal(t, d, res1.StakeEntries[0].Description)
 	require.Equal(t, uint64(49), res1.StakeEntries[0].DelegateCommission)
 }
+
+func TestMoveStake(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 1, 5, 0)
+
+	delegator, _ := ts.AddAccount("del", 1, 1000000000)
+	provider0, _ := ts.GetAccount(common.PROVIDER, 0)
+
+	// delegate and check delegatetotal
+	_, err := ts.TxDualstakingDelegate(delegator.Addr.String(), provider0.Addr.String(), types.NewInt64Coin(ts.TokenDenom(), 5000))
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	}
+
+	_, err = ts.TxPairingMoveStake(provider0.GetVaultAddr(), SpecName(1), SpecName(0), testStake/2)
+	require.NoError(t, err)
+
+	res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+	require.Equal(t, int64(1500), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	res, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(1))
+	require.NoError(t, err)
+	require.Equal(t, int64(500), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+
+	for i := 2; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	}
+}
