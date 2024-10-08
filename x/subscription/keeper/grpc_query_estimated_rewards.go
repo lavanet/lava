@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) EstimatedRewardsV2(goCtx context.Context, req *types.QueryEstimatedRewardsV2Request) (*types.QueryEstimatedRewardsResponse, error) {
+func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.QueryEstimatedProviderRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -129,6 +129,6 @@ func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, dele
 }
 
 func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimatedRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
-	newReq := types.QueryEstimatedRewardsV2Request{Provider: req.Provider, AmountDelegator: req.AmountDelegator}
-	return k.EstimatedRewardsV2(goCtx, &newReq)
+	newReq := types.QueryEstimatedProviderRewardsRequest{Provider: req.Provider, AmountDelegator: req.AmountDelegator}
+	return k.EstimatedProviderRewards(goCtx, &newReq)
 }

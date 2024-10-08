@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdEstimatedRewardsV2() *cobra.Command {
+func CmdEstimatedProviderRewards() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "estimated-rewards [provider] {optional: amount/delegator}",
+		Use:   "estimated-provider-rewards [provider] {optional: amount/delegator}",
 		Short: "Calculates estimated rewards for a provider delegation.",
 		Long: `Estimates the rewards a delegator will earn from a provider over one month. If no optional arguments are provided, the calculation is for the provider itself.
 		The estimation considers subscription rewards, bonus rewards, IPRPC rewards, provider delegation limits, spec contribution, and tax.
@@ -21,9 +21,9 @@ func CmdEstimatedRewardsV2() *cobra.Command {
 			- delegator: The address of an existing delegator.
 		`,
 		Example: ` The query can be used in 3 ways:
-		1. estimated-rewards <provider_address>: estimates the monthly reward of a provider.
-		2. estimated-rewards <provider_address> <delegator_address>: estimates the monthly reward of a delegator from a specific provider.
-		3. estimated-rewards <provider_address> <delegation_amount>: estimates the monthly reward of a delegator that has a specific amount of delegation to a specific provider.
+		1. estimated-provider-rewards <provider_address>: estimates the monthly reward of a provider.
+		2. estimated-provider-rewards <provider_address> <delegator_address>: estimates the monthly reward of a delegator from a specific provider.
+		3. estimated-provider-rewards <provider_address> <delegation_amount>: estimates the monthly reward of a delegator that has a specific amount of delegation to a specific provider.
 		`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -34,7 +34,7 @@ func CmdEstimatedRewardsV2() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryEstimatedRewardsV2Request{}
+			req := types.QueryEstimatedProviderRewardsRequest{}
 			req.Provider, err = utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
@@ -49,7 +49,7 @@ func CmdEstimatedRewardsV2() *cobra.Command {
 				}
 			}
 
-			res, err := queryClient.EstimatedRewardsV2(cmd.Context(), &req)
+			res, err := queryClient.EstimatedProviderRewards(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}

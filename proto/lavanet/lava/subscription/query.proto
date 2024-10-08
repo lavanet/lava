@@ -45,15 +45,15 @@ service Query {
   }
 
 // Queries a rewards estimation.
-// Deprecated: please use EstimatedRewardsV2
+// Deprecated: please use EstimatedProviderRewards
 rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
   option deprecated = true;
   option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
 }
 
 // Queries a rewards estimation.
-rpc EstimatedRewardsV2(QueryEstimatedRewardsV2Request) returns (QueryEstimatedRewardsResponse) {
-  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{amount_delegator}";
+rpc EstimatedProviderRewards(QueryEstimatedProviderRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_provider_rewards/{provider}/{amount_delegator}";
 }
 
 rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
@@ -138,7 +138,7 @@ message QueryEstimatedRewardsRequest {
   string amount_delegator = 3; 
 }
 
-message QueryEstimatedRewardsV2Request {
+message QueryEstimatedProviderRewardsRequest {
   string provider = 1;
   string amount_delegator = 2; 
 }
