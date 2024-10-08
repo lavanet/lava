@@ -160,8 +160,8 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 }
 
 func (rpcps *RPCProviderServer) setLoadMetric() {
-	loadRate := rpcps.providerLoadManager.getActiveRequestsPerSecond()
-	rpcps.metrics.SetLoadRate(float64(loadRate))
+	loadRate := rpcps.providerLoadManager.getProviderLoad()
+	rpcps.metrics.SetLoadRate(loadRate)
 }
 
 func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.ChainMessage, err error) {
