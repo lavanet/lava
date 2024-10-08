@@ -42,11 +42,11 @@ func testFreezeAndJailsMetricsOnEpochUpdate(t *testing.T, freezeStatus FrozenSta
 			Jails:             jailsAmount,
 		},
 	}
-	response := &pairingtypes.QueryProvidersResponse{StakeEntry: stakeEntryList}
+	response := &pairingtypes.QueryProviderResponse{StakeEntries: stakeEntryList}
 
 	// Create a new mock objects
 	stateQuery := NewMockProviderPairingStatusStateQueryInf(ctrlStateQuery)
-	stateQuery.EXPECT().Providers(gomock.Any(), gomock.Any(), gomock.Any()).Return(response, nil).AnyTimes()
+	stateQuery.EXPECT().Provider(gomock.Any(), gomock.Any(), gomock.Any()).Return(response, nil).AnyTimes()
 	metricManager := NewMockProviderMetricsManagerInf(ctrlMetrics)
 	// set expect for correct metric calls
 	metricManager.EXPECT().SetFrozenStatus(float64(freezeStatus), specID, address).Return().AnyTimes()
@@ -87,11 +87,11 @@ func TestStakeEntryReplyOfDifferentAddress(t *testing.T) {
 			Chain:   specID,
 		},
 	}
-	response := &pairingtypes.QueryProvidersResponse{StakeEntry: stakeEntryList}
+	response := &pairingtypes.QueryProviderResponse{StakeEntries: stakeEntryList}
 
 	// Create a new mock objects
 	stateQuery := NewMockProviderPairingStatusStateQueryInf(ctrlStateQuery)
-	stateQuery.EXPECT().Providers(gomock.Any(), gomock.Any(), gomock.Any()).Return(response, nil).AnyTimes()
+	stateQuery.EXPECT().Provider(gomock.Any(), gomock.Any(), gomock.Any()).Return(response, nil).AnyTimes()
 	metricManager := NewMockProviderMetricsManagerInf(ctrlMetrics)
 	// set expect for correct metric calls
 	metricManager.EXPECT().SetFrozenStatus(gomock.Any(), gomock.Any(), gomock.Any()).MaxTimes(0)

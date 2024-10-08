@@ -15,7 +15,7 @@ const (
 )
 
 type ProviderPairingStatusStateQueryInf interface {
-	Providers(ctx context.Context, in *types.QueryProvidersRequest, opts ...grpc.CallOption) (*types.QueryProvidersResponse, error)
+	Provider(ctx context.Context, in *types.QueryProviderRequest, opts ...grpc.CallOption) (*types.QueryProviderResponse, error)
 }
 
 type ProviderMetricsManagerInf interface {
@@ -68,21 +68,21 @@ func (pfu *ProviderFreezeUpdater) UpdateEpoch(epoch uint64) {
 	pfu.latestEpoch = epoch
 	ctx := context.Background()
 
-	response, err := pfu.pairingQueryClient.Providers(ctx, &types.QueryProvidersRequest{
-		ChainID:    pfu.chainId,
-		ShowFrozen: true,
+	response, err := pfu.pairingQueryClient.Provider(ctx, &types.QueryProviderRequest{
+		ChainID: pfu.chainId,
+		Address: pfu.publicAddress,
 	})
 	if err != nil {
 		utils.LavaFormatError("Failed querying pairing client for providers", err, utils.LogAttr("chainId", pfu.chainId))
 		return
 	}
-	for _, provider := range response.StakeEntry {
+	for _, provider := range response.StakeEntries {
 		if provider.Address != pfu.publicAddress || !provider.IsAddressVaultOrProvider(provider.Address) {
 			continue
 		}
 
 		pfu.metricsManager.SetJailedStatus(provider.Jails, provider.Chain, provider.Address)
-		if provider.StakeAppliedBlock > epoch || provider.IsJailed(time.Now().UTC().Unix()) {
+		if provider.StakeAppliedBlock > epoch || provider.IsFrozen() || provider.IsJailed(time.Now().UTC().Unix()) {
 			pfu.setProviderFreezeMetric(FROZEN, provider.Chain, provider.Address)
 			continue
 		}

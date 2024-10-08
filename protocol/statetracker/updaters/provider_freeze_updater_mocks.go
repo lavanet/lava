@@ -36,24 +36,24 @@ func (m *MockProviderPairingStatusStateQueryInf) EXPECT() *MockProviderPairingSt
 	return m.recorder
 }
 
-// Providers mocks base method.
-func (m *MockProviderPairingStatusStateQueryInf) Providers(ctx context.Context, in *types.QueryProvidersRequest, opts ...grpc.CallOption) (*types.QueryProvidersResponse, error) {
+// Provider mocks base method.
+func (m *MockProviderPairingStatusStateQueryInf) Provider(ctx context.Context, in *types.QueryProviderRequest, opts ...grpc.CallOption) (*types.QueryProviderResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "Providers", varargs...)
-	ret0, _ := ret[0].(*types.QueryProvidersResponse)
+	ret := m.ctrl.Call(m, "Provider", varargs...)
+	ret0, _ := ret[0].(*types.QueryProviderResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Providers indicates an expected call of Providers.
-func (mr *MockProviderPairingStatusStateQueryInfMockRecorder) Providers(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// Provider indicates an expected call of Provider.
+func (mr *MockProviderPairingStatusStateQueryInfMockRecorder) Provider(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Providers", reflect.TypeOf((*MockProviderPairingStatusStateQueryInf)(nil).Providers), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Provider", reflect.TypeOf((*MockProviderPairingStatusStateQueryInf)(nil).Provider), varargs...)
 }
 
 // MockProviderMetricsManagerInf is a mock of ProviderMetricsManagerInf interface.
