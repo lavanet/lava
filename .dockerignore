@@ -25,3 +25,8 @@ go.work.sum
 Dockerfile
 docker/docker-compose.*
 cmd/**/Dockerfile
+
+.dockerignore
+.gcloudignore
+
+Makefile

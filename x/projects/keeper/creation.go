@@ -191,7 +191,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 		// check that the developer key is valid, and that it does not already
 		// belong to a different project.
-		if found && devkeyData.ProjectID != project.Index {
+		if found && devkeyData.ProjectID != project.GetIndex() {
 			return utils.LavaFormatWarning("failed to register key",
 				fmt.Errorf("key already exists"),
 				utils.Attribute{Key: "key", Value: key.Key},
@@ -254,10 +254,9 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		// the developer key belongs to a different project
 		if devkeyData.ProjectID != project.GetIndex() {
 			return utils.LavaFormatWarning("failed to unregister key", legacyerrors.ErrNotFound,
-				utils.Attribute{Key: "projectID", Value: project.Index},
+				utils.Attribute{Key: "projectID", Value: project.GetIndex()},
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
-				utils.Attribute{Key: "projectID", Value: project.GetIndex()},
 				utils.Attribute{Key: "otherID", Value: devkeyData.ProjectID},
 			)
 		}
