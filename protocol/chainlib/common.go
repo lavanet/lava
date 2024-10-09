@@ -30,7 +30,7 @@ const (
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
 	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
-	RpcProviderLoadRateHeader  = "Lava-Provider-load-rate"
+	RpcProviderLoadRateHeader  = "Lava-Provider-Load-Rate"
 	RpcProviderUniqueIdHeader  = "Lava-Provider-Unique-Id"
 	WebSocketExtension         = "websocket"
 )
