@@ -43,7 +43,6 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 		cache := &Cache{client: nil, address: addr, serviceCtx: ctx}
 		go cache.reconnectLoop()
 		return cache, err
-
 	}
 	cache := Cache{client: *relayerCacheClient, address: addr, serviceCtx: ctx}
 	return &cache, nil
