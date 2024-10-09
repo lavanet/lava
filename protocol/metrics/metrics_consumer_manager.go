@@ -44,6 +44,7 @@ type ConsumerMetricsManager struct {
 	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
 	totalWsSubscriptionDissconnectMetric        *prometheus.CounterVec
 	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *prometheus.GaugeVec
@@ -111,6 +112,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	totalDuplicatedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
 		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalWebSocketConnectionsActive := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_total_websocket_connections_active",
+		Help: "The total number of currently active websocket connections with users",
 	}, []string{"spec", "apiInterface"})
 
 	totalWsSubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -218,6 +224,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
+	prometheus.MustRegister(totalWebSocketConnectionsActive)
 	prometheus.MustRegister(apiSpecificsMetric)
 	prometheus.MustRegister(averageLatencyMetric)
 	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
@@ -238,6 +245,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		totalFailedWsSubscriptionRequestsMetric:     totalFailedWsSubscriptionRequestsMetric,
 		totalDuplicatedWsSubscriptionRequestsMetric: totalDuplicatedWsSubscriptionRequestsMetric,
 		totalWsSubscriptionDissconnectMetric:        totalWsSubscriptionDissconnectMetric,
+		totalWebSocketConnectionsActive:             totalWebSocketConnectionsActive,
 		totalErroredMetric:                          totalErroredMetric,
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
@@ -295,6 +303,17 @@ func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, 
 		return
 	}
 	pme.totalRelaysSentToProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
+	if pme == nil {
+		return
+	}
+	if add {
+		pme.totalWebSocketConnectionsActive.WithLabelValues(chainId, apiInterface).Add(1)
+	} else {
+		pme.totalWebSocketConnectionsActive.WithLabelValues(chainId, apiInterface).Sub(1)
+	}
 }
 
 func (pme *ConsumerMetricsManager) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
