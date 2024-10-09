@@ -116,7 +116,6 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 		address:     addr,
 		serviceCtx:  ctx,
 	}, err
-
 }
 
 func (cache *Cache) GetEntry(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (reply *pairingtypes.CacheRelayReply, err error) {
