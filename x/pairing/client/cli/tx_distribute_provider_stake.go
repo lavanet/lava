@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -56,10 +57,10 @@ func CmdDistributeProviderStake() *cobra.Command {
 
 type data struct {
 	chain    string
-	original sdk.Int
+	original math.Int
 	percent  sdk.Dec
-	target   sdk.Int
-	diff     sdk.Int
+	target   math.Int
+	diff     math.Int
 }
 
 func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeEntry, distributionsArg string) ([]sdk.Msg, error) {
