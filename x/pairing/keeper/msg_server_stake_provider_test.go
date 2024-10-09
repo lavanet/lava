@@ -27,9 +27,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(common.MockDescription()))
+	stakeEntry, err := ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(common.MockDescription()))
 
 	// modify description
 	dNew := stakingtypes.NewDescription("bla", "blan", "bal", "lala", "asdasd")
@@ -38,9 +38,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(dNew))
+	stakeEntry, err = ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(dNew))
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
