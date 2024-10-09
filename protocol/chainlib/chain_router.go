@@ -48,7 +48,8 @@ func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon s
 	// check if that specific method has a special route, if it does apply it to the router key
 	wantedRouterKey := lavasession.NewRouterKey(extensions)
 	wantedRouterKey.ApplyInternalPath(internalPath)
-	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey.String()]; ok {
+	wantedRouterKeyStr := wantedRouterKey.String()
+	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKeyStr]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
 				// check if the method is supported
@@ -58,19 +59,19 @@ func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon s
 					}
 					utils.LavaFormatTrace("chainProxy supporting method routing selected",
 						utils.LogAttr("addon", addon),
-						utils.LogAttr("wantedRouterKey", wantedRouterKey),
+						utils.LogAttr("wantedRouterKey", wantedRouterKeyStr),
 						utils.LogAttr("method", method),
 					)
 				}
-				if wantedRouterKey.String() != lavasession.GetEmptyRouterKey().String() { // add trailer only when router key is not default (||)
-					grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeExtension, wantedRouterKey.String()))
+				if wantedRouterKeyStr != lavasession.GetEmptyRouterKey().String() { // add trailer only when router key is not default (||)
+					grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeExtension, wantedRouterKeyStr))
 				}
 				return chainRouterEntry.ChainProxy, nil
 			}
 
 			utils.LavaFormatTrace("chainProxy supporting extensions but not supporting addon",
 				utils.LogAttr("addon", addon),
-				utils.LogAttr("wantedRouterKey", wantedRouterKey),
+				utils.LogAttr("wantedRouterKey", wantedRouterKeyStr),
 			)
 		}
 		// no support for this addon
