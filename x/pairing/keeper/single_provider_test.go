@@ -406,8 +406,6 @@ func TestPairingWithDelegationDistributions(t *testing.T) {
 		require.NoError(ts.T, err)
 	}
 
-	ts.AdvanceEpoch()
-
 	// check that provider is in pairing in spec1
 	numOfPairing = 0
 	for i := 0; i < 100; i++ {
