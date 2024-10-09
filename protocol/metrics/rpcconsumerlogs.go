@@ -87,6 +87,10 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	return rpcConsumerLogs, err
 }
 
+func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
+	rpccl.consumerMetricsManager.SetWebSocketConnectionActive(chainId, apiInterface, add)
+}
+
 func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
 	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
 }
