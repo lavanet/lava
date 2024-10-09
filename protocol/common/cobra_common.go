@@ -40,7 +40,8 @@ const (
 	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
 
 	// websocket flags
-	RateLimitWebSocketFlag = "rate-limit-websocket-requests-per-connection"
+	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
+	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
 )
 
 const (

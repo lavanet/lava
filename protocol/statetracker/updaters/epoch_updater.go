@@ -56,6 +56,12 @@ func NewEpochUpdater(stateQuery EpochStateQueryInterface) *EpochUpdater {
 func (eu *EpochUpdater) RegisterEpochUpdatable(ctx context.Context, epochUpdatable EpochUpdatable, blocksUpdateDelay int64) {
 	eu.lock.Lock()
 	defer eu.lock.Unlock()
+	// validate we do not store the same updatable twice
+	for _, epochUpdatableStored := range eu.epochUpdatables {
+		if epochUpdatable == epochUpdatableStored.EpochUpdatable {
+			return
+		}
+	}
 	// initialize with the current epoch
 	currentEpoch, err := eu.stateQuery.CurrentEpochStart(ctx)
 	if err != nil {

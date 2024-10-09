@@ -1196,6 +1196,27 @@
                                         "expected_value": "*"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "tokens-owner-indexed",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenAccountsByOwner\",\"params\":[\"4Qkev8aNZcqFNSRhQzwyLMFSsi94jHqE8WNVTJzTP99F\",{\"programId\":\"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA\"},{\"encoding\":\"jsonParsed\"}]}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "value"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "getTokenAccountsByOwner"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
                             }
                         ]
                     }
