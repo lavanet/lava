@@ -132,7 +132,6 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 		k.handleNoIprpcRewardToProviders(ctx, iprpcReward.SpecFunds)
 		return
 	}
-
 	leftovers := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
 		details := map[string]string{}
@@ -178,9 +177,10 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			_, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
-				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
+				// failed sending the rewards, add the claimable rewards to the leftovers that will be transferred to the community pool
+				utils.LavaFormatPanic("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}
 			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerIprpcReward.String())
 		}

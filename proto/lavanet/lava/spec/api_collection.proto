@@ -83,6 +83,7 @@ message ParseDirective {
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
+  repeated GenericParser parsers = 5 [(gogoproto.nullable) = false];
 }
 
 message BlockParser {

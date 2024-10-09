@@ -102,13 +102,6 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
-	providerAddr, err := sdk.AccAddressFromBech32(provider)
-	if err != nil {
-		return utils.LavaFormatWarning("invalid address", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
-
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
@@ -117,7 +110,15 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		)
 	}
 	totalAmount := existingEntry.Stake.Amount
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, providerAddr)
+	vaultAcc, err := sdk.AccAddressFromBech32(existingEntry.Vault)
+	if err != nil {
+		return utils.LavaFormatError("can't unstake entry, invalid vault address", err,
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("chain", chainID),
+			utils.LogAttr("vault", existingEntry.Vault),
+		)
+	}
+	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
 
 	for _, delegation := range delegations {
 		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
@@ -139,9 +140,6 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		}
 
 		if totalAmount.IsZero() {
-			existingEntry, _ := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
-			k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, existingEntry.Address)
-
 			details := map[string]string{
 				"address":     existingEntry.GetAddress(),
 				"chainID":     existingEntry.GetChain(),

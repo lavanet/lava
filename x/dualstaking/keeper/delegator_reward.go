@@ -139,31 +139,34 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+// since this function does not actually send rewards to the providers and delegator (but only allocates rewards to be claimed)
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error) {
+	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
 
 	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
-		return zeroCoins, zeroCoins, err
+		return zeroCoins, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+			utils.Attribute{Key: "block", Value: block},
+		)
 	}
 
 	delegations, err := k.GetProviderDelegators(ctx, provider)
 	if err != nil {
-		return zeroCoins, zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
+		return zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
 	}
-	claimableRewards = totalReward
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	contributorsNum := sdk.NewInt(int64(len(contributorAddresses)))
+	contributorReward := zeroCoins
 	if !contributorsNum.IsZero() && contributorPart.GT(math.LegacyZeroDec()) {
-		contributorReward := totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(sdk.NewInt(spectypes.ContributorPrecision))
+		contributorReward = totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(sdk.NewInt(spectypes.ContributorPrecision))
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoInt(contributorsNum).MulInt(contributorsNum)
-		claimableRewards = totalReward.Sub(contributorReward...)
 		if !calcOnlyContributor {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
-				return zeroCoins, zeroCoins, err
+				return zeroCoins, err
 			}
 		}
 	}
@@ -181,7 +184,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		}
 	}
 
-	providerReward, delegatorsReward := k.CalcRewards(ctx, claimableRewards, totalDelegations, selfdelegation, relevantDelegations, metadata.DelegateCommission)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfdelegation, relevantDelegations, metadata.DelegateCommission)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
@@ -191,7 +194,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		k.rewardDelegator(ctx, types.Delegation{Provider: metadata.Provider, Delegator: metadata.Vault}, fullProviderReward, senderModule)
 	}
 
-	return fullProviderReward, claimableRewards, nil
+	return fullProviderReward, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
@@ -200,11 +203,9 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 
 	for _, delegation := range delegations {
 		delegatorReward := k.CalcDelegatorReward(ctx, delegatorsReward, totalDelegations, delegation)
-
 		if !calcOnly {
 			k.rewardDelegator(ctx, delegation, delegatorReward, senderModule)
 		}
-
 		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward...)
 	}
 
