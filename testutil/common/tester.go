@@ -179,7 +179,6 @@ func (ts *Tester) StakeProviderExtra(
 	securityContact string,
 	descriptionDetails string,
 ) error {
-
 	return ts.StakeProviderFull(vault,
 		provider,
 		spec,

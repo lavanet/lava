@@ -63,7 +63,6 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		// distribute stake between other chains
 		metadata, err := k.epochStorageKeeper.GetMetadata(ctx, existingEntry.Address)
 		if err == nil {
-
 			entries := []*epochstoragetypes.StakeEntry{}
 			for _, chain := range metadata.Chains {
 				entry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, existingEntry.Address)

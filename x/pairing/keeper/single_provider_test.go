@@ -6,6 +6,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v3/x/pairing/client/cli"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +17,7 @@ func SpecName(num int) string {
 
 func SetupForSingleProviderTests(ts *tester, providers, specs, clientsCount int) {
 	for i := 0; i < providers; i++ {
-		ts.AddAccount(common.PROVIDER, i, testBalance)
+		ts.AddAccount(common.PROVIDER, i, 100*testBalance)
 	}
 
 	for i := 0; i < specs; i++ {
@@ -426,4 +428,77 @@ func TestPairingWithDelegationDistributions(t *testing.T) {
 		}
 	}
 	require.Greater(t, numOfPairing, 95)
+}
+
+func TestDistributionCli(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 1, 100, 0)
+
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+
+	res, err := ts.QueryPairingProvider(provider.Addr.String(), "")
+	require.NoError(t, err)
+
+	// distribute each provider 0.1% and last with 90.1%
+	distribution := ""
+	for i := 0; i < 99; i++ {
+		distribution = distribution + SpecName(i) + "," + "0.1" + ","
+	}
+	distribution = distribution + SpecName(99) + "," + "90.1"
+
+	// get the msgs and run
+	msgs, err := cli.CalculateDistbiruitions(provider.Addr.String(), res.StakeEntries, distribution)
+	require.NoError(t, err)
+	for _, msgRaw := range msgs {
+		msg, ok := msgRaw.(*pairingtypes.MsgMoveProviderStake)
+		require.True(t, ok)
+		require.Equal(t, provider.Addr.String(), msg.Creator)
+		require.Equal(t, SpecName(99), msg.DstChain)
+		require.NotEqual(t, SpecName(99), msg.SrcChain)
+		require.Equal(t, int64(90000), msg.Amount.Amount.Int64())
+
+		_, err := ts.Servers.PairingServer.MoveProviderStake(ts.Ctx, msg)
+		require.NoError(t, err)
+	}
+
+	// check the stake entries on chain
+	for i := 0; i < 99; i++ {
+		res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, int64(10000), res.StakeEntries[0].Stake.Amount.Int64())
+	}
+
+	res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(99))
+	require.NoError(t, err)
+	require.Equal(t, int64(9010000), res.StakeEntries[0].Stake.Amount.Int64())
+
+	// distribute back to 1% each
+	res, err = ts.QueryPairingProvider(provider.Addr.String(), "")
+	require.NoError(t, err)
+
+	distribution = ""
+	for i := 0; i < 100; i++ {
+		distribution = distribution + SpecName(i) + "," + "1" + ","
+	}
+	distribution = distribution[:len(distribution)-1]
+
+	msgs, err = cli.CalculateDistbiruitions(provider.Addr.String(), res.StakeEntries, distribution)
+	require.NoError(t, err)
+	for _, msgRaw := range msgs {
+		msg, ok := msgRaw.(*pairingtypes.MsgMoveProviderStake)
+		require.True(t, ok)
+		require.Equal(t, provider.Addr.String(), msg.Creator)
+		require.Equal(t, SpecName(99), msg.SrcChain)
+		require.NotEqual(t, SpecName(99), msg.DstChain)
+		require.Equal(t, int64(90000), msg.Amount.Amount.Int64())
+
+		_, err := ts.Servers.PairingServer.MoveProviderStake(ts.Ctx, msg)
+		require.NoError(t, err)
+	}
+
+	for i := 0; i < 100; i++ {
+		res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, testStake, res.StakeEntries[0].Stake.Amount.Int64())
+	}
 }
