@@ -88,7 +88,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
@@ -178,10 +178,14 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 	}
 
 	totalBasePay := math.ZeroInt()
+	stakedBasePays := []types.BasePayWithIndex{}
 	for _, basepay := range basepays {
-		totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+		if _, found := k.epochstorage.GetStakeEntryCurrent(ctx, basepay.ChainId, basepay.Provider); found {
+			totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+			stakedBasePays = append(stakedBasePays, basepay)
+		}
 	}
-	return basepays, totalBasePay
+	return stakedBasePays, totalBasePay
 }
 
 // ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool
