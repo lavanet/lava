@@ -108,9 +108,12 @@ func (cache *Cache) SetEntry(ctx context.Context, cacheSet *pairingtypes.RelayCa
 	if cache == nil {
 		return NotInitializedError
 	}
+
 	if cache.client == nil {
+		go cache.reconnectLoop()
 		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
 	}
+
 	_, err := cache.client.SetRelay(ctx, cacheSet)
 	cache.reconnectIfNeeded(err)
 	return err
