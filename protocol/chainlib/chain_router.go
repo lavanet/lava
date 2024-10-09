@@ -15,11 +15,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type MethodRoute struct {
-	lavasession.RouterKey
-	method string
-}
-
 type chainRouterEntry struct {
 	ChainProxy
 	addonsSupported map[string]struct{}
