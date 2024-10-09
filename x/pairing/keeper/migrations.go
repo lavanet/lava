@@ -57,10 +57,11 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		}
 
 		// if no vault was found the vault is the address
+		metadata.Description = biggestEntry.Description
+		metadata.DelegateCommission = biggestEntry.DelegateCommission
+		metadata.Provider = address
 		if biggestVault != nil {
 			metadata.Vault = biggestVault.Vault
-			metadata.Description = biggestEntry.Description
-			metadata.DelegateCommission = biggestEntry.DelegateCommission
 		} else {
 			metadata.Vault = address
 		}
@@ -86,6 +87,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 				fmt.Println(address)
 				biggestVault.Stake = biggestVault.Stake.SubAmount(sdk.NewInt(1))
 				e.Stake.Amount = sdk.OneInt()
+				e.Vault = metadata.Vault
 			} else {
 				TotalSelfDelegation = TotalSelfDelegation.Add(e.Stake.Amount)
 			}
