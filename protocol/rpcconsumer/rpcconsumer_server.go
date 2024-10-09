@@ -689,6 +689,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
+						utils.LogAttr("Provider", providerPublicAddress),
 					)
 				}
 
