@@ -356,3 +356,76 @@ func TestMoveStake(t *testing.T) {
 		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
 	}
 }
+
+func TestPairingWithDelegationDistributions(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 0, 2, 1)
+
+	stake := int64(1000)
+	delegator, _ := ts.AddAccount("del", 1, stake*10000)
+	client, _ := ts.GetAccount(common.CONSUMER, 0)
+	spec := ts.Spec(SpecName(0))
+
+	// stake for spec0
+	for i := 0; i < 100; i++ {
+		acc, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, spec, stake)
+		require.NoError(ts.T, err)
+	}
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+
+	// delegate a lot of stake to the first provider
+	_, err := ts.TxDualstakingDelegate(delegator.Addr.String(), provider.Addr.String(), types.NewInt64Coin(ts.TokenDenom(), stake*10000))
+	require.NoError(t, err)
+
+	numOfPairing := 0
+	for i := 0; i < 100; i++ {
+		ts.AdvanceEpoch()
+
+		// make sure the provider is in the pairing list
+		res, err := ts.QueryPairingGetPairing(spec.Index, client.Addr.String())
+		require.NoError(t, err)
+		found := false
+		for _, p := range res.Providers {
+			if p.Address == provider.Addr.String() {
+				found = true
+				break
+			}
+		}
+		if found {
+			numOfPairing++
+		}
+	}
+	require.Greater(t, numOfPairing, 95)
+
+	spec = ts.Spec(SpecName(1))
+	// stake to spec1
+	for i := 0; i < 100; i++ {
+		acc, addr := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, spec, stake)
+		require.NoError(ts.T, err)
+	}
+
+	ts.AdvanceEpoch()
+
+	// check that provider is in pairing in spec1
+	numOfPairing = 0
+	for i := 0; i < 100; i++ {
+		ts.AdvanceEpoch()
+
+		// make sure the provider is in the pairing list
+		res, err := ts.QueryPairingGetPairing(spec.Index, client.Addr.String())
+		require.NoError(t, err)
+		found := false
+		for _, p := range res.Providers {
+			if p.Address == provider.Addr.String() {
+				found = true
+				break
+			}
+		}
+		if found {
+			numOfPairing++
+		}
+	}
+	require.Greater(t, numOfPairing, 95)
+}
