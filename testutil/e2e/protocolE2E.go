@@ -77,6 +77,8 @@ type lavaTest struct {
 	wg                   sync.WaitGroup
 	logPath              string
 	tokenDenom           string
+	consumerCacheAddress string
+	providerCacheAddress string
 }
 
 func init() {
@@ -339,8 +341,8 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/jsonrpcProvider%d.yml --chain-id=lava --from servicer%d %s",
-			lt.protocolPath, providerConfigsFolder, idx, idx, lt.lavadArgs,
+			"%s rpcprovider %s/jsonrpcProvider%d.yml --cache-be %s --chain-id=lava --from servicer%d %s",
+			lt.protocolPath, providerConfigsFolder, idx, lt.providerCacheAddress, idx, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
@@ -358,8 +360,8 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
-			"%s rpcconsumer %s/ethConsumer%d.yml --chain-id=lava --from %s %s",
-			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			"%s rpcconsumer %s/ethConsumer%d.yml --cache-be %s --chain-id=lava --from %s %s",
+			lt.protocolPath, consumerConfigsFolder, idx+1, lt.consumerCacheAddress, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
@@ -533,8 +535,8 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/lavaProvider%d --chain-id=lava --from servicer%d %s",
-			lt.protocolPath, providerConfigsFolder, idx, idx, lt.lavadArgs,
+			"%s rpcprovider %s/lavaProvider%d --cache-be %s --chain-id=lava --from servicer%d %s",
+			lt.protocolPath, providerConfigsFolder, idx, lt.providerCacheAddress, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
@@ -552,14 +554,51 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
-			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava --from %s %s",
-			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			"%s rpcconsumer %s/lavaConsumer%d.yml --cache-be %s --chain-id=lava --from %s %s",
+			lt.protocolPath, consumerConfigsFolder, idx+1, lt.consumerCacheAddress, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
 		lt.execCommand(ctx, funcName, logName, command, false)
 	}
 	utils.LavaFormatInfo("startRPCConsumer OK")
+}
+
+func (lt *lavaTest) startConsumerCache(ctx context.Context) {
+	command := fmt.Sprintf("%s cache %s --log_level debug", lt.protocolPath, lt.consumerCacheAddress)
+	logName := "08_Consumer_Cache"
+	funcName := "startConsumerCache"
+
+	lt.execCommand(ctx, funcName, logName, command, false)
+	lt.checkCacheIsUp(ctx, lt.consumerCacheAddress, time.Minute)
+	utils.LavaFormatInfo(funcName + OKstr)
+}
+
+func (lt *lavaTest) startProviderCache(ctx context.Context) {
+	command := fmt.Sprintf("%s cache %s --log_level debug", lt.protocolPath, lt.providerCacheAddress)
+	logName := "09_Provider_Cache"
+	funcName := "startProviderCache"
+
+	lt.execCommand(ctx, funcName, logName, command, false)
+	lt.checkCacheIsUp(ctx, lt.providerCacheAddress, time.Minute)
+	utils.LavaFormatInfo(funcName + OKstr)
+}
+
+func (lt *lavaTest) checkCacheIsUp(ctx context.Context, cacheAddress string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting Cache " + cacheAddress)
+		nctx, cancel := context.WithTimeout(ctx, time.Second)
+		grpcClient, err := grpc.DialContext(nctx, cacheAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			cancel()
+			time.Sleep(time.Second)
+			continue
+		}
+		cancel()
+		grpcClient.Close()
+		return
+	}
+	panic("checkCacheIsUp: Check Failed Cache didn't respond" + cacheAddress)
 }
 
 func (lt *lavaTest) startLavaEmergencyConsumer(ctx context.Context) {
@@ -1394,16 +1433,18 @@ func runProtocolE2E(timeout time.Duration) {
 		fmt.Println(err)
 	}
 	lt := &lavaTest{
-		grpcConn:     grpcConn,
-		lavadPath:    gopath + "/bin/lavad",
-		protocolPath: gopath + "/bin/lavap",
-		lavadArgs:    "--geolocation 1 --log_level debug",
-		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*sdk.SafeBuffer),
-		commands:     make(map[string]*exec.Cmd),
-		providerType: make(map[string][]epochStorageTypes.Endpoint),
-		logPath:      protocolLogsFolder,
-		tokenDenom:   commonconsts.TestTokenDenom,
+		grpcConn:             grpcConn,
+		lavadPath:            gopath + "/bin/lavad",
+		protocolPath:         gopath + "/bin/lavap",
+		lavadArgs:            "--geolocation 1 --log_level debug",
+		consumerArgs:         " --allow-insecure-provider-dialing",
+		logs:                 make(map[string]*sdk.SafeBuffer),
+		commands:             make(map[string]*exec.Cmd),
+		providerType:         make(map[string][]epochStorageTypes.Endpoint),
+		logPath:              protocolLogsFolder,
+		tokenDenom:           commonconsts.TestTokenDenom,
+		consumerCacheAddress: "127.0.0.1:2778",
+		providerCacheAddress: "127.0.0.1:2777",
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
@@ -1465,60 +1506,71 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.startLavaProviders(ctx)
 	lt.startLavaConsumer(ctx)
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		lt.checkTendermintConsumer(url, time.Second*30)
-		url = fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
-		lt.checkRESTConsumer(url, time.Second*30)
-		url = fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
-		lt.checkGRPCConsumer(url, time.Second*30)
-	})
+	runChecksAndTests := func() {
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
+			lt.checkTendermintConsumer(url, time.Second*15)
+			url = fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
+			lt.checkRESTConsumer(url, time.Second*15)
+			url = fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
+			lt.checkGRPCConsumer(url, time.Second*15)
+		})
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:333%d", n)
-		if err := jsonrpcTests(url, time.Second*30); err != nil {
-			panic(err)
-		}
-	})
-	utils.LavaFormatInfo("JSONRPC TEST OK")
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:333%d", n)
+			if err := jsonrpcTests(url, time.Second*15); err != nil {
+				panic(err)
+			}
+		})
+		utils.LavaFormatInfo("JSONRPC TEST OK")
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		if err := tendermintTests(url, time.Second*30); err != nil {
-			panic(err)
-		}
-	})
-	utils.LavaFormatInfo("TENDERMINTRPC TEST OK")
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
+			if err := tendermintTests(url, time.Second*15); err != nil {
+				panic(err)
+			}
+		})
+		utils.LavaFormatInfo("TENDERMINTRPC TEST OK")
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		if err := tendermintURITests(url, time.Second*30); err != nil {
-			panic(err)
-		}
-	})
-	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
+			if err := tendermintURITests(url, time.Second*15); err != nil {
+				panic(err)
+			}
+		})
+		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
-		if err := restTests(url, time.Second*30); err != nil {
-			panic(err)
-		}
-	})
-	utils.LavaFormatInfo("REST TEST OK")
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
+			if err := restTests(url, time.Second*15); err != nil {
+				panic(err)
+			}
+		})
+		utils.LavaFormatInfo("REST TEST OK")
 
-	// staked client then with subscription
-	repeat(1, func(n int) {
-		url := fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
-		if err := grpcTests(url, time.Second*30); err != nil {
-			panic(err)
-		}
-	})
-	utils.LavaFormatInfo("GRPC TEST OK")
+		// staked client then with subscription
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
+			if err := grpcTests(url, time.Second*15); err != nil {
+				panic(err)
+			}
+		})
+		utils.LavaFormatInfo("GRPC TEST OK")
+	}
+
+	// run tests without cache
+	runChecksAndTests()
+
+	lt.startConsumerCache(ctx)
+	lt.startProviderCache(ctx)
+
+	// run tests with cache
+	runChecksAndTests()
 
 	lt.lavaOverLava(ctx)
 
