@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type SingleConsumerSession struct {
@@ -25,7 +26,7 @@ type SingleConsumerSession struct {
 	BlockListed        bool // if session lost sync we blacklist it.
 	ConsecutiveErrors  []error
 	errorsCount        uint64
-	relayProcessor     UsedProvidersInf
+	usedProviders      UsedProvidersInf
 	providerUniqueId   string
 	StaticProvider     bool
 }
@@ -111,14 +112,14 @@ func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, 
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
 		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
 	}
-	scs.relayProcessor = usedProviders
+	scs.usedProviders = usedProviders
 	return nil
 }
 
-func (scs *SingleConsumerSession) Free(err error) {
-	if scs.relayProcessor != nil {
-		scs.relayProcessor.RemoveUsed(scs.Parent.PublicLavaAddress, err)
-		scs.relayProcessor = nil
+func (scs *SingleConsumerSession) Free(err error, extensions []*spectypes.Extension) {
+	if scs.usedProviders != nil {
+		scs.usedProviders.RemoveUsed(scs.Parent.PublicLavaAddress, extensions, err)
+		scs.usedProviders = nil
 	}
 	scs.EndpointConnection.decreaseSessionUsingConnection()
 	scs.lock.Unlock()
@@ -130,7 +131,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
-		if session.relayProcessor != nil {
+		if session.usedProviders != nil {
 			utils.LavaFormatError("session misuse detected, usedProviders isn't nil, missing Free call, blocking", nil, utils.LogAttr("session", session.SessionId))
 			session.BlockListed = true
 			session.lock.Unlock()
@@ -143,10 +144,10 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 }
 
 // Verify the consumerSession is locked when getting to this function, if its not locked throw an error
-func (consumerSession *SingleConsumerSession) VerifyLock() error {
+func (consumerSession *SingleConsumerSession) VerifyLock(extensions []*spectypes.Extension) error {
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
-		defer consumerSession.Free(nil)
+		defer consumerSession.Free(nil, extensions)
 		// if failed to lock we should block session as it seems like a very rare case.
 		consumerSession.BlockListed = true // block this session from future usages
 		utils.LavaFormatError("Verify Lock failed on session Failure, blocking session", nil, utils.LogAttr("consumerSession", consumerSession))
