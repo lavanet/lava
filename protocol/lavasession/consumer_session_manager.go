@@ -32,7 +32,7 @@ var (
 	CollectOptimizerProvidersScore             = false
 	CollectOptimizerProvidersScoreFlagName     = "collect-optimizer-providers-score"
 	CollectOptimizerProvidersScoreInterval     = time.Second * 1
-	CollectOptimizerProvidersScoreIntervalFlag = "collect-optimizer-providers-score-interval"
+	CollectOptimizerProvidersScoreIntervalFlag = "optimizer-providers-score-collection-interval"
 )
 
 // created with NewConsumerSessionManager
@@ -1172,7 +1172,8 @@ func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx co
 				}
 			}
 
-			go csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers)
+			shiftedChances := csm.providerOptimizer.CalculateShiftedChances(selectionTier)
+			go csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers, shiftedChances)
 		}
 	}
 }
