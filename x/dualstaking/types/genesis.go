@@ -2,8 +2,6 @@ package types
 
 import (
 	fmt "fmt"
-
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
 )
 
 // DefaultIndex is the default global index
@@ -15,8 +13,7 @@ func DefaultGenesis() *GenesisState {
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:              DefaultParams(),
 		DelegatorRewardList: []DelegatorReward{},
-		DelegationsFS:       *fixationstoretypes.DefaultGenesis(),
-		DelegatorsFS:        *fixationstoretypes.DefaultGenesis(),
+		Delegations:         []Delegation{},
 	}
 }
 
@@ -27,11 +24,22 @@ func (gs GenesisState) Validate() error {
 	delegatorRewardIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.DelegatorRewardList {
-		index := DelegationKey(elem.Provider, elem.Delegator, elem.ChainId)
+		key := DelegationKey(elem.Provider, elem.Delegator)
+		index := key.K1() + key.K2()
 		if _, ok := delegatorRewardIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for delegatorReward")
 		}
 		delegatorRewardIndexMap[index] = struct{}{}
+	}
+
+	delegationIndexMap := make(map[string]struct{})
+	for _, elem := range gs.Delegations {
+		key := DelegationKey(elem.Provider, elem.Delegator)
+		index := key.K1() + key.K2()
+		if _, ok := delegationIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for delegations")
+		}
+		delegationIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

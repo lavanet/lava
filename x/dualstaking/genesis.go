@@ -11,8 +11,12 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 
-	k.InitDelegations(ctx, genState.DelegationsFS)
-	k.InitDelegators(ctx, genState.DelegatorsFS)
+	for _, d := range genState.Delegations {
+		err := k.SetDelegation(ctx, d)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	// Set all the DelegatorReward
 	for _, elem := range genState.DelegatorRewardList {
@@ -25,8 +29,12 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
 
-	genesis.DelegationsFS = k.ExportDelegations(ctx)
-	genesis.DelegatorsFS = k.ExportDelegators(ctx)
+	var err error
+	genesis.Delegations, err = k.GetAllDelegations(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	genesis.DelegatorRewardList = k.GetAllDelegatorReward(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
