@@ -725,7 +725,7 @@ func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress s
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 	return lavasession.NewConsumerSessionManager(
 		&lavasession.RPCEndpoint{NetworkAddress: "stub", ChainID: chainID, ApiInterface: apiInterface, TLSEnabled: false, HealthCheckPath: "/", Geolocation: 0},
-		provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1),
+		provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1, nil, "dontcare"),
 		nil, nil, consumerPublicAddress,
 		lavasession.NewActiveSubscriptionProvidersStorage(),
 	)

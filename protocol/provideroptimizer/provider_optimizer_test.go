@@ -40,7 +40,7 @@ func (posc *providerOptimizerSyncCache) Set(key, value interface{}, cost int64) 
 func setupProviderOptimizer(maxProvidersCount int) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	baseWorldLatency := TEST_BASE_WORLD_LATENCY
-	return NewProviderOptimizer(STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, uint(maxProvidersCount))
+	return NewProviderOptimizer(STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, uint(maxProvidersCount), nil, "dontcare")
 }
 
 type providersGenerator struct {
@@ -686,7 +686,7 @@ func TestProviderOptimizerWeights(t *testing.T) {
 	improvedLatency := normalLatency - 5*time.Millisecond
 	improvedBlock := syncBlock + 2
 
-	providerOptimizer.UpdateWeights(weights)
+	providerOptimizer.UpdateWeights(weights, syncBlock)
 	for i := 0; i < 10; i++ {
 		for idx, address := range providersGen.providersAddresses {
 			if idx == 0 {

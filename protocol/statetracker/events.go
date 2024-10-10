@@ -723,23 +723,17 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	}
 
 	// Log the transactions per day results
-	totalTxPerDay.Range(func(key, value interface{}) bool {
-		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", key), utils.LogAttr("totalTx", value))
+	totalTxPerDay.Range(func(day int64, totalTx int) bool {
+		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", day), utils.LogAttr("totalTx", totalTx))
 		return true // continue iteration
 	})
 
 	// Prepare the JSON data
 	jsonData := make(map[string]int)
-	totalTxPerDay.Range(func(key, value interface{}) bool {
-		day, ok := key.(int64)
-		if ok {
-			date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
-			dateKey := fmt.Sprintf("date_%s", date)
-			val, ok2 := value.(int)
-			if ok2 {
-				jsonData[dateKey] = val
-			}
-		}
+	totalTxPerDay.Range(func(day int64, totalTx int) bool {
+		date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
+		dateKey := fmt.Sprintf("date_%s", date)
+		jsonData[dateKey] = totalTx
 		return true
 	})
 

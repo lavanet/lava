@@ -658,7 +658,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			endpointClient := singleConsumerSession.EndpointConnection.Client
 
 			// set relay sent metric
-			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
+			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(providerPublicAddress, chainId, apiInterface)
 
 			if chainlib.IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
