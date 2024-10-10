@@ -261,15 +261,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              stakeAmount,
-		Address:            provider,
-		StakeAppliedBlock:  stakeAppliedBlock,
-		Endpoints:          endpointsVerified,
-		Geolocation:        geolocation,
-		Chain:              chainID,
-		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
-		DelegateCommission: 0,
-		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
+		Stake:             stakeAmount,
+		Address:           provider,
+		StakeAppliedBlock: stakeAppliedBlock,
+		Endpoints:         endpointsVerified,
+		Geolocation:       geolocation,
+		Chain:             chainID,
+		DelegateTotal:     sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
+		Vault:             creator, // the stake-provider TX creator is always regarded as the vault address
 	}
 
 	metadata.DelegateCommission = delegationCommission

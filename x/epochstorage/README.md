@@ -162,6 +162,7 @@ The epochstorage module supports the following queries:
 | `show-fixated-params` | chainid           | a specific fixated param                      |
 | `list-stake-storage`  | chainid           | list of all stake storages indices            |
 | `show-stake-storage`  | chainid           | show a specific stake storage                 |
+| `provider-metadata`   | provider-address  | shows the metadata of a specific provider, if left empty returns metadata for all providers                 |
 
 ## Transactions
 

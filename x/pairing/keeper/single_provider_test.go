@@ -58,10 +58,10 @@ func TestUnstakeStake(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	for i := 0; i < 5; i++ {
-		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
-		require.NoError(t, err)
-		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+	stakeEntries := ts.Keepers.Epochstorage.GetAllStakeEntriesForEpoch(ts.Ctx, ts.EpochStart())
+	require.Len(t, stakeEntries, 5)
+	for _, entry := range stakeEntries {
+		require.Equal(t, int64(1000), entry.DelegateTotal.Amount.Int64())
 	}
 
 	// unstake spec0 provider
@@ -110,13 +110,11 @@ func TestUnstakeStake(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
-	require.NoError(t, err)
-	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
-
-	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(1))
-	require.NoError(t, err)
-	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+	stakeEntries = ts.Keepers.Epochstorage.GetAllStakeEntriesForEpoch(ts.Ctx, ts.EpochStart())
+	require.Len(t, stakeEntries, 2)
+	for _, entry := range stakeEntries {
+		require.Equal(t, int64(2500), entry.DelegateTotal.Amount.Int64())
+	}
 }
 
 // * unstake to see the delegations distributions
@@ -152,6 +150,14 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		_, err = ts.TxPairingUnstakeProvider(provider0.GetVaultAddr(), SpecName(i))
 		require.NoError(t, err)
+
+		md, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider0.Addr.String())
+		if i == 4 {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Len(t, md.Chains, 4-i)
+		}
 	}
 
 	res, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
