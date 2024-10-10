@@ -159,10 +159,6 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	rpcps.relaysMonitor.Start(ctx)
 }
 
-func (rpcps *RPCProviderServer) setLoadMetric(currentLoad float64) {
-	rpcps.metrics.SetLoadRate(currentLoad)
-}
-
 func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.ChainMessage, err error) {
 	parsing, apiCollection, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
@@ -193,7 +189,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		// add load metric and subtract the load at the end of the relay using a routine.
 		go func() {
 			rpcps.providerLoadManager.subtractRelayCall()
-			rpcps.setLoadMetric(currentLoad)
+			rpcps.metrics.SetLoadRate(currentLoad)
 		}()
 	}()
 	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)

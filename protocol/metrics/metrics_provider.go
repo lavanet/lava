@@ -50,8 +50,11 @@ func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pair
 	}
 }
 
-func (pm *ProviderMetrics) SetLoadRate(loatRate float64) {
-	pm.loadRateMetric.WithLabelValues(pm.specID).Set(loatRate)
+func (pm *ProviderMetrics) SetLoadRate(loadRate float64) {
+	if pm == nil {
+		return
+	}
+	pm.loadRateMetric.WithLabelValues(pm.specID).Set(loadRate)
 }
 
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
