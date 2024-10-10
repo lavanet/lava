@@ -53,7 +53,7 @@ screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
 $PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level trace --from servicer1 --chain-id lava --rate-limit-requests-per-second 10 --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level trace --from servicer1 --chain-id lava --rate-limit-requests-per-second 1000 --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 wait_next_block
 
