@@ -829,6 +829,15 @@ func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.Query
 	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
 }
 
+// QuerySubscriptionEstimateRewards: implement 'q subscription estimate-provider-rewards'
+func (ts *Tester) QuerySubscriptionEstimateProviderRewards(provider string, amountDelegator string) (*subscriptiontypes.QueryEstimatedRewardsResponse, error) {
+	msg := &subscriptiontypes.QueryEstimatedProviderRewardsRequest{
+		Provider:        provider,
+		AmountDelegator: amountDelegator,
+	}
+	return ts.Keepers.Subscription.EstimatedProviderRewards(ts.GoCtx, msg)
+}
+
 // QueryProjectInfo implements 'q project info'
 func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
 	msg := &projectstypes.QueryInfoRequest{Project: projectID}
@@ -1262,4 +1271,22 @@ func (ts *Tester) DisableParticipationFees() {
 	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
 	require.Nil(ts.T, err)
 	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
+}
+
+// deductParticipationFees calculates the validators and community participation
+// fees and returns the providers reward after deducting them
+func (ts *Tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
+	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward)
+	require.Nil(ts.T, err)
+	valParticipation = valPerc.MulInt(reward).TruncateInt()
+	communityParticipation = communityPerc.MulInt(reward).TruncateInt()
+	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
+}
+
+// EstimateProviderRewards uses the subscription's "estimate-provider-rewards" query and returns
+// the estimated rewards in math.Int form
+func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount string) (total math.Int, info []subscriptiontypes.EstimatedRewardInfo) {
+	res, err := ts.QuerySubscriptionEstimateProviderRewards(provider, delegatorAmount)
+	require.NoError(ts.T, err)
+	return res.Total.AmountOf(ts.BondDenom()).TruncateInt(), res.Info
 }

@@ -441,7 +441,7 @@ func TestDelegationTimestamp(t *testing.T) {
 	_, delegator := ts.GetAccount(common.CONSUMER, 1)
 
 	// delegate and check the timestamp is equal to current time + month
-	currentTimeAfterMonth := ts.GetNextMonth(ts.BlockTime())
+	currentTimeAfterMonth := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 
 	require.NoError(t, err)
@@ -490,8 +490,8 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
-	// delegate and check the delegation's timestamp is equal than nowPlusMonthTime
-	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
+	// delegate and check the delegation's timestamp is equal than nowPlusWeekTime
+	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
@@ -502,7 +502,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+			require.Equal(t, nowPlusWeekTime, d.Timestamp)
 		}
 	}
 
@@ -532,8 +532,8 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	ts.AdvanceEpoch()
 	makeProviderCommissionZero(ts, provider)
 
-	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
-	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
+	// delegate and check the delegation's timestamp is equal to nowPlusWeekTime
+	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
@@ -544,7 +544,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+			require.Equal(t, nowPlusWeekTime, d.Timestamp)
 		}
 	}
 
@@ -587,8 +587,8 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	makeProviderCommissionZero(ts, provider1)
 	makeProviderCommissionZero(ts, provider)
 
-	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
-	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
+	// delegate and check the delegation's timestamp is equal to nowPlusWeekTime
+	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
@@ -599,7 +599,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+			require.Equal(t, nowPlusWeekTime, d.Timestamp)
 		}
 	}
 
