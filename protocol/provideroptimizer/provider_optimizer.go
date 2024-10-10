@@ -60,7 +60,6 @@ type ProviderOptimizer struct {
 	selectionWeighter               SelectionWeighter
 	OptimizerNumTiers               int
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
-	metrics                         *metrics.ConsumerMetricsManager
 }
 
 type Exploration struct {
