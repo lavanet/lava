@@ -131,6 +131,15 @@ func Contains[T comparable](slice []T, elem T) bool {
 	return false
 }
 
+func ContainsPredicate[T comparable](slice []T, predicate func(elem T) bool) bool {
+	for _, e := range slice {
+		if predicate(e) {
+			return true
+		}
+	}
+	return false
+}
+
 // Remove removes the first instance (if exists) of elem from the slice, and
 // returns the new slice and indication if removal took place.
 func Remove[T comparable](slice []T, elem T) ([]T, bool) {
