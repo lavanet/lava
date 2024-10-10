@@ -73,6 +73,12 @@ func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
 	return len(csm.validAddresses)
 }
 
+func (csm *ConsumerSessionManager) getAllValidAddressesWithLock() (addresses []string) {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	return csm.validAddresses
+}
+
 // this is being read in multiple locations and but never changes so no need to lock.
 func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
@@ -1153,7 +1159,7 @@ func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx co
 			return
 		case <-time.After(CollectOptimizerProvidersScoreInterval):
 			// collect optimizer providers score
-			selectionTier, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.validAddresses, nil, 10, spectypes.LATEST_BLOCK)
+			selectionTier, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.getAllValidAddressesWithLock(), nil, 10, spectypes.LATEST_BLOCK)
 			metricsTiers := []metrics.ProviderTierEntry{}
 			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
 				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, 1)
