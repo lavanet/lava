@@ -64,6 +64,7 @@ type ConsumerMetricsManager struct {
 	providerChosenByOptimizerCount              *prometheus.GaugeVec
 	providersStake                              *prometheus.GaugeVec
 	optimizerProvidersScore                     *prometheus.GaugeVec
+	optimizerProviderTierShiftedChances         *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -205,6 +206,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The scores and tiers of the providers, calculated by the optimizer",
 	}, []string{"spec", "apiInterface", "provider_address", "epoch", "tier"})
 
+	optimizerProviderTierShiftedChances := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_optimizer_providers_tiers_shifted_chances",
+		Help: "The shifted chances to choose each tier",
+	}, []string{"spec", "apiInterface", "epoch", "tier"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -231,6 +237,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(providerChosenByOptimizerCount)
 	prometheus.MustRegister(providersStake)
 	prometheus.MustRegister(optimizerProvidersScore)
+	prometheus.MustRegister(optimizerProviderTierShiftedChances)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -263,6 +270,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		providerChosenByOptimizerCount:              providerChosenByOptimizerCount,
 		providersStake:                              providersStake,
 		optimizerProvidersScore:                     optimizerProvidersScore,
+		optimizerProviderTierShiftedChances:         optimizerProviderTierShiftedChances,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -524,15 +532,22 @@ func (pme *ConsumerMetricsManager) UpdateProvidersStake(chainId, apiInterface st
 	}
 }
 
-func (pme *ConsumerMetricsManager) UpdateOptimizerProvidersScore(chainId, apiInterface string, epoch uint64, tiers []ProviderTierEntry) {
+func (pme *ConsumerMetricsManager) UpdateOptimizerProvidersScore(chainId, apiInterface string, epoch uint64, tiers []ProviderTierEntry, shiftedChances map[int]float64) {
 	if pme == nil {
 		return
 	}
 
+	epochStr := strconv.FormatUint(epoch, 10)
+	tierToString := func(tier int) string {
+		return strconv.FormatInt(int64(tier), 10)
+	}
+
 	for _, tierEntry := range tiers {
-		epochStr := strconv.FormatUint(epoch, 10)
-		tierStr := strconv.FormatInt(int64(tierEntry.Tier), 10)
-		pme.optimizerProvidersScore.WithLabelValues(chainId, apiInterface, tierEntry.Address, epochStr, tierStr).Set(tierEntry.Score)
+		pme.optimizerProvidersScore.WithLabelValues(chainId, apiInterface, tierEntry.Address, epochStr, tierToString(tierEntry.Tier)).Set(tierEntry.Score)
+	}
+
+	for tier, chance := range shiftedChances {
+		pme.optimizerProviderTierShiftedChances.WithLabelValues(chainId, apiInterface, epochStr, tierToString(tier)).Set(chance)
 	}
 }
 

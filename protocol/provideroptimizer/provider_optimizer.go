@@ -196,6 +196,20 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 	return selectionTier, explorationCandidate
 }
 
+func (po *ProviderOptimizer) CalculateShiftedChances(selectionTier SelectionTier) map[int]float64 {
+	initialChances := map[int]float64{0: ATierChance}
+	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
+		po.OptimizerNumTiers = selectionTier.ScoresCount()
+	}
+
+	if selectionTier.ScoresCount() >= MinimumEntries*2 {
+		// if we have more than 2*MinimumEntries we set the LastTierChance configured
+		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
+	}
+
+	return selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
+}
+
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
 	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
@@ -203,17 +217,10 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		// no providers to choose from
 		return []string{}, -1
 	}
-	initialChances := map[int]float64{0: ATierChance}
-	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		po.OptimizerNumTiers = selectionTier.ScoresCount()
-	}
-	if selectionTier.ScoresCount() >= MinimumEntries*2 {
-		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
-	}
-	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
+
+	shiftedChances := po.CalculateShiftedChances(selectionTier)
+	selectedTier := selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
+	tierProviders := selectionTier.GetTier(selectedTier, po.OptimizerNumTiers, MinimumEntries)
 
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
