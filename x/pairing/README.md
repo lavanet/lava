@@ -90,6 +90,16 @@ A consumer sends requests to a provider's endpoint to communicate with them. The
 
 Stake entries' storage is managed by the epochstorage module. For more details, see its README.
 
+Providers `DelegateTotal` is the delegators delegations part for this chain and is calculated by as follows: `total_provider_delegations` * `stake` / `total_stake`
+
+when:
+
+`stake` is the providers stake on a specific chain
+
+`total_stake` is the total stake of the provider across all chains
+
+`total_provider_delegations` is the total delegations for the provider
+
 #### Unstake
 
 A provider can unstake and retrieve their coins. When a provider unstakes, they are removed from the pairing list starting from the next epoch. After a specified number of blocks called `UnstakeHoldBlocks` (a parameter of the epochstorage module), the provider is eligible to receive their coins back.
