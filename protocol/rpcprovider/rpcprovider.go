@@ -407,8 +407,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
-	var providerLoadManager *ProviderLoadManager
-
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
@@ -456,11 +454,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		}
 
 		// create provider load manager per chain ID
-		var keyExists bool
-		providerLoadManager, keyExists = rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
+		_, keyExists := rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
 		if !keyExists {
-			providerLoadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
-			rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = providerLoadManager
+			rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = NewProviderLoadManager(rpcp.relayLoadLimit)
 		}
 		return nil
 	}
@@ -497,7 +493,11 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, providerLoadManager)
+	loadManager, found := rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
+	if !found {
+		utils.LavaFormatError("Failed creating provider load manager", nil, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID))
+	}
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
