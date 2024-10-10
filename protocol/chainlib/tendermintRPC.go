@@ -606,7 +606,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 				ErrorHandler:     &TendermintRPCErrorHandler{},
 				ChainID:          rpcProviderEndpoint.ChainID,
 			},
-			conn: map[string]*chainproxy.Connector{},
+			conn: nil,
 		},
 	}
 
@@ -651,8 +651,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	httpClient := cp.httpClient
 
 	// appending hashed url
-	internalPath := chainMessage.GetApiCollection().GetCollectionData().InternalPath
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.NodeUrl.Url + "/" + nodeMessage.Path
@@ -728,19 +727,15 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
 	var rpc *rpcclient.Client
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-
-	connector := cp.conn[internalPath]
-
-	rpc, err = connector.GetRpc(ctx, true)
+	rpc, err = cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
 	// return the rpc connection to the websocket pool after the function completes
-	defer connector.ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, connector.GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage

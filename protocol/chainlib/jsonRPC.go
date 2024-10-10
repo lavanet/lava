@@ -501,7 +501,7 @@ func (apil *JsonRPCChainListener) GetListeningAddress() string {
 
 type JrpcChainProxy struct {
 	BaseChainProxy
-	conn map[string]*chainproxy.Connector
+	conn *chainproxy.Connector
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -520,7 +520,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 			ErrorHandler:     &JsonRPCErrorHandler{},
 			ChainID:          rpcProviderEndpoint.ChainID,
 		},
-		conn: map[string]*chainproxy.Connector{},
+		conn: nil,
 	}
 
 	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
@@ -534,21 +534,16 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 		return err
 	}
 
-	cp.conn[nodeUrl.InternalPath] = conn
-	if cp.conn == nil {
-		return errors.New("g_conn == nil")
-	}
-
+	cp.conn = conn
 	return nil
 }
 
 func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
 			rpc.SetHeader(metadata.Name, metadata.Value)
@@ -573,7 +568,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	}
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx, element := range batch {
-		// convert them because batch elements can't be marshaled back to the user, they are missing tags and flieds
+		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
 		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
 		if err != nil {
 			return nil, err
@@ -608,16 +603,15 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		reply, err := cp.sendBatchMessage(ctx, batchMessage, chainMessage)
 		return reply, "", nil, err
 	}
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	connector := cp.conn[internalPath]
-	rpc, err := connector.GetRpc(ctx, true)
+
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer connector.ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, connector.GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
