@@ -26,13 +26,6 @@ func NewProviderLoadManager(rateLimitThreshold uint64) *ProviderLoadManager {
 	return loadManager
 }
 
-func (loadManager *ProviderLoadManager) addRelayCall() {
-	if loadManager == nil {
-		return
-	}
-	loadManager.activeRequestsPerSecond.Add(1)
-}
-
 func (loadManager *ProviderLoadManager) subtractRelayCall() {
 	if loadManager == nil {
 		return
@@ -40,35 +33,26 @@ func (loadManager *ProviderLoadManager) subtractRelayCall() {
 	loadManager.activeRequestsPerSecond.Add(^uint64(0))
 }
 
-func (loadManager *ProviderLoadManager) getProviderLoad() float64 {
-	if loadManager == nil {
-		return 0
-	}
+func (loadManager *ProviderLoadManager) getProviderLoad(activeRequests uint64) float64 {
 	rateLimitThreshold := loadManager.rateLimitThreshold.Load()
 	if rateLimitThreshold == 0 {
 		return 0
 	}
-	activeRequests := loadManager.activeRequestsPerSecond.Load()
 	return float64(activeRequests) / float64(rateLimitThreshold)
 }
 
-func (loadManager *ProviderLoadManager) applyProviderLoadMetadataToContextTrailer(ctx context.Context) bool {
-	provideRelayLoad := loadManager.getProviderLoad()
+// Add relay count, calculate current load
+func (loadManager *ProviderLoadManager) addAndSetRelayLoadToContextTrailer(ctx context.Context) float64 {
+	if loadManager == nil {
+		return 0
+	}
+	activeRequestsPerSecond := loadManager.activeRequestsPerSecond.Add(1)
+	provideRelayLoad := loadManager.getProviderLoad(activeRequestsPerSecond)
 	if provideRelayLoad == 0 {
-		return false
+		return provideRelayLoad
 	}
 	formattedProviderLoad := strconv.FormatFloat(provideRelayLoad, 'f', -1, 64)
-
 	trailerMd := metadata.Pairs(chainlib.RpcProviderLoadRateHeader, formattedProviderLoad)
 	grpc.SetTrailer(ctx, trailerMd)
-	return true
-}
-
-func (loadManager *ProviderLoadManager) addAndSetRelayLoadToContextTrailer(ctx context.Context) bool {
-	loadManager.addRelayCall()
-	return loadManager.applyProviderLoadMetadataToContextTrailer(ctx)
-}
-
-func (loadManager *ProviderLoadManager) getActiveRequestsPerSecond() uint64 {
-	return loadManager.activeRequestsPerSecond.Load()
+	return provideRelayLoad
 }
