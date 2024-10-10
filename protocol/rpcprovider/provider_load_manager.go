@@ -11,7 +11,7 @@ import (
 )
 
 type ProviderLoadManager struct {
-	rateLimitThreshold      atomic.Uint64
+	rateLimitThreshold      uint64
 	activeRequestsPerSecond atomic.Uint64
 }
 
@@ -19,10 +19,7 @@ func NewProviderLoadManager(rateLimitThreshold uint64) *ProviderLoadManager {
 	if rateLimitThreshold == 0 {
 		return nil
 	}
-	loadManager := &ProviderLoadManager{}
-
-	loadManager.rateLimitThreshold.Store(rateLimitThreshold)
-
+	loadManager := &ProviderLoadManager{rateLimitThreshold: rateLimitThreshold}
 	return loadManager
 }
 
@@ -34,7 +31,7 @@ func (loadManager *ProviderLoadManager) subtractRelayCall() {
 }
 
 func (loadManager *ProviderLoadManager) getProviderLoad(activeRequests uint64) float64 {
-	rateLimitThreshold := loadManager.rateLimitThreshold.Load()
+	rateLimitThreshold := loadManager.rateLimitThreshold
 	if rateLimitThreshold == 0 {
 		return 0
 	}
