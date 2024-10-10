@@ -59,7 +59,6 @@ type ConsumerSessionManager struct {
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
 	providerOptimizer                  ProviderOptimizer
 	consumerMetricsManager             *metrics.ConsumerMetricsManager
-	consumerOptimizerQoSClient         *metrics.ConsumerOptimizerQoSClient
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
@@ -115,11 +114,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	providersWeightsByStake := CalcWeightsByStake(pairingList)
-	csm.providerOptimizer.UpdateWeights(providersWeightsByStake)
-
-	// Update the stake map for metrics
-	go csm.consumerOptimizerQoSClient.UpdatePairingListStake(providersWeightsByStake, csm.rpcEndpoint.ChainID, epoch)
+	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
@@ -1139,13 +1134,11 @@ func NewConsumerSessionManager(
 	reporter metrics.Reporter,
 	consumerPublicAddress string,
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
-	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 ) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:          NewReportedProviders(reporter, rpcEndpoint.ChainID),
-		consumerMetricsManager:     consumerMetricsManager,
-		consumerPublicAddress:      consumerPublicAddress,
-		consumerOptimizerQoSClient: consumerOptimizerQoSClient,
+		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
+		consumerMetricsManager: consumerMetricsManager,
+		consumerPublicAddress:  consumerPublicAddress,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

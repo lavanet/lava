@@ -49,6 +49,9 @@ type cacheInf interface {
 	Set(key, value interface{}, cost int64) bool
 }
 
+type consumerOptimizerQoSClientInf interface {
+	UpdatePairingListStake(stakeMap map[string]int64, chainId string, epoch uint64)
+}
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                cacheInf
@@ -59,6 +62,8 @@ type ProviderOptimizer struct {
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
 	OptimizerNumTiers               int
+	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
+	chainId                         string
 }
 
 type Exploration struct {
@@ -87,8 +92,13 @@ const (
 	STRATEGY_DISTRIBUTED
 )
 
-func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64) {
+func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
 	po.selectionWeighter.SetWeights(weights)
+
+	// Update the stake map for metrics
+	if po.consumerOptimizerQoSClient != nil {
+		po.consumerOptimizerQoSClient.UpdatePairingListStake(weights, po.chainId, epoch)
+	}
 }
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
@@ -530,7 +540,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClientInf consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -552,6 +562,8 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers,
+		consumerOptimizerQoSClient:      consumerOptimizerQoSClientInf,
+		chainId:                         chainId,
 	}
 }
 

@@ -250,7 +250,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 
 				// Create / Use existing optimizer
-				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
+				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
 				optimizer, _, err = optimizers.LoadOrStore(chainID, newOptimizer)
 				if err != nil {
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -288,7 +288,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			// Create active subscription provider storage for each unique chain
 			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage, consumerOptimizerQoSClient)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
 
