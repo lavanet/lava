@@ -13,16 +13,16 @@ import (
 var DelegationIndexPrefix = collections.NewPrefix(1)
 
 type DelegationIndexes struct {
-	Number *indexes.ReversePair[string, string, Delegation]
+	ReverseIndex *indexes.ReversePair[string, string, Delegation]
 }
 
 func (a DelegationIndexes) IndexesList() []collections.Index[collections.Pair[string, string], Delegation] {
-	return []collections.Index[collections.Pair[string, string], Delegation]{a.Number}
+	return []collections.Index[collections.Pair[string, string], Delegation]{a.ReverseIndex}
 }
 
 func NewDelegationIndexes(sb *collections.SchemaBuilder) DelegationIndexes {
 	return DelegationIndexes{
-		Number: indexes.NewReversePair[Delegation](
+		ReverseIndex: indexes.NewReversePair[Delegation](
 			sb, DelegationIndexPrefix, "delegation_by_provider_delegator",
 			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
 		),

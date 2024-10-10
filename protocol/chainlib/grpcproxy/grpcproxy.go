@@ -112,7 +112,7 @@ func (RawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 func (RawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	bufferPtr, ok := v.(*[]byte)
 	if !ok {
-		return utils.LavaFormatError("cannot decode into type", nil, utils.Attribute{Key: "v", Value: v})
+		return utils.LavaFormatDebug("cannot decode into type", utils.LogAttr("v", v), utils.LogAttr("data", data))
 	}
 	*bufferPtr = data
 	return nil

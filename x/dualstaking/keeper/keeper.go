@@ -29,8 +29,8 @@ type (
 		specKeeper         types.SpecKeeper
 
 		schema      collections.Schema
-		delegations *collections.IndexedMap[collections.Pair[string, string], types.Delegation, types.DelegationIndexes]
-		rewards     collections.Map[collections.Pair[string, string], types.DelegatorReward]
+		delegations *collections.IndexedMap[collections.Pair[string, string], types.Delegation, types.DelegationIndexes] // key: [delegator, provider]
+		rewards     collections.Map[collections.Pair[string, string], types.DelegatorReward]                             // key: [delegator, provider]
 	}
 )
 

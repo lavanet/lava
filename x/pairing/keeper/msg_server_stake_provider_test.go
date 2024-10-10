@@ -27,9 +27,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(common.MockDescription()))
+	stakeEntry, err := ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(common.MockDescription()))
 
 	// modify description
 	dNew := stakingtypes.NewDescription("bla", "blan", "bal", "lala", "asdasd")
@@ -38,9 +38,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(dNew))
+	stakeEntry, err = ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(dNew))
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
@@ -207,7 +207,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription())
+				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription(), 100)
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -657,7 +657,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, common.MockDescription())
+			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, common.MockDescription(), 100)
 			if play.success {
 				require.NoError(t, err)
 
@@ -1013,7 +1013,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 
 	provider := acc.Addr.String()
 	vault := acc.GetVaultAddr()
-	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())
 	require.True(t, found)
@@ -1055,7 +1054,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := types.MsgStakeProvider{
 				Creator:            tt.creator,
-				Validator:          sdk.ValAddress(valAcc.Addr).String(),
 				ChainID:            stakeEntry.Chain,
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,

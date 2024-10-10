@@ -11,7 +11,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
-	"github.com/lavanet/lava/v3/x/spec/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -110,7 +109,7 @@ func (ts *tester) addProviderExtra(
 	website string,
 	securityContact string,
 	descriptionDetails string,
-	spec types.Spec,
+	spec spectypes.Spec,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {

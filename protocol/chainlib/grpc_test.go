@@ -217,9 +217,8 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }
@@ -287,9 +286,8 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }

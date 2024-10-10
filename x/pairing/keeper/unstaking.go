@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
@@ -37,7 +38,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	if creator != existingEntry.Vault && creator != existingEntry.Address {
-		return utils.LavaFormatWarning("can't unstake entry with provider address, only vault address is allowed to unstake", fmt.Errorf("provider unstake failed"),
+		return utils.LavaFormatWarning("unstake can be don only by provider or vault", fmt.Errorf("provider unstake failed"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("provider", existingEntry.Address),
 			utils.LogAttr("vault", existingEntry.Vault),
@@ -62,22 +63,27 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		// distribute stake between other chains
 		metadata, err := k.epochStorageKeeper.GetMetadata(ctx, existingEntry.Address)
 		if err == nil {
-			total := amount.Amount
-			count := int64(len(metadata.Chains))
+			entries := []*epochstoragetypes.StakeEntry{}
 			for _, chain := range metadata.Chains {
 				entry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, existingEntry.Address)
-				if !found {
+				if found {
+					entries = append(entries, &entry)
+				} else {
 					utils.LavaFormatError("did not find stake entry that exists in metadata", nil,
 						utils.LogAttr("provider", existingEntry.Address),
 						utils.LogAttr("chain", chain),
 					)
-					continue
 				}
+			}
+
+			total := amount.Amount
+			count := int64(len(entries))
+			for _, entry := range entries {
 				part := total.QuoRaw(count)
 				entry.Stake = entry.Stake.AddAmount(part)
 				total = total.Sub(part)
 				count--
-				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, entry)
+				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 			}
 		}
 	}
@@ -96,13 +102,6 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
-	providerAddr, err := sdk.AccAddressFromBech32(provider)
-	if err != nil {
-		return utils.LavaFormatWarning("invalid address", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
-
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
@@ -111,7 +110,15 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		)
 	}
 	totalAmount := existingEntry.Stake.Amount
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, providerAddr)
+	vaultAcc, err := sdk.AccAddressFromBech32(existingEntry.Vault)
+	if err != nil {
+		return utils.LavaFormatError("can't unstake entry, invalid vault address", err,
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("chain", chainID),
+			utils.LogAttr("vault", existingEntry.Vault),
+		)
+	}
+	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
 
 	for _, delegation := range delegations {
 		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
@@ -133,9 +140,6 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		}
 
 		if totalAmount.IsZero() {
-			existingEntry, _ := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
-			k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, existingEntry.Address)
-
 			details := map[string]string{
 				"address":     existingEntry.GetAddress(),
 				"chainID":     existingEntry.GetChain(),

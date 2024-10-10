@@ -33,8 +33,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			Chains:           []string{chainID},
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
+	} else {
+		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 	}
-	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
@@ -157,7 +158,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		decrease := amount.Amount.LT(existingEntry.Stake.Amount)
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
-		existingEntry.Description = description
+		metadata.Description = description
 		metadata.DelegateCommission = delegationCommission
 		metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 		existingEntry.Stake = amount
@@ -236,6 +237,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	stakeAmount := amount
+	// creating a new provider, fetch old delegation
 	if len(metadata.Chains) == 1 {
 		delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
 		if err == nil {
@@ -265,7 +267,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,
 		Chain:              chainID,
-		Description:        description,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateCommission: 0,
 		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
@@ -273,6 +274,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	metadata.DelegateCommission = delegationCommission
 	metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+	metadata.Description = description
 
 	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)

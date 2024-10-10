@@ -689,6 +689,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
+						utils.LogAttr("Provider", providerPublicAddress),
 					)
 				}
 
@@ -1303,6 +1304,15 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			pairingtypes.Metadata{
 				Name:  common.GUID_HEADER_NAME,
 				Value: guidStr,
+			})
+	}
+
+	// add stateful API (hanging, transactions)
+	if protocolMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.STATEFUL_API_HEADER,
+				Value: "true",
 			})
 	}
 

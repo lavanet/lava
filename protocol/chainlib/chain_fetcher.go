@@ -188,68 +188,71 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		)
 	}
 
-	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
-	if err != nil {
-		return utils.LavaFormatWarning("[-] verify failed to parse result", err, []utils.Attribute{
-			{Key: "chainId", Value: chainId},
-			{Key: "nodeUrl", Value: proxyUrl.Url},
-			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
-		}...)
+	parsedInput := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing, parsing.Parsers)
+	if parsedInput.GetRawParsedData() == "" {
+		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
+			utils.LogAttr("chainId", chainId),
+			utils.LogAttr("nodeUrl", proxyUrl.Url),
+			utils.LogAttr("Method", parsing.GetApiName()),
+			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+		)
 	}
 	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
-		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
-		if err != nil {
-			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
-				{Key: "chainId", Value: chainId},
-				{Key: "nodeUrl", Value: proxyUrl.Url},
-				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "Response", Value: string(reply.RelayReply.Data)},
-				{Key: "parsedResult", Value: parsedResult},
-			}...)
+		parsedResultAsNumber := parsedInput.GetBlock()
+		if parsedResultAsNumber == spectypes.NOT_APPLICABLE {
+			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err,
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("nodeUrl", proxyUrl.Url),
+				utils.LogAttr("Method", parsing.GetApiName()),
+				utils.LogAttr("Response", string(reply.RelayReply.Data)),
+				utils.LogAttr("rawParsedData", parsedInput.GetRawParsedData()),
+			)
 		}
-		if parsedResultAsNumber > latestBlock {
-			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", err, []utils.Attribute{
-				{Key: "chainId", Value: chainId},
-				{Key: "nodeUrl", Value: proxyUrl.Url},
-				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "latestBlock", Value: latestBlock},
-				{Key: "parsedResult", Value: parsedResultAsNumber},
-			}...)
+		uint64ParsedResultAsNumber := uint64(parsedResultAsNumber)
+		if uint64ParsedResultAsNumber > latestBlock {
+			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", err,
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("nodeUrl", proxyUrl.Url),
+				utils.LogAttr("Method", parsing.GetApiName()),
+				utils.LogAttr("latestBlock", latestBlock),
+				utils.LogAttr("parsedResult", uint64ParsedResultAsNumber),
+			)
 		}
-		if latestBlock-parsedResultAsNumber < verification.LatestDistance {
-			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err, []utils.Attribute{
-				{Key: "chainId", Value: chainId},
-				{Key: "nodeUrl", Value: proxyUrl.Url},
-				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "latestBlock", Value: latestBlock},
-				{Key: "parsedResult", Value: parsedResultAsNumber},
-				{Key: "expected", Value: verification.LatestDistance},
-			}...)
+		if latestBlock-uint64ParsedResultAsNumber < verification.LatestDistance {
+			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err,
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("nodeUrl", proxyUrl.Url),
+				utils.LogAttr("Method", parsing.GetApiName()),
+				utils.LogAttr("latestBlock", latestBlock),
+				utils.LogAttr("parsedResult", uint64ParsedResultAsNumber),
+				utils.LogAttr("expected", verification.LatestDistance),
+			)
 		}
 	}
 	// some verifications only want the response to be valid, and don't care about the value
 	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
-		if parsedResult != verification.Value {
-			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
-				{Key: "chainId", Value: chainId},
-				{Key: "nodeUrl", Value: proxyUrl.Url},
-				{Key: "parsedResult", Value: parsedResult},
-				{Key: "verification.Value", Value: verification.Value},
-				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "Extension", Value: verification.Extension},
-				{Key: "Addon", Value: verification.Addon},
-				{Key: "Verification", Value: verification.Name},
-			}...)
+		rawData := parsedInput.GetRawParsedData()
+		if rawData != verification.Value {
+			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err,
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("nodeUrl", proxyUrl.Url),
+				utils.LogAttr("rawParsedBlock", rawData),
+				utils.LogAttr("verification.Value", verification.Value),
+				utils.LogAttr("Method", parsing.GetApiName()),
+				utils.LogAttr("Extension", verification.Extension),
+				utils.LogAttr("Addon", verification.Addon),
+				utils.LogAttr("Verification", verification.Name),
+			)
 		}
 	}
 	utils.LavaFormatInfo("[+] verified successfully",
-		utils.Attribute{Key: "chainId", Value: chainId},
-		utils.Attribute{Key: "nodeUrl", Value: proxyUrl.Url},
-		utils.Attribute{Key: "verification", Value: verification.Name},
-		utils.Attribute{Key: "value", Value: parser.CapStringLen(parsedResult)},
-		utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey},
-		utils.Attribute{Key: "apiInterface", Value: cf.endpoint.ApiInterface},
+		utils.LogAttr("chainId", chainId),
+		utils.LogAttr("nodeUrl", proxyUrl.Url),
+		utils.LogAttr("verification", verification.Name),
+		utils.LogAttr("block", parsedInput.GetBlock()),
+		utils.LogAttr("rawData", parsedInput.GetRawParsedData()),
+		utils.LogAttr("verificationKey", verification.VerificationKey),
+		utils.LogAttr("apiInterface", cf.endpoint.ApiInterface),
 	)
 	return nil
 }
@@ -292,8 +295,9 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "error", Value: err},
 		}...)
 	}
-	blockNum, err := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing)
-	if err != nil {
+	parsedInput := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing, parsing.Parsers)
+	blockNum := parsedInput.GetBlock()
+	if blockNum == spectypes.NOT_APPLICABLE {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed to parse Response", []utils.Attribute{
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
@@ -355,7 +359,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		}...)
 	}
 
-	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
+	res, err := parser.ParseBlockHashFromReplyAndDecode(parserInput, parsing.ResultParsing, parsing.Parsers)
 	if err != nil {
 		return "", utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
 			{Key: "error", Value: err},

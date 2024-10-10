@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
@@ -38,10 +39,14 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 	for address, entries := range providerMap {
 		metadata := epochstoragetypes.ProviderMetadata{Provider: address}
 
-		// find the bigest vault
+		// find the biggest vault
 		var biggestVault *epochstoragetypes.StakeEntry
+		biggestEntry := entries[0]
 		for i := range entries {
 			e := entries[i]
+			if biggestEntry.Stake.Amount.LT(e.Stake.Amount) {
+				biggestEntry = e
+			}
 			if e.Vault != e.Address {
 				if biggestVault == nil {
 					biggestVault = e
@@ -52,6 +57,9 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		}
 
 		// if no vault was found the vault is the address
+		metadata.Description = biggestEntry.Description
+		metadata.DelegateCommission = biggestEntry.DelegateCommission
+		metadata.Provider = address
 		if biggestVault != nil {
 			metadata.Vault = biggestVault.Vault
 		} else {
@@ -61,7 +69,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// get all delegations and sum
 		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, metadata.Provider)
 		if err != nil {
-			panic("ahahahaha")
+			return err
 		}
 
 		metadata.TotalDelegations = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
@@ -79,6 +87,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 				fmt.Println(address)
 				biggestVault.Stake = biggestVault.Stake.SubAmount(sdk.NewInt(1))
 				e.Stake.Amount = sdk.OneInt()
+				e.Vault = metadata.Vault
 			} else {
 				TotalSelfDelegation = TotalSelfDelegation.Add(e.Stake.Amount)
 			}
@@ -88,6 +97,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		for _, entry := range entries {
 			metadata.Chains = lavaslices.AddUnique(metadata.Chains, entry.Chain)
 			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+			entry.Description = types1.Description{}
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 		}
 

@@ -13,6 +13,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	WsDisconnectionReasonConsumer = "consumer-disconnect"
+	WsDisconnectionReasonProvider = "provider-disconnect"
+	WsDisconnectionReasonUser     = "user-disconnect"
+)
+
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
 	TotalRequests  int
@@ -34,6 +40,11 @@ type ConsumerMetricsManager struct {
 	totalNodeErroredRecoveryAttemptsMetric      *prometheus.CounterVec
 	totalRelaysSentToProvidersMetric            *prometheus.CounterVec
 	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
+	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
+	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
+	totalWsSubscriptionDissconnectMetric        *prometheus.CounterVec
+	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *prometheus.GaugeVec
@@ -87,6 +98,31 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_errored",
 		Help: "The total number of errors encountered by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
+
+	totalWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_ws_subscription_requests",
+		Help: "The total number of websocket subscription requests over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalFailedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_failed_ws_subscription_requests",
+		Help: "The total number of failed websocket subscription requests over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalDuplicatedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
+		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalWebSocketConnectionsActive := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_total_websocket_connections_active",
+		Help: "The total number of currently active websocket connections with users",
+	}, []string{"spec", "apiInterface"})
+
+	totalWsSubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_ws_subscription_disconnect",
+		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per dissconnect reason.",
+	}, []string{"spec", "apiInterface", "dissconectReason"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_latest_block",
@@ -188,6 +224,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
+	prometheus.MustRegister(totalWebSocketConnectionsActive)
 	prometheus.MustRegister(apiSpecificsMetric)
 	prometheus.MustRegister(averageLatencyMetric)
 	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
@@ -196,10 +233,19 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
+	prometheus.MustRegister(totalWsSubscriptionRequestsMetric)
+	prometheus.MustRegister(totalFailedWsSubscriptionRequestsMetric)
+	prometheus.MustRegister(totalDuplicatedWsSubscriptionRequestsMetric)
+	prometheus.MustRegister(totalWsSubscriptionDissconnectMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
 		totalRelaysRequestedMetric:                  totalRelaysRequestedMetric,
+		totalWsSubscriptionRequestsMetric:           totalWsSubscriptionRequestsMetric,
+		totalFailedWsSubscriptionRequestsMetric:     totalFailedWsSubscriptionRequestsMetric,
+		totalDuplicatedWsSubscriptionRequestsMetric: totalDuplicatedWsSubscriptionRequestsMetric,
+		totalWsSubscriptionDissconnectMetric:        totalWsSubscriptionDissconnectMetric,
+		totalWebSocketConnectionsActive:             totalWebSocketConnectionsActive,
 		totalErroredMetric:                          totalErroredMetric,
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
@@ -257,6 +303,17 @@ func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, 
 		return
 	}
 	pme.totalRelaysSentToProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
+	if pme == nil {
+		return
+	}
+	if add {
+		pme.totalWebSocketConnectionsActive.WithLabelValues(chainId, apiInterface).Add(1)
+	} else {
+		pme.totalWebSocketConnectionsActive.WithLabelValues(chainId, apiInterface).Sub(1)
+	}
 }
 
 func (pme *ConsumerMetricsManager) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
@@ -459,4 +516,32 @@ func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string)
 	}
 	combined := major*1000000 + minor*1000 + patch
 	protocolVersionMetric.WithLabelValues("version").Set(float64(combined))
+}
+
+func (pme *ConsumerMetricsManager) SetWsSubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetFailedWsSubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalFailedWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetDuplicatedWsSubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalDuplicatedWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
+	if pme == nil {
+		return
+	}
+	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
 }

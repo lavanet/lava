@@ -187,8 +187,9 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:invalid parser input format"
-	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
+	actualErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:blockParsing - parse failed {error:invalid parser input format,"
+	expectedErrMsg := err.Error()[:len(actualErrMsg)]
+	require.Equal(t, actualErrMsg, expectedErrMsg, err.Error())
 }
 
 func TestAddonAndVerifications(t *testing.T) {

@@ -553,7 +553,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward
 	fakeReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
-	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
+	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.NoError(t, err)
 	require.True(t, fakeReward.IsEqual(providerReward)) // if the delegator got anything, this would fail
@@ -615,11 +615,11 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// verify that the delegator gets nothing from the total reward from provider1 but does get
 	// reward from provider
 	fakeReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
-	provider1Reward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1, ts.spec.Index,
+	provider1Reward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
 	require.True(t, fakeReward.IsEqual(provider1Reward)) // if the delegator got anything, this would fail
-	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
+	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
 	require.False(t, fakeReward.IsEqual(providerReward)) // the delegator should have rewards
@@ -631,4 +631,85 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
+}
+
+// TestDelegatorRewardProviderAddingChain checks that a delegator gets rewards even if the provider moves stake between chains
+func TestDelegatorRewardProviderAddingChain(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 2)                   // 1 providers, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+	_, delegator := ts.GetAccount(common.CONSUMER, 1)
+	clientAcc, client := ts.AddAccount(common.CONSUMER, 0, testBalance)
+	makeProviderCommissionZero(ts, provider)
+
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	require.NoError(t, err)
+	ts.AdvanceEpoch() // apply delegations
+
+	_, err = ts.TxSubscriptionBuy(client, client, ts.plan.Index, 1, true, false)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch() // to apply pairing
+
+	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	_, err = ts.TxPairingRelayPayment(relayPaymentMessage.Creator, relayPaymentMessage.Relays...)
+	require.Nil(ts.T, err)
+
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// delegator should get half of the payment
+	res, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, "")
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, ts.plan.Price.Amount.QuoRaw(2), res.Rewards[0].Amount[0].Amount)
+	ts.TxDualstakingClaimRewards(delegator, "")
+
+	// add additional spec
+	spec1 := common.CreateMockSpec()
+	spec1.Index = "mock1"
+	spec1.Name = "mock1"
+	ts.AddSpec(spec1.Index, spec1)
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), provider, spec1, testStake)
+	makeProviderCommissionZero(ts, provider)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index, spec1.Index})
+	_, err = ts.TxPairingRelayPayment(relayPaymentMessage.Creator, relayPaymentMessage.Relays...)
+	require.Nil(ts.T, err)
+
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// delegator should get half of the payment
+	res, err = ts.QueryDualstakingDelegatorRewards(delegator, provider, "")
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, ts.plan.Price.Amount.QuoRaw(3).AddRaw(1), res.Rewards[0].Amount[0].Amount)
+	ts.TxDualstakingClaimRewards(delegator, "")
+
+	// move the stake between chains, should still get third
+	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index, spec1.Index})
+	_, err = ts.TxPairingRelayPayment(relayPaymentMessage.Creator, relayPaymentMessage.Relays...)
+	require.Nil(ts.T, err)
+
+	err = ts.Keepers.Pairing.MoveProviderStake(ts.Ctx, provider, ts.spec.Index, spec1.Index, sdk.NewCoin(ts.BondDenom(), sdk.NewInt(testStake/10)))
+	require.Nil(ts.T, err)
+
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// delegator should get half of the payment
+	res, err = ts.QueryDualstakingDelegatorRewards(delegator, provider, "")
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, ts.plan.Price.Amount.QuoRaw(3).AddRaw(1), res.Rewards[0].Amount[0].Amount)
+	ts.TxDualstakingClaimRewards(delegator, "")
 }

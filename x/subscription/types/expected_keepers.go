@@ -71,7 +71,7 @@ type TimerStoreKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error)
 	GetDelegation(ctx sdk.Context, delegator, provider string) (dualstakingtypes.Delegation, bool)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
 	DelegatorRewards(goCtx context.Context, req *dualstakingtypes.QueryDelegatorRewardsRequest) (res *dualstakingtypes.QueryDelegatorRewardsResponse, err error)
