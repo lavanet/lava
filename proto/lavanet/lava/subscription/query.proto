@@ -153,7 +153,7 @@ message EstimatedRewardInfo {
 }
 
 message QueryEstimatedRewardsResponse {
-  reserved 1;
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = false];
   repeated cosmos.base.v1beta1.DecCoin total = 2 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
     (gogoproto.nullable)     = false,

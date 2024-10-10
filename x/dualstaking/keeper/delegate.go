@@ -175,9 +175,8 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	return nil
 }
 
-// delegate lets a delegator delegate an amount of coins to a provider.
-// (effective on next epoch)
-func (k Keeper) delegate(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error {
+// Delegate lets a delegator Delegate an amount of coins to a provider.
+func (k Keeper) Delegate(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error {
 	_, err := sdk.AccAddressFromBech32(delegator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,

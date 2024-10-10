@@ -3,11 +3,16 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"sort"
 
+	"strings"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/testutil/sample"
 	"github.com/lavanet/lava/v3/utils"
 	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
+	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
 	"github.com/lavanet/lava/v3/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,11 +43,13 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 			}
 		} else {
 			// arg is delegation, assign arbitrary delegator address and delegate the amount
-			delegator = sample.AccAddress()
-			err := k.dualstakingKeeper.DelegateFull(ctx, delegator, sample.ValAddress(), req.Provider, delegation, false)
+			delegator, err = k.createDummyDelegator(ctx, req.Provider, delegation)
 			if err != nil {
-				return nil, utils.LavaFormatWarning("cannot estimate rewards, delegation simulation failed", err, details...)
+				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get delegator", err, details...)
 			}
+
+			// advance ctx by a month and a day to make the delegation count
+			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 1, 1))
 		}
 	}
 
@@ -51,6 +58,10 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	if err != nil {
 		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards before distribution", err, details...)
 	}
+
+	// we use events to get the detailed info about the rewards (for the provider only use-case)
+	// we reset the context's event manager to have a "clean slate"
+	ctx = ctx.WithEventManager(sdk.NewEventManager())
 
 	// trigger subs
 	subs := k.GetAllSubscriptionsIndices(ctx)
@@ -75,6 +86,22 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 
 	// calculate the claimable rewards difference
 	res.Total = sdk.NewDecCoinsFromCoins(after.Sub(before...)...)
+
+	// get detailed info for providers only
+	if req.AmountDelegator == "" {
+		info, total := k.getRewardsInfoFromEvents(ctx, req.Provider)
+		if !total.IsEqual(res.Total) {
+			// total amount sanity check
+			return nil, utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
+				fmt.Errorf("total rewards from info is different than total claimable rewards difference"),
+				utils.LogAttr("total_claimable_rewards", res.Total.String()),
+				utils.LogAttr("total_info_rewards", total.String()),
+				utils.LogAttr("info", info),
+			)
+		}
+
+		res.Info = info
+	}
 
 	// get the last IPRPC rewards distribution block
 	// note: on error we simply leave RecommendedBlock to be zero since until the
@@ -128,6 +155,204 @@ func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, dele
 	return qRes.Rewards[0].Amount, nil
 }
 
+// getRewardsInfoFromEvents build the estimated reward info array by checking events details
+// it also returns the total reward amount for validation
+func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (infos []types.EstimatedRewardInfo, total sdk.DecCoins) {
+	events := ctx.EventManager().ABCIEvents()
+	rewardsInfo := map[string]sdk.DecCoins{}
+
+	for _, event := range events {
+		// get reward info from event (!ok == event not relevant)
+		eventRewardsInfo, ok := k.parseEvent(event, provider)
+		if !ok {
+			continue
+		}
+
+		// append the event map to rewardsInfo
+		for source, reward := range eventRewardsInfo {
+			savedReward, ok := rewardsInfo[source]
+			if ok {
+				rewardsInfo[source] = savedReward.Add(reward...)
+			} else {
+				rewardsInfo[source] = reward
+			}
+		}
+	}
+
+	// sort the rewardsInfo keys
+	sortedKeys := []string{}
+	for key := range rewardsInfo {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	// construct the info list and calculate the total rewards
+	for _, key := range sortedKeys {
+		infos = append(infos, types.EstimatedRewardInfo{
+			Source: key,
+			Amount: rewardsInfo[key],
+		})
+		total = total.Add(rewardsInfo[key]...)
+	}
+
+	return infos, total
+}
+
+// parseEvent parses an event. If it's one of the payment events and contains the provider address
+// it builds the "source" string that is required for the estimated rewards info. Also it returns the
+// rewards amount of the provider for a specific payment type and a specific chain
+// if it returns ok == false, the event is not relevant and can be skipped
+func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+	subEventName := utils.EventPrefix + types.SubscriptionPayoutEventName
+	boostEventName := utils.EventPrefix + rewardstypes.ProvidersBonusRewardsEventName
+	iprpcEventName := utils.EventPrefix + rewardstypes.IprpcPoolEmissionEventName
+
+	// check event type and call appropriate handler
+	switch event.Type {
+	case subEventName:
+		return extractInfoFromSubscriptionEvent(event, provider)
+	case boostEventName:
+		return extractInfoFromBoostEvent(event, provider)
+	case iprpcEventName:
+		return extractInfoFromIprpcEvent(event, provider)
+	}
+
+	return nil, false
+}
+
+// extractInfoFromSubscriptionEvent extract a map of source string keys (source = "Subscription: <chain_id>")
+// that hold rewards amount. The subscription payout event holds multiple keys of each reward for each chain ID.
+// All of the rewards keys are prefixed with provider addresses
+func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+	eventRewardsInfo = map[string]sdk.DecCoins{}
+
+	for _, atr := range event.Attributes {
+		if strings.HasPrefix(atr.Key, provider) {
+			// extract chain ID
+			parts := strings.Split(atr.Key, " ")
+			if len(parts) != 2 {
+				// should never happen (as long as the event key is not changed)
+				utils.LavaFormatWarning("cannot extract chain ID from attribute",
+					fmt.Errorf("attribute key is not in expected format of '<provider> <chain_id>'"),
+					utils.LogAttr("attribute_key", atr.Key),
+					utils.LogAttr("provider", provider),
+				)
+				return nil, false
+			}
+			source := "Subscription: " + parts[1]
+
+			// extract provider reward
+			parts = strings.Split(atr.Value, " ")
+			if len(parts) != 4 {
+				// should never happen (as long as the event value is not changed)
+				utils.LavaFormatWarning("cannot extract provider reward from attribute",
+					fmt.Errorf("attribute value is not in expected format of 'cu: <cu> reward: <reward_string>'"),
+					utils.LogAttr("attribute_key", atr.Key),
+					utils.LogAttr("attribute_value", atr.Value),
+					utils.LogAttr("provider", provider),
+				)
+				return nil, false
+			}
+			reward, err := sdk.ParseDecCoins(parts[3])
+			if err != nil {
+				// should never happen
+				utils.LavaFormatError("cannot parse DecCoins from reward string", err,
+					utils.LogAttr("provider", provider),
+					utils.LogAttr("chain_id", parts[1]),
+					utils.LogAttr("amount", parts[3]),
+				)
+				return nil, false
+			}
+
+			// put source and reward in result map
+			savedReward, ok := eventRewardsInfo[source]
+			if ok {
+				eventRewardsInfo[source] = savedReward.Add(reward...)
+			} else {
+				eventRewardsInfo[source] = reward
+			}
+		}
+	}
+
+	if len(eventRewardsInfo) == 0 {
+		// the provider address was not found in the event
+		return nil, false
+	}
+
+	return eventRewardsInfo, true
+}
+
+// extractInfoFromIprpcEvent extract a map of source string keys that hold rewards amount from
+// a boost payout event
+func extractInfoFromBoostEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+	return extractInfoFromIprpcAndBoostEvent(event, provider, "Boost: ")
+}
+
+// extractInfoFromIprpcEvent extract a map of source string keys that hold rewards amount from
+// an IPRPC payout event
+func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+	return extractInfoFromIprpcAndBoostEvent(event, provider, "Pools: ")
+}
+
+// extractInfoFromIprpcAndBoostEvent extract a map of source string keys (source = "Pools: <chain_id>")
+// that hold rewards amount from either IPRPC and boost rewards. There's an event for each chain ID.
+// All keys are prefixed with provider addresses. Since the events are emitted per chain ID,
+// we expect a single reward key for a specific provider. Also, the reward string in the event
+// is of type sdk.Coins.
+func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, sourcePrefix string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+	var rewardStr, chainID string
+	eventRewardsInfo = map[string]sdk.DecCoins{}
+
+	for _, atr := range event.Attributes {
+		if strings.HasPrefix(atr.Key, provider) {
+			// extract provider reward
+			parts := strings.Split(atr.Value, " ")
+			if len(parts) != 4 {
+				// should never happen (as long as the event value is not changed)
+				utils.LavaFormatWarning("cannot extract provider reward from attribute",
+					fmt.Errorf("attribute value is not in expected format of 'cu: <cu> reward: <reward_string>'"),
+					utils.LogAttr("attribute_key", atr.Key),
+					utils.LogAttr("attribute_value", atr.Value),
+					utils.LogAttr("provider", provider),
+				)
+				return nil, false
+			}
+			rewardStr = parts[3]
+		}
+
+		if atr.Key == "chainid" {
+			chainID = atr.Value
+		}
+	}
+
+	if rewardStr == "" || chainID == "" {
+		// the provider address was not found in the event
+		return nil, false
+	}
+
+	reward, err := sdk.ParseCoinsNormalized(rewardStr)
+	if err != nil {
+		// should never happen
+		utils.LavaFormatError("cannot parse DecCoins from reward string", err,
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("reward", rewardStr),
+		)
+		return nil, false
+	}
+
+	// put source and reward in result map
+	eventRewardsInfo[sourcePrefix+chainID] = sdk.NewDecCoinsFromCoins(reward...)
+	return eventRewardsInfo, true
+}
+
+// createDummyDelegator is a helper function to create a dummy delegator that delegates to the provider
+func (k Keeper) createDummyDelegator(ctx sdk.Context, provider string, delegation sdk.Coin) (string, error) {
+	delegator := sample.AccAddress()
+	return delegator, k.dualstakingKeeper.Delegate(ctx, delegator, provider, delegation, false)
+}
+
+// Deprecated: backwards compatibility support for the old deprecated version of the EstimatedProviderRewards query
 func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimatedRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
 	newReq := types.QueryEstimatedProviderRewardsRequest{Provider: req.Provider, AmountDelegator: req.AmountDelegator}
 	return k.EstimatedProviderRewards(goCtx, &newReq)

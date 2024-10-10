@@ -75,6 +75,7 @@ type DualStakingKeeper interface {
 	GetDelegation(ctx sdk.Context, delegator, provider string) (dualstakingtypes.Delegation, bool)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
 	DelegatorRewards(goCtx context.Context, req *dualstakingtypes.QueryDelegatorRewardsRequest) (res *dualstakingtypes.QueryDelegatorRewardsResponse, err error)
+	Delegate(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error
 }
 
 type RewardsKeeper interface {

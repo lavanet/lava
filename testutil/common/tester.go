@@ -829,13 +829,13 @@ func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.Query
 	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
 }
 
-// QuerySubscriptionEstimateRewards: implement 'q subscription estimate-rewards'
-func (ts *Tester) QuerySubscriptionEstimateRewards(provider string, amountDelegator string) (*subscriptiontypes.QueryEstimatedRewardsResponse, error) {
-	msg := &subscriptiontypes.QueryEstimatedRewardsRequest{
+// QuerySubscriptionEstimateRewards: implement 'q subscription estimate-provider-rewards'
+func (ts *Tester) QuerySubscriptionEstimateProviderRewards(provider string, amountDelegator string) (*subscriptiontypes.QueryEstimatedRewardsResponse, error) {
+	msg := &subscriptiontypes.QueryEstimatedProviderRewardsRequest{
 		Provider:        provider,
 		AmountDelegator: amountDelegator,
 	}
-	return ts.Keepers.Subscription.EstimatedRewards(ts.GoCtx, msg)
+	return ts.Keepers.Subscription.EstimatedProviderRewards(ts.GoCtx, msg)
 }
 
 // QueryProjectInfo implements 'q project info'
@@ -1283,20 +1283,10 @@ func (ts *Tester) DeductParticipationFees(reward math.Int) (updatedReward math.I
 	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
 }
 
-// EstimateProviderRewards uses the subscription's "estimate-rewards" query and returns the estimated rewards
-// The query is implemented in such a way that it "changes" the state. In non-testing environments, the state changes
-// are automatically reverted since it's a query. In testing environment, the state will not revert so we use
-// this helper function to run the query and keep the context intact
-func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount string, deductTax bool) math.Int {
-	ctx, _ := ts.Ctx.CacheContext()
-	res, err := ts.QuerySubscriptionEstimateRewards(provider, delegatorAmount)
+// EstimateProviderRewards uses the subscription's "estimate-provider-rewards" query and returns
+// the estimated rewards in math.Int form
+func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount string) (total math.Int, info []subscriptiontypes.EstimatedRewardInfo) {
+	res, err := ts.QuerySubscriptionEstimateProviderRewards(provider, delegatorAmount)
 	require.NoError(ts.T, err)
-	ts.Ctx = ctx
-	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
-
-	reward := res.Total.AmountOf(ts.BondDenom()).TruncateInt()
-	if deductTax {
-		reward, _, _ = ts.DeductParticipationFees(reward)
-	}
-	return reward
+	return res.Total.AmountOf(ts.BondDenom()).TruncateInt(), res.Info
 }
