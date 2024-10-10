@@ -30,6 +30,7 @@ const (
 	LAVA_LOG_ERROR
 	LAVA_LOG_FATAL
 	LAVA_LOG_PANIC
+	LAVA_LOG_PRODUCTION
 	NoColor = true
 )
 
@@ -226,6 +227,18 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
 	}
 
+	// depending on the build flag, this log function will log either a warning or an error.
+	// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
+	// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
+	// in test environment we don't expect to have these errors and if they occur we would like to fail the test.
+	if severity == LAVA_LOG_PRODUCTION {
+		if ExtendedLogLevel == "production" {
+			severity = LAVA_LOG_WARN
+		} else {
+			severity = LAVA_LOG_ERROR
+		}
+	}
+
 	var logEvent *zerolog.Event
 	var rollingLoggerEvent *zerolog.Event
 	switch severity {
@@ -301,16 +314,9 @@ func LavaFormatFatal(description string, err error, attributes ...Attribute) {
 	LavaFormatLog(description, err, attributes, LAVA_LOG_FATAL)
 }
 
-// depending on the build flag, this log function will log either a warning or an error.
-// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
-// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
-// in test environment we dont expect to have these errors and if they occur we would like to fail the test.
+// see documentation in LavaFormatLog function
 func LavaFormatProduction(description string, err error, attributes ...Attribute) error {
-	if ExtendedLogLevel == "production" {
-		return LavaFormatWarning(description, err, attributes...)
-	} else {
-		return LavaFormatError(description, err, attributes...)
-	}
+	return LavaFormatLog(description, err, attributes, LAVA_LOG_PRODUCTION)
 }
 
 func LavaFormatError(description string, err error, attributes ...Attribute) error {
