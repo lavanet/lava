@@ -88,6 +88,7 @@ type ChainMessage interface {
 	SetForceCacheRefresh(force bool) bool
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 	GetRawRequestHash() ([]byte, error)
+	GetRequestedBlocksHashes() []string
 
 	ChainMessageForSend
 }
@@ -123,7 +124,6 @@ type RelaySender interface {
 		connectionType string,
 		dappID string,
 		consumerIp string,
-		analytics *metrics.RelayMetrics,
 		metadata []pairingtypes.Metadata,
 	) (ProtocolMessage, error)
 	SendParsedRelay(
