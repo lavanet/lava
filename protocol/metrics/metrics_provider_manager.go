@@ -41,6 +41,8 @@ type ProviderMetricsManager struct {
 	endpointsHealthChecksOk       uint64
 	relaysMonitors                map[string]*RelaysMonitor
 	relaysMonitorsLock            sync.RWMutex
+	frozenStatusMetric            *prometheus.GaugeVec
+	jailedStatusMetric            *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -120,6 +122,15 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "At least one endpoint is healthy",
 	})
 	endpointsHealthChecksOkMetric.Set(1)
+	frozenStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_frozen_status",
+		Help: "Frozen: 1, Healthy: 0",
+	}, []string{"chainID", "address"})
+
+	jailedStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_jailed_status",
+		Help: "The amount of times the provider was jailed in the last 24 hours",
+	}, []string{"chainID", "address"})
 
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
@@ -141,6 +152,8 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
+	prometheus.MustRegister(frozenStatusMetric)
+	prometheus.MustRegister(jailedStatusMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:               map[string]*ProviderMetrics{},
@@ -161,6 +174,8 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
 		relaysMonitors:                map[string]*RelaysMonitor{},
+		frozenStatusMetric:            frozenStatusMetric,
+		jailedStatusMetric:            jailedStatusMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -349,4 +364,20 @@ func (pme *ProviderMetricsManager) RegisterRelaysMonitor(chainID, apiInterface s
 	pme.relaysMonitorsLock.Lock()
 	defer pme.relaysMonitorsLock.Unlock()
 	pme.relaysMonitors[chainID+apiInterface] = relaysMonitor
+}
+
+func (pme *ProviderMetricsManager) SetFrozenStatus(frozenStatus float64, chain string, address string) {
+	if pme == nil {
+		return
+	}
+
+	pme.frozenStatusMetric.WithLabelValues(chain, address).Set(frozenStatus)
+}
+
+func (pme *ProviderMetricsManager) SetJailedStatus(jailedCounter uint64, chain string, address string) {
+	if pme == nil {
+		return
+	}
+
+	pme.jailedStatusMetric.WithLabelValues(chain, address).Set(float64(jailedCounter))
 }

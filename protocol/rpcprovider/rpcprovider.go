@@ -188,6 +188,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp)
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
+		rpcp.createAndRegisterFreezeUpdatersByOptions(options, ctx)
 	}
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
@@ -269,6 +270,19 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	}
 
 	return nil
+}
+
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(options *rpcProviderStartOptions, ctx context.Context) {
+	providerFreezeUpdaterByChainId := make(map[string]*updaters.ProviderFreezeUpdater)
+	for _, rpcProviderEndpoint := range options.rpcProviderEndpoints {
+		_, freezeUpdaterExists := providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID]
+		if !freezeUpdaterExists {
+			stateQuery := updaters.NewProviderStateQuery(ctx, options.clientCtx)
+			freezeUpdater := updaters.NewProviderFreezeUpdater(stateQuery.PairingQueryClient, rpcProviderEndpoint.ChainID, options.clientCtx.FromAddress.String(), rpcp.providerMetricsManager)
+			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeUpdater)
+			providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID] = freezeUpdater
+		}
+	}
 }
 
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
