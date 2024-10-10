@@ -13,6 +13,7 @@ Note that the module will make sure that any changes will be applied only in the
   * [Epoch](#epoch)
     * [EpochDetails](#epochdetails)
   * [FixatedParams](#fixatedparams)
+  * [Metadata](#metadata)
   * [StakeEntry](#stakeentry)
 	* [StakeEntry Storage](#stakeentry-storage)
 * [Parameters](#parameters)
@@ -62,6 +63,21 @@ type FixatedParams struct {
 ```
 
 This is done in the [BeginBlock method of the module](keeper/fixated_params.go)
+
+### Metadata
+
+The metadata struct includes all the data for a provider that is the same accross all chains
+```go
+type ProviderMetadata struct {
+	Provider           string 				// provider address           
+	Vault              string            	// vault address
+	TotalDelegations   types.Coin        	// total delegations by delegators
+	Chains             []string          	// list of all chain ids the provider is staken on
+	DelegateCommission uint64            	// provider commission from rewards
+	LastChange         uint64            	// date of the last commission change
+	Description        types1.Description	// string descriptions of the provider entity (moniker, identity, wesite...)
+}
+```
 
 ### StakeEntry
 
@@ -146,6 +162,7 @@ The epochstorage module supports the following queries:
 | `show-fixated-params` | chainid           | a specific fixated param                      |
 | `list-stake-storage`  | chainid           | list of all stake storages indices            |
 | `show-stake-storage`  | chainid           | show a specific stake storage                 |
+| `provider-metadata`   | provider-address  | shows the metadata of a specific provider, if left empty returns metadata for all providers                 |
 
 ## Transactions
 

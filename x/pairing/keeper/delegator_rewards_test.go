@@ -688,7 +688,7 @@ func TestDelegatorRewardProviderAddingChain(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	// delegator should get half of the payment
+	// delegator should get third of the payment
 	res, err = ts.QueryDualstakingDelegatorRewards(delegator, provider, "")
 	require.Nil(ts.T, err)
 	require.Equal(ts.T, ts.plan.Price.Amount.QuoRaw(3).AddRaw(1), res.Rewards[0].Amount[0].Amount)
