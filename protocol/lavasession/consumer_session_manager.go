@@ -162,7 +162,7 @@ func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions
 }
 
 // csm is Rlocked
-func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, extensions []string) (supportingProviderAddresses []string) {
+func (csm *ConsumerSessionManager) calculateAddonValidAddresses(addon string, extensions []string) (supportingProviderAddresses []string) {
 	for _, providerAdress := range csm.validAddresses {
 		providerEntry := csm.pairing[providerAdress]
 		if providerEntry.IsSupportingAddon(addon) && providerEntry.IsSupportingExtensions(extensions) {
@@ -176,7 +176,7 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
 	routerKey := NewRouterKey(append(extensions, addon))
 	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
-		return csm.CalculateAddonValidAddresses(addon, extensions)
+		return csm.calculateAddonValidAddresses(addon, extensions)
 	}
 	return csm.addonAddresses[routerKey]
 }
@@ -354,7 +354,7 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string,
 			}
 		}
 		csm.RemoveAddonAddresses(addon, extensions) // refresh the list
-		csm.addonAddresses[NewRouterKey(append(extensions, addon))] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[NewRouterKey(append(extensions, addon))] = csm.calculateAddonValidAddresses(addon, extensions)
 	}
 }
 
@@ -399,7 +399,7 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 	routerKey := NewRouterKey(append(extensions, addon))
 	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
 		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKey] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[routerKey] = csm.calculateAddonValidAddresses(addon, extensions)
 	}
 	return csm.addonAddresses[routerKey]
 }
