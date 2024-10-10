@@ -1,0 +1,1942 @@
+{
+    "proposal": {
+      "title": "Add Specs: Dymension",
+      "description": "Adding new specification support for relaying Dymension data on Lava",
+      "specs": [
+        {
+          "index": "DYMENSION",
+          "name": "dymension mainnet",
+          "enabled": true,
+          "imports": [
+            "COSMOSSDK",
+            "ETHERMINT",
+            "ETH1"
+          ],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 0,
+          "blocks_in_finalization_proof": 1,
+          "average_block_time": 6000,
+          "allowed_block_lag_for_qos_sync": 2,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "50000000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "rest",
+                "internal_path": "",
+                "type": "GET",
+                "add_on": ""
+              },
+              "apis": [
+                {
+                  "name": "/dymensionxyz/dymension/delayedack/packets/{rollappId}/{status}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                    "name": "/dymensionxyz/dymension/delayedack/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/eibc/demand_order/{id}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/eibc/demand_orders/{status}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/eibc/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/eip155/{eip155}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/latest_height/{rollappId}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/latest_state_index/{rollappId}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/rollapp",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/rollapp/{rollappId}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/rollapp/state_info/{rollappId}/{index}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/sequencer/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/sequencer/sequencer",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/sequencer/sequencer/{sequencerAddress}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/sequencer/sequencers_by_rollapp/{rollappId}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/sequencer/sequencers_by_rollapp/{rollappId}/{status}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/streamer/active_streams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/streamer/module_to_distribute_coins",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/streamer/stream_by_id/{id}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/streamer/streams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/streamer/upcoming_streams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v2/pools/{pool_id}/prices",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/filtered_pools",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/num_pools",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}/exit_swap_share_amount_in",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}/join_swap_exact_in",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}/prices",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/pools/{pool_id}/total_pool_liquidity",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_in",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_out",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/epochs/v1beta1/current_epoch",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/epochs/v1beta1/epochs",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/active_gauges",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/active_gauges_per_denom",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/gauge_by_id/{id}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/gauges",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/lockable_durations",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/module_to_distribute_coins",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/rewards_est/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/upcoming_gauges",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/incentives/v1beta1/upcoming_gauges_per_denom",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_coins/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_duration/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_longer_duration/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_pasttime/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_unlockable_coins/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_unlocked_before_time/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/account_unlocking_coins/{owner}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/locked_by_id/{lock_id}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/locked_denom",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/module_balance",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/module_locked_amount",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/next_lock_id",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/lockup/v1beta1/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/txfees/v1beta1/base_denom",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/txfees/v1beta1/denom_pool_id/{denom}",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/txfees/v1beta1/fee_tokens",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/txfees/v1beta1/params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  },
+                  {
+                    "name": "/dymensionxyz/dymension/txfees/v1beta1/spot_price_by_denom",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                  }
+              ],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "dymension_1100-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "grpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [
+                {
+                  "name": "dymensionxyz.dymension.delayedack.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.delayedack.Query/GetPackets",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.eibc.Query/Params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.eibc.Query/DemandOrderById",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.eibc.Query/DemandOrderByStatus",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/Params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/Rollapp",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/RollappByEIP155",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/RollappAll",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/LatestHeight",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/LatestStateIndex",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.rollapp.Query/StateInfo",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.sequencer.Query/Params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.sequencer.Query/Sequencer",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.sequencer.Query/Sequencers",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.sequencer.Query/SequencersByRollapp",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.sequencer.Query/SequencersByRollappByStatus",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.streamer.Query/Params",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.streamer.Query/StreamById",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.streamer.Query/Streams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.streamer.Query/ActiveStreams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "dymensionxyz.dymension.streamer.Query/UpcomingStreams",
+                    "block_parsing": {
+                      "parser_arg": [
+                        "latest"
+                      ],
+                      "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                      "deterministic": true,
+                      "local": false,
+                      "subscription": false,
+                      "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                }
+              ],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "dymension_1100-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "tendermintrpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "dymension_1100-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 0
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "jsonrpc",
+                "internal_path": "",
+                "type": "POST",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "0x44c"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "parse_directive": {
+                  "function_tag": "GET_BLOCK_BY_NUM"
+                  },
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 0
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": "DYMENSIONT",
+          "name": "dymension testnet",
+          "enabled": true,
+          "imports": [
+            "DYMENSION"
+          ],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 0,
+          "blocks_in_finalization_proof": 1,
+          "average_block_time": 5700,
+          "allowed_block_lag_for_qos_sync": 2,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "50000000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "rest",
+                "internal_path": "",
+                "type": "GET",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "froopyland_100-1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "grpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "froopyland_100-1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "tendermintrpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "froopyland_100-1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "jsonrpc",
+                "internal_path": "",
+                "type": "POST",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "0x44c"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "deposit": "10000000ulava"
+  }
