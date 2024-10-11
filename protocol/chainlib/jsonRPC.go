@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -28,7 +29,10 @@ import (
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
-const SEP = "&"
+const (
+	SEP                                              = "&"
+	MaximumNumberOfParallelWebsocketConnectionsPerIp = 5
+)
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -300,6 +304,27 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
+// Will limit a certain amount of connections per IP
+type WebsocketConnectionLimiter struct {
+	ipToNumberOfActiveConnections map[string]uint64
+	lock                          sync.RWMutex
+}
+
+func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) uint64 {
+	wcl.lock.Lock()
+	defer wcl.lock.Unlock()
+	// wether it exists or not we add 1.
+	wcl.ipToNumberOfActiveConnections[ip] += 1
+	return wcl.ipToNumberOfActiveConnections[ip]
+}
+
+func (wcl *WebsocketConnectionLimiter) decreaseIpConnectionAndGetCurrentAmount(ip string) {
+	wcl.lock.Lock()
+	defer wcl.lock.Unlock()
+	// wether it exists or not we add 1.
+	wcl.ipToNumberOfActiveConnections[ip] -= 1
+}
+
 type JsonRPCChainListener struct {
 	endpoint                      *lavasession.RPCEndpoint
 	relaySender                   RelaySender
@@ -308,6 +333,7 @@ type JsonRPCChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -325,6 +351,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{},
 	}
 
 	return chainListener
@@ -354,6 +381,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		ip := websocketConn.RemoteAddr().String()
+		numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
+		defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
+		if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
+			websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
+			return
+		}
+
 		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
