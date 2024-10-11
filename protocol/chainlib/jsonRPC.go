@@ -30,9 +30,10 @@ import (
 )
 
 const (
-	SEP                                              = "&"
-	MaximumNumberOfParallelWebsocketConnectionsPerIp = 5
+	SEP = "&"
 )
+
+var MaximumNumberOfParallelWebsocketConnectionsPerIp int64 = 0
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -306,11 +307,11 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 
 // Will limit a certain amount of connections per IP
 type WebsocketConnectionLimiter struct {
-	ipToNumberOfActiveConnections map[string]uint64
+	ipToNumberOfActiveConnections map[string]int64
 	lock                          sync.RWMutex
 }
 
-func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) uint64 {
+func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) int64 {
 	wcl.lock.Lock()
 	defer wcl.lock.Unlock()
 	// wether it exists or not we add 1.
@@ -381,12 +382,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		ip := websocketConn.RemoteAddr().String()
-		numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
-		defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
-		if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
-			websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
-			return
+		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
+			ip := websocketConn.RemoteAddr().String()
+			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
+			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
+			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
+				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
+				return
+			}
 		}
 
 		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))

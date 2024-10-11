@@ -380,12 +380,14 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		ip := websocketConn.RemoteAddr().String()
-		numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
-		defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
-		if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
-			websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
-			return
+		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
+			ip := websocketConn.RemoteAddr().String()
+			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
+			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
+			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
+				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
+				return
+			}
 		}
 
 		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
