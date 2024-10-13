@@ -13,9 +13,9 @@ import (
 func TestScoreStoreCreation(t *testing.T) {
 	num, denom, timestamp := float64(1), float64(2), time.Now()
 	weight, halfLife := float64(4), 5*time.Second
-	opts := []score.Option{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
-	negativeWeightOpts := []score.Option{score.WithWeight(-weight), score.WithDecayHalfLife(halfLife)}
-	negativeHalflifeOpts := []score.Option{score.WithWeight(weight), score.WithDecayHalfLife(-halfLife)}
+	opts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
+	negativeWeightOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(halfLife)}
+	negativeHalflifeOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(-halfLife)}
 
 	template := []struct {
 		name      string
@@ -23,27 +23,27 @@ func TestScoreStoreCreation(t *testing.T) {
 		num       float64
 		denom     float64
 		timestamp time.Time
-		opts      []score.Option
+		opts      []score.Option_Refactor
 		valid     bool
 	}{
-		{name: "valid", scoreType: score.LatencyScoreType, num: num, denom: denom, timestamp: timestamp, opts: nil, valid: true},
-		{name: "valid latency store with opts", scoreType: score.LatencyScoreType, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
-		{name: "valid sync store with opts", scoreType: score.SyncScoreType, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
-		{name: "valid availability store with opts", scoreType: score.AvailabilityScoreType, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
+		{name: "valid", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: nil, valid: true},
+		{name: "valid latency store with opts", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
+		{name: "valid sync store with opts", scoreType: score.SyncScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
+		{name: "valid availability store with opts", scoreType: score.AvailabilityScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: opts, valid: true},
 
-		{name: "invalid negative num", scoreType: score.LatencyScoreType, num: -num, denom: denom, timestamp: timestamp, opts: nil, valid: false},
-		{name: "invalid negative denom", scoreType: score.LatencyScoreType, num: num, denom: -denom, timestamp: timestamp, opts: nil, valid: false},
-		{name: "invalid zero denom", scoreType: score.LatencyScoreType, num: num, denom: 0, timestamp: timestamp, opts: nil, valid: false},
-		{name: "invalid option - negative weight", scoreType: score.LatencyScoreType, num: num, denom: denom, timestamp: timestamp, opts: negativeWeightOpts, valid: false},
-		{name: "invalid option - negative half life", scoreType: score.LatencyScoreType, num: num, denom: denom, timestamp: timestamp, opts: negativeHalflifeOpts, valid: false},
+		{name: "invalid negative num", scoreType: score.LatencyScoreType_Refactor, num: -num, denom: denom, timestamp: timestamp, opts: nil, valid: false},
+		{name: "invalid negative denom", scoreType: score.LatencyScoreType_Refactor, num: num, denom: -denom, timestamp: timestamp, opts: nil, valid: false},
+		{name: "invalid zero denom", scoreType: score.LatencyScoreType_Refactor, num: num, denom: 0, timestamp: timestamp, opts: nil, valid: false},
+		{name: "invalid option - negative weight", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: negativeWeightOpts, valid: false},
+		{name: "invalid option - negative half life", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: negativeHalflifeOpts, valid: false},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			store, err := score.NewCustomScoreStore(tt.scoreType, tt.num, tt.denom, tt.timestamp, tt.opts...)
+			store, err := score.NewCustomScoreStore_Refactor(tt.scoreType, tt.num, tt.denom, tt.timestamp, tt.opts...)
 			if tt.valid {
 				require.NoError(t, err)
-				require.Equal(t, tt.scoreType, store.GetName())
+				require.Equal(t, tt.scoreType, store)
 				require.Equal(t, tt.num, store.GetNum())
 				require.Equal(t, tt.denom, store.GetDenom())
 				require.Equal(t, tt.timestamp, store.GetLastUpdateTime())
@@ -63,48 +63,48 @@ func TestDefaultScoreStoreCreation(t *testing.T) {
 		name      string
 		scoreType string
 	}{
-		{name: "latency store", scoreType: score.LatencyScoreType},
-		{name: "sync store", scoreType: score.SyncScoreType},
-		{name: "availability store", scoreType: score.AvailabilityScoreType},
+		{name: "latency store", scoreType: score.LatencyScoreType_Refactor},
+		{name: "sync store", scoreType: score.SyncScoreType_Refactor},
+		{name: "availability store", scoreType: score.AvailabilityScoreType_Refactor},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			store := score.NewScoreStore(tt.scoreType)
+			store := score.NewScoreStore_Refactor(tt.scoreType)
 			var expectedNum float64
 			switch tt.scoreType {
-			case score.LatencyScoreType:
-				expectedNum = score.DefaultLatencyNum
-			case score.SyncScoreType:
-				expectedNum = score.DefaultSyncNum
-			case score.AvailabilityScoreType:
-				expectedNum = score.DefaultAvailabilityNum
+			case score.LatencyScoreType_Refactor:
+				expectedNum = score.DefaultLatencyNum_Refactor
+			case score.SyncScoreType_Refactor:
+				expectedNum = score.DefaultSyncNum_Refactor
+			case score.AvailabilityScoreType_Refactor:
+				expectedNum = score.DefaultAvailabilityNum_Refactor
 			}
 
 			require.Equal(t, tt.scoreType, store.GetName())
 			require.Equal(t, expectedNum, store.GetNum())
 			require.Equal(t, float64(1), store.GetDenom())
-			require.InEpsilon(t, time.Now().Add(-score.InitialDataStaleness*time.Hour).UTC().Unix(), store.GetLastUpdateTime().UTC().Unix(), 0.01)
-			require.Equal(t, score.DefaultWeight, store.GetConfig().Weight)
-			require.Equal(t, score.DefaultHalfLifeTime, store.GetConfig().HalfLife)
+			require.InEpsilon(t, time.Now().Add(-score.InitialDataStaleness_Refactor*time.Hour).UTC().Unix(), store.GetLastUpdateTime().UTC().Unix(), 0.01)
+			require.Equal(t, score.DefaultWeight_Refactor, store.GetConfig().Weight)
+			require.Equal(t, score.DefaultHalfLifeTime_Refactor, store.GetConfig().HalfLife)
 		})
 	}
 }
 
 func TestScoreStoreValidation(t *testing.T) {
-	validConfig := score.Config{Weight: 1, HalfLife: time.Second}
-	invalidConfig := score.Config{Weight: -1, HalfLife: time.Second}
+	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second}
+	invalidConfig := score.Config_Refactor{Weight: -1, HalfLife: time.Second}
 
 	template := []struct {
 		name  string
-		store score.ScoreStore
+		store score.ScoreStore_Refactor
 		valid bool
 	}{
-		{name: "valid", store: score.ScoreStore{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: validConfig}, valid: true},
-		{name: "invalid negative num", store: score.ScoreStore{Name: "dummy", Num: -1, Denom: 1, Time: time.Now(), Config: validConfig}, valid: false},
-		{name: "invalid negative denom", store: score.ScoreStore{Name: "dummy", Num: 1, Denom: -1, Time: time.Now(), Config: validConfig}, valid: false},
-		{name: "invalid zero denom", store: score.ScoreStore{Name: "dummy", Num: 1, Denom: 0, Time: time.Now(), Config: validConfig}, valid: false},
-		{name: "invalid config", store: score.ScoreStore{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig}, valid: false},
+		{name: "valid", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: validConfig}, valid: true},
+		{name: "invalid negative num", store: score.ScoreStore_Refactor{Name: "dummy", Num: -1, Denom: 1, Time: time.Now(), Config: validConfig}, valid: false},
+		{name: "invalid negative denom", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: -1, Time: time.Now(), Config: validConfig}, valid: false},
+		{name: "invalid zero denom", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 0, Time: time.Now(), Config: validConfig}, valid: false},
+		{name: "invalid config", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig}, valid: false},
 	}
 
 	for _, tt := range template {
@@ -120,15 +120,15 @@ func TestScoreStoreValidation(t *testing.T) {
 }
 
 func TestScoreStoreResolve(t *testing.T) {
-	validConfig := score.Config{Weight: 1, HalfLife: time.Second}
+	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second}
 	template := []struct {
 		name   string
-		store  score.ScoreStore
+		store  score.ScoreStore_Refactor
 		result float64
 		valid  bool
 	}{
-		{name: "valid", store: score.ScoreStore{Num: 5, Denom: 16, Config: validConfig}, result: 0.3125, valid: true},
-		{name: "invalid num", store: score.ScoreStore{Num: -5, Denom: 16, Config: validConfig}, result: 0.3125, valid: false},
+		{name: "valid", store: score.ScoreStore_Refactor{Num: 5, Denom: 16, Config: validConfig}, result: 0.3125, valid: true},
+		{name: "invalid num", store: score.ScoreStore_Refactor{Num: -5, Denom: 16, Config: validConfig}, result: 0.3125, valid: false},
 	}
 
 	for _, tt := range template {
@@ -145,12 +145,12 @@ func TestScoreStoreResolve(t *testing.T) {
 }
 
 func TestScoreStoreUpdateConfig(t *testing.T) {
-	store := score.NewScoreStore(score.LatencyScoreType)
+	store := score.NewScoreStore_Refactor(score.LatencyScoreType_Refactor)
 	weight := float64(2)
 	halfLife := 3 * time.Second
 
-	validOpts := []score.Option{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
-	invalidOpts := []score.Option{score.WithWeight(-weight), score.WithDecayHalfLife(-halfLife)}
+	validOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
+	invalidOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(-halfLife)}
 
 	err := store.UpdateConfig(validOpts...)
 	require.NoError(t, err)
@@ -181,19 +181,19 @@ func TestScoreStoreUpdate(t *testing.T) {
 		sample    float64
 		valid     bool
 	}{
-		{name: "valid latency", scoreType: score.LatencyScoreType, sample: sample, valid: true},
-		{name: "valid sync", scoreType: score.SyncScoreType, sample: sample, valid: true},
-		{name: "valid availability", scoreType: score.AvailabilityScoreType, sample: sample, valid: true},
+		{name: "valid latency", scoreType: score.LatencyScoreType_Refactor, sample: sample, valid: true},
+		{name: "valid sync", scoreType: score.SyncScoreType_Refactor, sample: sample, valid: true},
+		{name: "valid availability", scoreType: score.AvailabilityScoreType_Refactor, sample: sample, valid: true},
 
-		{name: "invalid negative latency sample", scoreType: score.LatencyScoreType, sample: -sample, valid: false},
-		{name: "invalid negative sync sample", scoreType: score.SyncScoreType, sample: -sample, valid: false},
-		{name: "invalid negative availability sample", scoreType: score.AvailabilityScoreType, sample: -sample, valid: false},
-		{name: "invalid availability sample - not 0/1", scoreType: score.AvailabilityScoreType, sample: 0.5, valid: false},
+		{name: "invalid negative latency sample", scoreType: score.LatencyScoreType_Refactor, sample: -sample, valid: false},
+		{name: "invalid negative sync sample", scoreType: score.SyncScoreType_Refactor, sample: -sample, valid: false},
+		{name: "invalid negative availability sample", scoreType: score.AvailabilityScoreType_Refactor, sample: -sample, valid: false},
+		{name: "invalid availability sample - not 0/1", scoreType: score.AvailabilityScoreType_Refactor, sample: 0.5, valid: false},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			store, err := score.NewCustomScoreStore(tt.scoreType, num, denom, timestamp,
+			store, err := score.NewCustomScoreStore_Refactor(tt.scoreType, num, denom, timestamp,
 				score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
 			require.NoError(t, err)
 
@@ -217,7 +217,7 @@ func TestScoreStoreUpdateIdenticalSamples(t *testing.T) {
 	num, denom, timestamp := float64(94), float64(17), time.Date(0, 0, 0, 0, 0, 1, 0, time.UTC)
 	weight, halfLife := float64(4), 500*time.Millisecond
 
-	store, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
 
@@ -245,7 +245,7 @@ func TestScoreStoreUpdateIdenticalSamplesThenBetter(t *testing.T) {
 	num, denom, timestamp := float64(94), float64(17), time.Date(0, 0, 0, 0, 0, 1, 0, time.UTC)
 	weight, halfLife := float64(4), 500*time.Millisecond
 
-	store, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
 
@@ -290,10 +290,10 @@ func TestScoreStoreUpdateDecayFactors(t *testing.T) {
 	originalScore := num / denom
 
 	// setup two identical stores
-	store1, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store1, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
-	store2, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store2, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
 
@@ -320,7 +320,7 @@ func TestScoreStoreStaysWithinRange(t *testing.T) {
 	timestamp, halfLife := time.Date(0, 0, 0, 0, 0, 1, 0, time.UTC), 500*time.Millisecond
 	minRangeValue, maxRangeValue := float64(0), float64(100)
 
-	store, err := score.NewCustomScoreStore(score.LatencyScoreType, 1, 1, timestamp,
+	store, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, 1, 1, timestamp,
 		score.WithWeight(1), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
 
@@ -354,10 +354,10 @@ func TestScoreStoreHalfLife(t *testing.T) {
 	shortHalfLife, longHalfLife := 10*time.Millisecond, 500*time.Millisecond
 
 	// setup two identical stores (store1 = short, store2 = long)
-	store1, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store1, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(shortHalfLife))
 	require.NoError(t, err)
-	store2, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store2, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight), score.WithDecayHalfLife(longHalfLife))
 	require.NoError(t, err)
 
@@ -388,10 +388,10 @@ func TestScoreStoreWeight(t *testing.T) {
 	weight1, weight2 := float64(4), float64(40)
 
 	// setup two identical stores (store1 = low weight, store2 = high weight)
-	store1, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store1, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight1), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
-	store2, err := score.NewCustomScoreStore(score.LatencyScoreType, num, denom, timestamp,
+	store2, err := score.NewCustomScoreStore_Refactor(score.LatencyScoreType_Refactor, num, denom, timestamp,
 		score.WithWeight(weight2), score.WithDecayHalfLife(halfLife))
 	require.NoError(t, err)
 

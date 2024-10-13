@@ -11,12 +11,12 @@ import (
 func TestConfigValidation(t *testing.T) {
 	template := []struct {
 		name   string
-		config score.Config
+		config score.Config_Refactor
 		valid  bool
 	}{
-		{name: "valid", config: score.Config{Weight: 1, HalfLife: time.Second}, valid: true},
-		{name: "invalid weight", config: score.Config{Weight: -1, HalfLife: time.Second}, valid: false},
-		{name: "valid", config: score.Config{Weight: 1, HalfLife: -time.Second}, valid: false},
+		{name: "valid", config: score.Config_Refactor{Weight: 1, HalfLife: time.Second}, valid: true},
+		{name: "invalid weight", config: score.Config_Refactor{Weight: -1, HalfLife: time.Second}, valid: false},
+		{name: "valid", config: score.Config_Refactor{Weight: 1, HalfLife: -time.Second}, valid: false},
 	}
 
 	for _, tt := range template {
@@ -32,11 +32,11 @@ func TestConfigValidation(t *testing.T) {
 }
 
 func TestConfigModification(t *testing.T) {
-	config := score.Config{Weight: 1, HalfLife: time.Second}
+	config := score.Config_Refactor{Weight: 1, HalfLife: time.Second}
 	weight := float64(2)
 	halfLife := 3 * time.Second
 
-	opts := []score.Option{
+	opts := []score.Option_Refactor{
 		score.WithWeight(weight),
 		score.WithDecayHalfLife(halfLife),
 	}

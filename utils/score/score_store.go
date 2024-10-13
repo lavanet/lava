@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	DecPrecision         int64 = 8
-	InitialDataStaleness       = 24
+	DecPrecision_Refactor         int64 = 8
+	InitialDataStaleness_Refactor       = 24
 )
 
 // ScoreStore holds a score's numerator and denominator, last update timestamp, and a
@@ -22,34 +22,34 @@ const (
 // Keeping the score as a fracture helps calculating and updating weighted average calculations
 // on the go.
 // Currently, ScoreStore is used for QoS excellence metrics (see below).
-type ScoreStore struct {
+type ScoreStore_Refactor struct {
 	Name   string
 	Num    float64 // using float64 and not math/big for performance
 	Denom  float64
 	Time   time.Time
-	Config Config
+	Config Config_Refactor
 }
 
 // ScoreStorer defines the interface for all score stores
-type ScoreStorer interface {
+type ScoreStorer_Refactor interface {
 	Update(sample float64, sampleTime time.Time) error
 	Resolve() (float64, error)
 	Validate() error
 	String() string
-	UpdateConfig(opts ...Option) error
+	UpdateConfig(opts ...Option_Refactor) error
 
 	GetName() string
 	GetNum() float64
 	GetDenom() float64
 	GetLastUpdateTime() time.Time
-	GetConfig() Config
+	GetConfig() Config_Refactor
 }
 
 // NewCustomScoreStore creates a new custom ScoreStorer based on the score type
-func NewCustomScoreStore(scoreType string, num, denom float64, t time.Time, opts ...Option) (ScoreStorer, error) {
-	cfg := Config{
-		Weight:   DefaultWeight,
-		HalfLife: DefaultHalfLifeTime,
+func NewCustomScoreStore_Refactor(scoreType string, num, denom float64, t time.Time, opts ...Option_Refactor) (ScoreStorer_Refactor, error) {
+	cfg := Config_Refactor{
+		Weight:   DefaultWeight_Refactor,
+		HalfLife: DefaultHalfLifeTime_Refactor,
 	}
 	for _, opt := range opts {
 		opt(&cfg)
@@ -59,7 +59,7 @@ func NewCustomScoreStore(scoreType string, num, denom float64, t time.Time, opts
 		return nil, fmt.Errorf("cannot create %s ScoreStore, invalid configuration: %w", scoreType, err)
 	}
 
-	base := &ScoreStore{
+	base := &ScoreStore_Refactor{
 		Num:    num,
 		Denom:  denom,
 		Time:   t,
@@ -71,42 +71,42 @@ func NewCustomScoreStore(scoreType string, num, denom float64, t time.Time, opts
 	}
 
 	switch scoreType {
-	case LatencyScoreType:
-		base.Name = LatencyScoreType
-		return &LatencyScoreStore{ScoreStore: base}, nil
-	case SyncScoreType:
-		base.Name = SyncScoreType
-		return &SyncScoreStore{ScoreStore: base}, nil
-	case AvailabilityScoreType:
-		base.Name = AvailabilityScoreType
-		return &AvailabilityScoreStore{ScoreStore: base}, nil
+	case LatencyScoreType_Refactor:
+		base.Name = LatencyScoreType_Refactor
+		return &LatencyScoreStore_Refactor{ScoreStore_Refactor: base}, nil
+	case SyncScoreType_Refactor:
+		base.Name = SyncScoreType_Refactor
+		return &SyncScoreStore_Refactor{ScoreStore_Refactor: base}, nil
+	case AvailabilityScoreType_Refactor:
+		base.Name = AvailabilityScoreType_Refactor
+		return &AvailabilityScoreStore_Refactor{ScoreStore_Refactor: base}, nil
 	default:
 		return nil, fmt.Errorf("unknown score type: %s", scoreType)
 	}
 }
 
 // NewScoreStore creates a new default ScoreStorer based on the score type
-func NewScoreStore(scoreType string) ScoreStorer {
+func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 	switch scoreType {
-	case LatencyScoreType:
+	case LatencyScoreType_Refactor:
 		// default latency: 10ms
-		latencyScoreStore, err := NewCustomScoreStore(scoreType, DefaultLatencyNum, 1, time.Now().Add(-InitialDataStaleness*time.Hour))
+		latencyScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultLatencyNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
 		if err != nil {
 			utils.LavaFormatFatal("cannot create default "+scoreType+" ScoreStore", err)
 		}
 		return latencyScoreStore
 
-	case SyncScoreType:
+	case SyncScoreType_Refactor:
 		// default sync: 100ms
-		syncScoreStore, err := NewCustomScoreStore(scoreType, DefaultSyncNum, 1, time.Now().Add(-InitialDataStaleness*time.Hour))
+		syncScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultSyncNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
 		if err != nil {
 			utils.LavaFormatFatal("cannot create default "+scoreType+" ScoreStore", err)
 		}
 		return syncScoreStore
 
-	case AvailabilityScoreType:
+	case AvailabilityScoreType_Refactor:
 		// default availability: 1
-		availabilityScoreStore, err := NewCustomScoreStore(scoreType, DefaultAvailabilityNum, 1, time.Now().Add(-InitialDataStaleness*time.Hour))
+		availabilityScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultAvailabilityNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
 		if err != nil {
 
 		}
@@ -118,13 +118,13 @@ func NewScoreStore(scoreType string) ScoreStorer {
 }
 
 // String prints a ScoreStore's fields
-func (ss *ScoreStore) String() string {
+func (ss *ScoreStore_Refactor) String() string {
 	return fmt.Sprintf("num: %f, denom: %f, last_update_time: %s, config: %s",
 		ss.Num, ss.Denom, ss.Time.String(), ss.Config.String())
 }
 
 // Validate validates the ScoreStore's fields hold valid values
-func (ss *ScoreStore) Validate() error {
+func (ss *ScoreStore_Refactor) Validate() error {
 	if ss.Num < 0 || ss.Denom <= 0 {
 		return fmt.Errorf("invalid %s ScoreStore: num or denom are non-positives, num: %f, denom: %f", ss.Name, ss.Num, ss.Denom)
 	}
@@ -136,7 +136,7 @@ func (ss *ScoreStore) Validate() error {
 }
 
 // Resolve resolves the ScoreStore's frac by dividing the numerator by the denominator
-func (ss *ScoreStore) Resolve() (float64, error) {
+func (ss *ScoreStore_Refactor) Resolve() (float64, error) {
 	if err := ss.Validate(); err != nil {
 		return 0, errors.Wrap(err, "cannot calculate "+ss.Name+" ScoreStore's score")
 	}
@@ -144,7 +144,7 @@ func (ss *ScoreStore) Resolve() (float64, error) {
 }
 
 // UpdateConfig updates the configuration of a ScoreStore
-func (ss *ScoreStore) UpdateConfig(opts ...Option) error {
+func (ss *ScoreStore_Refactor) UpdateConfig(opts ...Option_Refactor) error {
 	cfg := ss.Config
 	for _, opt := range opts {
 		opt(&cfg)
@@ -158,26 +158,6 @@ func (ss *ScoreStore) UpdateConfig(opts ...Option) error {
 	return nil
 }
 
-func (ss *ScoreStore) GetName() string {
-	return ss.Name
-}
-
-func (ss *ScoreStore) GetNum() float64 {
-	return ss.Num
-}
-
-func (ss *ScoreStore) GetDenom() float64 {
-	return ss.Denom
-}
-
-func (ss *ScoreStore) GetLastUpdateTime() time.Time {
-	return ss.Time
-}
-
-func (ss *ScoreStore) GetConfig() Config {
-	return ss.Config
-}
-
 // update updates the ScoreStore's numerator and denominator with a new sample.
 // The ScoreStore's score is calculated as a weighted average with a decay factor.
 // The new sample is added by the following formula:
@@ -185,7 +165,7 @@ func (ss *ScoreStore) GetConfig() Config {
 //	num = num * decay_factor + sample * weight
 //	denom = denom * decay_factor + weight
 //	decay_factor = exp(-time_since_last_update / half_life_time)
-func (ss *ScoreStore) update(sample float64, sampleTime time.Time) error {
+func (ss *ScoreStore_Refactor) update(sample float64, sampleTime time.Time) error {
 	if ss == nil {
 		return fmt.Errorf("cannot update ScoreStore, ScoreStore is nil")
 	}
@@ -224,9 +204,29 @@ func (ss *ScoreStore) update(sample float64, sampleTime time.Time) error {
 	return nil
 }
 
+func (ss *ScoreStore_Refactor) GetName() string {
+	return ss.Name
+}
+
+func (ss *ScoreStore_Refactor) GetNum() float64 {
+	return ss.Num
+}
+
+func (ss *ScoreStore_Refactor) GetDenom() float64 {
+	return ss.Denom
+}
+
+func (ss *ScoreStore_Refactor) GetLastUpdateTime() time.Time {
+	return ss.Time
+}
+
+func (ss *ScoreStore_Refactor) GetConfig() Config_Refactor {
+	return ss.Config
+}
+
 func ConvertToDec(val float64) sdk.Dec {
-	intScore := int64(math.Round(val * math.Pow(10, float64(DecPrecision))))
-	return sdk.NewDecWithPrec(intScore, DecPrecision)
+	intScore := int64(math.Round(val * math.Pow(10, float64(DecPrecision_Refactor))))
+	return sdk.NewDecWithPrec(intScore, DecPrecision_Refactor)
 }
 
 // QoS excellence is a collection of performance metrics that measure a provider's
@@ -240,27 +240,27 @@ func ConvertToDec(val float64) sdk.Dec {
 // pairing process.
 
 const (
-	DefaultLatencyNum      float64 = 0.01
-	DefaultSyncNum         float64 = 0.1
-	DefaultAvailabilityNum float64 = 1
+	DefaultLatencyNum_Refactor      float64 = 0.01
+	DefaultSyncNum_Refactor         float64 = 0.1
+	DefaultAvailabilityNum_Refactor float64 = 1
 
-	LatencyScoreType      = "latency"
-	SyncScoreType         = "sync"
-	AvailabilityScoreType = "availability"
+	LatencyScoreType_Refactor      = "latency"
+	SyncScoreType_Refactor         = "sync"
+	AvailabilityScoreType_Refactor = "availability"
 
 	// Worst score results for each QoS excellence metric for truncation
-	WorstLatencyScore float64 = 30      // seconds
-	WorstSyncScore    float64 = 20 * 60 // seconds
+	WorstLatencyScore_Refactor float64 = 30      // seconds
+	WorstSyncScore_Refactor    float64 = 20 * 60 // seconds
 )
 
 /* ########## Latency ScoreStore ############ */
 
-type LatencyScoreStore struct {
-	*ScoreStore
+type LatencyScoreStore_Refactor struct {
+	*ScoreStore_Refactor
 }
 
 // Update updates the Latency ScoreStore's numerator and denominator with a new sample.
-func (ls *LatencyScoreStore) Update(sample float64, sampleTime time.Time) error {
+func (ls *LatencyScoreStore_Refactor) Update(sample float64, sampleTime time.Time) error {
 	if ls == nil {
 		return fmt.Errorf("LatencyScoreStore is nil")
 	}
@@ -269,12 +269,12 @@ func (ls *LatencyScoreStore) Update(sample float64, sampleTime time.Time) error 
 
 /* ########## Sync ScoreStore ############ */
 
-type SyncScoreStore struct {
-	*ScoreStore
+type SyncScoreStore_Refactor struct {
+	*ScoreStore_Refactor
 }
 
 // Update updates the Sync ScoreStore's numerator and denominator with a new sample.
-func (ss *SyncScoreStore) Update(sample float64, sampleTime time.Time) error {
+func (ss *SyncScoreStore_Refactor) Update(sample float64, sampleTime time.Time) error {
 	if ss == nil {
 		return fmt.Errorf("SyncScoreStore is nil")
 	}
@@ -283,13 +283,13 @@ func (ss *SyncScoreStore) Update(sample float64, sampleTime time.Time) error {
 
 /* ########## Availability ScoreStore ############ */
 
-type AvailabilityScoreStore struct {
-	*ScoreStore
+type AvailabilityScoreStore_Refactor struct {
+	*ScoreStore_Refactor
 }
 
 // Update updates the availability ScoreStore's numerator and denominator with a new sample.
 // The new sample must be 0 or 1.
-func (as *AvailabilityScoreStore) Update(sample float64, sampleTime time.Time) error {
+func (as *AvailabilityScoreStore_Refactor) Update(sample float64, sampleTime time.Time) error {
 	if as == nil {
 		return fmt.Errorf("AvailabilityScoreStore is nil")
 	}
