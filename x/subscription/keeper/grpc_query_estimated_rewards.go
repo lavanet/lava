@@ -73,7 +73,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	}
 
 	// get claimable rewards before the rewards distribution
-	before, err := k.getClaimableRewards(goCtx, req.Provider, delegator)
+	before, err := k.getClaimableRewards(ctx, req.Provider, delegator)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards before distribution", err, details...)
 	}
@@ -113,7 +113,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	k.rewardsKeeper.DistributeMonthlyBonusRewards(ctx)
 
 	// get claimable rewards after the rewards distribution
-	after, err := k.getClaimableRewards(goCtx, req.Provider, delegator)
+	after, err := k.getClaimableRewards(ctx, req.Provider, delegator)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards after distribution", err, details...)
 	}
@@ -154,9 +154,9 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 }
 
 // helper function that returns a map of provider->rewards
-func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, delegator string) (rewards sdk.Coins, err error) {
+func (k Keeper) getClaimableRewards(ctx sdk.Context, provider string, delegator string) (rewards sdk.Coins, err error) {
 	var qRes *dualstakingtypes.QueryDelegatorRewardsResponse
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	goCtx := sdk.WrapSDKContext(ctx)
 
 	// get delegator rewards
 	if delegator == "" {
