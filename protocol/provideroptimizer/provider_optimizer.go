@@ -160,6 +160,20 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
+func (po *ProviderOptimizer) calcLatencyAndSyncScores(providerData ProviderData, cu uint64, requestedBlock int64) (float64, float64) {
+	// latency score
+	latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
+
+	// sync score
+	syncScoreCurrent := float64(0)
+	if requestedBlock < 0 {
+		// means user didn't ask for a specific block and we want to give him the best
+		syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
+	}
+
+	return latencyScoreCurrent, syncScoreCurrent
+}
+
 func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []metrics.OptimizerQoSReport {
 	reports := []metrics.OptimizerQoSReport{}
 	for _, providerAddress := range allAddresses {
@@ -170,19 +184,11 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 		providerData, found := po.getProviderData(providerAddress)
 		if !found {
 			utils.LavaFormatDebug("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
-			continue
-		}
-		// latency score
-		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
-
-		// sync score
-		syncScoreCurrent := float64(0)
-		if requestedBlock < 0 {
-			// means user didn't ask for a specific block and we want to give him the best
-			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
 		}
 
+		latencyScoreCurrent, syncScoreCurrent := po.calcLatencyAndSyncScores(providerData, cu, requestedBlock)
 		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+
 		providerReport := metrics.OptimizerQoSReport{
 			ProviderAddress:   providerAddress,
 			SyncScore:         syncScoreCurrent,
@@ -207,19 +213,13 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			// ignored provider, skip it
 			continue
 		}
+
 		providerData, found := po.getProviderData(providerAddress)
 		if !found {
 			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
 		}
-		// latency score
-		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
 
-		// sync score
-		syncScoreCurrent := float64(0)
-		if requestedBlock < 0 {
-			// means user didn't ask for a specific block and we want to give him the best
-			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
-		}
+		latencyScoreCurrent, syncScoreCurrent := po.calcLatencyAndSyncScores(providerData, cu, requestedBlock)
 
 		utils.LavaFormatTrace("scores information",
 			utils.LogAttr("providerAddress", providerAddress),
@@ -228,6 +228,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			utils.LogAttr("latencyScore", latencyScore),
 			utils.LogAttr("syncScore", syncScore),
 		)
+
 		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
 		selectionTier.AddScore(providerAddress, providerScore)
 
