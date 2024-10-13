@@ -16,12 +16,7 @@ func (k Keeper) ProviderDelegators(goCtx context.Context, req *types.QueryProvid
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	epoch := uint64(ctx.BlockHeight())
-	if req.WithPending {
-		epoch = k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
-	}
-
-	delegations, err := k.GetProviderDelegators(ctx, req.Provider, epoch)
+	delegations, err := k.GetProviderDelegators(ctx, req.Provider)
 	if err != nil {
 		return nil, err
 	}

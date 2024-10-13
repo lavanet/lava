@@ -146,6 +146,15 @@ func Remove[T comparable](slice []T, elem T) ([]T, bool) {
 	return slice, false
 }
 
+func AddUnique[T comparable](slice []T, elem T) []T {
+	for _, e := range slice {
+		if e == elem {
+			return slice
+		}
+	}
+	return append(slice, elem)
+}
+
 func IsSubset[T comparable](subset, superset []T) bool {
 	subsetMap := make(map[T]bool)
 	commonMap := make(map[T]bool)

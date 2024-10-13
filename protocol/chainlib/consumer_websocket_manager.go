@@ -96,6 +96,10 @@ func (cwm *ConsumerWebsocketManager) handleRateLimitReached(inpData []byte) ([]b
 }
 
 func (cwm *ConsumerWebsocketManager) ListenToMessages() {
+	// adding metrics for how many active connections we have.
+	cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, true)
+	defer cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, false)
+
 	var (
 		messageType int
 		msg         []byte

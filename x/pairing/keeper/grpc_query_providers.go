@@ -19,16 +19,24 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 
 	stakeEntries := k.epochStorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainID)
 
-	if !req.ShowFrozen {
-		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
-		for i := range stakeEntries {
-			stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
-
-			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
-			if stakeEntries[i].GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
-				stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntries[i])
-			}
+	stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
+	for i := range stakeEntries {
+		metadata, err := k.epochStorageKeeper.GetMetadata(ctx, stakeEntries[i].Address)
+		if err != nil {
+			return nil, err
 		}
+		stakeEntries[i].DelegateCommission = metadata.DelegateCommission
+		stakeEntries[i].Description = metadata.Description
+		stakeEntries[i].Moniker = metadata.Description.Moniker
+		stakeEntries[i].Vault = metadata.Vault
+
+		// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
+		if !req.ShowFrozen && stakeEntries[i].GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
+			stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntries[i])
+		}
+	}
+
+	if !req.ShowFrozen {
 		stakeEntries = stakeEntriesNoFrozen
 	}
 

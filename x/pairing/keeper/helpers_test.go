@@ -73,24 +73,30 @@ func (ts *tester) addValidators(count int) {
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
 	d := common.MockDescription()
-	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details) // default: endpoints, geolocation, moniker
+	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec) // default: endpoints, geolocation, moniker
+}
+
+// addProvider: with default endpoints, geolocation, moniker
+func (ts *tester) addProviderSpec(count int, spec string) error {
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.Spec(spec))
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
 func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
 	d := common.MockDescription()
-	return ts.addProviderExtra(count, nil, geolocation, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+	return ts.addProviderExtra(count, nil, geolocation, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec)
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
 	d := common.MockDescription()
-	return ts.addProviderExtra(count, endpoints, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+	return ts.addProviderExtra(count, endpoints, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec)
 }
 
 // addProviderDescription: with description, and default endpoints, geolocation
 func (ts *tester) addProviderDescription(count int, moniker string, identity string, website string, securityContact string, descriptionDetails string) error {
-	return ts.addProviderExtra(count, nil, 0, moniker, identity, website, securityContact, descriptionDetails)
+	return ts.addProviderExtra(count, nil, 0, moniker, identity, website, securityContact, descriptionDetails, ts.spec)
 }
 
 // addProviderExtra: with mock endpoints, and preset geolocation, description details
@@ -103,11 +109,12 @@ func (ts *tester) addProviderExtra(
 	website string,
 	securityContact string,
 	descriptionDetails string,
+	spec spectypes.Spec,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
-		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, ts.spec, testStake, endpoints, geoloc, moniker, identity, website, securityContact, descriptionDetails)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, spec, testStake, endpoints, geoloc, moniker, identity, website, securityContact, descriptionDetails)
 		if err != nil {
 			return err
 		}

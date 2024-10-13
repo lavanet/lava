@@ -76,8 +76,8 @@ message QueryDelegatorRewardsResponse {
 }
 
 message DelegatorRewardInfo {
+  reserved 2;
   string provider = 1;
-  string chain_id = 2;
   repeated cosmos.base.v1beta1.Coin amount = 3 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (gogoproto.nullable)     = false

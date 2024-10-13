@@ -34,7 +34,7 @@ Dualstaking makes this happen by "duplicating" delegations, for each validator d
 ### Delegation
 
 Dualstaking introduces provider delegations to the Lava network. Provider delegations allow users to delegate their tokens to a specific provider, similar to validators, in order to contribute to their success and claim a portion of the rewards awarded to the provider.
-When a provider stakes tokens, they create a self-delegation entry. Whenever a provider receives rewards, all delegators are eligible for a portion of the rewards based on their delegation amount and the commission rate set by the provider.
+When a provider stakes tokens, they create a self-delegation entry. Whenever a provider receives rewards, all delegators are eligible for a portion of the rewards based on their delegation amount and the commission rate set by the provider. The delegations for a provider is split between the chains of the provider, distributed according the the providers stakes.
 
 ### Empty Provider
 
@@ -123,9 +123,9 @@ The Dualstaking module supports the following transactions:
 
 | Transaction      | Arguments       | What it does                                  |
 | ---------- | --------------- | ----------------------------------------------|
-| `delegate`     | validator-addr(string) provider-addr (string) chain-id (string) amount (coin)| delegate to validator and provider the given amount|
-| `redelegate`     | src-provider-addr (string) src-chain-id (string) dst-provider-addr (string) dst-chain-id (string) amount (coin)| redelegate provider delegation from source provider to destination provider|
-| `unbond`     | validator-addr (string) provider-addr (string) chain-id (string) amount (coin) | undong from validator and provider the given amount                  |
+| `delegate`     | validator-addr(string) provider-addr (string) amount (coin)| delegate to validator and provider the given amount|
+| `redelegate`     | src-provider-addr (string) dst-provider-addr (string) amount (coin)| redelegate provider delegation from source provider to destination provider|
+| `unbond`     | validator-addr (string) provider-addr (string) amount (coin) | undong from validator and provider the given amount                  |
 | `claim-rewards`     | optional: provider-addr (string)| claim the rewards from a given provider or all rewards |
 
 
