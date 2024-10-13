@@ -128,9 +128,6 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(chainId, provider
 
 func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) {
 	// must be called under read lock
-	if coqc == nil {
-		return
-	}
 
 	optimizerQoSReportToSend := optimizerQoSReportToSend{
 		Timestamp:         time.Now(),
@@ -174,6 +171,10 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 }
 
 func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx context.Context, samplingInterval time.Duration) {
+	if coqc == nil {
+		return
+	}
+
 	utils.LavaFormatTrace("Starting ConsumerOptimizerQoSClient reports collecting")
 	go func() {
 		for {
