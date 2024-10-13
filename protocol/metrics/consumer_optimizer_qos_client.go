@@ -26,7 +26,7 @@ type ConsumerOptimizerQoSClient struct {
 	chainIdToProviderToRelaysCount     map[string]map[string]uint64
 	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
 	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
-	atomicCurrentEpoch                 uint64
+	currentEpoch                       atomic.Uint64
 	lock                               sync.RWMutex
 }
 
@@ -153,7 +153,7 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 	cu := uint64(10)
 	requestedBlock := spectypes.LATEST_BLOCK
 
-	currentEpoch := atomic.LoadUint64(&coqc.atomicCurrentEpoch)
+	currentEpoch := coqc.currentEpoch.Load()
 
 	for chainId, optimizer := range coqc.optimizers {
 		providersMap, ok := coqc.chainIdToProviderToEpochToStake[chainId]
@@ -244,7 +244,7 @@ func (coqc *ConsumerOptimizerQoSClient) SetNodeErrorToProvider(providerAddress s
 
 func (coqc *ConsumerOptimizerQoSClient) setProviderStake(chainId, providerAddress string, epoch uint64, stake int64) {
 	// must be called under write lock
-	atomic.StoreUint64(&coqc.atomicCurrentEpoch, epoch)
+	coqc.currentEpoch.Store(epoch)
 
 	providersMap, found := coqc.chainIdToProviderToEpochToStake[chainId]
 	if !found {
