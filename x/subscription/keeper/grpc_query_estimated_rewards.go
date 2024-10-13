@@ -21,7 +21,9 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	oldCtx := sdk.UnwrapSDKContext(goCtx)
+	ctx, _ := oldCtx.CacheContext() // verify the original ctx is not changed
+
 	res := types.QueryEstimatedRewardsResponse{}
 
 	details := []utils.Attribute{
