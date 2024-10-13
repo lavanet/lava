@@ -755,3 +755,122 @@ func TestCommunityTaxOne(t *testing.T) {
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.Equal(t, expectedReward, communityBalance)
 }
+
+// TestEstimateRewardsQuery tests that the subscription module's estimate-rewards query works as expected
+// for all three use-cases: provider, delegator, and delegation (dummy delegator)
+// The test lets a provider get subscription, bonus and iprpc rewards. Before advancing a month, the
+// query should present the expected rewards amount for the provider
+func TestEstimateRewardsQuery(t *testing.T) {
+	const (
+		Provider = iota
+		Delegator
+		Delegation
+	)
+
+	testCases := []struct {
+		name  string
+		mode  int
+		num   int64 // provider/delegator stake
+		denom int64 // total stake
+	}{
+		{name: "provider only", mode: Provider, num: 2 * testStake, denom: 2 * testStake},
+		{name: "delegator", mode: Delegator, num: testStake / 2, denom: 2*testStake + testStake/2},
+		{name: "delegation", mode: Delegation, num: testStake / 2, denom: 2*testStake + testStake/2},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := newTester(t, true)
+
+			// stake and buy iprpc-eligible subcription (total stake = 2*testStake)
+			ts.setupForIprpcTests(true)
+			consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+			_, provider := ts.GetAccount(common.PROVIDER, 0)
+
+			if tt.mode == Delegator {
+				// delegate to the provider
+				// advance ctx by a month and a day to make the delegation count
+				_, err := ts.TxDualstakingDelegate(consumer, provider, sdk.NewInt64Coin(ts.TokenDenom(), testStake/2))
+				require.NoError(t, err)
+				ts.AdvanceMonths(1)
+			}
+
+			// make provider commission zero
+			metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+			require.NoError(t, err)
+			metadata.DelegateCommission = 0
+			ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
+
+			ts.AdvanceEpoch()
+
+			// send relay on specs[0] (normal spec)
+			cu := int64(100)
+			msg := ts.SendRelay(provider, consumerAcc, []string{ts.specs[0].Index}, uint64(cu))
+			_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+			require.NoError(t, err)
+
+			// send relay on specs[1] (the iprpc eligible spec)
+			msg = ts.SendRelay(provider, consumerAcc, []string{ts.specs[1].Index}, uint64(cu))
+			_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+			require.NoError(t, err)
+
+			ts.AdvanceEpoch()
+
+			// subscription expected rewards (for two specs)
+			if tt.mode == Delegation {
+				trackedCuFactor := sdk.OneDec().Add(sdk.NewDec(testStake / 2).QuoInt64(tt.denom))
+				cu = trackedCuFactor.MulInt64(cu).TruncateInt64()
+			}
+			expectedSubSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedSubSpec0AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec0)
+			expectedSubSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedSubSpec1AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec1)
+
+			// providers bonus expected rewards (basic bonus of single provider are the same as sub rewards but without tax)
+			expectedBonusSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedBonusSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+
+			// iprpc expected rewards
+			expectedIprpc := iprpcFunds.AmountOf(ts.BondDenom()).Sub(minIprpcCost.Amount)
+			expectedIprpcAfterTax, _, _ := ts.DeductParticipationFees(expectedIprpc)
+
+			// total expected reward (multiply by num/denom to get the relevant part)
+			expectedTotal := expectedSubSpec0AfterTax.Add(expectedSubSpec1AfterTax).Add(expectedIprpcAfterTax).Add(expectedBonusSpec0).Add(expectedBonusSpec1)
+			expectedTotal = expectedTotal.MulRaw(tt.num).QuoRaw(tt.denom)
+
+			if tt.mode == Provider {
+				// run the estimated rewards query for the provider
+				total, info := ts.EstimateProviderRewards(provider, "")
+				require.InDelta(t, expectedTotal.Int64(), total.Int64(), 5) // InDelta because of Int divisions
+
+				if tt.mode == Provider {
+					// check the result's info, should have all the reward parts
+					expectedInfoAmounts := []math.Int{
+						expectedSubSpec0AfterTax.MulRaw(tt.num).QuoRaw(tt.denom),
+						expectedSubSpec1AfterTax.MulRaw(tt.num).QuoRaw(tt.denom),
+						expectedBonusSpec0.MulRaw(tt.num).QuoRaw(tt.denom),
+						expectedBonusSpec1.MulRaw(tt.num).QuoRaw(tt.denom),
+						expectedIprpcAfterTax.MulRaw(tt.num).QuoRaw(tt.denom),
+					}
+					infoAmounts := []math.Int{}
+					for _, infoPart := range info {
+						infoAmounts = append(infoAmounts, infoPart.Amount.AmountOf(ts.TokenDenom()).TruncateInt())
+					}
+					require.ElementsMatch(t, expectedInfoAmounts, infoAmounts)
+				}
+			} else if tt.mode == Delegator {
+				// run the estimated rewards query for the delegator (should not have info, it's only for providers)
+				total, info := ts.EstimateProviderRewards(provider, consumer)
+				require.InDelta(t, expectedTotal.Int64(), total.Int64(), 5) // InDelta because of Int divisions
+				require.Empty(t, info)
+			} else {
+				// run the estimated rewards query for delegation simulation (should not have info, it's only for providers)
+				delegation := sdk.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
+				total, info := ts.EstimateProviderRewards(provider, delegation)
+
+				// expectedTotal = trackedCuFactor.MulInt(expectedTotal).TruncateInt()
+				require.InDelta(t, expectedTotal.Int64(), total.Int64(), 5) // InDelta because of Int divisions
+				require.Empty(t, info)
+			}
+		})
+	}
+}

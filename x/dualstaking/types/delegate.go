@@ -6,7 +6,6 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 )
 
@@ -34,7 +33,7 @@ func NewDelegation(delegator, provider string, blockTime time.Time, tokenDenom s
 		Delegator: delegator,
 		Provider:  provider,
 		Amount:    sdk.NewCoin(tokenDenom, sdk.ZeroInt()),
-		Timestamp: utils.NextMonth(blockTime).UTC().Unix(),
+		Timestamp: blockTime.AddDate(0, 0, 7).UTC().Unix(),
 	}
 }
 
@@ -61,7 +60,7 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 
 func (delegation *Delegation) IsFirstWeekPassed(currentTimestamp int64) bool {
 	// this is a temporary code to reduce the time to 1 week instead of month, will be changed in the gradual delegation increase feature.
-	return delegation.Timestamp-int64((3*7*24*time.Hour).Seconds()) <= currentTimestamp
+	return delegation.Timestamp <= currentTimestamp
 }
 
 func NewDelegator(delegator, provider string) Delegator {
