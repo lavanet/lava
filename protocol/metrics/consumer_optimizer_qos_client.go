@@ -3,12 +3,14 @@ package metrics
 import (
 	"context"
 	"os"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"golang.org/x/exp/maps"
 )
@@ -70,7 +72,7 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 	hostname, err := os.Hostname()
 	if err != nil {
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
-		hostname = "unknown"
+		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
 
 	return &ConsumerOptimizerQoSClient{
