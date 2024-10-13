@@ -251,9 +251,14 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 				// Create / Use existing optimizer
 				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
-				optimizer, _, err = optimizers.LoadOrStore(chainID, newOptimizer)
+				optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 				if err != nil {
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+
+				if !loaded {
+					// if this is a new optimizer, register it in the consumerOptimizerQoSClient
+					consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 				}
 
 				// Create / Use existing ConsumerConsistency
@@ -291,8 +296,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
-
-			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 
 			var relaysMonitor *metrics.RelaysMonitor
 			if options.cmdFlags.RelaysHealthEnableFlag {
