@@ -27,13 +27,13 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	details := []utils.Attribute{
 		utils.LogAttr("block", ctx.BlockHeight()),
 		utils.LogAttr("provider", req.Provider),
-		utils.LogAttr("delegator_amount", req.AmountDelegator),
 	}
 
 	// parse the delegator/delegation optional argument (delegate if needed)
 	delegator := req.AmountDelegator
 	trackedCuFactor := sdk.ZeroDec()
 	if req.AmountDelegator != "" {
+		details = append(details, utils.LogAttr("delegator_amount", req.AmountDelegator))
 		delegation, err := sdk.ParseCoinNormalized(req.AmountDelegator)
 		if err != nil {
 			// arg is not delegation, check if it's an address
@@ -184,6 +184,7 @@ func (k Keeper) getClaimableRewards(goCtx context.Context, provider string, dele
 		return sdk.NewCoins(), nil
 	}
 
+	// we have one reward from the specific provider
 	return qRes.Rewards[0].Amount, nil
 }
 
