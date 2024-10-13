@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-
 	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
