@@ -355,7 +355,6 @@ func (wcl *WebsocketConnectionLimiter) getKey(ip string, forwardedIp string) str
 		}
 	}
 	return returnedKey
-
 }
 
 type JsonRPCChainListener struct {
