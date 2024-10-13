@@ -17,7 +17,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var WebSocketRateLimit = -1 // rate limit requests per second on websocket connection
+var (
+	WebSocketRateLimit   = -1               // rate limit requests per second on websocket connection
+	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
+)
 
 type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
@@ -93,6 +96,10 @@ func (cwm *ConsumerWebsocketManager) handleRateLimitReached(inpData []byte) ([]b
 }
 
 func (cwm *ConsumerWebsocketManager) ListenToMessages() {
+	// adding metrics for how many active connections we have.
+	cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, true)
+	defer cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, false)
+
 	var (
 		messageType int
 		msg         []byte
@@ -148,6 +155,15 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			case <-webSocketCtx.Done():
 				return
 			case <-ticker.C:
+				// check if rate limit reached, and ban is required
+				if WebSocketBanDuration > 0 && requestsPerSecond.Load() > uint64(WebSocketRateLimit) {
+					// wait the ban duration before resetting the store.
+					select {
+					case <-webSocketCtx.Done():
+						return
+					case <-time.After(WebSocketBanDuration): // just continue
+					}
+				}
 				requestsPerSecond.Store(0)
 			}
 		}
@@ -223,7 +239,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 						if err != nil {
 							continue
 						}
-
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
 					}
 				}
@@ -241,17 +256,18 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 					if formatterMsg != nil {
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
-						continue
 					}
+					continue
 				}
 
 				relayResultReply := relayResult.GetReply()
 				if relayResultReply != nil {
 					// No need to verify signature since this is already happening inside the SendParsedRelay flow
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
-					continue
+				} else {
+					utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
 				}
-				utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
+				continue
 			}
 		}
 

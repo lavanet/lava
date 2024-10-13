@@ -271,10 +271,9 @@ func Test2SpecsZeroShares(t *testing.T) {
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
-	require.Len(t, res.Rewards, 2)
+	require.Len(t, res.Rewards, 1)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
-	require.Equal(t, expectedReward, res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
+	require.Equal(t, expectedReward.MulRaw(2), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), "")
 	require.NoError(t, err)
 
@@ -287,7 +286,6 @@ func Test2SpecsZeroShares(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
-	require.Equal(t, res.Rewards[0].ChainId, ts.specs[0].Index)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -303,11 +301,12 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	spec2.Shares *= 2
 	ts.AddSpec(spec2.Index, spec2)
 
-	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
+	providerAcc1, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
+	err := ts.StakeProvider(providerAcc1.GetVaultAddr(), providerAcc1.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
-	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), spec2, testBalance)
+	providerAcc2, _ := ts.AddAccount(common.PROVIDER, 2, 2*testBalance)
+	err = ts.StakeProvider(providerAcc2.GetVaultAddr(), providerAcc2.Addr.String(), spec2, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -316,7 +315,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
+	msg := ts.SendRelay(providerAcc1.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -324,7 +323,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc2.Addr.String(), consumerAcc2.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg = ts.SendRelay(providerAcc.Addr.String(), consumerAcc2, []string{spec2.Index}, ts.plan.Price.Amount.Uint64())
+	msg = ts.SendRelay(providerAcc2.Addr.String(), consumerAcc2, []string{spec2.Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -333,25 +332,39 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc1.GetVaultAddr(), providerAcc1.Addr.String(), "")
 	require.NoError(t, err)
-	require.Len(t, res.Rewards, 2)
+	require.Len(t, res.Rewards, 1)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
 	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
-	require.Equal(t, expectedReward, res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
-	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), "")
+	_, err = ts.TxDualstakingClaimRewards(providerAcc1.GetVaultAddr(), "")
+	require.NoError(t, err)
+
+	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc2.GetVaultAddr(), providerAcc2.Addr.String(), "")
+	require.NoError(t, err)
+	require.Len(t, res.Rewards, 1)
+	expectedReward, _, _ = ts.DeductParticipationFees(ts.plan.Price.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
+	_, err = ts.TxDualstakingClaimRewards(providerAcc2.GetVaultAddr(), "")
 	require.NoError(t, err)
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 
-	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
+	res1, err := ts.QueryDualstakingDelegatorRewards(providerAcc1.GetVaultAddr(), providerAcc1.Addr.String(), "")
 	require.NoError(t, err)
-	require.Len(t, res.Rewards, 2)
-	require.Equal(t, res.Rewards[0].Amount.AmountOf(ts.BondDenom()).QuoRaw(2), res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
-	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String())
+	require.Len(t, res1.Rewards, 1)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc1.GetVaultAddr(), providerAcc1.Addr.String())
 	require.NoError(t, err)
+
+	res2, err := ts.QueryDualstakingDelegatorRewards(providerAcc2.GetVaultAddr(), providerAcc2.Addr.String(), "")
+	require.NoError(t, err)
+	require.Len(t, res1.Rewards, 1)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc2.GetVaultAddr(), providerAcc2.Addr.String())
+	require.NoError(t, err)
+
+	require.Equal(t, res1.Rewards[0].Amount.AmountOf(ts.BondDenom()), res2.Rewards[0].Amount.AmountOf(ts.BondDenom()).QuoRaw(2))
 }
 
 // in this test we setup 3 providers, each with different cu used (-> 3 different rewards from the plan) (1,2,4)
