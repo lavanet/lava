@@ -429,7 +429,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				ipForwarded = ""
 			}
 			ip := websocketConn.RemoteAddr().String()
-			utils.LavaFormatDebug("ipForwarded:" + ipForwarded + " ip: " + ip)
 			key := apil.websocketConnectionLimiter.getKey(ip, ipForwarded)
 			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(key)
 			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(key)

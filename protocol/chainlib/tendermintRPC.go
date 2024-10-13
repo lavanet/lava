@@ -397,12 +397,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			key := apil.websocketConnectionLimiter.getKey(ip, ipForwarded)
 			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(key)
 			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(key)
-			utils.LavaFormatDebug("ipForwarded:"+ipForwarded+" ip: "+ip,
-				utils.LogAttr("key", key),
-				utils.LogAttr("apil.websocketConnectionLimiter.ipToNumberOfActiveConnections", apil.websocketConnectionLimiter.ipToNumberOfActiveConnections),
-				utils.LogAttr("numberOfActiveConnections", numberOfActiveConnections),
-				utils.LogAttr("MaximumNumberOfParallelWebsocketConnectionsPerIp", MaximumNumberOfParallelWebsocketConnectionsPerIp),
-			)
 			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
 				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
 				return
