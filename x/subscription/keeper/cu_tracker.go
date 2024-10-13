@@ -87,7 +87,7 @@ func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (
 		_, provider, chainID := types.DecodeCuTrackerKey(key)
 		cu, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID, block)
 		if !found {
-			utils.LavaFormatWarning("cannot remove cu tracker", legacyerrors.ErrKeyNotFound,
+			utils.LavaFormatWarning("cannot get cu tracker", legacyerrors.ErrKeyNotFound,
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chain_id", Value: chainID},
@@ -105,6 +105,36 @@ func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (
 	}
 
 	return trackedCuList, totalCuTracked
+}
+
+func (k Keeper) GetSubTrackedCuInfoForProvider(ctx sdk.Context, sub string, provider string, block uint64) []*types.TrackedCuInfo {
+	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
+	trackedCuList := []*types.TrackedCuInfo{}
+
+	for _, key := range keys {
+		_, providerFromKey, chainID := types.DecodeCuTrackerKey(key)
+		if providerFromKey != provider {
+			continue
+		}
+		cu, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID, block)
+		if !found {
+			utils.LavaFormatWarning("cannot get cu tracker", legacyerrors.ErrKeyNotFound,
+				utils.Attribute{Key: "sub", Value: sub},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chain_id", Value: chainID},
+				utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
+			)
+			continue
+		}
+		trackedCuList = append(trackedCuList, &types.TrackedCuInfo{
+			Provider:  provider,
+			TrackedCu: cu,
+			ChainID:   chainID,
+			Block:     block,
+		})
+	}
+
+	return trackedCuList
 }
 
 // remove only before the sub is deleted

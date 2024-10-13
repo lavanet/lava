@@ -803,27 +803,31 @@ func TestEstimateRewardsQuery(t *testing.T) {
 			ts.AdvanceEpoch()
 
 			// send relay on specs[0] (normal spec)
-			cu := uint64(100)
-			msg := ts.SendRelay(provider, consumerAcc, []string{ts.specs[0].Index}, cu)
+			cu := int64(100)
+			msg := ts.SendRelay(provider, consumerAcc, []string{ts.specs[0].Index}, uint64(cu))
 			_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 			require.NoError(t, err)
 
 			// send relay on specs[1] (the iprpc eligible spec)
-			msg = ts.SendRelay(provider, consumerAcc, []string{ts.specs[1].Index}, cu)
+			msg = ts.SendRelay(provider, consumerAcc, []string{ts.specs[1].Index}, uint64(cu))
 			_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			// subscription expected rewards (for two specs)
-			expectedSubSpec0 := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
+			if tt.mode == Delegation {
+				trackedCuFactor := sdk.OneDec().Add(sdk.NewDec(testStake / 2).QuoInt64(tt.denom))
+				cu = trackedCuFactor.MulInt64(cu).TruncateInt64()
+			}
+			expectedSubSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 			expectedSubSpec0AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec0)
-			expectedSubSpec1 := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
+			expectedSubSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 			expectedSubSpec1AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec1)
 
 			// providers bonus expected rewards (basic bonus of single provider are the same as sub rewards but without tax)
-			expectedBonusSpec0 := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
-			expectedBonusSpec1 := sdk.NewIntFromUint64(cu * subscription.LIMIT_TOKEN_PER_CU)
+			expectedBonusSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedBonusSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 
 			// iprpc expected rewards
 			expectedIprpc := iprpcFunds.AmountOf(ts.BondDenom()).Sub(minIprpcCost.Amount)
@@ -862,6 +866,8 @@ func TestEstimateRewardsQuery(t *testing.T) {
 				// run the estimated rewards query for delegation simulation (should not have info, it's only for providers)
 				delegation := sdk.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
 				total, info := ts.EstimateProviderRewards(provider, delegation)
+
+				// expectedTotal = trackedCuFactor.MulInt(expectedTotal).TruncateInt()
 				require.InDelta(t, expectedTotal.Int64(), total.Int64(), 5) // InDelta because of Int divisions
 				require.Empty(t, info)
 			}

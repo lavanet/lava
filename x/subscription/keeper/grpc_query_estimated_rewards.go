@@ -32,6 +32,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 
 	// parse the delegator/delegation optional argument (delegate if needed)
 	delegator := req.AmountDelegator
+	trackedCuFactor := sdk.ZeroDec()
 	if req.AmountDelegator != "" {
 		delegation, err := sdk.ParseCoinNormalized(req.AmountDelegator)
 		if err != nil {
@@ -41,11 +42,28 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation", fmt.Errorf("delegator/delegation argument is neither a valid coin or a valid bech32 address"), details...)
 			}
 		} else {
+			var err error
 			// arg is delegation, assign arbitrary delegator address and delegate the amount
 			delegator, err = k.createDummyDelegator(ctx, req.Provider, delegation)
 			if err != nil {
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get delegator", err, details...)
 			}
+
+			totalDelegations := sdk.ZeroInt()
+			md, err := k.epochstorageKeeper.GetMetadata(ctx, req.Provider)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get provider metadata", err, details...)
+			}
+			for _, chain := range md.Chains {
+				entry, found := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chain, req.Provider)
+				if found {
+					totalDelegations = totalDelegations.Add(entry.TotalStake())
+				}
+			}
+
+			// calculate tracked CU factor which will increase the tracked CU due to
+			// a higher total stake (because of the dummy delegation, which will affect pairing)
+			trackedCuFactor = delegation.Amount.ToLegacyDec().QuoInt(totalDelegations)
 
 			// advance ctx by a month and a day to make the delegation count
 			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 1, 1))
@@ -65,6 +83,21 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	// trigger subs
 	subs := k.GetAllSubscriptionsIndices(ctx)
 	for _, sub := range subs {
+		if !trackedCuFactor.IsZero() {
+			subObj, found := k.GetSubscription(ctx, sub)
+			if !found {
+				continue
+			}
+			trackedCuInfos := k.GetSubTrackedCuInfoForProvider(ctx, sub, req.Provider, subObj.Block)
+			for _, info := range trackedCuInfos {
+				cuToAdd := trackedCuFactor.MulInt64(int64(info.TrackedCu)).TruncateInt64()
+				err := k.AddTrackedCu(ctx, sub, req.Provider, info.ChainID, uint64(cuToAdd), subObj.Block)
+				if err != nil {
+					continue
+				}
+			}
+		}
+
 		k.advanceMonth(ctx, []byte(sub))
 	}
 
