@@ -38,6 +38,8 @@ type EpochstorageKeeper interface {
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string)
 	GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
+	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
+	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
 	// Methods imported from epochstorage should be defined here
 }
 

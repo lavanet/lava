@@ -968,7 +968,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, ts.spec.Index, p.Stake)
+	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

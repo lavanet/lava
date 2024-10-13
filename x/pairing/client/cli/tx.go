@@ -48,6 +48,8 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdUnfreeze())
 	cmd.AddCommand(CmdModifyProvider())
 	cmd.AddCommand(CmdSimulateRelayPayment())
+	cmd.AddCommand(CmdMoveProviderStake())
+	cmd.AddCommand(CmdDistributeProviderStake())
 
 	// this line is used by starport scaffolding # 1
 
@@ -134,12 +136,10 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Address, ChainId: providerEntry.Chain}}
 				content.DelegatorsSlashing = []types.DelegatorSlashing{}
 				for _, delegator := range delegators.Delegations {
-					if delegator.ChainID == providerEntry.Chain {
-						content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
-							Delegator:      delegator.Delegator,
-							SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
-						})
-					}
+					content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
+						Delegator:      delegator.Delegator,
+						SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
+					})
 				}
 			}
 

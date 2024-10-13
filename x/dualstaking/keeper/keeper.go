@@ -2,16 +2,16 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
+	"cosmossdk.io/collections"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
 
+	collcompat "github.com/lavanet/lava/v3/utils/collcompat"
 	"github.com/lavanet/lava/v3/x/dualstaking/types"
 )
 
@@ -28,8 +28,9 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
-		delegationFS fixationtypes.FixationStore // map proviers/chainID -> delegations
-		delegatorFS  fixationtypes.FixationStore // map delegators -> providers
+		schema      collections.Schema
+		delegations *collections.IndexedMap[collections.Pair[string, string], types.Delegation, types.DelegationIndexes] // key: [delegator, provider]
+		rewards     collections.Map[collections.Pair[string, string], types.DelegatorReward]                             // key: [delegator, provider]
 	}
 )
 
@@ -50,6 +51,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -61,50 +64,36 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
 		specKeeper:         specKeeper,
+
+		delegations: collections.NewIndexedMap(sb, types.DelegationsPrefix, "delegations",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.Delegation](cdc),
+			types.NewDelegationIndexes(sb)),
+
+		rewards: collections.NewMap(sb, types.RewardPrefix, "rewards",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.DelegatorReward](cdc)),
 	}
 
-	delegationFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegationPrefix)
-	delegatorFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegatorPrefix)
-
-	keeper.delegationFS = delegationFS
-	keeper.delegatorFS = delegatorFS
-
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 	return keeper
-}
-
-// ExportDelegations exports dualstaking delegations data (for genesis)
-func (k Keeper) ExportDelegations(ctx sdk.Context) fixationtypes.GenesisState {
-	return k.delegationFS.Export(ctx)
-}
-
-// ExportDelegators exports dualstaking delegators data (for genesis)
-func (k Keeper) ExportDelegators(ctx sdk.Context) fixationtypes.GenesisState {
-	return k.delegatorFS.Export(ctx)
-}
-
-// InitDelegations imports dualstaking delegations data (from genesis)
-func (k Keeper) InitDelegations(ctx sdk.Context, data fixationtypes.GenesisState) {
-	k.delegationFS.Init(ctx, data)
-}
-
-// InitDelegators imports dualstaking delegators data (from genesis)
-func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState) {
-	k.delegatorFS.Init(ctx, data)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, index string, block uint64, timestamp int64) error {
-	var d types.Delegation
-	entryBlock, _, _, found := k.delegationFS.FindEntryDetailed(ctx, index, block, &d)
+func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, provider, delegator string, timestamp int64) error {
+	d, found := k.GetDelegation(ctx, provider, delegator)
 	if !found {
-		return fmt.Errorf("cannot change delegation timestamp: delegation not found. index: %s, block: %s", index, strconv.FormatUint(block, 10))
+		return fmt.Errorf("cannot change delegation timestamp: delegation not found. provider: %s, delegator: %s", provider, delegator)
 	}
 	d.Timestamp = timestamp
-	k.delegationFS.ModifyEntry(ctx, index, entryBlock, &d)
-	return nil
+	return k.SetDelegation(ctx, d)
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
