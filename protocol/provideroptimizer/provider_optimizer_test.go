@@ -1,12 +1,17 @@
 package provideroptimizer
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
+	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/rand"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
@@ -752,6 +757,50 @@ func TestProviderOptimizerTiers(t *testing.T) {
 			require.NotZero(t, tierResults[index], "tierResults %v providersCount %s index %d why: %d", tierResults, providersCount, index, why)
 		}
 	}
+}
+
+func TestProviderOptimizerWithOptimizerQoSClient(t *testing.T) {
+	rand.InitRandomSeed()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	httpServerHandler := func(w http.ResponseWriter, r *http.Request) {
+		data := make([]byte, r.ContentLength)
+		r.Body.Read(data)
+
+		optimizerQoSReport := &[]map[string]interface{}{}
+		err := json.Unmarshal(data, optimizerQoSReport)
+		require.NoError(t, err)
+		require.NotZero(t, len(*optimizerQoSReport))
+		w.WriteHeader(http.StatusOK)
+		wg.Done()
+	}
+
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(httpServerHandler))
+	defer mockHttpServer.Close()
+
+	chainId := "dontcare"
+
+	consumerOptimizerQoSClient := metrics.NewConsumerOptimizerQoSClient(mockHttpServer.URL, 1*time.Second)
+	consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(context.Background(), 900*time.Millisecond)
+
+	providerOptimizer := NewProviderOptimizer(STRATEGY_BALANCED, TEST_AVERAGE_BLOCK_TIME, TEST_BASE_WORLD_LATENCY, 10, consumerOptimizerQoSClient, chainId)
+	consumerOptimizerQoSClient.RegisterOptimizer(providerOptimizer, chainId)
+
+	syncBlock := uint64(1000)
+
+	providerAddr := "lava@test"
+
+	providerOptimizer.UpdateWeights(map[string]int64{
+		providerAddr: 1000000000,
+	}, syncBlock)
+
+	requestCU := uint64(10)
+
+	normalLatency := TEST_BASE_WORLD_LATENCY * 2
+	providerOptimizer.appendRelayData(providerAddr, normalLatency, false, true, requestCU, syncBlock, time.Now())
+
+	wg.Wait()
 }
 
 // TODO: new tests we need:
