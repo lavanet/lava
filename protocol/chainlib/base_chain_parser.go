@@ -242,11 +242,12 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 	bcp.verifications = verifications
 	allowedAddons := map[string]bool{}
 	allowedExtensions := map[string]struct{}{}
-	for _, apoCollection := range apiCollections {
-		for _, extension := range apoCollection.Extensions {
+	for _, apiCollection := range apiCollections {
+		for _, extension := range apiCollection.Extensions {
 			allowedExtensions[extension.Name] = struct{}{}
 		}
-		allowedAddons[apoCollection.CollectionData.AddOn] = false
+		// if addon was already existing (happens on spec update), use the existing policy, otherwise set it to false by default
+		allowedAddons[apiCollection.CollectionData.AddOn] = bcp.allowedAddons[apiCollection.CollectionData.AddOn]
 	}
 	bcp.allowedAddons = allowedAddons
 
