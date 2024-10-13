@@ -45,13 +45,6 @@ func TestDelegateFail(t *testing.T) {
 			amount:    1,
 		},
 		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider:  provider1Addr,
-			chainID:   "invalid",
-			amount:    1,
-		},
-		{
 			name:      "bad amount",
 			delegator: client1Addr,
 			provider:  provider1Addr,
@@ -78,7 +71,7 @@ func TestDelegateFail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
-			_, err := ts.TxDualstakingDelegate(tt.delegator, tt.provider, tt.chainID, amount)
+			_, err := ts.TxDualstakingDelegate(tt.delegator, tt.provider, amount)
 			require.Error(t, err, tt.name)
 		})
 	}
@@ -97,7 +90,7 @@ func TestDelegate(t *testing.T) {
 
 	// delegate once
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	// not yet in effect
 
@@ -111,10 +104,10 @@ func TestDelegate(t *testing.T) {
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
 
 	// delegate twice same block (fail)
-	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
-	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
@@ -143,7 +136,7 @@ func TestRedelegateFail(t *testing.T) {
 
 	// delegate once for setup
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	template := []struct {
@@ -176,14 +169,6 @@ func TestRedelegateFail(t *testing.T) {
 			provider1: provider1Addr,
 			provider2: "invalid",
 			chainID:   "mockspec",
-			amount:    1,
-		},
-		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider1: provider1Addr,
-			provider2: provider2Addr,
-			chainID:   "invalid",
 			amount:    1,
 		},
 		{
@@ -225,7 +210,7 @@ func TestRedelegateFail(t *testing.T) {
 			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
 			_, err := ts.TxDualstakingRedelegate(
-				tt.delegator, tt.provider1, tt.provider2, tt.chainID, tt.chainID, amount)
+				tt.delegator, tt.provider1, tt.provider2, amount)
 			require.Error(t, err, tt.name)
 		})
 	}
@@ -247,7 +232,7 @@ func TestRedelegate(t *testing.T) {
 	// delegate once
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(
-		client1Addr, provider1Addr, ts.spec.Name, amount)
+		client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -262,7 +247,7 @@ func TestRedelegate(t *testing.T) {
 	// redelegate once
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
 	_, err = ts.TxDualstakingRedelegate(
-		client1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, amount)
+		client1Addr, provider1Addr, provider2Addr, amount)
 	require.NoError(t, err)
 	stakeEntry1 = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
 	stakeEntry2 = ts.getStakeEntry(provider2Acct.Addr.String(), ts.spec.Name)
@@ -283,8 +268,7 @@ func TestRedelegate(t *testing.T) {
 
 	// redelegate from unstaking provider
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
-	_, err = ts.TxDualstakingRedelegate(
-		client1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingRedelegate(client1Addr, provider1Addr, provider2Addr, amount)
 	require.NoError(t, err)
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
@@ -308,7 +292,7 @@ func TestUnbondFail(t *testing.T) {
 
 	// delegate once for setup
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	template := []struct {
@@ -330,13 +314,6 @@ func TestUnbondFail(t *testing.T) {
 			delegator: client1Addr,
 			provider:  "invalid",
 			chainID:   "mockspec",
-			amount:    1,
-		},
-		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider:  provider1Addr,
-			chainID:   "invalid",
 			amount:    1,
 		},
 		{
@@ -366,7 +343,7 @@ func TestUnbondFail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
-			_, err := ts.TxDualstakingUnbond(tt.delegator, tt.provider, tt.chainID, amount)
+			_, err := ts.TxDualstakingUnbond(tt.delegator, tt.provider, amount)
 			require.Error(t, err, tt.name)
 		})
 	}
@@ -392,69 +369,68 @@ func TestUnbond(t *testing.T) {
 
 	// delegate once
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
-	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, spec2.Index, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
-	delegated = delegated.Add(amount)
+	delegated = delegated.Add(amount).Add(amount)
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
-	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr)
 	require.NoError(t, err)
-	require.Len(t, res.Delegations, 2)
+	require.Len(t, res.Delegations, 1)
 
 	// unbond once
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1000))
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
-
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
 	delegated = delegated.Sub(amount)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	// unbond twice in same block, and then in next block
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	// _, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
 	// require.Error(t, err)
 	ts.AdvanceBlock()
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
 	delegated = delegated.Sub(amount).Sub(amount)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	_, err = ts.TxPairingUnstakeProvider(provider1Acct.GetVaultAddr(), ts.spec.Name)
 	require.NoError(t, err)
 
 	// unbond from unstaking provider
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 	delegated = delegated.Sub(amount)
 
 	// unbond from unstaking provider everything
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, delegated)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, delegated)
 	require.NoError(t, err)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
 
@@ -469,10 +445,9 @@ func TestUnbond(t *testing.T) {
 
 	ts.verifyDelegatorsBalance()
 
-	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr)
 	require.NoError(t, err)
-	require.Len(t, res.Delegations, 1)
-	require.Equal(t, provider1Addr, res.Delegations[0].Provider)
+	require.Len(t, res.Delegations, 0)
 }
 
 func TestBondUnbondBond(t *testing.T) {
@@ -488,7 +463,7 @@ func TestBondUnbondBond(t *testing.T) {
 
 	// delegate once
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -499,7 +474,7 @@ func TestBondUnbondBond(t *testing.T) {
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
 
 	// unbond once
-	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
@@ -512,7 +487,7 @@ func TestBondUnbondBond(t *testing.T) {
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
 
 	// delegate second time
-	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -533,7 +508,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	amountToUnbond := staked.Sub(minSelfDelegation.AddAmount(math.OneInt()))
 
 	// unbond once (not unstaking completely but still below min stake)
-	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, ts.spec.Name, amountToUnbond)
+	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, amountToUnbond)
 	require.NoError(t, err)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
@@ -548,7 +523,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	require.True(t, stakeEntry.IsFrozen())
 }
 
-func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *testing.T) {
+func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesError(t *testing.T) {
 	ts := newTester(t)
 
 	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
@@ -560,16 +535,8 @@ func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *test
 	amountToUnbond := staked.SubAmount(math.OneInt())
 
 	// unbond once (not unstaking completely but still below min stake)
-	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, ts.spec.Name, amountToUnbond)
-	require.NoError(t, err)
-
-	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, staked.IsEqual(stakeEntry.Stake))
-
-	// advance epoch to digest the delegate
-	ts.AdvanceEpoch()
-	// provider should be unstaked -> getStakeEntry should panic
-	require.Panics(t, func() { ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name) })
+	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, amountToUnbond)
+	require.Error(t, err)
 }
 
 func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
@@ -584,7 +551,7 @@ func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
 
 	// delegate once
 	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(provider1Acct.GetVaultAddr(), provider1Addr, ts.spec.Name, amount)
+	_, err := ts.TxDualstakingDelegate(provider1Acct.GetVaultAddr(), provider1Addr, amount)
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -609,8 +576,8 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 
 	// redelegate once
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
-	amountToUnbond := stake.Sub(stake.Sub(minSelfDelegation.AddAmount(math.OneInt())))
-	_, err := ts.TxDualstakingRedelegate(provider1Acct.GetVaultAddr(), provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, stake.Sub(amountToUnbond))
+	amountToUnbond := minSelfDelegation.AddAmount(math.OneInt())
+	_, err := ts.TxDualstakingRedelegate(provider1Acct.GetVaultAddr(), provider1Addr, provider2Addr, stake.Sub(amountToUnbond))
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -627,7 +594,7 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	require.False(t, stakeEntry.IsFrozen())
 
 	// redelegate again
-	_, err = ts.TxDualstakingRedelegate(provider2Acct.GetVaultAddr(), provider2Addr, provider1Addr, ts.spec.Name, ts.spec.Name, stake.SubAmount(amountToUnbond.Amount))
+	_, err = ts.TxDualstakingRedelegate(provider2Acct.GetVaultAddr(), provider2Addr, provider1Addr, stake.SubAmount(amountToUnbond.Amount))
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate

@@ -161,6 +161,11 @@ func (ts *Tester) StakeProvider(vault string, provider string, spec spectypes.Sp
 	return ts.StakeProviderExtra(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 }
 
+func (ts *Tester) StakeProviderCommision(vault string, provider string, spec spectypes.Spec, amount int64, commission uint64) error {
+	d := MockDescription()
+	return ts.StakeProviderFull(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, commission)
+}
+
 func (ts *Tester) StakeProviderExtra(
 	vault string,
 	provider string,
@@ -173,6 +178,35 @@ func (ts *Tester) StakeProviderExtra(
 	website string,
 	securityContact string,
 	descriptionDetails string,
+) error {
+	return ts.StakeProviderFull(vault,
+		provider,
+		spec,
+		amount,
+		endpoints,
+		geoloc,
+		moniker,
+		identity,
+		website,
+		securityContact,
+		descriptionDetails,
+		uint64(100),
+	)
+}
+
+func (ts *Tester) StakeProviderFull(
+	vault string,
+	provider string,
+	spec spectypes.Spec,
+	amount int64,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc int32,
+	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
+	commission uint64,
 ) error {
 	// if geoloc left zero, use default 1
 	if geoloc == 0 {
@@ -199,7 +233,7 @@ func (ts *Tester) StakeProviderExtra(
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
 	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
-	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description)
+	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description, commission)
 
 	return err
 }
@@ -352,9 +386,8 @@ func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
 }
 
-func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
-	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
-	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator string, block uint64, timestamp int64) error {
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, provider, delegator, timestamp)
 }
 
 // proposals, transactions, queries
@@ -379,7 +412,6 @@ func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
 func (ts *Tester) TxDualstakingDelegate(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -387,7 +419,6 @@ func (ts *Tester) TxDualstakingDelegate(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -397,14 +428,13 @@ func (ts *Tester) TxDualstakingDelegateValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	msg := &dualstakingtypes.MsgDelegate{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
@@ -415,16 +445,14 @@ func (ts *Tester) TxDualstakingRedelegate(
 	creator string,
 	fromProvider string,
 	toProvider string,
-	fromChainID string,
-	toChainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgRedelegateResponse, error) {
 	msg := &dualstakingtypes.MsgRedelegate{
 		Creator:      creator,
 		FromProvider: fromProvider,
 		ToProvider:   toProvider,
-		FromChainID:  fromChainID,
-		ToChainID:    toChainID,
+		FromChainID:  "fromChainID",
+		ToChainID:    "toChainID",
 		Amount:       amount,
 	}
 	return ts.Servers.DualstakingServer.Redelegate(ts.GoCtx, msg)
@@ -434,7 +462,6 @@ func (ts *Tester) TxDualstakingRedelegate(
 func (ts *Tester) TxDualstakingUnbond(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -442,7 +469,6 @@ func (ts *Tester) TxDualstakingUnbond(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -452,14 +478,13 @@ func (ts *Tester) TxDualstakingUnbondValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	msg := &dualstakingtypes.MsgUnbond{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
@@ -573,6 +598,7 @@ func (ts *Tester) TxPairingStakeProvider(
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	description stakingtypes.Description,
+	commission uint64,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
@@ -583,7 +609,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
-		DelegateCommission: 100,
+		DelegateCommission: commission,
 		Address:            provider,
 		Description:        description,
 	}
@@ -686,6 +712,17 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 		ChainIds: lavaslices.Slice(chainID),
 	}
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
+}
+
+// TxPairingMoveStake: implement 'tx pairing move-provider-stake'
+func (ts *Tester) TxPairingMoveStake(provider, src, dst string, amount int64) (*pairingtypes.MsgMoveProviderStakeResponse, error) {
+	msg := &pairingtypes.MsgMoveProviderStake{
+		Creator:  provider,
+		SrcChain: src,
+		DstChain: dst,
+		Amount:   NewCoin(ts.BondDenom(), amount),
+	}
+	return ts.Servers.PairingServer.MoveProviderStake(ts.GoCtx, msg)
 }
 
 func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
@@ -885,19 +922,17 @@ func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairi
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
-func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
+func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{
-		Delegator:   delegator,
-		WithPending: withPending,
+		Delegator: delegator,
 	}
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
 // QueryDualstakingProviderDelegators implements 'q dualstaking provider-delegators'
-func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPending bool) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
+func (ts *Tester) QueryDualstakingProviderDelegators(provider string) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
 	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
-		Provider:    provider,
-		WithPending: withPending,
+		Provider: provider,
 	}
 	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
 }

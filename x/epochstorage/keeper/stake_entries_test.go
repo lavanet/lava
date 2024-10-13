@@ -99,6 +99,12 @@ func createNStakeEntriesCurrent(keeper *keeper.Keeper, ctx sdk.Context, n int) [
 			Chain:   strconv.Itoa(i),
 		}
 		keeper.SetStakeEntryCurrent(ctx, items[i])
+		metadata := types.ProviderMetadata{
+			Provider: items[i].Address,
+			Vault:    items[i].Vault,
+			Chains:   []string{items[i].Chain},
+		}
+		keeper.SetMetadata(ctx, metadata)
 	}
 	return items
 }
