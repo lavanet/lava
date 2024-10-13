@@ -36,6 +36,7 @@ type OptimizerQoSReport struct {
 	AvailabilityScore float64
 	LatencyScore      float64
 	GenericScore      float64
+	EntryIndex        int
 }
 
 type optimizerQoSReportToSend struct {
@@ -50,6 +51,7 @@ type optimizerQoSReportToSend struct {
 	NodeErrorRate     float64   `json:"node_error_rate"`
 	Epoch             uint64    `json:"epoch"`
 	ProviderStake     int64     `json:"provider_stake"`
+	EntryIndex        int       `json:"entry_index"`
 }
 
 func (oqosr optimizerQoSReportToSend) String() string {
@@ -61,7 +63,7 @@ func (oqosr optimizerQoSReportToSend) String() string {
 }
 
 type OptimizerInf interface {
-	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []OptimizerQoSReport
+	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
 }
 
 func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
@@ -122,7 +124,7 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(chainId, provider
 	return 0
 }
 
-func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report OptimizerQoSReport, chainId string, epoch uint64) {
+func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) {
 	// must be called under read lock
 	if coqc == nil {
 		return
@@ -136,6 +138,7 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report Optimize
 		LatencyScore:      report.LatencyScore,
 		GenericScore:      report.GenericScore,
 		ProviderAddress:   report.ProviderAddress,
+		EntryIndex:        report.EntryIndex,
 		ChainId:           chainId,
 		Epoch:             epoch,
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),

@@ -293,7 +293,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock-1) // update that he doesn't have the latest requested block
 	}
 	time.Sleep(4 * time.Millisecond)
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tierChances := selectionTier.ShiftTierChance(OptimizerNumTiers, map[int]float64{0: ATierChance, OptimizerNumTiers - 1: LastTierChance})
 	require.Greater(t, tierChances[0], 0.7, tierChances)
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)
@@ -436,14 +436,14 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
 	time.Sleep(4 * time.Millisecond)
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier0 := selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	// we have the best score on the top tier and it's sorted
 	require.Equal(t, providersGen.providersAddresses[chosenIndex], tier0[0].Address)
 
 	// now choose with a specific block that all providers have
-	selectionTier, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, int64(syncBlock))
+	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, int64(syncBlock))
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	for idx := range tier0 {
 		// sync score doesn't matter now so the tier0 is recalculated and chosenIndex has worst latency
@@ -508,7 +508,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	time.Sleep(4 * time.Millisecond)
 	providerOptimizer.strategy = STRATEGY_BALANCED
 	// a balanced strategy should pick provider 2 because of it's high availability
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier0 := selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	// we have the best score on the top tier and it's sorted
@@ -516,7 +516,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 
 	providerOptimizer.strategy = STRATEGY_COST
 	// with a cost strategy we expect the same as balanced
-	selectionTier, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	// we have the best score on the top tier and it's sorted
@@ -524,20 +524,20 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 
 	providerOptimizer.strategy = STRATEGY_LATENCY
 	// latency strategy should pick the best latency
-	selectionTier, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, requestBlock)
+	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
 
 	providerOptimizer.strategy = STRATEGY_SYNC_FRESHNESS
 	// freshness strategy should pick the most advanced provider
-	selectionTier, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, requestBlock)
+	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	require.Equal(t, providersGen.providersAddresses[1], tier0[0].Address)
 
 	// but if we request a past block, then it doesnt matter and we choose by latency:
-	selectionTier, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, int64(syncBlock))
+	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, int64(syncBlock))
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
@@ -705,7 +705,7 @@ func TestProviderOptimizerWeights(t *testing.T) {
 	}
 
 	// verify 0 has the best score
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier0 := selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
@@ -744,7 +744,7 @@ func TestProviderOptimizerTiers(t *testing.T) {
 				time.Sleep(4 * time.Millisecond)
 			}
 		}
-		selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+		selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 		shiftedChances := selectionTier.ShiftTierChance(4, map[int]float64{0: 0.75})
 		require.NotZero(t, shiftedChances[3])
 		// if we pick by sync, provider 0 is in the top tier and should be selected very often

@@ -174,40 +174,27 @@ func (po *ProviderOptimizer) calcLatencyAndSyncScores(providerData ProviderData,
 	return latencyScoreCurrent, syncScoreCurrent
 }
 
-func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []metrics.OptimizerQoSReport {
-	reports := []metrics.OptimizerQoSReport{}
-	for _, providerAddress := range allAddresses {
-		if _, ok := ignoredProviders[providerAddress]; ok {
-			// ignored provider, skip it
-			continue
-		}
-		providerData, found := po.getProviderData(providerAddress)
-		if !found {
-			utils.LavaFormatDebug("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
-		}
+func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	reports := []*metrics.OptimizerQoSReport{}
 
-		latencyScoreCurrent, syncScoreCurrent := po.calcLatencyAndSyncScores(providerData, cu, requestedBlock)
-		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
-
-		providerReport := metrics.OptimizerQoSReport{
-			ProviderAddress:   providerAddress,
-			SyncScore:         syncScoreCurrent,
-			AvailabilityScore: providerData.Availability.Num / providerData.Availability.Denom,
-			LatencyScore:      latencyScoreCurrent,
-			GenericScore:      providerScore,
-		}
-		reports = append(reports, providerReport)
+	rawScores := selectionTier.GetRawScores()
+	for idx, entry := range rawScores {
+		qosReport := providersScores[entry.Address]
+		qosReport.EntryIndex = idx
+		reports = append(reports, qosReport)
 	}
 
 	return reports
 }
 
-func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration) {
+func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 
 	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
+	providerScores := make(map[string]*metrics.OptimizerQoSReport)
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -230,6 +217,13 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 		)
 
 		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
+			ProviderAddress:   providerAddress,
+			SyncScore:         syncScoreCurrent,
+			AvailabilityScore: providerData.Availability.Num / providerData.Availability.Denom,
+			LatencyScore:      latencyScoreCurrent,
+			GenericScore:      providerScore,
+		}
 		selectionTier.AddScore(providerAddress, providerScore)
 
 		// check if candidate for exploration
@@ -239,12 +233,12 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			explorationCandidate = Exploration{address: providerAddress, time: updateTime}
 		}
 	}
-	return selectionTier, explorationCandidate
+	return selectionTier, explorationCandidate, providerScores
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
 		return []string{}, -1
