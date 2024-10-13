@@ -352,7 +352,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
-		websocketConnectionLimiter:    &WebsocketConnectionLimiter{},
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -371,6 +371,13 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		forwardedFor := c.Get(common.IP_FORWARDING_HEADER_NAME)
+		if forwardedFor == "" {
+			// If not present, fallback to c.IP() which retrieves the real IP
+			forwardedFor = c.IP()
+		}
+		// Store the X-Forwarded-For or real IP in the context
+		c.Locals(common.IP_FORWARDING_HEADER_NAME, forwardedFor)
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -381,9 +388,21 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
 		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
+			ipForwardedInterface := websocketConn.Locals(common.IP_FORWARDING_HEADER_NAME)
+			ipForwarded, found := ipForwardedInterface.(string)
+			if !found {
+				ipForwarded = ""
+			}
 			ip := websocketConn.RemoteAddr().String()
-			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(ip)
-			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(ip)
+			key := apil.websocketConnectionLimiter.getKey(ip, ipForwarded)
+			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(key)
+			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(key)
+			utils.LavaFormatDebug("ipForwarded:"+ipForwarded+" ip: "+ip,
+				utils.LogAttr("key", key),
+				utils.LogAttr("apil.websocketConnectionLimiter.ipToNumberOfActiveConnections", apil.websocketConnectionLimiter.ipToNumberOfActiveConnections),
+				utils.LogAttr("numberOfActiveConnections", numberOfActiveConnections),
+				utils.LogAttr("MaximumNumberOfParallelWebsocketConnectionsPerIp", MaximumNumberOfParallelWebsocketConnectionsPerIp),
+			)
 			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
 				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
 				return
