@@ -283,6 +283,14 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 }
 
 // AppendHeader mocks base method.
+func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRequestedBlocksHashes")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// AppendHeader mocks base method.
 func (m *MockChainMessage) AppendHeader(metadata []types.Metadata) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AppendHeader", metadata)
@@ -706,18 +714,18 @@ func (mr *MockRelaySenderMockRecorder) CreateDappKey(userData interface{}) *gomo
 }
 
 // ParseRelay mocks base method.
-func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, analytics *metrics.RelayMetrics, metadata []types.Metadata) (ProtocolMessage, error) {
+func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, metadata []types.Metadata) (ProtocolMessage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	ret0, _ := ret[0].(ProtocolMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ParseRelay indicates an expected call of ParseRelay.
-func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, metadata)
 }
 
 // SendParsedRelay mocks base method.

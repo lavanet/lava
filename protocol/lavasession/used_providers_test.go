@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gogo/status"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 )
@@ -20,35 +21,35 @@ func TestUsedProviders(t *testing.T) {
 		require.False(t, canUseAgain)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
-		unwanted := usedProviders.GetUnwantedProvidersToSend()
+		unwanted := usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 0)
 		consumerSessionsMap := ConsumerSessionsMap{"test": &SessionInfo{}, "test2": &SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
+		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 		canUseAgain = usedProviders.tryLockSelection()
 		require.True(t, canUseAgain)
-		unwanted = usedProviders.GetUnwantedProvidersToSend()
+		unwanted = usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 2)
 		require.Equal(t, 2, usedProviders.CurrentlyUsed())
 		canUseAgain = usedProviders.tryLockSelection()
 		require.False(t, canUseAgain)
 		consumerSessionsMap = ConsumerSessionsMap{"test3": &SessionInfo{}, "test4": &SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		unwanted = usedProviders.GetUnwantedProvidersToSend()
+		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		unwanted = usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 4)
 		require.Equal(t, 4, usedProviders.CurrentlyUsed())
 		// one provider gives a retry
-		usedProviders.RemoveUsed("test", status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), ""))
+		usedProviders.RemoveUsed("test", nil, status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), ""))
 		require.Equal(t, 3, usedProviders.CurrentlyUsed())
-		unwanted = usedProviders.GetUnwantedProvidersToSend()
+		unwanted = usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 3)
 		// one provider gives a result
-		usedProviders.RemoveUsed("test2", nil)
-		unwanted = usedProviders.GetUnwantedProvidersToSend()
+		usedProviders.RemoveUsed("test2", nil, nil)
+		unwanted = usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 3)
 		require.Equal(t, 2, usedProviders.CurrentlyUsed())
 		// one provider gives an error
-		usedProviders.RemoveUsed("test3", fmt.Errorf("bad"))
-		unwanted = usedProviders.GetUnwantedProvidersToSend()
+		usedProviders.RemoveUsed("test3", nil, fmt.Errorf("bad"))
+		unwanted = usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 3)
 		require.Equal(t, 1, usedProviders.CurrentlyUsed())
 		canUseAgain = usedProviders.tryLockSelection()
@@ -68,13 +69,13 @@ func TestUsedProvidersAsync(t *testing.T) {
 		go func() {
 			time.Sleep(time.Millisecond * 10)
 			consumerSessionsMap := ConsumerSessionsMap{"test": &SessionInfo{}, "test2": &SessionInfo{}}
-			usedProviders.AddUsed(consumerSessionsMap, nil)
+			usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 		}()
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()
 		canUseAgain := usedProviders.TryLockSelection(ctx)
 		require.Nil(t, canUseAgain)
-		unwanted := usedProviders.GetUnwantedProvidersToSend()
+		unwanted := usedProviders.GetUnwantedProvidersToSend([]*spectypes.Extension{})
 		require.Len(t, unwanted, 2)
 		require.Equal(t, 2, usedProviders.CurrentlyUsed())
 	})

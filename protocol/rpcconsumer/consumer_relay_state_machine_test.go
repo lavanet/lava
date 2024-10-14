@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -18,10 +18,6 @@ import (
 type ConsumerRelaySenderMock struct {
 	retValue    error
 	tickerValue time.Duration
-}
-
-func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error) {
-	return crsm.retValue
 }
 
 func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
@@ -33,6 +29,18 @@ func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.
 
 func (crsm *ConsumerRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
 	return "testUno", "testDos"
+}
+
+func (crsm *ConsumerRelaySenderMock) ParseRelay(
+	ctx context.Context,
+	url string,
+	req string,
+	connectionType string,
+	dappID string,
+	consumerIp string,
+	metadata []pairingtypes.Metadata,
+) (protocolMessage chainlib.ProtocolMessage, err error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
@@ -72,27 +80,28 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 			switch taskNumber {
 			case 0:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, nil)
+				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendProtocolError(relayProcessor, "lava@test", time.Millisecond*1, fmt.Errorf("bad"))
 			case 1:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, nil)
+				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 2:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, nil)
+				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 3:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, nil)
+				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				require.True(t, relayProcessor.HasRequiredNodeResults())
+				results, _ := relayProcessor.HasRequiredNodeResults()
+				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
 				require.Equal(t, string(returnedResult.Reply.Data), "ok")
