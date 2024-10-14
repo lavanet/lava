@@ -283,6 +283,14 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 }
 
 // AppendHeader mocks base method.
+func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRequestedBlocksHashes")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// AppendHeader mocks base method.
 func (m *MockChainMessage) AppendHeader(metadata []types.Metadata) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AppendHeader", metadata)
