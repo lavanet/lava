@@ -32,7 +32,7 @@ const (
 )
 
 type MetricsInterface interface {
-	SetRelayNodeErrorMetric(chainId string, apiInterface string)
+	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
 	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
 	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
 }
@@ -253,7 +253,8 @@ func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
 	if nodeError != nil && rp.selection != BestResult {
-		go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+		go rp.metricsInf.SetRelayNodeErrorMetric(response.relayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
