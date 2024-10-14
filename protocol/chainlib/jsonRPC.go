@@ -705,6 +705,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	replyMsg = *replyMessage
+	utils.LavaFormatDebug("@@@@@@@@@@@@@@@@@@@@@ TESTTTTTTTTTTTTTTTTTT", utils.LogAttr("reqest", nodeMessage), utils.LogAttr("reply", replyMessage))
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,

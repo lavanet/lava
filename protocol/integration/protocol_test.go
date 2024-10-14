@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,10 +16,13 @@ import (
 	"testing"
 	"time"
 
+	slices "github.com/lavanet/lava/v3/utils/lavaslices"
+
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v3/ecosystem/cache"
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v3/protocol/chaintracker"
 	"github.com/lavanet/lava/v3/protocol/common"
 	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
@@ -33,6 +37,8 @@ import (
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/rand"
 	"github.com/lavanet/lava/v3/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
@@ -165,6 +171,24 @@ func createInMemoryRewardDb(specs []string) (*rewardserver.RewardDB, error) {
 	return rewardDB, nil
 }
 
+type PolicySt struct {
+	addons       []string
+	extensions   []string
+	apiInterface string
+}
+
+func (a PolicySt) GetSupportedAddons(string) ([]string, error) {
+	return a.addons, nil
+}
+
+func (a PolicySt) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointService, error) {
+	ret := []epochstoragetypes.EndpointService{}
+	for _, ext := range a.extensions {
+		ret = append(ret, epochstoragetypes.EndpointService{Extension: ext, ApiInterface: a.apiInterface})
+	}
+	return ret, nil
+}
+
 type rpcConsumerOptions struct {
 	specId                string
 	apiInterface          string
@@ -208,6 +232,36 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
+
+	// Just setting the providers available extensions and policy so the consumer is aware of them
+	addons := []string{}
+	extensions := []string{}
+	for _, provider := range rpcConsumerOptions.pairingList {
+		for _, endpoint := range provider.Endpoints {
+			for addon := range endpoint.Addons {
+				if !slices.Contains(addons, addon) {
+					addons = append(addons, addon)
+				}
+				if !slices.Contains(extensions, addon) {
+					extensions = append(extensions, addon)
+				}
+			}
+			for extension := range endpoint.Extensions {
+				if !slices.Contains(extensions, extension) {
+					extensions = append(extensions, extension)
+				}
+				if !slices.Contains(addons, extension) {
+					addons = append(addons, extension)
+				}
+			}
+		}
+	}
+	policy := PolicySt{
+		addons:       addons,
+		extensions:   extensions,
+		apiInterface: rpcConsumerOptions.apiInterface,
+	}
+	chainParser.SetPolicy(policy, rpcConsumerOptions.specId, rpcConsumerOptions.apiInterface)
 
 	var cache *performance.Cache = nil
 	if rpcConsumerOptions.cacheListenAddress != "" {
@@ -1139,18 +1193,18 @@ func TestArchiveProvidersRetry(t *testing.T) {
 		statusCode         int
 	}{
 		{
-			name:               "happy flow",
-			numOfProviders:     3,
-			archiveProviders:   3,
-			nodeErrorProviders: 0,
-			expectedResult:     `{"result": "success"}`,
-			statusCode:         200,
-		},
-		{
 			name:               "archive with 1 errored provider",
 			numOfProviders:     3,
 			archiveProviders:   3,
 			nodeErrorProviders: 1,
+			expectedResult:     `{"result": "success"}`,
+			statusCode:         200,
+		},
+		{
+			name:               "happy flow",
+			numOfProviders:     3,
+			archiveProviders:   3,
+			nodeErrorProviders: 0,
 			expectedResult:     `{"result": "success"}`,
 			statusCode:         200,
 		},
@@ -1182,7 +1236,6 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			numProviders := play.numOfProviders
 
 			consumerListenAddress := addressGen.GetAddress()
-			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 
 			type providerData struct {
 				account                sigs.Account
@@ -1228,14 +1281,21 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				}
 			}
 
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 			for i := 0; i < numProviders; i++ {
+				extensions := map[string]struct{}{}
+				if i+1 <= play.archiveProviders {
+					extensions = map[string]struct{}{"archive": {}}
+				}
 				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
 					PublicLavaAddress: providers[i].account.Addr.String(),
+
 					Endpoints: []*lavasession.Endpoint{
 						{
 							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
 							Enabled:        true,
 							Geolocation:    1,
+							Extensions:     extensions,
 						},
 					},
 					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
@@ -1258,9 +1318,169 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
-			client := http.Client{Timeout: 1000 * time.Millisecond}
-			req, err := http.NewRequest(http.MethodGet, "http://"+consumerListenAddress+"/lavanet/lava/conflict/params", nil)
-			req.Header["lava-extension"] = []string{"archive"}
+			for i := 0; i < 10; i++ {
+				client := http.Client{Timeout: 10000 * time.Millisecond}
+				req, err := http.NewRequest(http.MethodGet, "http://"+consumerListenAddress+"/lavanet/lava/conflict/params", nil)
+				req.Header["lava-extension"] = []string{"archive"}
+				require.NoError(t, err)
+
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				require.Equal(t, play.statusCode, resp.StatusCode)
+
+				bodyBytes, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+
+				resp.Body.Close()
+				require.Equal(t, string(bodyBytes), play.expectedResult)
+			}
+		})
+	}
+}
+func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
+	playbook := []struct {
+		name             string
+		numOfProviders   int
+		archiveProviders int
+		expectedResult   string
+		statusCode       int
+	}{
+		{
+			name:             "happy flow",
+			numOfProviders:   3,
+			archiveProviders: 1,
+			expectedResult:   `{"jsonrpc":"2.0","id":1,"result":{"result":"success"}}`,
+			statusCode:       200,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "NEAR"
+			apiInterface := spectypes.APIInterfaceJsonRPC
+			epoch := uint64(100)
+			lavaChainID := "lava"
+			numProviders := play.numOfProviders
+
+			consumerListenAddress := addressGen.GetAddress()
+
+			type providerData struct {
+				account                sigs.Account
+				endpoint               *lavasession.RPCProviderEndpoint
+				server                 *rpcprovider.RPCProviderServer
+				replySetter            *ReplySetter
+				mockChainFetcher       *MockChainFetcher
+				mockReliabilityManager *MockReliabilityManager
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				addons := []string(nil)
+				if i+1 <= play.archiveProviders {
+					addons = []string{"archive"}
+				}
+
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           addons,
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+
+				id, _ := json.Marshal(1)
+				resultBody, _ := json.Marshal(map[string]string{"result": "success"})
+				res := rpcclient.JsonrpcMessage{
+					Version: "2.0",
+					ID:      id,
+					Result:  resultBody,
+				}
+				resBytes, _ := json.Marshal(res)
+				providers[i].replySetter.replyDataBuf = resBytes
+				// none archive providers return errors.
+				if i+1 > play.archiveProviders {
+					id, _ := json.Marshal(1)
+					res := rpcclient.JsonrpcMessage{
+						Version: "2.0",
+						ID:      id,
+						Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
+					}
+					resBytes, _ := json.Marshal(res)
+
+					providers[i].replySetter.replyDataBuf = resBytes
+					providers[i].replySetter.status = 299
+				}
+			}
+
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			for i := 0; i < numProviders; i++ {
+				extensions := map[string]struct{}{}
+				if i+1 <= play.archiveProviders {
+					extensions = map[string]struct{}{"archive": {}}
+				}
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+							Extensions:     extensions,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
+
+			params, _ := json.Marshal([]string{"5NFtBbExnjk4TFXpfXhJidcCm5KYPk7QCY51nWiwyQNU"})
+			id, _ := json.Marshal(1)
+			reqBody := rpcclient.JsonrpcMessage{
+				Version: "2.0",
+				Method:  "block", // Query latest block
+				Params:  params,  // Use "final" to get the latest final block
+				ID:      id,
+			}
+
+			// Convert request to JSON
+			jsonData, err := json.Marshal(reqBody)
+			if err != nil {
+				log.Fatalf("Error marshalling request: %v", err)
+			}
+
+			client := http.Client{Timeout: 10000 * time.Millisecond}
+			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, bytes.NewBuffer(jsonData))
 			require.NoError(t, err)
 
 			resp, err := client.Do(req)
