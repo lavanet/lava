@@ -61,7 +61,12 @@ func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string, int
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -496,7 +501,7 @@ func (apil *JsonRPCChainListener) GetListeningAddress() string {
 
 type JrpcChainProxy struct {
 	BaseChainProxy
-	conn map[string]*chainproxy.Connector
+	conn *chainproxy.Connector
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -504,7 +509,10 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+
+	// look for the first node url that has no internal path, otherwise take first node url
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+
 	cp := &JrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{
 			averageBlockTime: averageBlockTime,
@@ -512,72 +520,30 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 			ErrorHandler:     &JsonRPCErrorHandler{},
 			ChainID:          rpcProviderEndpoint.ChainID,
 		},
-		conn: map[string]*chainproxy.Connector{},
+		conn: nil,
 	}
 
 	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
 
-	internalPaths := map[string]struct{}{}
-	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
-	if ok {
-		internalPaths = jsonRPCChainParser.GetInternalPaths()
-	}
-	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
-		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
-	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
-		// provider provided specific endpoints but not enough to fill all requirements
-		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
-	}
-	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
-func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
-	for _, url := range nodeUrls {
-		_, ok := internalPaths[url.InternalPath]
-		if !ok {
-			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
-		}
-		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: url.String()})
-		conn, err := chainproxy.NewConnector(ctx, nConns, url)
-		if err != nil {
-			return err
-		}
-		cp.conn[url.InternalPath] = conn
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
+	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		return err
 	}
-	if len(cp.conn) != len(internalPaths) {
-		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
-	}
-	return nil
-}
 
-func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
-	if len(internalPaths) == 0 {
-		internalPaths = map[string]struct{}{"": {}} // add default path
-	}
-	basePath := nodeUrl.Url
-	for path := range internalPaths {
-		nodeUrl.Url = basePath + path
-		conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-		if err != nil {
-			return err
-		}
-
-		cp.conn[path] = conn
-		if cp.conn == nil {
-			return errors.New("g_conn == nil")
-		}
-	}
+	cp.conn = conn
 	return nil
 }
 
 func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
 			rpc.SetHeader(metadata.Name, metadata.Value)
@@ -602,7 +568,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	}
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx, element := range batch {
-		// convert them because batch elements can't be marshaled back to the user, they are missing tags and flieds
+		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
 		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
 		if err != nil {
 			return nil, err
@@ -637,16 +603,15 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		reply, err := cp.sendBatchMessage(ctx, batchMessage, chainMessage)
 		return reply, "", nil, err
 	}
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	connector := cp.conn[internalPath]
-	rpc, err := connector.GetRpc(ctx, true)
+
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer connector.ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, connector.GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage

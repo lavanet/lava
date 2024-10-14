@@ -2,6 +2,7 @@ package lavaslices
 
 import (
 	"math"
+	"reflect"
 	"testing"
 	"time"
 
@@ -508,5 +509,58 @@ func TestSliceSplitter(t *testing.T) {
 			}
 			originalSizeCopy -= i
 		}
+	}
+}
+
+func TestDifference(t *testing.T) {
+	tests := []struct {
+		name     string
+		slice1   []int
+		slice2   []int
+		expected []int
+	}{
+		{
+			name:     "Basic difference",
+			slice1:   []int{1, 2, 3, 4},
+			slice2:   []int{3, 4, 5, 6},
+			expected: []int{1, 2},
+		},
+		{
+			name:     "No difference",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{1, 2, 3},
+			expected: []int{},
+		},
+		{
+			name:     "All elements different",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{4, 5, 6},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "Empty first slice",
+			slice1:   []int{},
+			slice2:   []int{1, 2, 3},
+			expected: []int{},
+		},
+		{
+			name:     "Empty second slice",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "Mixed elements",
+			slice1:   []int{1, 2, 2, 3, 4},
+			slice2:   []int{2, 4},
+			expected: []int{1, 3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Difference(tt.slice1, tt.slice2)
+			require.True(t, reflect.DeepEqual(result, tt.expected))
+		})
 	}
 }
