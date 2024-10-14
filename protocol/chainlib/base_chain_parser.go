@@ -158,9 +158,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
-		if _, ok := policyInformation[addon]; ok {
-			bcp.allowedAddons[addon] = true
-		}
+		_, bcp.allowedAddons[addon] = policyInformation[addon]
 	}
 }
 
@@ -240,7 +238,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
-	verifications map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer, extensionParser extensionslib.ExtensionParser,
+	verifications map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer,
 ) {
 	bcp.spec = spec
 	bcp.internalPaths = internalPaths
@@ -251,16 +249,16 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 	bcp.verifications = verifications
 	allowedAddons := map[string]bool{}
 	allowedExtensions := map[string]struct{}{}
-	for _, apoCollection := range apiCollections {
-		for _, extension := range apoCollection.Extensions {
+	for _, apiCollection := range apiCollections {
+		for _, extension := range apiCollection.Extensions {
 			allowedExtensions[extension.Name] = struct{}{}
 		}
-		allowedAddons[apoCollection.CollectionData.AddOn] = false
+		// if addon was already existing (happens on spec update), use the existing policy, otherwise set it to false by default
+		allowedAddons[apiCollection.CollectionData.AddOn] = bcp.allowedAddons[apiCollection.CollectionData.AddOn]
 	}
 	bcp.allowedAddons = allowedAddons
 
-	bcp.extensionParser = extensionslib.ExtensionParser{AllowedExtensions: allowedExtensions}
-	bcp.extensionParser.SetConfiguredExtensions(extensionParser.GetConfiguredExtensions())
+	bcp.extensionParser = extensionslib.NewExtensionParser(allowedExtensions, bcp.extensionParser.GetConfiguredExtensions())
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool) {

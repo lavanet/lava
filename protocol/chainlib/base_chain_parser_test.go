@@ -133,9 +133,7 @@ func TestGetVerifications(t *testing.T) {
 		verifications: verifications,
 		allowedAddons: map[string]bool{"addon1": true},
 	}
-	baseChainParser.extensionParser = extensionslib.ExtensionParser{
-		AllowedExtensions: map[string]struct{}{"ext1": {}},
-	}
+	baseChainParser.extensionParser = extensionslib.NewExtensionParser(map[string]struct{}{"ext1": {}}, nil)
 
 	for idx, play := range playBook {
 		for _, apiInterface := range []string{spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest, spectypes.APIInterfaceGrpc} {

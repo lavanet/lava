@@ -43,6 +43,7 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 			} else {
 				delegation = oldDelegation
 			}
+			delegation.Timestamp = ctx.BlockTime().UTC().Unix()
 			m.keeper.SetDelegation(ctx, delegation)
 		}
 	}
