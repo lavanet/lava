@@ -3,8 +3,11 @@ package chainlib
 import (
 	"strings"
 
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"golang.org/x/exp/slices"
 )
 
 type UserData struct {
@@ -33,6 +36,31 @@ func (bpm *BaseProtocolMessage) RelayPrivateData() *pairingtypes.RelayPrivateDat
 
 func (bpm *BaseProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error) {
 	return HashCacheRequest(bpm.relayRequestData, chainId)
+}
+
+func (bpm *BaseProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) {
+	if earliestBlockHashRequested >= 0 {
+		success := bpm.UpdateEarliestInMessage(earliestBlockHashRequested)
+		if success {
+			extensionParser.ExtensionParsing(addon, bpm, uint64(seenBlock))
+			currentProtocolExtensions := bpm.GetExtensions()
+			currentPrivateDataExtensions := bpm.RelayPrivateData().Extensions
+			utils.LavaFormatTrace("[Archive Debug] Trying to add extensions", utils.LogAttr("currentProtocolExtensions", currentProtocolExtensions), utils.LogAttr("currentPrivateDataExtensions", currentPrivateDataExtensions))
+			if len(currentProtocolExtensions) > len(currentPrivateDataExtensions) {
+				// we need to add the missing extension to the private data.
+				for _, ext := range currentProtocolExtensions {
+					if !slices.Contains(currentPrivateDataExtensions, ext.Name) {
+						currentPrivateDataExtensions = append(currentPrivateDataExtensions, ext.Name)
+						if len(currentProtocolExtensions) == len(currentPrivateDataExtensions) {
+							break
+						}
+					}
+				}
+				bpm.RelayPrivateData().Extensions = currentPrivateDataExtensions
+				utils.LavaFormatTrace("[Archive Debug] After Swap", utils.LogAttr("bpm.RelayPrivateData().Extensions", bpm.RelayPrivateData().Extensions))
+			}
+		}
+	}
 }
 
 func (bpm *BaseProtocolMessage) GetBlockedProviders() []string {
@@ -65,4 +93,5 @@ type ProtocolMessage interface {
 	HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error)
 	GetBlockedProviders() []string
 	GetUserData() common.UserData
+	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64)
 }

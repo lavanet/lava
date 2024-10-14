@@ -697,7 +697,7 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 
 	// Craft the unsubscribe chain message
 	ctx := context.Background()
-	protocolMessage, err := cwsm.relaySender.ParseRelay(ctx, "", unsubscribeRequestData, cwsm.connectionType, dappID, consumerIp, metricsData, nil)
+	protocolMessage, err := cwsm.relaySender.ParseRelay(ctx, "", unsubscribeRequestData, cwsm.connectionType, dappID, consumerIp, nil)
 	if err != nil {
 		return nil, utils.LavaFormatError("could not craft unsubscribe chain message", err,
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
