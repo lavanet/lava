@@ -131,6 +131,10 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 						utils.LavaFormatTrace("[Archive Debug] no hash in cache", utils.LogAttr("Batch", numberOfRetriesLaunched))
 						// If we didn't find the hash in the cache we can try archive relay.
 						relayRequestData := crsm.protocolMessage.RelayPrivateData()
+						if relayRequestData == nil {
+							utils.LavaFormatError("relay private data is nil in shouldRetry, this should never happen", nil)
+							break
+						}
 						// Validate we're not already archive
 						if slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
 							break // Do nothing its already archive.
@@ -142,6 +146,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 						newProtocolMessage, err := crsm.relaySender.ParseRelay(crsm.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
 						if err != nil {
 							utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+							break
 						}
 						// Creating an archive protocol message, and set it to current protocol message
 						crsm.protocolMessage = newProtocolMessage
