@@ -46,6 +46,7 @@ const (
 	// websocket flags
 	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
+	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 )
 
 const (
