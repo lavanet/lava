@@ -187,16 +187,6 @@ func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Acco
 	return sigs.Account{}, sigs.Account{}
 }
 
-// deductParticipationFees calculates the validators and community participation
-// fees and returns the providers reward after deducting them
-func (ts *tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
-	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward)
-	require.Nil(ts.T, err)
-	valParticipation = valPerc.MulInt(reward).TruncateInt()
-	communityParticipation = communityPerc.MulInt(reward).TruncateInt()
-	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
-}
-
 // makeBondedRatioNonZero makes BondedRatio() to be 0.25
 // assumptions:
 //  1. validators was created using addValidators(1) and TxCreateValidator

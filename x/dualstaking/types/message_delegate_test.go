@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/v3/testutil/sample"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +25,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 				Provider:  sample.AccAddress(),
 				Amount:    oneCoin,
 				Validator: validator,
-				ChainID:   commontypes.EMPTY_PROVIDER_CHAINID,
+				ChainID:   "",
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		},
@@ -37,7 +36,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 				Provider:  "invalid_address",
 				Amount:    oneCoin,
 				Validator: validator,
-				ChainID:   commontypes.EMPTY_PROVIDER_CHAINID,
+				ChainID:   "",
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		},
@@ -48,7 +47,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 				Provider:  sample.AccAddress(),
 				Amount:    oneCoin,
 				Validator: validator,
-				ChainID:   commontypes.EMPTY_PROVIDER_CHAINID,
+				ChainID:   "",
 			},
 		},
 		{
@@ -58,7 +57,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 				Provider:  sample.AccAddress(),
 				Amount:    sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
 				Validator: validator,
-				ChainID:   commontypes.EMPTY_PROVIDER_CHAINID,
+				ChainID:   "",
 			},
 			err: legacyerrors.ErrInvalidCoins,
 		},
@@ -69,7 +68,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 				Provider:  sample.AccAddress(),
 				Amount:    oneCoin,
 				Validator: "invalid_validator",
-				ChainID:   commontypes.EMPTY_PROVIDER_CHAINID,
+				ChainID:   "",
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		},

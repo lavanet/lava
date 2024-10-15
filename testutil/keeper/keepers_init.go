@@ -335,8 +335,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 		ctx = ctx.WithBlockTime(fixedDate)
 	}
 
-	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
-	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstoretypes.DefaultGenesis())
