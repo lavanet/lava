@@ -79,8 +79,22 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push (Manual)
+        uses: docker/build-push-action@v5
+        if: ${{ github.event.inputs.release_tag != ''}}
+        with:
+          tags: |
+            type=raw,value=${{ github.event.inputs.release_tag }},enable=true
+          labels: ${{ steps.meta.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
       - name: Build and push
         uses: docker/build-push-action@v5
+        if: ${{ github.event.inputs.release_tag == ''}}
         with:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
