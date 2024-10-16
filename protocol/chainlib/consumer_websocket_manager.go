@@ -194,7 +194,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 		// Check rate limit is met
 		currentRequestsPerSecond := requestsPerSecond.Add(1)
-		if (cwm.headerRateLimit > 0 && currentRequestsPerSecond > uint64(cwm.headerRateLimit)) ||
+		if (cwm.headerRateLimit > 0 && currentRequestsPerSecond > cwm.headerRateLimit) ||
 			(WebSocketRateLimit > 0 && currentRequestsPerSecond > uint64(WebSocketRateLimit)) {
 			rateLimitResponse, err := cwm.handleRateLimitReached(msg)
 			if err == nil {
