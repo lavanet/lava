@@ -22,6 +22,10 @@ var (
 	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
 )
 
+const (
+	WebSocketRateLimitHeader = "x-lava-rate-limit"
+)
+
 type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
 	rpcConsumerLogs               *metrics.RPCConsumerLogs
@@ -35,6 +39,7 @@ type ConsumerWebsocketManager struct {
 	relaySender                   RelaySender
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
+	headerRateLimit               uint64
 }
 
 type ConsumerWebsocketManagerOptions struct {
@@ -50,6 +55,7 @@ type ConsumerWebsocketManagerOptions struct {
 	RelaySender                   RelaySender
 	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
+	headerRateLimit               uint64
 }
 
 func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *ConsumerWebsocketManager {
@@ -66,6 +72,7 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		refererData:                   options.RefererData,
 		consumerWsSubscriptionManager: options.ConsumerWsSubscriptionManager,
 		WebsocketConnectionUID:        options.WebsocketConnectionUID,
+		headerRateLimit:               options.headerRateLimit,
 	}
 	return cwm
 }
@@ -145,7 +152,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 	// rate limit routine
 	requestsPerSecond := &atomic.Uint64{}
 	go func() {
-		if WebSocketRateLimit <= 0 {
+		if WebSocketRateLimit <= 0 && cwm.headerRateLimit <= 0 {
 			return
 		}
 		ticker := time.NewTicker(time.Second) // rate limit per second.
@@ -156,7 +163,8 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				return
 			case <-ticker.C:
 				// check if rate limit reached, and ban is required
-				if WebSocketBanDuration > 0 && requestsPerSecond.Load() > uint64(WebSocketRateLimit) {
+				currentRequestsPerSecondLoad := requestsPerSecond.Load()
+				if WebSocketBanDuration > 0 && (cwm.headerRateLimit > currentRequestsPerSecondLoad || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
 					// wait the ban duration before resetting the store.
 					select {
 					case <-webSocketCtx.Done():
@@ -185,7 +193,9 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 
 		// Check rate limit is met
-		if WebSocketRateLimit > 0 && requestsPerSecond.Add(1) > uint64(WebSocketRateLimit) {
+		currentRequestsPerSecond := requestsPerSecond.Add(1)
+		if (cwm.headerRateLimit > 0 && currentRequestsPerSecond > uint64(cwm.headerRateLimit)) ||
+			(WebSocketRateLimit > 0 && currentRequestsPerSecond > uint64(WebSocketRateLimit)) {
 			rateLimitResponse, err := cwm.handleRateLimitReached(msg)
 			if err == nil {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: rateLimitResponse}

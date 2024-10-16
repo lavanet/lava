@@ -408,6 +408,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		// Store the X-Forwarded-For or real IP in the context
 		c.Locals(common.IP_FORWARDING_HEADER_NAME, forwardedFor)
 
+		rateLimitString := c.Get(WebSocketRateLimitHeader)
+		rateLimit, err := strconv.ParseInt(rateLimitString, 10, 64)
+		if err != nil {
+			rateLimit = 0
+		}
+		c.Locals(WebSocketRateLimitHeader, rateLimit)
+
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -423,8 +430,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
 		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
 			ipForwardedInterface := websocketConn.Locals(common.IP_FORWARDING_HEADER_NAME)
-			ipForwarded, found := ipForwardedInterface.(string)
-			if !found {
+			ipForwarded, assertionSuccessful := ipForwardedInterface.(string)
+			if !assertionSuccessful {
 				ipForwarded = ""
 			}
 			ip := websocketConn.RemoteAddr().String()
@@ -435,6 +442,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
 				return
 			}
+		}
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
 		}
 
 		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
@@ -453,6 +465,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
