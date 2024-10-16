@@ -334,6 +334,7 @@ type TendermintRpcChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -351,6 +352,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -369,6 +371,21 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		forwardedFor := c.Get(common.IP_FORWARDING_HEADER_NAME)
+		if forwardedFor == "" {
+			// If not present, fallback to c.IP() which retrieves the real IP
+			forwardedFor = c.IP()
+		}
+		// Store the X-Forwarded-For or real IP in the context
+		c.Locals(common.IP_FORWARDING_HEADER_NAME, forwardedFor)
+
+		rateLimitString := c.Get(WebSocketRateLimitHeader)
+		rateLimit, err := strconv.ParseInt(rateLimitString, 10, 64)
+		if err != nil {
+			rateLimit = 0
+		}
+		c.Locals(WebSocketRateLimitHeader, rateLimit)
+
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -378,6 +395,28 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
+			ipForwardedInterface := websocketConn.Locals(common.IP_FORWARDING_HEADER_NAME)
+			ipForwarded, found := ipForwardedInterface.(string)
+			if !found {
+				ipForwarded = ""
+			}
+			ip := websocketConn.RemoteAddr().String()
+			key := apil.websocketConnectionLimiter.getKey(ip, ipForwarded)
+			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(key)
+			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(key)
+			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
+				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
+				return
+			}
+		}
+
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
 		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
@@ -394,6 +433,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
