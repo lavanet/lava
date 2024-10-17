@@ -377,6 +377,7 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 			"cu":                         strconv.FormatUint(complainerCuToAdd, 10),
 			"epoch":                      strconv.FormatUint(epoch, 10),
 			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
+			"chainID":                    chainID,
 		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}
