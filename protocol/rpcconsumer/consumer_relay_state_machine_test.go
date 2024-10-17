@@ -20,6 +20,10 @@ type ConsumerRelaySenderMock struct {
 	tickerValue time.Duration
 }
 
+func (crsm *ConsumerRelaySenderMock) GetExtensionParser() *extensionslib.ExtensionParser {
+	return nil
+}
+
 func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error) {
 	return crsm.retValue
 }
