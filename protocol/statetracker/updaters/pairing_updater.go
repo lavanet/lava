@@ -248,12 +248,13 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			pairingEndpoints[idx] = endp
 		}
 		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)
+		totalStakeIncludingDelegation := sdk.Coin{Denom: provider.Stake.Denom, Amount: provider.Stake.Amount.Add(provider.DelegateTotal.Amount)}
 		pairing[uint64(providerIdx)] = lavasession.NewConsumerSessionWithProvider(
 			provider.Address,
 			pairingEndpoints,
 			maxCu,
 			epoch,
-			provider.Stake,
+			totalStakeIncludingDelegation,
 		)
 	}
 	if len(pairing) == 0 {
