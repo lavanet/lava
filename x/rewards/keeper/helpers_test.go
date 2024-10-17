@@ -34,7 +34,7 @@ var (
 		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
 		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
 	)
-	mockSpec2 string = "mock2"
+	mockSpec2 string = "mockspec2"
 )
 
 type tester struct {
