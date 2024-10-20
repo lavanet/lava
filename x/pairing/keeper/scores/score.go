@@ -42,10 +42,10 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 )
 
 var uniformStrategy ScoreStrategy

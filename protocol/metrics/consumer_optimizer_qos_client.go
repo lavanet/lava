@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"golang.org/x/exp/maps"
 )
 
