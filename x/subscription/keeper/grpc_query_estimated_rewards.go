@@ -126,15 +126,15 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 		info, total := k.getRewardsInfoFromEvents(ctx, req.Provider)
 		if !total.IsEqual(res.Total) {
 			// total amount sanity check
-			return nil, utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
+			utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
 				fmt.Errorf("total rewards from info is different than total claimable rewards difference"),
 				utils.LogAttr("total_claimable_rewards", res.Total.String()),
 				utils.LogAttr("total_info_rewards", total.String()),
 				utils.LogAttr("info", info),
 			)
+		} else {
+			res.Info = info
 		}
-
-		res.Info = info
 	}
 
 	// get the last IPRPC rewards distribution block
