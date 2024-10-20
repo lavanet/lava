@@ -49,7 +49,7 @@ func validatePortNumber(ipPort string) string {
 }
 
 func PerformCORSCheck(endpoint epochstoragetypes.Endpoint) error {
-	utils.LavaFormatDebug("Checking CORS", utils.Attribute{Key: "endpoint", Value: endpoint})
+	utils.LavaFormatDebug("Checking CORS", utils.LogAttr("endpoint", endpoint))
 	// Construct the URL for the RPC endpoint
 	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
 
@@ -86,7 +86,10 @@ func validateCORSHeaders(resp *http.Response) error {
 	// Check for the presence of "Access-Control-Allow-Origin" header
 	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	if corsOrigin != "*" {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "returned code", Value: resp.StatusCode}, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil,
+			utils.LogAttr("returned code", resp.StatusCode),
+			utils.LogAttr("corsOrigin", corsOrigin),
+		)
 	}
 
 	// Headers that must be present in "Access-Control-Allow-Headers"
@@ -95,7 +98,10 @@ func validateCORSHeaders(resp *http.Response) error {
 	corsHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
 	for _, requiredHeader := range requiredHeaders {
 		if !strings.Contains(corsHeaders, strings.ToLower(requiredHeader)) {
-			return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' are not present.", nil, utils.Attribute{Key: "corsHeaders", Value: corsHeaders}, utils.Attribute{Key: "requiredHeader", Value: requiredHeader})
+			return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' are not present.", nil,
+				utils.LogAttr("corsHeaders", corsHeaders),
+				utils.LogAttr("requiredHeader", requiredHeader),
+			)
 		}
 	}
 
@@ -121,7 +127,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 	lavaVersion := param.GetParams().Version
 	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
 	for _, providerEntry := range providerEntries {
-		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
+		utils.LavaFormatInfo("checking provider entry",
+			utils.LogAttr("chainID", providerEntry.Chain),
+			utils.LogAttr("endpoints", providerEntry.Endpoints),
+		)
 
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(apiInterface string, addon string) (time.Duration, string, int64, error) {
@@ -137,7 +146,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 					utils.LavaFormatWarning("You are using plain text connection (disabled tls), no consumer can connect to it as all consumers use tls. this should be used for testing purposes only", nil)
 					conn, err = grpc.DialContext(ctx, endpoint.IPPORT, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
 					if err != nil {
-						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
+							utils.LogAttr("apiInterface", apiInterface),
+							utils.LogAttr("addon", addon),
+							utils.LogAttr("chainID", providerEntry.Chain),
+							utils.LogAttr("network address", endpoint.IPPORT),
+						)
 					}
 					relayerClient = pairingtypes.NewRelayerClient(conn)
 				} else {
@@ -149,10 +163,20 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 							_, _, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 							lavasession.AllowInsecureConnectionToProviders = false
 							if err == nil {
-								return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+								return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err,
+									utils.LogAttr("apiInterface", apiInterface),
+									utils.LogAttr("addon", addon),
+									utils.LogAttr("chainID", providerEntry.Chain),
+									utils.LogAttr("network address", endpoint.IPPORT),
+								)
 							}
 						}
-						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
+							utils.LogAttr("apiInterface", apiInterface),
+							utils.LogAttr("addon", addon),
+							utils.LogAttr("chainID", providerEntry.Chain),
+							utils.LogAttr("network address", endpoint.IPPORT),
+						)
 					}
 				}
 
@@ -167,17 +191,36 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 				var trailer metadata.MD
 				probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
 				if err != nil {
-					return 0, "", 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, utils.LavaFormatError("failed probing provider endpoint", err,
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
 				}
 				versions := strings.Join(trailer.Get(common.VersionMetadataKey), ",")
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
-					return 0, versions, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, versions, 0, utils.LavaFormatError("probe returned invalid value", err,
+						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+						utils.LogAttr("guid", guid),
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
 				}
 
 				// CORS check
 				if err := PerformCORSCheck(endpoint); err != nil {
-					return 0, versions, 0, utils.LavaFormatError("invalid CORS check", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, versions, 0, utils.LavaFormatError("invalid CORS check", err,
+						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+						utils.LogAttr("guid", guid),
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
@@ -186,17 +229,27 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, "", 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil,
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, versions, 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, versions, 0, utils.LavaFormatError("relay returned unexpected error", err,
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
 				}
 				return relayLatency, versions, probeResp.GetLatestBlock(), nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
 			if len(endpointServices) == 0 {
-				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
+				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.LogAttr("endpoint", endpoint))
 			}
 			for _, endpointService := range endpointServices {
 				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
@@ -209,7 +262,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String()+" Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
 				}
-				utils.LavaFormatInfo("successfully verified provider endpoint", utils.LogAttr("version", version), utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
+				utils.LavaFormatInfo("successfully verified provider endpoint", utils.LogAttr("version", version),
+					utils.LogAttr("enspointService", endpointService),
+					utils.LogAttr("chainID", providerEntry.Chain),
+					utils.LogAttr("network address", endpoint.IPPORT),
+					utils.LogAttr("probe latency", probeLatency),
+				)
 				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+" version: "+version+" latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
 			}
 		}
@@ -261,7 +319,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			// setting the insecure option on provider dial, this should be used in development only!
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
 			if lavasession.AllowInsecureConnectionToProviders {
-				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
+				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.LogAttr(lavasession.AllowInsecureConnectionToProvidersFlag, lavasession.AllowInsecureConnectionToProviders))
 			}
 
 			var address string
@@ -282,7 +340,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			} else {
 				address = args[0]
 			}
-			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
+			utils.LavaFormatInfo("RPCProvider Test started", utils.LogAttr("address", address))
 			utils.SetGlobalLoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
 
@@ -330,11 +388,11 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 							ChainName: chainID,
 						})
 						if err != nil {
-							return utils.LavaFormatError("failed reading on chain data in order to resolve endpoint", err, utils.Attribute{Key: "endpoint", Value: endpoints[0]})
+							return utils.LavaFormatError("failed reading on chain data in order to resolve endpoint", err, utils.LogAttr("endpoint", endpoints[0]))
 						}
 						endpoints[0].ApiInterfaces = chainInfoResponse.Interfaces
 					}
-					utils.LavaFormatDebug("endpoints to check", utils.Attribute{Key: "endpoints", Value: endpoints})
+					utils.LavaFormatDebug("endpoints to check", utils.LogAttr("endpoints", endpoints))
 					providerEntry := epochstoragetypes.StakeEntry{
 						Endpoints:   endpoints,
 						Chain:       chainID,
@@ -353,7 +411,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 						for _, provider := range response.StakeEntry {
 							if provider.Address == address {
 								if provider.StakeAppliedBlock > uint64(currentBlock+1) {
-									utils.LavaFormatWarning("provider is Frozen", nil, utils.Attribute{Key: "chainID", Value: provider.Chain})
+									utils.LavaFormatWarning("provider is Frozen", nil, utils.LogAttr("chainID", provider.Chain))
 								}
 								stakedProviderChains = append(stakedProviderChains, provider)
 								break
@@ -363,9 +421,9 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				}
 			}
 			if len(stakedProviderChains) == 0 {
-				utils.LavaFormatError("no active chains for provider", nil, utils.Attribute{Key: "address", Value: address})
+				utils.LavaFormatError("no active chains for provider", nil, utils.LogAttr("address", address))
 			}
-			utils.LavaFormatDebug("checking chain entries", utils.Attribute{Key: "stakedProviderChains", Value: stakedProviderChains})
+			utils.LavaFormatDebug("checking chain entries", utils.LogAttr("stakedProviderChains", stakedProviderChains))
 			return startTesting(ctx, clientCtx, stakedProviderChains, viper.GetBool(common.PlainTextConnection))
 		},
 	}
