@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -28,7 +31,11 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
-const SEP = "&"
+const (
+	SEP = "&"
+)
+
+var MaximumNumberOfParallelWebsocketConnectionsPerIp int64 = 0
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -300,6 +307,56 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
+// Will limit a certain amount of connections per IP
+type WebsocketConnectionLimiter struct {
+	ipToNumberOfActiveConnections map[string]int64
+	lock                          sync.RWMutex
+}
+
+func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) int64 {
+	wcl.lock.Lock()
+	defer wcl.lock.Unlock()
+	// wether it exists or not we add 1.
+	wcl.ipToNumberOfActiveConnections[ip] += 1
+	return wcl.ipToNumberOfActiveConnections[ip]
+}
+
+func (wcl *WebsocketConnectionLimiter) decreaseIpConnectionAndGetCurrentAmount(ip string) {
+	wcl.lock.Lock()
+	defer wcl.lock.Unlock()
+	// wether it exists or not we add 1.
+	wcl.ipToNumberOfActiveConnections[ip] -= 1
+	if wcl.ipToNumberOfActiveConnections[ip] == 0 {
+		delete(wcl.ipToNumberOfActiveConnections, ip)
+	}
+}
+
+func (wcl *WebsocketConnectionLimiter) getKey(ip string, forwardedIp string) string {
+	returnedKey := ""
+	ipOriginal := net.ParseIP(ip)
+	if ipOriginal != nil {
+		returnedKey = ipOriginal.String()
+	} else {
+		ipPart, _, err := net.SplitHostPort(ip)
+		if err == nil {
+			returnedKey = ipPart
+		}
+	}
+	ips := strings.Split(forwardedIp, ",")
+	for _, ipStr := range ips {
+		ipParsed := net.ParseIP(strings.TrimSpace(ipStr))
+		if ipParsed != nil {
+			returnedKey += SEP + ipParsed.String()
+		} else {
+			ipPart, _, err := net.SplitHostPort(ipStr)
+			if err == nil {
+				returnedKey += SEP + ipPart
+			}
+		}
+	}
+	return returnedKey
+}
+
 type JsonRPCChainListener struct {
 	endpoint                      *lavasession.RPCEndpoint
 	relaySender                   RelaySender
@@ -308,6 +365,7 @@ type JsonRPCChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -325,6 +383,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -341,6 +400,21 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		forwardedFor := c.Get(common.IP_FORWARDING_HEADER_NAME)
+		if forwardedFor == "" {
+			// If not present, fallback to c.IP() which retrieves the real IP
+			forwardedFor = c.IP()
+		}
+		// Store the X-Forwarded-For or real IP in the context
+		c.Locals(common.IP_FORWARDING_HEADER_NAME, forwardedFor)
+
+		rateLimitString := c.Get(WebSocketRateLimitHeader)
+		rateLimit, err := strconv.ParseInt(rateLimitString, 10, 64)
+		if err != nil {
+			rateLimit = 0
+		}
+		c.Locals(WebSocketRateLimitHeader, rateLimit)
+
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -354,6 +428,27 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		if MaximumNumberOfParallelWebsocketConnectionsPerIp > 0 { // 0 is disabled.
+			ipForwardedInterface := websocketConn.Locals(common.IP_FORWARDING_HEADER_NAME)
+			ipForwarded, assertionSuccessful := ipForwardedInterface.(string)
+			if !assertionSuccessful {
+				ipForwarded = ""
+			}
+			ip := websocketConn.RemoteAddr().String()
+			key := apil.websocketConnectionLimiter.getKey(ip, ipForwarded)
+			numberOfActiveConnections := apil.websocketConnectionLimiter.addIpConnectionAndGetCurrentAmount(key)
+			defer apil.websocketConnectionLimiter.decreaseIpConnectionAndGetCurrentAmount(key)
+			if numberOfActiveConnections > MaximumNumberOfParallelWebsocketConnectionsPerIp {
+				websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", MaximumNumberOfParallelWebsocketConnectionsPerIp)))
+				return
+			}
+		}
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
 		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
@@ -370,6 +465,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
