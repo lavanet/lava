@@ -1,25 +1,25 @@
 {
     "proposal": {
-        "title": "Add Specs: Stargaze",
-        "description": "Adding new specification support for relaying agoric data on stargaze",
+        "title": "Add Specs: Archway",
+        "description": "Adding new specification support for relaying Archway data on Lava",
         "specs": [
             {
-                "index": "STRGZ",
-                "name": "stargaze mainnet",
+                "index": "ARCHWAY",
+                "name": "archway mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDKFULL"
+                    "COSMOSSDK50"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 5800,
+                "average_block_time": 5500,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "15000000000"
                 },
                 "api_collections": [
                     {
@@ -32,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/stargaze/alloc/v1beta1/params",
+                                "name": "/archway/rewards/v1/block_rewards_tracking",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -50,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/cron/v1/list-privileged",
+                                "name": "/archway/rewards/v1/contract_metadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -68,7 +68,27 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/cron/v1/params",
+                                "name": "/archway/rewards/v1/estimate_tx_fees",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "",
+                                        "="
+                                    ],
+                                    "default_value": "latest",
+                                    "parser_func": "PARSE_DICTIONARY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/archway/rewards/v1/flat_fee",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -86,7 +106,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/globalfee/v1/authorizations",
+                                "name": "/archway/rewards/v1/outstanding_rewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -104,7 +124,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/globalfee/v1/code_authorization/{code_id}",
+                                "name": "/archway/rewards/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -122,7 +142,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/globalfee/v1/contract_authorization/{contract_address}",
+                                "name": "/archway/rewards/v1/rewards_pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -140,7 +160,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/globalfee/v1/params",
+                                "name": "/archway/rewards/v1/rewards_records",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -158,7 +178,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/mint/v1beta1/annual_provisions",
+                                "name": "/archway/callback/v1/callbacks",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -176,7 +196,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/mint/v1beta1/params",
+                                "name": "/archway/callback/v1/estimate_callback_fees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -194,7 +214,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/tokenfactory/v1/denoms/{denom}/authority_metadata",
+                                "name": "/archway/callback/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -212,7 +232,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/tokenfactory/v1/denoms_from_creator/{creator}",
+                                "name": "/archway/cwerrors/v1/errors",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -230,7 +250,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/tokenfactory/v1/params",
+                                "name": "/archway/cwerrors/v1/is_subscribed",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -248,7 +268,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/claim/v1beta1/total_claimable/{address}",
+                                "name": "/archway/cwerrors/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -266,7 +286,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/claim/v1beta1/params",
+                                "name": "/archway/cwica/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -284,43 +304,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/stargaze/claim/v1beta1/module_account_balance",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/stargaze/claim/v1beta1/claimable_for_action/{address}/{action}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/stargaze/claim/v1beta1/claim_record/{address}",
+                                "name": "/archway/tracking/v1/block_gas_tracking",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -346,7 +330,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "stargaze-1"
+                                        "expected_value": "archway-1"
                                     }
                                 ]
                             },
@@ -354,11 +338,11 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14400
                                     },
                                     {
                                         "extension": "archive",
-                                        "expected_value": "5200791"
+                                        "latest_distance": 1000000
                                     }
                                 ]
                             }
@@ -368,7 +352,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14600
+                                    "block": 14200
                                 }
                             }
                         ]
@@ -383,7 +367,7 @@
                         },
                         "apis": [
                             {
-                                "name": "publicawesome.stargaze.mint.v1beta1.Query/Params",
+                                "name": "archway.callback.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -401,7 +385,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.mint.v1beta1.Query/AnnualProvisions",
+                                "name": "archway.callback.v1.Query/EstimateCallbackFees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -419,7 +403,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.globalfee.v1.Query/CodeAuthorization",
+                                "name": "archway.callback.v1.Query/Callbacks",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -437,7 +421,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.globalfee.v1.Query/Params",
+                                "name": "archway.cwerrors.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -455,7 +439,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.globalfee.v1.Query/ContractAuthorization",
+                                "name": "archway.cwerrors.v1.Query/Errors",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -473,7 +457,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.globalfee.v1.Query/Authorizations",
+                                "name": "archway.cwerrors.v1.Query/IsSubscribed",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -491,7 +475,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.cron.v1.Query/Params",
+                                "name": "archway.cwfees.v1.Query/IsGrantingContract",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -509,7 +493,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.cron.v1.Query/ListPrivileged",
+                                "name": "archway.cwfees.v1.Msg/RegisterAsGranter",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -527,7 +511,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "publicawesome.stargaze.alloc.v1beta1.Query/Params",
+                                "name": "archway.cwfees.v1.Msg/UnregisterAsGranter",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -545,7 +529,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "osmosis.tokenfactory.v1beta1.Query/Params",
+                                "name": "archway.cwica.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -563,7 +547,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+                                "name": "archway.cwica.v1.Msg/SendTx",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -581,7 +565,313 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
+                                "name": "archway.cwica.v1.Msg/RegisterInterchainAccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.cwica.v1.Msg/UpdateParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/ContractMetadata",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/BlockRewardsTracking",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/RewardsPool",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/EstimateTxFees",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/RewardsRecords",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/FlatFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Query/OutstandingRewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Msg/SetContractMetadata",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Msg/WithdrawRewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Msg/SetFlatFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.rewards.v1.Msg/UpdateParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.tracking.v1.Query/BlockGasTracking",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.callback.v1.Msg/UpdateParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.callback.v1.Msg/RequestCallback",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "archway.callback.v1.Msg/CancelCallback",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -607,7 +897,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "stargaze-1"
+                                        "expected_value": "archway-1"
                                     }
                                 ]
                             },
@@ -615,11 +905,11 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14400
                                     },
                                     {
                                         "extension": "archive",
-                                        "expected_value": "1"
+                                        "latest_distance": 1000000
                                     }
                                 ]
                             }
@@ -629,7 +919,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14600
+                                    "block": 5680
                                 }
                             }
                         ]
@@ -651,7 +941,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "stargaze-1"
+                                        "expected_value": "archway-1"
                                     }
                                 ]
                             },
@@ -659,7 +949,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14400
                                     },
                                     {
                                         "extension": "archive",
@@ -673,7 +963,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14600
+                                    "block": 14200
                                 }
                             }
                         ]
@@ -681,22 +971,22 @@
                 ]
             },
             {
-                "index": "STRGZT",
-                "name": "stargaze testnet",
+                "index": "ARCHWAYT",
+                "name": "archway testnet",
                 "enabled": true,
                 "imports": [
-                    "STRGZ"
+                    "ARCHWAY"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 5800,
+                "average_block_time": 5500,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "15000000000"
                 },
                 "api_collections": [
                     {
@@ -716,7 +1006,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "elgafar-1"
+                                        "expected_value": "constantine-3"
                                     }
                                 ]
                             }
@@ -739,7 +1029,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "elgafar-1"
+                                        "expected_value": "constantine-3"
                                     }
                                 ]
                             }
@@ -762,7 +1052,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "elgafar-1"
+                                        "expected_value": "constantine-3"
                                     }
                                 ]
                             }
@@ -772,5 +1062,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "1750000000ulava"
 }

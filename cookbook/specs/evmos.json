@@ -196,276 +196,6 @@
                 "extra_compute_units": 0
               },
               {
-                "name": "/evmos/evm/v1/account/{address}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/balances/{address}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/base_fee",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/codes/{address}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/cosmos_account/{address}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/estimate_gas",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/eth_call",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/params",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/storage/{address}/{key}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/trace_block",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/trace_tx",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/evm/v1/validator_account/{cons_address}",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/feemarket/v1/base_fee",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/feemarket/v1/block_gas",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "/evmos/feemarket/v1/params",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
                 "name": "/evmos/incentives/v1/allocation_meters",
                 "block_parsing": {
                   "parser_arg": [
@@ -737,6 +467,294 @@
               },
               {
                 "name": "/evmos/vesting/v2/balances/{address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/recovery/v1/params",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/account/{address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/balances/{address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/base_fee",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/codes/{address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/cosmos_account/{address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/estimate_gas",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/eth_call",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/params",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/storage/{address}/{key}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/trace_block",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/trace_tx",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/evm/v1/validator_account/{cons_address}",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/feemarket/v1/base_fee",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/feemarket/v1/block_gas",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": 0
+              },
+              {
+                "name": "/evmos/feemarket/v1/params",
                 "block_parsing": {
                   "parser_arg": [
                     "latest"
