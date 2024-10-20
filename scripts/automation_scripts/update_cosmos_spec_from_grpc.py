@@ -39,7 +39,7 @@ def parse_endpoints_from_grpcurl(grpc_url: str) -> dict[str, list[str]]:
     print("### Parsing endpoints from gRPC service")
 
     endpoints: dict[str, list[str]] = {"grpc": [], "rest": []}
-    content = os.popen(f"grpcurl {grpc_url} describe").read()
+    content = os.popen(f"grpcurl --plaintext {grpc_url} describe").read()
 
     # Regex pattern to find services starting with their corresponding rpc and rest paths
     grpc_pattern = re.compile(
