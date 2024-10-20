@@ -108,7 +108,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	return nil
 }
 
-func startTesting(ctx context.Context, clientCtx client.Context, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
+func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChainId string, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -208,6 +208,44 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 						utils.LogAttr("addon", addon),
 						utils.LogAttr("chainID", providerEntry.Chain),
 						utils.LogAttr("network address", endpoint.IPPORT),
+					)
+				}
+
+				// chain id check - lava node chain id should be the same as the one we are probing
+				md, ok := metadata.FromIncomingContext(ctx)
+				if !ok {
+					return 0, versions, 0, utils.LavaFormatError("failed to get metadata from context", nil,
+						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+						utils.LogAttr("guid", guid),
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
+				}
+
+				lavaChainIdFromProbeMD := md.Get(common.LavaChainIdMetadataKey)
+				if len(lavaChainIdFromProbeMD) == 0 {
+					return 0, versions, 0, utils.LavaFormatError("failed to get chain id from probe, empty", nil,
+						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+						utils.LogAttr("guid", guid),
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("chainID", providerEntry.Chain),
+						utils.LogAttr("network address", endpoint.IPPORT),
+					)
+				}
+
+				lavaChainIdFromProbe := lavaChainIdFromProbeMD[0]
+
+				if lavaChainIdFromProbe != lavaNetworkChainId {
+					return 0, versions, 0, utils.LavaFormatError("lava chain id from probe does not match the configured network chain id", nil,
+						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+						utils.LogAttr("guid", guid),
+						utils.LogAttr("apiInterface", apiInterface),
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("lavaChainIdFromProbe", lavaChainIdFromProbe),
+						utils.LogAttr("networkChainId", lavaNetworkChainId),
 					)
 				}
 
@@ -350,6 +388,14 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if err != nil {
 				return err
 			}
+
+			if resultStatus.NodeInfo.Network != networkChainId {
+				return utils.LavaFormatError("network chain id does not match the one in the node", nil,
+					utils.LogAttr("networkChainId", networkChainId),
+					utils.LogAttr("nodeNetwork", resultStatus.NodeInfo.Network),
+				)
+			}
+
 			currentBlock := resultStatus.SyncInfo.LatestBlockHeight
 			// get all chains provider is serving and their endpoints
 			specQuerier := spectypes.NewQueryClient(clientCtx)
@@ -424,7 +470,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				utils.LavaFormatError("no active chains for provider", nil, utils.LogAttr("address", address))
 			}
 			utils.LavaFormatDebug("checking chain entries", utils.LogAttr("stakedProviderChains", stakedProviderChains))
-			return startTesting(ctx, clientCtx, stakedProviderChains, viper.GetBool(common.PlainTextConnection))
+			return startTesting(ctx, clientCtx, networkChainId, stakedProviderChains, viper.GetBool(common.PlainTextConnection))
 		},
 	}
 
