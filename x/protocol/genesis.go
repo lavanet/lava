@@ -2,8 +2,8 @@ package protocol
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/protocol/keeper"
-	"github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/x/protocol/keeper"
+	"github.com/lavanet/lava/v4/x/protocol/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

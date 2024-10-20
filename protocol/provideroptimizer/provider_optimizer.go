@@ -8,13 +8,13 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/score"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/score"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
