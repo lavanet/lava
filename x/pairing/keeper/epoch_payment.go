@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 // AddEpochPayment adds a new epoch payment and returns the updated CU used between provider and project

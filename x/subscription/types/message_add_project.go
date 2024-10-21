@@ -4,7 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 )
 
 const TypeMsgAddProject = "add_project"

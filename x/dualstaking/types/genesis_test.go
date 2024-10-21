@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 

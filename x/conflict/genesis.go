@@ -2,8 +2,8 @@ package conflict
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/conflict/keeper"
-	"github.com/lavanet/lava/v3/x/conflict/types"
+	"github.com/lavanet/lava/v4/x/conflict/keeper"
+	"github.com/lavanet/lava/v4/x/conflict/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

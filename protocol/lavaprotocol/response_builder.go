@@ -6,12 +6,12 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.GenericMessage) (*rpcInterfaceMessages.RPCResponse, error) {
