@@ -6,12 +6,12 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -144,17 +144,17 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	clientAcct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -484,16 +484,16 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's  and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 10
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
@@ -515,12 +515,12 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: credit*100/200 (from spec1) + credit*(100/200)*(2/3) (from spec, considering delegations)
-	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 50+33
-	expectedTotalPayout := uint64(83)
+	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5+1/5*commission(10%) (from spec, considering delegations)
+	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 90
+	expectedTotalPayout := uint64(82)
 	expectedPayouts := []types.SubscriptionPayout{
-		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 50},
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 41},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 41},
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)
@@ -603,16 +603,16 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 10
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	delegationTime := ts.BlockTime()
 	ts.AdvanceEpoch()
@@ -622,7 +622,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// now since we want to check the expected reward, before it gets transferred). So, we need to artificially
 	// change the delegations' timestamp to be a month forward
 	fakeTimestamp := ts.BlockTime().AddDate(0, -2, 0)
-	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
 	require.NoError(t, err)
 
 	// send two relay payments in spec and spec1
@@ -641,16 +641,13 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// half the plan payment for spec1 is 25. Then it's divided between 2 contributors equally rounded down
-	expectedContributorPay := uint64(12)
-
-	// for planPrice=100, and equal CU usage for both specs, the expected provider monthly payout is:
-	//  spec (delegator is 33% of stake): planPrice * specUsedCu/totalUsedCu * providerStake/totalStake = 100*0.5*(2/3) = 33
-	// 	spec1 (contributors with commission=50%): planPrice * specUsedCu/totalUsedCu - contributorsPart = 100*0.5 - 24 = 26
-	expectedTotalPayout := uint64(59)
+	// check for expected balance: planPrice*(100/200 (from spec1) + planPrice*(100/200))*(4/5 + 1/5*0.1) (from spec, considering delegations)
+	// for planPrice=100, expected monthly payout is 50 (spec1 with contributor) + 33 (normal spec no contributor)
+	expectedContributorPay := uint64(12) // half the plan payment for spec1:25 then divided between contributors half half rounded down
+	expectedTotalPayout := uint64(85) - expectedContributorPay*2
 	expectedPayouts := []types.SubscriptionPayout{
-		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26},
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 41},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 20}, // 50 - 26 for contributors (each contributor gets 12)
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)
@@ -690,7 +687,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// advance month + blocksToSave + 1 to trigger the monthly payment
 	// (also restore delegation original timestamp)
 	oldBalance := ts.GetBalance(providerAcct.Vault.Addr)
-	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
 	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)

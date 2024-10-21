@@ -8,15 +8,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	v1 "github.com/lavanet/lava/v3/x/downtime/v1"
-	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/v3/x/subscription/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
+	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 type SpecKeeper interface {
@@ -53,6 +53,8 @@ type EpochstorageKeeper interface {
 	GetAllStakeEntriesCurrent(ctx sdk.Context) []epochstoragetypes.StakeEntry
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provider string)
 	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
+	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
+	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
 }
 
 type AccountKeeper interface {
@@ -103,10 +105,12 @@ type DowntimeKeeper interface {
 
 type DualstakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error)
-	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
-	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
-	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
+	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
+	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
+	GetProviderDelegators(ctx sdk.Context, provider string) ([]dualstakingtypes.Delegation, error)
 	MinSelfDelegation(ctx sdk.Context) sdk.Coin
+	GetDelegation(ctx sdk.Context, provider, delegator string) (dualstakingtypes.Delegation, bool)
+	AfterDelegationModified(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase, stake bool) (err error)
 }
 
 type FixationStoreKeeper interface {

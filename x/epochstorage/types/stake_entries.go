@@ -8,7 +8,7 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 var (
@@ -17,6 +17,7 @@ var (
 	EpochChainIdProviderIndexesPrefix = collections.NewPrefix([]byte("EpochChainIdProviderIndexes/"))
 	ChainIdVaultIndexesPrefix         = collections.NewPrefix([]byte("ChainIdVaultIndexes/"))
 	EpochHashesPrefix                 = collections.NewPrefix([]byte("EpochHash/"))
+	ProviderMetaDataPrefix            = collections.NewPrefix([]byte("ProviderMetaData/"))
 )
 
 // EpochChainIdProviderIndexes defines a secondary unique index for the keeper's stakeEntries indexed map
