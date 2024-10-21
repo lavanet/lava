@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	commonconsts "github.com/lavanet/lava/v3/testutil/common/consts"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

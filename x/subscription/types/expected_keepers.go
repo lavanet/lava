@@ -1,18 +1,20 @@
 package types
 
 import (
+	context "context"
+
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -37,6 +39,7 @@ type EpochstorageKeeper interface {
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
 	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
+	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -70,6 +73,9 @@ type TimerStoreKeeper interface {
 type DualStakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error)
 	GetDelegation(ctx sdk.Context, delegator, provider string) (dualstakingtypes.Delegation, bool)
+	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
+	DelegatorRewards(goCtx context.Context, req *dualstakingtypes.QueryDelegatorRewardsRequest) (res *dualstakingtypes.QueryDelegatorRewardsResponse, err error)
+	Delegate(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error
 }
 
 type RewardsKeeper interface {
@@ -87,6 +93,8 @@ type RewardsKeeper interface {
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64
 	GetCommunityTax(ctx sdk.Context) math.LegacyDec
+	DistributeMonthlyBonusRewards(ctx sdk.Context)
+	GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, after24HoursBlock uint64, err error)
 }
 
 type StakingKeeper interface {

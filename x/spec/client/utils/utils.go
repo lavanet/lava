@@ -10,9 +10,9 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
-	"github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	"github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type (

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

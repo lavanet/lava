@@ -3,7 +3,7 @@ package chainlib
 import (
 	"testing"
 
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
