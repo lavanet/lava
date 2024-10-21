@@ -1208,6 +1208,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
+	trailer.Append(common.LavaChainIdMetadataKey, rpcps.lavaChainID)
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }

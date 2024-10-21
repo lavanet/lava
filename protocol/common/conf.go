@@ -20,6 +20,7 @@ const (
 	MaximumConcurrentProvidersFlagName = "concurrent-providers"
 	StatusCodeMetadataKey              = "status-code"
 	VersionMetadataKey                 = "lavap-version"
+	LavaChainIdMetadataKey             = "lavap-chain-id"
 	TimeOutForFetchingLavaBlocksFlag   = "timeout-for-fetching-lava-blocks"
 )
 
