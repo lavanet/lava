@@ -130,7 +130,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 		apiName := protocolMessage.GetApi().Name
 		resetUsedOnce := true
 		setArchiveOnSpecialApi := func() {
-			if apiName == "tx" || apiName == "chunk" {
+			if apiName == "tx" || apiName == "chunk" || apiName == "EXPERIMENTAL_tx_status" {
 				archiveExtensionArray := []string{"archive"}
 				protocolMessage.OverrideExtensions(archiveExtensionArray, crsm.relaySender.GetExtensionParser())
 				protocolMessage.RelayPrivateData().Extensions = archiveExtensionArray
