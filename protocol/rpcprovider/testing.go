@@ -212,41 +212,19 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				}
 
 				// chain id check - lava node chain id should be the same as the one we are probing
-				md, ok := metadata.FromIncomingContext(ctx)
-				if !ok {
-					return 0, versions, 0, utils.LavaFormatError("failed to get metadata from context", nil,
-						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
-						utils.LogAttr("guid", guid),
-						utils.LogAttr("apiInterface", apiInterface),
-						utils.LogAttr("addon", addon),
-						utils.LogAttr("chainID", providerEntry.Chain),
-						utils.LogAttr("network address", endpoint.IPPORT),
-					)
-				}
-
-				lavaChainIdFromProbeMD := md.Get(common.LavaChainIdMetadataKey)
-				if len(lavaChainIdFromProbeMD) == 0 {
-					return 0, versions, 0, utils.LavaFormatError("failed to get chain id from probe, empty", nil,
-						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
-						utils.LogAttr("guid", guid),
-						utils.LogAttr("apiInterface", apiInterface),
-						utils.LogAttr("addon", addon),
-						utils.LogAttr("chainID", providerEntry.Chain),
-						utils.LogAttr("network address", endpoint.IPPORT),
-					)
-				}
-
-				lavaChainIdFromProbe := lavaChainIdFromProbeMD[0]
-
-				if lavaChainIdFromProbe != lavaNetworkChainId {
-					return 0, versions, 0, utils.LavaFormatError("lava chain id from probe does not match the configured network chain id", nil,
-						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
-						utils.LogAttr("guid", guid),
-						utils.LogAttr("apiInterface", apiInterface),
-						utils.LogAttr("addon", addon),
-						utils.LogAttr("lavaChainIdFromProbe", lavaChainIdFromProbe),
-						utils.LogAttr("networkChainId", lavaNetworkChainId),
-					)
+				lavaChainIdFromProbeMD := trailer.Get(common.LavaChainIdMetadataKey)
+				if len(lavaChainIdFromProbeMD) > 0 {
+					lavaChainIdFromProbe := lavaChainIdFromProbeMD[0]
+					if lavaChainIdFromProbe != lavaNetworkChainId {
+						return 0, versions, 0, utils.LavaFormatError("lava chain id from probe does not match the configured network chain id", nil,
+							utils.LogAttr("returnedGuid", probeResp.GetGuid()),
+							utils.LogAttr("guid", guid),
+							utils.LogAttr("apiInterface", apiInterface),
+							utils.LogAttr("addon", addon),
+							utils.LogAttr("lavaChainIdFromProbe", lavaChainIdFromProbe),
+							utils.LogAttr("networkChainId", lavaNetworkChainId),
+						)
+					}
 				}
 
 				// CORS check
