@@ -213,7 +213,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			url := "ws://localhost:3000" + testCase.route
+			url := "ws://127.0.0.1:3000" + testCase.route
 			dialer := &websocket2.Dialer{}
 			conn, _, err := dialer.Dial(url, testCase.headers)
 			if err != nil {

@@ -49,6 +49,11 @@ type ethereumSubscriptionResult struct {
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
+type starkNetPathfinderSubscriptionResult struct {
+	ID     int             `json:"subscription"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
 type tendermintSubscriptionResult struct {
 	Query string `json:"query"`
 }
@@ -68,8 +73,12 @@ type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
 
+func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
+	return msg.ID == nil && msg.Method != "" && msg.Result != nil
+}
+
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
-	return msg.ID == nil && msg.Method != ""
+	return msg.ID == nil && msg.Method != "" && msg.Params != nil
 }
 
 func (msg *JsonrpcMessage) isTendermintNotification() bool {
