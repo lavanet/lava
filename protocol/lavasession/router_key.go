@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 )
 
 const (

@@ -3,7 +3,7 @@ package chaintracker
 import (
 	fmt "fmt"
 
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type BlockRange struct {

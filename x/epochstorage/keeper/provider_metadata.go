@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 )
 
 func (k Keeper) GetMetadata(ctx sdk.Context, provider string) (types.ProviderMetadata, error) {
