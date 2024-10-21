@@ -5,16 +5,16 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/v3/app"
 	lvutil "github.com/lavanet/lava/v3/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v3/protocol/common"
@@ -109,13 +109,6 @@ func validateCORSHeaders(resp *http.Response) error {
 }
 
 func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChainId string, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
-	ctx, cancel := context.WithCancel(ctx)
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	defer func() {
-		signal.Stop(signalChan)
-		cancel()
-	}()
 	goodChains := []string{}
 	badChains := []string{}
 	portValidation := []string{}
@@ -328,6 +321,16 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if err != nil {
 				return err
 			}
+
+			if networkChainId == app.Name {
+				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
+				if err == nil {
+					if clientTomlConfig.ChainID != "" {
+						networkChainId = clientTomlConfig.ChainID
+					}
+				}
+			}
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
