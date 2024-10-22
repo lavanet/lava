@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	types "github.com/lavanet/lava/v3/x/pairing/types"
+	types "github.com/lavanet/lava/v4/x/pairing/types"
 	grpc "google.golang.org/grpc"
 )
 

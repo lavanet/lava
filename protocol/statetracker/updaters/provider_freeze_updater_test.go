@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/lavanet/lava/v3/utils/rand"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func testFreezeAndJailsMetricsOnEpochUpdate(t *testing.T, freezeStatus FrozenStatus, jailsAmount uint64) {
