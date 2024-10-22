@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v3/testutil/sample"
+	"github.com/lavanet/lava/v4/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
 

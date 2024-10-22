@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 )
 
 func CmdQueryParams() *cobra.Command {
