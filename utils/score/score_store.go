@@ -15,13 +15,19 @@ const (
 	InitialDataStaleness_Refactor       = 24
 )
 
+// ScoreStore is a decaying weighted average object that is used to collect
+// providers performace metrics samples (see QoS excellence comment below).
+// These are used to calculate the providers QoS excellence score, used
+// by the provider optimizer when choosing providers to be paired with a consumer.
+//
 // ScoreStore holds a score's numerator and denominator, last update timestamp, and a
-// configuration object.
-// When a ScoreStore updates it uses a decay exponent to lower the weight of old
-// average samples and a weight parameter to determine the influence of the new sample.
-// Keeping the score as a fracture helps calculating and updating weighted average calculations
-// on the go.
-// Currently, ScoreStore is used for QoS excellence metrics (see below).
+// configuration object. When a ScoreStore updates it uses a decay exponent to lower
+// the weight of old average samples and a weight parameter to determine the influence
+// of the new sample.
+//
+// Resolving the ScoreStore's num and denom means to divide the num by the denom to get
+// the score. Keeping the score as a fracture helps calculating and updating weighted
+// average calculations on the go.
 type ScoreStore_Refactor struct {
 	Name   string
 	Num    float64 // using float64 and not math/big for performance
@@ -47,10 +53,7 @@ type ScoreStorer_Refactor interface {
 
 // NewCustomScoreStore creates a new custom ScoreStorer based on the score type
 func NewCustomScoreStore_Refactor(scoreType string, num, denom float64, t time.Time, opts ...Option_Refactor) (ScoreStorer_Refactor, error) {
-	cfg := Config_Refactor{
-		Weight:   DefaultWeight_Refactor,
-		HalfLife: DefaultHalfLifeTime_Refactor,
-	}
+	cfg := defaultConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -165,7 +168,7 @@ func (ss *ScoreStore_Refactor) UpdateConfig(opts ...Option_Refactor) error {
 //	num = num * decay_factor + sample * weight
 //	denom = denom * decay_factor + weight
 //	decay_factor = exp(-time_since_last_update / half_life_time)
-func (ss *ScoreStore_Refactor) update(sample float64, sampleTime time.Time) error {
+func (ss *ScoreStore_Refactor) Update(sample float64, sampleTime time.Time) error {
 	if ss == nil {
 		return fmt.Errorf("cannot update ScoreStore, ScoreStore is nil")
 	}
@@ -238,6 +241,13 @@ func ConvertToDec(val float64) sdk.Dec {
 // interface.
 // The QoS excellence score influences a provider's chance to be selected in the consumer
 // pairing process.
+// The metrics are:
+// 	1. Latency: the time it takes the provider to answer to consumer relays.
+//
+//  2. Sync: the difference between the latest block as the provider percieves it
+//           compared to the actual last block of the chain it serves.
+//
+//  3. Availability: the provider's up time.
 
 const (
 	DefaultLatencyNum_Refactor      float64 = 0.01
@@ -249,8 +259,9 @@ const (
 	AvailabilityScoreType_Refactor = "availability"
 
 	// Worst score results for each QoS excellence metric for truncation
-	WorstLatencyScore_Refactor float64 = 30      // seconds
-	WorstSyncScore_Refactor    float64 = 20 * 60 // seconds
+	WorstLatencyScore_Refactor      float64 = 30      // seconds
+	WorstSyncScore_Refactor         float64 = 20 * 60 // seconds
+	WorstAvailabilityScore_Refactor float64 = 0
 )
 
 /* ########## Latency ScoreStore ############ */
@@ -264,7 +275,11 @@ func (ls *LatencyScoreStore_Refactor) Update(sample float64, sampleTime time.Tim
 	if ls == nil {
 		return fmt.Errorf("LatencyScoreStore is nil")
 	}
-	return ls.update(sample, sampleTime)
+
+	// normalize the sample with the latency CU factor
+	sample = sample * ls.ScoreStore_Refactor.Config.LatencyCuFactor
+
+	return ls.ScoreStore_Refactor.Update(sample, sampleTime)
 }
 
 /* ########## Sync ScoreStore ############ */
@@ -278,7 +293,7 @@ func (ss *SyncScoreStore_Refactor) Update(sample float64, sampleTime time.Time) 
 	if ss == nil {
 		return fmt.Errorf("SyncScoreStore is nil")
 	}
-	return ss.update(sample, sampleTime)
+	return ss.ScoreStore_Refactor.Update(sample, sampleTime)
 }
 
 /* ########## Availability ScoreStore ############ */
@@ -296,5 +311,5 @@ func (as *AvailabilityScoreStore_Refactor) Update(sample float64, sampleTime tim
 	if sample != float64(0) && sample != float64(1) {
 		return fmt.Errorf("availability must be 0 (false) or 1 (true), got %f", sample)
 	}
-	return as.update(sample, sampleTime)
+	return as.ScoreStore_Refactor.Update(sample, sampleTime)
 }

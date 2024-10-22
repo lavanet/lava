@@ -12,10 +12,11 @@ import (
 
 func TestScoreStoreCreation(t *testing.T) {
 	num, denom, timestamp := float64(1), float64(2), time.Now()
-	weight, halfLife := float64(4), 5*time.Second
+	weight, halfLife, latencyCuFactor := float64(4), 5*time.Second, float64(1)
 	opts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
-	negativeWeightOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(halfLife)}
-	negativeHalflifeOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(-halfLife)}
+	negativeWeightOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(halfLife), score.WithLatencyCuFactor(latencyCuFactor)}
+	negativeHalflifeOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(-halfLife), score.WithLatencyCuFactor(latencyCuFactor)}
+	negativeLatencyCuFactorOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife), score.WithLatencyCuFactor(-latencyCuFactor)}
 
 	template := []struct {
 		name      string
@@ -36,6 +37,7 @@ func TestScoreStoreCreation(t *testing.T) {
 		{name: "invalid zero denom", scoreType: score.LatencyScoreType_Refactor, num: num, denom: 0, timestamp: timestamp, opts: nil, valid: false},
 		{name: "invalid option - negative weight", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: negativeWeightOpts, valid: false},
 		{name: "invalid option - negative half life", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: negativeHalflifeOpts, valid: false},
+		{name: "invalid option - negative latency cu factor", scoreType: score.LatencyScoreType_Refactor, num: num, denom: denom, timestamp: timestamp, opts: negativeLatencyCuFactorOpts, valid: false},
 	}
 
 	for _, tt := range template {
@@ -43,7 +45,7 @@ func TestScoreStoreCreation(t *testing.T) {
 			store, err := score.NewCustomScoreStore_Refactor(tt.scoreType, tt.num, tt.denom, tt.timestamp, tt.opts...)
 			if tt.valid {
 				require.NoError(t, err)
-				require.Equal(t, tt.scoreType, store)
+				require.Equal(t, tt.scoreType, store.GetName())
 				require.Equal(t, tt.num, store.GetNum())
 				require.Equal(t, tt.denom, store.GetDenom())
 				require.Equal(t, tt.timestamp, store.GetLastUpdateTime())
@@ -92,8 +94,9 @@ func TestDefaultScoreStoreCreation(t *testing.T) {
 }
 
 func TestScoreStoreValidation(t *testing.T) {
-	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second}
-	invalidConfig := score.Config_Refactor{Weight: -1, HalfLife: time.Second}
+	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second, LatencyCuFactor: 1}
+	invalidConfig1 := score.Config_Refactor{Weight: -1, HalfLife: time.Second, LatencyCuFactor: 1}
+	invalidConfig2 := score.Config_Refactor{Weight: 1, HalfLife: time.Second, LatencyCuFactor: 1.01}
 
 	template := []struct {
 		name  string
@@ -104,7 +107,8 @@ func TestScoreStoreValidation(t *testing.T) {
 		{name: "invalid negative num", store: score.ScoreStore_Refactor{Name: "dummy", Num: -1, Denom: 1, Time: time.Now(), Config: validConfig}, valid: false},
 		{name: "invalid negative denom", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: -1, Time: time.Now(), Config: validConfig}, valid: false},
 		{name: "invalid zero denom", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 0, Time: time.Now(), Config: validConfig}, valid: false},
-		{name: "invalid config", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig}, valid: false},
+		{name: "invalid config weight", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig1}, valid: false},
+		{name: "invalid config latency cu factor", store: score.ScoreStore_Refactor{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig2}, valid: false},
 	}
 
 	for _, tt := range template {
@@ -146,34 +150,37 @@ func TestScoreStoreResolve(t *testing.T) {
 
 func TestScoreStoreUpdateConfig(t *testing.T) {
 	store := score.NewScoreStore_Refactor(score.LatencyScoreType_Refactor)
-	weight := float64(2)
+	weight, latencyCuFactor := float64(2), float64(1)
 	halfLife := 3 * time.Second
 
-	validOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife)}
-	invalidOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(-halfLife)}
+	validOpts := []score.Option_Refactor{score.WithWeight(weight), score.WithDecayHalfLife(halfLife), score.WithLatencyCuFactor(latencyCuFactor)}
+	invalidOpts := []score.Option_Refactor{score.WithWeight(-weight), score.WithDecayHalfLife(-halfLife), score.WithLatencyCuFactor(-latencyCuFactor)}
 
 	err := store.UpdateConfig(validOpts...)
 	require.NoError(t, err)
 	require.Equal(t, weight, store.GetConfig().Weight)
 	require.Equal(t, halfLife, store.GetConfig().HalfLife)
+	require.Equal(t, latencyCuFactor, store.GetConfig().LatencyCuFactor)
 
-	err = store.UpdateConfig(invalidOpts...)
-	require.Error(t, err)
-	require.Equal(t, weight, store.GetConfig().Weight)
-	require.Equal(t, halfLife, store.GetConfig().HalfLife)
+	for _, opt := range invalidOpts {
+		err = store.UpdateConfig(opt)
+		require.Error(t, err)
+		require.Equal(t, weight, store.GetConfig().Weight)
+		require.Equal(t, halfLife, store.GetConfig().HalfLife)
+		require.Equal(t, latencyCuFactor, store.GetConfig().LatencyCuFactor)
+	}
 }
 
 func TestScoreStoreUpdate(t *testing.T) {
 	num, denom, timestamp := float64(1), float64(2), time.Date(0, 0, 0, 0, 0, 1, 0, time.UTC)
-	weight, halfLife := float64(4), 5*time.Millisecond
+	weight, halfLife, latencyCuFactor := float64(4), 5*time.Millisecond, 0.5
 	sample, sampleTime := float64(1), timestamp.Add(10*time.Millisecond)
 
-	// in this test, we add a sample=1 after 10 milliseconds
-	// with the current config (weight=4, halfLife=5msec), the expected result is:
-	//    num = num * exp(-ln(2)*time_since_last_update/half_life_time) + weight * sample = 1*exp(-ln(2)*10/5) + 4*1 = exp(-2*ln(2)) + 4
-	//    denom = denom * exp(-ln(2)*time_since_last_update/half_life_time) + weight = 2*exp(-ln(2)*10/5) + 4  = 2*exp(-2*ln(2)) + 4
-	expectedNum := math.Exp(-2*math.Ln2) + 4
-	expectedDenom := 2*math.Exp(-2*math.Ln2) + 4
+	// in this test, we add a sample after 10 milliseconds, so the exponent is:
+	// time_since_last_update/half_life_time = 10ms / 5ms = 2
+	expectedNum := num*math.Exp(-2*math.Ln2) + weight*sample
+	expectedLatencyNum := math.Exp(-2*math.Ln2) + weight*sample*latencyCuFactor
+	expectedDenom := denom*math.Exp(-2*math.Ln2) + weight
 
 	template := []struct {
 		name      string
@@ -194,12 +201,16 @@ func TestScoreStoreUpdate(t *testing.T) {
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			store, err := score.NewCustomScoreStore_Refactor(tt.scoreType, num, denom, timestamp,
-				score.WithWeight(weight), score.WithDecayHalfLife(halfLife))
+				score.WithWeight(weight), score.WithDecayHalfLife(halfLife), score.WithLatencyCuFactor(latencyCuFactor))
 			require.NoError(t, err)
 
 			err = store.Update(tt.sample, sampleTime)
 			if tt.valid {
-				require.Equal(t, expectedNum, store.GetNum())
+				if tt.scoreType == score.LatencyScoreType_Refactor {
+					require.Equal(t, expectedLatencyNum, store.GetNum())
+				} else {
+					require.Equal(t, expectedNum, store.GetNum())
+				}
 				require.Equal(t, expectedDenom, store.GetDenom())
 				require.Equal(t, sampleTime, store.GetLastUpdateTime())
 			} else {
