@@ -33,7 +33,7 @@ func TestFreezeJailMetricsOnEpochUpdate(t *testing.T) {
 					Extensions:    []string{},
 				},
 			},
-			StakeAppliedBlock: uint64(stakeAppliedBlock),
+			StakeAppliedBlock: stakeAppliedBlock,
 		},
 	}
 
@@ -69,7 +69,7 @@ func TestFreezeJailMetricsOnEpochUpdate(t *testing.T) {
 
 		metricManager.
 			EXPECT().
-			SetJailedCount(specID, uint64(jailedCount)).
+			SetJailedCount(specID, jailedCount).
 			Times(1)
 
 		freezeUpdater.UpdateEpoch(epoch)
