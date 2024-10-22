@@ -188,8 +188,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp)
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
-		rpcp.createAndRegisterFreezeUpdatersByOptions(options, ctx)
 	}
+
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -211,8 +211,13 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
+
 	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
+
+	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, options.clientCtx, rpcp.addr.String())
+
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
+
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
@@ -272,17 +277,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	return nil
 }
 
-func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(options *rpcProviderStartOptions, ctx context.Context) {
-	providerFreezeUpdaterByChainId := make(map[string]*updaters.ProviderFreezeUpdater)
-	for _, rpcProviderEndpoint := range options.rpcProviderEndpoints {
-		_, freezeUpdaterExists := providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID]
-		if !freezeUpdaterExists {
-			stateQuery := updaters.NewProviderStateQuery(ctx, options.clientCtx)
-			freezeUpdater := updaters.NewProviderFreezeUpdater(stateQuery.PairingQueryClient, rpcProviderEndpoint.ChainID, options.clientCtx.FromAddress.String(), rpcp.providerMetricsManager)
-			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeUpdater)
-			providerFreezeUpdaterByChainId[rpcProviderEndpoint.ChainID] = freezeUpdater
-		}
-	}
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, clientCtx client.Context, publicAddress string) {
+	queryClient := pairingtypes.NewQueryClient(clientCtx)
+	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(queryClient, publicAddress, rpcp.providerMetricsManager)
+	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
 }
 
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
