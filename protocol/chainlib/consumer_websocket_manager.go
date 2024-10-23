@@ -23,7 +23,8 @@ var (
 )
 
 const (
-	WebSocketRateLimitHeader = "x-lava-rate-limit"
+	WebSocketRateLimitHeader            = "x-lava-websocket-rate-limit"
+	WebSocketOpenConnectionsLimitHeader = "x-lava-websocket-open-connections-limit"
 )
 
 type ConsumerWebsocketManager struct {
