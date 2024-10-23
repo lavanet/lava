@@ -14,21 +14,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/utils"
-	specutils "github.com/lavanet/lava/v3/utils/keeper"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	dualstakingante "github.com/lavanet/lava/v3/x/dualstaking/ante"
-	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/v3/x/subscription/types"
+	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/utils"
+	specutils "github.com/lavanet/lava/v4/utils/keeper"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	dualstakingante "github.com/lavanet/lava/v4/x/dualstaking/ante"
+	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -829,6 +829,15 @@ func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.Query
 	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
 }
 
+// QuerySubscriptionEstimateRewards: implement 'q subscription estimate-provider-rewards'
+func (ts *Tester) QuerySubscriptionEstimateProviderRewards(provider string, amountDelegator string) (*subscriptiontypes.QueryEstimatedRewardsResponse, error) {
+	msg := &subscriptiontypes.QueryEstimatedProviderRewardsRequest{
+		Provider:        provider,
+		AmountDelegator: amountDelegator,
+	}
+	return ts.Keepers.Subscription.EstimatedProviderRewards(ts.GoCtx, msg)
+}
+
 // QueryProjectInfo implements 'q project info'
 func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
 	msg := &projectstypes.QueryInfoRequest{Project: projectID}
@@ -1262,4 +1271,22 @@ func (ts *Tester) DisableParticipationFees() {
 	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
 	require.Nil(ts.T, err)
 	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
+}
+
+// deductParticipationFees calculates the validators and community participation
+// fees and returns the providers reward after deducting them
+func (ts *Tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
+	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward)
+	require.Nil(ts.T, err)
+	valParticipation = valPerc.MulInt(reward).TruncateInt()
+	communityParticipation = communityPerc.MulInt(reward).TruncateInt()
+	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
+}
+
+// EstimateProviderRewards uses the subscription's "estimate-provider-rewards" query and returns
+// the estimated rewards in math.Int form
+func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount string) (total math.Int, info []subscriptiontypes.EstimatedRewardInfo) {
+	res, err := ts.QuerySubscriptionEstimateProviderRewards(provider, delegatorAmount)
+	require.NoError(ts.T, err)
+	return res.Total.AmountOf(ts.BondDenom()).TruncateInt(), res.Info
 }

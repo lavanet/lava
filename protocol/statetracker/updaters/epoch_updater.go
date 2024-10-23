@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 	"golang.org/x/net/context"
 )
 

@@ -5,10 +5,10 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	v1 "github.com/lavanet/lava/v3/x/downtime/v1"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -40,6 +40,7 @@ type TimerStoreKeeper interface {
 type EpochstorageKeeper interface {
 	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
 	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
+	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
 }
 
 type DowntimeKeeper interface {

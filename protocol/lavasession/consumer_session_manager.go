@@ -10,13 +10,13 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v3/protocol/common"
-	metrics "github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	metrics "github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -114,7 +114,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList))
+	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
+
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -1126,7 +1127,14 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
+func NewConsumerSessionManager(
+	rpcEndpoint *RPCEndpoint,
+	providerOptimizer ProviderOptimizer,
+	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	reporter metrics.Reporter,
+	consumerPublicAddress string,
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
+) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,
