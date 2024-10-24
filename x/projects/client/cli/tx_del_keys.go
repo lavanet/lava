@@ -4,9 +4,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/decoder"
-	"github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/decoder"
+	"github.com/lavanet/lava/v4/x/projects/types"
 	"github.com/spf13/cobra"
 )
 

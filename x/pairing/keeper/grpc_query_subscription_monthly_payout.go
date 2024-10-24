@@ -6,10 +6,10 @@ import (
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	subsciption "github.com/lavanet/lava/v3/x/subscription/keeper"
-	subsciptiontypes "github.com/lavanet/lava/v3/x/subscription/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	subsciption "github.com/lavanet/lava/v4/x/subscription/keeper"
+	subsciptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

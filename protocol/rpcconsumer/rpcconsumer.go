@@ -16,25 +16,25 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/app"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/performance"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider"
-	"github.com/lavanet/lava/v3/protocol/statetracker"
-	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v3/protocol/upgrade"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	plantypes "github.com/lavanet/lava/v3/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/app"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider"
+	"github.com/lavanet/lava/v4/protocol/statetracker"
+	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/protocol/upgrade"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	plantypes "github.com/lavanet/lava/v4/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -100,29 +100,30 @@ type ConsumerStateTrackerInf interface {
 	GetLatestVirtualEpoch() uint64
 }
 
-type AnalyticsServerAddressess struct {
+type AnalyticsServerAddresses struct {
 	AddApiMethodCallsMetrics bool
 	MetricsListenAddress     string
 	RelayServerAddress       string
 	ReportsAddressFlag       string
+	OptimizerQoSAddress      string
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
 }
 
 type rpcConsumerStartOptions struct {
-	txFactory                 tx.Factory
-	clientCtx                 client.Context
-	rpcEndpoints              []*lavasession.RPCEndpoint
-	requiredResponses         int
-	cache                     *performance.Cache
-	strategy                  provideroptimizer.Strategy
-	maxConcurrentProviders    uint
-	analyticsServerAddressess AnalyticsServerAddressess
-	cmdFlags                  common.ConsumerCmdFlags
-	stateShare                bool
-	refererData               *chainlib.RefererData
-	staticProvidersList       []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
+	txFactory                tx.Factory
+	clientCtx                client.Context
+	rpcEndpoints             []*lavasession.RPCEndpoint
+	requiredResponses        int
+	cache                    *performance.Cache
+	strategy                 provideroptimizer.Strategy
+	maxConcurrentProviders   uint
+	analyticsServerAddresses AnalyticsServerAddresses
+	cmdFlags                 common.ConsumerCmdFlags
+	stateShare               bool
+	refererData              *chainlib.RefererData
+	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -131,10 +132,16 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		testModeWarn("RPCConsumer running tests")
 	}
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
-	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddressess.ReportsAddressFlag)
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddressess.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddressess.AddApiMethodCallsMetrics}) // start up prometheus metrics
-	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress)                                                                                                                                    // start up relay server reporting
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
+	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddresses.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddresses.AddApiMethodCallsMetrics}) // start up prometheus metrics
+	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                   // start up relay server reporting
+	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
+	if options.analyticsServerAddresses.OptimizerQoSAddress != "" {
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                  // start up optimizer qos client
+	}
+
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerOptimizerQoSClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
@@ -243,10 +250,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 
 				// Create / Use existing optimizer
-				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
-				optimizer, _, err = optimizers.LoadOrStore(chainID, newOptimizer)
+				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+				optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 				if err != nil {
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+
+				if !loaded {
+					// if this is a new optimizer, register it in the consumerOptimizerQoSClient
+					consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 				}
 
 				// Create / Use existing ConsumerConsistency
@@ -539,11 +551,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
 
-			analyticsServerAddressess := AnalyticsServerAddressess{
+			analyticsServerAddresses := AnalyticsServerAddresses{
 				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
 				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
 				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
 				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
 			}
 
 			var refererData *chainlib.RefererData
@@ -574,7 +587,20 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState, refererData, staticProviderEndpoints})
+			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
+				txFactory,
+				clientCtx,
+				rpcEndpoints,
+				requiredResponses,
+				cache,
+				strategyFlag.Strategy,
+				maxConcurrentProviders,
+				analyticsServerAddresses,
+				consumerPropagatedFlags,
+				rpcConsumerSharedState,
+				refererData,
+				staticProviderEndpoints,
+			})
 			return err
 		},
 	}
@@ -618,6 +644,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, 0.75, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, 0.0, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
 	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
+	// optimizer qos reports
+	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
+	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCConsumer.Flags().IntVar(&chainlib.WebSocketRateLimit, common.RateLimitWebSocketFlag, chainlib.WebSocketRateLimit, "rate limit (per second) websocket requests per user connection, default is unlimited")
 	cmdRPCConsumer.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	common.AddRollingLogConfig(cmdRPCConsumer)

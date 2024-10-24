@@ -3,7 +3,7 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type SpecKeeper interface {

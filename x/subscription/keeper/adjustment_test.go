@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v4/testutil/common"
 	"github.com/stretchr/testify/require"
 )
 

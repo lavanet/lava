@@ -3,7 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/rewards/types"
+	"github.com/lavanet/lava/v4/x/rewards/types"
 )
 
 // SetBasePay set a specific BasePay in the store from its index
@@ -84,8 +84,10 @@ func (k Keeper) popAllBasePayForChain(ctx sdk.Context, chainID string) (list []t
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		bs := types.BasePayKeyRecover(string(iterator.Key()))
 		bs.BasePay = val
-		list = append(list, bs)
-		store.Delete(iterator.Key())
+		if bs.ChainId == chainID {
+			list = append(list, bs)
+			store.Delete(iterator.Key())
+		}
 	}
 
 	return

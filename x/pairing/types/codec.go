@@ -16,6 +16,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgRelayPayment{}, "pairing/RelayPayment", nil)
 	cdc.RegisterConcrete(&MsgFreezeProvider{}, "pairing/Freeze", nil)
 	cdc.RegisterConcrete(&MsgUnfreezeProvider{}, "pairing/Unfreeze", nil)
+	cdc.RegisterConcrete(&MsgMoveProviderStake{}, "pairing/MoveProviderStake", nil)
 	// this line is used by starport scaffolding # 2
 }
 
@@ -34,6 +35,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgUnfreezeProvider{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgMoveProviderStake{},
 	)
 	// this line is used by starport scaffolding # 3
 

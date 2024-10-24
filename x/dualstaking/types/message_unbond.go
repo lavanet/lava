@@ -4,7 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 )
 
 const TypeMsgUnbond = "unbond"

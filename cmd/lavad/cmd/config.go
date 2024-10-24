@@ -3,7 +3,7 @@ package cmd
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/v3/app"
+	"github.com/lavanet/lava/v4/app"
 )
 
 func InitSDKConfig() {

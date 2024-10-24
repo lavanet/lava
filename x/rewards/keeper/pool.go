@@ -4,7 +4,7 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/rewards/types"
+	"github.com/lavanet/lava/v4/x/rewards/types"
 )
 
 // TotalPoolTokens gets the total tokens supply from a pool

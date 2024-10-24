@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -217,9 +217,8 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }
@@ -287,9 +286,8 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }

@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -112,7 +112,7 @@ func (RawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 func (RawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	bufferPtr, ok := v.(*[]byte)
 	if !ok {
-		return utils.LavaFormatError("cannot decode into type", nil, utils.LogAttr("v", v), utils.LogAttr("data", data))
+		return utils.LavaFormatDebug("cannot decode into type", utils.LogAttr("v", v), utils.LogAttr("data", data))
 	}
 	*bufferPtr = data
 	return nil

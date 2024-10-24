@@ -8,16 +8,16 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
-	specutils "github.com/lavanet/lava/v3/utils/keeper"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	pairingscores "github.com/lavanet/lava/v3/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
+	specutils "github.com/lavanet/lava/v4/utils/keeper"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/v4/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -968,7 +968,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, ts.spec.Index, p.Stake)
+	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

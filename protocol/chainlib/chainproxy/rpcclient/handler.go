@@ -27,7 +27,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that

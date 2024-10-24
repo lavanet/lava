@@ -13,11 +13,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/utils"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/utils"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"github.com/spf13/cobra"
 )
 

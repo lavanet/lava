@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v3/testutil/common"
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/testutil/common"
+	"github.com/lavanet/lava/v4/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 

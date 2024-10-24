@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/projects/types"
 )
 
 func (k msgServer) SetSubscriptionPolicy(goCtx context.Context, msg *types.MsgSetSubscriptionPolicy) (*types.MsgSetSubscriptionPolicyResponse, error) {

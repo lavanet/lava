@@ -9,13 +9,13 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/cmd/lavad/cmd"
-	"github.com/lavanet/lava/v3/testutil/common"
-	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/testutil/nullify"
-	"github.com/lavanet/lava/v3/x/spec/client/utils"
-	"github.com/lavanet/lava/v3/x/spec/keeper"
-	"github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
+	"github.com/lavanet/lava/v4/testutil/common"
+	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/testutil/nullify"
+	"github.com/lavanet/lava/v4/x/spec/client/utils"
+	"github.com/lavanet/lava/v4/x/spec/keeper"
+	"github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

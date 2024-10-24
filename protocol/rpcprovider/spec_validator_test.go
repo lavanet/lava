@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	testcommon "github.com/lavanet/lava/v4/testutil/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )

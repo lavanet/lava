@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	common "github.com/lavanet/lava/v3/testutil/common"
-	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/testutil/nullify"
-	"github.com/lavanet/lava/v3/x/epochstorage/keeper"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	common "github.com/lavanet/lava/v4/testutil/common"
+	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/testutil/nullify"
+	"github.com/lavanet/lava/v4/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

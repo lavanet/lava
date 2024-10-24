@@ -2,7 +2,7 @@ package client
 
 import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	"github.com/lavanet/lava/v3/x/spec/client/cli"
+	"github.com/lavanet/lava/v4/x/spec/client/cli"
 )
 
 // SpecAddProposalHandler is the param change proposal handler.

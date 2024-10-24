@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v3/utils"
-	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/utils"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
 )
 
 const (

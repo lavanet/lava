@@ -3,7 +3,7 @@ package provideroptimizer
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/stretchr/testify/assert"
 )
 

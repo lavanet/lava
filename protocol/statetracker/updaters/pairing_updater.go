@@ -7,10 +7,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/utils"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"golang.org/x/net/context"
 )
 
@@ -120,6 +120,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 		} else {
 			nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
 		}
+
 		for _, consumerSessionManager := range consumerSessionManagerList {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
 			err = pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
@@ -247,12 +248,17 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			pairingEndpoints[idx] = endp
 		}
 		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)
+		totalStakeAmount := provider.Stake.Amount
+		if !provider.DelegateTotal.Amount.IsNil() {
+			totalStakeAmount = totalStakeAmount.Add(provider.DelegateTotal.Amount)
+		}
+		totalStakeIncludingDelegation := sdk.Coin{Denom: provider.Stake.Denom, Amount: totalStakeAmount}
 		pairing[uint64(providerIdx)] = lavasession.NewConsumerSessionWithProvider(
 			provider.Address,
 			pairingEndpoints,
 			maxCu,
 			epoch,
-			provider.Stake,
+			totalStakeIncludingDelegation,
 		)
 	}
 	if len(pairing) == 0 {

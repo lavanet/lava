@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,14 +23,11 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 	}
 
 	for _, delegation := range resProviders.Delegations {
-		if (delegation.ChainID == req.ChainId || req.ChainId == "") &&
-			(delegation.Provider == req.Provider || req.Provider == "") {
-			ind := types.DelegationKey(delegation.Provider, req.Delegator, delegation.ChainID)
-			delegatorReward, found := k.GetDelegatorReward(ctx, ind)
+		if delegation.Provider == req.Provider || req.Provider == "" {
+			delegatorReward, found := k.GetDelegatorReward(ctx, delegation.Provider, delegation.Delegator)
 			if found {
 				reward := types.DelegatorRewardInfo{
 					Provider: delegation.Provider,
-					ChainId:  delegation.ChainID,
 					Amount:   delegatorReward.Amount,
 				}
 				rewards = append(rewards, reward)

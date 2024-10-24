@@ -6,9 +6,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/x/epochstorage/keeper"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -99,6 +99,12 @@ func createNStakeEntriesCurrent(keeper *keeper.Keeper, ctx sdk.Context, n int) [
 			Chain:   strconv.Itoa(i),
 		}
 		keeper.SetStakeEntryCurrent(ctx, items[i])
+		metadata := types.ProviderMetadata{
+			Provider: items[i].Address,
+			Vault:    items[i].Vault,
+			Chains:   []string{items[i].Chain},
+		}
+		keeper.SetMetadata(ctx, metadata)
 	}
 	return items
 }

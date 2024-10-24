@@ -12,7 +12,7 @@ import (
 
 	"github.com/praserx/ipconv"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type IpService struct {

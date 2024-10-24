@@ -8,9 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	"github.com/lavanet/lava/v3/x/projects/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v4/x/projects/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/spf13/cobra"
 )
 

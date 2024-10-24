@@ -1,15 +1,15 @@
 syntax = "proto3";
 package lavanet.lava.dualstaking;
 
-option go_package = "github.com/lavanet/lava/v3/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 message DelegatorReward {
+    reserved 3;
     string delegator = 1;
     string provider = 2;
-    string chain_id = 3;
     repeated cosmos.base.v1beta1.Coin amount = 4 [
         (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
         (gogoproto.nullable)     = false

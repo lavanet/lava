@@ -6,16 +6,16 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v3/utils"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	plantypes "github.com/lavanet/lava/v3/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/utils"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	plantypes "github.com/lavanet/lava/v4/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
 )
 
 type ConsumerTxSenderInf interface {

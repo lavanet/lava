@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v3/testutil/sample"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/testutil/sample"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

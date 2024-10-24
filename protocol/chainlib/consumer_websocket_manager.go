@@ -8,12 +8,12 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
-	formatter "github.com/lavanet/lava/v3/ecosystem/cache/format"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	formatter "github.com/lavanet/lava/v4/ecosystem/cache/format"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -96,6 +96,10 @@ func (cwm *ConsumerWebsocketManager) handleRateLimitReached(inpData []byte) ([]b
 }
 
 func (cwm *ConsumerWebsocketManager) ListenToMessages() {
+	// adding metrics for how many active connections we have.
+	cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, true)
+	defer cwm.rpcConsumerLogs.SetWebSocketConnectionActive(cwm.chainId, cwm.apiInterface, false)
+
 	var (
 		messageType int
 		msg         []byte

@@ -11,9 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/v3/testutil/sample"
-	conflictsimulation "github.com/lavanet/lava/v3/x/conflict/simulation"
-	"github.com/lavanet/lava/v3/x/conflict/types"
+	"github.com/lavanet/lava/v4/testutil/sample"
+	conflictsimulation "github.com/lavanet/lava/v4/x/conflict/simulation"
+	"github.com/lavanet/lava/v4/x/conflict/types"
 )
 
 // avoid unused import issue

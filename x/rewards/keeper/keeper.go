@@ -3,14 +3,16 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/collections"
 	cosmosMath "cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v3/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
+	"github.com/lavanet/lava/v4/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 type (
@@ -41,6 +43,9 @@ type (
 		// the address capable of executing a MsgSetIprpcData message. Typically, this
 		// should be the x/gov module account.
 		authority string
+
+		schema           collections.Schema
+		lastRewardsBlock collections.Item[uint64]
 	}
 )
 
@@ -66,6 +71,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -83,16 +90,24 @@ func NewKeeper(
 
 		feeCollectorName: feeCollectorName,
 		authority:        authority,
+
+		lastRewardsBlock: collections.NewItem(sb, types.LastRewardsBlockPrefix, "last_rewards_block", collections.Uint64Value),
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
-		keeper.distributeMonthlyBonusRewards(ctx)
+		keeper.DistributeMonthlyBonusRewards(ctx)
 		keeper.RefillRewardsPools(ctx, subkey, data)
 	}
 
 	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
 	keeper.refillRewardsPoolTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.RefillRewardsPoolTimerPrefix).
 		WithCallbackByBlockTime(refillRewardsPoolTimerCallback)
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 
 	return &keeper
 }

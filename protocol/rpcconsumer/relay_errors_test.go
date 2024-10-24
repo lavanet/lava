@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
