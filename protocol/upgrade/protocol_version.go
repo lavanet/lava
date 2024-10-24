@@ -26,7 +26,7 @@ func GetCurrentVersion() ProtocolVersion {
 func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *updaters.ProtocolVersionResponse) error {
 	// check min version
 	if HasVersionMismatch(incoming.Version.ConsumerMin, lavaProtocolVersion.ConsumerVersion) || HasVersionMismatch(incoming.Version.ProviderMin, lavaProtocolVersion.ProviderVersion) {
-		utils.LavaFormatFatal("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
+		return utils.LavaFormatError("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
 			nil,
 			utils.Attribute{Key: "required (on-chain) consumer minimum version:", Value: incoming.Version.ConsumerMin},
 			utils.Attribute{Key: "required (on-chain) provider minimum version", Value: incoming.Version.ProviderMin},
