@@ -284,7 +284,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 					return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 				}
 				if !loaded { // when creating new finalization consensus instance we need to register it to updates
-					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, staticProvidersActive)
 				}
 				return nil
 			}
