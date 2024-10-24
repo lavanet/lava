@@ -146,7 +146,7 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 		Client:  csq.clientCtx.FromAddress.String(),
 	})
 	if err != nil {
-		return nil, 0, 0, utils.LavaFormatError("Failed in get pairing query", err, utils.Attribute{})
+		return nil, 0, 0, err
 	}
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)
