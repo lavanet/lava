@@ -336,19 +336,26 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 					}
 				}
 
-				value, exists = finalizationConsensuses.Load(chainID)
-				if !exists {
-					// doesn't exist for this chain create a new one
-					finalizationConsensus = finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
+				if !loaded {
+					// if this is a new optimizer, register it in the consumerOptimizerQoSClient
+					consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
+				}
+
+				// Create / Use existing ConsumerConsistency
+				newConsumerConsistency := NewConsumerConsistency(chainID)
+				consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
+				if err != nil {
+					return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+
+				// Create / Use existing FinalizationConsensus
+				newFinalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
+				finalizationConsensus, loaded, err = finalizationConsensuses.LoadOrStore(chainID, newFinalizationConsensus)
+				if err != nil {
+					return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+				if !loaded { // when creating new finalization consensus instance we need to register it to updates
 					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, staticProvidersActive)
-					finalizationConsensuses.Store(chainID, finalizationConsensus)
-				} else {
-					var ok bool
-					finalizationConsensus, ok = value.(*finalizationconsensus.FinalizationConsensus)
-					if !ok {
-						err = utils.LavaFormatError("failed loading finalization consensus, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-						return err
-					}
 				}
 				return nil
 			}
