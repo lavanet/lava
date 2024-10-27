@@ -108,16 +108,20 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 }
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
-	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now(), nil)
 }
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64) {
-	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64, providerLoad *ProviderLoadReport) {
+	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now(), providerLoad)
 }
 
-func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time) {
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time, providerLoad *ProviderLoadReport) {
 	latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
 	providerData, _ := po.getProviderData(providerAddress)
+	// set current provider load only if incoming data is more fresh than previous stored data
+	if providerLoad != nil && (providerData.ProviderLoad == nil || providerLoad.TimeStamp.After(providerData.ProviderLoad.TimeStamp)) {
+		providerData.ProviderLoad = providerLoad
+	}
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success {

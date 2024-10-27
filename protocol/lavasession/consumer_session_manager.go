@@ -1042,7 +1042,16 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+
+	// create new provider load pointer so we can read it later without locks
+	var providerLoadReport *provideroptimizer.ProviderLoadReport
+	if consumerSession.latestKnownLoadReport != nil {
+		providerLoadReport = &provideroptimizer.ProviderLoadReport{
+			ProviderLoad: consumerSession.latestKnownLoadReport.ProviderLoad,
+			TimeStamp:    consumerSession.latestKnownLoadReport.TimeStamp,
+		}
+	}
+	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock), providerLoadReport)
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }
