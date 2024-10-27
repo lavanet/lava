@@ -654,18 +654,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			}
 			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
 
-			resultStatus, err := clientCtx.Client.Status(ctx)
-			if err != nil {
-				utils.LavaFormatFatal("failed to get status from node", err)
-			}
-
-			if networkChainId != resultStatus.NodeInfo.Network {
-				utils.LavaFormatFatal("lava chain-id from flag does not match the lava chain-id of the node", nil,
-					utils.LogAttr("chain-id-from-flag", networkChainId),
-					utils.LogAttr("chain-id-from-node", resultStatus.NodeInfo.Network),
-				)
-			}
-
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			err = common.VerifyAndHandleUnsupportedFlags(cmd.Flags())
 			if err != nil {
