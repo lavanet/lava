@@ -107,6 +107,7 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 	}
 }
 
+// TODO forward load also on relay failure
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
 	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now(), nil)
 }
