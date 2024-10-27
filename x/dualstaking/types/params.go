@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"gopkg.in/yaml.v2"
 )
 

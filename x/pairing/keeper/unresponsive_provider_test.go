@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/testutil/common"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/pairing/keeper"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/keeper"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

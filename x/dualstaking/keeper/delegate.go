@@ -21,11 +21,11 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
-	lavaslices "github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/utils"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	lavaslices "github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	"golang.org/x/exp/slices"
 )
 

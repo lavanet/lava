@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/spec/types"
-	typesv1 "github.com/lavanet/lava/v3/x/spec/types/migrations/v1"
+	"github.com/lavanet/lava/v4/x/spec/types"
+	typesv1 "github.com/lavanet/lava/v4/x/spec/types/migrations/v1"
 )
 
 type Migrator struct {

@@ -11,10 +11,10 @@ import (
 	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type Selection int
@@ -192,11 +192,11 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 			// Check hash already exist, if it does, we don't want to retry
 			if !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
-				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", utils.ToHexString(hash)))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
 				return false
 			}
-			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
+			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", utils.ToHexString(hash)))
 		} else {
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
@@ -205,7 +205,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 				utils.LogAttr("params", rp.RelayStateMachine.GetProtocolMessage().GetRPCMessage().GetParams()),
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("apiInterface", apiInterface),
-				utils.LogAttr("hash", hash),
+				utils.LogAttr("hash", utils.ToHexString(hash)),
 			)
 			rp.relayRetriesManager.AddHashToCache(hash)
 		}

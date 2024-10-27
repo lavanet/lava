@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 )
 
 var DelegationIndexPrefix = collections.NewPrefix(1)

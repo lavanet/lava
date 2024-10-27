@@ -3,7 +3,7 @@ package common
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type SafeSyncMap[K, V any] struct {
