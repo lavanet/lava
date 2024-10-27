@@ -143,7 +143,7 @@ type RPCProvider struct {
 	staticProvider               bool
 	staticSpecPath               string
 	relayLoadLimit               uint64
-	providerLoadManagersPerChain map[string]*ProviderLoadManager
+	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -169,8 +169,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
 	rpcp.relayLoadLimit = options.relayLoadLimit
-	rpcp.providerLoadManagersPerChain = make(map[string]*ProviderLoadManager)
-
+	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -454,10 +453,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		}
 
 		// create provider load manager per chain ID
-		_, keyExists := rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
-		if !keyExists {
-			rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID] = NewProviderLoadManager(rpcp.relayLoadLimit)
-		}
+		rpcp.providerLoadManagersPerChain.LoadOrStore(rpcProviderEndpoint.ChainID, NewProviderLoadManager(rpcp.relayLoadLimit))
 		return nil
 	}
 	err = chainCommonSetup()
@@ -493,8 +489,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-	loadManager, found := rpcp.providerLoadManagersPerChain[rpcProviderEndpoint.ChainID]
-	if !found {
+
+	loadManager, found, err := rpcp.providerLoadManagersPerChain.Load(rpcProviderEndpoint.ChainID)
+	if !found || err != nil {
 		utils.LavaFormatError("Failed creating provider load manager", nil, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID))
 	}
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager)
