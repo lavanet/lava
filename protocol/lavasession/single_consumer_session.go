@@ -11,6 +11,11 @@ import (
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
+type ProviderLoadReport struct {
+	providerLoad float64
+	timeStamp    time.Time
+}
+
 type SingleConsumerSession struct {
 	CuSum         uint64
 	LatestRelayCu uint64 // set by GetSessions cuNeededForSession
@@ -21,13 +26,36 @@ type SingleConsumerSession struct {
 	RelayNum      uint64
 	LatestBlock   int64
 	// Each session will holds a pointer to a connection, if the connection is lost, this session will be banned (wont be picked)
-	EndpointConnection *EndpointConnection
-	BlockListed        bool // if session lost sync we blacklist it.
-	ConsecutiveErrors  []error
-	errorsCount        uint64
-	relayProcessor     UsedProvidersInf
-	providerUniqueId   string
-	StaticProvider     bool
+	EndpointConnection    *EndpointConnection
+	BlockListed           bool // if session lost sync we blacklist it.
+	ConsecutiveErrors     []error
+	errorsCount           uint64
+	relayProcessor        UsedProvidersInf
+	providerUniqueId      string
+	StaticProvider        bool
+	latestKnownLoadReport *ProviderLoadReport
+}
+
+// should only be called when locked.
+func (cs *SingleConsumerSession) SetLoadReport(loadReport []string) {
+	if len(loadReport) <= 0 {
+		// no load report
+		return
+	}
+	load := loadReport[0]
+	floatLoad, err := strconv.ParseFloat(load, 64)
+	if err != nil {
+		utils.LavaFormatWarning("Failed parsing load report from provider", err, utils.LogAttr("load_reported", loadReport))
+		return
+	}
+	if floatLoad == 0 {
+		// Provider did not set his max load options or has 0 load.
+		return
+	}
+	cs.latestKnownLoadReport = &ProviderLoadReport{
+		timeStamp:    time.Now(),
+		providerLoad: floatLoad,
+	}
 }
 
 // returns the expected latency to a threshold.

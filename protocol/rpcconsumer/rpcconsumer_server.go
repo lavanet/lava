@@ -886,6 +886,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 
 		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
+		// set provider load to single consumer session
+		singleConsumerSession.SetLoadReport(relayResult.ProviderTrailer.Get(chainlib.RpcProviderLoadRateHeader))
 
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
