@@ -83,7 +83,7 @@ type ProviderData struct {
 	SyncBlock    uint64           // will be used to calculate the probability of block error
 	LatencyRaw   score.ScoreStore // will be used when reporting reputation to the node (Latency = LatencyRaw / baseLatency)
 	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
-	ProviderLoad ProviderLoadReport
+	ProviderLoad *ProviderLoadReport
 }
 
 type Strategy int
