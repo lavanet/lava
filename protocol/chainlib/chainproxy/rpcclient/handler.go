@@ -333,16 +333,15 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 	} else if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
 		go op.sub.run()
 		h.clientSubs[op.sub.subid] = op.sub
-	}
-
-	// This is because StarkNet Pathfinder is returning an integer instead of a string in the result
-	var integerSubId int
-	err := json.Unmarshal(msg.Result, &integerSubId)
-	if err == nil {
-		op.err = nil
-		op.sub.subid = strconv.Itoa(integerSubId)
-		go op.sub.run()
-		h.clientSubs[op.sub.subid] = op.sub
+	} else {
+		// This is because StarkNet Pathfinder is returning an integer instead of a string in the result
+		var integerSubId int
+		if json.Unmarshal(msg.Result, &integerSubId) == nil {
+			op.err = nil
+			op.sub.subid = strconv.Itoa(integerSubId)
+			go op.sub.run()
+			h.clientSubs[op.sub.subid] = op.sub
+		}
 	}
 }
 
