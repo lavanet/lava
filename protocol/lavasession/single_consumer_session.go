@@ -7,14 +7,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
-
-type ProviderLoadReport struct {
-	providerLoad float64
-	timeStamp    time.Time
-}
 
 type SingleConsumerSession struct {
 	CuSum         uint64
@@ -33,7 +29,7 @@ type SingleConsumerSession struct {
 	relayProcessor        UsedProvidersInf
 	providerUniqueId      string
 	StaticProvider        bool
-	latestKnownLoadReport *ProviderLoadReport
+	latestKnownLoadReport *provideroptimizer.ProviderLoadReport
 }
 
 // should only be called when locked.
@@ -52,9 +48,9 @@ func (cs *SingleConsumerSession) SetLoadReport(loadReport []string) {
 		// Provider did not set his max load options or has 0 load.
 		return
 	}
-	cs.latestKnownLoadReport = &ProviderLoadReport{
-		timeStamp:    time.Now(),
-		providerLoad: floatLoad,
+	cs.latestKnownLoadReport = &provideroptimizer.ProviderLoadReport{
+		TimeStamp:    time.Now(),
+		ProviderLoad: floatLoad,
 	}
 }
 

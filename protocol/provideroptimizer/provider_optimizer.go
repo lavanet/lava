@@ -71,6 +71,11 @@ type Exploration struct {
 	time    time.Time
 }
 
+type ProviderLoadReport struct {
+	ProviderLoad float64
+	TimeStamp    time.Time
+}
+
 type ProviderData struct {
 	Availability score.ScoreStore // will be used to calculate the probability of error
 	Latency      score.ScoreStore // will be used to calculate the latency score
@@ -78,6 +83,7 @@ type ProviderData struct {
 	SyncBlock    uint64           // will be used to calculate the probability of block error
 	LatencyRaw   score.ScoreStore // will be used when reporting reputation to the node (Latency = LatencyRaw / baseLatency)
 	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
+	ProviderLoad ProviderLoadReport
 }
 
 type Strategy int
