@@ -270,6 +270,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 	for _, requirement := range supportedMap {
 		if requirement.IsRequirementMet(WebSocketExtension) {
 			webSocketSupported = true
+			break
 		}
 	}
 	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
