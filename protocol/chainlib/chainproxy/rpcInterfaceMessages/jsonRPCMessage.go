@@ -56,7 +56,7 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	if result.Error == nil {
+	if result.Error == nil { // no error
 		return false, ""
 	}
 	return result.Error.Message != "", result.Error.Message
