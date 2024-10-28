@@ -11,21 +11,15 @@ import (
 )
 
 func TestGetVerifications(t *testing.T) {
-	verifications := map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer{
+	verifications := map[VerificationKey]map[string][]VerificationContainer{
 		{
 			Extension: "",
 			Addon:     "",
 		}: {
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "/x",
-			}: {
+			"/x": {
 				{InternalPath: "/x"},
 			},
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "",
-			}: {
+			"": {
 				{InternalPath: ""},
 			},
 		},
@@ -33,16 +27,10 @@ func TestGetVerifications(t *testing.T) {
 			Extension: "",
 			Addon:     "addon1",
 		}: {
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "/x",
-			}: {
+			"/x": {
 				{InternalPath: "/x"},
 			},
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "",
-			}: {
+			"": {
 				{InternalPath: ""},
 			},
 		},
@@ -50,16 +38,10 @@ func TestGetVerifications(t *testing.T) {
 			Extension: "ext1",
 			Addon:     "addon1",
 		}: {
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "/x",
-			}: {
+			"/x": {
 				{InternalPath: "/x"},
 			},
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "",
-			}: {
+			"": {
 				{InternalPath: ""},
 			},
 		},
@@ -67,16 +49,10 @@ func TestGetVerifications(t *testing.T) {
 			Extension: "ext1",
 			Addon:     "",
 		}: {
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "/x",
-			}: {
+			"/x": {
 				{InternalPath: "/x"},
 			},
-			{
-				ApiInterface: "jsonrpc",
-				InternalPath: "",
-			}: {
+			"": {
 				{InternalPath: ""},
 			},
 		},
@@ -153,12 +129,11 @@ func TestGetVerifications(t *testing.T) {
 				require.NoError(t, err)
 
 				expectedVerificationKey := VerificationKey{Extension: play.Extension, Addon: play.Addon}
-				expectedCollectionVerificationKey := VerificationCollectionKey{ApiInterface: apiInterface, InternalPath: play.InternalPath}
-				expectedVerifications := verifications[expectedVerificationKey][expectedCollectionVerificationKey]
+				expectedVerifications := verifications[expectedVerificationKey][play.InternalPath]
 				// add the empty addon to the expected verifications
 				if play.Addon != "" {
 					expectedVerificationKey.Addon = ""
-					expectedVerifications = append(expectedVerifications, verifications[expectedVerificationKey][expectedCollectionVerificationKey]...)
+					expectedVerifications = append(expectedVerifications, verifications[expectedVerificationKey][play.InternalPath]...)
 				}
 				require.True(t, reflect.DeepEqual(expectedVerifications, actualVerifications), "expected: %v, actual: %v", expectedVerifications, actualVerifications)
 			})

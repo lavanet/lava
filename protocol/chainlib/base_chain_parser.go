@@ -30,7 +30,7 @@ type BaseChainParser struct {
 	serverApis      map[ApiKey]ApiContainer
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer
+	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
 	allowedAddons   map[string]bool
 	extensionParser extensionslib.ExtensionParser
 	active          bool
@@ -222,12 +222,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 			}
 			collectionVerifications, ok := bcp.verifications[verificationKey]
 			if ok {
-				verificationCollectionKey := VerificationCollectionKey{
-					InternalPath: internalPath,
-					ApiInterface: apiInterface,
-				}
-
-				if verifications, ok := collectionVerifications[verificationCollectionKey]; ok {
+				if verifications, ok := collectionVerifications[internalPath]; ok {
 					retVerifications = append(retVerifications, verifications...)
 				}
 			}
@@ -238,7 +233,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
-	verifications map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer,
+	verifications map[VerificationKey]map[string][]VerificationContainer,
 ) {
 	bcp.spec = spec
 	bcp.internalPaths = internalPaths
@@ -365,13 +360,13 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey]map[string][]VerificationContainer) {
 	retInternalPaths = map[string]struct{}{}
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
-	verifications := map[VerificationKey]map[VerificationCollectionKey][]VerificationContainer{}
+	verifications := map[VerificationKey]map[string][]VerificationContainer{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
@@ -480,17 +475,13 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 						Severity:        parseValue.Severity,
 					}
 
-					verificationCollectionKey := VerificationCollectionKey{
-						ApiInterface: apiCollection.CollectionData.ApiInterface,
-						InternalPath: apiCollection.CollectionData.InternalPath,
-					}
-
+					internalPath := apiCollection.CollectionData.InternalPath
 					if extensionVerifications, ok := verifications[verificationKey]; !ok {
-						verifications[verificationKey] = map[VerificationCollectionKey][]VerificationContainer{verificationCollectionKey: {verCont}}
-					} else if collectionVerifications, ok := extensionVerifications[verificationCollectionKey]; !ok {
-						verifications[verificationKey][verificationCollectionKey] = []VerificationContainer{verCont}
+						verifications[verificationKey] = map[string][]VerificationContainer{internalPath: {verCont}}
+					} else if collectionVerifications, ok := extensionVerifications[internalPath]; !ok {
+						verifications[verificationKey][internalPath] = []VerificationContainer{verCont}
 					} else {
-						verifications[verificationKey][verificationCollectionKey] = append(collectionVerifications, verCont)
+						verifications[verificationKey][internalPath] = append(collectionVerifications, verCont)
 					}
 				}
 			}
