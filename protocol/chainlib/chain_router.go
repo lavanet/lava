@@ -106,6 +106,7 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 	httpRouteSet := false
 	firstWsRouterKey := lavasession.GetEmptyRouterKey()
 	firstWsNodeUrl := common.NodeUrl{}
+	isFirstWsSet := false
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
 		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
 		if len(nodeUrl.Methods) > 0 {
@@ -124,8 +125,11 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 		// Some parsing may fail because of gRPC
 		if err == nil && isWs {
 			// save the first ws router key and nodeUrl for later use
-			firstWsRouterKey = routerKey
-			firstWsNodeUrl = nodeUrl
+			if !isFirstWsSet {
+				isFirstWsSet = true
+				firstWsRouterKey = routerKey
+				firstWsNodeUrl = nodeUrl
+			}
 
 			// now change the router key to fit the websocket extension key.
 			nodeUrl.Addons = append(nodeUrl.Addons, WebSocketExtension)
