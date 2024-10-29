@@ -65,7 +65,7 @@ func (c Config_Refactor) Validate() error {
 		return fmt.Errorf("invalid config: half life time must be strictly positive, half life: %f", c.HalfLife.Seconds())
 	}
 	if c.LatencyCuFactor <= 0 || c.LatencyCuFactor > 1 {
-		return fmt.Errorf("invalid config: latency cu factor must be between [0,1], latency cu factor: %f", c.LatencyCuFactor)
+		return fmt.Errorf("invalid config: latency cu factor must be between (0,1], latency cu factor: %f", c.LatencyCuFactor)
 	}
 	return nil
 }

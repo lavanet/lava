@@ -86,7 +86,7 @@ func TestDefaultScoreStoreCreation(t *testing.T) {
 			require.Equal(t, tt.scoreType, store.GetName())
 			require.Equal(t, expectedNum, store.GetNum())
 			require.Equal(t, float64(1), store.GetDenom())
-			require.InEpsilon(t, time.Now().Add(-score.InitialDataStaleness_Refactor*time.Hour).UTC().Unix(), store.GetLastUpdateTime().UTC().Unix(), 0.01)
+			require.InEpsilon(t, time.Now().Add(-score.InitialDataStaleness_Refactor).UTC().Unix(), store.GetLastUpdateTime().UTC().Unix(), 0.01)
 			require.Equal(t, score.DefaultWeight_Refactor, store.GetConfig().Weight)
 			require.Equal(t, score.DefaultHalfLifeTime_Refactor, store.GetConfig().HalfLife)
 		})
@@ -124,7 +124,7 @@ func TestScoreStoreValidation(t *testing.T) {
 }
 
 func TestScoreStoreResolve(t *testing.T) {
-	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second}
+	validConfig := score.Config_Refactor{Weight: 1, HalfLife: time.Second, LatencyCuFactor: 0.1}
 	template := []struct {
 		name   string
 		store  score.ScoreStore_Refactor
@@ -420,4 +420,16 @@ func TestScoreStoreWeight(t *testing.T) {
 	score2, err := store2.Resolve()
 	require.NoError(t, err)
 	require.Greater(t, math.Abs(score2-originalScore), math.Abs(score1-originalScore))
+}
+
+// TestScoreStoreAvailabilityResolveNonZero verifies that the Resolve()
+// method of the AvailabilityScoreStore doesn't return zero when num/denom = 0
+// Zero is undesirable since in QoS Compute() method we divide by the
+// availability score
+func TestScoreStoreAvailabilityResolveNonZero(t *testing.T) {
+	store, err := score.NewCustomScoreStore_Refactor(score.AvailabilityScoreType_Refactor, 0, 1, time.Now())
+	require.NoError(t, err)
+	score, err := store.Resolve()
+	require.NoError(t, err)
+	require.NotZero(t, score)
 }

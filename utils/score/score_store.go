@@ -12,7 +12,7 @@ import (
 
 const (
 	DecPrecision_Refactor         int64 = 8
-	InitialDataStaleness_Refactor       = 24
+	InitialDataStaleness_Refactor       = 24 * time.Hour
 )
 
 // ScoreStore is a decaying weighted average object that is used to collect
@@ -93,7 +93,7 @@ func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 	switch scoreType {
 	case LatencyScoreType_Refactor:
 		// default latency: 10ms
-		latencyScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultLatencyNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
+		latencyScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultLatencyNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor))
 		if err != nil {
 			utils.LavaFormatFatal("cannot create default "+scoreType+" ScoreStore", err)
 		}
@@ -101,7 +101,7 @@ func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 
 	case SyncScoreType_Refactor:
 		// default sync: 100ms
-		syncScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultSyncNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
+		syncScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultSyncNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor))
 		if err != nil {
 			utils.LavaFormatFatal("cannot create default "+scoreType+" ScoreStore", err)
 		}
@@ -109,7 +109,7 @@ func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 
 	case AvailabilityScoreType_Refactor:
 		// default availability: 1
-		availabilityScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultAvailabilityNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor*time.Hour))
+		availabilityScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultAvailabilityNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor))
 		if err != nil {
 
 		}
@@ -259,9 +259,9 @@ const (
 	AvailabilityScoreType_Refactor = "availability"
 
 	// Worst score results for each QoS excellence metric for truncation
-	WorstLatencyScore_Refactor      float64 = 30      // seconds
-	WorstSyncScore_Refactor         float64 = 20 * 60 // seconds
-	WorstAvailabilityScore_Refactor float64 = 0
+	WorstLatencyScore_Refactor      float64 = 30        // seconds
+	WorstSyncScore_Refactor         float64 = 20 * 60   // seconds
+	WorstAvailabilityScore_Refactor float64 = 0.0000001 // very small value to avoid score = 0
 )
 
 /* ########## Latency ScoreStore ############ */
@@ -312,4 +312,22 @@ func (as *AvailabilityScoreStore_Refactor) Update(sample float64, sampleTime tim
 		return fmt.Errorf("availability must be 0 (false) or 1 (true), got %f", sample)
 	}
 	return as.ScoreStore_Refactor.Update(sample, sampleTime)
+}
+
+func (as *AvailabilityScoreStore_Refactor) Resolve() (float64, error) {
+	if as == nil {
+		return 0, fmt.Errorf("AvailabilityScoreStore is nil")
+	}
+	score, err := as.ScoreStore_Refactor.Resolve()
+	if err != nil {
+		return 0, err
+	}
+
+	// if the resolved score is equal to zero, return a very small number
+	// instead of zero since in the QoS Compute() method we divide by
+	// the availability score
+	if score == 0 {
+		score = WorstAvailabilityScore_Refactor
+	}
+	return score, nil
 }
