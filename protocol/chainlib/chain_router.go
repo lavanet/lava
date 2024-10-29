@@ -99,7 +99,7 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 }
 
 // batch nodeUrls with the same addons together in a copy
-func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) (map[string]lavasession.RPCProviderEndpoint, error) {
+func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (map[string]lavasession.RPCProviderEndpoint, error) {
 	returnedBatch := map[string]lavasession.RPCProviderEndpoint{}
 	routesToCheck := map[string]bool{}
 	methodRoutes := map[string]int{}
@@ -137,7 +137,21 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 		} else {
 			httpRouteSet = true
 		}
-		cri.addRouterKeyToBatch(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
+		cri.setRouterKeyInBatch(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint, true) // will override existing entries
+
+		if nodeUrl.InternalPath == "" { // root path
+			for _, internalPath := range chainParser.GetAllInternalPaths() {
+				nodeUrl.InternalPath = internalPath // add internal path.
+				if isWs {
+					// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
+					_, _, existing := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SUBSCRIBE)
+					if !existing {
+						continue
+					}
+				}
+				cri.setRouterKeyInBatch(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint, false) // will not override existing entries
+			}
+		}
 	}
 
 	// check if batch has http configured, if not, add a websocket one
@@ -179,20 +193,19 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 	return returnedBatch, nil
 }
 
-func (*chainRouterImpl) addRouterKeyToBatch(nodeUrl common.NodeUrl, returnedBatch map[string]lavasession.RPCProviderEndpoint, routerKey lavasession.RouterKey, rpcProviderEndpoint lavasession.RPCProviderEndpoint) {
+func (*chainRouterImpl) setRouterKeyInBatch(nodeUrl common.NodeUrl, returnedBatch map[string]lavasession.RPCProviderEndpoint, routerKey lavasession.RouterKey, rpcProviderEndpoint lavasession.RPCProviderEndpoint, overrideExistingEntry bool) {
 	routerKeyString := routerKey.String()
-	if existingEndpoint, ok := returnedBatch[routerKeyString]; !ok {
-		returnedBatch[routerKeyString] = lavasession.RPCProviderEndpoint{
-			NetworkAddress: rpcProviderEndpoint.NetworkAddress,
-			ChainID:        rpcProviderEndpoint.ChainID,
-			ApiInterface:   rpcProviderEndpoint.ApiInterface,
-			Geolocation:    rpcProviderEndpoint.Geolocation,
-			NodeUrls:       []common.NodeUrl{nodeUrl},
+	if !overrideExistingEntry {
+		if _, ok := returnedBatch[routerKeyString]; ok {
+			return
 		}
-	} else {
-		// setting the incoming url first as it might be http while existing is websocket. (we prioritize http over ws when possible)
-		existingEndpoint.NodeUrls = append([]common.NodeUrl{nodeUrl}, existingEndpoint.NodeUrls...)
-		returnedBatch[routerKeyString] = existingEndpoint
+	}
+	returnedBatch[routerKeyString] = lavasession.RPCProviderEndpoint{
+		NetworkAddress: rpcProviderEndpoint.NetworkAddress,
+		ChainID:        rpcProviderEndpoint.ChainID,
+		ApiInterface:   rpcProviderEndpoint.ApiInterface,
+		Geolocation:    rpcProviderEndpoint.Geolocation,
+		NodeUrls:       []common.NodeUrl{nodeUrl},
 	}
 }
 
@@ -203,7 +216,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 	}
 	requiredMap := map[string]struct{}{}     // key is requirement
 	supportedMap := map[string]requirement{} // key is requirement
-	rpcProviderEndpointBatch, err := cri.BatchNodeUrlsByServices(rpcProviderEndpoint)
+	rpcProviderEndpointBatch, err := cri.BatchNodeUrlsByServices(rpcProviderEndpoint, chainParser)
 	if err != nil {
 		return nil, err
 	}
