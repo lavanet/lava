@@ -17,13 +17,20 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	var rewards []types.DelegatorRewardInfo
-	allRewards := k.GetAllDelegatorReward(ctx)
-	for _, delegatorReward := range allRewards {
-		if delegatorReward.Delegator == req.Delegator && (delegatorReward.Provider == req.Provider || req.Provider == "") {
-			rewards = append(rewards, types.DelegatorRewardInfo{
-				Provider: delegatorReward.Provider,
-				Amount:   delegatorReward.Amount,
-			})
+	if req.Provider != "" {
+		reward, found := k.GetDelegatorReward(ctx, req.Provider, req.Delegator)
+		if found {
+			rewards = append(rewards, types.DelegatorRewardInfo{Provider: reward.Provider, Amount: reward.Amount})
+		}
+	} else {
+		allRewards := k.GetAllDelegatorReward(ctx)
+		for _, delegatorReward := range allRewards {
+			if delegatorReward.Delegator == req.Delegator {
+				rewards = append(rewards, types.DelegatorRewardInfo{
+					Provider: delegatorReward.Provider,
+					Amount:   delegatorReward.Amount,
+				})
+			}
 		}
 	}
 
