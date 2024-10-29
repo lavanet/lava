@@ -50,6 +50,37 @@ func (cp TendermintrpcMessage) GetParams() interface{} {
 	return cp.Params
 }
 
+type TendermintMessageResponseBody struct {
+	Code int    `json:"code,omitempty"`
+	Log  string `json:"log,omitempty"`
+}
+
+type TendermintMessageResponse struct {
+	Response TendermintMessageResponseBody `json:"response,omitempty"`
+}
+
+// returns if error exists and
+func (jm TendermintrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	result := &JsonrpcMessage{}
+	err := json.Unmarshal(data, result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+
+	if result.Error == nil { // no error
+		if result.Result != nil { // check if we got a tendermint error
+			tendermintResponse := &TendermintMessageResponse{}
+			err := json.Unmarshal(result.Result, tendermintResponse)
+			if err == nil {
+				return (tendermintResponse.Response.Code != 0 && tendermintResponse.Response.Log != ""), tendermintResponse.Response.Log
+			}
+		}
+		return false, ""
+	}
+	return result.Error.Message != "", result.Error.Message
+}
+
 func (tm TendermintrpcMessage) GetResult() json.RawMessage {
 	if tm.Error != nil {
 		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: tm.Error})
