@@ -71,6 +71,7 @@ type RPCProviderServer struct {
 	providerUniqueId                string
 	StaticProvider                  bool
 	providerStateMachine            *ProviderStateMachine
+	providerLoadManager             *ProviderLoadManager
 }
 
 type ReliabilityManagerInf interface {
@@ -112,6 +113,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
+	providerLoadManager *ProviderLoadManager,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -134,6 +136,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
 	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
+	rpcps.providerLoadManager = providerLoadManager
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -180,7 +183,17 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId))
+	// get the number of simultaneous relay calls
+	currentLoad := rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
+	defer func() {
+		// add load metric and subtract the load at the end of the relay using a routine.
+		go func() {
+			rpcps.providerLoadManager.subtractRelayCall()
+			rpcps.metrics.SetLoadRate(currentLoad)
+		}()
+	}()
+	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
+	grpc.SetTrailer(ctx, trailerMd)
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
@@ -1208,6 +1221,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
+	trailer.Append(common.LavaChainIdMetadataKey, rpcps.lavaChainID)
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }

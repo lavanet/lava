@@ -44,6 +44,7 @@ type ProviderMetricsManager struct {
 	frozenStatusMetric            *prometheus.GaugeVec
 	jailStatusMetric              *prometheus.GaugeVec
 	jailedCountMetric             *prometheus.GaugeVec
+	loadRateMetric                *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -110,6 +111,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "The total number of get latest block queries that succeeded by chainfetcher",
 	}, []string{"spec"})
 
+	loadRateMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_load_rate",
+		Help: "The load rate according to the load rate limit - Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.",
+	}, []string{"spec"})
+
 	fetchBlockSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_block_success",
 		Help: "The total number of get specific block queries that succeeded by chainfetcher",
@@ -165,6 +171,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(frozenStatusMetric)
 	prometheus.MustRegister(jailStatusMetric)
 	prometheus.MustRegister(jailedCountMetric)
+	prometheus.MustRegister(loadRateMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:               map[string]*ProviderMetrics{},
@@ -188,6 +195,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		frozenStatusMetric:            frozenStatusMetric,
 		jailStatusMetric:              jailStatusMetric,
 		jailedCountMetric:             jailedCountMetric,
+		loadRateMetric:                loadRateMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -236,7 +244,7 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface strin
 	}
 
 	if pme.getProviderMetric(specID, apiInterface) == nil {
-		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric)
+		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric)
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)

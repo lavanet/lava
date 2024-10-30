@@ -110,6 +110,7 @@ type rpcProviderStartOptions struct {
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
 	staticSpecPath            string
+	relayLoadLimit            uint64
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -123,24 +124,26 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 	// all of the following members need to be concurrency proof
-	providerMetricsManager    *metrics.ProviderMetricsManager
-	rewardServer              *rewardserver.RewardServer
-	privKey                   *btcec.PrivateKey
-	lavaChainID               string
-	addr                      sdk.AccAddress
-	blockMemorySize           uint64
-	chainMutexes              map[string]*sync.Mutex
-	parallelConnections       uint
-	cache                     *performance.Cache
-	shardID                   uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers             *common.SafeSyncMap[string, *chaintracker.ChainTracker]
-	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
-	relaysHealthCheckEnabled  bool
-	relaysHealthCheckInterval time.Duration
-	grpcHealthCheckEndpoint   string
-	providerUniqueId          string
-	staticProvider            bool
-	staticSpecPath            string
+	providerMetricsManager       *metrics.ProviderMetricsManager
+	rewardServer                 *rewardserver.RewardServer
+	privKey                      *btcec.PrivateKey
+	lavaChainID                  string
+	addr                         sdk.AccAddress
+	blockMemorySize              uint64
+	chainMutexes                 map[string]*sync.Mutex
+	parallelConnections          uint
+	cache                        *performance.Cache
+	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers                *common.SafeSyncMap[string, *chaintracker.ChainTracker]
+	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
+	relaysHealthCheckEnabled     bool
+	relaysHealthCheckInterval    time.Duration
+	grpcHealthCheckEndpoint      string
+	providerUniqueId             string
+	staticProvider               bool
+	staticSpecPath               string
+	relayLoadLimit               uint64
+	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -165,7 +168,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
-
+	rpcp.relayLoadLimit = options.relayLoadLimit
+	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -319,9 +323,7 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
-	chainIds := make(map[string]struct{})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
@@ -416,8 +418,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
-
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
+	var loadManager *ProviderLoadManager
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
 		defer rpcp.chainMutexes[chainID].Unlock()
@@ -462,6 +464,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			chainTracker = chainTrackerLoaded
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
+
+		// create provider load manager per chain ID
+		loadManager, _, err = rpcp.providerLoadManagersPerChain.LoadOrStore(rpcProviderEndpoint.ChainID, NewProviderLoadManager(rpcp.relayLoadLimit))
+		if err != nil {
+			utils.LavaFormatError("Failed LoadOrStore providerLoadManagersPerChain", err, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID), utils.LogAttr("rpcp.relayLoadLimit", rpcp.relayLoadLimit))
+		}
 		return nil
 	}
 	err = chainCommonSetup()
@@ -497,8 +505,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -729,6 +736,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if stickinessHeaderName != "" {
 				RPCProviderStickinessHeaderName = stickinessHeaderName
 			}
+			relayLoadLimit := viper.GetUint64(common.RateLimitRequestPerSecondFlag)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
@@ -766,6 +774,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
 				offlineSpecPath,
+				relayLoadLimit,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -802,7 +811,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
-
+	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }
