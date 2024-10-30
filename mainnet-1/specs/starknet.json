@@ -11,7 +11,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 12000,
+                "average_block_time": 30000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
@@ -36,7 +36,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -156,7 +156,7 @@
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -445,7 +445,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -605,7 +605,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_5",
+                            "internal_path": "/rpc/v0_6",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -622,7 +622,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_6",
+                            "internal_path": "/rpc/v0_7",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -729,7 +729,7 @@
                 "contributor": [
                   "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
                 ],
-                "contributor_percentage": "0.03"
+                "contributor_percentage": "0.035"
             },
             {
                 "index": "STRKS",
@@ -742,7 +742,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 1800000,
+                "average_block_time": 32000,
                 "allowed_block_lag_for_qos_sync": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -754,6 +754,29 @@
                         "collection_data": {
                             "api_interface": "jsonrpc",
                             "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f5345504f4c4941"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_7",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -794,37 +817,14 @@
                                 ]
                             }
                         ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_5",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
                     }
                 ],
                 "contributor": [
                   "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
                 ],
-                "contributor_percentage": "0.03"
+                "contributor_percentage": "0.035"
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "1750000000ulava"
 }
