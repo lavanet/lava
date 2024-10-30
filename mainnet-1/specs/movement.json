@@ -7,6 +7,9 @@
                 "index": "MOVEMENT",
                 "name": "movement mainnet",
                 "enabled": true,
+                "imports": [
+                    "APT1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
