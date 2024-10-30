@@ -1264,6 +1264,20 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 	chainMessage.SetForceCacheRefresh(ok)
 }
 
+// Iterating over metadataHeaders adding each trailer that fits the header if found to relayResult.Relay.Metadata
+func (rpccs *RPCConsumerServer) getMetadataFromRelayTrailer(metadataHeaders []string, relayResult *common.RelayResult) {
+	for _, metadataHeader := range metadataHeaders {
+		trailerValue := relayResult.ProviderTrailer.Get(metadataHeader)
+		if len(trailerValue) > 0 {
+			extensionMD := pairingtypes.Metadata{
+				Name:  metadataHeader,
+				Value: trailerValue[0],
+			}
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
+		}
+	}
+}
+
 func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, protocolMessage chainlib.ProtocolMessage, apiName string) {
 	if relayResult == nil {
 		return
@@ -1336,14 +1350,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	}
 
 	// fetch trailer information from the provider by using the provider trailer field.
-	providerNodeExtensions := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeExtension)
-	if len(providerNodeExtensions) > 0 {
-		extensionMD := pairingtypes.Metadata{
-			Name:  chainlib.RPCProviderNodeExtension,
-			Value: providerNodeExtensions[0],
-		}
-		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
-	}
+	rpccs.getMetadataFromRelayTrailer(chainlib.TrailersToAddToHeaderResponse, relayResult)
 
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
