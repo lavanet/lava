@@ -32,6 +32,19 @@ type SingleConsumerSession struct {
 	latestKnownLoadReport *provideroptimizer.ProviderLoadReport
 }
 
+// should only be called when locked, returning a copy of the object
+func (cs *SingleConsumerSession) GetProviderLoad() *provideroptimizer.ProviderLoadReport {
+	// create new provider load pointer so we can read it later without locks
+	var providerLoadReport *provideroptimizer.ProviderLoadReport
+	if cs.latestKnownLoadReport != nil {
+		providerLoadReport = &provideroptimizer.ProviderLoadReport{
+			ProviderLoad: cs.latestKnownLoadReport.ProviderLoad,
+			TimeStamp:    cs.latestKnownLoadReport.TimeStamp,
+		}
+	}
+	return providerLoadReport
+}
+
 // should only be called when locked.
 func (cs *SingleConsumerSession) SetLoadReport(loadReport []string) {
 	if len(loadReport) <= 0 {

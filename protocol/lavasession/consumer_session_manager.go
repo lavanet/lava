@@ -959,7 +959,8 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	// latency, isHangingApi, syncScore aren't updated when there is a failure
-	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
+
+	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress, consumerSession.GetProviderLoad())
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
@@ -1043,15 +1044,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 
-	// create new provider load pointer so we can read it later without locks
-	var providerLoadReport *provideroptimizer.ProviderLoadReport
-	if consumerSession.latestKnownLoadReport != nil {
-		providerLoadReport = &provideroptimizer.ProviderLoadReport{
-			ProviderLoad: consumerSession.latestKnownLoadReport.ProviderLoad,
-			TimeStamp:    consumerSession.latestKnownLoadReport.TimeStamp,
-		}
-	}
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock), providerLoadReport)
+	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock), consumerSession.GetProviderLoad())
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }

@@ -71,7 +71,7 @@ type ConsumerSessionsMap map[string]*SessionInfo
 
 type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
-	AppendRelayFailure(providerAddress string)
+	AppendRelayFailure(providerAddress string, providerLoad *provideroptimizer.ProviderLoadReport)
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64, providerLoad *provideroptimizer.ProviderLoadReport)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)

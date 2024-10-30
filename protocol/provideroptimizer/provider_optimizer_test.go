@@ -261,7 +261,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 			// skip 0
 			continue
 		}
-		providerOptimizer.AppendRelayFailure(providersGen.providersAddresses[i])
+		providerOptimizer.AppendRelayFailure(providersGen.providersAddresses[i], nil)
 	}
 	time.Sleep(4 * time.Millisecond)
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)

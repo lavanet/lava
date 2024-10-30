@@ -72,7 +72,7 @@ type Exploration struct {
 }
 
 type ProviderLoadReport struct {
-	ProviderLoad float64
+	ProviderLoad float64 // float describing load set by the provider can go above 1.0.
 	TimeStamp    time.Time
 }
 
@@ -108,8 +108,8 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 }
 
 // TODO forward load also on relay failure
-func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
-	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now(), nil)
+func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string, providerLoad *ProviderLoadReport) {
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now(), providerLoad)
 }
 
 func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64, providerLoad *ProviderLoadReport) {
