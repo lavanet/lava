@@ -71,6 +71,11 @@ type Exploration struct {
 	time    time.Time
 }
 
+type ProviderLoadReport struct {
+	ProviderLoad float64 // float describing load set by the provider can go above 1.0.
+	TimeStamp    time.Time
+}
+
 type ProviderData struct {
 	Availability score.ScoreStore // will be used to calculate the probability of error
 	Latency      score.ScoreStore // will be used to calculate the latency score
@@ -78,6 +83,7 @@ type ProviderData struct {
 	SyncBlock    uint64           // will be used to calculate the probability of block error
 	LatencyRaw   score.ScoreStore // will be used when reporting reputation to the node (Latency = LatencyRaw / baseLatency)
 	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
+	ProviderLoad *ProviderLoadReport
 }
 
 type Strategy int
@@ -101,17 +107,22 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 	}
 }
 
-func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
-	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
+// TODO forward load also on relay failure
+func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string, providerLoad *ProviderLoadReport) {
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now(), providerLoad)
 }
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64) {
-	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64, providerLoad *ProviderLoadReport) {
+	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now(), providerLoad)
 }
 
-func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time) {
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time, providerLoad *ProviderLoadReport) {
 	latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
 	providerData, _ := po.getProviderData(providerAddress)
+	// set current provider load only if incoming data is more fresh than previous stored data
+	if providerLoad != nil && (providerData.ProviderLoad == nil || providerLoad.TimeStamp.After(providerData.ProviderLoad.TimeStamp)) {
+		providerData.ProviderLoad = providerLoad
+	}
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success {

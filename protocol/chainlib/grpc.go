@@ -128,7 +128,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Check API is supported and save it in nodeMsg.
 	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
+		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, utils.LogAttr("url", url))
 	}
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)

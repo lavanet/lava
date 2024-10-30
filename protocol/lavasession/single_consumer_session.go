@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
@@ -21,13 +22,49 @@ type SingleConsumerSession struct {
 	RelayNum      uint64
 	LatestBlock   int64
 	// Each session will holds a pointer to a connection, if the connection is lost, this session will be banned (wont be picked)
-	EndpointConnection *EndpointConnection
-	BlockListed        bool // if session lost sync we blacklist it.
-	ConsecutiveErrors  []error
-	errorsCount        uint64
-	relayProcessor     UsedProvidersInf
-	providerUniqueId   string
-	StaticProvider     bool
+	EndpointConnection    *EndpointConnection
+	BlockListed           bool // if session lost sync we blacklist it.
+	ConsecutiveErrors     []error
+	errorsCount           uint64
+	relayProcessor        UsedProvidersInf
+	providerUniqueId      string
+	StaticProvider        bool
+	latestKnownLoadReport *provideroptimizer.ProviderLoadReport
+}
+
+// should only be called when locked, returning a copy of the object
+func (cs *SingleConsumerSession) GetProviderLoad() *provideroptimizer.ProviderLoadReport {
+	// create new provider load pointer so we can read it later without locks
+	var providerLoadReport *provideroptimizer.ProviderLoadReport
+	if cs.latestKnownLoadReport != nil {
+		providerLoadReport = &provideroptimizer.ProviderLoadReport{
+			ProviderLoad: cs.latestKnownLoadReport.ProviderLoad,
+			TimeStamp:    cs.latestKnownLoadReport.TimeStamp,
+		}
+	}
+	return providerLoadReport
+}
+
+// should only be called when locked.
+func (cs *SingleConsumerSession) SetLoadReport(loadReport []string) {
+	if len(loadReport) <= 0 {
+		// no load report
+		return
+	}
+	load := loadReport[0]
+	floatLoad, err := strconv.ParseFloat(load, 64)
+	if err != nil {
+		utils.LavaFormatWarning("Failed parsing load report from provider", err, utils.LogAttr("load_reported", loadReport))
+		return
+	}
+	if floatLoad == 0 {
+		// Provider did not set his max load options or has 0 load.
+		return
+	}
+	cs.latestKnownLoadReport = &provideroptimizer.ProviderLoadReport{
+		TimeStamp:    time.Now(),
+		ProviderLoad: floatLoad,
+	}
 }
 
 // returns the expected latency to a threshold.

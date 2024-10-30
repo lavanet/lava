@@ -44,6 +44,8 @@ func (sw *selectionWeighterInst) SetWeights(weights map[string]int64) {
 	}
 }
 
+// providerLoad - 0.7; if providerLoad < 0; providerLoad = 0;
+// (weight * 1 / 1 + (providerLoad - 0.7));
 func (sw *selectionWeighterInst) WeightedChoice(entries []Entry) string {
 	if len(entries) == 0 {
 		return ""
