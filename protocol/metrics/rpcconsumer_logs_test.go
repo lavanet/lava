@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +23,7 @@ type ErrorData struct {
 }
 
 func TestGetUniqueGuidResponseForError(t *testing.T) {
-	plog, err := NewRPCConsumerLogs(nil, nil)
+	plog, err := NewRPCConsumerLogs(nil, nil, nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -39,7 +39,7 @@ func TestGetUniqueGuidResponseForError(t *testing.T) {
 }
 
 func TestGetUniqueGuidResponseDeterministic(t *testing.T) {
-	plog, err := NewRPCConsumerLogs(nil, nil)
+	plog, err := NewRPCConsumerLogs(nil, nil, nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -58,7 +58,7 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
 		mt, _, _ := c.ReadMessage()
-		plog, _ := NewRPCConsumerLogs(nil, nil)
+		plog, _ := NewRPCConsumerLogs(nil, nil, nil)
 		responseError := errors.New("response error")
 		formatterMsg := plog.AnalyzeWebSocketErrorAndGetFormattedMessage(c.LocalAddr().String(), responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
 		assert.NotNil(t, formatterMsg)

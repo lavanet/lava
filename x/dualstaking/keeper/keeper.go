@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	collcompat "github.com/lavanet/lava/v3/utils/collcompat"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 )
 
 type (

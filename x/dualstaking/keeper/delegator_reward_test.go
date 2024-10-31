@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/testutil/nullify"
-	"github.com/lavanet/lava/v3/x/dualstaking/keeper"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/testutil/nullify"
+	"github.com/lavanet/lava/v4/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 
