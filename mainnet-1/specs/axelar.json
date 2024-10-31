@@ -8,8 +8,8 @@
                 "name": "axelar mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDKFULL",
-                    "COSMOSSDK45DEP"
+                    "COSMOSSDK50",
+                    "COSMOSWASM"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -20,7 +20,7 @@
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "15000000000"
                 },
                 "api_collections": [
                     {
@@ -34,6 +34,24 @@
                         "apis": [
                             {
                                 "name": "/axelar/axelarnet/v1beta1/ibc_transfer_count",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/axelarnet/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -106,6 +124,24 @@
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/chains",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/evm/v1beta1/command_request",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -231,6 +267,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/axelar/evm/v1beta1/params/{chain}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/axelar/evm/v1beta1/pending_commands/{chain}",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -250,24 +304,6 @@
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/token_info/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/command_request",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -340,6 +376,24 @@
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/next_key_id/{chain}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/multisig/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -447,7 +501,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
+                                "name": "/axelar/nexus/v1beta1/fee",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -465,7 +519,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/axelar/nexus/v1beta1/fee",
+                                "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -501,6 +555,42 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/axelar/nexus/v1beta1/message",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/nexus/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/axelar/nexus/v1beta1/recipient_address/{deposit_chain}/{deposit_addr}",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -519,7 +609,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
+                                "name": "/axelar/nexus/v1beta1/transfer_fee",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -537,7 +627,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/axelar/nexus/v1beta1/transfer_fee",
+                                "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -591,42 +681,6 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/axelar/nexus/v1beta1/message",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/permission/v1beta1/governance_key",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "/axelar/reward/v1beta1/inflation_rate",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -645,79 +699,25 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/axelar/reward/v1beta1/inflation_rate/{validator}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/axelar/reward/v1beta1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/axelarnet/v1beta1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/params/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/multisig/v1beta1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -789,6 +789,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/axelar/permission/v1beta1/governance_key",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/axelar/permission/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -823,7 +841,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14400
+                                        "latest_distance": 14900
                                     }
                                 ]
                             }
@@ -833,7 +851,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14200
+                                    "block": 14800
                                 }
                             }
                         ]
@@ -1693,7 +1711,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14200
+                                    "block": 14800
                                 }
                             }
                         ]
@@ -1707,6 +1725,24 @@
                             "add_on": ""
                         },
                         "apis": [
+                            {
+                                "name": "axelar.axelarnet.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
                             {
                                 "name": "axelar.axelarnet.v1beta1.QueryService/PendingIBCTransferCount",
                                 "block_parsing": {
@@ -1924,6 +1960,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.evm.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.evm.v1beta1.QueryService/PendingCommands",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -2015,6 +2069,24 @@
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/NextKeyID",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "axelar.multisig.v1beta1.QueryService/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2176,6 +2248,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.nexus.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -2266,6 +2356,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.permission.v1beta1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.reward.v1beta1.QueryService/InflationRate",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -2300,6 +2408,60 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "axelar.snapshot.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "axelar.tss.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "axelar.vote.v1beta1.QueryService/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -2318,7 +2480,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14400
+                                        "latest_distance": 14900
                                     }
                                 ]
                             }
@@ -2328,7 +2490,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14200
+                                    "block": 14800
                                 }
                             }
                         ]
@@ -2358,7 +2520,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14400
+                                        "latest_distance": 14900
                                     },
                                     {
                                         "extension": "archive",
@@ -2372,12 +2534,17 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 14200
+                                    "block": 14800
                                 }
                             }
                         ]
                     }
-                ]
+                ],
+                "contributor": [
+                    "lava@1jnsszemt05kcxd4pf3uzewl9xqtzfpfg65960w"
+                ],
+                "contributor_percentage": "0.025",
+                "identity": "7C0AE2E5F08269E6"
             },
             {
                 "index": "AXELART",
@@ -2390,12 +2557,12 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 5000,
+                "average_block_time": 5600,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "15000000000"
                 },
                 "api_collections": [
                     {
@@ -2476,9 +2643,14 @@
                             }
                         ]
                     }
-                ]
+                ],
+                "contributor": [
+                    "lava@1jnsszemt05kcxd4pf3uzewl9xqtzfpfg65960w"
+                ],
+                "contributor_percentage": "0.025",
+                "identity": "7C0AE2E5F08269E6"
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "1750000000ulava"
 }
