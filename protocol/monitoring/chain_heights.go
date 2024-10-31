@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 const (
