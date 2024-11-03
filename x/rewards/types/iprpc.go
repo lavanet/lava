@@ -1,5 +1,7 @@
 package types
 
+import "cosmossdk.io/collections"
+
 const (
 	// IprpcSubscriptionPrefix is the prefix to retrieve all IprpcSubscription
 	IprpcSubscriptionPrefix = "IprpcSubscription/"
@@ -13,3 +15,5 @@ const (
 	// IprpcRewardsCurrentPrefix is the prefix to retrieve all IprpcRewardsCurrent
 	IprpcRewardsCurrentPrefix = "IprpcRewardsCurrent/"
 )
+
+var LastRewardsBlockPrefix = collections.NewPrefix([]byte("LastRewardsBlock/"))

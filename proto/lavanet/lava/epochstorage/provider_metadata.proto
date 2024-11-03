@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+option go_package = "github.com/lavanet/lava/v4/x/epochstorage/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+import "amino/amino.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+
+message ProviderMetadata {
+  string provider = 1;
+  string vault = 2;
+  cosmos.base.v1beta1.Coin total_delegations = 3 [(gogoproto.nullable) = false]; 
+  repeated string chains = 4;
+  uint64 delegate_commission = 5; // delegation commission (precentage 0-100)
+  uint64 last_change = 6;
+  cosmos.staking.v1beta1.Description description = 7 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

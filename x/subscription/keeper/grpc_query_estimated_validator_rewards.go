@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
-	"github.com/lavanet/lava/v3/x/subscription/types"
+	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
+	"github.com/lavanet/lava/v4/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

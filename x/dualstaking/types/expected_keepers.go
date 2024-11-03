@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -38,6 +38,8 @@ type EpochstorageKeeper interface {
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string)
 	GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
+	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
+	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
 	// Methods imported from epochstorage should be defined here
 }
 

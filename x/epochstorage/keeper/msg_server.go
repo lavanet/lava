@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 )
 
 type msgServer struct {
