@@ -600,10 +600,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	if rpccs.debugRelays {
+		routerKey := lavasession.NewRouterKeyFromExtensions(extensions)
 		utils.LavaFormatDebug("[Before Send] returned the following sessions",
 			utils.LogAttr("sessions", sessions),
-			utils.LogAttr("usedProviders.GetUnwantedProvidersToSend", usedProviders.GetUnwantedProvidersToSend(extensions)),
-			utils.LogAttr("usedProviders.GetErroredProviders", usedProviders.GetErroredProviders(extensions)),
+			utils.LogAttr("usedProviders.GetUnwantedProvidersToSend", usedProviders.GetUnwantedProvidersToSend(routerKey)),
+			utils.LogAttr("usedProviders.GetErroredProviders", usedProviders.GetErroredProviders(routerKey)),
 			utils.LogAttr("addons", addon),
 			utils.LogAttr("extensions", extensions),
 			utils.LogAttr("AllowSessionDegradation", relayProcessor.GetAllowSessionDegradation()),
@@ -721,7 +722,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					}
 					time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
 					// relay failed need to fail the session advancement
-					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, origErr, extensions)
+					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, origErr)
 					if errReport != nil {
 						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: origErr.Error()})
 					}
@@ -1003,9 +1004,8 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 	)
 
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
-	var extensions []*spectypes.Extension // currently no extensions for subscription, so it will be nil.
 	if err != nil {
-		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err, extensions)
+		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
 			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
 				utils.LogAttr("GUID", ctx),
@@ -1019,7 +1019,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 
 	reply, err := rpccs.getFirstSubscriptionReply(ctx, hashedParams, replyServer)
 	if err != nil {
-		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err, extensions)
+		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
 			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
 				utils.LogAttr("GUID", ctx),
@@ -1038,7 +1038,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
 	latestBlock := relayResult.Reply.LatestBlock
-	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession, latestBlock, extensions)
+	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession, latestBlock)
 	return err
 }
 
@@ -1345,7 +1345,8 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
-		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders(protocolMessage.GetExtensions())
+		routerKey := lavasession.NewRouterKeyFromExtensions(protocolMessage.GetExtensions())
+		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders(routerKey)
 		if len(erroredProviders) > 0 {
 			erroredProvidersArray := make([]string, len(erroredProviders))
 			idx := 0

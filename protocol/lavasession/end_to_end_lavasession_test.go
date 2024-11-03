@@ -57,7 +57,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 
 				skippedRelays++
 
-				err := csm.OnSessionFailure(cs.Session, nil, nil)
+				err := csm.OnSessionFailure(cs.Session, nil)
 				require.NoError(t, err)
 
 				err = psm.OnSessionFailure(sps, cs.Session.RelayNum-skippedRelays)
@@ -124,7 +124,7 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 		require.NoError(t, err)
 
 		// Consumer Side:
-		err = csm.OnSessionFailure(cs.Session, nil, nil)
+		err = csm.OnSessionFailure(cs.Session, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, maxCuForVirtualEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)

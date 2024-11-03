@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/v3/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -52,11 +51,11 @@ var (
 )
 
 type UsedProvidersInf interface {
-	RemoveUsed(providerAddress string, extensions []*spectypes.Extension, err error)
+	RemoveUsed(providerAddress string, routerKey RouterKey, err error)
 	TryLockSelection(context.Context) error
-	AddUsed(ConsumerSessionsMap, []*spectypes.Extension, error)
-	GetUnwantedProvidersToSend(extensions []*spectypes.Extension) map[string]struct{}
-	AddUnwantedAddresses(address string, extensions []string)
+	AddUsed(ConsumerSessionsMap, error)
+	GetUnwantedProvidersToSend(RouterKey) map[string]struct{}
+	AddUnwantedAddresses(address string, routerKey RouterKey)
 	CurrentlyUsed() int
 }
 
@@ -440,6 +439,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
+		routerKey:          NewRouterKey(nil),
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.

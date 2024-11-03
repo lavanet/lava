@@ -72,22 +72,22 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 			switch taskNumber {
 			case 0:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendProtocolError(relayProcessor, "lava@test", time.Millisecond*1, fmt.Errorf("bad"))
 			case 1:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 2:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 3:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:

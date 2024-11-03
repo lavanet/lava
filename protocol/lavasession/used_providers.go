@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v3/utils"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 const MaximumNumberOfSelectionLockAttempts = 500
@@ -139,23 +138,21 @@ func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *Un
 	return uniqueUsedProviders
 }
 
-func (up *UsedProviders) AddUnwantedAddresses(address string, extensions []string) {
+func (up *UsedProviders) AddUnwantedAddresses(address string, routerKey RouterKey) {
 	if up == nil {
 		utils.LavaFormatError("UsedProviders.AddUnwantedAddresses is nil, misuse detected", nil)
 		return
 	}
-	routerKey := NewRouterKey(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 	uniqueUsedProviders.unwantedProviders[address] = struct{}{}
 }
 
-func (up *UsedProviders) RemoveUsed(provider string, extensions []*spectypes.Extension, err error) {
+func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err error) {
 	if up == nil {
 		return
 	}
-	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
@@ -192,18 +189,23 @@ func (up *UsedProviders) ClearUnwanted() {
 	}
 }
 
-func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, extensions []*spectypes.Extension, err error) {
+func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 	if up == nil {
 		return
 	}
-	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
-	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 	// this is nil safe
 	if len(sessions) > 0 && err == nil {
 		up.sessionsLatestBatch = 0
-		for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
+		for provider, sessionInfo := range sessions { // the key for ConsumerSessionsMap is the provider public address
+			var routerKey RouterKey
+			if sessionInfo.Session != nil {
+				routerKey = sessionInfo.Session.routerKey
+			} else {
+				routerKey = NewRouterKey(nil)
+			}
+			uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 			uniqueUsedProviders.providers[provider] = struct{}{}
 			up.sessionsLatestBatch++
 		}
@@ -250,22 +252,20 @@ func (up *UsedProviders) tryLockSelection() bool {
 	return false
 }
 
-func (up *UsedProviders) GetErroredProviders(extensions []*spectypes.Extension) map[string]struct{} {
+func (up *UsedProviders) GetErroredProviders(routerKey RouterKey) map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
 	}
-	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 	return uniqueUsedProviders.erroredProviders
 }
 
-func (up *UsedProviders) GetUnwantedProvidersToSend(extensions []*spectypes.Extension) map[string]struct{} {
+func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
 	}
-	routerKey := NewRouterKeyFromExtensions(extensions)
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
