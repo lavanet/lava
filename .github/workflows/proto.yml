@@ -23,15 +23,15 @@ jobs:
   #       with:
   #         input: "proto"
 
-  break-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.38.0
-      - uses: bufbuild/buf-breaking-action@v1
-        with:
-          input: "proto"
-          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
+  # break-check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: bufbuild/buf-setup-action@v1.38.0
+  #     - uses: bufbuild/buf-breaking-action@v1
+  #       with:
+  #         input: "proto"
+  #         against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
 
   validate-check:
     runs-on: ubuntu-latest

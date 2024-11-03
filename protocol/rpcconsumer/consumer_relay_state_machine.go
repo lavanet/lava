@@ -5,16 +5,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	slices "github.com/lavanet/lava/v3/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	slices "github.com/lavanet/lava/v4/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	common "github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type RelayStateMachine interface {

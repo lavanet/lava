@@ -3,9 +3,9 @@ package provideroptimizer
 import (
 	"math"
 
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
 )
 
 type Entry struct {
@@ -21,6 +21,7 @@ type SelectionTier interface {
 	SelectTierRandomly(numTiers int, tierChances map[int]float64) int
 	ShiftTierChance(numTiers int, initialYierChances map[int]float64) map[int]float64
 	ScoresCount() int
+	GetRawScores() []Entry
 }
 
 type SelectionTierInst struct {
@@ -29,6 +30,10 @@ type SelectionTierInst struct {
 
 func NewSelectionTier() SelectionTier {
 	return &SelectionTierInst{scores: []Entry{}}
+}
+
+func (st *SelectionTierInst) GetRawScores() []Entry {
+	return st.scores
 }
 
 func (st *SelectionTierInst) ScoresCount() int {

@@ -10,7 +10,7 @@ import (
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	// sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/v3/x/subscription/types"
+	"github.com/lavanet/lava/v4/x/subscription/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -26,7 +26,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdQueryParams())
 	cmd.AddCommand(CmdCurrent())
-	cmd.AddCommand(CmdEstimatedRewards())
+	cmd.AddCommand(CmdEstimatedProviderRewards())
 	cmd.AddCommand(CmdEstimatedValidatorsRewards())
 	cmd.AddCommand(CmdTrackedCuUsage())
 

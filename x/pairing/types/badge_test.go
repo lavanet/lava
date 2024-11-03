@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 
