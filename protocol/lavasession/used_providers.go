@@ -105,7 +105,7 @@ func (up *UsedProviders) CurrentlyUsedAddresses() []string {
 	return addresses
 }
 
-func (up *UsedProviders) UnwantedAddresses() []string {
+func (up *UsedProviders) AllUnwantedAddresses() []string {
 	if up == nil {
 		utils.LavaFormatError("UsedProviders.UnwantedAddresses is nil, misuse detected", nil)
 		return []string{}
