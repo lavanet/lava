@@ -34,7 +34,8 @@ type ConsumerStateTracker struct {
 
 func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager, disableConflictTransactions bool) (ret *ConsumerStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
+	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, stateQuery.StateQuery, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	}
 	cst := &ConsumerStateTracker{
 		StateTracker:                stateTrackerBase,
-		stateQuery:                  updaters.NewConsumerStateQuery(ctx, clientCtx),
+		stateQuery:                  stateQuery,
 		ConsumerTxSenderInf:         txSender,
 		ConsumerEmergencyTrackerInf: emergencyTracker,
 		disableConflictTransactions: disableConflictTransactions,
