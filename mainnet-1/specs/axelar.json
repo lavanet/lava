@@ -8,7 +8,7 @@
                 "name": "axelar mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK50",
+                    "COSMOSSDK",
                     "COSMOSWASM"
                 ],
                 "reliability_threshold": 268435455,
