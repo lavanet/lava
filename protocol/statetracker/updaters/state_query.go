@@ -86,6 +86,10 @@ func (sq *StateQuery) UpdateAccess(accessInf StateQueryAccessInf) {
 	sq.TendermintRPC = accessInf
 }
 
+func (sq *StateQuery) Provider(ctx context.Context, in *pairingtypes.QueryProviderRequest, opts ...grpc.CallOption) (*pairingtypes.QueryProviderResponse, error) {
+	return sq.pairingQueryClient.Provider(ctx, in, opts...)
+}
+
 func (sq *StateQuery) GetSpecQueryClient() spectypes.QueryClient {
 	return sq.specQueryClient
 }
