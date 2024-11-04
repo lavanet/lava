@@ -2,7 +2,6 @@ package updaters
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -210,12 +209,4 @@ type tendermintRPC interface {
 		ctx context.Context,
 		height *int64,
 	) (*ctypes.ResultConsensusParams, error)
-}
-
-func TryIntoTendermintRPC(cl tendermintRPC) (tendermintRPC, error) {
-	brp, ok := cl.(tendermintRPC)
-	if !ok {
-		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)
-	}
-	return brp, nil
 }

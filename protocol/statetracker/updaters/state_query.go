@@ -51,7 +51,11 @@ type StateQueryAccessInst struct {
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: clientCtx.Client.(tendermintRPC), TendermintRPC: clientCtx.Client}
+	tenderRpc, ok := clientCtx.Client.(tendermintRPC)
+	if !ok {
+		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
+	}
+	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
 }
 
 type StateQuery struct {
@@ -280,10 +284,7 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	brp, err := TryIntoTendermintRPC(psq.StateQuery)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed to get block result provider", err)
-	}
+	brp := psq.StateQuery.tendermintRPC
 	blockResults, err := brp.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return nil, err

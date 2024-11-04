@@ -267,7 +267,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 	consumerMetricsManager *metrics.ConsumerMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
-
 ) (*RPCConsumerServer, error) {
 	chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
 	if err != nil {
