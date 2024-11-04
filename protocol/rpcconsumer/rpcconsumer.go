@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/lavanet/lava/v4/app"
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/common"
@@ -207,119 +208,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
-			chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
-			if err != nil {
-				err = utils.LavaFormatError("failed creating chain parser", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
-				errCh <- err
-				return err
-			}
-			chainID := rpcEndpoint.ChainID
-			// create policyUpdaters per chain
-			newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
-			policyUpdater, ok, err := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater)
-			if err != nil {
-				errCh <- err
-				return utils.LavaFormatError("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
-			}
-			if ok {
-				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
-				if err != nil {
-					errCh <- err
-					return utils.LavaFormatError("failed adding policy setter", err)
-				}
-			}
-
-			err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker)
-			if err != nil {
-				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
-				errCh <- err
-				return err
-			}
-
-			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-			var optimizer *provideroptimizer.ProviderOptimizer
-			var consumerConsistency *ConsumerConsistency
-			var finalizationConsensus *finalizationconsensus.FinalizationConsensus
-			getOrCreateChainAssets := func() error {
-				// this is locked so we don't race optimizers creation
-				chainMutexes[chainID].Lock()
-				defer chainMutexes[chainID].Unlock()
-				var loaded bool
-				var err error
-
-				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-
-				// Create / Use existing optimizer
-				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
-				optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
-				if err != nil {
-					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-				}
-
-				if !loaded {
-					// if this is a new optimizer, register it in the consumerOptimizerQoSClient
-					consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
-				}
-
-				// Create / Use existing ConsumerConsistency
-				newConsumerConsistency := NewConsumerConsistency(chainID)
-				consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
-				if err != nil {
-					return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-				}
-
-				// Create / Use existing FinalizationConsensus
-				newFinalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
-				finalizationConsensus, loaded, err = finalizationConsensuses.LoadOrStore(chainID, newFinalizationConsensus)
-				if err != nil {
-					return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-				}
-				if !loaded { // when creating new finalization consensus instance we need to register it to updates
-					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
-				}
-				return nil
-			}
-			err = getOrCreateChainAssets()
-			if err != nil {
-				errCh <- err
-				return err
-			}
-
-			if finalizationConsensus == nil || optimizer == nil || consumerConsistency == nil {
-				err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-				errCh <- err
-				return err
-			}
-
-			// Create active subscription provider storage for each unique chain
-			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
-			// Register For Updates
-			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
-
-			var relaysMonitor *metrics.RelaysMonitor
-			if options.cmdFlags.RelaysHealthEnableFlag {
-				relaysMonitor = metrics.NewRelaysMonitor(options.cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
-				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
-			}
-
-			rpcConsumerServer := &RPCConsumerServer{}
-
-			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
-			var specMethodType string
-			if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-				specMethodType = http.MethodPost
-			}
-			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
-
-			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
-			if err != nil {
-				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
-				errCh <- err
-				return err
-			}
-			return nil
+			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
+				policyUpdaters, optimizers, consumerConsistencies, finalizationConsensuses, chainMutexes,
+				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
+				consumerMetricsManager, relaysMonitorAggregator)
+			return err
 		}(rpcEndpoint)
 	}
 
@@ -353,6 +246,142 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	return nil
+}
+
+func (rpcc *RPCConsumer) CreateConsumerEndpoint(
+	ctx context.Context,
+	rpcEndpoint *lavasession.RPCEndpoint,
+	errCh chan error,
+	consumerAddr sdk.AccAddress,
+	consumerStateTracker *statetracker.ConsumerStateTracker,
+	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
+	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
+	consumerConsistencies *common.SafeSyncMap[string, *ConsumerConsistency],
+	finalizationConsensuses *common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus],
+	chainMutexes map[string]*sync.Mutex,
+	options *rpcConsumerStartOptions,
+	privKey *secp256k1.PrivateKey,
+	lavaChainID string,
+	rpcConsumerMetrics *metrics.RPCConsumerLogs,
+	consumerReportsManager *metrics.ConsumerReportsClient,
+	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
+	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
+
+) (*RPCConsumerServer, error) {
+	chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
+	if err != nil {
+		err = utils.LavaFormatError("failed creating chain parser", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+		errCh <- err
+		return nil, err
+	}
+	chainID := rpcEndpoint.ChainID
+	// create policyUpdaters per chain
+	newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
+	policyUpdater, ok, err := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater)
+	if err != nil {
+		errCh <- err
+		return nil, utils.LavaFormatError("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
+	}
+	if ok {
+		err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+		if err != nil {
+			errCh <- err
+			return nil, utils.LavaFormatError("failed adding policy setter", err)
+		}
+	}
+
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker)
+	if err != nil {
+		err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+		errCh <- err
+		return nil, err
+	}
+
+	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	var optimizer *provideroptimizer.ProviderOptimizer
+	var consumerConsistency *ConsumerConsistency
+	var finalizationConsensus *finalizationconsensus.FinalizationConsensus
+	getOrCreateChainAssets := func() error {
+		// this is locked so we don't race optimizers creation
+		chainMutexes[chainID].Lock()
+		defer chainMutexes[chainID].Unlock()
+		var loaded bool
+		var err error
+
+		baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+
+		// Create / Use existing optimizer
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
+		if err != nil {
+			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+		}
+
+		if !loaded {
+			// if this is a new optimizer, register it in the consumerOptimizerQoSClient
+			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
+		}
+
+		// Create / Use existing ConsumerConsistency
+		newConsumerConsistency := NewConsumerConsistency(chainID)
+		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
+		if err != nil {
+			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+		}
+
+		// Create / Use existing FinalizationConsensus
+		newFinalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
+		finalizationConsensus, loaded, err = finalizationConsensuses.LoadOrStore(chainID, newFinalizationConsensus)
+		if err != nil {
+			return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+		}
+		if !loaded { // when creating new finalization consensus instance we need to register it to updates
+			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+		}
+		return nil
+	}
+	err = getOrCreateChainAssets()
+	if err != nil {
+		errCh <- err
+		return nil, err
+	}
+
+	if finalizationConsensus == nil || optimizer == nil || consumerConsistency == nil {
+		err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+		errCh <- err
+		return nil, err
+	}
+
+	// Create active subscription provider storage for each unique chain
+	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	// Register For Updates
+	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
+
+	var relaysMonitor *metrics.RelaysMonitor
+	if options.cmdFlags.RelaysHealthEnableFlag {
+		relaysMonitor = metrics.NewRelaysMonitor(options.cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+		relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
+	}
+
+	rpcConsumerServer := &RPCConsumerServer{}
+
+	var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
+	var specMethodType string
+	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
+		specMethodType = http.MethodPost
+	}
+	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
+
+	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
+	if err != nil {
+		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+		errCh <- err
+		return nil, err
+	}
+	return rpcConsumerServer, nil
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
