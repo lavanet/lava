@@ -156,24 +156,10 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 	parsedInput.SetBlock(parsedBlock)
 }
 
-func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int, disableWarningLevelLog bool) (string, error) {
-	parseErrorLogLevel := utils.LAVA_LOG_WARN
-	if disableWarningLevelLog {
-		// found a hash, no need to log warning later
-		parseErrorLogLevel = utils.LAVA_LOG_DEBUG
-	}
-
+func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, error) {
 	result, err := legacyParse(rpcInput, blockParser, source)
 	if err != nil || result == nil {
-		return "", utils.LavaFormatLog("blockParsing - parse failed", nil,
-			lavaslices.Slice(
-				utils.LogAttr("error", err),
-				utils.LogAttr("result", result),
-				utils.LogAttr("blockParser", blockParser),
-				utils.LogAttr("rpcInput", rpcInput),
-			),
-			uint(parseErrorLogLevel),
-		)
+		return "", fmt.Errorf("blockParsing - parse failed. result=%v error=%w", result, err)
 	}
 
 	resString, ok := result[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
@@ -198,7 +184,7 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 // Returns:
 // - A pointer to a ParsedInput struct containing the parsed data.
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
-	parsedBlockInfo, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
+	parsedBlockInfo, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedBlockInfo == nil {
 		parsedBlockInfo = NewParsedInput()
 	} else {
@@ -209,7 +195,7 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 		}
 	}
 
-	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source, parsedSuccessfully)
+	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
 	parsedBlockInfo.parsedDataRaw = unquoteString(parsedRawBlock)
 	return parsedBlockInfo
 }
@@ -242,9 +228,21 @@ func unquoteString(str string) string {
 func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) (string, error) {
 	parsedInput, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedInput == nil {
-		parsedBlockHashFromBlockParser, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT, parsedSuccessfully)
+		parsedBlockHashFromBlockParser, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT)
 		if err != nil {
-			return "", err
+			parseErrorLogLevel := utils.LAVA_LOG_WARN
+			if parsedSuccessfully {
+				// found a hash, no need to log warning later
+				parseErrorLogLevel = utils.LAVA_LOG_DEBUG
+			}
+
+			return "", utils.LavaFormatLog("failed to parse with legacy block parser", err,
+				lavaslices.Slice(
+					utils.LogAttr("rpcInput", rpcInput),
+					utils.LogAttr("resultParser", resultParser),
+				),
+				uint(parseErrorLogLevel),
+			)
 		}
 		return parseResponseByEncoding([]byte(parsedBlockHashFromBlockParser), resultParser.Encoding)
 	}
