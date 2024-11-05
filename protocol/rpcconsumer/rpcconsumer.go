@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -146,7 +148,16 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
+
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+	httpClient, err := jsonrpcclient.DefaultHTTPClient(options.clientCtx.NodeURI)
+	if err == nil {
+		httpClient.Transport = NewCustomLavaTransport(httpClient.Transport)
+		client, err := rpchttp.NewWithClient(options.clientCtx.NodeURI, "/websocket", httpClient)
+		if err == nil {
+			options.clientCtx = options.clientCtx.WithClient(client)
+		}
+	}
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -155,6 +166,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
+
+	lavaChainFetcher.FetchLatestBlockNum(ctx)
 
 	lavaChainID := options.clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(options.clientCtx)
