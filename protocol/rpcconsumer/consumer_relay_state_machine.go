@@ -20,7 +20,7 @@ import (
 type RelayStateMachine interface {
 	GetProtocolMessage() chainlib.ProtocolMessage
 	GetDebugState() bool
-	GetRelayTaskChannel() chan RelayStateSendInstructions
+	GetRelayTaskChannel() (chan RelayStateSendInstructions, error)
 	UpdateBatch(err error)
 	GetSelection() Selection
 	GetUsedProviders() *lavasession.UsedProviders
@@ -93,6 +93,10 @@ func NewRelayStateMachine(
 		tickerMetricSetter:      tickerMetricSetter,
 		batchUpdate:             make(chan error, MaximumNumberOfTickerRelayRetries),
 	}
+}
+
+func (crsm *ConsumerRelayStateMachine) Initialized() bool {
+	return crsm.relayRetriesManager != nil && crsm.resultsChecker != nil
 }
 
 func (crsm *ConsumerRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
@@ -196,7 +200,10 @@ func (rssi *RelayStateSendInstructions) IsDone() bool {
 	return rssi.done || rssi.err != nil
 }
 
-func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSendInstructions {
+func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
+	if !crsm.Initialized() {
+		return nil, utils.LavaFormatError("ConsumerRelayStateMachine was not initialized properly", nil)
+	}
 	relayTaskChannel := make(chan RelayStateSendInstructions)
 	go func() {
 		// A channel to be notified processing was done, true means we have results and can return
@@ -325,7 +332,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			}
 		}
 	}()
-	return relayTaskChannel
+	return relayTaskChannel, nil
 }
 
 func (crsm *ConsumerRelayStateMachine) UpdateBatch(err error) {

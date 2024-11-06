@@ -437,7 +437,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 	)
 
-	relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+	if err != nil {
+		return relayProcessor, err
+	}
 	for task := range relayTaskChannel {
 		if task.IsDone() {
 			return relayProcessor, task.err

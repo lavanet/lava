@@ -74,7 +74,8 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 
-		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {
@@ -143,7 +144,8 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 
-		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {
