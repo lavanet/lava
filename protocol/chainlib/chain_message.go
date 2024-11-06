@@ -38,6 +38,10 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
+func (bcnc *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
+	return bcnc.requestedBlockHashes
+}
+
 func (bcnc *baseChainMessageContainer) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
 	return bcnc.msg.SubscriptionIdExtractor(reply)
 }

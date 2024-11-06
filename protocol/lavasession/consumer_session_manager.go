@@ -435,7 +435,8 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
 	}
 	defer func() { usedProviders.AddUsed(consumerSessionMap, errRet) }()
-	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend()
+	routerKey := NewRouterKeyFromExtensions(extensions)
+	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend(routerKey)
 
 	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
@@ -569,7 +570,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					// we don't want to update the reputation by it, so we null the rawQosReport
 					rawQosReport = nil
 				}
-				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders)
+				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders, routerKey)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				if len(sessions) == wantedSession {
@@ -689,6 +690,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	// if we got here we validated the epoch is still the same epoch as we expected and we need to fetch a session from the blocked provider list.
 	defer csm.lock.RUnlock()
 
+	routerKey := NewRouterKey(extensions)
 	// csm.currentlyBlockedProviderAddresses is sorted by the provider with the highest cu used this epoch to the lowest
 	// meaning if we fetch the first successful index this is probably the highest success ratio to get a response.
 	for _, providerAddress := range csm.currentlyBlockedProviderAddresses {
@@ -699,7 +701,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 		consumerSessionsWithProvider := csm.pairing[providerAddress]
 		// Add to ignored (no matter what)
 		ignoredProviders.providers[providerAddress] = struct{}{}
-		usedProviders.AddUnwantedAddresses(providerAddress) // add the address to our unwanted providers to avoid infinite recursion
+		usedProviders.AddUnwantedAddresses(providerAddress, routerKey) // add the address to our unwanted providers to avoid infinite recursion
 
 		// validate this provider has enough cu to be used
 		if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {
@@ -1021,6 +1023,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	numOfProviders int,
 	providersCount uint64,
 	isHangingApi bool,
+	extensions []*spectypes.Extension,
 ) error {
 	// release locks, update CU, relaynum etc..
 	if err := consumerSession.VerifyLock(); err != nil {

@@ -31,11 +31,13 @@ const (
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
 	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
+	RpcProviderLoadRateHeader  = "Lava-Provider-Load-Rate"
 	RpcProviderUniqueIdHeader  = "Lava-Provider-Unique-Id"
 	WebSocketExtension         = "websocket"
 )
 
 var (
+	TrailersToAddToHeaderResponse      = []string{RPCProviderNodeExtension, RpcProviderLoadRateHeader}
 	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
 	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
 	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")

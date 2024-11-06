@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/v4/utils/lavaslices"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 const (
@@ -24,6 +25,14 @@ func NewRouterKey(extensions []string) RouterKey {
 	routerKey := RouterKey{}
 	routerKey.SetExtensions(extensions)
 	return routerKey
+}
+
+func NewRouterKeyFromExtensions(extensions []*spectypes.Extension) RouterKey {
+	extensionsStr := lavaslices.Map(extensions, func(extension *spectypes.Extension) string {
+		return extension.Name
+	})
+
+	return NewRouterKey(extensionsStr)
 }
 
 func GetEmptyRouterKey() RouterKey {

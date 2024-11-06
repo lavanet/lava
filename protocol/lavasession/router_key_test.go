@@ -3,6 +3,7 @@ package lavasession
 import (
 	"testing"
 
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,6 +13,15 @@ func TestRouterKey_SetExtensions(t *testing.T) {
 
 	rk.SetExtensions([]string{"ext3", "ext2"})
 	require.Equal(t, "|ext2|ext3|", rk.String())
+}
+
+func TestRouterKey_NewRouterKeyFromExtensions(t *testing.T) {
+	rk := NewRouterKeyFromExtensions([]*spectypes.Extension{
+		{Name: "ext1"},
+		{Name: "ext2"},
+		{Name: "ext3"},
+	})
+	require.Equal(t, "|ext1|ext2|ext3|", rk.String())
 }
 
 func TestRouterKey_HasExtension(t *testing.T) {
