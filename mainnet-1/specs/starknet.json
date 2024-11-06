@@ -16,7 +16,7 @@
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "15000000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -605,6 +605,23 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_5",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_6",
                             "type": "POST",
                             "add_on": ""
@@ -746,7 +763,7 @@
                 "allowed_block_lag_for_qos_sync": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "15000000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
