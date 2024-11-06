@@ -374,15 +374,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// warn if not all internal paths are configured
 	configuredInternalPaths := GetAllNodeUrlsInternalPaths(rpcProviderEndpoint.NodeUrls)
 	chainInternalPaths := chainParser.GetAllInternalPaths()
-	nonConfiguredInternalPaths := lavaslices.Difference(chainInternalPaths, configuredInternalPaths)
-	if len(nonConfiguredInternalPaths) > 0 {
-		utils.LavaFormatWarning("Some internal paths not configured, and therefor won't be serviced. This may harm the QoS score.", nil,
-			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("apiInterface", apiInterface),
-			utils.LogAttr("internalPaths", strings.Join(nonConfiguredInternalPaths, ",")),
-		)
-	}
-
 	overConfiguredInternalPaths := lavaslices.Difference(configuredInternalPaths, chainInternalPaths)
 	if len(overConfiguredInternalPaths) > 0 {
 		utils.LavaFormatWarning("Some configured internal paths are not in the chain's spec", nil,
