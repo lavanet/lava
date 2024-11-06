@@ -267,6 +267,16 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	return val.Parsing, val.ApiCollection, ok
 }
 
+func (bcp *BaseChainParser) IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+
+	apiCollection, ok := bcp.apiCollections[collectionKey]
+	return ok && lavaslices.ContainsPredicate(apiCollection.ParseDirectives, func(elem *spectypes.ParseDirective) bool {
+		return elem.FunctionTag == tag
+	})
+}
+
 func (bcp *BaseChainParser) GetAllInternalPaths() []string {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
