@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	context "context"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -139,7 +140,9 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, 
 						// We need to set archive.
 						// Create a new relay private data containing the extension.
 						userData := crsm.protocolMessage.GetUserData()
-						metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: extensionslib.ArchiveExtension}}
+						// add all existing extensions including archive split by "," so the override will work
+						existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
+						metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
 						newProtocolMessage, err := crsm.relaySender.ParseRelay(crsm.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
 						if err != nil {
 							utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
