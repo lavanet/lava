@@ -66,6 +66,9 @@ func (rk RouterKey) HasExtension(extension string) bool {
 func (rk RouterKey) String() string {
 	// uniqueExtensions are sorted on init
 	retStr := rk.uniqueExtensions
+	if len(retStr) == 0 {
+		retStr = append(retStr, "")
+	}
 
 	// if we have a route number, we add it to the key
 	if rk.methodsRouteUniqueKey != 0 {
