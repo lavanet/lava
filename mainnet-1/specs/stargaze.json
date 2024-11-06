@@ -20,7 +20,7 @@
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",
-          "amount": "15000000000"
+          "amount": "5000000000"
         },
         "api_collections": [
           {
@@ -684,7 +684,7 @@
           "lava@1jnsszemt05kcxd4pf3uzewl9xqtzfpfg65960w"
         ],
         "contributor_percentage": "0.025",
-        "identity": "7C0AE2E5F08269E6"
+        "identity": ""
       },
       {
         "index": "STRGZT",
@@ -702,7 +702,7 @@
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",
-          "amount": "15000000000"
+          "amount": "5000000000"
         },
         "api_collections": [
           {
@@ -779,7 +779,7 @@
           "lava@1jnsszemt05kcxd4pf3uzewl9xqtzfpfg65960w"
         ],
         "contributor_percentage": "0.025",
-        "identity": "7C0AE2E5F08269E6"
+        "identity": ""
       }
     ]
   },
