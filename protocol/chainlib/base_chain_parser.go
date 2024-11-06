@@ -3,6 +3,8 @@ package chainlib
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
@@ -316,6 +318,56 @@ func (apip *BaseChainParser) isValidInternalPath(path string) bool {
 	}
 	_, ok := apip.internalPaths[path]
 	return ok
+}
+
+// take an http request and direct it through the consumer
+func (apip *BaseChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	// Extract URL
+	url = request.URL.String()
+
+	// Extract connection type
+	connectionType = request.Method
+
+	// Extract metadata
+	for key, values := range request.Header {
+		for _, value := range values {
+			metadata = append(metadata, pairingtypes.Metadata{
+				Name:  key,
+				Value: value,
+			})
+		}
+	}
+
+	// Extract data
+	if request.Body != nil {
+		bodyBytes, err := io.ReadAll(request.Body)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		data = string(bodyBytes)
+	}
+
+	return url, data, connectionType, metadata, nil
+}
+
+func (apip *BaseChainParser) SetResponseFromRelayResult(relayResult *common.RelayResult) (*http.Response, error) {
+	if relayResult == nil {
+		return nil, errors.New("relayResult is nil")
+	}
+	response := &http.Response{
+		StatusCode: relayResult.StatusCode,
+		Header:     make(http.Header),
+	}
+
+	for _, values := range relayResult.Reply.Metadata {
+		response.Header.Add(values.Name, values.Value)
+	}
+
+	if relayResult.Reply != nil && relayResult.Reply.Data != nil {
+		response.Body = io.NopCloser(strings.NewReader(string(relayResult.Reply.Data)))
+	}
+
+	return response, nil
 }
 
 // getSupportedApi fetches service api from spec by name

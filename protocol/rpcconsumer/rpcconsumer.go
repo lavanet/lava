@@ -49,6 +49,7 @@ const (
 	refererBackendAddressFlagName = "referer-be-address"
 	refererMarkerFlagName         = "referer-marker"
 	reportsSendBEAddress          = "reports-be-address"
+	LavaOverLavaBackupFlagName    = "use-lava-over-lava-backup"
 )
 
 var (
@@ -150,9 +151,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+
+	var customLavaTransport *CustomLavaTransport
 	httpClient, err := jsonrpcclient.DefaultHTTPClient(options.clientCtx.NodeURI)
 	if err == nil {
-		httpClient.Transport = NewCustomLavaTransport(httpClient.Transport)
+		customLavaTransport = NewCustomLavaTransport(httpClient.Transport, nil)
+		httpClient.Transport = customLavaTransport
 		client, err := rpchttp.NewWithClient(options.clientCtx.NodeURI, "/websocket", httpClient)
 		if err == nil {
 			options.clientCtx = options.clientCtx.WithClient(client)
@@ -221,10 +225,16 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
-			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
+			rpcConsumerServer, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
 				policyUpdaters, optimizers, consumerConsistencies, finalizationConsensuses, chainMutexes,
 				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
+			if err == nil {
+				if customLavaTransport != nil && statetracker.IsLavaNativeSpec(rpcEndpoint.ChainID) && rpcEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC {
+					// we can add lava over lava to the custom transport as a secondary source
+					customLavaTransport.SetSecondaryTransport(rpcConsumerServer)
+				}
+			}
 			return err
 		}(rpcEndpoint)
 	}
@@ -627,6 +637,37 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				utils.LavaFormatFatal("offline spec modifications are supported only in single chain bootstrapping", nil, utils.LogAttr("len(rpcEndpoints)", len(rpcEndpoints)), utils.LogAttr("rpcEndpoints", rpcEndpoints))
 			}
 
+			if viper.GetBool(LavaOverLavaBackupFlagName) {
+				additionalEndpoint := func() *lavasession.RPCEndpoint {
+					for _, endpoint := range rpcEndpoints {
+						if statetracker.IsLavaNativeSpec(endpoint.ChainID) {
+							// native spec already exists, no need to add
+							return nil
+						}
+					}
+					// need to add an endpoint for the native lava chain
+					if strings.Contains(networkChainId, "mainnet") {
+						return &lavasession.RPCEndpoint{
+							NetworkAddress: chainlib.INTERNAL_ADDRESS,
+							ChainID:        statetracker.MAINNET_SPEC,
+							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
+						}
+					} else if strings.Contains(networkChainId, "testnet") {
+						return &lavasession.RPCEndpoint{
+							NetworkAddress: chainlib.INTERNAL_ADDRESS,
+							ChainID:        statetracker.TESTNET_SPEC,
+							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
+						}
+					}
+					utils.LavaFormatError("could not find a native lava chain for the current network", nil, utils.LogAttr("networkChainId", networkChainId))
+					return nil
+				}()
+				if additionalEndpoint != nil {
+					utils.LavaFormatInfo("Lava over Lava backup is enabled", utils.Attribute{Key: "additionalEndpoint", Value: additionalEndpoint.ChainID})
+					rpcEndpoints = append(rpcEndpoints, additionalEndpoint)
+				}
+			}
+
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
 				txFactory,
@@ -691,6 +732,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCConsumer.Flags().IntVar(&chainlib.WebSocketRateLimit, common.RateLimitWebSocketFlag, chainlib.WebSocketRateLimit, "rate limit (per second) websocket requests per user connection, default is unlimited")
 	cmdRPCConsumer.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
+	cmdRPCConsumer.Flags().Bool(LavaOverLavaBackupFlagName, true, "enable lava over lava backup to regular rpc calls")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

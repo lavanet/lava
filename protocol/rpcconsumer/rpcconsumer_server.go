@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -1414,4 +1415,20 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
+}
+
+func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	guid := utils.GenerateUniqueIdentifier()
+	ctx = utils.WithUniqueIdentifier(ctx, guid)
+	url, data, connectionType, metadata, err := rpccs.chainParser.ExtractDataFromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	relayResult, err := rpccs.SendRelay(ctx, url, data, connectionType, "", "", nil, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return rpccs.chainParser.SetResponseFromRelayResult(relayResult)
 }
