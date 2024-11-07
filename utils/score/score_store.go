@@ -188,12 +188,17 @@ func (ss *ScoreStore_Refactor) Update(sample float64, sampleTime time.Time) erro
 
 	exponent := -(math.Ln2 * timeDiff) / ss.Config.HalfLife.Seconds()
 	decayFactor := math.Exp(exponent)
+	if decayFactor > 1 {
+		return fmt.Errorf("invalid larger than 1 decay factor, factor: %f", decayFactor)
+	}
 
-	newNum := ss.Num*decayFactor + sample*ss.Config.Weight
-	newDenom := ss.Denom*decayFactor + ss.Config.Weight
-
-	if newDenom <= 0 {
-		return fmt.Errorf("cannot update %s ScoreStore, invalid new denominator: %f", ss.Name, newDenom)
+	newNum, err := ss.CalcNewNum(sample, decayFactor)
+	if err != nil {
+		return err
+	}
+	newDenom, err := ss.CalcNewDenom(decayFactor)
+	if err != nil {
+		return err
 	}
 
 	ss.Num = newNum
@@ -205,6 +210,43 @@ func (ss *ScoreStore_Refactor) Update(sample float64, sampleTime time.Time) erro
 	}
 
 	return nil
+}
+
+// CalcNewNum calculates the new numerator update and verifies it's not negative or overflowing
+func (ss *ScoreStore_Refactor) CalcNewNum(sample float64, decayFactor float64) (float64, error) {
+	if math.IsInf(ss.Num*decayFactor, 0) || math.IsInf(sample*ss.Config.Weight, 0) {
+		return 0, utils.LavaFormatError("cannot ScoreStore update numerator", fmt.Errorf("potential overflow"),
+			utils.LogAttr("score_store_name", ss.Name),
+			utils.LogAttr("current_num", ss.Num),
+			utils.LogAttr("decay_factor", decayFactor),
+			utils.LogAttr("sample", sample),
+			utils.LogAttr("weight", ss.Config.Weight),
+		)
+	}
+
+	newNum := ss.Num*decayFactor + sample*ss.Config.Weight
+	if newNum < 0 {
+		return 0, fmt.Errorf("cannot update %s ScoreStore, invalid negative numerator: %f", ss.Name, newNum)
+	}
+	return newNum, nil
+}
+
+// CalcNewDenom calculates the new denominator update and verifies it's strictly positive or not overflowing
+func (ss *ScoreStore_Refactor) CalcNewDenom(decayFactor float64) (float64, error) {
+	if math.IsInf(ss.Denom*decayFactor, 0) || math.IsInf(ss.Config.Weight, 0) {
+		return 0, utils.LavaFormatError("cannot ScoreStore update denominator", fmt.Errorf("potential overflow"),
+			utils.LogAttr("score_store_name", ss.Name),
+			utils.LogAttr("current_denom", ss.Denom),
+			utils.LogAttr("decay_factor", decayFactor),
+			utils.LogAttr("weight", ss.Config.Weight),
+		)
+	}
+
+	newDenom := ss.Denom*decayFactor + ss.Config.Weight
+	if newDenom <= 0 {
+		return 0, fmt.Errorf("cannot update %s ScoreStore, invalid non-positive denominator: %f", ss.Name, newDenom)
+	}
+	return newDenom, nil
 }
 
 func (ss *ScoreStore_Refactor) GetName() string {
