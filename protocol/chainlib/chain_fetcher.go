@@ -49,7 +49,7 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
-		verifications, err := cf.chainParser.GetVerifications(addons)
+		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 	}
 
-	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionType}, cf.ChainFetcherMetadata())
+	craftData := &CraftData{Path: path, Data: data, ConnectionType: collectionType, InternalPath: verification.InternalPath}
+	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, craftData, cf.ChainFetcherMetadata())
 	if err != nil {
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -253,6 +254,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		utils.LogAttr("rawData", parsedInput.GetRawParsedData()),
 		utils.LogAttr("verificationKey", verification.VerificationKey),
 		utils.LogAttr("apiInterface", cf.endpoint.ApiInterface),
+		utils.LogAttr("internalPath", proxyUrl.InternalPath),
 	)
 	return nil
 }
@@ -455,7 +457,7 @@ type DummyChainFetcher struct {
 func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
-		verifications, err := cf.chainParser.GetVerifications(addons)
+		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
