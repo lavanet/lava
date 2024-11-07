@@ -650,7 +650,6 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	// support setting headers
 	if len(nodeMessage.GetHeaders()) > 0 {
@@ -671,41 +670,43 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
-		if err != nil {
+		if nodeErr != nil {
 			// here we are getting an error for every code that is not 200-300
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
-				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
-			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
+			if parsedError := cp.HandleNodeError(ctx, nodeErr); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}
 	}
 
-	var replyMsg rpcInterfaceMessages.JsonrpcMessage
+	var replyMsg *rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
-
 	if nodeErr != nil {
-		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
-		return nil, "", nil, nodeErr
+		// try to parse node error as json message
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			return nil, "", nil, nodeErr
+		}
 	}
 
-	replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
+	replyMsg, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	// validate result is valid
-	if replyMessage.Error == nil {
-		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+	if replyMsg.Error == nil {
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
 		if responseIsNilValidationError != nil {
 			return nil, "", nil, responseIsNilValidationError
 		}
 	}
 
-	replyMsg = *replyMessage
-	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx},
