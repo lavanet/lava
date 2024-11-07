@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	context "context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -62,6 +63,7 @@ type ConsumerRelayStateMachine struct {
 	relayRetriesManager *lavaprotocol.RelayRetriesManager
 	relayState          []*RelayState
 	protocolMessage     chainlib.ProtocolMessage
+	relayStateLock      sync.RWMutex
 }
 
 func NewRelayStateMachine(
@@ -112,14 +114,29 @@ func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
 	return crsm.selection
 }
 
+func (crsm *ConsumerRelayStateMachine) appendRelayState(nextState *RelayState) {
+	crsm.relayStateLock.Lock()
+	defer crsm.relayStateLock.Unlock()
+	crsm.relayState = append(crsm.relayState, nextState)
+}
+
+func (crsm *ConsumerRelayStateMachine) getLatestState() *RelayState {
+	crsm.relayStateLock.RLock()
+	defer crsm.relayStateLock.RUnlock()
+	if len(crsm.relayState) == 0 {
+		return nil
+	}
+	return crsm.relayState[len(crsm.relayState)-1]
+}
+
 func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState) *RelayState {
 	var nextState *RelayState
 	if relayState == nil { // initial state
-		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender)
+		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, ArchiveStatus{})
 	} else {
-		nextState = NewRelayState(crsm.ctx, relayState.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender)
+		nextState = NewRelayState(crsm.ctx, relayState.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus)
 	}
-	crsm.relayState = append(crsm.relayState, nextState)
+	crsm.appendRelayState(nextState)
 	return nextState
 }
 
@@ -130,7 +147,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 	batchNumber := crsm.usedProviders.BatchNumber()
 	shouldRetry := crsm.retryCondition(batchNumber)
 	if shouldRetry {
-		lastState := crsm.relayState[len(crsm.relayState)-1]
+		lastState := crsm.getLatestState()
 		nextState := crsm.stateTransition(lastState)
 		// Retry archive logic
 		return nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
@@ -151,11 +168,11 @@ func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
 }
 
 func (crsm *ConsumerRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMessage {
-	stateLength := len(crsm.relayState)
-	if stateLength == 0 {
+	latestState := crsm.getLatestState()
+	if latestState == nil { // failed fetching latest state
 		return crsm.protocolMessage
 	}
-	return crsm.relayState[stateLength-1].GetProtocolMessage()
+	return latestState.GetProtocolMessage()
 }
 
 type RelayStateSendInstructions struct {
@@ -212,6 +229,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			}
 		}
 
+		// initialize relay state
 		crsm.stateTransition(nil)
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{

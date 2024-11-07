@@ -29,10 +29,14 @@ type RelayParserInf interface {
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
+type ArchiveStatus struct {
+	isArchive    bool
+	isUpgraded   bool
+	isHashCached bool
+}
+
 type RelayState struct {
-	isArchive       bool
-	isUpgraded      bool
-	isHashCached    bool
+	archiveStatus   ArchiveStatus
 	stateNumber     int
 	protocolMessage chainlib.ProtocolMessage
 	cache           RetryHashCacheInf
@@ -40,13 +44,13 @@ type RelayState struct {
 	ctx             context.Context
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf) *RelayState {
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
 	isArchive := false
 	if slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
 		isArchive = true
 	}
-	return &RelayState{ctx: ctx, protocolMessage: protocolMessage, stateNumber: stateNumber, cache: cache, relayParser: relayParser, isArchive: isArchive}
+	return &RelayState{ctx: ctx, protocolMessage: protocolMessage, stateNumber: stateNumber, cache: cache, relayParser: relayParser, archiveStatus: ArchiveStatus{isArchive: isArchive, isUpgraded: archiveInfo.isUpgraded, isHashCached: archiveInfo.isHashCached}}
 }
 
 func (rs *RelayState) GetStateNumber() int {
@@ -63,7 +67,7 @@ func (rs *RelayState) GetProtocolMessage() chainlib.ProtocolMessage {
 func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
 	hashes := rs.protocolMessage.GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
-	if rs.isUpgraded && numberOfNodeErrors >= 2 {
+	if rs.archiveStatus.isUpgraded && numberOfNodeErrors >= 2 {
 		// Validate the following.
 		// 1. That we have applied archive
 		// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
@@ -71,15 +75,16 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		// We know we have applied archive and failed.
 		// 1. We can remove the archive, return to the original protocol message,
 		// 2. Set all hashes as irrelevant for future queries.
-		if !rs.isHashCached {
+		if !rs.archiveStatus.isHashCached {
 			for _, hash := range hashes {
 				rs.cache.AddHashToCache(hash)
 			}
+			rs.archiveStatus.isHashCached = true
 		}
 		// We do not want to send additional relays after archive attempt. return false.
 		return false
 	}
-	if !rs.isArchive && len(hashes) > 0 && numberOfNodeErrors > 0 {
+	if !rs.archiveStatus.isArchive && len(hashes) > 0 && numberOfNodeErrors > 0 {
 		// Launch archive only on the second retry attempt.
 		if numberOfRetriesLaunched == 1 {
 			// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
@@ -101,8 +106,8 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 					// Creating an archive protocol message, and set it to current protocol message
 					rs.protocolMessage = newProtocolMessage
 					// for future batches.
-					rs.isUpgraded = true
-					rs.isArchive = true
+					rs.archiveStatus.isUpgraded = true
+					rs.archiveStatus.isArchive = true
 					break
 				}
 			}
