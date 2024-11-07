@@ -221,10 +221,14 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v24: %w", types.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(types.ModuleName, 24, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v25: %w", types.ModuleName, err))
+	}
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 24 }
+func (AppModule) ConsensusVersion() uint64 { return 25 }
 
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}

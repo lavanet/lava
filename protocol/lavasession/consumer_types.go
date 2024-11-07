@@ -51,11 +51,11 @@ var (
 )
 
 type UsedProvidersInf interface {
-	RemoveUsed(providerAddress string, err error)
+	RemoveUsed(providerAddress string, routerKey RouterKey, err error)
 	TryLockSelection(context.Context) error
 	AddUsed(ConsumerSessionsMap, error)
-	GetUnwantedProvidersToSend() map[string]struct{}
-	AddUnwantedAddresses(address string)
+	GetUnwantedProvidersToSend(RouterKey) map[string]struct{}
+	AddUnwantedAddresses(address string, routerKey RouterKey)
 	CurrentlyUsed() int
 }
 
@@ -439,6 +439,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
+		routerKey:          NewRouterKey(nil),
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
