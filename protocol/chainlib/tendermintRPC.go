@@ -739,7 +739,6 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.RPCResponse
 	var sub *rpcclient.ClientSubscription
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
@@ -782,27 +781,27 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
-
 	if nodeErr != nil {
-		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
-		return nil, "", nil, nodeErr
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			return nil, "", nil, nodeErr
+		}
 	}
 
-	replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
+	replyMsg, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC error", err)
 	}
 
 	// if we didn't get a node error.
-	if replyMessage.Error == nil {
+	if replyMsg.Error == nil {
 		// validate result is valid
-		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
 		if responseIsNilValidationError != nil {
 			return nil, "", nil, responseIsNilValidationError
 		}
 	}
-	replyMsg = replyMessage
-
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,

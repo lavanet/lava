@@ -650,7 +650,6 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	// support setting headers
 	if len(nodeMessage.GetHeaders()) > 0 {
@@ -684,28 +683,30 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 	}
 
-	var replyMsg rpcInterfaceMessages.JsonrpcMessage
+	var replyMsg *rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
-
 	if nodeErr != nil {
-		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
-		return nil, "", nil, nodeErr
+		// try to parse node error as json message
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			return nil, "", nil, nodeErr
+		}
 	}
 
-	replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
+	replyMsg, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	// validate result is valid
-	if replyMessage.Error == nil {
-		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+	if replyMsg.Error == nil {
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
 		if responseIsNilValidationError != nil {
 			return nil, "", nil, responseIsNilValidationError
 		}
 	}
 
-	replyMsg = *replyMessage
-	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx},

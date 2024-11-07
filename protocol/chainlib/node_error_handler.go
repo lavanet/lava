@@ -139,6 +139,19 @@ func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json
 	return nil
 }
 
+func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage {
+	// try to parse node error as json message
+	httpError, ok := nodeErr.(rpcclient.HTTPError)
+	if ok {
+		jsonMessage := &rpcclient.JsonrpcMessage{}
+		err := json.Unmarshal(httpError.Body, jsonMessage)
+		if err == nil {
+			return jsonMessage
+		}
+	}
+	return nil
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
