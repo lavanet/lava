@@ -181,16 +181,16 @@ func GetChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint *lavas
 	return newChainRouter(ctx, nConns, *rpcProviderEndpoint, chainParser, proxyConstructor)
 }
 
-type EmptyChainListener struct {
-}
+type EmptyChainListener struct{}
 
 func NewEmptyChainListener() ChainListener {
 	return &EmptyChainListener{}
 }
 
 func (*EmptyChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
-	return
+	// do nothing
 }
+
 func (*EmptyChainListener) GetListeningAddress() string {
 	return ""
 }
