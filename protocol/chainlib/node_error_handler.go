@@ -146,6 +146,7 @@ func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage
 		jsonMessage := &rpcclient.JsonrpcMessage{}
 		err := json.Unmarshal(httpError.Body, jsonMessage)
 		if err == nil {
+			utils.LavaFormatDebug("Successfully recovered HTTPError to node message", utils.LogAttr("jsonMessage", jsonMessage))
 			return jsonMessage
 		}
 	}
