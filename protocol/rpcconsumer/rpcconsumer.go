@@ -171,8 +171,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 
-	lavaChainFetcher.FetchLatestBlockNum(ctx)
-
 	lavaChainID := options.clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
@@ -232,7 +230,25 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			if err == nil {
 				if customLavaTransport != nil && statetracker.IsLavaNativeSpec(rpcEndpoint.ChainID) && rpcEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC {
 					// we can add lava over lava to the custom transport as a secondary source
-					customLavaTransport.SetSecondaryTransport(rpcConsumerServer)
+					go func() {
+						ticker := time.NewTicker(100 * time.Millisecond)
+						defer ticker.Stop()
+						for range ticker.C {
+							if rpcConsumerServer.IsInitialized() {
+								customLavaTransport.SetSecondaryTransport(rpcConsumerServer)
+								lavaChainFetcher.FetchLatestBlockNum(ctx)
+								queryClient := spectypes.NewQueryClient(options.clientCtx)
+								spec1, err := queryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{ChainID: "LAV1"})
+								customLavaTransport.TogglePrimarySecondaryTransport()
+								lavaChainFetcher.FetchLatestBlockNum(ctx)
+								spec2, err2 := queryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{ChainID: "LAV1"})
+								if err != nil || err2 != nil {
+									utils.LavaFormatFatal("failed fetching spec", err, utils.Attribute{Key: "spec1", Value: spec1}, utils.Attribute{Key: "spec2", Value: spec2})
+								}
+								return
+							}
+						}
+					}()
 				}
 			}
 			return err

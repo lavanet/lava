@@ -322,9 +322,8 @@ func (apip *BaseChainParser) isValidInternalPath(path string) bool {
 
 // take an http request and direct it through the consumer
 func (apip *BaseChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
-	// Extract URL
-	url = request.URL.String()
-
+	// Extract relative URL path
+	url = request.URL.Path
 	// Extract connection type
 	connectionType = request.Method
 

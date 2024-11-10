@@ -1417,6 +1417,10 @@ func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
 }
 
+func (rpccs *RPCConsumerServer) IsInitialized() bool {
+	return rpccs.relaysMonitor.IsInitialized()
+}
+
 func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

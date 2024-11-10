@@ -18,7 +18,8 @@ type RelaysMonitor struct {
 	interval    time.Duration
 	lock        sync.RWMutex
 
-	isHealthy uint32
+	isHealthy   uint32
+	initialized bool
 }
 
 func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *RelaysMonitor {
@@ -28,6 +29,7 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *Rel
 		ticker:       time.NewTicker(interval),
 		interval:     interval,
 		isHealthy:    1, // setting process to healthy by default, after init relays we know if its truly healthy or not.
+		initialized:  false,
 	}
 }
 
@@ -39,6 +41,26 @@ func (sem *RelaysMonitor) SetRelaySender(relaySender func() (bool, error)) {
 	sem.lock.Lock()
 	defer sem.lock.Unlock()
 	sem.relaySender = relaySender
+}
+
+func (sem *RelaysMonitor) SetInitialized() {
+	if sem == nil {
+		return
+	}
+
+	sem.lock.Lock()
+	defer sem.lock.Unlock()
+	sem.initialized = true
+}
+
+func (sem *RelaysMonitor) IsInitialized() bool {
+	if sem == nil {
+		return false
+	}
+
+	sem.lock.RLock()
+	defer sem.lock.RUnlock()
+	return sem.initialized
 }
 
 func (sem *RelaysMonitor) Start(ctx context.Context) {
@@ -69,6 +91,9 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 				utils.LogAttr("health result", success),
 			)
 			sem.storeHealthStatus(success)
+			if success {
+				sem.SetInitialized()
+			}
 		case <-ctx.Done():
 			sem.ticker.Stop()
 			return

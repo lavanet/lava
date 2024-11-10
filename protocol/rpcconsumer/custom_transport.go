@@ -3,12 +3,14 @@ package rpcconsumer
 import (
 	"net/http"
 	"sync"
+	"sync/atomic"
 )
 
 type CustomLavaTransport struct {
 	transport          http.RoundTripper
 	lock               sync.RWMutex
 	secondaryTransport http.RoundTripper
+	consecutiveFails   atomic.Uint64
 }
 
 func NewCustomLavaTransport(httpTransport http.RoundTripper, secondaryTransport http.RoundTripper) *CustomLavaTransport {
@@ -21,20 +23,33 @@ func (c *CustomLavaTransport) SetSecondaryTransport(secondaryTransport http.Roun
 	c.secondaryTransport = secondaryTransport
 }
 
+// used to switch the primary and secondary transports, in case the primary one fails too much
+func (c *CustomLavaTransport) TogglePrimarySecondaryTransport() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	primaryTransport := c.transport
+	secondaryTransport := c.secondaryTransport
+	c.secondaryTransport = primaryTransport
+	c.transport = secondaryTransport
+}
+
 func (c *CustomLavaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Custom logic before the request
-
+	c.lock.RLock()
+	primaryTransport := c.transport
+	secondaryTransport := c.secondaryTransport
+	c.lock.RUnlock()
 	// Delegate to the underlying RoundTripper (usually http.Transport)
-	resp, err := c.transport.RoundTrip(req)
+	resp, err := primaryTransport.RoundTrip(req)
 	// Custom logic after the request
 	if err != nil {
+		c.consecutiveFails.Add(1)
 		// If the primary transport fails, use the secondary transport
-		c.lock.RLock()
-		secondaryTransport := c.secondaryTransport
-		c.lock.RUnlock()
 		if secondaryTransport != nil {
 			resp, err = secondaryTransport.RoundTrip(req)
 		}
+	} else {
+		c.consecutiveFails.Store(0)
 	}
 	return resp, err
 }
