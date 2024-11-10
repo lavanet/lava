@@ -236,15 +236,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 						for range ticker.C {
 							if rpcConsumerServer.IsInitialized() {
 								customLavaTransport.SetSecondaryTransport(rpcConsumerServer)
-								lavaChainFetcher.FetchLatestBlockNum(ctx)
-								queryClient := spectypes.NewQueryClient(options.clientCtx)
-								spec1, err := queryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{ChainID: "LAV1"})
-								customLavaTransport.TogglePrimarySecondaryTransport()
-								lavaChainFetcher.FetchLatestBlockNum(ctx)
-								spec2, err2 := queryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{ChainID: "LAV1"})
-								if err != nil || err2 != nil {
-									utils.LavaFormatFatal("failed fetching spec", err, utils.Attribute{Key: "spec1", Value: spec1}, utils.Attribute{Key: "spec2", Value: spec2})
-								}
 								return
 							}
 						}

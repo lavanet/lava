@@ -1443,5 +1443,7 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
-	return rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
+	return resp, err
 }

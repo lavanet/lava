@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type CustomLavaTransport struct {
@@ -20,6 +22,7 @@ func NewCustomLavaTransport(httpTransport http.RoundTripper, secondaryTransport 
 func (c *CustomLavaTransport) SetSecondaryTransport(secondaryTransport http.RoundTripper) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	utils.LavaFormatDebug("Setting secondary transport for CustomLavaTransport")
 	c.secondaryTransport = secondaryTransport
 }
 
