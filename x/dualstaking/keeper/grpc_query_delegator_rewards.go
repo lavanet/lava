@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,20 +17,19 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	var rewards []types.DelegatorRewardInfo
-	resProviders, err := k.DelegatorProviders(goCtx, &types.QueryDelegatorProvidersRequest{Delegator: req.Delegator})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, delegation := range resProviders.Delegations {
-		if delegation.Provider == req.Provider || req.Provider == "" {
-			delegatorReward, found := k.GetDelegatorReward(ctx, delegation.Provider, delegation.Delegator)
-			if found {
-				reward := types.DelegatorRewardInfo{
-					Provider: delegation.Provider,
+	if req.Provider != "" {
+		reward, found := k.GetDelegatorReward(ctx, req.Provider, req.Delegator)
+		if found {
+			rewards = append(rewards, types.DelegatorRewardInfo{Provider: reward.Provider, Amount: reward.Amount})
+		}
+	} else {
+		allRewards := k.GetAllDelegatorReward(ctx)
+		for _, delegatorReward := range allRewards {
+			if delegatorReward.Delegator == req.Delegator {
+				rewards = append(rewards, types.DelegatorRewardInfo{
+					Provider: delegatorReward.Provider,
 					Amount:   delegatorReward.Amount,
-				}
-				rewards = append(rewards, reward)
+				})
 			}
 		}
 	}

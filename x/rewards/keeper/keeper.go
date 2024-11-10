@@ -10,9 +10,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	collcompat "github.com/lavanet/lava/v3/utils/collcompat"
-	"github.com/lavanet/lava/v3/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
+	"github.com/lavanet/lava/v4/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 type (

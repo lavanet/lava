@@ -11,22 +11,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	"github.com/lavanet/lava/v4/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type RestChainParser struct {
@@ -47,7 +47,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 		var data []byte = nil
 		urlPath := string(craftData.Data)
 		if craftData.ConnectionType == http.MethodPost {
-			// on post we need to send the data provided in the templace with the api as method
+			// on post we need to send the data provided in the template with the api as method
 			data = craftData.Data
 			urlPath = craftData.Path
 		}

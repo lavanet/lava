@@ -10,13 +10,13 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	rpcInterfaceMessages "github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	rpcclient "github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	extensionslib "github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/v3/protocol/common"
-	metrics "github.com/lavanet/lava/v3/protocol/metrics"
-	types "github.com/lavanet/lava/v3/x/pairing/types"
-	types0 "github.com/lavanet/lava/v3/x/spec/types"
+	rpcInterfaceMessages "github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	rpcclient "github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	extensionslib "github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	common "github.com/lavanet/lava/v4/protocol/common"
+	metrics "github.com/lavanet/lava/v4/protocol/metrics"
+	types "github.com/lavanet/lava/v4/x/pairing/types"
+	types0 "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 // MockChainParser is a mock of ChainParser interface.
@@ -280,6 +280,14 @@ func NewMockChainMessage(ctrl *gomock.Controller) *MockChainMessage {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 	return m.recorder
+}
+
+// AppendHeader mocks base method.
+func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRequestedBlocksHashes")
+	ret0, _ := ret[0].([]string)
+	return ret0
 }
 
 // AppendHeader mocks base method.

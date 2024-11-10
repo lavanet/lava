@@ -9,14 +9,14 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	"github.com/lavanet/lava/v3/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v4/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +34,7 @@ var (
 		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
 		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
 	)
-	mockSpec2 string = "mock2"
+	mockSpec2 string = "mockspec2"
 )
 
 type tester struct {

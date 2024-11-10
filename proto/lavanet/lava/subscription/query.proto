@@ -11,7 +11,7 @@ import "lavanet/lava/subscription/params.proto";
 import "lavanet/lava/subscription/subscription.proto";
 import "amino/amino.proto";
 
-option go_package = "github.com/lavanet/lava/v3/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v4/x/subscription/types";
 
 // Query defines the gRPC querier service.
 service Query {

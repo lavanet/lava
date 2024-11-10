@@ -5,9 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	v2 "github.com/lavanet/lava/v4/x/pairing/migrations/v2"
 )
 
 type Migrator struct {

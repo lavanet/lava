@@ -14,25 +14,25 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/performance"
-	"github.com/lavanet/lava/v3/protocol/upgrade"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/protocopy"
-	"github.com/lavanet/lava/v3/utils/rand"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/upgrade"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/protocopy"
+	"github.com/lavanet/lava/v4/utils/rand"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v4/x/plans/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -604,10 +604,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	if rpccs.debugRelays {
+		routerKey := lavasession.NewRouterKeyFromExtensions(extensions)
 		utils.LavaFormatDebug("[Before Send] returned the following sessions",
 			utils.LogAttr("sessions", sessions),
-			utils.LogAttr("usedProviders.GetUnwantedProvidersToSend", usedProviders.GetUnwantedProvidersToSend()),
-			utils.LogAttr("usedProviders.GetErroredProviders", usedProviders.GetErroredProviders()),
+			utils.LogAttr("usedProviders.GetUnwantedProvidersToSend", usedProviders.GetUnwantedProvidersToSend(routerKey)),
+			utils.LogAttr("usedProviders.GetErroredProviders", usedProviders.GetErroredProviders(routerKey)),
 			utils.LogAttr("addons", addon),
 			utils.LogAttr("extensions", extensions),
 			utils.LogAttr("AllowSessionDegradation", relayProcessor.GetAllowSessionDegradation()),
@@ -767,8 +768,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				// validate nodeError is matching our expectations for reducing availability.
 				reduceAvailability = strings.Contains(string(localRelayResult.Reply.Data), "The node does not track the shard ID")
 			}
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, reduceAvailability) // session done successfully
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, reduceAvailability, extensions) // session done successfully
 			localRelayResult.IsNodeError = isNodeError
+			if rpccs.debugRelays {
+				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode))
+			}
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
 				// in case the error is a node error we don't want to cache
 				if !isNodeError {
@@ -1270,6 +1274,20 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 	chainMessage.SetForceCacheRefresh(ok)
 }
 
+// Iterating over metadataHeaders adding each trailer that fits the header if found to relayResult.Relay.Metadata
+func (rpccs *RPCConsumerServer) getMetadataFromRelayTrailer(metadataHeaders []string, relayResult *common.RelayResult) {
+	for _, metadataHeader := range metadataHeaders {
+		trailerValue := relayResult.ProviderTrailer.Get(metadataHeader)
+		if len(trailerValue) > 0 {
+			extensionMD := pairingtypes.Metadata{
+				Name:  metadataHeader,
+				Value: trailerValue[0],
+			}
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
+		}
+	}
+}
+
 func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, protocolMessage chainlib.ProtocolMessage, apiName string) {
 	if relayResult == nil {
 		return
@@ -1342,19 +1360,13 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	}
 
 	// fetch trailer information from the provider by using the provider trailer field.
-	providerNodeExtensions := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeExtension)
-	if len(providerNodeExtensions) > 0 {
-		extensionMD := pairingtypes.Metadata{
-			Name:  chainlib.RPCProviderNodeExtension,
-			Value: providerNodeExtensions[0],
-		}
-		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
-	}
+	rpccs.getMetadataFromRelayTrailer(chainlib.TrailersToAddToHeaderResponse, relayResult)
 
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
-		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders()
+		routerKey := lavasession.NewRouterKeyFromExtensions(protocolMessage.GetExtensions())
+		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders(routerKey)
 		if len(erroredProviders) > 0 {
 			erroredProvidersArray := make([]string, len(erroredProviders))
 			idx := 0

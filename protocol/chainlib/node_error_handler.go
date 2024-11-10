@@ -11,13 +11,13 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type genericErrorHandler struct{}
@@ -135,6 +135,20 @@ func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json
 	}
 	if reqId != respId {
 		return fmt.Errorf("ID mismatch error")
+	}
+	return nil
+}
+
+func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage {
+	// try to parse node error as json message
+	httpError, ok := nodeErr.(rpcclient.HTTPError)
+	if ok {
+		jsonMessage := &rpcclient.JsonrpcMessage{}
+		err := json.Unmarshal(httpError.Body, jsonMessage)
+		if err == nil {
+			utils.LavaFormatDebug("Successfully recovered HTTPError to node message", utils.LogAttr("jsonMessage", jsonMessage))
+			return jsonMessage
+		}
 	}
 	return nil
 }
