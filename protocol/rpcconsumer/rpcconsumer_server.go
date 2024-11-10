@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -78,6 +79,7 @@ type RPCConsumerServer struct {
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
+	initialized                    atomic.Bool
 }
 
 type relayResponse struct {
@@ -167,8 +169,11 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 		// Only start after everything is initialized - check consumer session manager
 		rpccs.waitForPairing()
 	}
-
-	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	if success {
+		rpccs.initialized.Store(true)
+	}
+	return success, err
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
@@ -1418,7 +1423,11 @@ func (rpccs *RPCConsumerServer) IsHealthy() bool {
 }
 
 func (rpccs *RPCConsumerServer) IsInitialized() bool {
-	return rpccs.relaysMonitor.IsInitialized()
+	if rpccs == nil {
+		return false
+	}
+
+	return rpccs.initialized.Load()
 }
 
 func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
