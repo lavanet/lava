@@ -81,7 +81,6 @@ func CmdAccountInfo() *cobra.Command {
 					} else {
 						info.Provider = append(info.Provider, provider)
 					}
-					break
 				}
 			}
 
