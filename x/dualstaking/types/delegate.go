@@ -3,18 +3,37 @@ package types
 import (
 	"time"
 
+	"cosmossdk.io/collections"
+	"cosmossdk.io/collections/indexes"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 )
 
-func NewDelegation(delegator, provider, chainID string, blockTime time.Time, tokenDenom string) Delegation {
+var DelegationIndexPrefix = collections.NewPrefix(1)
+
+type DelegationIndexes struct {
+	ReverseIndex *indexes.ReversePair[string, string, Delegation]
+}
+
+func (a DelegationIndexes) IndexesList() []collections.Index[collections.Pair[string, string], Delegation] {
+	return []collections.Index[collections.Pair[string, string], Delegation]{a.ReverseIndex}
+}
+
+func NewDelegationIndexes(sb *collections.SchemaBuilder) DelegationIndexes {
+	return DelegationIndexes{
+		ReverseIndex: indexes.NewReversePair[Delegation](
+			sb, DelegationIndexPrefix, "delegation_by_provider_delegator",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+		),
+	}
+}
+
+func NewDelegation(delegator, provider string, blockTime time.Time, tokenDenom string) Delegation {
 	return Delegation{
 		Delegator: delegator,
 		Provider:  provider,
-		ChainID:   chainID,
 		Amount:    sdk.NewCoin(tokenDenom, sdk.ZeroInt()),
-		Timestamp: utils.NextMonth(blockTime).UTC().Unix(),
+		Timestamp: blockTime.AddDate(0, 0, 7).UTC().Unix(),
 	}
 }
 
@@ -33,7 +52,6 @@ func (delegation *Delegation) IsZero() bool {
 func (delegation *Delegation) Equal(other *Delegation) bool {
 	if delegation.Delegator != other.Delegator ||
 		delegation.Provider != other.Provider ||
-		delegation.ChainID != other.ChainID ||
 		!delegation.Amount.IsEqual(other.Amount) {
 		return false
 	}
@@ -42,7 +60,7 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 
 func (delegation *Delegation) IsFirstWeekPassed(currentTimestamp int64) bool {
 	// this is a temporary code to reduce the time to 1 week instead of month, will be changed in the gradual delegation increase feature.
-	return delegation.Timestamp-int64((3*7*24*time.Hour).Seconds()) <= currentTimestamp
+	return delegation.Timestamp <= currentTimestamp
 }
 
 func NewDelegator(delegator, provider string) Delegator {

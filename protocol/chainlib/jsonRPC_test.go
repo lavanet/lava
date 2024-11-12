@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	specutils "github.com/lavanet/lava/v3/utils/keeper"
-	plantypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	specutils "github.com/lavanet/lava/v4/utils/keeper"
+	plantypes "github.com/lavanet/lava/v4/x/plans/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -187,8 +187,9 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:invalid parser input format"
-	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
+	actualErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:blockParsing - parse failed {error:invalid parser input format,"
+	expectedErrMsg := err.Error()[:len(actualErrMsg)]
+	require.Equal(t, actualErrMsg, expectedErrMsg, err.Error())
 }
 
 func TestAddonAndVerifications(t *testing.T) {
@@ -213,7 +214,7 @@ func TestAddonAndVerifications(t *testing.T) {
 	require.NotNil(t, chainRouter)
 	require.NotNil(t, chainFetcher)
 
-	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	verifications, err := chainParser.GetVerifications([]string{"debug"}, "", "jsonrpc")
 	require.NoError(t, err)
 	require.NotEmpty(t, verifications)
 	for _, verification := range verifications {

@@ -10,8 +10,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v3/utils"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	"github.com/lavanet/lava/v4/utils"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 // FixationStore manages lists of entries with versions in the store.

@@ -10,13 +10,13 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v3/protocol/common"
-	metrics "github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	metrics "github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -52,7 +52,7 @@ type ConsumerSessionManager struct {
 	// contains a sorted list of blocked addresses, sorted by their cu used this epoch for higher chance of response
 	currentlyBlockedProviderAddresses []string
 
-	addonAddresses    map[RouterKey][]string
+	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
@@ -114,7 +114,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList))
+	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
+
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -128,13 +129,13 @@ func (csm *ConsumerSessionManager) Initialized() bool {
 func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
 	if addon == "" && len(extensions) == 0 {
 		// purge all
-		csm.addonAddresses = make(map[RouterKey][]string)
+		csm.addonAddresses = make(map[string][]string)
 	} else {
 		routerKey := NewRouterKey(append(extensions, addon))
 		if csm.addonAddresses == nil {
-			csm.addonAddresses = make(map[RouterKey][]string)
+			csm.addonAddresses = make(map[string][]string)
 		}
-		csm.addonAddresses[routerKey] = []string{}
+		csm.addonAddresses[routerKey.String()] = []string{}
 	}
 }
 
@@ -152,10 +153,11 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 // assuming csm is Rlocked
 func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
 	routerKey := NewRouterKey(append(extensions, addon))
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+	routerKeyString := routerKey.String()
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
 		return csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[routerKey]
+	return csm.addonAddresses[routerKeyString]
 }
 
 // After 2 epochs we need to close all open connections.
@@ -331,7 +333,7 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string,
 			}
 		}
 		csm.RemoveAddonAddresses(addon, extensions) // refresh the list
-		csm.addonAddresses[NewRouterKey(append(extensions, addon))] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[NewRouterKey(append(extensions, addon)).String()] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
 }
 
@@ -374,11 +376,12 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
 	defer csm.lock.Unlock()
 	routerKey := NewRouterKey(append(extensions, addon))
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+	routerKeyString := routerKey.String()
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
 		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKey] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[routerKey]
+	return csm.addonAddresses[routerKeyString]
 }
 
 // validating we still have providers, otherwise reset valid addresses list
@@ -432,7 +435,8 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
 	}
 	defer func() { usedProviders.AddUsed(consumerSessionMap, errRet) }()
-	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend()
+	routerKey := NewRouterKeyFromExtensions(extensions)
+	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend(routerKey)
 
 	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
@@ -566,7 +570,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					// we don't want to update the reputation by it, so we null the rawQosReport
 					rawQosReport = nil
 				}
-				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders)
+				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders, routerKey)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				if len(sessions) == wantedSession {
@@ -686,6 +690,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	// if we got here we validated the epoch is still the same epoch as we expected and we need to fetch a session from the blocked provider list.
 	defer csm.lock.RUnlock()
 
+	routerKey := NewRouterKey(extensions)
 	// csm.currentlyBlockedProviderAddresses is sorted by the provider with the highest cu used this epoch to the lowest
 	// meaning if we fetch the first successful index this is probably the highest success ratio to get a response.
 	for _, providerAddress := range csm.currentlyBlockedProviderAddresses {
@@ -696,7 +701,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 		consumerSessionsWithProvider := csm.pairing[providerAddress]
 		// Add to ignored (no matter what)
 		ignoredProviders.providers[providerAddress] = struct{}{}
-		usedProviders.AddUnwantedAddresses(providerAddress) // add the address to our unwanted providers to avoid infinite recursion
+		usedProviders.AddUnwantedAddresses(providerAddress, routerKey) // add the address to our unwanted providers to avoid infinite recursion
 
 		// validate this provider has enough cu to be used
 		if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {
@@ -1018,6 +1023,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	numOfProviders int,
 	providersCount uint64,
 	isHangingApi bool,
+	extensions []*spectypes.Extension,
 ) error {
 	// release locks, update CU, relaynum etc..
 	if err := consumerSession.VerifyLock(); err != nil {
@@ -1126,7 +1132,14 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
+func NewConsumerSessionManager(
+	rpcEndpoint *RPCEndpoint,
+	providerOptimizer ProviderOptimizer,
+	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	reporter metrics.Reporter,
+	consumerPublicAddress string,
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
+) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,

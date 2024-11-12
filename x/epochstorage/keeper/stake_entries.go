@@ -7,8 +7,9 @@ import (
 
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 )
 
 /* ########## StakeEntry ############ */
@@ -186,6 +187,23 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provide
 	err := k.stakeEntriesCurrent.Remove(ctx, key)
 	if err != nil {
 		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove entry with key %v, error: %w", key, err))
+	}
+
+	metadata, err := k.GetMetadata(ctx, provider)
+	if err != nil {
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to fetch provider metadata %v, error: %w", provider, err))
+	}
+	var ok bool
+	metadata.Chains, ok = lavaslices.Remove(metadata.Chains, chainID)
+	if !ok {
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove chain from provider metadata %v, error: %w", provider, err))
+	}
+	if len(metadata.Chains) == 0 {
+		if k.RemoveMetadata(ctx, provider) != nil {
+			panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove provider metadata %v, error: %w", provider, err))
+		}
+	} else {
+		k.SetMetadata(ctx, metadata)
 	}
 }
 

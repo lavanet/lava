@@ -7,19 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 type relayProcessorMetricsMock struct{}
 
-func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {}
+func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
+}
 
 func (romm *relayProcessorMetricsMock) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
 }
@@ -41,7 +42,7 @@ var (
 
 func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -59,7 +60,7 @@ func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 
 func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, err)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), err)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -77,7 +78,7 @@ func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay ti
 
 func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -186,7 +187,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults()
 		require.False(t, requiredNodeResults)
 		// check first retry
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
@@ -194,7 +195,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
 		require.False(t, requiredNodeResults)
 
 		// check first second retry
@@ -203,7 +204,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
 
 		// 2nd relay, same inputs
@@ -229,7 +230,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
 
 		// 3nd relay, different inputs
@@ -255,7 +256,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
 		// check our hashing mechanism works with different inputs
 		require.False(t, requiredNodeResults)
 
@@ -283,7 +284,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
 
 		// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
@@ -332,7 +333,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
 		relayCountOnNodeError = 2
 	})
@@ -519,14 +520,14 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 			err := relayProcessor.WaitForResults(ctx)
 			require.NoError(t, err)
 			// Decide if we need to resend or not
-			if relayProcessor.HasRequiredNodeResults() {
+			if results, _ := relayProcessor.HasRequiredNodeResults(); results {
 				break
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		resultsOk = relayProcessor.HasRequiredNodeResults()
+		resultsOk, _ = relayProcessor.HasRequiredNodeResults()
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)

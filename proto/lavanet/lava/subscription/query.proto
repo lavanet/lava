@@ -11,7 +11,7 @@ import "lavanet/lava/subscription/params.proto";
 import "lavanet/lava/subscription/subscription.proto";
 import "amino/amino.proto";
 
-option go_package = "github.com/lavanet/lava/v3/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v4/x/subscription/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -45,8 +45,15 @@ service Query {
   }
 
 // Queries a rewards estimation.
+// Deprecated: please use EstimatedProviderRewards
 rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option deprecated = true;
   option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
+}
+
+// Queries a rewards estimation.
+rpc EstimatedProviderRewards(QueryEstimatedProviderRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_provider_rewards/{provider}/{amount_delegator}";
 }
 
 rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
@@ -125,13 +132,19 @@ message QuerySubscriptionTrackedUsageResponse {
 }
 
 message QueryEstimatedRewardsRequest {
+  option deprecated = true;
   string provider = 1;
-  string chain_id = 2;
+  string chain_id = 2 [(gogoproto.moretags) = "yaml:\"chain_id\",deprecated:\"true\"", deprecated = true];
   string amount_delegator = 3; 
 }
 
+message QueryEstimatedProviderRewardsRequest {
+  string provider = 1;
+  string amount_delegator = 2; 
+}
+
 message EstimatedRewardInfo {
-  string source =1;
+  string source = 1;
   repeated cosmos.base.v1beta1.DecCoin amount = 2 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
     (gogoproto.nullable)     = false,
@@ -140,12 +153,15 @@ message EstimatedRewardInfo {
 }
 
 message QueryEstimatedRewardsResponse {
-  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = false];
   repeated cosmos.base.v1beta1.DecCoin total = 2 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true
   ];
+  uint64 recommended_block = 3; // if the query is run in the first 24H of the month, recommended_block will be non-zero.
+                                // The IPRPC estimation might be misleading in the first 24H since it's dependent on CU count
+                                // so the user should run the query again using the --height flag with the recommended_block
 }
 
 message QueryEstimatedValidatorRewardsRequest {
