@@ -1416,24 +1416,6 @@
                                     "extra_compute_units": 0
                                 },
                                 {
-                                    "name": "Filecoin.StateMarketBalance",
-                                    "block_parsing": {
-                                        "parser_arg": [
-                                            "latest"
-                                        ],
-                                        "parser_func": "DEFAULT"
-                                    },
-                                    "compute_units": 10,
-                                    "enabled": true,
-                                    "category": {
-                                        "deterministic": false,
-                                        "local": false,
-                                        "subscription": false,
-                                        "stateful": 0
-                                    },
-                                    "extra_compute_units": 0
-                                },
-                                {
                                     "name": "Filecoin.StateMarketParticipants",
                                     "block_parsing": {
                                         "parser_arg": [
