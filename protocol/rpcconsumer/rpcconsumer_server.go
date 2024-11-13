@@ -613,8 +613,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		localRelayRequestData := &pairingtypes.RelayPrivateData{}
+		err := protocopy.DeepCopyProtoObject(protocolMessage.RelayPrivateData(), localRelayRequestData)
+		if err != nil {
+			return err
+		}
+
 		// Launch a separate goroutine for each session
-		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
+		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo, localRelayRequestData *pairingtypes.RelayPrivateData) {
 			// add ticker launch metrics
 			localRelayResult := &common.RelayResult{
 				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderQoSExcellenceSummery: sessionInfo.QoSSummeryResult},
@@ -643,14 +649,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				goroutineCtxCancel()
 			}()
 
-			localRelayRequestData := *protocolMessage.RelayPrivateData()
-
 			// Extract fields from the sessionInfo
 			singleConsumerSession := sessionInfo.Session
 			epoch := sessionInfo.Epoch
 			reportedProviders := sessionInfo.ReportedProviders
 
-			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
+			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 			if errResponse != nil {
 				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData))
 				return
@@ -813,7 +817,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 			// localRelayResult is being sent on the relayProcessor by a deferred function
-		}(providerPublicAddress, sessionInfo)
+		}(providerPublicAddress, sessionInfo, localRelayRequestData)
 	}
 	// finished setting up go routines, can return and wait for responses
 	return nil
