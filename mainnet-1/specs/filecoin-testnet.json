@@ -1890,9 +1890,22 @@
                                     }
                                   ]
                                 }
+                            ],
+                            "extensions": [
+                                {
+                                    "name": "archive",
+                                    "cu_multiplier": 5,
+                                    "rule": {
+                                        "block": 2000
+                                    }
+                                }
                             ]
                         }
-                    ]
+                    ],
+                    "contributor": [
+                        "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
+                    ],
+                    "contributor_percentage": "0.015"
                 }
             ]
         },
