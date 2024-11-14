@@ -3,8 +3,8 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func (k Keeper) SetPairingRelayCache(ctx sdk.Context, project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry, allowedCu uint64) {
@@ -37,28 +37,4 @@ func (k Keeper) ResetPairingRelayCache(ctx sdk.Context) {
 	for ; iterator.Valid(); iterator.Next() {
 		store.Delete(iterator.Key())
 	}
-}
-
-// the cache used for the query, does not write into state
-func (k Keeper) SetPairingQueryCache(project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry) {
-	if k.pairingQueryCache == nil {
-		// pairing cache is not initialized, will be in next epoch so simply skip
-		return
-	}
-	key := types.NewPairingCacheKey(project, chainID, epoch)
-
-	(*k.pairingQueryCache)[key] = pairedProviders
-}
-
-func (k Keeper) GetPairingQueryCache(project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, bool) {
-	if k.pairingQueryCache == nil {
-		// pairing cache is not initialized, will be in next epoch so simply skip
-		return nil, false
-	}
-	key := types.NewPairingCacheKey(project, chainID, epoch)
-	if providers, ok := (*k.pairingQueryCache)[key]; ok {
-		return providers, true
-	}
-
-	return nil, false
 }

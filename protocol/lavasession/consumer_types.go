@@ -8,11 +8,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	metrics "github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -51,11 +52,11 @@ var (
 )
 
 type UsedProvidersInf interface {
-	RemoveUsed(providerAddress string, err error)
+	RemoveUsed(providerAddress string, routerKey RouterKey, err error)
 	TryLockSelection(context.Context) error
 	AddUsed(ConsumerSessionsMap, error)
-	GetUnwantedProvidersToSend() map[string]struct{}
-	AddUnwantedAddresses(address string)
+	GetUnwantedProvidersToSend(RouterKey) map[string]struct{}
+	AddUnwantedAddresses(address string, routerKey RouterKey)
 	CurrentlyUsed() int
 }
 
@@ -76,8 +77,8 @@ type ProviderOptimizer interface {
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int)
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)
 	Strategy() provideroptimizer.Strategy
-	UpdateWeights(map[string]int64)
-	CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (provideroptimizer.SelectionTier, provideroptimizer.Exploration)
+	UpdateWeights(map[string]int64, uint64)
+	CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (provideroptimizer.SelectionTier, provideroptimizer.Exploration, map[string]*metrics.OptimizerQoSReport)
 	CalculateShiftedChances(selectionTier provideroptimizer.SelectionTier) map[int]float64
 }
 
@@ -441,6 +442,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
+		routerKey:          NewRouterKey(nil),
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.

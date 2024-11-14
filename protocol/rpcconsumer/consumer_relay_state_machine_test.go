@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -92,7 +92,8 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				require.True(t, relayProcessor.HasRequiredNodeResults())
+				results, _ := relayProcessor.HasRequiredNodeResults()
+				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
 				require.Equal(t, string(returnedResult.Reply.Data), "ok")

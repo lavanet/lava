@@ -12,9 +12,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"google.golang.org/grpc/metadata"
 )
@@ -29,16 +29,17 @@ const (
 )
 
 type RPCConsumerLogs struct {
-	newRelicApplication       *newrelic.Application
-	MetricService             *MetricService
-	StoreMetricData           bool
-	excludeMetricsReferrers   string
-	excludedUserAgent         []string
-	consumerMetricsManager    *ConsumerMetricsManager
-	consumerRelayServerClient *ConsumerRelayServerClient
+	newRelicApplication        *newrelic.Application
+	MetricService              *MetricService
+	StoreMetricData            bool
+	excludeMetricsReferrers    string
+	excludedUserAgent          []string
+	consumerMetricsManager     *ConsumerMetricsManager
+	consumerRelayServerClient  *ConsumerRelayServerClient
+	consumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
@@ -49,7 +50,11 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}, nil
+		return &RPCConsumerLogs{
+			consumerMetricsManager:     consumerMetricsManager,
+			consumerRelayServerClient:  consumerRelayServerClient,
+			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
+		}, nil
 	}
 
 	newRelicApplication, err := newrelic.NewApplication(
@@ -87,12 +92,23 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	return rpcConsumerLogs, err
 }
 
-func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
+func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
+	rpccl.consumerMetricsManager.SetWebSocketConnectionActive(chainId, apiInterface, add)
 }
 
-func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
+func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chainId, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
+	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
+}
+
+func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
+	if providerAddress == "" {
+		// skip if provider address is empty
+		return
+	}
+
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
+	rpccl.consumerOptimizerQoSClient.SetNodeErrorToProvider(providerAddress, chainId)
 }
 
 func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
@@ -139,13 +155,14 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)
 
-		jsonResponse, _ := json.Marshal(fiber.Map{
+		jsonResponse, err := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
-
+		if err != nil {
+			utils.LavaFormatError("AnalyzeWebSocketErrorAndGetFormattedMessage unexpected behavior, failed marshalling json response", err, utils.LogAttr("seed", msgSeed))
+		}
 		return jsonResponse
 	}
-
 	return nil
 }
 

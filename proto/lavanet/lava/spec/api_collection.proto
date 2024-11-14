@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.spec;
 
-option go_package = "github.com/lavanet/lava/v3/x/spec/types";
+option go_package = "github.com/lavanet/lava/v4/x/spec/types";
 option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
@@ -83,6 +83,7 @@ message ParseDirective {
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
+  repeated GenericParser parsers = 5 [(gogoproto.nullable) = false];
 }
 
 message BlockParser {

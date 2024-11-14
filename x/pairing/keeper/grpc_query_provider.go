@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,9 +17,14 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, req.Address)
+	if err != nil {
+		return &types.QueryProviderResponse{}, nil
+	}
+
 	chains := []string{req.ChainID}
 	if req.ChainID == "" {
-		chains = k.specKeeper.GetAllChainIDs(ctx)
+		chains = metadata.Chains
 	}
 
 	stakeEntries := []epochstoragetypes.StakeEntry{}
@@ -28,7 +33,10 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 		if !found {
 			continue
 		}
-		stakeEntry.Moniker = stakeEntry.Description.Moniker
+		stakeEntry.Description = metadata.Description
+		stakeEntry.Moniker = metadata.Description.Moniker
+		stakeEntry.DelegateCommission = metadata.DelegateCommission
+		stakeEntry.Vault = metadata.Vault
 		stakeEntries = append(stakeEntries, stakeEntry)
 	}
 

@@ -10,11 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"github.com/spf13/cobra"
 )
 
@@ -122,7 +122,7 @@ func CmdModifyProvider() *cobra.Command {
 
 				if !providerEntry.Stake.IsEqual(newStake) {
 					if cmd.Flags().Changed(ValidatorFlag) {
-						validator, err = cmd.Flags().GetString(types.FlagMoniker)
+						validator, err = cmd.Flags().GetString(ValidatorFlag)
 						if err != nil {
 							return err
 						}

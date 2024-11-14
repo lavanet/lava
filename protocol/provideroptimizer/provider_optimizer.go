@@ -8,13 +8,13 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/score"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/score"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -49,6 +49,9 @@ type cacheInf interface {
 	Set(key, value interface{}, cost int64) bool
 }
 
+type consumerOptimizerQoSClientInf interface {
+	UpdatePairingListStake(stakeMap map[string]int64, chainId string, epoch uint64)
+}
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                cacheInf
@@ -60,6 +63,8 @@ type ProviderOptimizer struct {
 	selectionWeighter               SelectionWeighter
 	OptimizerNumTiers               int
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
+	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
+	chainId                         string
 }
 
 type Exploration struct {
@@ -88,8 +93,13 @@ const (
 	STRATEGY_DISTRIBUTED
 )
 
-func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64) {
+func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
 	po.selectionWeighter.SetWeights(weights)
+
+	// Update the stake map for metrics
+	if po.consumerOptimizerQoSClient != nil {
+		po.consumerOptimizerQoSClient.UpdatePairingListStake(weights, po.chainId, epoch)
+	}
 }
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
@@ -151,30 +161,53 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
-func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration) {
+func (po *ProviderOptimizer) calcLatencyAndSyncScores(providerData ProviderData, cu uint64, requestedBlock int64) (float64, float64) {
+	// latency score
+	latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
+
+	// sync score
+	syncScoreCurrent := float64(0)
+	if requestedBlock < 0 {
+		// means user didn't ask for a specific block and we want to give him the best
+		syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
+	}
+
+	return latencyScoreCurrent, syncScoreCurrent
+}
+
+func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	reports := []*metrics.OptimizerQoSReport{}
+
+	rawScores := selectionTier.GetRawScores()
+	for idx, entry := range rawScores {
+		qosReport := providersScores[entry.Address]
+		qosReport.EntryIndex = idx
+		reports = append(reports, qosReport)
+	}
+
+	return reports
+}
+
+func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 
 	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
+	providerScores := make(map[string]*metrics.OptimizerQoSReport)
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
 			continue
 		}
+
 		providerData, found := po.getProviderData(providerAddress)
 		if !found {
 			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
 		}
-		// latency score
-		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
 
-		// sync score
-		syncScoreCurrent := float64(0)
-		if requestedBlock < 0 {
-			// means user didn't ask for a specific block and we want to give him the best
-			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
-		}
+		latencyScoreCurrent, syncScoreCurrent := po.calcLatencyAndSyncScores(providerData, cu, requestedBlock)
 
 		utils.LavaFormatTrace("scores information",
 			utils.LogAttr("providerAddress", providerAddress),
@@ -183,7 +216,15 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			utils.LogAttr("latencyScore", latencyScore),
 			utils.LogAttr("syncScore", syncScore),
 		)
+
 		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
+			ProviderAddress:   providerAddress,
+			SyncScore:         syncScoreCurrent,
+			AvailabilityScore: providerData.Availability.Num / providerData.Availability.Denom,
+			LatencyScore:      latencyScoreCurrent,
+			GenericScore:      providerScore,
+		}
 		selectionTier.AddScore(providerAddress, providerScore)
 
 		// check if candidate for exploration
@@ -193,7 +234,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			explorationCandidate = Exploration{address: providerAddress, time: updateTime}
 		}
 	}
-	return selectionTier, explorationCandidate
+	return selectionTier, explorationCandidate, providerScores
 }
 
 func (po *ProviderOptimizer) CalculateShiftedChances(selectionTier SelectionTier) map[int]float64 {
@@ -212,7 +253,7 @@ func (po *ProviderOptimizer) CalculateShiftedChances(selectionTier SelectionTier
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
 		return []string{}, -1
@@ -518,7 +559,15 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector) *ProviderOptimizer {
+func NewProviderOptimizer(
+	strategy Strategy,
+	averageBlockTIme,
+	baseWorldLatency time.Duration,
+	wantedNumProvidersInConcurrency uint,
+	consumerOptimizerQoSClientInf consumerOptimizerQoSClientInf,
+	chainId string,
+	consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector,
+) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -542,6 +591,8 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers,
 		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
+		consumerOptimizerQoSClient:      consumerOptimizerQoSClientInf,
+		chainId:                         chainId,
 	}
 }
 
