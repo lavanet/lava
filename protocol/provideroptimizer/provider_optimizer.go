@@ -252,7 +252,7 @@ func (po *ProviderOptimizer) CalculateShiftedChances(selectionTier SelectionTier
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) ([]string, int) {
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
@@ -273,25 +273,27 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
 		utils.LogAttr("cu", cu),
 		utils.LogAttr("shiftedChances", shiftedChances),
-		utils.LogAttr("tier", tier),
+		utils.LogAttr("tier", selectedTier),
 	)
 
-	for _, providerAddress := range allAddresses {
-		providerData, found := po.getProviderData(providerAddress)
-		if !found {
-			utils.LavaFormatWarning("provider data was not found for address", nil, utils.LogAttr("providerAddress", providerAddress))
-			continue
-		}
+	if po.consumerOptimizerDataCollector != nil {
+		for _, providerAddress := range allAddresses {
+			providerData, found := po.getProviderData(providerAddress)
+			if !found {
+				utils.LavaFormatWarning("provider data was not found for address", nil, utils.LogAttr("providerAddress", providerAddress))
+				continue
+			}
 
-		// TODO: Make sure that this is true
-		availabilityScore := providerData.Availability.Num / providerData.Availability.Denom
-		syncScore := providerData.Sync.Num / providerData.Sync.Denom
-		latencyScore := providerData.Latency.Num / providerData.Latency.Denom
-		chosen := lavaslices.Contains(returnedProviders, providerAddress)
-		go po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
+			// TODO: Make sure that this is true
+			availabilityScore := providerData.Availability.Num / providerData.Availability.Denom
+			syncScore := providerData.Sync.Num / providerData.Sync.Denom
+			latencyScore := providerData.Latency.Num / providerData.Latency.Denom
+			chosen := lavaslices.Contains(returnedProviders, providerAddress)
+			go po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
+		}
 	}
 
-	return returnedProviders, tier
+	return returnedProviders, selectedTier
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block
