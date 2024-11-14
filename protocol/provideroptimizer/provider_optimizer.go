@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/score"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -638,6 +639,24 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	)
 
 	return ret, rawQosReport
+}
+
+func (po *ProviderOptimizer) CalculateSelectionTierAndShiftedChancesForMetrics(addresses []string) ([]metrics.ProviderTierEntry, map[int]float64) {
+	selectionTier, _, _ := po.CalculateSelectionTiers(addresses, nil, 10, spectypes.LATEST_BLOCK)
+	metricsTiers := []metrics.ProviderTierEntry{}
+	for i := 0; i < OptimizerNumTiers; i++ {
+		tierEntries := selectionTier.GetTier(i, OptimizerNumTiers, MinimumEntries)
+		for _, entry := range tierEntries {
+			metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
+				Address: entry.Address,
+				Score:   entry.Score,
+				Tier:    i,
+			})
+		}
+	}
+
+	shiftedChances := po.CalculateShiftedChances(selectionTier)
+	return metricsTiers, shiftedChances
 }
 
 func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {

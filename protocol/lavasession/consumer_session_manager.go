@@ -1171,21 +1171,8 @@ func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx co
 			return
 		case <-time.After(CollectOptimizerProvidersScoreInterval):
 			// collect optimizer providers score
-			selectionTier, _, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.getAllValidAddressesWithLock(), nil, 10, spectypes.LATEST_BLOCK)
-			metricsTiers := []metrics.ProviderTierEntry{}
-			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
-				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, provideroptimizer.MinimumEntries)
-				for _, entry := range tierEntries {
-					metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
-						Address: entry.Address,
-						Score:   entry.Score,
-						Tier:    i,
-					})
-				}
-			}
-
-			shiftedChances := csm.providerOptimizer.CalculateShiftedChances(selectionTier)
-			go csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers, shiftedChances)
+			metricsTiers, shiftedChances := csm.providerOptimizer.CalculateSelectionTierAndShiftedChancesForMetrics(csm.getAllValidAddressesWithLock())
+			csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers, shiftedChances)
 		}
 	}
 }

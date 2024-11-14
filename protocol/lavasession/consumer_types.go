@@ -80,6 +80,7 @@ type ProviderOptimizer interface {
 	UpdateWeights(map[string]int64, uint64)
 	CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (provideroptimizer.SelectionTier, provideroptimizer.Exploration, map[string]*metrics.OptimizerQoSReport)
 	CalculateShiftedChances(selectionTier provideroptimizer.SelectionTier) map[int]float64
+	CalculateSelectionTierAndShiftedChancesForMetrics(addresses []string) ([]metrics.ProviderTierEntry, map[int]float64)
 }
 
 type ignoredProviders struct {
