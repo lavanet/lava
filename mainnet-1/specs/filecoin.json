@@ -1886,7 +1886,7 @@
                                     },
                                     {
                                       "extension": "archive",
-                                      "expected_value": ""
+                                      "expected_value": "1"
                                     }
                                   ]
                                 }
