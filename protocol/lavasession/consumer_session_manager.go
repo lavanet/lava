@@ -1174,7 +1174,7 @@ func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx co
 			selectionTier, _, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.getAllValidAddressesWithLock(), nil, 10, spectypes.LATEST_BLOCK)
 			metricsTiers := []metrics.ProviderTierEntry{}
 			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
-				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, 1)
+				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, provideroptimizer.MinimumEntries)
 				for _, entry := range tierEntries {
 					metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
 						Address: entry.Address,
