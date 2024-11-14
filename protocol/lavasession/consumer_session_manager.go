@@ -645,6 +645,16 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 	return addresses
 }
 
+func (csm *ConsumerSessionManager) updateProviderChosenMetric(providers []string) {
+	if csm.consumerMetricsManager == nil {
+		return
+	}
+
+	for _, chosenProvider := range providers {
+		csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
+	}
+}
+
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
@@ -671,9 +681,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
 		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, csm.currentEpoch)
-		for _, chosenProvider := range providers {
-			go csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
-		}
+		go csm.updateProviderChosenMetric(providers)
 	}
 
 	utils.LavaFormatTrace("Choosing providers",
