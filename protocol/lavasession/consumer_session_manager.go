@@ -1166,7 +1166,7 @@ func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx co
 			return
 		case <-time.After(CollectOptimizerProvidersScoreInterval):
 			// collect optimizer providers score
-			selectionTier, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.getAllValidAddressesWithLock(), nil, 10, spectypes.LATEST_BLOCK)
+			selectionTier, _, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.getAllValidAddressesWithLock(), nil, 10, spectypes.LATEST_BLOCK)
 			metricsTiers := []metrics.ProviderTierEntry{}
 			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
 				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, 1)
