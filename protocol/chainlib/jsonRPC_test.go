@@ -214,7 +214,7 @@ func TestAddonAndVerifications(t *testing.T) {
 	require.NotNil(t, chainRouter)
 	require.NotNil(t, chainFetcher)
 
-	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	verifications, err := chainParser.GetVerifications([]string{"debug"}, "", "jsonrpc")
 	require.NoError(t, err)
 	require.NotEmpty(t, verifications)
 	for _, verification := range verifications {

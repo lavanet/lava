@@ -242,6 +242,12 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 			return true
 		}
 		return false
+	case msg.isStarkNetPathfinderNotification():
+		if strings.HasSuffix(msg.Method, notificationMethodSuffix) {
+			h.handleSubscriptionResultStarkNetPathfinder(msg)
+			return true
+		}
+		return false
 	case msg.isResponse():
 		h.handleResponse(msg)
 		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "duration", time.Since(start))
@@ -251,10 +257,31 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 	}
 }
 
+func (h *handler) handleSubscriptionResultStarkNetPathfinder(msg *JsonrpcMessage) {
+	var result starkNetPathfinderSubscriptionResult
+	if err := json.Unmarshal(msg.Result, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid starknet pathfinder subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("result", string(msg.Result)),
+		)
+		h.log.Debug("Dropping invalid subscription message")
+		return
+	}
+
+	id := strconv.Itoa(result.ID)
+	if h.clientSubs[id] != nil {
+		h.clientSubs[id].deliver(msg)
+	}
+}
+
 // handleSubscriptionResult processes subscription notifications.
 func (h *handler) handleSubscriptionResultEthereum(msg *JsonrpcMessage) {
 	var result ethereumSubscriptionResult
 	if err := json.Unmarshal(msg.Params, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid ethereum subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("params", string(msg.Params)),
+		)
 		h.log.Debug("Dropping invalid subscription message")
 		return
 	}
@@ -266,6 +293,10 @@ func (h *handler) handleSubscriptionResultEthereum(msg *JsonrpcMessage) {
 func (h *handler) handleSubscriptionResultTendermint(msg *JsonrpcMessage) {
 	var result tendermintSubscriptionResult
 	if err := json.Unmarshal(msg.Result, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid tendermint subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("result", string(msg.Result)),
+		)
 		h.log.Debug("Dropping invalid subscription message")
 		return
 	}
@@ -302,6 +333,15 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 	} else if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
 		go op.sub.run()
 		h.clientSubs[op.sub.subid] = op.sub
+	} else {
+		// This is because StarkNet Pathfinder is returning an integer instead of a string in the result
+		var integerSubId int
+		if json.Unmarshal(msg.Result, &integerSubId) == nil {
+			op.err = nil
+			op.sub.subid = strconv.Itoa(integerSubId)
+			go op.sub.run()
+			h.clientSubs[op.sub.subid] = op.sub
+		}
 	}
 }
 
