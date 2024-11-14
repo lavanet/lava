@@ -659,8 +659,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// optimizer metrics
 	cmdRPCConsumer.Flags().BoolVar(&CollectOptimizerProviderDataFlag, CollectOptimizerProviderDataFlagName, CollectOptimizerProviderDataFlag, "enables collection of data from the provider optimizer")
 	cmdRPCConsumer.Flags().DurationVar(&OptimizerProviderDataCollectionIntervalFlag, OptimizerProviderDataCollectionIntervalFlagNam, OptimizerProviderDataCollectionIntervalFlag, "sets the interval for collecting data from the provider optimizer")
-	cmdRPCConsumer.Flags().BoolVar(&lavasession.CollectOptimizerProvidersScore, lavasession.CollectOptimizerProvidersScoreFlagName, lavasession.CollectOptimizerProvidersScore, "enables collection of provider scores from the provider optimizer")
-	cmdRPCConsumer.Flags().DurationVar(&lavasession.CollectOptimizerProvidersScoreInterval, lavasession.CollectOptimizerProvidersScoreIntervalFlag, lavasession.CollectOptimizerProvidersScoreInterval, "sets the interval for collecting provider scores from the provider optimizer")
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.CollectOptimizerProvidersScore, common.CollectOptimizerProvidersScoreFlag, lavasession.CollectOptimizerProvidersScore, "enables collection of provider scores from the provider optimizer")
+	cmdRPCConsumer.Flags().DurationVar(&lavasession.CollectOptimizerProvidersScoreInterval, common.CollectOptimizerProvidersScoreIntervalFlag, lavasession.CollectOptimizerProvidersScoreInterval, "sets the interval for collecting provider scores from the provider optimizer")
 	// optimizer qos reports
 	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")

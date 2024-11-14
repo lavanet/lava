@@ -27,12 +27,10 @@ const (
 )
 
 var (
-	retrySecondChanceAfter                     = time.Minute * 3
-	DebugProbes                                = false
-	CollectOptimizerProvidersScore             = false
-	CollectOptimizerProvidersScoreFlagName     = "collect-optimizer-providers-score"
-	CollectOptimizerProvidersScoreInterval     = time.Second * 1
-	CollectOptimizerProvidersScoreIntervalFlag = "optimizer-providers-score-collection-interval"
+	retrySecondChanceAfter                 = time.Minute * 3
+	DebugProbes                            = false
+	CollectOptimizerProvidersScore         = false
+	CollectOptimizerProvidersScoreInterval = time.Second * 1
 )
 
 // created with NewConsumerSessionManager

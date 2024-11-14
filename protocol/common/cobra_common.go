@@ -43,6 +43,11 @@ const (
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
 	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
 	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
+
+	// optimizer providers score flags
+	CollectOptimizerProvidersScoreFlag         = "optimizer-providers-score-collection-enabled"
+	CollectOptimizerProvidersScoreIntervalFlag = "optimizer-providers-score-collection-interval"
+
 	// websocket flags
 	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
