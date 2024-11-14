@@ -25,7 +25,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		}
 	}
 	return &UsedProviders{
-		uniqueUsedProviders: map[RouterKey]*UniqueUsedProviders{NewRouterKey([]string{}): {
+		uniqueUsedProviders: map[string]*UniqueUsedProviders{GetEmptyRouterKey().String(): {
 			providers:         map[string]struct{}{},
 			unwantedProviders: unwantedProviders,
 			blockOnSyncLoss:   map[string]struct{}{},
@@ -48,7 +48,7 @@ type UniqueUsedProviders struct {
 
 type UsedProviders struct {
 	lock                      sync.RWMutex
-	uniqueUsedProviders       map[RouterKey]*UniqueUsedProviders
+	uniqueUsedProviders       map[string]*UniqueUsedProviders
 	originalUnwantedProviders map[string]struct{}
 	selecting                 bool
 	sessionsLatestBatch       int
@@ -125,7 +125,8 @@ func (up *UsedProviders) AllUnwantedAddresses() []string {
 // if it does, return it. If it doesn't
 // creating a new instance and returning it.
 func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *UniqueUsedProviders {
-	uniqueUsedProviders, ok := up.uniqueUsedProviders[key]
+	keyString := key.String()
+	uniqueUsedProviders, ok := up.uniqueUsedProviders[keyString]
 	if !ok {
 		uniqueUsedProviders = &UniqueUsedProviders{
 			providers:         map[string]struct{}{},
@@ -133,7 +134,7 @@ func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *Un
 			blockOnSyncLoss:   map[string]struct{}{},
 			erroredProviders:  map[string]struct{}{},
 		}
-		up.uniqueUsedProviders[key] = uniqueUsedProviders
+		up.uniqueUsedProviders[keyString] = uniqueUsedProviders
 	}
 	return uniqueUsedProviders
 }
