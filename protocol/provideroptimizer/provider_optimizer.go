@@ -266,7 +266,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
+	if explorationCandidate.address != "" && po.shouldExplore(1) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",
@@ -325,8 +325,8 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sa
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
-func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int) bool {
-	if uint(currentNumProvders) >= po.wantedNumProvidersInConcurrency {
+func (po *ProviderOptimizer) shouldExplore(currentNumProviders int) bool {
+	if uint(currentNumProviders) >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -343,21 +343,6 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 		return false // only one at a time
 	}
 	return rand.Float64() < explorationChance
-}
-
-func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
-	switch po.strategy {
-	case STRATEGY_PRIVACY:
-		// pick at random regardless of score
-		if rand.Intn(2) == 0 {
-			return true
-		}
-		return false
-	}
-	if syncScoreCurrent == 0 {
-		return latencyScore > latencyScoreCurrent
-	}
-	return po.calcProviderScore(latencyScore, syncScore) > po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
 }
 
 func (po *ProviderOptimizer) calcProviderScore(latencyScore, syncScore float64) float64 {
