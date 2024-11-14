@@ -82,6 +82,23 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
 }
 
+func (csm *ConsumerSessionManager) createStakeEntriesForMetrics(pairingList map[uint64]*ConsumerSessionsWithProvider) map[string]uint64 {
+	stakeEntriesForMetrics := map[string]uint64{}
+	for _, provider := range pairingList {
+		providerStakeEntry := provider.getProviderStakeSize()
+		stake := uint64(0)
+		if providerStakeEntry.IsValid() {
+			stake = providerStakeEntry.Amount.Uint64()
+			if provider.StaticProvider {
+				stake *= WeightMultiplierForStaticProviders
+			}
+		}
+		stakeEntriesForMetrics[provider.PublicLavaAddress] = stake
+	}
+
+	return stakeEntriesForMetrics
+}
+
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 	// TODO: we can block updating until some of the probing is done, this can prevent failed attempts on epoch change when we have no information on the providers,
@@ -123,19 +140,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 
-	stakeEntriesForMetrics := map[string]uint64{}
-	for _, provider := range pairingList {
-		providerStakeEntry := provider.getProviderStakeSize()
-		stake := uint64(0)
-		if providerStakeEntry.IsValid() {
-			stake = providerStakeEntry.Amount.Uint64()
-			if provider.StaticProvider {
-				stake *= WeightMultiplierForStaticProviders
-			}
-		}
-		stakeEntriesForMetrics[provider.PublicLavaAddress] = stake
-	}
-	go csm.consumerMetricsManager.UpdateProvidersStake(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, stakeEntriesForMetrics)
+	go csm.consumerMetricsManager.UpdateProvidersStake(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, csm.createStakeEntriesForMetrics(pairingList))
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
