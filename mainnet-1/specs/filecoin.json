@@ -4152,7 +4152,102 @@
                         "denom": "ulava",
                         "amount": "5000000000"
                     },
-                    "api_collections": [],
+                    "api_collections": [
+                        {
+                            "enabled": true,
+                            "collection_data": {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "/rpc/v0",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            "apis": [],
+                            "inheritance_apis": [
+                                {
+                                    "api_interface": "jsonrpc",
+                                    "internal_path": "/rpc/v1",
+                                    "type": "POST",
+                                    "add_on": ""
+                                }
+                            ],
+                            "parse_directives": [],
+                            "verifications": [
+                                {
+                                    "name": "chain-id",
+                                    "values": [
+                                        {
+                                            "expected_value": "0x4CB2F"
+                                        }
+                                    ]
+                                },
+                                {
+                                  "name": "pruning",
+                                  "values": [
+                                    {
+                                      "expected_value": ""
+                                    },
+                                    {
+                                      "extension": "archive",
+                                      "expected_value": "1"
+                                    }
+                                  ]
+                                }
+                            ],
+                            "extensions": [
+                                {
+                                    "name": "archive",
+                                    "cu_multiplier": 5,
+                                    "rule": {
+                                        "block": 2000
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "enabled": true,
+                            "collection_data": {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "/rpc/v1",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            "apis": [],
+                            "headers": [],
+                            "inheritance_apis": [],
+                            "parse_directives": [],
+                            "verifications": [
+                                {
+                                    "name": "chain-id",
+                                    "values": [
+                                        {
+                                            "expected_value": "0x4CB2F"
+                                        }
+                                    ]
+                                },
+                                {
+                                  "name": "pruning",
+                                  "values": [
+                                    {
+                                      "expected_value": ""
+                                    },
+                                    {
+                                      "extension": "archive",
+                                      "expected_value": "1"
+                                    }
+                                  ]
+                                }
+                            ],
+                            "extensions": [
+                                {
+                                    "name": "archive",
+                                    "cu_multiplier": 5,
+                                    "rule": {
+                                        "block": 2000
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "contributor": [
                         "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
                     ],
