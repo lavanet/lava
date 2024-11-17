@@ -2786,7 +2786,7 @@
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 900,
+                "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 30000,
                 "allowed_block_lag_for_qos_sync": 2,
@@ -2811,30 +2811,9 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x4CB2F"
+                                        "expected_value": "0x4cb2f"
                                     }
                                 ]
-                            },
-                            {
-                              "name": "pruning",
-                              "values": [
-                                {
-                                  "expected_value": ""
-                                },
-                                {
-                                  "extension": "archive",
-                                  "expected_value": "1"
-                                }
-                              ]
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 2000
-                                }
                             }
                         ]
                     },
@@ -2853,30 +2832,9 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x4CB2F"
+                                        "expected_value": "0x4cb2f"
                                     }
                                 ]
-                            },
-                            {
-                              "name": "pruning",
-                              "values": [
-                                {
-                                  "expected_value": ""
-                                },
-                                {
-                                  "extension": "archive",
-                                  "expected_value": "1"
-                                }
-                              ]
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 2000
-                                }
                             }
                         ]
                     },
@@ -2895,30 +2853,9 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x4CB2F"
+                                        "expected_value": "0x4cb2f"
                                     }
                                 ]
-                            },
-                            {
-                              "name": "pruning",
-                              "values": [
-                                {
-                                  "expected_value": ""
-                                },
-                                {
-                                  "extension": "archive",
-                                  "expected_value": "1"
-                                }
-                              ]
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 2000
-                                }
                             }
                         ]
                     }
