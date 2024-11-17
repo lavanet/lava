@@ -602,105 +602,6 @@
                         ]
                     },
                     {
-                        "enabled": false,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "WS-ONLY",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [
-                            {
-                                "name": "pathfinder_subscription",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "pathfinder_subscribe",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 1000,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "pathfinder_unsubscribe",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            }
-                        ],
-                        "parse_directives": [
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "pathfinder_subscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"pathfinder_unsubscribe\",\"params\":[%s],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "pathfinder_unsubscribe"
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "",
-                                "type": "POST",
-                                "add_on": ""
-                            },
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "WS-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
@@ -738,29 +639,6 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_6",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "/rpc/v0_6",
-                                "type": "POST",
-                                "add_on": ""
-                            },
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "WS-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_7",
                             "type": "POST",
                             "add_on": ""
@@ -769,29 +647,6 @@
                             {
                                 "api_interface": "jsonrpc",
                                 "internal_path": "",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_7",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "/rpc/v0_7",
-                                "type": "POST",
-                                "add_on": ""
-                            },
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "WS-ONLY",
                                 "type": "POST",
                                 "add_on": ""
                             }
@@ -976,7 +831,7 @@
                     }
                 ],
                 "contributor": [
-                  "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
+                    "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
                 ],
                 "contributor_percentage": "0.035"
             },
@@ -1025,53 +880,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_7",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_7",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -1117,29 +926,6 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_6",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_5",
                             "type": "POST",
                             "add_on": ""
@@ -1161,7 +947,7 @@
                     }
                 ],
                 "contributor": [
-                  "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
+                    "lava@1m0yk72fcvut72ujrs7hyf4mzgahe4c9yctz5zz"
                 ],
                 "contributor_percentage": "0.035"
             }
