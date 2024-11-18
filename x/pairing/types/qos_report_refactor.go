@@ -27,7 +27,7 @@ var (
 	// 3. sync freshness strategy: make sync more influential -> multiply the default sync factor by 3
 	BalancedStrategyFactor      = sdk.OneDec()             // 1
 	LatencyStrategyFactor       = sdk.OneDec().QuoInt64(3) // 1/3
-	SyncFreshnessStrategyFactor = sdk.NewDec(3)            // 3
+	SyncFreshnessStrategyFactor = sdk.NewDec(30)           // 3
 )
 
 // Config_Refactor defines a collection of parameters that can be used when calculating
