@@ -1,6 +1,8 @@
 package types
 
 import (
+	"bytes"
+
 	"github.com/lavanet/lava/v4/utils/sigs"
 )
 
@@ -28,5 +30,5 @@ func (rs RelaySession) CalculateHashForFinalization() []byte {
 		blockHeightBytes,
 		relayNumBytes,
 	}
-	return sigs.Join(msgParts)
+	return bytes.Join(msgParts, nil)
 }
