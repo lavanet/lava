@@ -131,7 +131,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		require.NoError(t, err)
 		dappId := "dapp"
 		consumerIp := "123.11"
-		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, &pairingtypes.RelayPrivateData{}, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics))
