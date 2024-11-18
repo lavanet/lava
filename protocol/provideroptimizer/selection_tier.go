@@ -196,6 +196,11 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	return ret
 }
 
+// TODO: add unitests and fix this function
+// scenarios: 5 entries, 6 entries, 7 entries, 9 entries, 10 entries and 11 entries
+// numTiers: 3(0,1,2),4,5
+// expected: sum(parts of tier) = float32(entries / numtiers) for all tiers (loop on them)
+// add another case: 2 providers 3 tiers, expected sum parts = 1,0.5+0.5,1
 func getPositionsForTier(tier int, numTiers int, entriesLen int) (start int, end int, fracStart float64, fracEnd float64) {
 	rankStart := float64(tier) / float64(numTiers)
 	rankEnd := float64(tier+1) / float64(numTiers)

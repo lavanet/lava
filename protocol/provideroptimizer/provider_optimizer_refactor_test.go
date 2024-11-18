@@ -795,6 +795,8 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 // 2. Do step 1 many times.
 // Expected: the ranking of providers stays the same, providers with high stake are picked more often,
 // providers from the lowest tier are not picked
+// TODO: make odd providers high stake
+// TODO: add checks on tier results
 func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -869,17 +871,25 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			require.Equal(t, 3, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[2]], res[providersGen.providersAddresses[3]])
 		case 3:
+			// less than OptimizerMinTierEntries*2 so last tier chance isn't 0
 			// 3 providers, 3 tiers, last one not picked so only
-			// providers 3,4 are picked. tier 0: providers 3
+			// providers 3,4,5 are picked. tier 0: providers 3
 			// tier 1: providers 4,5
 			// provider 4 has higher stake and should be picked more often within their tier
-			// TODO: is this correct behavior?
+			// TODO: make sure all can be selected
+			selectionTiers, _ := providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses[i:], nil, cu, requestBlock)
+			require.NotNil(t, selectionTiers)
+			for ii := 0; ii < 3; ii++ {
+				tier := selectionTiers.GetTier(ii, 3, 2)
+				require.NotEmpty(t, tier)
+			}
 			require.Equal(t, 3, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
 		case 4:
 			// 2 providers, 3 tiers
 			// providers 4,5 are picked. tier 0: providers 4,5
 			// provider 4 has higher stake and should be picked more often within their tier
+			// TODO: let's make sure Tier0 doesn't have 5
 			require.Equal(t, 2, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
 		}
@@ -893,6 +903,7 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 // sample with a better range (for example, the better one gets latency of 10-30ms and the bad one gets 25-40ms)
 // 2. Choose between them and verify the better one is chosen more.
 // TODO: not passing - the providers are picked pretty evenly
+// let's do 2 tiers minimumper tier 1, after fixing tiering function we expect a clear preference for the better scored provider
 func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -918,9 +929,10 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		// randomize latency, provider 0 gets a better latency than provider 1
 		p1Latency += float64(rand.Int63n(21)+10) * float64(time.Millisecond) // Random number between 10-30
-		p2Latency += float64(rand.Int63n(16)+25) * float64(time.Millisecond) // Random number between 25-40
+		p2Latency += float64(rand.Int63n(16)+25) * float64(time.Millisecond) // Random number between 30-40 // TODO: fix
 
 		// randomize sync, provider 0 gets a better sync than provider 1
+		// TODO: increment both or only p1 10/5
 		if rand.Float64() < 0.8 { // 80% chance to increment
 			p1SyncBlock++
 		}
@@ -929,6 +941,7 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 		}
 
 		// randomize availability, provider 0 gets a better availability than provider 1
+		// TODO same here
 		if rand.Float64() < 0.8 { // 80% chance to true
 			p1Availability = true
 		} else {
@@ -959,6 +972,7 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 // score_good_latency = latency + sync_factor * sync_lag + ... = 100 + 0.1 * 10000 + ... = 1100 + ...
 // score_good_sync = latency + sync_factor * sync_lag + ... = 1100 + 0.1 * 0 + ... = 1100 + ...
 // TODO: not working - it seems that the sync affects less than expected
+// TODO: add block time to sample time for worse sync block
 func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
