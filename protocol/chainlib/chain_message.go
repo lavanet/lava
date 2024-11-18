@@ -195,6 +195,7 @@ type CraftData struct {
 	Path           string
 	Data           []byte
 	ConnectionType string
+	InternalPath   string
 }
 
 func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
