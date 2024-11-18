@@ -112,21 +112,6 @@ func EncodeUint64(val uint64) []byte {
 	return encodedVal
 }
 
-// Join() is faster than bytes.Join because it does what
-// bytes.Join() does without appending (empty) separators
-func Join(s [][]byte) []byte {
-	n := 0
-	for _, v := range s {
-		n += len(v)
-	}
-
-	b, i := make([]byte, n), 0
-	for _, v := range s {
-		i += copy(b[i:], v)
-	}
-	return b
-}
-
 func GetKeyName(clientCtx client.Context) (string, error) {
 	_, name, _, err := client.GetFromFields(clientCtx, clientCtx.Keyring, clientCtx.From)
 	if err != nil {
