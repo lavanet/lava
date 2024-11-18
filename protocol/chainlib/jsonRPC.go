@@ -432,6 +432,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
 			}
 
+			if _, ok := err.(*json.SyntaxError); ok {
+				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcParseError)
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
