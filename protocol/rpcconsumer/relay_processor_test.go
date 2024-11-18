@@ -52,7 +52,7 @@ func sendSuccessRespJsonRpc(relayProcessor *RelayProcessor, provider string, del
 		Result:  resultBody,
 	}
 	resBytes, _ := json.Marshal(res)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -132,7 +132,7 @@ func sendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay
 	}
 	resBytes, _ := json.Marshal(res)
 
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{

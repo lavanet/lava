@@ -279,13 +279,14 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {
 			case 0:
 				require.False(t, task.IsDone())
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 1:
@@ -295,7 +296,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 						task.protocolMessage.GetExtensions(),
 						func(predicate *spectypes.Extension) bool { return predicate.Name == "archive" }),
 				)
-				usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
 				sendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:

@@ -37,6 +37,8 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
