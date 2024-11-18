@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/grpcproxy/testproto"
-	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/chainlib/grpcproxy/testproto"
+	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 )

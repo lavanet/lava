@@ -2,7 +2,7 @@ package types
 
 import (
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/utils/sigs"
 )
 
 const (

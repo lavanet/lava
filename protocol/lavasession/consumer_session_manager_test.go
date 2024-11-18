@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -162,7 +162,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1, nil, "dontcare"), nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
 }
 
 func TestMain(m *testing.M) {
@@ -346,7 +346,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
 		require.True(t, expectedProviderAddress)
 		for _, sessionInfo := range css {
-			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"), nil)
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
 		}
 		_, ok := csm.secondChanceGivenToAddresses[pairingList[0].PublicLavaAddress]
 		if ok {
@@ -399,7 +399,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
 		require.True(t, expectedProviderAddress)
 		for _, sessionInfo := range css {
-			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"), nil)
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
 			require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
 		}
 		if _, ok := csm.reportedProviders.addedToPurgeAndReport[pairingList[0].PublicLavaAddress]; ok {
@@ -430,7 +430,7 @@ func runOnSessionFailureForConsumerSessionMap(t *testing.T, css ConsumerSessions
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err := csm.OnSessionFailure(cs.Session, fmt.Errorf("testError"), nil)
+		err := csm.OnSessionFailure(cs.Session, fmt.Errorf("testError"))
 		require.NoError(t, err)
 	}
 }
@@ -509,7 +509,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 		require.NoError(t, err)
 
 		for _, cs := range css {
-			err = csm.OnSessionFailure(cs.Session, nil, nil)
+			err = csm.OnSessionFailure(cs.Session, nil)
 			require.NoError(t, err) // fail test.
 		}
 	}
@@ -545,7 +545,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, cs := range css {
-				err = csm.OnSessionFailure(cs.Session, nil, nil)
+				err = csm.OnSessionFailure(cs.Session, nil)
 				require.NoError(t, err)
 			}
 
@@ -627,7 +627,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 			sessionListData[j] = SessTestData{cuSum: cuForFirstRequest, relayNum: 1}
 		} else {
-			err = csm.OnSessionFailure(cs, nil, nil)
+			err = csm.OnSessionFailure(cs, nil)
 			require.NoError(t, err)
 			require.Equal(t, cs.CuSum, uint64(0))
 			require.Equal(t, cs.RelayNum, relayNumberAfterFirstFail)
@@ -660,7 +660,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			require.Equal(t, cs.RelayNum, sessionListData[j].relayNum+1)
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 		} else {
-			err = csm.OnSessionFailure(cs, nil, nil)
+			err = csm.OnSessionFailure(cs, nil)
 			require.NoError(t, err)
 			require.Equal(t, sessionListData[j].cuSum, cs.CuSum)
 			require.Equal(t, cs.RelayNum, sessionListData[j].relayNum+1)
@@ -689,7 +689,7 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
-		err = csm.OnSessionFailure(cs.Session, fmt.Errorf("nothing special"), nil)
+		err = csm.OnSessionFailure(cs.Session, fmt.Errorf("nothing special"))
 		require.NoError(t, err)
 		ch <- p
 	}
@@ -808,7 +808,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError, nil)
+		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.Parent.UsedComputeUnits, cuSumOnFailure)
 		require.Equal(t, cs.Session.CuSum, cuSumOnFailure)
@@ -845,7 +845,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 
 		err = csm.UpdateAllProviders(secondEpochHeight, pairingList) // update the providers again.
 		require.NoError(t, err)
-		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError, nil)
+		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 		require.NoError(t, err)
 	}
 }
@@ -945,7 +945,7 @@ func TestPairingWithAddons(t *testing.T) {
 				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0) // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
-					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError, nil)
+					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 					require.NoError(t, err)
 				}
 				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil)})
@@ -1020,7 +1020,7 @@ func TestPairingWithExtensions(t *testing.T) {
 				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0) // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
-					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError, nil)
+					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 					require.NoError(t, err)
 				}
 				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)})
@@ -1072,7 +1072,7 @@ func TestPairingWithStateful(t *testing.T) {
 			require.NoError(t, err)
 		}
 		usedProviders := NewUsedProviders(nil)
-		usedProviders.RemoveUsed(providerAddresses[0], nil, nil)
+		usedProviders.RemoveUsed(providerAddresses[0], NewRouterKey(nil), nil)
 		css, err = csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0) // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders-1, len(css))
@@ -1090,7 +1090,7 @@ func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
 		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 		for _, cs := range css {
-			err = csm.OnSessionFailure(cs.Session, errors.Join(BlockProviderError, SessionOutOfSyncError), nil)
+			err = csm.OnSessionFailure(cs.Session, errors.Join(BlockProviderError, SessionOutOfSyncError))
 			require.NoError(t, err)
 		}
 	}

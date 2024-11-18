@@ -1,7 +1,7 @@
 package extensionslib
 
 import (
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 const ArchiveExtension = "archive"
@@ -29,8 +29,15 @@ type ExtensionParserRule interface {
 }
 
 type ExtensionParser struct {
-	AllowedExtensions    map[string]struct{}
+	allowedExtensions    map[string]struct{}
 	configuredExtensions map[ExtensionKey]*spectypes.Extension
+}
+
+func NewExtensionParser(allowedExtensions map[string]struct{}, configuredExtensions map[ExtensionKey]*spectypes.Extension) ExtensionParser {
+	return ExtensionParser{
+		allowedExtensions:    allowedExtensions,
+		configuredExtensions: configuredExtensions,
+	}
 }
 
 func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Extension {
@@ -52,7 +59,7 @@ func (ep *ExtensionParser) AllowedExtension(extension string) bool {
 	if extension == "" {
 		return true
 	}
-	_, ok := ep.AllowedExtensions[extension]
+	_, ok := ep.allowedExtensions[extension]
 	return ok
 }
 

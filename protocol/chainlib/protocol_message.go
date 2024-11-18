@@ -3,10 +3,10 @@ package chainlib
 import (
 	"strings"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"golang.org/x/exp/slices"
 )
 

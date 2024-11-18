@@ -2,25 +2,24 @@ package rpcconsumer
 
 import (
 	context "context"
+	"sync"
 	"sync/atomic"
 	"time"
 
-	slices "github.com/lavanet/lava/v3/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	common "github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type RelayStateMachine interface {
 	GetProtocolMessage() chainlib.ProtocolMessage
 	GetDebugState() bool
-	GetRelayTaskChannel() chan RelayStateSendInstructions
+	GetRelayTaskChannel() (chan RelayStateSendInstructions, error)
 	UpdateBatch(err error)
 	GetSelection() Selection
 	GetUsedProviders() *lavasession.UsedProviders
@@ -52,19 +51,19 @@ type tickerMetricSetterInf interface {
 }
 
 type ConsumerRelayStateMachine struct {
-	ctx                     context.Context // same context as user context.
-	relaySender             ConsumerRelaySender
-	resultsChecker          ResultsCheckerInf
-	protocolMessage         chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
-	originalProtocolMessage chainlib.ProtocolMessage
-	appliedArchiveExtension bool
-	analytics               *metrics.RelayMetrics // first relay metrics
-	selection               Selection
-	debugRelays             bool
-	tickerMetricSetter      tickerMetricSetterInf
-	batchUpdate             chan error
-	usedProviders           *lavasession.UsedProviders
-	relayRetriesManager     *lavaprotocol.RelayRetriesManager
+	ctx                 context.Context // same context as user context.
+	relaySender         ConsumerRelaySender
+	resultsChecker      ResultsCheckerInf
+	analytics           *metrics.RelayMetrics // first relay metrics
+	selection           Selection
+	debugRelays         bool
+	tickerMetricSetter  tickerMetricSetterInf
+	batchUpdate         chan error
+	usedProviders       *lavasession.UsedProviders
+	relayRetriesManager *lavaprotocol.RelayRetriesManager
+	relayState          []*RelayState
+	protocolMessage     chainlib.ProtocolMessage
+	relayStateLock      sync.RWMutex
 }
 
 func NewRelayStateMachine(
@@ -82,17 +81,21 @@ func NewRelayStateMachine(
 	}
 
 	return &ConsumerRelayStateMachine{
-		ctx:                     ctx,
-		usedProviders:           usedProviders,
-		relaySender:             relaySender,
-		protocolMessage:         protocolMessage,
-		originalProtocolMessage: protocolMessage,
-		analytics:               analytics,
-		selection:               selection,
-		debugRelays:             debugRelays,
-		tickerMetricSetter:      tickerMetricSetter,
-		batchUpdate:             make(chan error, MaximumNumberOfTickerRelayRetries),
+		ctx:                ctx,
+		usedProviders:      usedProviders,
+		relaySender:        relaySender,
+		protocolMessage:    protocolMessage,
+		analytics:          analytics,
+		selection:          selection,
+		debugRelays:        debugRelays,
+		tickerMetricSetter: tickerMetricSetter,
+		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
+		relayState:         make([]*RelayState, 0),
 	}
+}
+
+func (crsm *ConsumerRelayStateMachine) Initialized() bool {
+	return crsm.relayRetriesManager != nil && crsm.resultsChecker != nil
 }
 
 func (crsm *ConsumerRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
@@ -111,72 +114,43 @@ func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
 	return crsm.selection
 }
 
+func (crsm *ConsumerRelayStateMachine) appendRelayState(nextState *RelayState) {
+	crsm.relayStateLock.Lock()
+	defer crsm.relayStateLock.Unlock()
+	crsm.relayState = append(crsm.relayState, nextState)
+}
+
+func (crsm *ConsumerRelayStateMachine) getLatestState() *RelayState {
+	crsm.relayStateLock.RLock()
+	defer crsm.relayStateLock.RUnlock()
+	if len(crsm.relayState) == 0 {
+		return nil
+	}
+	return crsm.relayState[len(crsm.relayState)-1]
+}
+
+func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState) *RelayState {
+	var nextState *RelayState
+	if relayState == nil { // initial state
+		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, ArchiveStatus{})
+	} else {
+		nextState = NewRelayState(crsm.ctx, relayState.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus)
+	}
+	crsm.appendRelayState(nextState)
+	return nextState
+}
+
 // Should retry implements the logic for when to send another relay.
 // As well as the decision of changing the protocol message,
 // into different extensions or addons based on certain conditions
-func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
-	shouldRetry := crsm.retryCondition(numberOfRetriesLaunched)
+func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bool {
+	batchNumber := crsm.usedProviders.BatchNumber()
+	shouldRetry := crsm.retryCondition(batchNumber)
 	if shouldRetry {
+		lastState := crsm.getLatestState()
+		nextState := crsm.stateTransition(lastState)
 		// Retry archive logic
-		utils.LavaFormatTrace("[Archive Debug] Got Results", utils.LogAttr("Batch", numberOfRetriesLaunched), utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors))
-		hashes := crsm.GetProtocolMessage().GetRequestedBlocksHashes()
-		if len(hashes) > 0 && numberOfNodeErrors > 0 {
-			utils.LavaFormatTrace("[Archive Debug] found hashes", utils.LogAttr("Batch", numberOfRetriesLaunched), utils.LogAttr("len(hashes)", len(hashes)))
-			// Launch archive only on the second retry attempt.
-			if numberOfRetriesLaunched == 1 {
-				// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
-				// If we are familiar with all, we don't want to allow archive.
-				for _, hash := range hashes {
-					if !crsm.relayRetriesManager.CheckHashInCache(hash) {
-						utils.LavaFormatTrace("[Archive Debug] no hash in cache", utils.LogAttr("Batch", numberOfRetriesLaunched))
-						// If we didn't find the hash in the cache we can try archive relay.
-						relayRequestData := crsm.protocolMessage.RelayPrivateData()
-						if relayRequestData == nil {
-							utils.LavaFormatError("relay private data is nil in shouldRetry, this should never happen", nil)
-							break
-						}
-						// Validate we're not already archive
-						if slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
-							break // Do nothing its already archive.
-						}
-						// We need to set archive.
-						// Create a new relay private data containing the extension.
-						userData := crsm.protocolMessage.GetUserData()
-						metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: extensionslib.ArchiveExtension}}
-						newProtocolMessage, err := crsm.relaySender.ParseRelay(crsm.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
-						if err != nil {
-							utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
-							break
-						}
-						// Creating an archive protocol message, and set it to current protocol message
-						crsm.protocolMessage = newProtocolMessage
-						// for future batches.
-						crsm.appliedArchiveExtension = true
-						utils.LavaFormatTrace("[Archive Debug] SET ARCHIVE RELAY NEXT", utils.LogAttr("Batch", numberOfRetriesLaunched))
-						break
-					} else {
-						utils.LavaFormatTrace("[Archive Debug] YES hash in cache!!", utils.LogAttr("Batch", numberOfRetriesLaunched))
-					}
-				}
-				// We had node error, and we have a hash parsed.
-			} else if crsm.appliedArchiveExtension && numberOfNodeErrors >= 2 {
-				// Validate the following.
-				// 1. That we have applied archive
-				// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
-				// Now -
-				// We know we have applied archive and failed.
-				// 1. We can remove the archive, return to the original protocol message,
-				// 2. Set all hashes as irrelevant for future queries.
-				utils.LavaFormatTrace("[Archive Debug] HASHES ARE SHIT, BAN.", utils.LogAttr("Batch", numberOfRetriesLaunched))
-				crsm.protocolMessage = crsm.originalProtocolMessage
-				for _, hash := range hashes {
-					crsm.relayRetriesManager.AddHashToCache(hash)
-				}
-				crsm.appliedArchiveExtension = false // so we don't get here again
-				// We do not want to send additional relays after archive attempt. return false.
-				return false
-			}
-		}
+		return nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
 	}
 	return shouldRetry
 }
@@ -194,7 +168,11 @@ func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
 }
 
 func (crsm *ConsumerRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMessage {
-	return crsm.protocolMessage
+	latestState := crsm.getLatestState()
+	if latestState == nil { // failed fetching latest state
+		return crsm.protocolMessage
+	}
+	return latestState.GetProtocolMessage()
 }
 
 type RelayStateSendInstructions struct {
@@ -208,7 +186,10 @@ func (rssi *RelayStateSendInstructions) IsDone() bool {
 	return rssi.done || rssi.err != nil
 }
 
-func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSendInstructions {
+func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
+	if !crsm.Initialized() {
+		return nil, utils.LavaFormatError("ConsumerRelayStateMachine was not initialized properly", nil)
+	}
 	relayTaskChannel := make(chan RelayStateSendInstructions)
 	go func() {
 		// A channel to be notified processing was done, true means we have results and can return
@@ -248,6 +229,8 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			}
 		}
 
+		// initialize relay state
+		crsm.stateTransition(nil)
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
 			protocolMessage: crsm.GetProtocolMessage(),
@@ -275,9 +258,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 					} else {
 						utils.LavaFormatTrace("[StateMachine] batchUpdate - err != nil - batch fail retry attempt", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors))
 						// Failed sending message, but we still want to attempt sending more.
-						relayTaskChannel <- RelayStateSendInstructions{
-							protocolMessage: crsm.GetProtocolMessage(),
-						}
+						relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 					}
 					continue
 				}
@@ -293,7 +274,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 					return
 				}
 				// If should retry == true, send a new batch. (success == false)
-				if crsm.shouldRetry(crsm.usedProviders.BatchNumber(), numberOfNodeErrorsAtomic.Load()) {
+				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()))
 					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 				} else {
@@ -302,7 +283,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
-				if crsm.shouldRetry(crsm.usedProviders.BatchNumber(), numberOfNodeErrorsAtomic.Load()) {
+				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()))
 					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 					// Add ticker launch metrics
@@ -337,7 +318,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			}
 		}
 	}()
-	return relayTaskChannel
+	return relayTaskChannel, nil
 }
 
 func (crsm *ConsumerRelayStateMachine) UpdateBatch(err error) {

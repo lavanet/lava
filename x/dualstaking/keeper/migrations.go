@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	dualstakingv4 "github.com/lavanet/lava/v3/x/dualstaking/migrations/v4"
-	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 type Migrator struct {
@@ -18,36 +18,70 @@ func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
-// MigrateVersion4To5 change the DelegatorReward object amount's field from sdk.Coin to sdk.Coins
-func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
-	delegatorRewards := m.GetAllDelegatorRewardV4(ctx)
-	for _, dr := range delegatorRewards {
-		delegatorReward := dualstakingtypes.DelegatorReward{
-			Delegator: dr.Delegator,
-			Provider:  dr.Provider,
-			ChainId:   dr.ChainId,
-			Amount:    sdk.NewCoins(dr.Amount),
+func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
+	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+
+	// prefix for the delegations fixation store
+	const (
+		DelegationPrefix         = "delegation-fs"
+		DelegatorPrefix          = "delegator-fs"
+		UnbondingPrefix          = "unbonding-ts"
+		DelegatorRewardKeyPrefix = "DelegatorReward/value/"
+	)
+
+	// set delegations
+	ts := timerstoretypes.NewTimerStore(m.keeper.storeKey, m.keeper.cdc, DelegationPrefix)
+	delegationFS := fixationtypes.NewFixationStore(m.keeper.storeKey, m.keeper.cdc, DelegationPrefix, ts, nil)
+	incisec := delegationFS.GetAllEntryIndices(ctx)
+	for _, index := range incisec {
+		var oldDelegation types.Delegation
+		found := delegationFS.FindEntry(ctx, index, nextEpoch, &oldDelegation)
+		if found {
+			delegation, found := m.keeper.GetDelegation(ctx, oldDelegation.Provider, oldDelegation.Delegator)
+			if found {
+				delegation.Amount = delegation.Amount.Add(oldDelegation.Amount)
+			} else {
+				delegation = oldDelegation
+			}
+			delegation.Timestamp = ctx.BlockTime().UTC().Unix()
+			m.keeper.SetDelegation(ctx, delegation)
 		}
-		m.keeper.RemoveDelegatorReward(ctx, dualstakingtypes.DelegationKey(dr.Provider, dr.Delegator, dr.ChainId))
-		m.keeper.SetDelegatorReward(ctx, delegatorReward)
 	}
 
-	params := dualstakingtypes.DefaultParams()
-	m.keeper.SetParams(ctx, params)
-	return nil
-}
-
-func (m Migrator) GetAllDelegatorRewardV4(ctx sdk.Context) (list []dualstakingv4.DelegatorRewardv4) {
-	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(dualstakingtypes.DelegatorRewardKeyPrefix))
+	// set rewards
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(DelegatorRewardKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var val dualstakingv4.DelegatorRewardv4
+		var val types.DelegatorReward
 		m.keeper.cdc.MustUnmarshal(iterator.Value(), &val)
-		list = append(list, val)
+		reward, found := m.keeper.GetDelegatorReward(ctx, val.Delegator, val.Delegator)
+		if found {
+			reward.Amount = reward.Amount.Add(val.Amount...)
+		} else {
+			reward = val
+		}
+		m.keeper.SetDelegatorReward(ctx, reward)
 	}
 
-	return
+	// now delete the stores
+	deleteStore := func(prefixString string) {
+		store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(prefixString))
+		iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+		defer iterator.Close()
+
+		for ; iterator.Valid(); iterator.Next() {
+			store.Delete(iterator.Key())
+		}
+	}
+
+	deleteStore(DelegationPrefix)
+	deleteStore(DelegatorPrefix)
+	deleteStore(UnbondingPrefix)
+	deleteStore(DelegatorRewardKeyPrefix)
+
+	return nil
 }

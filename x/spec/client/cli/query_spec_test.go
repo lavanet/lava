@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/v3/testutil/network"
-	"github.com/lavanet/lava/v3/testutil/nullify"
-	"github.com/lavanet/lava/v3/x/spec/client/cli"
-	"github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/testutil/network"
+	"github.com/lavanet/lava/v4/testutil/nullify"
+	"github.com/lavanet/lava/v4/x/spec/client/cli"
+	"github.com/lavanet/lava/v4/x/spec/types"
 )
 
 // Prevent strconv unused error

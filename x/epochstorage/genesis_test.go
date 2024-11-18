@@ -3,10 +3,10 @@ package epochstorage_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
-	"github.com/lavanet/lava/v3/testutil/nullify"
-	"github.com/lavanet/lava/v3/x/epochstorage"
-	"github.com/lavanet/lava/v3/x/epochstorage/types"
+	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/testutil/nullify"
+	"github.com/lavanet/lava/v4/x/epochstorage"
+	"github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
