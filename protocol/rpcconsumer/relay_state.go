@@ -47,7 +47,7 @@ type RelayState struct {
 func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
 	isArchive := false
-	if slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
+	if relayRequestData != nil && slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
 		isArchive = true
 	}
 	return &RelayState{ctx: ctx, protocolMessage: protocolMessage, stateNumber: stateNumber, cache: cache, relayParser: relayParser, archiveStatus: ArchiveStatus{isArchive: isArchive, isUpgraded: archiveInfo.isUpgraded, isHashCached: archiveInfo.isHashCached}}
