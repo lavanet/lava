@@ -18,7 +18,7 @@
           "denom": "ulava",
           "amount": "47500000000"
         },
-        "providers_types": 1,
+        "providers_types": 0,
         "api_collections": [
           {
             "enabled": true,
