@@ -3,7 +3,7 @@ package common
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type SafeSyncMap[K, V any] struct {
@@ -46,6 +46,20 @@ func (ssm *SafeSyncMap[K, V]) LoadOrStore(key K, value V) (ret V, loaded bool, e
 	return value, false, nil
 }
 
-func (ssm *SafeSyncMap[K, V]) Range(f func(key, value any) bool) {
-	ssm.localMap.Range(f)
+func (ssm *SafeSyncMap[K, V]) Range(f func(key K, value V) bool) {
+	ssm.localMap.Range(func(key, value any) bool {
+		unboxedKey, ok := key.(K)
+		if !ok {
+			utils.LavaFormatError("invalid usage of sync map, could not cast key into a type", nil)
+			return false
+		}
+
+		unboxedValue, ok := value.(V)
+		if !ok {
+			utils.LavaFormatError("invalid usage of sync map, could not cast value into a type", nil)
+			return false
+		}
+
+		return f(unboxedKey, unboxedValue)
+	})
 }

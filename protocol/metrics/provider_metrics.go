@@ -3,7 +3,7 @@ package metrics
 import (
 	"sync"
 
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -22,6 +22,7 @@ type ProviderMetrics struct {
 	totalRelaysServicedMetric *prometheus.CounterVec
 	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
+	loadRateMetric            *prometheus.GaugeVec
 }
 
 func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport) {
@@ -49,6 +50,13 @@ func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pair
 	}
 }
 
+func (pm *ProviderMetrics) SetLoadRate(loadRate float64) {
+	if pm == nil {
+		return
+	}
+	pm.loadRateMetric.WithLabelValues(pm.specID).Set(loadRate)
+}
+
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
 	if pm == nil {
 		return
@@ -72,6 +80,7 @@ func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prom
 	totalRelaysServicedMetric *prometheus.CounterVec,
 	totalErroredMetric *prometheus.CounterVec,
 	consumerQoSMetric *prometheus.GaugeVec,
+	loadRateMetric *prometheus.GaugeVec,
 ) *ProviderMetrics {
 	pm := &ProviderMetrics{
 		specID:                    specID,
@@ -82,6 +91,7 @@ func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prom
 		totalRelaysServicedMetric: totalRelaysServicedMetric,
 		totalErroredMetric:        totalErroredMetric,
 		consumerQoSMetric:         consumerQoSMetric,
+		loadRateMetric:            loadRateMetric,
 	}
 	return pm
 }

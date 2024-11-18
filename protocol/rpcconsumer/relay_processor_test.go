@@ -7,19 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 type relayProcessorMetricsMock struct{}
 
-func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {}
+func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
+}
 
 func (romm *relayProcessorMetricsMock) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
 }
@@ -41,7 +42,7 @@ var (
 
 func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -59,7 +60,7 @@ func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 
 func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil, err)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), err)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -77,7 +78,7 @@ func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay ti
 
 func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil, nil)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -123,7 +124,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*5)
@@ -179,7 +180,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		// check first reply
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(context.Background())
@@ -222,7 +223,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		// check first reply, this time we have hash in map, so we don't retry node errors.
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(context.Background())
@@ -248,7 +249,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		// check first reply, this time we have hash in map, so we don't retry node errors.
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(context.Background())
@@ -273,7 +274,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		// check first reply, this time we have hash in map, so we don't retry node errors.
 		hash, err := relayProcessor.getInputMsgInfoHashString()
 		require.NoError(t, err)
@@ -325,7 +326,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		// check first reply
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(context.Background())
@@ -365,7 +366,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		go func() {
 			time.Sleep(time.Millisecond * 5)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -374,7 +375,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 			require.NoError(t, ctx.Err())
 			require.Nil(t, canUse)
 			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test3": &lavasession.SessionInfo{}, "lava@test4": &lavasession.SessionInfo{}}
-			usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+			usedProviders.AddUsed(consumerSessionsMap, nil)
 		}()
 		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
@@ -418,7 +419,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 
 		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
 		go sendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
@@ -463,7 +464,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 
 		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
 		go sendNodeError(relayProcessor, "lava@test2", time.Millisecond*20)
@@ -508,7 +509,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
 		go sendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
 		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
@@ -563,7 +564,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
 		go sendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
 		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
@@ -610,7 +611,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, []*spectypes.Extension{}, nil)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 
 		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
 		go sendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)

@@ -16,28 +16,28 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v3/ecosystem/cache"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/performance"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v3/protocol/rpcconsumer"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/ecosystem/cache"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/sigs"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 var (
@@ -205,7 +205,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2, nil, "dontcare")
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
 
@@ -219,7 +219,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
-	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
+	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
@@ -344,7 +344,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)

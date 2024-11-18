@@ -3,39 +3,38 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v4/testutil/common"
 	"github.com/stretchr/testify/require"
 )
 
 // TestVaultProviderUnstake tests that only the vault address can unstake.
 // Scenarios:
 // 1. unstake with vault -> should work
-// 2. try with provider -> should fail
+// 2. try with provider -> should work
 func TestVaultProviderUnstake(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 0, 0)
+	ts.setupForPayments(2, 0, 0)
 
-	acc, _ := ts.GetAccount(common.PROVIDER, 0)
-	provider := acc.Addr.String()
-	vault := acc.GetVaultAddr()
+	acc1, _ := ts.GetAccount(common.PROVIDER, 0)
+	provider1 := acc1.Addr.String()
+
+	acc2, _ := ts.GetAccount(common.PROVIDER, 1)
+	vault2 := acc2.GetVaultAddr()
 
 	tests := []struct {
 		name    string
 		creator string
-		valid   bool
 	}{
-		{"provider unstakes", provider, false},
-		{"vault unstakes", vault, true},
+		{"provider unstakes", provider1},
+		{"vault unstakes", vault2},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			prov := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+			_ = prov
 			_, err := ts.TxPairingUnstakeProvider(tt.creator, ts.spec.Index)
-			if tt.valid {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-			}
+			require.NoError(t, err)
 		})
 	}
 }

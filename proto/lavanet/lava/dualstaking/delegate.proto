@@ -1,14 +1,14 @@
 syntax = "proto3";
 package lavanet.lava.dualstaking;
 
-option go_package = "github.com/lavanet/lava/v3/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 message Delegation {
+    reserved 2;
     string provider = 1;  // provider receives the delegated funds
-    string chainID = 2;   // chainID to which staking delegate funds
     string delegator = 3; // delegator that owns the delegated funds
     cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
     int64 timestamp = 5; // Unix timestamp of the delegation (+ month)
