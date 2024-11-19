@@ -1337,6 +1337,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 		})
 	}
 }
+
 func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 	playbook := []struct {
 		name             string
