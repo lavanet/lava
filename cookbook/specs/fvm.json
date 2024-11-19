@@ -2763,7 +2763,7 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
-                            }
+                            },
                             {
                                 "name": "Filecoin.GasEstimateGasLimit",
                                 "block_parsing": {
@@ -2799,7 +2799,8 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
-                            },{
+                            },
+                            {
                                 "name": "Filecoin.GasEstimateMessageGas",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -2816,8 +2817,7 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
-                            },
-
+                            }
                         ],
                         "headers": [],
                         "inheritance_apis": [],
