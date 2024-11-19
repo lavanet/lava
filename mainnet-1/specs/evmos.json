@@ -848,15 +848,6 @@
                         "parse_directives": [],
                         "verifications": [
                             {
-                                "name": "minimum-gas-price",
-                                "values": [
-                                    {
-                                        "expected_value": "CiQ1MDAwMDAwMDAwMC4wMDAwMDAwMDAwMDAwMDAwMDBhZXZtb3M",
-                                        "severity": "Warning"
-                                    }
-                                ]
-                            },
-                            {
                                 "name": "chain-id",
                                 "values": [
                                     {
@@ -942,43 +933,43 @@
                             "type": "POST",
                             "add_on": "debug"
                         },
-                            "apis": [
-                              {
+                        "apis": [
+                            {
                                 "name": "debug_getBadBlocks",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_getRawBlock",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_getRawHeader",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_getRawReceipts",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_getRawTransaction",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_storageRangeAt",
                                 "compute_units": 1,
                                 "enabled": false
-                              },
-                              {
+                            },
+                            {
                                 "name": "debug_traceCall",
                                 "compute_units": 1,
                                 "enabled": false
-                              }
-                            ],
+                            }
+                        ],
                         "verifications": [
                             {
                                 "name": "enabled",
