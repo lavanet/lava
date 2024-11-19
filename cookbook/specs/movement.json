@@ -62,7 +62,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": ""
+                                        "expected_value": "*"
                                     }
                                 ]
                             },
