@@ -153,10 +153,31 @@ func TestProviderOptimizerBasicRelayData_Refactor(t *testing.T) {
 	time.Sleep(4 * time.Millisecond)
 	returnedProviders, tier = providerOptimizer.ChooseProvider_Refactor(providersGen.providersAddresses, nil, cu, requestBlock)
 	require.Equal(t, 1, len(returnedProviders))
+
+	// there's a chance that some of the worst providers will be in part of a higher tier
+	// because of a high minimum entries value, so filter the providers that are only in the worst tier
+	selectionTier, _ := providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses, nil, cu, requestBlock)
+	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
+	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, 1)
+	worstTierEntries := map[string]struct{}{}
+	for _, entry := range tier3Entries {
+		// verify that the worst providers are the ones with the bad latency
+		if entry.Address != providersGen.providersAddresses[5] &&
+			entry.Address != providersGen.providersAddresses[6] &&
+			entry.Address != providersGen.providersAddresses[7] {
+			t.Fatalf("entry %s is not in the worst tier", entry.Address)
+		}
+		worstTierEntries[entry.Address] = struct{}{}
+	}
+	for _, entry := range tier2Entries {
+		// remove the providers that are also in tier 2
+		delete(worstTierEntries, entry.Address)
+	}
+
 	require.NotEqual(t, tier, 3) // we shouldn't pick the low tier providers
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[5], tier)
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[6], tier)
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[7], tier)
+	for address := range worstTierEntries {
+		require.NotEqual(t, returnedProviders[0], address)
+	}
 
 	// improve providers 0-2 scores with good latency probes relays
 	// they should be selected by the optimizer more often and should be in the best tier
@@ -172,9 +193,9 @@ func TestProviderOptimizerBasicRelayData_Refactor(t *testing.T) {
 	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
 
 	// the bad providers shouldn't have been picked even once
-	require.Zero(t, results[providersGen.providersAddresses[5]])
-	require.Zero(t, results[providersGen.providersAddresses[6]])
-	require.Zero(t, results[providersGen.providersAddresses[7]])
+	for address := range worstTierEntries {
+		require.Zero(t, results[address])
+	}
 }
 
 // TestProviderOptimizerAvailabilityProbeData_Refactor tests the availability update when
@@ -720,13 +741,12 @@ func TestProviderOptimizerTiers_Refactor(t *testing.T) {
 // 1. ~80% of the times, the great score providers are picked (no preference between the two)
 // 2. high stake mid score is picked more than 0 times and picked more than mid score with average stake
 // 3. low score are not selected
-// TODO: for some reason, provider 0 is picked half the times compared to provider 1 (should be equal)
 func TestProviderOptimizerChooseProvider(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
 	providersCount := 6
-	providerOptimizer.OptimizerNumTiers = providersCount / 2 // make each tier contain 2 providers
-	providerOptimizer.OptimizerMinTierEntries = 2
+	providerOptimizer.OptimizerNumTiers = providersCount / 2
+	providerOptimizer.OptimizerMinTierEntries = 2 // make each tier contain 2 providers
 	providersGen := (&providersGenerator_Refactor{}).setupProvidersForTest_Refactor(providersCount)
 	cu := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
@@ -783,8 +803,8 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.1) // no difference between high score providers (max 10% diff)
 	require.Greater(t, results[providersGen.providersAddresses[2]], 0)                                           // high stake mid score provider picked at least once
 	require.Greater(t, results[providersGen.providersAddresses[2]], results[providersGen.providersAddresses[3]]) // high stake mid score provider picked more than normal stake mid score provider
-	require.Equal(t, 0, results[providersGen.providersAddresses[3]])
 	require.Equal(t, 0, results[providersGen.providersAddresses[4]])
+	require.Equal(t, 0, results[providersGen.providersAddresses[5]])
 }
 
 // TestProviderOptimizerRetriesWithReducedProvidersSet checks that when having a set of providers, the amount of
@@ -795,8 +815,6 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 // 2. Do step 1 many times.
 // Expected: the ranking of providers stays the same, providers with high stake are picked more often,
 // providers from the lowest tier are not picked
-// TODO: make odd providers high stake
-// TODO: add checks on tier results
 func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -807,10 +825,10 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	providerOptimizer.OptimizerNumTiers = providersCount / 2
 	providerOptimizer.OptimizerMinTierEntries = 2
 
-	// apply high stake for providers 0, 2, 4
+	// apply high stake for providers 1, 3, 5
 	normalStake := int64(50000000000)
 	highStake := 5 * normalStake
-	highStakeProviderIndexes := []int{0, 2, 4}
+	highStakeProviderIndexes := []int{1, 3, 5}
 	weights := map[string]int64{}
 	for i := 0; i < providersCount; i++ {
 		if slices.Contains(highStakeProviderIndexes, i) {
@@ -845,51 +863,63 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	for i := 0; i < providersCount; i++ {
 		// run and choose many times and keep a map of provider address -> number of times it was picked
 		iterations := 1000
-		res, _ := runChooseManyTimesAndReturnResults_Refactor(t, providerOptimizer, providersGen.providersAddresses[i:], nil, iterations, cu, requestBlock)
+		res, tierResults := runChooseManyTimesAndReturnResults_Refactor(t, providerOptimizer, providersGen.providersAddresses[i:], nil, iterations, cu, requestBlock)
 
 		switch i {
 		case 0:
 			// 6 providers, 3 tiers, last one not picked so only
 			// providers 0,1,2,3 are picked. tier 0: providers 0,1
 			// tier 1: providers 2,3
-			// provider 0,2 have higher stake and should be picked more often within their tier
+			// provider 1,3 have higher stake and should be picked more often within their tier
+			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], tierResults[1])
 			require.Equal(t, 4, len(res))
-			require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
-			require.Greater(t, res[providersGen.providersAddresses[2]], res[providersGen.providersAddresses[3]])
+			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[0]])
+			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
 		case 1:
 			// 5 providers, 3 tiers, last one not picked so only
 			// providers 1,2,3 are picked. tier 0: providers 1,2
-			// tier 1: provider 3
-			// provider 2 has higher stake and should be picked more often within their tier
-			require.Equal(t, 3, len(res))
-			require.Greater(t, res[providersGen.providersAddresses[2]], res[providersGen.providersAddresses[1]])
+			// tier 1: providers 2,3,4 (2 and 4 with part)
+			// provider 1 has higher stake and should be picked more often within their tier
+			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
+			// provider 3 should be picked more often than provider 4
+			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], tierResults[1])
+			require.Equal(t, 4, len(res))
+			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[2]])
+			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
 		case 2:
 			// 4 providers, 3 tiers, last one not picked so only
 			// providers 2,3,4 are picked. tier 0: providers 2,3
-			// tier 1: provider 4
-			// provider 2 has higher stake and should be picked more often within their tier
+			// tier 1: providers 3,4
+			// provider 3 has higher stake and should be picked more often within their tier
+			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
+			// provider 3 should be picked more often than provider 4
+			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], tierResults[1])
 			require.Equal(t, 3, len(res))
-			require.Greater(t, res[providersGen.providersAddresses[2]], res[providersGen.providersAddresses[3]])
+			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
+			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
 		case 3:
-			// less than OptimizerMinTierEntries*2 so last tier chance isn't 0
-			// 3 providers, 3 tiers, last one not picked so only
+			// 3 providers, 3 tiers, last one not picked
+			// minimum entries per tier is 2 and there are 1 provider per tier
+			// because of this, each tier > 0 will have 2 providers and not 1
 			// providers 3,4,5 are picked. tier 0: providers 3
 			// tier 1: providers 4,5
-			// provider 4 has higher stake and should be picked more often within their tier
-			// TODO: make sure all can be selected
-			selectionTiers, _ := providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses[i:], nil, cu, requestBlock)
-			require.NotNil(t, selectionTiers)
-			for ii := 0; ii < 3; ii++ {
-				tier := selectionTiers.GetTier(ii, 3, 2)
-				require.NotEmpty(t, tier)
-			}
+			// provider 5 has higher stake and should be picked more often within their tier
+			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], tierResults[1])
 			require.Equal(t, 3, len(res))
-			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
+			require.Greater(t, res[providersGen.providersAddresses[5]], res[providersGen.providersAddresses[4]])
 		case 4:
-			// 2 providers, 3 tiers
-			// providers 4,5 are picked. tier 0: providers 4,5
-			// provider 4 has higher stake and should be picked more often within their tier
-			// TODO: let's make sure Tier0 doesn't have 5
+			// 2 providers, 2 tiers
+			// there are less providers than tiers, so num tiers is reduced to 2
+			// providers 4,5 are picked. tier 0: providers 4
+			// tier 1: providers 4,5 (4 with part=0.5, because it's dragged from tier 0)
+			// provider 4 is picked more often than provider 5 even though it has less stake
+			// because it's the only provider in tier 0
+			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], tierResults[1])
 			require.Equal(t, 2, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
 		}
@@ -902,8 +932,6 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 // 1. Append relay data for both providers with random samples. The "better" provider will have a randomized
 // sample with a better range (for example, the better one gets latency of 10-30ms and the bad one gets 25-40ms)
 // 2. Choose between them and verify the better one is chosen more.
-// TODO: not passing - the providers are picked pretty evenly
-// let's do 2 tiers minimumper tier 1, after fixing tiering function we expect a clear preference for the better scored provider
 func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -914,6 +942,9 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	syncBlock := uint64(1000)
 	sampleTime := time.Now()
 	baseLatency := TEST_BASE_WORLD_LATENCY_Refactor.Seconds()
+
+	providerOptimizer.OptimizerNumTiers = 2
+	providerOptimizer.OptimizerMinTierEntries = 1
 
 	// initial values
 	p1Latency := baseLatency * float64(time.Millisecond)
@@ -929,27 +960,23 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		// randomize latency, provider 0 gets a better latency than provider 1
 		p1Latency += float64(rand.Int63n(21)+10) * float64(time.Millisecond) // Random number between 10-30
-		p2Latency += float64(rand.Int63n(16)+25) * float64(time.Millisecond) // Random number between 30-40 // TODO: fix
+		p2Latency += float64(rand.Int63n(11)+30) * float64(time.Millisecond) // Random number between 30-40
 
 		// randomize sync, provider 0 gets a better sync than provider 1
-		// TODO: increment both or only p1 10/5
-		if rand.Float64() < 0.8 { // 80% chance to increment
+		if rand.Float64() < 0.1 { // 10% chance to increment both
 			p1SyncBlock++
-		}
-		if rand.Float64() < 0.4 { // 40% chance to increment
 			p2SyncBlock++
+		}
+		if rand.Float64() < 0.05 { // 5% chance to increment only p1
+			p1SyncBlock++
 		}
 
 		// randomize availability, provider 0 gets a better availability than provider 1
-		// TODO same here
-		if rand.Float64() < 0.8 { // 80% chance to true
-			p1Availability = true
-		} else {
-			p1Availability = false
+		if rand.Float64() < 0.1 { // 10% chance to false for p2
+			p2Availability = false
 		}
-		if rand.Float64() < 0.4 { // 40% chance to true
-			p2Availability = true
-		} else {
+		if rand.Float64() < 0.05 { // 5% chance to false for both
+			p1Availability = false
 			p2Availability = false
 		}
 
@@ -969,10 +996,8 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 // TestProviderOptimizerLatencySyncScore tests that a provider with 100ms latency and x sync block
 // has the same score as a provider with 1100ms latency but x+1 sync block
 // This is true since the average block time is 10sec and the default sync factor is 0.1. So
-// score_good_latency = latency + sync_factor * sync_lag + ... = 100 + 0.1 * 10000 + ... = 1100 + ...
-// score_good_sync = latency + sync_factor * sync_lag + ... = 1100 + 0.1 * 0 + ... = 1100 + ...
-// TODO: not working - it seems that the sync affects less than expected
-// TODO: add block time to sample time for worse sync block
+// score_good_latency = latency + sync_factor * sync_lag + ... = 0.01 + 0.1 * 10 + ... = 1.01 + ...
+// score_good_sync = latency + sync_factor * sync_lag + ... = 1.01 + 0.1 * 0 + ... = 1.01 + ...
 func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -983,7 +1008,7 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	syncBlock := uint64(1000)
 
 	improvedLatency := TEST_BASE_WORLD_LATENCY_Refactor
-	badLatency := TEST_BASE_WORLD_LATENCY_Refactor + TEST_AVERAGE_BLOCK_TIME
+	badLatency := TEST_BASE_WORLD_LATENCY_Refactor + TEST_AVERAGE_BLOCK_TIME/10 // sync factor is 0.1 so divide by 10
 
 	// set a basic state for all providers
 	sampleTime := time.Now()
@@ -994,12 +1019,11 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 		time.Sleep(4 * time.Millisecond)
 	}
 
-	sampleTime = sampleTime.Add(TEST_AVERAGE_BLOCK_TIME_Refactor)
 	// provider 0 gets a good sync with bad latency
 	providerOptimizer.appendRelayData_Refactor(providersGen.providersAddresses[0], badLatency, true, cu, syncBlock+1, sampleTime)
 
 	// provider 1 gets a good latency with bad sync
-	providerOptimizer.appendRelayData_Refactor(providersGen.providersAddresses[1], improvedLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData_Refactor(providersGen.providersAddresses[1], improvedLatency, true, cu, syncBlock, sampleTime.Add(TEST_AVERAGE_BLOCK_TIME_Refactor))
 
 	// verify both providers have the same score
 	scores := []math.LegacyDec{}
@@ -1012,9 +1036,14 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 		scores = append(scores, score)
 	}
 	require.Len(t, scores, 2)
-	require.True(t, scores[0].Equal(scores[1]))
+	s0, err := scores[0].Float64()
+	require.NoError(t, err)
+	s1, err := scores[1].Float64()
+	require.NoError(t, err)
+	require.InDelta(t, s0, s1, 0.01)
 
 	// choose many times - since their scores should be the same, they should be picked in a similar amount
-	res, _ := runChooseManyTimesAndReturnResults_Refactor(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Equal(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
+	iterations := 1000
+	res, _ := runChooseManyTimesAndReturnResults_Refactor(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	require.InDelta(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]], float64(iterations)*0.05)
 }

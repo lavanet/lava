@@ -270,16 +270,17 @@ func (po *ProviderOptimizer_Refactor) ChooseProvider_Refactor(allAddresses []str
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		po.OptimizerNumTiers = selectionTier.ScoresCount()
+	numTiers := po.OptimizerNumTiers
+	if selectionTier.ScoresCount() < numTiers {
+		numTiers = selectionTier.ScoresCount()
 	}
 	if selectionTier.ScoresCount() >= po.OptimizerMinTierEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
 		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, po.OptimizerMinTierEntries)
+	shiftedChances := selectionTier.ShiftTierChance(numTiers, initialChances)
+	tier = selectionTier.SelectTierRandomly(numTiers, shiftedChances)
+	tierProviders := selectionTier.GetTier(tier, numTiers, po.OptimizerMinTierEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
