@@ -134,7 +134,7 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState) *
 	if relayState == nil { // initial state
 		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, ArchiveStatus{})
 	} else {
-		nextState = NewRelayState(crsm.ctx, relayState.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus)
+		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus)
 	}
 	crsm.appendRelayState(nextState)
 	return nextState
@@ -150,7 +150,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 		lastState := crsm.getLatestState()
 		nextState := crsm.stateTransition(lastState)
 		// Retry archive logic
-		return nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
+		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
 	}
 	return shouldRetry
 }
