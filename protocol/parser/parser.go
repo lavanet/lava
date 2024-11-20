@@ -330,18 +330,7 @@ func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 		json.Unmarshal(rpcInputResult, &result)
 	}
 
-	var mapError map[string]interface{}
-	rpcInputError := rpcInput.GetError()
-	if rpcInputError != nil {
-		jsonError, err := json.Marshal(rpcInputError)
-		if err != nil {
-			utils.LavaFormatError("failed to marshal rpcInputError", err)
-		} else {
-			json.Unmarshal(jsonError, &mapError)
-		}
-	}
-
-	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result, "error": mapError}
+	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result, "error": rpcInput.GetError().ToMap()}
 }
 
 func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {
