@@ -311,3 +311,69 @@ func TestSelectionTierInst_SelectTierRandomly_Default(t *testing.T) {
 		assert.InDelta(t, expectedDistribution, count, 300)
 	}
 }
+
+// TestTierParts tests that when getting a tier, the sum of the parts of the entries
+// in each tier is equal to the expected value of entries/numTiers
+// note, it's assumed that the number of entries is greater or equal to the number of tiers
+func TestTierParts(t *testing.T) {
+	templete := []struct {
+		name       string
+		numTiers   int
+		entriesLen int
+		expected   map[int][]float64 // expected parts for each tier
+	}{
+		{"3 tiers 6 entries", 3, 6, map[int][]float64{
+			0: {1.0, 1.0},
+			1: {1.0, 1.0},
+			2: {1.0, 1.0},
+		}},
+		{"3 tiers 3 entries", 3, 3, map[int][]float64{
+			0: {1.0},
+			1: {1.0},
+			2: {1.0},
+		}},
+		{"3 tiers 5 entries", 3, 5, map[int][]float64{
+			0: {1.0, 2.0 / 3.0},
+			1: {1.0 / 3.0, 1.0, 1.0 / 3.0},
+			2: {2.0 / 3.0, 1.0},
+		}},
+		{"4 tiers 11 entries", 4, 11, map[int][]float64{
+			0: {1.0, 1.0, 0.75},
+			1: {0.25, 1.0, 1.0, 0.5},
+			2: {0.5, 1.0, 1.0, 0.25},
+			3: {0.75, 1.0, 1.0},
+		}},
+		{"4 tiers 10 entries", 4, 10, map[int][]float64{
+			0: {1.0, 1.0, 0.5},
+			1: {0.5, 1.0, 1.0},
+			2: {1.0, 1.0, 0.5},
+			3: {0.5, 1.0, 1.0},
+		}},
+	}
+
+	for _, play := range templete {
+		for tier := 0; tier < play.numTiers; tier++ {
+			st := NewSelectionTier()
+			// add entries to the selection tier
+			for i := 0; i < play.entriesLen; i++ {
+				st.AddScore("entry"+strconv.Itoa(i), 0.1)
+			}
+
+			// get tier parts
+			partsSum := 0.0
+			parts := []float64{}
+			entries := st.GetTier(tier, play.numTiers, 1)
+			for _, entry := range entries {
+				partsSum += entry.Part
+				parts = append(parts, entry.Part)
+			}
+
+			for i := range parts {
+				require.InDelta(t, play.expected[tier][i], parts[i], 0.001,
+					"tier: %d, entriesLen: %d, numTiers: %d, index: %d", tier, play.entriesLen, play.numTiers, i)
+			}
+			assert.InDelta(t, float64(play.entriesLen)/float64(play.numTiers), partsSum, 0.01,
+				"tier: %d, entriesLen: %d, numTiers: %d", tier, play.entriesLen, play.numTiers)
+		}
+	}
+}

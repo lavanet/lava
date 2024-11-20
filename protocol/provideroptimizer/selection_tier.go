@@ -166,6 +166,10 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int) []Entry {
 	// get the tier of scores for the given tier and number of tiers
 	entriesLen := len(st.scores)
+	if entriesLen < numTiers {
+		utils.LavaFormatError("Number of tiers is greater than the number of scores", nil, utils.LogAttr("entriesLen", entriesLen), utils.LogAttr("numTiers", numTiers))
+		return st.scores
+	}
 	if entriesLen < minimumEntries || numTiers == 0 || tier >= numTiers {
 		return st.scores
 	}
@@ -177,9 +181,22 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	}
 	ret := st.scores[start:end]
 	if len(ret) >= minimumEntries {
-		// apply the relative parts to the first and last entries
-		ret[0].Part = 1 - fracStart
-		ret[len(ret)-1].Part = fracEnd
+		// First entry
+		if start == 0 {
+			ret[0].Part = 1.0
+		} else {
+			ret[0].Part = fracStart
+		}
+
+		// Middle entries
+		for i := 1; i < len(ret)-1; i++ {
+			ret[i].Part = 1.0
+		}
+
+		// Last entry
+		if len(ret) > 1 {
+			ret[len(ret)-1].Part = fracEnd
+		}
 		return ret
 	}
 	// bring in entries from better tiers if insufficient, give them a handicap to weight
@@ -196,20 +213,46 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	return ret
 }
 
-// TODO: add unitests and fix this function
-// scenarios: 5 entries, 6 entries, 7 entries, 9 entries, 10 entries and 11 entries
-// numTiers: 3(0,1,2),4,5
-// expected: sum(parts of tier) = float32(entries / numtiers) for all tiers (loop on them)
-// add another case: 2 providers 3 tiers, expected sum parts = 1,0.5+0.5,1
+// getPositionsForTier calculates the start and end positions for a given tier,
+// along with fractional adjustments for boundary entries
+// outputs: first entry index for this tier, last entry index for this tier (exclusive), fractional part
+// for first entry, fractional part for last entry
+// Note: this function assumes that numTiers is not greater than the number of entries
 func getPositionsForTier(tier int, numTiers int, entriesLen int) (start int, end int, fracStart float64, fracEnd float64) {
-	rankStart := float64(tier) / float64(numTiers)
-	rankEnd := float64(tier+1) / float64(numTiers)
-	// Calculate the position based on the rank
-	startPositionF := (float64(entriesLen-1) * rankStart)
-	endPositionF := (float64(entriesLen-1) * rankEnd)
+	if numTiers <= 0 || entriesLen <= 0 {
+		return 0, entriesLen, 0, 0
+	}
 
-	positionStart := int(startPositionF)
-	positionEnd := int(endPositionF) + 1
+	// Calculate base distribution
+	baseEntriesPerTier := entriesLen / numTiers
 
-	return positionStart, positionEnd, startPositionF - float64(positionStart), float64(positionEnd) - endPositionF
+	// if entriesLen%numTiers == 0 {
+	// 	return tier * baseEntriesPerTier, (tier + 1) * baseEntriesPerTier, 1.0, 1.0
+	// }
+
+	// calculate the part of the first and last entries in the tier
+	tierSize := float64(entriesLen) / float64(numTiers)
+	fracStart = 1.0
+	fracEnd = tierSize - float64(baseEntriesPerTier-1) - fracStart
+	if tier > 0 {
+		fracStart = math.Ceil(tierSize*float64(tier)) - tierSize*float64(tier)
+		fracEnd = tierSize - float64(baseEntriesPerTier) - fracStart
+	}
+
+	// if tier == numTiers-1 {
+	// 	fracEnd = 1.0
+	// }
+
+	if math.Abs(fracStart) < 1e-10 {
+		fracStart = 1.0
+	}
+
+	if math.Abs(fracEnd) < 1e-10 {
+		fracEnd = 1.0
+	}
+
+	// calculate the start and end positions
+	start = int(math.Floor(tierSize * float64(tier)))
+	end = int(math.Ceil(tierSize * float64(tier+1)))
+	return start, end, fracStart, fracEnd
 }
