@@ -496,7 +496,6 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 	if latestBlockHashRequested >= 0 && (reqBlock == spectypes.LATEST_BLOCK || reqBlock < latestBlockHashRequested) {
 		reqBlock = latestBlockHashRequested
 	}
-	protocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, seenBlock)
 	return reqBlock
 }
 
@@ -654,6 +653,20 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	addon := chainlib.GetAddon(protocolMessage)
 	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, earliestBlockHashRequested, addon, protocolMessage)
+	// check wether we need a new protocol message with the new earliest block hash requested
+	if earliestBlockHashRequested != spectypes.NOT_APPLICABLE {
+		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
+		// and update the extension rules with the new earliest block data as it might be archive.
+		relayRequestData := protocolMessage.RelayPrivateData()
+		userData := protocolMessage.GetUserData()
+		newProtocolMessage, err := rpccs.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, nil)
+		if err != nil {
+			utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
+		} else {
+			newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
+			protocolMessage = newProtocolMessage
+		}
+	}
 
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
