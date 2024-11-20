@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	fmt "fmt"
 
@@ -55,7 +56,7 @@ func (rf RelayFinalization) DataToSign() []byte {
 		sdkAccAddress,
 		relaySessionHash,
 	}
-	return sigs.Join(msgParts)
+	return bytes.Join(msgParts, nil)
 }
 
 func (rfm RelayFinalization) HashRounds() int {

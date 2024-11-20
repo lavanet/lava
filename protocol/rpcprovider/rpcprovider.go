@@ -30,6 +30,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v4/protocol/upgrade"
 	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	epochstorage "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -355,11 +356,20 @@ func GetAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *Provi
 	return policy
 }
 
+func GetAllNodeUrlsInternalPaths(nodeUrls []common.NodeUrl) []string {
+	paths := []string{}
+	for _, nodeUrl := range nodeUrls {
+		paths = append(paths, nodeUrl.InternalPath)
+	}
+	return paths
+}
+
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
+
 	chainID := rpcProviderEndpoint.ChainID
 	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
@@ -373,6 +383,18 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+	}
+
+	// warn if not all internal paths are configured
+	configuredInternalPaths := GetAllNodeUrlsInternalPaths(rpcProviderEndpoint.NodeUrls)
+	chainInternalPaths := chainParser.GetAllInternalPaths()
+	overConfiguredInternalPaths := lavaslices.Difference(configuredInternalPaths, chainInternalPaths)
+	if len(overConfiguredInternalPaths) > 0 {
+		utils.LavaFormatWarning("Some configured internal paths are not in the chain's spec", nil,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("internalPaths", strings.Join(overConfiguredInternalPaths, ",")),
+		)
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
