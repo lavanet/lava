@@ -182,11 +182,7 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	ret := st.scores[start:end]
 	if len(ret) >= minimumEntries {
 		// First entry
-		if start == 0 {
-			ret[0].Part = 1.0
-		} else {
-			ret[0].Part = fracStart
-		}
+		ret[0].Part = fracStart
 
 		// Middle entries
 		for i := 1; i < len(ret)-1; i++ {
