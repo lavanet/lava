@@ -99,31 +99,24 @@ func filterGenericParsersByType(genericParsers []spectypes.GenericParser, filter
 	return retGenericParsers
 }
 
-func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, bool) {
+func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser, source int) (*ParsedInput, bool) {
 	managedToParseRawBlock := false
 	if len(genericParsers) == 0 {
 		return nil, managedToParseRawBlock
 	}
 
-	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, filterGenericParsersByType(genericParsers, getParserTypeMap(PARSE_PARAMS)))
+	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, filterGenericParsersByType(genericParsers, getParserTypeMap(source)))
 	if genericParserErr != nil {
 		return nil, managedToParseRawBlock
 	}
 
-	parsed := NewParsedInput()
-	rawParsedData := genericParserResult.GetRawParsedData()
-	if rawParsedData != "" {
+	_, err := genericParserResult.GetBlockHashes()
+	if genericParserResult.GetParserError() == "" && (err == nil || genericParserResult.GetRawParsedData() != "") {
+		// if we got here, there is no parser error and we successfully parsed either the block hashes or the raw parsed data
 		managedToParseRawBlock = true
-		parsed.parsedDataRaw = rawParsedData
 	}
 
-	parsedBlockHashes, err := genericParserResult.GetBlockHashes()
-	if err == nil {
-		managedToParseRawBlock = true
-		parsed.parsedHashes = parsedBlockHashes
-	}
-
-	return parsed, managedToParseRawBlock
+	return genericParserResult, managedToParseRawBlock
 }
 
 // ParseRawBlock attempts to parse a block from rpcInput and store it in parsedInput.
@@ -194,7 +187,7 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 // Returns:
 // - A pointer to a ParsedInput struct containing the parsed data.
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
-	parsedBlockInfo, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
+	parsedBlockInfo, _ := parseInputWithGenericParsers(rpcInput, genericParsers, source)
 	if parsedBlockInfo == nil {
 		parsedBlockInfo = NewParsedInput()
 	} else {
@@ -236,7 +229,7 @@ func unquoteString(str string) string {
 
 // This returns the parsed response after decoding
 func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) (string, error) {
-	parsedInput, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
+	parsedInput, _ := parseInputWithGenericParsers(rpcInput, genericParsers, PARSE_RESULT)
 	if parsedInput == nil {
 		parsedBlockHashFromBlockParser, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT)
 		if err != nil {
