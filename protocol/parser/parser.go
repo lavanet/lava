@@ -429,10 +429,17 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 		return parsed, nil
 	// Case Block Latest, setting the value set by the user given a json path hit.
 	// Example: block_id: 100, will result in requested block 100.
+	case spectypes.PARSER_TYPE_RESULT:
+		parsed := NewParsedInput()
+		strValue := blockInterfaceToString(value)
+		parsed.parsedDataRaw = strValue
+		if genericParser.Value != "*" && strValue != genericParser.Value {
+			parsed.parserError = fmt.Sprintf("expected %s, received %s", genericParser.Value, strValue)
+		}
+		return parsed, nil
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:
 		parsed := NewParsedInput()
-		block := blockInterfaceToString(value)
-		parsed.parsedDataRaw = block
+		parsed.parsedDataRaw = blockInterfaceToString(value)
 		return parsed, nil
 	case spectypes.PARSER_TYPE_BLOCK_HASH:
 		return parseGenericParserBlockHash(value)
