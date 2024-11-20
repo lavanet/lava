@@ -74,7 +74,6 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
-
 	return &ConsumerOptimizerQoSClient{
 		consumerOrigin:                     hostname,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
