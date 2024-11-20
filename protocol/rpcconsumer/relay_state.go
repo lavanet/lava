@@ -61,6 +61,9 @@ func (rs *RelayState) GetStateNumber() int {
 }
 
 func (rs *RelayState) GetProtocolMessage() chainlib.ProtocolMessage {
+	if rs == nil {
+		return nil
+	}
 	return rs.protocolMessage
 }
 
