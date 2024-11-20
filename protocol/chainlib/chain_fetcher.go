@@ -201,7 +201,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	parserError := parsedInput.GetParserError()
 	if parserError != "" {
-		return utils.LavaFormatWarning("[-] parser returned an error", fmt.Errorf(parserError),
+		return utils.LavaFormatWarning("[-] parser returned an error", nil,
+			utils.LogAttr("error", parserError),
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
