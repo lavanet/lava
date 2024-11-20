@@ -11,6 +11,7 @@ import (
 	"github.com/itchyny/gojq"
 
 	sdkerrors "cosmossdk.io/errors"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
@@ -28,6 +29,7 @@ var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to par
 type RPCInput interface {
 	GetParams() interface{}
 	GetResult() json.RawMessage
+	GetError() *rpcclient.JsonError
 	ParseBlock(block string) (int64, error)
 	GetHeaders() []pairingtypes.Metadata
 	GetMethod() string
@@ -156,6 +158,10 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 }
 
 func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, error) {
+	if rpcInput.GetError() != nil {
+		return "", utils.LavaFormatError("blockParsing - rpcInput is error", nil, utils.LogAttr("rpcInput.GetError()", rpcInput.GetError()))
+	}
+
 	result, err := legacyParse(rpcInput, blockParser, source)
 	if err != nil || result == nil {
 		return "", utils.LavaFormatDebug("blockParsing - parse failed",
@@ -288,6 +294,7 @@ type ParsedInput struct {
 	parsedDataRaw string
 	parsedBlock   int64
 	parsedHashes  []string
+	parserError   string
 }
 
 const RAW_NOT_APPLICABLE = "-1"
@@ -312,6 +319,10 @@ func (p *ParsedInput) GetBlock() int64 {
 	return p.parsedBlock
 }
 
+func (p *ParsedInput) GetParserError() string {
+	return p.parserError
+}
+
 func (p *ParsedInput) GetBlockHashes() ([]string, error) {
 	if len(p.parsedHashes) == 0 {
 		return nil, fmt.Errorf("no parsed hashes found")
@@ -325,7 +336,19 @@ func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 	if rpcInputResult != nil {
 		json.Unmarshal(rpcInputResult, &result)
 	}
-	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result}
+
+	var mapError map[string]interface{}
+	rpcInputError := rpcInput.GetError()
+	if rpcInputError != nil {
+		jsonError, err := json.Marshal(rpcInputError)
+		if err != nil {
+			utils.LavaFormatError("failed to marshal rpcInputError", err)
+		} else {
+			json.Unmarshal(jsonError, &mapError)
+		}
+	}
+
+	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result, "error": mapError}
 }
 
 func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {
@@ -397,6 +420,7 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	if !parseRule(genericParser.Rule, value) {
 		return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Did not match any rule", nil, utils.LogAttr("value", value), utils.LogAttr("rules", genericParser.Rule))
 	}
+
 	utils.LavaFormatTrace("parsed generic value",
 		utils.LogAttr("input", input),
 		utils.LogAttr("genericParser", genericParser),
