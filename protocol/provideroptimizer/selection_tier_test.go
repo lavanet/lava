@@ -59,13 +59,13 @@ func TestSelectionTierInst_GetTier(t *testing.T) {
 		{
 			tier:           1,
 			minimumEntries: 2,
-			expectedTier:   []string{"entry5", "entry4", "entry2"},
+			expectedTier:   []string{"entry4", "entry2"},
 			name:           "tier 1, 2 entries",
 		},
 		{
 			tier:           2,
 			minimumEntries: 2,
-			expectedTier:   []string{"entry2", "entry3", "entry6"},
+			expectedTier:   []string{"entry3", "entry6"},
 			name:           "tier 2, 2 entries",
 		},
 		{
@@ -139,20 +139,20 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 		{
 			tier:            1,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 1, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 1, 25 entries",
 		},
 		{
 			tier:            2,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 2, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 2, 25 entries",
 		},
 		{
 			tier:            3,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 3, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 3, 25 entries",
 		},
 		{
 			tier:            0,
@@ -336,6 +336,11 @@ func TestTierParts(t *testing.T) {
 			0: {1.0, 2.0 / 3.0},
 			1: {1.0 / 3.0, 1.0, 1.0 / 3.0},
 			2: {2.0 / 3.0, 1.0},
+		}},
+		{"3 tiers 4 entries", 3, 4, map[int][]float64{
+			0: {1.0, 1.0 / 3.0},
+			1: {2.0 / 3.0, 2.0 / 3.0},
+			2: {1.0 / 3.0, 1.0},
 		}},
 		{"4 tiers 11 entries", 4, 11, map[int][]float64{
 			0: {1.0, 1.0, 0.75},

@@ -219,25 +219,13 @@ func getPositionsForTier(tier int, numTiers int, entriesLen int) (start int, end
 		return 0, entriesLen, 0, 0
 	}
 
-	// Calculate base distribution
-	baseEntriesPerTier := entriesLen / numTiers
-
-	// if entriesLen%numTiers == 0 {
-	// 	return tier * baseEntriesPerTier, (tier + 1) * baseEntriesPerTier, 1.0, 1.0
-	// }
-
 	// calculate the part of the first and last entries in the tier
 	tierSize := float64(entriesLen) / float64(numTiers)
-	fracStart = 1.0
-	fracEnd = tierSize - float64(baseEntriesPerTier-1) - fracStart
-	if tier > 0 {
-		fracStart = math.Ceil(tierSize*float64(tier)) - tierSize*float64(tier)
-		fracEnd = tierSize - float64(baseEntriesPerTier) - fracStart
-	}
+	fracStart = math.Ceil(tierSize*float64(tier)) - tierSize*float64(tier)
 
-	// if tier == numTiers-1 {
-	// 	fracEnd = 1.0
-	// }
+	leftover := tierSize - fracStart
+	// the fractional part of the leftover is fracEnd
+	fracEnd = leftover - math.Floor(leftover)
 
 	if math.Abs(fracStart) < 1e-10 {
 		fracStart = 1.0
