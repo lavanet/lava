@@ -126,7 +126,6 @@ type RelaySender interface {
 		connectionType string,
 		dappID string,
 		consumerIp string,
-		analytics *metrics.RelayMetrics,
 		metadata []pairingtypes.Metadata,
 	) (ProtocolMessage, error)
 	SendParsedRelay(
