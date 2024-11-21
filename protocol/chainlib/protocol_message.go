@@ -58,7 +58,7 @@ func (bpm *BaseProtocolMessage) addMissingExtensions(updatedProtocolExtensions [
 	return currentPrivateDataExtensions
 }
 
-func (bpm *BaseProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) {
+func (bpm *BaseProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	if earliestBlockHashRequested >= 0 {
 		success := bpm.UpdateEarliestInMessage(earliestBlockHashRequested)
 		// check if we successfully updated the earliest block in the message
@@ -73,9 +73,11 @@ func (bpm *BaseProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensio
 				currentPrivateDataExtensions = bpm.addMissingExtensions(updatedProtocolExtensions, currentPrivateDataExtensions)
 				bpm.RelayPrivateData().Extensions = currentPrivateDataExtensions
 				utils.LavaFormatTrace("[Archive Debug] After Swap", utils.LogAttr("bpm.RelayPrivateData().Extensions", bpm.RelayPrivateData().Extensions))
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func (bpm *BaseProtocolMessage) GetBlockedProviders() []string {
@@ -108,5 +110,5 @@ type ProtocolMessage interface {
 	HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error)
 	GetBlockedProviders() []string
 	GetUserData() common.UserData
-	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64)
+	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
 }

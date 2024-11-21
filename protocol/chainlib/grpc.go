@@ -115,7 +115,9 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, grpcMessage, apiCollection), nil
+	parsedInput := &parser.ParsedInput{}
+	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+	return apip.newChainMessage(apiCont.api, parsedInput, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -168,15 +170,14 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		}
 	}
 
-	parsedBlock := parsedInput.GetBlock()
-	blockHashes, _ := parsedInput.GetBlockHashes()
-
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, requestedHashes []string, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	requestedBlock := parsedInput.GetBlock()
+	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
 		api:                      api,
 		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
@@ -185,6 +186,7 @@ func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),
+		usedDefaultValue:         parsedInput.UsedDefaultValue,
 	}
 	return nodeMsg
 }

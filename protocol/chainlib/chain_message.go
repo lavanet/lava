@@ -31,6 +31,7 @@ type baseChainMessageContainer struct {
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
 	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
+	usedDefaultValue       bool
 
 	inputHashCache []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
@@ -168,6 +169,10 @@ func (bcnc *baseChainMessageContainer) OverrideExtensions(extensionNames []strin
 			}
 		}
 	}
+}
+
+func (bcnc *baseChainMessageContainer) GetUsedDefaultValue() bool {
+	return bcnc.usedDefaultValue
 }
 
 func (bcnc *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
