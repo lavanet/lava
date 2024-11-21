@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

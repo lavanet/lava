@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

@@ -11,9 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/v3/testutil/sample"
-	protocolsimulation "github.com/lavanet/lava/v3/x/protocol/simulation"
-	"github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/testutil/sample"
+	protocolsimulation "github.com/lavanet/lava/v4/x/protocol/simulation"
+	"github.com/lavanet/lava/v4/x/protocol/types"
 )
 
 // avoid unused import issue

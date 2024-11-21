@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
-	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 type Migrator struct {
@@ -43,6 +43,7 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 			} else {
 				delegation = oldDelegation
 			}
+			delegation.Timestamp = ctx.BlockTime().UTC().Unix()
 			m.keeper.SetDelegation(ctx, delegation)
 		}
 	}

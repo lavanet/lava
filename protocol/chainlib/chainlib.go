@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 var (
@@ -63,9 +63,11 @@ type ChainParser interface {
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
+	IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool
+	GetAllInternalPaths() []string
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
-	GetVerifications(supported []string) ([]VerificationContainer, error)
+	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
 	SetPolicy(policy PolicyInf, chainId string, apiInterface string) error
 	Active() bool
@@ -88,6 +90,7 @@ type ChainMessage interface {
 	SetForceCacheRefresh(force bool) bool
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 	GetRawRequestHash() ([]byte, error)
+	GetRequestedBlocksHashes() []string
 
 	ChainMessageForSend
 }

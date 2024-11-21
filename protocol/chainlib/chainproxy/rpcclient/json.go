@@ -29,7 +29,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 const (
@@ -46,6 +46,11 @@ var null = json.RawMessage("null")
 
 type ethereumSubscriptionResult struct {
 	ID     string          `json:"subscription"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type starkNetPathfinderSubscriptionResult struct {
+	ID     int             `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
@@ -68,8 +73,12 @@ type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
 
+func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
+	return msg.ID == nil && msg.Method != "" && msg.Result != nil
+}
+
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
-	return msg.ID == nil && msg.Method != ""
+	return msg.ID == nil && msg.Method != "" && msg.Params != nil
 }
 
 func (msg *JsonrpcMessage) isTendermintNotification() bool {

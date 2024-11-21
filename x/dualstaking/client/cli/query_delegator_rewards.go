@@ -7,23 +7,22 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 )
 
 const (
 	providerFlagName = "provider"
-	chainIDFlagName  = "chain-id"
 )
 
 func CmdQueryDelegatorRewards() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "delegator-rewards [delegator]",
 		Short: `shows all the rewards that can be claimed for a specific delegator. 
-		Can be more specific using the optional --provider and --chain-id flags`,
+		show rewards from a specific provider using the optional --provider flag`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var provider, chainID string
+			var provider string
 
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -47,19 +46,9 @@ func CmdQueryDelegatorRewards() *cobra.Command {
 				return err
 			}
 
-			// check if the command includes --chain-id
-			chainIDFlag := cmd.Flags().Lookup(chainIDFlagName)
-			if chainIDFlag == nil {
-				return fmt.Errorf("%s flag wasn't found", chainIDFlagName)
-			}
-			if cmd.Flags().Changed(chainIDFlagName) {
-				chainID = chainIDFlag.Value.String()
-			}
-
 			res, err := queryClient.DelegatorRewards(cmd.Context(), &types.QueryDelegatorRewardsRequest{
 				Delegator: delegator,
 				Provider:  provider,
-				ChainId:   chainID,
 			})
 			if err != nil {
 				return err
@@ -71,7 +60,6 @@ func CmdQueryDelegatorRewards() *cobra.Command {
 
 	flags.AddQueryFlagsToCmd(cmd)
 	cmd.Flags().String(providerFlagName, "", "output rewards from a specific provider")
-	cmd.Flags().String(chainIDFlagName, "", "output rewards for a specific chain")
 
 	return cmd
 }
