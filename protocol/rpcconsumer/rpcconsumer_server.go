@@ -487,7 +487,7 @@ func (rpccs *RPCConsumerServer) getEarliestBlockHashRequestedFromCacheReply(cach
 	return latestRequestedBlock, earliestRequestedBlock
 }
 
-func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock int64, latestBlockHashRequested, earliestBlockHashRequested int64, addon string, protocolMessage chainlib.ProtocolMessage) int64 {
+func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock int64, latestBlockHashRequested int64) int64 {
 	if reqBlock == spectypes.LATEST_BLOCK && seenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = seenBlock
@@ -652,7 +652,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	addon := chainlib.GetAddon(protocolMessage)
-	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, earliestBlockHashRequested, addon, protocolMessage)
+	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested)
 	// check wether we need a new protocol message with the new earliest block hash requested
 	if earliestBlockHashRequested != spectypes.NOT_APPLICABLE {
 		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
