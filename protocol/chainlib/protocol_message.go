@@ -41,17 +41,19 @@ func (bpm *BaseProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([
 func (bpm *BaseProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) {
 	if earliestBlockHashRequested >= 0 {
 		success := bpm.UpdateEarliestInMessage(earliestBlockHashRequested)
+		// check if we successfully updated the earliest block in the message
 		if success {
+			// parse the extensions for the new updated earliest block
 			extensionParser.ExtensionParsing(addon, bpm, uint64(seenBlock))
-			currentProtocolExtensions := bpm.GetExtensions()
+			updatedProtocolExtensions := bpm.GetExtensions()
 			currentPrivateDataExtensions := bpm.RelayPrivateData().Extensions
-			utils.LavaFormatTrace("[Archive Debug] Trying to add extensions", utils.LogAttr("currentProtocolExtensions", currentProtocolExtensions), utils.LogAttr("currentPrivateDataExtensions", currentPrivateDataExtensions))
-			if len(currentProtocolExtensions) > len(currentPrivateDataExtensions) {
+			utils.LavaFormatTrace("[Archive Debug] Trying to add extensions", utils.LogAttr("currentProtocolExtensions", updatedProtocolExtensions), utils.LogAttr("currentPrivateDataExtensions", currentPrivateDataExtensions))
+			if len(updatedProtocolExtensions) > len(currentPrivateDataExtensions) {
 				// we need to add the missing extension to the private data.
-				for _, ext := range currentProtocolExtensions {
+				for _, ext := range updatedProtocolExtensions {
 					if !slices.Contains(currentPrivateDataExtensions, ext.Name) {
 						currentPrivateDataExtensions = append(currentPrivateDataExtensions, ext.Name)
-						if len(currentProtocolExtensions) == len(currentPrivateDataExtensions) {
+						if len(updatedProtocolExtensions) == len(currentPrivateDataExtensions) {
 							break
 						}
 					}
