@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/score"
-	"github.com/lavanet/lava/v4/x/pairing/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
@@ -230,7 +229,7 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 			utils.LogAttr("availabilityScore", qos.Availability.String()),
 		)
 
-		opts := []types.Option{pairingtypes.WithStrategyFactor(po.strategy.GetStrategyFactor())}
+		opts := []pairingtypes.Option{pairingtypes.WithStrategyFactor(po.strategy.GetStrategyFactor())}
 		if requestedBlock > 0 {
 			// add block error probability config if the request block is positive
 			opts = append(opts, pairingtypes.WithBlockErrorProbability(po.CalculateProbabilityOfBlockError(requestedBlock, providerData)))

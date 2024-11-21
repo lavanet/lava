@@ -156,7 +156,7 @@ func TestProviderOptimizerBasic(t *testing.T) {
 
 	// there's a chance that some of the worst providers will be in part of a higher tier
 	// because of a high minimum entries value, so filter the providers that are only in the worst tier
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
 	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, 1)
 	worstTierEntries := map[string]struct{}{}
@@ -225,7 +225,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 
 	// there's a chance that some of the worst providers will be in part of a higher tier
 	// because of a high minimum entries value, so filter the providers that are only in the worst tier
-	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
 	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
 	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, 1)
 	worstTierEntries := map[string]struct{}{}
