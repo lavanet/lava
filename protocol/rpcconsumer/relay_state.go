@@ -48,7 +48,7 @@ type RelayState struct {
 	lock            sync.RWMutex
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo ArchiveStatus) *RelayState {
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo *ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
 	rs := &RelayState{
 		ctx:             ctx,
