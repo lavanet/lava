@@ -685,7 +685,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions))
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch)
-	fmt.Println("sessions LENGTH", len(sessions), protocolMessage.GetApi().Name)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
