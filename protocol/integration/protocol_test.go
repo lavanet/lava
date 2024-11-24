@@ -1338,165 +1338,6 @@ func TestArchiveProvidersRetry(t *testing.T) {
 	}
 }
 
-func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
-	playbook := []struct {
-		name             string
-		numOfProviders   int
-		archiveProviders int
-		expectedResult   string
-		statusCode       int
-	}{
-		{
-			name:             "happy flow",
-			numOfProviders:   3,
-			archiveProviders: 1,
-			expectedResult:   `{"jsonrpc":"2.0","id":1,"result":{"result":"success"}}`,
-			statusCode:       200,
-		},
-	}
-	for _, play := range playbook {
-		t.Run(play.name, func(t *testing.T) {
-			ctx := context.Background()
-			// can be any spec and api interface
-			specId := "NEAR"
-			apiInterface := spectypes.APIInterfaceJsonRPC
-			epoch := uint64(100)
-			lavaChainID := "lava"
-			numProviders := play.numOfProviders
-
-			consumerListenAddress := addressGen.GetAddress()
-
-			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
-			}
-			providers := []providerData{}
-
-			for i := 0; i < numProviders; i++ {
-				account := sigs.GenerateDeterministicFloatingKey(randomizer)
-				providerDataI := providerData{account: account}
-				providers = append(providers, providerDataI)
-			}
-			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-
-			for i := 0; i < numProviders; i++ {
-				ctx := context.Background()
-				providerDataI := providers[i]
-				listenAddress := addressGen.GetAddress()
-				addons := []string(nil)
-				if i+1 <= play.archiveProviders {
-					addons = []string{"archive"}
-				}
-
-				rpcProviderOptions := rpcProviderOptions{
-					consumerAddress:  consumerAccount.Addr.String(),
-					specId:           specId,
-					apiInterface:     apiInterface,
-					listenAddress:    listenAddress,
-					account:          providerDataI.account,
-					lavaChainID:      lavaChainID,
-					addons:           addons,
-					providerUniqueId: fmt.Sprintf("provider%d", i),
-				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
-
-				id, _ := json.Marshal(1)
-				resultBody, _ := json.Marshal(map[string]string{"result": "success"})
-				res := rpcclient.JsonrpcMessage{
-					Version: "2.0",
-					ID:      id,
-					Result:  resultBody,
-				}
-				resBytes, _ := json.Marshal(res)
-				providers[i].replySetter.replyDataBuf = resBytes
-				// none archive providers return errors.
-				if i+1 > play.archiveProviders {
-					id, _ := json.Marshal(1)
-					res := rpcclient.JsonrpcMessage{
-						Version: "2.0",
-						ID:      id,
-						Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
-					}
-					resBytes, _ := json.Marshal(res)
-
-					providers[i].replySetter.replyDataBuf = resBytes
-					providers[i].replySetter.status = 299
-				}
-			}
-
-			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-			for i := 0; i < numProviders; i++ {
-				extensions := map[string]struct{}{}
-				if i+1 <= play.archiveProviders {
-					extensions = map[string]struct{}{"archive": {}}
-				}
-				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-					PublicLavaAddress: providers[i].account.Addr.String(),
-
-					Endpoints: []*lavasession.Endpoint{
-						{
-							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
-							Enabled:        true,
-							Geolocation:    1,
-							Extensions:     extensions,
-						},
-					},
-					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-					MaxComputeUnits:  10000,
-					UsedComputeUnits: 0,
-					PairingEpoch:     epoch,
-				}
-			}
-
-			rpcConsumerOptions := rpcConsumerOptions{
-				specId:                specId,
-				apiInterface:          apiInterface,
-				account:               consumerAccount,
-				consumerListenAddress: consumerListenAddress,
-				epoch:                 epoch,
-				pairingList:           pairingList,
-				requiredResponses:     1,
-				lavaChainID:           lavaChainID,
-			}
-			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-			params, _ := json.Marshal([]string{"5NFtBbExnjk4TFXpfXhJidcCm5KYPk7QCY51nWiwyQNU"})
-			id, _ := json.Marshal(1)
-			reqBody := rpcclient.JsonrpcMessage{
-				Version: "2.0",
-				Method:  "block", // Query latest block
-				Params:  params,  // Use "final" to get the latest final block
-				ID:      id,
-			}
-
-			// Convert request to JSON
-			jsonData, err := json.Marshal(reqBody)
-			if err != nil {
-				log.Fatalf("Error marshalling request: %v", err)
-			}
-
-			client := http.Client{Timeout: 10000 * time.Millisecond}
-			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, bytes.NewBuffer(jsonData))
-			require.NoError(t, err)
-
-			resp, err := client.Do(req)
-			require.NoError(t, err)
-			require.Equal(t, play.statusCode, resp.StatusCode)
-
-			bodyBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err)
-
-			resp.Body.Close()
-			require.Equal(t, string(bodyBytes), play.expectedResult)
-		})
-	}
-}
-
 func TestSameProviderConflictReport(t *testing.T) {
 	type providerData struct {
 		account                sigs.Account
@@ -2104,4 +1945,194 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 
 	// Verify that overall we have 2 cache hits
 	require.Equal(t, 2, cacheHits)
+}
+
+func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
+	playbook := []struct {
+		name             string
+		numOfProviders   int
+		archiveProviders int
+		expectedResult   string
+		statusCode       int
+	}{
+		{
+			name:             "happy flow",
+			numOfProviders:   3,
+			archiveProviders: 1,
+			expectedResult:   `{"jsonrpc":"2.0","id":1,"result":{"result":"success"}}`,
+			statusCode:       200,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "NEAR"
+			apiInterface := spectypes.APIInterfaceJsonRPC
+			epoch := uint64(100)
+			lavaChainID := "lava"
+			numProviders := play.numOfProviders
+			cacheListenAddress := addressGen.GetAddress()
+			createCacheServer(t, ctx, cacheListenAddress)
+
+			consumerListenAddress := addressGen.GetAddress()
+
+			type providerData struct {
+				account                sigs.Account
+				endpoint               *lavasession.RPCProviderEndpoint
+				server                 *rpcprovider.RPCProviderServer
+				replySetter            *ReplySetter
+				mockChainFetcher       *MockChainFetcher
+				mockReliabilityManager *MockReliabilityManager
+			}
+			providers := []providerData{}
+			timesCalledProviders := 0
+			for i := 0; i < numProviders; i++ {
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				addons := []string(nil)
+				if i+1 <= play.archiveProviders {
+					addons = []string{"archive"}
+				}
+
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           addons,
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+
+				handler := func(req []byte, header http.Header) (data []byte, status int) {
+					var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+					err := json.Unmarshal(req, &jsonRpcMessage)
+					require.NoError(t, err)
+					timesCalledProviders++
+					id, _ := json.Marshal(1)
+					resultBody, _ := json.Marshal(map[string]string{"result": "success"})
+					res := rpcclient.JsonrpcMessage{
+						Version: "2.0",
+						ID:      id,
+						Result:  resultBody,
+					}
+					resBytes, _ := json.Marshal(res)
+					return resBytes, http.StatusOK
+				}
+				// none archive providers return errors.
+				if i+1 > play.archiveProviders {
+
+					handler = func(req []byte, header http.Header) (data []byte, status int) {
+						var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+						err := json.Unmarshal(req, &jsonRpcMessage)
+						require.NoError(t, err)
+						timesCalledProviders++
+						id, _ := json.Marshal(1)
+						res := rpcclient.JsonrpcMessage{
+							Version: "2.0",
+							ID:      id,
+							Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
+						}
+						resBytes, _ := json.Marshal(res)
+						return resBytes, 299
+					}
+				}
+				providers[i].replySetter.handler = handler
+			}
+
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			for i := 0; i < numProviders; i++ {
+				extensions := map[string]struct{}{}
+				if i+1 <= play.archiveProviders {
+					extensions = map[string]struct{}{"archive": {}}
+				}
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+							Extensions:     extensions,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+				cacheListenAddress:    cacheListenAddress,
+			}
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
+
+			params, _ := json.Marshal([]string{"5NFtBbExnjk4TFXpfXhJidcCm5KYPk7QCY51nWiwyQNU"})
+			id, _ := json.Marshal(1)
+			reqBody := rpcclient.JsonrpcMessage{
+				Version: "2.0",
+				Method:  "block", // Query latest block
+				Params:  params,  // Use "final" to get the latest final block
+				ID:      id,
+			}
+
+			// Convert request to JSON
+			jsonData, err := json.Marshal(reqBody)
+			if err != nil {
+				log.Fatalf("Error marshalling request: %v", err)
+			}
+
+			client := http.Client{Timeout: 10000 * time.Millisecond}
+			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, bytes.NewBuffer(jsonData))
+			require.NoError(t, err)
+
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, play.statusCode, resp.StatusCode)
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			resp.Body.Close()
+			require.Equal(t, string(bodyBytes), play.expectedResult)
+			fmt.Println("timesCalledProviders", timesCalledProviders)
+
+			// attempt 2nd time, this time we should have only one retry
+			client = http.Client{Timeout: 10000 * time.Millisecond}
+			req, err = http.NewRequest(http.MethodPost, "http://"+cacheListenAddress, bytes.NewBuffer(jsonData))
+			require.NoError(t, err)
+
+			resp, err = client.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, play.statusCode, resp.StatusCode)
+
+			bodyBytes, err = io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			resp.Body.Close()
+			require.Equal(t, string(bodyBytes), play.expectedResult)
+			fmt.Println("timesCalledProviders", timesCalledProviders)
+		})
+	}
 }
