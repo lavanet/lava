@@ -135,12 +135,7 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 	if relayState == nil { // initial state
 		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{})
 	} else {
-		archiveStatus := &ArchiveStatus{}
-		archiveStatus.isArchive.Store(relayState.archiveStatus.isArchive.Load())
-		archiveStatus.isEarliestUsed.Store(relayState.archiveStatus.isEarliestUsed.Load())
-		archiveStatus.isHashCached.Store(relayState.archiveStatus.isHashCached.Load())
-		archiveStatus.isUpgraded.Store(relayState.archiveStatus.isUpgraded.Load())
-		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, archiveStatus)
+		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus.Copy())
 		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
 	}
 	crsm.appendRelayState(nextState)

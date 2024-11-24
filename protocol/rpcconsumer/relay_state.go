@@ -38,6 +38,15 @@ type ArchiveStatus struct {
 	isEarliestUsed atomic.Bool
 }
 
+func (as *ArchiveStatus) Copy() *ArchiveStatus {
+	archiveStatus := &ArchiveStatus{}
+	archiveStatus.isArchive.Store(as.isArchive.Load())
+	archiveStatus.isUpgraded.Store(as.isUpgraded.Load())
+	archiveStatus.isHashCached.Store(as.isHashCached.Load())
+	archiveStatus.isEarliestUsed.Store(as.isEarliestUsed.Load())
+	return archiveStatus
+}
+
 type RelayState struct {
 	archiveStatus   ArchiveStatus
 	stateNumber     int
