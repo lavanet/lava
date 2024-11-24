@@ -127,6 +127,8 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
 			)
 			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
