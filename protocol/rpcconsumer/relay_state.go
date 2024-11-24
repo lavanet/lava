@@ -57,8 +57,22 @@ type RelayState struct {
 	lock            sync.RWMutex
 }
 
+func GetEmptyRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage) *RelayState {
+	archiveStatus := &ArchiveStatus{}
+	archiveStatus.isEarliestUsed.Store(true)
+	return &RelayState{
+		ctx:             ctx,
+		protocolMessage: protocolMessage,
+		archiveStatus:   archiveStatus,
+	}
+}
+
 func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveStatus *ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
+	if archiveStatus == nil {
+		utils.LavaFormatError("misuse detected archiveStatus is nil", nil, utils.Attribute{Key: "protocolMessage.GetApi", Value: protocolMessage.GetApi()})
+		archiveStatus = &ArchiveStatus{}
+	}
 	rs := &RelayState{
 		ctx:             ctx,
 		protocolMessage: protocolMessage,
@@ -76,21 +90,21 @@ func (rs *RelayState) CheckIsArchive(relayRequestData *pairingtypes.RelayPrivate
 }
 
 func (rs *RelayState) GetIsEarliestUsed() bool {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return true
 	}
 	return rs.archiveStatus.isEarliestUsed.Load()
 }
 
 func (rs *RelayState) SetIsEarliestUsed() {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 	rs.archiveStatus.isEarliestUsed.Store(true)
 }
 
 func (rs *RelayState) SetIsArchive(isArchive bool) {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 	rs.archiveStatus.isArchive.Store(isArchive)
@@ -122,7 +136,7 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 }
 
 func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
-	if rs == nil || numberOfNodeErrors == 0 {
+	if rs == nil || rs.archiveStatus == nil || numberOfNodeErrors == 0 {
 		return
 	}
 	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()
