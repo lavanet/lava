@@ -96,6 +96,20 @@ func (rs *RelayState) GetIsEarliestUsed() bool {
 	return rs.archiveStatus.isEarliestUsed.Load()
 }
 
+func (rs *RelayState) GetIsArchive() bool {
+	if rs == nil {
+		return false
+	}
+	return rs.archiveStatus.isArchive.Load()
+}
+
+func (rs *RelayState) GetIsUpgraded() bool {
+	if rs == nil {
+		return false
+	}
+	return rs.archiveStatus.isUpgraded.Load()
+}
+
 func (rs *RelayState) SetIsEarliestUsed() {
 	if rs == nil || rs.archiveStatus == nil {
 		return

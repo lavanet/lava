@@ -500,18 +500,32 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock 
 	// 4. The requested block is not applicable meaning block parsing failed completely (reqBlock == spectypes.NOT_APPLICABLE)
 	if latestBlockHashRequested >= 0 &&
 		((reqBlock == spectypes.LATEST_BLOCK && protocolMessage.GetUsedDefaultValue()) ||
-			reqBlock >= 0 && reqBlock < latestBlockHashRequested ||
-			reqBlock == spectypes.NOT_APPLICABLE) {
+			reqBlock >= 0 && reqBlock < latestBlockHashRequested) {
 		reqBlock = latestBlockHashRequested
 	}
 	return reqBlock
 }
 
-func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool) ([]*pairingtypes.BlockHashToHeight, bool) {
+func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool, relayState *RelayState) ([]*pairingtypes.BlockHashToHeight, bool) {
 	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
 	// 1. The current extension is archive.
 	// 2. The user requested a single block hash.
-	// 3. The archive extension rule is set.
+	// 3. The archive extension rule is set
+
+	// Adding to cache only if we upgraded to archive, meaning normal relay didn't work and archive did.
+	// It is safe to assume in most cases this hash should be used with archive.
+	// And if it is not, it will only increase archive load but wont result in user errors.
+	// After the finalized cache duration it will be reset until next time.
+	if relayState == nil {
+		return blockHashesToHeights, finalized
+	}
+	if !relayState.GetIsUpgraded() {
+		if relayState.GetIsEarliestUsed() && relayState.GetIsArchive() && chainMessage.GetUsedDefaultValue() {
+			finalized = true
+		}
+		return blockHashesToHeights, finalized
+	}
+
 	isArchiveRelay := false
 	var rule *spectypes.Rule
 	for _, extension := range extensions {
@@ -900,7 +914,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
 						}
 						var finalized bool
-						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized)
+						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
 						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights))
 
 						new_ctx := context.Background()
@@ -1552,7 +1566,7 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 		}
 
 		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
-		if extensionAdded && relayState.CheckIsArchive(protocolMessage.RelayPrivateData()) {
+		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
 			relayState.SetIsArchive(true)
 		}
 		relayState.SetProtocolMessage(newProtocolMessage)
