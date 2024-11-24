@@ -17,6 +17,7 @@ import (
 	"time"
 
 	slices "github.com/lavanet/lava/v4/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v4/ecosystem/cache"
@@ -204,6 +205,7 @@ type rpcConsumerOptions struct {
 type rpcConsumerOut struct {
 	rpcConsumerServer        *rpcconsumer.RPCConsumerServer
 	mockConsumerStateTracker *mockConsumerStateTracker
+	cache                    *performance.Cache
 }
 
 func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpcConsumerOptions) rpcConsumerOut {
@@ -293,7 +295,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		require.True(t, consumerUp)
 	}
 
-	return rpcConsumerOut{rpcConsumerServer, consumerStateTracker}
+	return rpcConsumerOut{rpcConsumerServer, consumerStateTracker, cache}
 }
 
 type rpcProviderOptions struct {
@@ -1957,7 +1959,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 	}{
 		{
 			name:             "happy flow",
-			numOfProviders:   3,
+			numOfProviders:   5,
 			archiveProviders: 1,
 			expectedResult:   `{"jsonrpc":"2.0","id":1,"result":{"result":"success"}}`,
 			statusCode:       200,
@@ -1974,7 +1976,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			numProviders := play.numOfProviders
 			cacheListenAddress := addressGen.GetAddress()
 			createCacheServer(t, ctx, cacheListenAddress)
-
+			blockHash := "5NFtBbExnjk4TFXpfXhJidcCm5KYPk7QCY51nWiwyQNU"
 			consumerListenAddress := addressGen.GetAddress()
 
 			type providerData struct {
@@ -1986,20 +1988,79 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 				mockReliabilityManager *MockReliabilityManager
 			}
 			providers := []providerData{}
-			timesCalledProviders := 0
 			for i := 0; i < numProviders; i++ {
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
 			}
 			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+
+			allowArchiveRet := false
+			stageTwoCheckFirstTimeArchive := false
+			timesCalledProvidersOnSecondStage := 0
+
 			for i := 0; i < numProviders; i++ {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
+				handler := func(req []byte, header http.Header) (data []byte, status int) {
+					var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+					fmt.Println("regular handler got request", string(req))
+					err := json.Unmarshal(req, &jsonRpcMessage)
+					require.NoError(t, err)
+					if strings.Contains(string(req), blockHash) {
+						fmt.Println("hash request", string(req))
+						allowArchiveRet = true
+					}
+					if stageTwoCheckFirstTimeArchive {
+						timesCalledProvidersOnSecondStage++
+					}
+					id, _ := json.Marshal(1)
+					res := rpcclient.JsonrpcMessage{
+						Version: "2.0",
+						ID:      id,
+						Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
+					}
+					resBytes, _ := json.Marshal(res)
+					return resBytes, 299
+				}
 				addons := []string(nil)
-				if i+1 <= play.archiveProviders {
-					addons = []string{"archive"}
+				extensions := map[string]struct{}{}
+				if i >= numProviders-play.archiveProviders {
+					extensions = map[string]struct{}{"archive": {}}
+					addons = []string{"archive", ""}
+					handler = func(req []byte, header http.Header) (data []byte, status int) {
+						fmt.Println("archive handler got request", string(req))
+						var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+						err := json.Unmarshal(req, &jsonRpcMessage)
+						require.NoError(t, err)
+						if strings.Contains(string(req), blockHash) {
+							fmt.Println("hash request", string(req))
+						}
+						if stageTwoCheckFirstTimeArchive {
+							timesCalledProvidersOnSecondStage++
+						}
+						if allowArchiveRet {
+							id, _ := json.Marshal(1)
+							resultBody, _ := json.Marshal(map[string]string{"result": "success"})
+							res := rpcclient.JsonrpcMessage{
+								Version: "2.0",
+								ID:      id,
+								Result:  resultBody,
+							}
+							resBytes, _ := json.Marshal(res)
+							return resBytes, http.StatusOK
+						}
+						id, _ := json.Marshal(1)
+						res := rpcclient.JsonrpcMessage{
+							Version: "2.0",
+							ID:      id,
+							Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
+						}
+						resBytes, _ := json.Marshal(res)
+						return resBytes, 299
+					}
 				}
 
 				rpcProviderOptions := rpcProviderOptions{
@@ -2013,52 +2074,10 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
 				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
-
-				handler := func(req []byte, header http.Header) (data []byte, status int) {
-					var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
-					err := json.Unmarshal(req, &jsonRpcMessage)
-					require.NoError(t, err)
-					timesCalledProviders++
-					id, _ := json.Marshal(1)
-					resultBody, _ := json.Marshal(map[string]string{"result": "success"})
-					res := rpcclient.JsonrpcMessage{
-						Version: "2.0",
-						ID:      id,
-						Result:  resultBody,
-					}
-					resBytes, _ := json.Marshal(res)
-					return resBytes, http.StatusOK
-				}
-				// none archive providers return errors.
-				if i+1 > play.archiveProviders {
-
-					handler = func(req []byte, header http.Header) (data []byte, status int) {
-						var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
-						err := json.Unmarshal(req, &jsonRpcMessage)
-						require.NoError(t, err)
-						timesCalledProviders++
-						id, _ := json.Marshal(1)
-						res := rpcclient.JsonrpcMessage{
-							Version: "2.0",
-							ID:      id,
-							Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
-						}
-						resBytes, _ := json.Marshal(res)
-						return resBytes, 299
-					}
-				}
 				providers[i].replySetter.handler = handler
-			}
 
-			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-			for i := 0; i < numProviders; i++ {
-				extensions := map[string]struct{}{}
-				if i+1 <= play.archiveProviders {
-					extensions = map[string]struct{}{"archive": {}}
-				}
 				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
 					PublicLavaAddress: providers[i].account.Addr.String(),
-
 					Endpoints: []*lavasession.Endpoint{
 						{
 							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
@@ -2087,8 +2106,8 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			}
 			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-			params, _ := json.Marshal([]string{"5NFtBbExnjk4TFXpfXhJidcCm5KYPk7QCY51nWiwyQNU"})
+			// wait for consumer to bootstrap
+			params, _ := json.Marshal([]string{blockHash})
 			id, _ := json.Marshal(1)
 			reqBody := rpcclient.JsonrpcMessage{
 				Version: "2.0",
@@ -2103,7 +2122,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 				log.Fatalf("Error marshalling request: %v", err)
 			}
 
-			client := http.Client{Timeout: 10000 * time.Millisecond}
+			client := http.Client{Timeout: 100000000 * time.Millisecond}
 			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, bytes.NewBuffer(jsonData))
 			require.NoError(t, err)
 
@@ -2116,11 +2135,36 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 
 			resp.Body.Close()
 			require.Equal(t, string(bodyBytes), play.expectedResult)
-			fmt.Println("timesCalledProviders", timesCalledProviders)
+			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 
+			// Allow relay to hit cache.
+			for {
+				time.Sleep(1 * time.Second)
+				cacheCtx, cancel := context.WithTimeout(ctx, time.Second)
+				cacheReply, err := rpcConsumerOut.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
+					RequestHash:           []byte("test"),
+					RequestedBlock:        1005,
+					ChainId:               specId,
+					SeenBlock:             1005,
+					BlocksHashesToHeights: []*pairingtypes.BlockHashToHeight{{Hash: blockHash, Height: spectypes.NOT_APPLICABLE}},
+				}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				cancel()
+				if err != nil {
+					continue
+				}
+				if len(cacheReply.BlocksHashesToHeights) > 0 && cacheReply.BlocksHashesToHeights[0].Height != spectypes.NOT_APPLICABLE {
+					fmt.Println("cache has this entry", cacheReply.BlocksHashesToHeights)
+					break
+				} else {
+					fmt.Println("cache does not have this entry", cacheReply.BlocksHashesToHeights)
+				}
+			}
 			// attempt 2nd time, this time we should have only one retry
+			// set stageTwoCheckFirstTimeArchive to true
+			stageTwoCheckFirstTimeArchive = true
+			// create new client
 			client = http.Client{Timeout: 10000 * time.Millisecond}
-			req, err = http.NewRequest(http.MethodPost, "http://"+cacheListenAddress, bytes.NewBuffer(jsonData))
+			req, err = http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, bytes.NewBuffer(jsonData))
 			require.NoError(t, err)
 
 			resp, err = client.Do(req)
@@ -2132,7 +2176,8 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 
 			resp.Body.Close()
 			require.Equal(t, string(bodyBytes), play.expectedResult)
-			fmt.Println("timesCalledProviders", timesCalledProviders)
+			require.Equal(t, 1, timesCalledProvidersOnSecondStage) // must go directly to archive as we have it in cache.
+			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 		})
 	}
 }
