@@ -500,8 +500,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock 
 	// 4. The requested block is not applicable meaning block parsing failed completely (reqBlock == spectypes.NOT_APPLICABLE)
 	if latestBlockHashRequested >= 0 &&
 		((reqBlock == spectypes.LATEST_BLOCK && protocolMessage.GetUsedDefaultValue()) ||
-			reqBlock >= 0 && reqBlock < latestBlockHashRequested ||
-			reqBlock == spectypes.NOT_APPLICABLE) {
+			reqBlock >= 0 && reqBlock < latestBlockHashRequested) {
 		reqBlock = latestBlockHashRequested
 	}
 	return reqBlock
@@ -1552,7 +1551,7 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 		}
 
 		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
-		if extensionAdded && relayState.CheckIsArchive(protocolMessage.RelayPrivateData()) {
+		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
 			relayState.SetIsArchive(true)
 		}
 		relayState.SetProtocolMessage(newProtocolMessage)
