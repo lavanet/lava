@@ -136,11 +136,6 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 	}
 	if rawBlock == "" || err != nil {
 		if defaultValue != "" {
-			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
-				utils.LogAttr("params", rpcInput.GetParams()),
-				utils.LogAttr("failed_parsed_value", rawBlock),
-				utils.LogAttr("default_value", defaultValue),
-			)
 			parsedBlock, err = rpcInput.ParseBlock(defaultValue)
 			if err != nil {
 				utils.LavaFormatError("Failed parsing default value, setting to NOT_APPLICABLE", err,
@@ -150,6 +145,12 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 			} else {
 				parsedInput.UsedDefaultValue = true
 			}
+			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
+				utils.LogAttr("params", rpcInput.GetParams()),
+				utils.LogAttr("failed_parsed_value", rawBlock),
+				utils.LogAttr("default_value", defaultValue),
+				utils.LogAttr("parsedBlock", parsedBlock),
+			)
 		} else {
 			parsedBlock = spectypes.NOT_APPLICABLE
 		}
