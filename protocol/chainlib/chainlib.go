@@ -93,6 +93,7 @@ type ChainMessage interface {
 	GetRequestedBlocksHashes() []string
 	UpdateEarliestInMessage(incomingEarliest int64) bool
 	SetExtension(extension *spectypes.Extension)
+	GetUsedDefaultValue() bool
 
 	ChainMessageForSend
 }

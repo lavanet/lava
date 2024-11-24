@@ -282,6 +282,15 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 	return m.recorder
 }
 
+
+// GetUsedDefaultValue mocks base method.
+func (m *MockChainMessage) GetUsedDefaultValue() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsedDefaultValue")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // AppendHeader mocks base method.
 func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
 	m.ctrl.T.Helper()

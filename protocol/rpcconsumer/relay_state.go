@@ -3,6 +3,8 @@ package rpcconsumer
 import (
 	"context"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
@@ -30,9 +32,10 @@ type RelayParserInf interface {
 }
 
 type ArchiveStatus struct {
-	isArchive    bool
-	isUpgraded   bool
-	isHashCached bool
+	isArchive      atomic.Bool
+	isUpgraded     atomic.Bool
+	isHashCached   atomic.Bool
+	isEarliestUsed atomic.Bool
 }
 
 type RelayState struct {
@@ -42,15 +45,48 @@ type RelayState struct {
 	cache           RetryHashCacheInf
 	relayParser     RelayParserInf
 	ctx             context.Context
+	lock            sync.RWMutex
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo ArchiveStatus) *RelayState {
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo *ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
-	isArchive := false
-	if relayRequestData != nil && slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension) {
-		isArchive = true
+	rs := &RelayState{
+		ctx:             ctx,
+		protocolMessage: protocolMessage,
+		stateNumber:     stateNumber,
+		cache:           cache,
+		relayParser:     relayParser,
 	}
-	return &RelayState{ctx: ctx, protocolMessage: protocolMessage, stateNumber: stateNumber, cache: cache, relayParser: relayParser, archiveStatus: ArchiveStatus{isArchive: isArchive, isUpgraded: archiveInfo.isUpgraded, isHashCached: archiveInfo.isHashCached}}
+	rs.archiveStatus.isUpgraded.Store(archiveInfo.isUpgraded.Load())
+	rs.archiveStatus.isHashCached.Store(archiveInfo.isHashCached.Load())
+	rs.archiveStatus.isEarliestUsed.Store(archiveInfo.isEarliestUsed.Load())
+	rs.archiveStatus.isArchive.Store(rs.CheckIsArchive(relayRequestData))
+	return rs
+}
+
+func (rs *RelayState) CheckIsArchive(relayRequestData *pairingtypes.RelayPrivateData) bool {
+	return relayRequestData != nil && slices.Contains(relayRequestData.Extensions, extensionslib.ArchiveExtension)
+}
+
+func (rs *RelayState) GetIsEarliestUsed() bool {
+	if rs == nil {
+		return true
+	}
+	return rs.archiveStatus.isEarliestUsed.Load()
+}
+
+func (rs *RelayState) SetIsEarliestUsed() {
+	if rs == nil {
+		return
+	}
+	rs.archiveStatus.isEarliestUsed.Store(true)
+}
+
+func (rs *RelayState) SetIsArchive(isArchive bool) {
+	if rs == nil {
+		return
+	}
+	rs.archiveStatus.isArchive.Store(isArchive)
 }
 
 func (rs *RelayState) GetStateNumber() int {
@@ -61,13 +97,27 @@ func (rs *RelayState) GetStateNumber() int {
 }
 
 func (rs *RelayState) GetProtocolMessage() chainlib.ProtocolMessage {
+	if rs == nil {
+		return nil
+	}
+	rs.lock.RLock()
+	defer rs.lock.RUnlock()
 	return rs.protocolMessage
 }
 
-func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) bool {
-	hashes := rs.protocolMessage.GetRequestedBlocksHashes()
+func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessage) {
+	if rs == nil {
+		return
+	}
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+	rs.protocolMessage = protocolMessage
+}
+
+func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
+	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
-	if rs.archiveStatus.isUpgraded && numberOfNodeErrors >= 2 {
+	if rs.archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
 		// Validate the following.
 		// 1. That we have applied archive
 		// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
@@ -75,16 +125,15 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		// We know we have applied archive and failed.
 		// 1. We can remove the archive, return to the original protocol message,
 		// 2. Set all hashes as irrelevant for future queries.
-		if !rs.archiveStatus.isHashCached {
+		if !rs.archiveStatus.isHashCached.Load() {
 			for _, hash := range hashes {
 				rs.cache.AddHashToCache(hash)
 			}
-			rs.archiveStatus.isHashCached = true
+			rs.archiveStatus.isHashCached.Store(true)
 		}
-		// We do not want to send additional relays after archive attempt. return false.
-		return false
+		return
 	}
-	if !rs.archiveStatus.isArchive && len(hashes) > 0 && numberOfNodeErrors > 0 {
+	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 && numberOfNodeErrors > 0 {
 		// Launch archive only on the second retry attempt.
 		if numberOfRetriesLaunched == 1 {
 			// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
@@ -92,27 +141,28 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 			for _, hash := range hashes {
 				if !rs.cache.CheckHashInCache(hash) {
 					// If we didn't find the hash in the cache we can try archive relay.
-					relayRequestData := rs.protocolMessage.RelayPrivateData()
+					protocolMessage := rs.GetProtocolMessage()
+					relayRequestData := protocolMessage.RelayPrivateData()
 					// We need to set archive.
 					// Create a new relay private data containing the extension.
-					userData := rs.protocolMessage.GetUserData()
+					userData := protocolMessage.GetUserData()
 					// add all existing extensions including archive split by "," so the override will work
 					existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
 					metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
 					newProtocolMessage, err := rs.relayParser.ParseRelay(rs.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
 					if err != nil {
 						utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+					} else {
+						// Creating an archive protocol message, and set it to current protocol message
+						rs.SetProtocolMessage(newProtocolMessage)
+						// for future batches.
+						rs.archiveStatus.isUpgraded.Store(true)
+						rs.archiveStatus.isArchive.Store(true)
 					}
-					// Creating an archive protocol message, and set it to current protocol message
-					rs.protocolMessage = newProtocolMessage
-					// for future batches.
-					rs.archiveStatus.isUpgraded = true
-					rs.archiveStatus.isArchive = true
 					break
 				}
 			}
 			// We had node error, and we have a hash parsed.
 		}
 	}
-	return true
 }
