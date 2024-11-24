@@ -293,7 +293,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				require.False(t, task.IsDone())
 				require.True(t,
 					lavaslices.ContainsPredicate(
-						task.protocolMessage.GetExtensions(),
+						task.relayState.GetProtocolMessage().GetExtensions(),
 						func(predicate *spectypes.Extension) bool { return predicate.Name == "archive" }),
 				)
 				usedProviders.AddUsed(consumerSessionsMap, nil)

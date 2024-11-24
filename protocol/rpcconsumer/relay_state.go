@@ -115,6 +115,9 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 }
 
 func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
+	if rs == nil || numberOfNodeErrors == 0 {
+		return
+	}
 	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
 	if rs.archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
@@ -133,7 +136,7 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		}
 		return
 	}
-	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 && numberOfNodeErrors > 0 {
+	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 {
 		// Launch archive only on the second retry attempt.
 		if numberOfRetriesLaunched == 1 {
 			// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.

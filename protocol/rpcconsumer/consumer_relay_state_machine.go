@@ -129,7 +129,8 @@ func (crsm *ConsumerRelayStateMachine) getLatestState() *RelayState {
 	return crsm.relayState[len(crsm.relayState)-1]
 }
 
-func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState) *RelayState {
+func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, numberOfNodeErrors uint64) {
+	batchNumber := crsm.usedProviders.BatchNumber()
 	var nextState *RelayState
 	if relayState == nil { // initial state
 		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{})
@@ -140,9 +141,9 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState) *
 		archiveStatus.isHashCached.Store(relayState.archiveStatus.isHashCached.Load())
 		archiveStatus.isUpgraded.Store(relayState.archiveStatus.isUpgraded.Load())
 		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, archiveStatus)
+		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
 	}
 	crsm.appendRelayState(nextState)
-	return nextState
 }
 
 // Should retry implements the logic for when to send another relay.
@@ -152,10 +153,7 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 	batchNumber := crsm.usedProviders.BatchNumber()
 	shouldRetry := crsm.retryCondition(batchNumber)
 	if shouldRetry {
-		lastState := crsm.getLatestState()
-		nextState := crsm.stateTransition(lastState)
-		// Retry archive logic
-		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
+		crsm.stateTransition(crsm.getLatestState(), numberOfNodeErrors)
 	}
 	return shouldRetry
 }
@@ -235,7 +233,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 		}
 
 		// initialize relay state
-		crsm.stateTransition(nil)
+		crsm.stateTransition(nil, 0)
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
 			analytics:  crsm.analytics,
