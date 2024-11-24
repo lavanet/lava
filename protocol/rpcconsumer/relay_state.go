@@ -48,7 +48,7 @@ func (as *ArchiveStatus) Copy() *ArchiveStatus {
 }
 
 type RelayState struct {
-	archiveStatus   ArchiveStatus
+	archiveStatus   *ArchiveStatus
 	stateNumber     int
 	protocolMessage chainlib.ProtocolMessage
 	cache           RetryHashCacheInf
@@ -57,7 +57,7 @@ type RelayState struct {
 	lock            sync.RWMutex
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo *ArchiveStatus) *RelayState {
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveStatus *ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
 	rs := &RelayState{
 		ctx:             ctx,
@@ -65,10 +65,8 @@ func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage
 		stateNumber:     stateNumber,
 		cache:           cache,
 		relayParser:     relayParser,
+		archiveStatus:   archiveStatus,
 	}
-	rs.archiveStatus.isUpgraded.Store(archiveInfo.isUpgraded.Load())
-	rs.archiveStatus.isHashCached.Store(archiveInfo.isHashCached.Load())
-	rs.archiveStatus.isEarliestUsed.Store(archiveInfo.isEarliestUsed.Load())
 	rs.archiveStatus.isArchive.Store(rs.CheckIsArchive(relayRequestData))
 	return rs
 }
