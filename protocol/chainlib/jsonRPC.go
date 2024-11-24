@@ -158,6 +158,8 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
 				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
 

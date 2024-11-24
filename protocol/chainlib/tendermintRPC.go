@@ -184,6 +184,8 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
 				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
 

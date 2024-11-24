@@ -167,6 +167,8 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
 			)
 			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
