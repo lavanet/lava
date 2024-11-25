@@ -1,0 +1,29 @@
+{
+    "proposal": {
+        "title": "Add Specs: Full Cosmos SDK",
+        "description": "Adding full Cosmos SDK specification",
+        "specs": [
+            {
+                "index": "COSMOSSDKFULL",
+                "name": "full cosmos sdk",
+                "enabled": false,
+                "imports": [
+                    "COSMOSSDK",
+                    "COSMOSWASM"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
+                }
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}
