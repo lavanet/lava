@@ -70,7 +70,7 @@ lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) --enable-auto-
 # lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # MANTLE
-CHAINS="ETH1,SEP1,HOL1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSMOSHUB,POLYGON1,EVMOS,OPTM,BASES,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR,SQDSUBGRAPH,AGR,AGRT,KOIIT,AVAXT,CELESTIATM"
+CHAINS="POLYGON"
 BASE_CHAINS="ETH1,LAV1"
 # stake providers on all chains
 echo; echo "#### Staking provider 1 ####"
