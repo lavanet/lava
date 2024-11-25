@@ -80,9 +80,10 @@ func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon s
 	)
 }
 
-func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
-	routerKey := lavasession.NewRouterKey(extensions).String()
-	_, ok := cri.chainProxyRouter[routerKey]
+func (cri chainRouterImpl) ExtensionsSupported(internalPath string, extensions []string) bool {
+	routerKey := lavasession.NewRouterKey(extensions)
+	routerKey.ApplyInternalPath(internalPath)
+	_, ok := cri.chainProxyRouter[routerKey.String()]
 	return ok
 }
 
@@ -195,9 +196,7 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 		}
 	}
 
-	// check if batch has http configured, if not, add a websocket one
-	// prefer one without internal path
-	if !httpRootRouteSet {
+	if !httpRootRouteSet && chainParser.IsInternalPathEnabled("", rpcProviderEndpoint.ApiInterface, "") {
 		return nil, utils.LavaFormatError("HTTP/HTTPS is mandatory. It is recommended to configure both HTTP/HTTP and WS/WSS.", nil, utils.LogAttr("nodeUrls", rpcProviderEndpoint.NodeUrls))
 	}
 
