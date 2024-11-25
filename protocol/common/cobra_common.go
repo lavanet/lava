@@ -31,9 +31,24 @@ const (
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
-	DisableRetryOnNodeErrorsFlag = "disable-retry-on-node-error"
-	UseOfflineSpecFlag           = "use-offline-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-	SkipPolicyVerificationFlag   = "skip-policy-verification"
+	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
+	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+
+	// optimizer flags
+	SetProviderOptimizerBestTierPickChance    = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance   = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
+
+	// optimizer qos server flags
+	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
+	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
+	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
+	// websocket flags
+	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
+	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
+	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	DisableRetryOnNodeErrorsFlag                 = "disable-retry-on-node-error"
+	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 )
 
 const (
