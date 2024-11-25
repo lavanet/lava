@@ -112,39 +112,48 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 		nodeUrl.InternalPath = internalPath // add internal path to the nodeUrl
 		nodeUrl.Url = baseUrl + internalPath
 		routerKey.ApplyInternalPath(internalPath)
-		if isWs {
-			addons, _, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
-			if err != nil {
-				return err
-			}
 
-			lookForSubscriptionTag := func() bool {
-				for _, connectionType := range []string{"POST", ""} {
-					if len(addons) == 0 {
-						addons = append(addons, "")
-					}
-
-					for _, addon := range addons {
-						// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
-						collectionKey := CollectionKey{
-							InternalPath:   internalPath,
-							Addon:          addon,
-							ConnectionType: connectionType,
-						}
-
-						if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
-							return true
-						}
-					}
-				}
-				return false
-			}
-
-			if !lookForSubscriptionTag() {
-				continue
-			}
+		addons, _, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
+		if err != nil {
+			return err
 		}
 
+		lookForSubscriptionTag := func() bool {
+			for _, connectionType := range []string{"POST", ""} {
+				if len(addons) == 0 {
+					addons = append(addons, "")
+				}
+
+				for _, addon := range addons {
+					// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
+					collectionKey := CollectionKey{
+						InternalPath:   internalPath,
+						Addon:          addon,
+						ConnectionType: connectionType,
+					}
+
+					if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+						return true
+					}
+				}
+			}
+			return false
+		}
+
+		subscriptionTagFound := lookForSubscriptionTag()
+		if isWs && !subscriptionTagFound {
+			// this is ws, don't auto generate http paths
+			continue
+		} else if !isWs && subscriptionTagFound {
+			// this is http, don't auto generate ws paths
+			continue
+		}
+
+		utils.LavaFormatDebug("auto generated internal path",
+			utils.LogAttr("nodeUrl", nodeUrl.Url),
+			utils.LogAttr("internalPath", internalPath),
+			utils.LogAttr("routerKey", routerKey.String()),
+		)
 		cri.setRouterKeyInBatch(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint, false) // will not override existing entries
 	}
 
