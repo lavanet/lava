@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Axelar",
-        "description": "Adding new specification support for relaying axelar data on Lava",
+        "description": "Adding new specification support for relaying axelar data on Lava ",
         "specs": [
             {
                 "index": "AXELAR",
