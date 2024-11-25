@@ -282,6 +282,15 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 	return m.recorder
 }
 
+
+// GetUsedDefaultValue mocks base method.
+func (m *MockChainMessage) GetUsedDefaultValue() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsedDefaultValue")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // AppendHeader mocks base method.
 func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
 	m.ctrl.T.Helper()
@@ -432,6 +441,20 @@ func (mr *MockChainMessageMockRecorder) GetRawRequestHash() *gomock.Call {
 func (m *MockChainMessage) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "OverrideExtensions", extensionNames, extensionParser)
+}
+
+// OverrideExtensions mocks base method.
+func (m *MockChainMessage) SetExtension(extension *types0.Extension) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetExtension", extension)
+}
+
+// OverrideExtensions mocks base method.
+func (m *MockChainMessage) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEarliestInMessage", incomingEarliest)
+	ret0, _ := ret[0].(bool)
+	return ret0
 }
 
 // OverrideExtensions indicates an expected call of OverrideExtensions.
