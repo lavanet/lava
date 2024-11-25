@@ -1485,6 +1485,12 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.REQUESTED_BLOCK_HEADER_NAME,
+				Value: strconv.FormatInt(protocolMessage.RelayPrivateData().GetRequestBlock(), 10),
+			})
+
 		routerKey := lavasession.NewRouterKeyFromExtensions(protocolMessage.GetExtensions())
 		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders(routerKey)
 		if len(erroredProviders) > 0 {
