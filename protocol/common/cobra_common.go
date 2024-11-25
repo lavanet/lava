@@ -47,7 +47,6 @@ const (
 	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
-	DisableRetryOnNodeErrorsFlag                 = "disable-retry-on-node-error"
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 )
 
