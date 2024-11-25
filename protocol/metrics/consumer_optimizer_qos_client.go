@@ -30,6 +30,7 @@ type ConsumerOptimizerQoSClient struct {
 	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
 	currentEpoch                       atomic.Uint64
 	lock                               sync.RWMutex
+	reportsToSend                      []OptimizerQoSReportToSend
 }
 
 type OptimizerQoSReport struct {
@@ -41,7 +42,7 @@ type OptimizerQoSReport struct {
 	EntryIndex        int
 }
 
-type optimizerQoSReportToSend struct {
+type OptimizerQoSReportToSend struct {
 	Timestamp         time.Time `json:"timestamp"`
 	SyncScore         float64   `json:"sync_score"`
 	AvailabilityScore float64   `json:"availability_score"`
@@ -56,7 +57,7 @@ type optimizerQoSReportToSend struct {
 	EntryIndex        int       `json:"entry_index"`
 }
 
-func (oqosr optimizerQoSReportToSend) String() string {
+func (oqosr OptimizerQoSReportToSend) String() string {
 	bytes, err := json.Marshal(oqosr)
 	if err != nil {
 		return ""
@@ -74,7 +75,6 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
-
 	return &ConsumerOptimizerQoSClient{
 		consumerOrigin:                     hostname,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
@@ -126,10 +126,9 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(chainId, provider
 	return 0
 }
 
-func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) {
+func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) OptimizerQoSReportToSend {
 	// must be called under read lock
-
-	optimizerQoSReportToSend := optimizerQoSReportToSend{
+	optimizerQoSReportToSend := OptimizerQoSReportToSend{
 		Timestamp:         time.Now(),
 		ConsumerOrigin:    coqc.consumerOrigin,
 		SyncScore:         report.SyncScore,
@@ -145,9 +144,10 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
+	return optimizerQoSReportToSend
 }
 
-func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
+func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() []OptimizerQoSReportToSend {
 	coqc.lock.RLock() // we only read from the maps here
 	defer coqc.lock.RUnlock()
 
@@ -156,7 +156,7 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 	requestedBlock := spectypes.LATEST_BLOCK
 
 	currentEpoch := coqc.currentEpoch.Load()
-
+	reportsToSend := []OptimizerQoSReportToSend{}
 	for chainId, optimizer := range coqc.optimizers {
 		providersMap, ok := coqc.chainIdToProviderToEpochToStake[chainId]
 		if !ok {
@@ -165,9 +165,22 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 
 		reports := optimizer.CalculateQoSScoresForMetrics(maps.Keys(providersMap), ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
-			coqc.appendOptimizerQoSReport(report, chainId, currentEpoch)
+			reportsToSend = append(reportsToSend, coqc.appendOptimizerQoSReport(report, chainId, currentEpoch))
 		}
 	}
+	return reportsToSend
+}
+
+func (coqc *ConsumerOptimizerQoSClient) SetReportsToSend(reports []OptimizerQoSReportToSend) {
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+	coqc.reportsToSend = reports
+}
+
+func (coqc *ConsumerOptimizerQoSClient) GetReportsToSend() []OptimizerQoSReportToSend {
+	coqc.lock.RLock()
+	defer coqc.lock.RUnlock()
+	return coqc.reportsToSend
 }
 
 func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx context.Context, samplingInterval time.Duration) {
@@ -183,7 +196,7 @@ func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx 
 				utils.LavaFormatTrace("ConsumerOptimizerQoSClient context done")
 				return
 			case <-time.After(samplingInterval):
-				coqc.getReportsFromOptimizers()
+				coqc.SetReportsToSend(coqc.getReportsFromOptimizers())
 			}
 		}
 	}()

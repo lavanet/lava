@@ -119,14 +119,14 @@ enum FUNCTION_TAG {
 }
 
 enum PARSER_TYPE {
-  NO_PARSER = 0;
-  BLOCK_LATEST = 1;
-  BLOCK_EARLIEST = 2;
-  RESULT = 3;
-  EXTENSION_ARG = 4;
-  IDENTIFIER = 5;
-  DEFAULT_VALUE = 6;
-  BLOCK_HASH = 7;
+  NO_PARSER = 0; // parsing is disabled
+  BLOCK_LATEST = 1; // parse the latest block
+  BLOCK_EARLIEST = 2; // parse the earliest block
+  RESULT = 3; // parse the result of the rpc call
+  EXTENSION_ARG = 4; // parse the extension argument (e.g. should we turn on an extension or not, based on the parsed value)
+  IDENTIFIER = 5; // parse the id of the rpc message
+  DEFAULT_VALUE = 6; // set the default value for the parsed result (currently used for block, after all other generic parsers failed)
+  BLOCK_HASH = 7; // parse the block hash
 }
 
 enum PARSER_FUNC{
