@@ -86,7 +86,8 @@ func NewRelayProcessor(
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
 	}
-	relayProcessor.RelayStateMachine.SetRelayProcessor(relayProcessor)
+	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
+	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
 	return relayProcessor
 }
 
@@ -120,7 +121,7 @@ func (rp *RelayProcessor) String() string {
 	usedProviders := rp.GetUsedProviders()
 
 	currentlyUsedAddresses := usedProviders.CurrentlyUsedAddresses()
-	unwantedAddresses := usedProviders.UnwantedAddresses()
+	unwantedAddresses := usedProviders.AllUnwantedAddresses()
 	return fmt.Sprintf("relayProcessor {%s, unwantedAddresses: %s,currentlyUsedAddresses:%s}",
 		rp.ResultsManager.String(), strings.Join(unwantedAddresses, ";"), strings.Join(currentlyUsedAddresses, ";"))
 }
@@ -192,11 +193,11 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 			// Check hash already exist, if it does, we don't want to retry
 			if !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
-				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", utils.ToHexString(hash)))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
 				return false
 			}
-			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
+			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", utils.ToHexString(hash)))
 		} else {
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
@@ -205,7 +206,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 				utils.LogAttr("params", rp.RelayStateMachine.GetProtocolMessage().GetRPCMessage().GetParams()),
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("apiInterface", apiInterface),
-				utils.LogAttr("hash", hash),
+				utils.LogAttr("hash", utils.ToHexString(hash)),
 			)
 			rp.relayRetriesManager.AddHashToCache(hash)
 		}
@@ -214,9 +215,9 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	return true
 }
 
-func (rp *RelayProcessor) HasRequiredNodeResults() bool {
+func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	if rp == nil {
-		return false
+		return false, 0
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
@@ -236,17 +237,17 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
 			}
 		}
-		return true
+		return true, nodeErrors
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
-			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash)
+			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
-	return false
+	return false, nodeErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *relayResponse) {
@@ -370,7 +371,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	// this must be here before the lock because this function locks
-	allProvidersAddresses := rp.GetUsedProviders().UnwantedAddresses()
+	allProvidersAddresses := rp.GetUsedProviders().AllUnwantedAddresses()
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()

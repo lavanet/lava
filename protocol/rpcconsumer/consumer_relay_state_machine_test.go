@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
 	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -18,10 +18,6 @@ import (
 type ConsumerRelaySenderMock struct {
 	retValue    error
 	tickerValue time.Duration
-}
-
-func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error) {
-	return crsm.retValue
 }
 
 func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
@@ -33,6 +29,18 @@ func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.
 
 func (crsm *ConsumerRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
 	return "testUno", "testDos"
+}
+
+func (crsm *ConsumerRelaySenderMock) ParseRelay(
+	ctx context.Context,
+	url string,
+	req string,
+	connectionType string,
+	dappID string,
+	consumerIp string,
+	metadata []pairingtypes.Metadata,
+) (protocolMessage chainlib.ProtocolMessage, err error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
@@ -66,7 +74,8 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 
-		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {
@@ -92,7 +101,8 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				require.True(t, relayProcessor.HasRequiredNodeResults())
+				results, _ := relayProcessor.HasRequiredNodeResults()
+				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
 				require.Equal(t, string(returnedResult.Reply.Data), "ok")
@@ -134,7 +144,8 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 
-		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {

@@ -63,9 +63,11 @@ type ChainParser interface {
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
+	IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool
+	GetAllInternalPaths() []string
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
-	GetVerifications(supported []string) ([]VerificationContainer, error)
+	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
 	SetPolicy(policy PolicyInf, chainId string, apiInterface string) error
 	Active() bool
@@ -88,6 +90,10 @@ type ChainMessage interface {
 	SetForceCacheRefresh(force bool) bool
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 	GetRawRequestHash() ([]byte, error)
+	GetRequestedBlocksHashes() []string
+	UpdateEarliestInMessage(incomingEarliest int64) bool
+	SetExtension(extension *spectypes.Extension)
+	GetUsedDefaultValue() bool
 
 	ChainMessageForSend
 }
@@ -123,7 +129,6 @@ type RelaySender interface {
 		connectionType string,
 		dappID string,
 		consumerIp string,
-		analytics *metrics.RelayMetrics,
 		metadata []pairingtypes.Metadata,
 	) (ProtocolMessage, error)
 	SendParsedRelay(
