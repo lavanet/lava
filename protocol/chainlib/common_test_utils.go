@@ -17,7 +17,7 @@ import (
 	"github.com/lavanet/lava/v4/utils/sigs"
 
 	"github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -51,11 +51,11 @@ func (mrw mockResponseWriter) WriteHeader(statusCode int) {
 }
 
 type myServiceImplementation struct {
-	*tmservice.UnimplementedServiceServer
+	*cmtservice.UnimplementedServiceServer
 	serverCallback http.HandlerFunc
 }
 
-func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
+func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *cmtservice.GetLatestBlockRequest) (*cmtservice.GetLatestBlockResponse, error) {
 	metadata, exists := metadata.FromIncomingContext(ctx)
 	req := &http.Request{}
 	if exists {
@@ -70,7 +70,7 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 	num := 5
 	respWriter := mockResponseWriter{blockToReturn: &num}
 	bbb.serverCallback(respWriter, req)
-	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
+	return &cmtservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
 }
 
 func generateCombinations(arr []string) [][]string {
@@ -175,7 +175,7 @@ func CreateChainLibMocks(
 		}
 		go func() {
 			service := myServiceImplementation{serverCallback: httpServerCallback}
-			tmservice.RegisterServiceServer(grpcServer, service)
+			cmtservice.RegisterServiceServer(grpcServer, service)
 			gogoreflection.Register(grpcServer)
 			// Serve requests on the buffered connection
 			if err := grpcServer.Serve(lis); err != nil {

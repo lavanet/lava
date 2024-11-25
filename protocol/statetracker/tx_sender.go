@@ -12,12 +12,12 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"cosmossdk.io/x/feegrant"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"

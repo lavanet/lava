@@ -7,7 +7,7 @@ import (
 	"unicode"
 
 	"cosmossdk.io/collections"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/epochstorage/types"

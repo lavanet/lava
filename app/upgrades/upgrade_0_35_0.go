@@ -1,11 +1,11 @@
 package upgrades
 
 import (
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/cosmos/gogoproto/proto"
-	ibctypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibctypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/lavanet/lava/v4/app/keepers"
 	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"

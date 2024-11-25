@@ -2,7 +2,7 @@ package types
 
 import (
 	"cosmossdk.io/math"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	v1 "github.com/lavanet/lava/v4/x/downtime/v1"

@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/cachekv"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/pairing/types"

@@ -3,7 +3,7 @@ package keeper
 import (
 	_ "embed"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"

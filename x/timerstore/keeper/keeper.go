@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )

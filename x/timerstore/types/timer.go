@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 )
