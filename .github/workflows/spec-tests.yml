@@ -22,7 +22,7 @@ jobs:
       - name: Checkout Lava Repository
         uses: actions/checkout@v3
         with:
-          repository: lavanet/lava  # Replace with the correct repository
+          repository: lavanet/lava 
           path: lava
           
       - name: Set up Go
