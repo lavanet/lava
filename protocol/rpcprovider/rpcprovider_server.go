@@ -328,7 +328,13 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	}
 	// we only need the chainMessage for a static provider
 	if rpcps.StaticProvider {
-		return nil, nil, chainMessage, nil
+		// extract consumer address from signature
+		extractedConsumerAddress, err := rpcps.ExtractConsumerAddress(ctx, request.RelaySession)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		return nil, extractedConsumerAddress, chainMessage, nil
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
@@ -601,7 +607,7 @@ func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, rela
 	} else {
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(relaySession)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, utils.LavaFormatWarning("failed to extract signer address from relay session", err, utils.LogAttr("GUID", ctx))
 		}
 	}
 	return extractedConsumerAddress, nil

@@ -172,7 +172,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())

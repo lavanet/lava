@@ -136,18 +136,21 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 	}
 	if rawBlock == "" || err != nil {
 		if defaultValue != "" {
-			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
-				utils.LogAttr("params", rpcInput.GetParams()),
-				utils.LogAttr("failed_parsed_value", rawBlock),
-				utils.LogAttr("default_value", defaultValue),
-			)
 			parsedBlock, err = rpcInput.ParseBlock(defaultValue)
 			if err != nil {
 				utils.LavaFormatError("Failed parsing default value, setting to NOT_APPLICABLE", err,
 					utils.LogAttr("default_value", defaultValue),
 				)
 				parsedBlock = spectypes.NOT_APPLICABLE
+			} else {
+				parsedInput.UsedDefaultValue = true
 			}
+			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
+				utils.LogAttr("params", rpcInput.GetParams()),
+				utils.LogAttr("failed_parsed_value", rawBlock),
+				utils.LogAttr("default_value", defaultValue),
+				utils.LogAttr("parsedBlock", parsedBlock),
+			)
 		} else {
 			parsedBlock = spectypes.NOT_APPLICABLE
 		}
@@ -155,10 +158,10 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 	parsedInput.SetBlock(parsedBlock)
 }
 
-func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, error) {
-	result, err := legacyParse(rpcInput, blockParser, source)
+func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, bool, error) {
+	result, usedDefaultValue, err := legacyParse(rpcInput, blockParser, source)
 	if err != nil || result == nil {
-		return "", utils.LavaFormatDebug("blockParsing - parse failed",
+		return "", usedDefaultValue, utils.LavaFormatDebug("blockParsing - parse failed",
 			utils.LogAttr("error", err),
 			utils.LogAttr("result", result),
 			utils.LogAttr("blockParser", blockParser),
@@ -168,10 +171,10 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 
 	resString, ok := result[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
 	if !ok {
-		return "", utils.LavaFormatDebug("blockParsing - result[0].(string) - type assertion failed", utils.LogAttr("result[0]", result[0]))
+		return "", usedDefaultValue, utils.LavaFormatDebug("blockParsing - result[0].(string) - type assertion failed", utils.LogAttr("result[0]", result[0]))
 	}
 
-	return resString, nil
+	return resString, usedDefaultValue, nil
 }
 
 // parseBlock processes the given RPC input using either generic parsers or a legacy block parser.
@@ -199,7 +202,10 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 		}
 	}
 
-	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
+	parsedRawBlock, usedDefaultValue, err := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
+	if err == nil {
+		parsedBlockInfo.UsedDefaultValue = usedDefaultValue
+	}
 	parsedBlockInfo.parsedDataRaw = unquoteString(parsedRawBlock)
 	return parsedBlockInfo
 }
@@ -232,7 +238,7 @@ func unquoteString(str string) string {
 func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) (string, error) {
 	parsedInput, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedInput == nil {
-		parsedBlockHashFromBlockParser, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT)
+		parsedBlockHashFromBlockParser, _, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT)
 		if err != nil {
 			return "", err
 		}
@@ -251,13 +257,13 @@ func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.
 	return parseResponseByEncoding([]byte(parsedBlockHashes[0]), resultParser.Encoding)
 }
 
-func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
+func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, bool, error) {
 	var retval []interface{}
 	var err error
-
+	var usedDefaultValue bool
 	switch blockParser.ParserFunc {
 	case spectypes.PARSER_FUNC_EMPTY:
-		return nil, nil
+		return nil, usedDefaultValue, nil
 	case spectypes.PARSER_FUNC_PARSE_BY_ARG:
 		retval, err = parseByArg(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_PARSE_CANONICAL:
@@ -268,26 +274,29 @@ func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSourc
 		retval, err = parseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
 		retval = parseDefault(blockParser.ParserArg)
+		usedDefaultValue = true
 	default:
-		return nil, fmt.Errorf("unsupported block parser parserFunc")
+		return nil, usedDefaultValue, fmt.Errorf("unsupported block parser parserFunc")
 	}
 
 	if err != nil {
 		if ValueNotSetError.Is(err) && blockParser.DefaultValue != "" {
 			// means this parsing failed because the value did not exist on an optional param
 			retval = appendInterfaceToInterfaceArray(blockParser.DefaultValue)
+			usedDefaultValue = true
 		} else {
-			return nil, err
+			return nil, usedDefaultValue, err
 		}
 	}
 
-	return retval, nil
+	return retval, usedDefaultValue, nil
 }
 
 type ParsedInput struct {
-	parsedDataRaw string
-	parsedBlock   int64
-	parsedHashes  []string
+	parsedDataRaw    string
+	parsedBlock      int64
+	parsedHashes     []string
+	UsedDefaultValue bool
 }
 
 const RAW_NOT_APPLICABLE = "-1"
@@ -409,6 +418,7 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
 		parsed := NewParsedInput()
 		parsed.parsedDataRaw = genericParser.Value
+
 		return parsed, nil
 	// Case Block Latest, setting the value set by the user given a json path hit.
 	// Example: block_id: 100, will result in requested block 100.
