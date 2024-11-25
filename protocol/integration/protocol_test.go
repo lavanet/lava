@@ -2042,9 +2042,6 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 						if stageTwoCheckFirstTimeArchive {
 							timesCalledProvidersOnSecondStage++
 						}
-						if strings.Contains(string(req), blockHash) {
-							fmt.Println(allowArchiveRet.Load(), "hash request", string(req))
-						}
 						if allowArchiveRet.Load() == true {
 							id, _ := json.Marshal(1)
 							resultBody, _ := json.Marshal(map[string]string{"result": "success"})
@@ -2065,6 +2062,10 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 						}
 						resBytes, _ := json.Marshal(res)
 						fmt.Println("returning 299", string(resBytes))
+						if strings.Contains(string(req), blockHash) {
+							allowArchiveRet.Store(true)
+							fmt.Println(allowArchiveRet.Load(), "hash request", string(req))
+						}
 						return resBytes, 299
 					}
 				}
