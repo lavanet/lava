@@ -14,12 +14,12 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 200,
+                "average_block_time": 2000,
+                "allowed_block_lag_for_qos_sync": 8,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -170,11 +170,11 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 200,
+                "average_block_time": 2000,
+                "allowed_block_lag_for_qos_sync": 8,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
