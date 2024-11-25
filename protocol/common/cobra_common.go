@@ -41,6 +41,7 @@ const (
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
+	OptimizerQosListenFlag                 = "optimizer-qos-listen"            // enable listening for qos reports on metrics endpoint
 	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
 	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
 	// websocket flags
