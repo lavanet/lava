@@ -1,9 +1,6 @@
 name: Spec Tests
 
 on:
-  push:
-    paths:
-      - 'mainnet-1/specs/*.json'  
   pull_request:
     paths:
       - 'mainnet-1/specs/*.json'  
