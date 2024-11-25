@@ -118,7 +118,7 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 			return err
 		}
 
-		lookForSubscriptionTag := func() bool {
+		subscriptionTagFound := func() bool {
 			for _, connectionType := range []string{"POST", ""} {
 				if len(addons) == 0 {
 					addons = append(addons, "")
@@ -138,9 +138,8 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 				}
 			}
 			return false
-		}
+		}()
 
-		subscriptionTagFound := lookForSubscriptionTag()
 		if isWs && !subscriptionTagFound {
 			// this is ws, don't auto generate http paths
 			continue
@@ -336,6 +335,8 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			return nil, err
 		}
 	}
+
+	utils.LavaFormatDebug("router keys", utils.LogAttr("chainProxyRouter", chainProxyRouter))
 
 	// make sure all chainProxyRouter entries have one without a method routing
 	for routerKey, chainRouterEntries := range chainProxyRouter {
