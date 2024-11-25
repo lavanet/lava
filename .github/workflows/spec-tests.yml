@@ -14,12 +14,19 @@ jobs:
       - name: Checkout Current Repository
         uses: actions/checkout@v4
 
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          echo "tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_OUTPUT
+
       - name: Checkout Lava Repository
         uses: actions/checkout@v4
         with:
-          repository: lavanet/lava 
+          repository: lavanet/lava
           path: lava
-          
+          fetch-depth: 0
+          ref: ${{ steps.latest_tag.outputs.tag }}
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
