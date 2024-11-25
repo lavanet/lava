@@ -34,15 +34,14 @@ import (
 // and updates the (epochstorage) stake-entry.
 func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error {
 	// get, update the delegation entry
-	delegation, err := k.delegations.Get(ctx, types.DelegationKey(provider, delegator))
-	if err != nil {
+	delegation, found := k.GetDelegation(ctx, provider, delegator)
+	if !found {
 		// new delegation (i.e. not increase of existing one)
 		delegation = types.NewDelegation(delegator, provider, ctx.BlockTime(), k.stakingKeeper.BondDenom(ctx))
 	}
 
 	delegation.AddAmount(amount)
-
-	err = k.delegations.Set(ctx, types.DelegationKey(provider, delegator), delegation)
+	err := k.SetDelegation(ctx, delegation)
 	if err != nil {
 		return err
 	}
@@ -365,6 +364,9 @@ func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
 }
 
 func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
+	credit, creditTimestamp := k.CalculateCredit(ctx, delegation)
+	delegation.Credit = credit
+	delegation.CreditTimestamp = creditTimestamp
 	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
 }
 
