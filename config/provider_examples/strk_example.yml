@@ -5,9 +5,11 @@ endpoints:
       address: "127.0.0.1:2220"
     node-urls:
       - url: <wss url here>/ws
-        internal-path: ""
+        internal-path: "/ws"
       - url: <wss url here>/ws/rpc/v0_6
-        internal-path: "/rpc/v0_6"
+        internal-path: "/ws/rpc/v0_6"
+      - url: <wss url here>/ws/rpc/v0_7
+        internal-path: "/ws/rpc/v0_7"
 
       - url: <https url here>
         internal-path: ""
@@ -15,3 +17,5 @@ endpoints:
         internal-path: "/rpc/v0_5"
       - url: <https url here>/rpc/v0_6
         internal-path: "/rpc/v0_6"
+      - url: <https url here>/rpc/v0_7
+        internal-path: "/rpc/v0_7"
