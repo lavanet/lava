@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -48,9 +49,10 @@ import (
 )
 
 var (
-	seed       int64
-	randomizer *sigs.ZeroReader
-	addressGen uniqueAddressGenerator
+	seed                                    int64
+	randomizer                              *sigs.ZeroReader
+	addressGen                              uniqueAddressGenerator
+	numberOfRetriesOnNodeErrorsProviderSide int = 2
 )
 
 func TestMain(m *testing.M) {
@@ -400,7 +402,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, numberOfRetriesOnNodeErrorsProviderSide)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -1959,7 +1961,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 	}{
 		{
 			name:             "happy flow",
-			numOfProviders:   5,
+			numOfProviders:   2,
 			archiveProviders: 1,
 			expectedResult:   `{"jsonrpc":"2.0","id":1,"result":{"result":"success"}}`,
 			statusCode:       200,
@@ -1971,6 +1973,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			// can be any spec and api interface
 			specId := "NEAR"
 			apiInterface := spectypes.APIInterfaceJsonRPC
+			numberOfRetriesOnNodeErrorsProviderSide = 0
 			epoch := uint64(100)
 			lavaChainID := "lava"
 			numProviders := play.numOfProviders
@@ -1996,7 +1999,8 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
 			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 
-			allowArchiveRet := false
+			allowArchiveRet := atomic.Bool{}
+			allowArchiveRet.Store(false)
 			stageTwoCheckFirstTimeArchive := false
 			timesCalledProvidersOnSecondStage := 0
 
@@ -2010,8 +2014,8 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 					err := json.Unmarshal(req, &jsonRpcMessage)
 					require.NoError(t, err)
 					if strings.Contains(string(req), blockHash) {
-						fmt.Println("hash request", string(req))
-						allowArchiveRet = true
+						fmt.Println("hash request, allowing valid archive retry", string(req))
+						allowArchiveRet.Store(true)
 					}
 					if stageTwoCheckFirstTimeArchive {
 						timesCalledProvidersOnSecondStage++
@@ -2035,13 +2039,13 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 						var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
 						err := json.Unmarshal(req, &jsonRpcMessage)
 						require.NoError(t, err)
-						if strings.Contains(string(req), blockHash) {
-							fmt.Println("hash request", string(req))
-						}
 						if stageTwoCheckFirstTimeArchive {
 							timesCalledProvidersOnSecondStage++
 						}
-						if allowArchiveRet {
+						if strings.Contains(string(req), blockHash) {
+							fmt.Println(allowArchiveRet.Load(), "hash request", string(req))
+						}
+						if allowArchiveRet.Load() == true {
 							id, _ := json.Marshal(1)
 							resultBody, _ := json.Marshal(map[string]string{"result": "success"})
 							res := rpcclient.JsonrpcMessage{
@@ -2050,6 +2054,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 								Result:  resultBody,
 							}
 							resBytes, _ := json.Marshal(res)
+							fmt.Println("returning success", string(resBytes))
 							return resBytes, http.StatusOK
 						}
 						id, _ := json.Marshal(1)
@@ -2059,6 +2064,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 							Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
 						}
 						resBytes, _ := json.Marshal(res)
+						fmt.Println("returning 299", string(resBytes))
 						return resBytes, 299
 					}
 				}
@@ -2139,7 +2145,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 
 			// Allow relay to hit cache.
 			for {
-				time.Sleep(1 * time.Second)
+				time.Sleep(time.Millisecond)
 				cacheCtx, cancel := context.WithTimeout(ctx, time.Second)
 				cacheReply, err := rpcConsumerOut.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 					RequestHash:           []byte("test"),
