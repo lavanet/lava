@@ -18,6 +18,7 @@ package keeper
 // tracking the list of providers for a delegator, indexed by the delegator.
 
 import (
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -45,14 +46,19 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 		creditTimestamp = monthAgo
 	}
 	creditDelta := int64(0) // hours
-	if !creditAmount.IsZero() {
+	if !creditAmount.IsNil() && !creditAmount.IsZero() {
 		if creditTimestamp.Before(delegationTimestap) {
 			creditDelta = int64(delegationTimestap.Sub(creditTimestamp).Hours())
 		}
+	} else {
+		// handle uninitialized credit
+		creditAmount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 	}
 	amountDelta := int64(0) // hours
 	if !currentAmount.IsZero() {
-		amountDelta = int64(currentTimestamp.Sub(delegationTimestap).Hours())
+		if delegationTimestap.Before(currentTimestamp) {
+			amountDelta = int64(currentTimestamp.Sub(delegationTimestap).Hours())
+		}
 	}
 
 	// creditDelta is the weight of the history and amountDelta is the weight of the current amount
@@ -61,6 +67,7 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	if totalDelta == 0 {
 		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), currentTimestamp.Unix()
 	}
+	fmt.Println("creditDelta", creditDelta, "amountDelta", amountDelta, "totalDelta", totalDelta, "creditAmount", creditAmount.Amount, "currentAmount", currentAmount.Amount)
 	credit = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), currentAmount.Amount.MulRaw(amountDelta).Add(creditAmount.Amount.MulRaw(creditDelta)).QuoRaw(totalDelta))
 	return credit, creditTimestamp.Unix()
 }
