@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
+	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
@@ -49,7 +50,7 @@ type cacheInf_Refactor interface {
 }
 
 type ProviderOptimizer_Refactor struct {
-	strategy                        Strategy_Refactor
+	strategy                        Strategy
 	providersStorage                cacheInf_Refactor
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
@@ -76,49 +77,13 @@ type ProviderData_Refactor struct {
 	SyncBlock    uint64                     // will be used to calculate the probability of block error
 }
 
-// Strategy_Refactor defines the pairing strategy. Using different
-// strategies allow users to determine the providers type they'll
-// be paired with: providers with low latency, fresh sync and more.
-type Strategy_Refactor int
-
-const (
-	StrategyBalanced_Refactor      Strategy_Refactor = iota
-	StrategyLatency_Refactor                         // prefer low latency
-	StrategySyncFreshness_Refactor                   // prefer better sync
-	StrategyCost_Refactor                            // prefer low CU cost (minimize optimizer exploration)
-	StrategyPrivacy_Refactor                         // prefer pairing with a single provider (not fully implemented)
-	StrategyAccuracy_Refactor                        // encourage optimizer exploration (higher cost)
-	StrategyDistributed_Refactor                     // prefer pairing with different providers (slightly minimize optimizer exploration)
-)
-
-func (s Strategy_Refactor) String() string {
-	switch s {
-	case StrategyBalanced_Refactor:
-		return "balanced"
-	case StrategyLatency_Refactor:
-		return "latency"
-	case StrategySyncFreshness_Refactor:
-		return "sync_freshness"
-	case StrategyCost_Refactor:
-		return "cost"
-	case StrategyPrivacy_Refactor:
-		return "privacy"
-	case StrategyAccuracy_Refactor:
-		return "accuracy"
-	case StrategyDistributed_Refactor:
-		return "distributed"
-	}
-
-	return ""
-}
-
 // GetStrategyFactor gets the appropriate factor to multiply the sync factor
 // with according to the strategy
-func (s Strategy_Refactor) GetStrategyFactor() math.LegacyDec {
+func (s Strategy) GetStrategyFactor() math.LegacyDec {
 	switch s {
-	case StrategyLatency_Refactor:
+	case STRATEGY_LATENCY:
 		return pairingtypes.LatencyStrategyFactor
-	case StrategySyncFreshness_Refactor:
+	case STRATEGY_SYNC_FRESHNESS:
 		return pairingtypes.SyncFreshnessStrategyFactor
 	}
 
@@ -199,9 +164,24 @@ func (po *ProviderOptimizer_Refactor) AppendProbeRelayData_Refactor(providerAddr
 	)
 }
 
-func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration_Refactor) {
+func (po *ProviderOptimizer_Refactor) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+	selectionTier, _, providersScores := po.CalculateSelectionTiers_Refactor(allAddresses, ignoredProviders, cu, requestedBlock)
+	reports := []*metrics.OptimizerQoSReport{}
+
+	rawScores := selectionTier.GetRawScores()
+	for idx, entry := range rawScores {
+		qosReport := providersScores[entry.Address]
+		qosReport.EntryIndex = idx
+		reports = append(reports, qosReport)
+	}
+
+	return reports
+}
+
+func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration_Refactor, map[string]*metrics.OptimizerQoSReport) {
 	explorationCandidate := Exploration_Refactor{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
+	providerScores := make(map[string]*metrics.OptimizerQoSReport)
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -219,7 +199,7 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 				fmt.Errorf("could not get QoS excellece report for provider"),
 				utils.LogAttr("provider", providerAddress),
 			)
-			return NewSelectionTier(), Exploration_Refactor{}
+			return NewSelectionTier(), Exploration_Refactor{}, providerScores
 		}
 
 		utils.LavaFormatTrace("[Optimizer] scores information",
@@ -240,7 +220,7 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 				utils.LogAttr("provider", providerAddress),
 				utils.LogAttr("requested_block", requestedBlock),
 			)
-			return NewSelectionTier(), Exploration_Refactor{}
+			return NewSelectionTier(), Exploration_Refactor{}, providerScores
 		}
 		score, err := qos.ComputeQoSExcellence_Refactor(opts...)
 		if err != nil {
@@ -248,8 +228,17 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 				utils.LogAttr("provider", providerAddress),
 				utils.LogAttr("qos_report", qos.String()),
 			)
-			return NewSelectionTier(), Exploration_Refactor{}
+			return NewSelectionTier(), Exploration_Refactor{}, providerScores
 		}
+
+		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
+			ProviderAddress:   providerAddress,
+			SyncScore:         qos.Sync.MustFloat64(),
+			LatencyScore:      qos.Latency.MustFloat64(),
+			AvailabilityScore: qos.Availability.MustFloat64(),
+			GenericScore:      score.MustFloat64(),
+		}
+
 		selectionTier.AddScore(providerAddress, score.MustFloat64())
 
 		// check if candidate for exploration
@@ -258,12 +247,12 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 			explorationCandidate = Exploration_Refactor{address: providerAddress, time: lastUpdateTime}
 		}
 	}
-	return selectionTier, explorationCandidate
+	return selectionTier, explorationCandidate, providerScores
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer_Refactor) ChooseProvider_Refactor(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate := po.CalculateSelectionTiers_Refactor(allAddresses, ignoredProviders, cu, requestedBlock)
+	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers_Refactor(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
 		return []string{}, -1
@@ -358,15 +347,15 @@ func (po *ProviderOptimizer_Refactor) shouldExplore_Refactor(currentNumProviders
 	}
 	explorationChance := DefaultExplorationChance_Refactor
 	switch po.strategy {
-	case StrategyLatency_Refactor:
+	case STRATEGY_LATENCY:
 		return true // we want a lot of parallel tries on latency
-	case StrategyAccuracy_Refactor:
+	case STRATEGY_ACCURACY:
 		return true
-	case StrategyCost_Refactor:
+	case STRATEGY_COST:
 		explorationChance = CostExplorationChance_Refactor
-	case StrategyDistributed_Refactor:
+	case STRATEGY_DISTRIBUTED:
 		explorationChance = DefaultExplorationChance_Refactor * 0.25
-	case StrategyPrivacy_Refactor:
+	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
 	return rand.Float64() < explorationChance
@@ -495,7 +484,7 @@ func (po *ProviderOptimizer_Refactor) getRelayStatsTimes_Refactor(providerAddres
 	return nil
 }
 
-func NewProviderOptimizer_Refactor(strategy Strategy_Refactor, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer_Refactor {
+func NewProviderOptimizer_Refactor(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer_Refactor {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -504,7 +493,7 @@ func NewProviderOptimizer_Refactor(strategy Strategy_Refactor, averageBlockTIme 
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	if strategy == StrategyPrivacy_Refactor {
+	if strategy == STRATEGY_PRIVACY {
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}

@@ -80,17 +80,40 @@ type ProviderData struct {
 	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
 }
 
+// Strategy defines the pairing strategy. Using different strategies allow users to determine
+// the providers type they'll be paired with: providers with low latency, fresh sync and more.
 type Strategy int
 
 const (
-	STRATEGY_BALANCED Strategy = iota
-	STRATEGY_LATENCY
-	STRATEGY_SYNC_FRESHNESS
-	STRATEGY_COST
-	STRATEGY_PRIVACY
-	STRATEGY_ACCURACY
-	STRATEGY_DISTRIBUTED
+	STRATEGY_BALANCED       Strategy = iota
+	STRATEGY_LATENCY                 // prefer low latency
+	STRATEGY_SYNC_FRESHNESS          // prefer better sync
+	STRATEGY_COST                    // prefer low CU cost (minimize optimizer exploration)
+	STRATEGY_PRIVACY                 // prefer pairing with a single provider (not fully implemented)
+	STRATEGY_ACCURACY                // encourage optimizer exploration (higher cost)
+	STRATEGY_DISTRIBUTED             // prefer pairing with different providers (slightly minimize optimizer exploration)
 )
+
+func (s Strategy) String() string {
+	switch s {
+	case STRATEGY_BALANCED:
+		return "balanced"
+	case STRATEGY_LATENCY:
+		return "latency"
+	case STRATEGY_SYNC_FRESHNESS:
+		return "sync_freshness"
+	case STRATEGY_COST:
+		return "cost"
+	case STRATEGY_PRIVACY:
+		return "privacy"
+	case STRATEGY_ACCURACY:
+		return "accuracy"
+	case STRATEGY_DISTRIBUTED:
+		return "distributed"
+	}
+
+	return ""
+}
 
 func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
 	po.selectionWeighter.SetWeights(weights)
