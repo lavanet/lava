@@ -48,7 +48,6 @@ const (
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	DisableRetryOnNodeErrorsFlag                 = "disable-retry-on-node-error"
-	UseOfflineSpecFlag                           = "use-offline-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 )
 
