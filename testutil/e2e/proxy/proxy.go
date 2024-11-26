@@ -211,7 +211,11 @@ func startProxyProcess(process proxyProcess) {
 			}
 
 			jStruct := &jsonStruct{}
-			json.Unmarshal([]byte(msg), jStruct)
+			err = json.Unmarshal(msg, jStruct)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
 			jStruct.ID = 0
 			rawBodySNoID, _ := json.Marshal(jStruct)
 
