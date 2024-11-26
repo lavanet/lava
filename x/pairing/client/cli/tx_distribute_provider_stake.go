@@ -33,16 +33,38 @@ func CmdDistributeProviderStake() *cobra.Command {
 				return err
 			}
 
-			provider := clientCtx.GetFromAddress().String()
+			address := clientCtx.GetFromAddress().String()
 
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			ctx := context.Background()
-			response, err := pairingQuerier.Provider(ctx, &types.QueryProviderRequest{Address: provider})
+			response, err := pairingQuerier.Provider(ctx, &types.QueryProviderRequest{Address: address})
 			if err != nil {
 				return err
 			}
 
-			msgs, err := CalculateDistbiruitions(provider, response.StakeEntries, args[0])
+			if len(response.StakeEntries) == 0 {
+				// Check if the address is a vault by querying metadata
+				epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
+				metadatasResponse, err := epochStorageQuerier.ProviderMetaData(ctx, &epochstoragetypes.QueryProviderMetaDataRequest{})
+				if err != nil {
+					return err
+				}
+
+				// If this provider has a vault set, try to use the vault address instead
+				// TOSO: this is a fix until we add a way to query the vault's metadata
+				for _, metadata := range metadatasResponse.MetaData {
+					if metadata.Vault == address {
+						// Query the vault's stake entries
+						response, err = pairingQuerier.Provider(ctx, &types.QueryProviderRequest{Address: metadata.Provider})
+						if err != nil {
+							return err
+						}
+						break
+					}
+				}
+			}
+
+			msgs, err := CalculateDistbiruitions(address, response.StakeEntries, args[0])
 			if err != nil {
 				return err
 			}
@@ -64,6 +86,10 @@ type data struct {
 }
 
 func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeEntry, distributionsArg string) ([]sdk.Msg, error) {
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("provider: %s is not staked on any chain", provider)
+	}
+
 	splitedArgs := strings.Split(distributionsArg, ",")
 	if len(splitedArgs)%2 != 0 {
 		return nil, fmt.Errorf("args must: chain,percent,chain,percent")
@@ -72,25 +98,40 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 	totalStake := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 	totalP := sdk.ZeroDec()
 	distributions := []data{}
+	// First decode the args into chain->percent map
+	chainToPercent := make(map[string]sdk.Dec)
 	for i := 0; i < len(splitedArgs); i += 2 {
 		p, err := sdk.NewDecFromStr(splitedArgs[i+1])
 		if err != nil {
 			return nil, err
 		}
-		for _, e := range entries {
-			if splitedArgs[i] == e.Chain {
-				distributions = append(distributions, data{chain: e.Chain, original: e.Stake.Amount, percent: p})
-				totalStake = totalStake.Add(e.Stake)
-				totalP = totalP.Add(p)
-			}
+		chainToPercent[splitedArgs[i]] = p
+	}
+
+	// Then match entries with percentages and fill the data
+	for _, e := range entries {
+		if p, ok := chainToPercent[e.Chain]; ok {
+			distributions = append(distributions, data{chain: e.Chain, original: e.Stake.Amount, percent: p})
+			totalStake = totalStake.Add(e.Stake)
+			totalP = totalP.Add(p)
 		}
 	}
 
 	if len(distributions) != len(entries) {
-		return nil, fmt.Errorf("must specify percentages for all chains the provider is staked on")
+		// Print out which chains were specified vs which chains have stakes
+		specifiedChains := make([]string, 0)
+		for chain := range chainToPercent {
+			specifiedChains = append(specifiedChains, chain)
+		}
+		stakedChains := make([]string, 0)
+		for _, entry := range entries {
+			stakedChains = append(stakedChains, entry.Chain)
+		}
+		return nil, fmt.Errorf("chains mismatch - specified chains: %v, staked chains: %v", specifiedChains, stakedChains)
 	}
+
 	if !totalP.Equal(sdk.NewDec(100)) {
-		return nil, fmt.Errorf("total percentages must be 100")
+		return nil, fmt.Errorf("total percentages must be 100, total input: %s", totalP.String())
 	}
 
 	left := totalStake

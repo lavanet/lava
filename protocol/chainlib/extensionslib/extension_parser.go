@@ -71,7 +71,6 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 	if len(ep.configuredExtensions) == 0 {
 		return
 	}
-
 	for extensionKey, extension := range ep.configuredExtensions {
 		if extensionKey.Addon != addon {
 			// this extension is not relevant for this api
