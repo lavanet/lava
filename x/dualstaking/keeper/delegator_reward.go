@@ -64,7 +64,7 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfDelegation types.Delegation, delegations []types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
+func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfDelegation types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
 	zeroCoins := sdk.NewCoins()
 	totalDelegationsWithSelf := totalDelegations.Add(selfDelegation.Amount.Amount)
 
@@ -175,16 +175,19 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 	totalDelegations := sdk.ZeroInt()
 	var selfdelegation types.Delegation
 	// fetch relevant delegations (those who are passed the first week of delegation), self delegation and sum the total delegations
-	for _, d := range delegations {
-		if d.Delegator == metadata.Vault {
-			selfdelegation = d
-		} else if d.IsFirstWeekPassed(ctx.BlockTime().UTC().Unix()) {
-			relevantDelegations = append(relevantDelegations, d)
-			totalDelegations = totalDelegations.Add(d.Amount.Amount)
+	for _, delegation := range delegations {
+		if delegation.Delegator == metadata.Vault {
+			selfdelegation = delegation
+		} else {
+			credit := k.CalculateMonthlyCredit(ctx, delegation)
+			// modify the delegation for reward calculation based on the time it was staked
+			delegation.Amount = credit
+			relevantDelegations = append(relevantDelegations, delegation)
+			totalDelegations = totalDelegations.Add(delegation.Amount.Amount)
 		}
 	}
 
-	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfdelegation, relevantDelegations, metadata.DelegateCommission)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfdelegation, metadata.DelegateCommission)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)

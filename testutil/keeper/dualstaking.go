@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -72,7 +73,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
 

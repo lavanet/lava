@@ -209,19 +209,17 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
 	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
 
-	relevantDelegations := []dualstakingtypes.Delegation{}
 	totalDelegations := sdk.ZeroInt()
 	var selfdelegation dualstakingtypes.Delegation
 	for _, d := range res.Delegations {
 		if d.Delegator != stakeEntry.Vault {
 			selfdelegation = d
 		} else if d.IsFirstWeekPassed(currentTimestamp) {
-			relevantDelegations = append(relevantDelegations, d)
 			totalDelegations = totalDelegations.Add(d.Amount.Amount)
 		}
 	}
 
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, relevantDelegations, stakeEntry.DelegateCommission)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, stakeEntry.DelegateCommission)
 
 	require.True(t, totalReward.IsEqual(providerReward))
 

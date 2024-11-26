@@ -33,7 +33,7 @@ func NewDelegation(delegator, provider string, blockTime time.Time, tokenDenom s
 		Delegator: delegator,
 		Provider:  provider,
 		Amount:    sdk.NewCoin(tokenDenom, sdk.ZeroInt()),
-		Timestamp: blockTime.AddDate(0, 0, 7).UTC().Unix(),
+		Timestamp: blockTime.UTC().Unix(),
 	}
 }
 
