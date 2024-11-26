@@ -874,7 +874,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			reduceAvailability := false
-			if isNodeError {
+			if isNodeError && (chainId == "NEAR" || chainId == "NEART") {
 				// validate nodeError is matching our expectations for reducing availability.
 				reduceAvailability = strings.Contains(string(localRelayResult.Reply.Data), "The node does not track the shard ID")
 			}
