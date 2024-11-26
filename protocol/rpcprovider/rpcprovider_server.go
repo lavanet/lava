@@ -114,6 +114,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
 	providerLoadManager *ProviderLoadManager,
+	numberOfRetries int,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -135,7 +136,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
 	rpcps.providerLoadManager = providerLoadManager
 
 	rpcps.initRelaysMonitor(ctx)

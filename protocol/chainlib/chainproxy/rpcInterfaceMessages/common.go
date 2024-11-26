@@ -5,6 +5,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v4/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
@@ -13,6 +14,7 @@ var WontCalculateBatchHash = sdkerrors.New("Wont calculate batch hash", 892, "wo
 
 type ParsableRPCInput struct {
 	Result json.RawMessage
+	Error  *rpcclient.JsonError
 	chainproxy.BaseMessage
 }
 
@@ -34,6 +36,10 @@ func (pri ParsableRPCInput) GetResult() json.RawMessage {
 
 func (pri ParsableRPCInput) GetID() json.RawMessage {
 	return nil
+}
+
+func (pri ParsableRPCInput) GetError() *rpcclient.JsonError {
+	return pri.Error
 }
 
 type GenericMessage interface {
