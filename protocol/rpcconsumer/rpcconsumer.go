@@ -101,11 +101,12 @@ type ConsumerStateTrackerInf interface {
 }
 
 type AnalyticsServerAddresses struct {
-	AddApiMethodCallsMetrics bool
-	MetricsListenAddress     string
-	RelayServerAddress       string
-	ReportsAddressFlag       string
-	OptimizerQoSAddress      string
+	AddApiMethodCallsMetrics    bool
+	MetricsListenAddress        string
+	RelayServerAddress          string
+	ReportsAddressFlag          string
+	OptimizerQoSAddress         string
+	OptimizerQoSAddressRefactor string
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
@@ -136,9 +137,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddresses.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddresses.AddApiMethodCallsMetrics}) // start up prometheus metrics
 	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                   // start up relay server reporting
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
-	if options.analyticsServerAddresses.OptimizerQoSAddress != "" {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                  // start up optimizer qos client
+	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSAddressRefactor != "" {
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, options.analyticsServerAddresses.OptimizerQoSAddressRefactor, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                                                                                // start up optimizer qos client
 	}
 
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerOptimizerQoSClient)
@@ -183,6 +184,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
+	optimizersRefactored := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer_Refactor]{}
 	consumerConsistencies := &common.SafeSyncMap[string, *ConsumerConsistency]{}
 	finalizationConsensuses := &common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus]{}
 
@@ -238,6 +240,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
+			var optimizerRefactored *provideroptimizer.ProviderOptimizer_Refactor
 			var consumerConsistency *ConsumerConsistency
 			var finalizationConsensus *finalizationconsensus.FinalizationConsensus
 			getOrCreateChainAssets := func() error {
@@ -245,6 +248,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				chainMutexes[chainID].Lock()
 				defer chainMutexes[chainID].Unlock()
 				var loaded bool
+				var loadedRefactored bool
 				var err error
 
 				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
@@ -256,9 +260,19 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 				}
 
+				// Create / Use existing optimizer refactored
+				newOptimizerRefactored := provideroptimizer.NewProviderOptimizer_Refactor(options.strategy, averageBlockTime, options.maxConcurrentProviders)
+				optimizerRefactored, loadedRefactored, err = optimizersRefactored.LoadOrStore(chainID, newOptimizerRefactored)
+				if err != nil {
+					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+
 				if !loaded {
 					// if this is a new optimizer, register it in the consumerOptimizerQoSClient
 					consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
+				}
+				if !loadedRefactored {
+					consumerOptimizerQoSClient.RegisterOptimizerRefactored(optimizerRefactored, chainID)
 				}
 
 				// Create / Use existing ConsumerConsistency
@@ -552,11 +566,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
-				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
-				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
+				AddApiMethodCallsMetrics:    viper.GetBool(metrics.AddApiMethodCallsMetrics),
+				MetricsListenAddress:        viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:          viper.GetString(metrics.RelayServerFlagName),
+				ReportsAddressFlag:          viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:         viper.GetString(common.OptimizerQosServerAddressFlag),
+				OptimizerQoSAddressRefactor: viper.GetString(common.OptimizerQosServerAddressRefactorFlag),
 			}
 
 			var refererData *chainlib.RefererData
@@ -646,6 +661,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
 	// optimizer qos reports
 	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressRefactorFlag, "", "address to send optimizer qos reports to the refactored server")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCConsumer.Flags().IntVar(&chainlib.WebSocketRateLimit, common.RateLimitWebSocketFlag, chainlib.WebSocketRateLimit, "rate limit (per second) websocket requests per user connection, default is unlimited")

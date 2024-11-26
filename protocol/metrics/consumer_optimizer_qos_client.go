@@ -21,9 +21,11 @@ var (
 )
 
 type ConsumerOptimizerQoSClient struct {
-	consumerOrigin string
-	queueSender    *QueueSender
-	optimizers     map[string]OptimizerInf // keys are chain ids
+	consumerOrigin        string
+	queueSender           *QueueSender
+	queueSenderRefactored *QueueSender
+	optimizers            map[string]OptimizerInf // keys are chain ids
+	optimizersRefactored  map[string]OptimizerInf // keys are chain ids
 	// keys are chain ids, values are maps with provider addresses as keys
 	chainIdToProviderToRelaysCount     map[string]map[string]uint64
 	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
@@ -68,7 +70,7 @@ type OptimizerInf interface {
 	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
 }
 
-func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
+func NewConsumerOptimizerQoSClient(endpointAddress string, endpointAddressRefactor string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
 	hostname, err := os.Hostname()
 	if err != nil {
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
@@ -78,7 +80,9 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 	return &ConsumerOptimizerQoSClient{
 		consumerOrigin:                     hostname,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
+		queueSenderRefactored:              NewQueueSender(endpointAddressRefactor, "ConsumerOptimizerQoSRefactored", nil, interval...),
 		optimizers:                         map[string]OptimizerInf{},
+		optimizersRefactored:               map[string]OptimizerInf{},
 		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
 		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
 		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
@@ -147,6 +151,27 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
 }
 
+func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReportRefactored(report *OptimizerQoSReport, chainId string, epoch uint64) {
+	// must be called under read lock
+
+	optimizerQoSReportToSend := optimizerQoSReportToSend{
+		Timestamp:         time.Now(),
+		ConsumerOrigin:    coqc.consumerOrigin,
+		SyncScore:         report.SyncScore,
+		AvailabilityScore: report.AvailabilityScore,
+		LatencyScore:      report.LatencyScore,
+		GenericScore:      report.GenericScore,
+		ProviderAddress:   report.ProviderAddress,
+		EntryIndex:        report.EntryIndex,
+		ChainId:           chainId,
+		Epoch:             epoch,
+		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
+		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
+	}
+
+	coqc.queueSenderRefactored.appendQueue(optimizerQoSReportToSend)
+}
+
 func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 	coqc.lock.RLock() // we only read from the maps here
 	defer coqc.lock.RUnlock()
@@ -166,6 +191,18 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 		reports := optimizer.CalculateQoSScoresForMetrics(maps.Keys(providersMap), ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
 			coqc.appendOptimizerQoSReport(report, chainId, currentEpoch)
+		}
+	}
+
+	for chainId, optimizer := range coqc.optimizersRefactored {
+		providersMap, ok := coqc.chainIdToProviderToEpochToStake[chainId]
+		if !ok {
+			continue
+		}
+
+		reports := optimizer.CalculateQoSScoresForMetrics(maps.Keys(providersMap), ignoredProviders, cu, requestedBlock)
+		for _, report := range reports {
+			coqc.appendOptimizerQoSReportRefactored(report, chainId, currentEpoch)
 		}
 	}
 }
@@ -203,6 +240,22 @@ func (coqc *ConsumerOptimizerQoSClient) RegisterOptimizer(optimizer OptimizerInf
 	}
 
 	coqc.optimizers[chainId] = optimizer
+}
+
+func (coqc *ConsumerOptimizerQoSClient) RegisterOptimizerRefactored(optimizer OptimizerInf, chainId string) {
+	if coqc == nil {
+		return
+	}
+
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+
+	if _, found := coqc.optimizersRefactored[chainId]; found {
+		utils.LavaFormatWarning("Optimizer refactored already registered for chain", nil, utils.LogAttr("chainId", chainId))
+		return
+	}
+
+	coqc.optimizersRefactored[chainId] = optimizer
 }
 
 func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store map[string]map[string]uint64, chainId, providerAddress string) {

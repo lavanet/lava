@@ -40,9 +40,10 @@ const (
 	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
 
 	// optimizer qos server flags
-	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
-	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
-	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
+	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"          // address of the optimizer qos server to send the qos reports
+	OptimizerQosServerAddressRefactorFlag  = "optimizer-qos-server-address-refactor" // address of the refactored optimizer qos server to send the qos reports
+	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"           // interval to push the qos reports to the optimizer qos server
+	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval"       // interval to sample the qos reports
 	// websocket flags
 	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
