@@ -666,7 +666,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		// try to parse node error as json message
 		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
 		if rpcMessage == nil {
-			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr), utils.LogAttr("nodeUrl", cp.NodeUrl.Url))
 			return nil, "", nil, nodeErr
 		}
 	}

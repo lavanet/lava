@@ -121,6 +121,26 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 	}
 }
 
+func getExtensionsForVerification(verification VerificationContainer, chainParser ChainParser) []string {
+	extensions := []string{verification.Extension}
+
+	collectionKey := CollectionKey{
+		InternalPath:   verification.InternalPath,
+		Addon:          verification.Addon,
+		ConnectionType: verification.ConnectionType,
+	}
+
+	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+		if verification.Extension == "" {
+			extensions = []string{WebSocketExtension}
+		} else {
+			extensions = append(extensions, WebSocketExtension)
+		}
+	}
+
+	return extensions
+}
+
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
 
@@ -173,12 +193,21 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+	extensions := getExtensionsForVerification(verification, cf.chainParser)
+
+	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, extensions)
 	if err != nil {
-		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err,
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+			utils.LogAttr("APIInterface", cf.endpoint.ApiInterface),
+			utils.LogAttr("extensions", extensions),
+		)
 	}
 	if reply == nil || reply.RelayReply == nil {
-		return utils.LavaFormatWarning("[-] verify failed sending chainMessage, reply or reply.RelayReply are nil", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatWarning("[-] verify failed sending chainMessage, reply or reply.RelayReply are nil", nil,
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+			utils.LogAttr("APIInterface", cf.endpoint.ApiInterface),
+		)
 	}
 
 	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
