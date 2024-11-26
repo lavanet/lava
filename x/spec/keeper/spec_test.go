@@ -820,7 +820,7 @@ func TestCookbookSpecs(t *testing.T) {
 
 	getToTopMostPath := "../../.././cookbook/specs/"
 
-	SpecsFiles, err := getAllFilesInDirectory(getToTopMostPath)
+	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
 
 	// Sort specs by hierarchy - specs that are imported by others should come first
@@ -828,7 +828,7 @@ func TestCookbookSpecs(t *testing.T) {
 	specProposals := make(map[string]types.Spec)
 
 	// First read all spec contents
-	for _, fileName := range SpecsFiles {
+	for _, fileName := range specsFiles {
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.NoError(t, err)
 
@@ -877,9 +877,7 @@ func TestCookbookSpecs(t *testing.T) {
 		}
 	}
 
-	SpecsFiles = sortedSpecs
-
-	for _, specName := range SpecsFiles {
+	for _, specName := range sortedSpecs {
 		sp := specProposals[specName]
 
 		ts.setSpec(sp)
