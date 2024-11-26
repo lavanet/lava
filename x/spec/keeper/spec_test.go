@@ -878,7 +878,8 @@ func TestCookbookSpecs(t *testing.T) {
 	}
 
 	for _, specName := range sortedSpecs {
-		sp := specProposals[specName]
+		sp, found := specProposals[specName]
+		require.True(t, found)
 
 		ts.setSpec(sp)
 		fullspec, err := ts.expandSpec(sp)
