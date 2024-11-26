@@ -165,11 +165,11 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"jsonrpc":"2.0","id":"1","result":"0x10a7a08"}`)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
 	wsServerHandler := func(message string) string {
-		return `{"jsonrpc":"2.0","id":"1","result":"0x10a7a08"}`
+		return `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`
 	}
 
 	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandler, createWebSocketHandler(wsServerHandler), "../../", nil)
