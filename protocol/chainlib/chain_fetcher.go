@@ -121,6 +121,26 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 	}
 }
 
+func getExtensionsForVerification(verification VerificationContainer, chainParser ChainParser) []string {
+	extensions := []string{verification.Extension}
+
+	collectionKey := CollectionKey{
+		InternalPath:   verification.InternalPath,
+		Addon:          verification.Addon,
+		ConnectionType: verification.ConnectionType,
+	}
+
+	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+		if verification.Extension == "" {
+			extensions = []string{WebSocketExtension}
+		} else {
+			extensions = append(extensions, WebSocketExtension)
+		}
+	}
+
+	return extensions
+}
+
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
 
@@ -173,21 +193,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	extensions := []string{verification.Extension}
-
-	collectionKey := CollectionKey{
-		InternalPath:   verification.InternalPath,
-		Addon:          verification.Addon,
-		ConnectionType: verification.ConnectionType,
-	}
-
-	if cf.chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
-		if verification.Extension == "" {
-			extensions = []string{WebSocketExtension}
-		} else {
-			extensions = append(extensions, WebSocketExtension)
-		}
-	}
+	extensions := getExtensionsForVerification(verification, cf.chainParser)
 
 	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, extensions)
 	if err != nil {
