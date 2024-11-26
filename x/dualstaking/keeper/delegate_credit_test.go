@@ -24,9 +24,10 @@ func TestCalculateCredit(t *testing.T) {
 	bondDenom := commontypes.TokenDenom
 	timeNow := ctx.BlockTime()
 	tests := []struct {
-		name           string
-		delegation     types.Delegation
-		expectedCredit sdk.Coin
+		name                    string
+		delegation              types.Delegation
+		expectedCredit          sdk.Coin
+		expectedCreditTimestamp int64
 	}{
 		{
 			name: "initial delegation",
@@ -36,7 +37,8 @@ func TestCalculateCredit(t *testing.T) {
 				Timestamp:       timeNow.Add(-time.Hour * 24 * 10).Unix(),
 				CreditTimestamp: 0,
 			},
-			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+			expectedCredit:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+			expectedCreditTimestamp: timeNow.Add(-time.Hour * 24 * 10).Unix(),
 		},
 		{
 			name: "delegation with existing credit",
@@ -46,7 +48,8 @@ func TestCalculateCredit(t *testing.T) {
 				Timestamp:       timeNow.Add(-time.Hour * 24 * 5).Unix(),
 				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 10).Unix(),
 			},
-			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1500)),
+			expectedCredit:          sdk.NewCoin(bondDenom, sdk.NewInt(1500)),
+			expectedCreditTimestamp: timeNow.Add(-time.Hour * 24 * 5).Unix(),
 		},
 		{
 			name: "delegation older than 30 days",
@@ -56,14 +59,16 @@ func TestCalculateCredit(t *testing.T) {
 				Timestamp:       timeNow.Add(-time.Hour * 24 * 40).Unix(),
 				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 35).Unix(),
 			},
-			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
+			expectedCredit:          sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
+			expectedCreditTimestamp: timeNow.Add(-time.Hour * 24 * 40).Unix(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			credit, _ := k.CalculateCredit(ctx, tt.delegation)
+			credit, creditTimestamp := k.CalculateCredit(ctx, tt.delegation)
 			require.Equal(t, tt.expectedCredit, credit)
+			require.Equal(t, tt.expectedCreditTimestamp, creditTimestamp)
 		})
 	}
 }

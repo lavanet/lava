@@ -364,9 +364,15 @@ func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
 }
 
 func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
-	credit, creditTimestamp := k.CalculateCredit(ctx, delegation)
+	existingDelegation, found := k.GetDelegation(ctx, delegation.Provider, delegation.Delegator)
+	if !found {
+		return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
+	}
+	// calculate credit based on the existing delegation before changes
+	credit, creditTimestamp := k.CalculateCredit(ctx, existingDelegation)
 	delegation.Credit = credit
 	delegation.CreditTimestamp = creditTimestamp
+	delegation.Timestamp = ctx.BlockTime().UTC().Unix() // after setting credit we reset the delegation timestamp
 	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
 }
 
