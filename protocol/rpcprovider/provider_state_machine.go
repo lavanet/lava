@@ -20,13 +20,15 @@ type ProviderStateMachine struct {
 	relayRetriesManager lavaprotocol.RelayRetriesManagerInf
 	chainId             string
 	relaySender         ProviderRelaySender
+	numberOfRetries     int
 }
 
-func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int) *ProviderStateMachine {
 	return &ProviderStateMachine{
 		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,
 		relaySender:         relaySender,
+		numberOfRetries:     numberOfRetries,
 	}
 }
 
@@ -41,7 +43,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
-	for retryAttempt := 0; retryAttempt <= numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
+	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
 		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {

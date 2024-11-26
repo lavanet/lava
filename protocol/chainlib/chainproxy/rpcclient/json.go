@@ -174,6 +174,20 @@ func (err *JsonError) ErrorData() interface{} {
 	return err.Data
 }
 
+func (err *JsonError) ToMap() map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"code":    err.Code,
+		"message": err.Message,
+		"data":    err.Data,
+		"name":    err.Name,
+		"cause":   err.Cause,
+	}
+}
+
 // Conn is a subset of the methods of net.Conn which are sufficient for ServerCodec.
 type Conn interface {
 	io.ReadWriteCloser
