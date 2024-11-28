@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -198,30 +199,33 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 
 	ts.AdvanceEpoch()
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-
+	stakeEntryResp, err := ts.Keepers.Pairing.Provider(ts.Ctx, &types.QueryProviderRequest{
+		Address: provider,
+		ChainID: ts.spec.Index,
+	})
+	require.Nil(t, err)
+	stakeEntry := stakeEntryResp.StakeEntries[0]
 	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
-	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
-	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
-
+	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum*100))))
+	// advance a month so the numbers are round and we don't get a truncation that results in 1 ulava less
+	ts.AdvanceMonths(1)
 	totalDelegations := sdk.ZeroInt()
 	var selfdelegation dualstakingtypes.Delegation
 	for _, d := range res.Delegations {
+		d.Amount = ts.Keepers.Dualstaking.CalculateMonthlyCredit(ts.Ctx, d)
 		if d.Delegator != stakeEntry.Vault {
 			selfdelegation = d
-		} else if d.IsFirstWeekPassed(currentTimestamp) {
+		} else {
 			totalDelegations = totalDelegations.Add(d.Amount.Amount)
 		}
 	}
 
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, stakeEntry.DelegateCommission)
-
-	require.True(t, totalReward.IsEqual(providerReward))
+	require.True(t, totalReward.IsEqual(providerReward), "total %v vs provider %v", totalReward, providerReward)
 
 	// check that the expected reward equals to the provider's new balance minus old balance
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -438,10 +442,8 @@ func TestDelegationTimestamp(t *testing.T) {
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
 	_, delegator := ts.GetAccount(common.CONSUMER, 1)
 
-	// delegate and check the timestamp is equal to current time + month
-	currentTimeAfterMonth := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
-
+	delegationTime := ts.BlockTime().UTC().Unix()
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -450,13 +452,24 @@ func TestDelegationTimestamp(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, currentTimeAfterMonth, d.Timestamp)
+			require.Equal(t, delegationTime, d.Timestamp)
 		}
 	}
 
-	// advance time and delegate again to verify that the timestamp hasn't changed
+	// advance time
 	ts.AdvanceMonths(1)
+	// verify that the timestamp hasn't changed
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, delegationTime, d.Timestamp)
+		}
+	}
+	// verify that the timestamp changes when delegating more and credit is a month ago
 	expectedDelegation := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(2*testStake))
+	delegationTimeU := ts.BlockTime().UTC()
 	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
@@ -466,8 +479,10 @@ func TestDelegationTimestamp(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, currentTimeAfterMonth, d.Timestamp)
+			creditStart := delegationTimeU.Add(-30 * time.Hour * 24).UTC().Unix()
+			require.Equal(t, delegationTimeU.Unix(), d.Timestamp)
 			require.True(t, d.Amount.IsEqual(expectedDelegation))
+			require.Equal(t, creditStart, d.CreditTimestamp)
 		}
 	}
 }
@@ -489,7 +504,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// delegate and check the delegation's timestamp is equal than nowPlusWeekTime
-	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
+	delegationTime := ts.BlockTime().UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
@@ -500,7 +515,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusWeekTime, d.Timestamp)
+			require.Equal(t, delegationTime, d.Timestamp)
 		}
 	}
 
@@ -531,18 +546,17 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	makeProviderCommissionZero(ts, provider)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusWeekTime
-	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
+	delegationTime := ts.BlockTime().UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
-	ts.AdvanceEpoch() // apply delegations
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusWeekTime, d.Timestamp)
+			require.Equal(t, delegationTime, d.Timestamp)
 		}
 	}
 
@@ -554,12 +568,18 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.NoError(t, err)
-	require.True(t, fakeReward.IsEqual(providerReward)) // if the delegator got anything, this would fail
+	require.True(t, fakeReward.IsEqual(providerReward), "%v vs %v", providerReward, fakeReward) // if the delegator got something, this would fail
 
 	// verify again that the delegator has no unclaimed rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(resRewards.Rewards))
+	// now we advance some time and check that the delegator gets rewards
+	ts.AdvanceEpoch() // apply delegations
+	providerReward, err = ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
+		fakeReward, subscriptiontypes.ModuleName, true, true, true)
+	require.NoError(t, err)
+	require.False(t, fakeReward.IsEqual(providerReward), "%v", providerReward) // if the delegator got anything, this would fail
 }
 
 // TestRedelegationFirstMonthReward checks that a delegator that redelegates
@@ -586,7 +606,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	makeProviderCommissionZero(ts, provider)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusWeekTime
-	nowPlusWeekTime := ts.BlockTime().AddDate(0, 0, 7).UTC().Unix()
+	delegationTime := ts.BlockTime().UTC().Unix()
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
@@ -597,7 +617,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, nowPlusWeekTime, d.Timestamp)
+			require.Equal(t, delegationTime, d.Timestamp)
 		}
 	}
 

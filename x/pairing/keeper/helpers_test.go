@@ -153,7 +153,7 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
-// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// The providerRewardPerc arg is the part of the provider reward after deducting
 // the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
@@ -248,7 +248,7 @@ func (ts *tester) payAndVerifyBalance(
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
-	require.True(ts.T, want.IsZero())
+	require.True(ts.T, want.IsZero(), want)
 	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
