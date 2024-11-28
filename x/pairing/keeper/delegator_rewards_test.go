@@ -210,21 +210,21 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
-	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum*100))))
-	// advance a month so the numbers are round and we don't get a truncation that results in 1 ulava less
-	ts.AdvanceMonths(1)
+	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
+
 	totalDelegations := sdk.ZeroInt()
 	var selfdelegation dualstakingtypes.Delegation
+	monthTimeCtx := ts.Ctx.WithBlockTime(ts.Ctx.BlockTime().Add(time.Hour * 24 * 30)) // do the calculation for a month so delegation numbers are dividing nicely and don't give a truncation
 	for _, d := range res.Delegations {
-		d.Amount = ts.Keepers.Dualstaking.CalculateMonthlyCredit(ts.Ctx, d)
-		if d.Delegator != stakeEntry.Vault {
+		d.Amount = ts.Keepers.Dualstaking.CalculateMonthlyCredit(monthTimeCtx, d)
+		if d.Delegator == stakeEntry.Vault {
 			selfdelegation = d
 		} else {
 			totalDelegations = totalDelegations.Add(d.Amount.Amount)
 		}
 	}
 
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, stakeEntry.DelegateCommission)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(monthTimeCtx, totalReward, totalDelegations, selfdelegation, stakeEntry.DelegateCommission)
 	require.True(t, totalReward.IsEqual(providerReward), "total %v vs provider %v", totalReward, providerReward)
 
 	// check that the expected reward equals to the provider's new balance minus old balance
