@@ -270,30 +270,97 @@ func TestDelegationSet(t *testing.T) {
 		timeWait              time.Duration
 		remove                bool
 	}{
-		{
+		{ // 0
 			timeWait:              0,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(0)),
 		},
-		{
+		{ // 1
 			timeWait:              15 * time.Hour * 24,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720/2)),
 		},
-		{
+		{ // 2
 			timeWait:              15 * time.Hour * 24,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 		},
-		{
+		{ // 3
 			timeWait:              15 * time.Hour * 24,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 		},
-		{
+		{ // 4
 			timeWait:              15 * time.Hour * 24,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
 			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+		},
+		{ // 5
+			timeWait:              0,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+		},
+		{ // 6
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720/2+500*720/2)),
+		},
+		{ // 7
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt((1000*720/2+500*720/2)/2+500*720/2)),
+		},
+		{ // 8
+			timeWait:              30 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+		},
+		{ // 9
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(0)),
+			remove:                true, // remove existing entry first
+		},
+		{ // 10
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500)),
+		},
+		{ // 11
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500+500)),
+		},
+		{ // 12
+			timeWait:              30 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+		},
+		{ // 13
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(0)),
+			remove:                true, // remove existing entry first
+		},
+		{ // 14
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500)),
+		},
+		{ // 15
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(2000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500+1000)),
+		},
+		{ // 16
+			timeWait:              1 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500+1000+2000)),
+		},
+		{ // 17
+			timeWait:              2 * time.Hour,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500+1000+2000+1000*2)),
 		},
 	}
 
@@ -312,7 +379,7 @@ func TestDelegationSet(t *testing.T) {
 
 			err := k.SetDelegation(ctx, delegation)
 			require.NoError(t, err)
-			delegationGot, found := k.GetDelegation(ctx, delegation.Delegator, delegation.Provider)
+			delegationGot, found := k.GetDelegation(ctx, delegation.Provider, delegation.Delegator)
 			require.True(t, found)
 			monthlyCredit := k.CalculateMonthlyCredit(ctx, delegationGot)
 			require.Equal(t, tests[iteration].expectedMonthlyCredit, monthlyCredit)
