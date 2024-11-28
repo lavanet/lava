@@ -254,12 +254,11 @@ func TestCalculateMonthlyCredit(t *testing.T) {
 }
 
 func TestDelegationSet(t *testing.T) {
-	_, ctx := keepertest.DualstakingKeeper(t)
 	ts := newTester(t)
 
 	// 1 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
 	ts.setupForDelegation(1, 1, 0, 0)
-
+	ctx := ts.Ctx
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	k := ts.Keepers.Dualstaking
