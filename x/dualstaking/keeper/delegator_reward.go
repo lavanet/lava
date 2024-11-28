@@ -173,13 +173,24 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	relevantDelegations := []types.Delegation{}
 	totalDelegations := sdk.ZeroInt()
-	var selfdelegation types.Delegation
+	var selfDelegation types.Delegation
 	// fetch relevant delegations (those who are passed the first week of delegation), self delegation and sum the total delegations
 	for _, delegation := range delegations {
 		if delegation.Delegator == metadata.Vault {
-			selfdelegation = delegation
+			selfDelegation = delegation
+			// we are normalizing all delegations according to the time they were staked,
+			// if the provider is staked less than a month that would handicap them so we need to adjust the provider stake as well
+			credit := k.CalculateMonthlyCredit(ctx, selfDelegation)
+			if credit.IsZero() {
+				// should never happen
+				continue
+			}
+			selfDelegation.Amount = credit
 		} else {
 			credit := k.CalculateMonthlyCredit(ctx, delegation)
+			if credit.IsZero() {
+				continue
+			}
 			// modify the delegation for reward calculation based on the time it was staked
 			delegation.Amount = credit
 			relevantDelegations = append(relevantDelegations, delegation)
@@ -187,7 +198,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		}
 	}
 
-	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfdelegation, metadata.DelegateCommission)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfDelegation, metadata.DelegateCommission)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)

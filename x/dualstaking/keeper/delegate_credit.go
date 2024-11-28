@@ -25,6 +25,7 @@ import (
 )
 
 const monthHours = 720 // 30 days * 24 hours
+const hourSeconds = 3600
 
 // calculate the delegation credit based on the timestamps, and the amounts of delegations
 // amounts and credits represent daily value, rounded down
@@ -64,12 +65,12 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 		creditTimestamp = delegationTimestamp
 	} else if creditTimestamp.Before(delegationTimestamp) {
 		// calculate the credit delta in hours
-		creditDelta = int64(delegationTimestamp.Sub(creditTimestamp).Hours())
+		creditDelta = (delegationTimestamp.Unix() - creditTimestamp.Unix()) / hourSeconds
 	}
 
 	amountDelta := int64(0) // hours
 	if !currentAmount.IsZero() && delegationTimestamp.Before(currentTimestamp) {
-		amountDelta = int64(currentTimestamp.Sub(delegationTimestamp).Hours())
+		amountDelta = (currentTimestamp.Unix() - delegationTimestamp.Unix()) / hourSeconds
 	}
 
 	// creditDelta is the weight of the history and amountDelta is the weight of the current amount
@@ -89,7 +90,7 @@ func (k Keeper) CalculateMonthlyCredit(ctx sdk.Context, delegation types.Delegat
 		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 	}
 	creditTimestamp := time.Unix(creditTimeEpoch, 0)
-	timeStampDiff := ctx.BlockTime().UTC().Sub(creditTimestamp).Hours()
+	timeStampDiff := (ctx.BlockTime().UTC().Unix() - creditTimestamp.Unix()) / hourSeconds
 	if timeStampDiff <= 0 {
 		// no positive credit
 		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())

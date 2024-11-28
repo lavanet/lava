@@ -112,34 +112,134 @@ func TestCalculateMonthlyCredit(t *testing.T) {
 		expectedCredit sdk.Coin
 	}{
 		{
-			name: "initial delegation",
+			name: "monthly delegation no credit",
 			delegation: types.Delegation{
 				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
 				Credit:          sdk.NewCoin(bondDenom, sdk.ZeroInt()),
-				Timestamp:       timeNow.Add(-time.Hour * 24 * 10).Unix(),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 30).Unix(),
 				CreditTimestamp: 0,
 			},
 			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
 		},
 		{
-			name: "delegation with existing credit",
+			name: "old delegation no credit",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.ZeroInt()),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 100).Unix(),
+				CreditTimestamp: 0,
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+		},
+		{
+			name: "half month delegation no credit",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.ZeroInt()),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 15).Unix(),
+				CreditTimestamp: 0,
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(500)),
+		},
+		{
+			name: "old delegation with credit",
 			delegation: types.Delegation{
 				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(2000)),
 				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 35).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 45).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(2000)),
+		},
+		{
+			name: "new delegation new credit increased delegation",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(6000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
 				Timestamp:       timeNow.Add(-time.Hour * 24 * 5).Unix(),
 				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 10).Unix(),
 			},
 			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1500)),
 		},
 		{
-			name: "delegation older than 30 days",
+			name: "new delegation new credit decreased delegation",
 			delegation: types.Delegation{
 				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
-				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(1500)),
-				Timestamp:       timeNow.Add(-time.Hour * 24 * 40).Unix(),
-				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 35).Unix(),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(6000)),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 5).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 10).Unix(),
 			},
-			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1500)),
+		},
+		{
+			name: "new delegation old credit increased delegation",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(6000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 5).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 40).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(3500)),
+		},
+		{
+			name: "new delegation old credit decreased delegation",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(3000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(6000)),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 5).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 40).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(5500)),
+		},
+		{
+			name: "last second change",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(10000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+				Timestamp:       timeNow.Add(-time.Minute).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 40).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000)),
+		},
+		{
+			name: "non whole hours old credit",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(2*720000)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(720000)),
+				Timestamp:       timeNow.Add(-time.Hour - time.Minute).Unix(), // results in 1 hour
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 40).Unix(),     // results in 718 hours
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(721001)), // ((718*720 + 2*720*1) / 719) *720/720 = 721001.39
+		},
+		{
+			name: "non whole hours new credit",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(2*720)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(720)),
+				Timestamp:       timeNow.Add(-time.Hour*24*5 - time.Minute).Unix(),  // 120 hours
+				CreditTimestamp: timeNow.Add(-time.Hour*24*15 - time.Minute).Unix(), // 240 hours
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(480)), // (120 * 2 * 720 + 240 * 720) / 360 = 960, and monthly is: 960*360/720 = 480
+		},
+		{
+			name: "new delegation new credit last minute",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(2*720)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(720)),
+				Timestamp:       timeNow.Add(-time.Minute).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Minute * 2).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(0)),
+		},
+		{
+			name: "delegation credit are monthly exactly",
+			delegation: types.Delegation{
+				Amount:          sdk.NewCoin(bondDenom, sdk.NewInt(2*720)),
+				Credit:          sdk.NewCoin(bondDenom, sdk.NewInt(720)),
+				Timestamp:       timeNow.Add(-time.Hour * 24 * 30).Unix(),
+				CreditTimestamp: timeNow.Add(-time.Hour * 24 * 30).Unix(),
+			},
+			expectedCredit: sdk.NewCoin(bondDenom, sdk.NewInt(720*2)),
 		},
 	}
 
