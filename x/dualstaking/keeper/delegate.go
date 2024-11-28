@@ -363,7 +363,9 @@ func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
 	return iter.Values()
 }
 
+// this function overwrites the time tag with the ctx time upon writing the delegation
 func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
+	delegation.Timestamp = ctx.BlockTime().UTC().Unix()
 	existingDelegation, found := k.GetDelegation(ctx, delegation.Provider, delegation.Delegator)
 	if !found {
 		return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
@@ -372,7 +374,6 @@ func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) erro
 	credit, creditTimestamp := k.CalculateCredit(ctx, existingDelegation)
 	delegation.Credit = credit
 	delegation.CreditTimestamp = creditTimestamp
-	delegation.Timestamp = ctx.BlockTime().UTC().Unix() // after setting credit we reset the delegation timestamp
 	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
 }
 

@@ -1,10 +1,12 @@
 package keeper_test
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/testutil/common"
 	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/keeper"
@@ -247,6 +249,74 @@ func TestCalculateMonthlyCredit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			credit := k.CalculateMonthlyCredit(ctx, tt.delegation)
 			require.Equal(t, tt.expectedCredit, credit)
+		})
+	}
+}
+
+func TestDelegationSet(t *testing.T) {
+	_, ctx := keepertest.DualstakingKeeper(t)
+	ts := newTester(t)
+
+	// 1 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(1, 1, 0, 0)
+
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	k := ts.Keepers.Dualstaking
+	bondDenom := commontypes.TokenDenom
+	timeNow := ctx.BlockTime()
+	tests := []struct {
+		amount                sdk.Coin
+		expectedMonthlyCredit sdk.Coin
+		timeWait              time.Duration
+		remove                bool
+	}{
+		{
+			timeWait:              0,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(0)),
+		},
+		{
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720/2)),
+		},
+		{
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+		},
+		{
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+		},
+		{
+			timeWait:              15 * time.Hour * 24,
+			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720)),
+		},
+	}
+
+	for iteration := 0; iteration < len(tests); iteration++ {
+		t.Run("delegation set tests "+strconv.Itoa(iteration), func(t *testing.T) {
+			delegation := types.Delegation{
+				Delegator: client1Addr,
+				Provider:  provider1Addr,
+				Amount:    tests[iteration].amount,
+			}
+			if tests[iteration].remove {
+				k.RemoveDelegation(ctx, delegation)
+			}
+			timeNow = ctx.BlockTime()
+			ctx = ctx.WithBlockTime(timeNow.Add(tests[iteration].timeWait))
+
+			err := k.SetDelegation(ctx, delegation)
+			require.NoError(t, err)
+			delegationGot, found := k.GetDelegation(ctx, delegation.Delegator, delegation.Provider)
+			require.True(t, found)
+			monthlyCredit := k.CalculateMonthlyCredit(ctx, delegationGot)
+			require.Equal(t, tests[iteration].expectedMonthlyCredit, monthlyCredit)
 		})
 	}
 }
