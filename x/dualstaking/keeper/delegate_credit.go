@@ -24,8 +24,10 @@ import (
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
 )
 
-const monthHours = 720 // 30 days * 24 hours
-const hourSeconds = 3600
+const (
+	monthHours  = 720 // 30 days * 24 hours
+	hourSeconds = 3600
+)
 
 // calculate the delegation credit based on the timestamps, and the amounts of delegations
 // amounts and credits represent daily value, rounded down
@@ -100,6 +102,6 @@ func (k Keeper) CalculateMonthlyCredit(ctx sdk.Context, delegation types.Delegat
 		timeStampDiff = monthHours
 	}
 	// normalize credit to 30 days
-	credit.Amount = credit.Amount.MulRaw(int64(timeStampDiff)).QuoRaw(monthHours)
+	credit.Amount = credit.Amount.MulRaw(timeStampDiff).QuoRaw(monthHours)
 	return credit
 }

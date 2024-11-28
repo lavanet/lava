@@ -43,12 +43,15 @@ type mockStakingKeeperEmpty struct{}
 func (k mockStakingKeeperEmpty) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
 	return nil
 }
+
 func (k mockStakingKeeperEmpty) UnbondingTime(ctx sdk.Context) time.Duration {
 	return time.Duration(0)
 }
+
 func (k mockStakingKeeperEmpty) GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation {
 	return nil
 }
+
 func (k mockStakingKeeperEmpty) GetDelegatorValidator(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
 	return stakingtypes.Validator{}, nil
 }
