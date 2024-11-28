@@ -339,7 +339,13 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 10000
+                                "timeout_ms": 10000,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.tx_hash",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "EXPERIMENTAL_tx_status",
