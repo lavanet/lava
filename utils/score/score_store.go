@@ -16,7 +16,7 @@ const (
 )
 
 // ScoreStore is a decaying weighted average object that is used to collect
-// providers performace metrics samples (see QoS excellence comment below).
+// providers performance metrics samples (see QoS excellence comment below).
 // These are used to calculate the providers QoS excellence score, used
 // by the provider optimizer when choosing providers to be paired with a consumer.
 //
@@ -111,7 +111,6 @@ func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 		// default availability: 1
 		availabilityScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultAvailabilityNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor))
 		if err != nil {
-
 		}
 		return availabilityScoreStore
 	default:
@@ -319,7 +318,7 @@ func (ls *LatencyScoreStore_Refactor) Update(sample float64, sampleTime time.Tim
 	}
 
 	// normalize the sample with the latency CU factor
-	sample = sample * ls.ScoreStore_Refactor.Config.LatencyCuFactor
+	sample *= ls.ScoreStore_Refactor.Config.LatencyCuFactor
 
 	return ls.ScoreStore_Refactor.Update(sample, sampleTime)
 }
