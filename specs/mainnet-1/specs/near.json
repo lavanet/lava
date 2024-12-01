@@ -490,6 +490,32 @@
                                         "expected_value": "9820210"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "tracking-shards",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"floor.is.lava\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
