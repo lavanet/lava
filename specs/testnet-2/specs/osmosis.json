@@ -1,27 +1,25 @@
 {
     "proposal": {
-        "title": "Add Specs: Lava",
-        "description": "Adding new specification support for relaying Lava data on Lava",
+        "title": "Add Specs: Osmosis",
+        "description": "Adding new specification support for relaying Osmosis data on Lava",
         "specs": [
             {
-                "index": "LAVA",
-                "name": "lava mainnet",
-                "identity": "327af7338affeb1f0d0e2ec3b95d802571fbff4d",
+                "index": "OSMOSIS",
+                "name": "osmosis mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK"
+                    "COSMOSSDKFULL"
                 ],
-                "providers_types": 1,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 15000,
+                "average_block_time": 6500,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
@@ -34,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote/{index}",
+                                "name": "/osmosis/epochs/v1beta1/current_epoch",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -52,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/params",
+                                "name": "/osmosis/epochs/v1beta1/epochs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -70,7 +68,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/epoch_details",
+                                "name": "/osmosis/gamm/v1beta1/num_pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -88,7 +86,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params",
+                                "name": "/osmosis/gamm/v1beta1/pool_type/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -106,7 +104,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/params",
+                                "name": "/osmosis/gamm/v1beta1/pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -124,7 +122,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage",
+                                "name": "/osmosis/gamm/v1beta1/pools/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -142,7 +140,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
+                                "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -160,7 +158,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/clients/{chainID}",
+                                "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/prices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -178,7 +176,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments",
+                                "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_pool_liquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -196,7 +194,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments/{index}",
+                                "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_shares",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -214,7 +212,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
+                                "name": "/osmosis/gamm/v1beta1/total_liquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -232,7 +230,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/params",
+                                "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_in",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -250,7 +248,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage",
+                                "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_out",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -268,7 +266,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
+                                "name": "/osmosis/incentives/v1beta1/active_gauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -286,7 +284,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers/{chainID}",
+                                "name": "/osmosis/incentives/v1beta1/active_gauges_per_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -304,7 +302,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
+                                "name": "/osmosis/incentives/v1beta1/gauge_by_id/{id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -322,7 +320,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
+                                "name": "/osmosis/incentives/v1beta1/gauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -340,155 +338,9 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
+                                "name": "/osmosis/incentives/v1beta1/lockable_durations",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "block",
-                                        "=",
-                                        "3"
-                                    ],
-                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/plans/show_all_plans",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/chain/{chainID}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/show_all_chains",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/spec",
-                                "block_parsing": {
-                                    "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
@@ -504,7 +356,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{index}",
+                                "name": "/osmosis/incentives/v1beta1/module_distributed_coins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -522,7 +374,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/next/{store_key}/{prefix}",
+                                "name": "/osmosis/incentives/v1beta1/module_to_distribute_coins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -540,7 +392,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/params",
+                                "name": "/osmosis/incentives/v1beta1/rewards_est/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -558,7 +410,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/store_keys",
+                                "name": "/osmosis/incentives/v1beta1/upcoming_gauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -576,7 +428,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/sdk_pairing",
+                                "name": "/osmosis/incentives/v1beta1/upcoming_gauges_per_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -594,7 +446,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/pools",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_coins/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -612,7 +464,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/all_timers/{store_key}/{prefix}",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_duration/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -630,7 +482,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/params",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -648,7 +500,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/Entry/{store_key}/{prefix}/{key}/{block}",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -666,7 +518,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/params",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -684,7 +536,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list_projects/{subscription}",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_pasttime/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -702,7 +554,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/provider_delegators/{provider}",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -720,7 +572,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}",
+                                "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -738,7 +590,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw/{ChainID}",
+                                "name": "/osmosis/lockup/v1beta1/account_unlockable_coins/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -756,7 +608,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/params",
+                                "name": "/osmosis/lockup/v1beta1/account_unlocked_before_time/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -774,7 +626,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/info/{project}",
+                                "name": "/osmosis/lockup/v1beta1/account_unlocking_coins/{owner}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -792,7 +644,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_providers/{delegator}",
+                                "name": "/osmosis/lockup/v1beta1/locked_by_id/{lock_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -810,7 +662,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/developer/{developer}",
+                                "name": "/osmosis/lockup/v1beta1/locked_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -828,7 +680,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}",
+                                "name": "/osmosis/lockup/v1beta1/module_balance",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -846,7 +698,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/block_reward",
+                                "name": "/osmosis/lockup/v1beta1/module_locked_amount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -864,7 +716,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/list",
+                                "name": "/osmosis/lockup/v1beta1/synthetic_lockups_by_lock_id/{lock_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -882,7 +734,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/current/{consumer}",
+                                "name": "/osmosis/mint/v1beta1/epoch_provisions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -900,7 +752,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/static_providers_list/{chainID}",
+                                "name": "/osmosis/mint/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -918,7 +770,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/provider_conflicts/{provider}",
+                                "name": "/osmosis/pool-incentives/v1beta1/distr_info",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -936,7 +788,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params/{index}",
+                                "name": "/osmosis/pool-incentives/v1beta1/external_incentive_gauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -954,7 +806,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/protocol/params",
+                                "name": "/osmosis/pool-incentives/v1beta1/gauge-ids/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -972,7 +824,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote",
+                                "name": "/osmosis/pool-incentives/v1beta1/incentivized_pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -990,7 +842,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_monthly_payout/{provider}",
+                                "name": "/osmosis/pool-incentives/v1beta1/lockable_durations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1008,7 +860,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}",
+                                "name": "/osmosis/pool-incentives/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1026,7 +878,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}",
+                                "name": "/osmosis/superfluid/v1beta1/all_assets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1044,7 +896,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/query_downtime",
+                                "name": "/osmosis/superfluid/v1beta1/all_intermediary_accounts",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1062,7 +914,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/consumer_conflicts/{consumer}",
+                                "name": "/osmosis/superfluid/v1beta1/all_superfluid_delegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1080,7 +932,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}",
+                                "name": "/osmosis/superfluid/v1beta1/asset_multiplier",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1098,7 +950,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw",
+                                "name": "/osmosis/superfluid/v1beta1/asset_type",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1116,7 +968,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/store_keys",
+                                "name": "/osmosis/superfluid/v1beta1/connected_intermediary_account/{lock_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1134,7 +986,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{ChainID}",
+                                "name": "/osmosis/superfluid/v1beta1/estimate_superfluid_delegation_amount_by_validator_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1152,7 +1004,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/params",
+                                "name": "/osmosis/superfluid/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1170,7 +1022,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/params",
+                                "name": "/osmosis/superfluid/v1beta1/superfluid_delegation_amount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1188,7 +1040,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/info/{plan_index}",
+                                "name": "/osmosis/superfluid/v1beta1/superfluid_delegations/{delegator_address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1206,7 +1058,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list",
+                                "name": "/osmosis/superfluid/v1beta1/superfluid_delegations_by_validator_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1224,7 +1076,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/next_to_month_expiry",
+                                "name": "/osmosis/superfluid/v1beta1/superfluid_undelegations_by_delegator/{delegator_address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1242,7 +1094,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_spec_reward/{spec}",
+                                "name": "/osmosis/superfluid/v1beta1/total_delegation_by_delegator/{delegator_address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1260,7 +1112,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}",
+                                "name": "/osmosis/tokenfactory/v1beta1/denoms/{denom}/authority_metadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1278,7 +1130,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/tracked_usage/{subscription}",
+                                "name": "/osmosis/tokenfactory/v1beta1/denoms_from_creator/{creator}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1296,7 +1148,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_provider_reward/{provider}",
+                                "name": "/osmosis/tokenfactory/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1314,7 +1166,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}",
+                                "name": "/osmosis/twap/v1beta1/ArithmeticTwap",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1332,7 +1184,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}",
+                                "name": "/osmosis/twap/v1beta1/ArithmeticTwapToNow",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1350,7 +1202,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/SpecTrackedInfo/{chain_id}/{provider}",
+                                "name": "/osmosis/twap/v1beta1/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1368,7 +1220,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers_epoch_cu",
+                                "name": "/osmosis/txfees/v1beta1/base_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1386,7 +1238,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider/{address}/{chainID}",
+                                "name": "/osmosis/txfees/v1beta1/denom_pool_id/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1404,7 +1256,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}",
+                                "name": "/osmosis/txfees/v1beta1/fee_tokens",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1422,7 +1274,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/show_iprpc_data",
+                                "name": "/osmosis/txfees/v1beta1/spot_price_by_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1448,7 +1300,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "osmosis-1"
                                     }
                                 ]
                             },
@@ -1456,11 +1308,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
+                                        "latest_distance": 17280
                                     }
                                 ]
                             }
@@ -1470,7 +1318,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 17040
                                 }
                             }
                         ]
@@ -1485,7 +1333,7 @@
                         },
                         "apis": [
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVote",
+                                "name": "osmosis.epochs.v1beta1.Query/CurrentEpoch",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1503,7 +1351,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
+                                "name": "osmosis.epochs.v1beta1.Query/EpochInfos",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1521,7 +1369,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/Params",
+                                "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1539,7 +1387,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/EpochDetails",
+                                "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1557,7 +1405,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParams",
+                                "name": "osmosis.gamm.v1beta1.Query/NumPools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1575,7 +1423,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
+                                "name": "osmosis.gamm.v1beta1.Query/Pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1593,7 +1441,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/Params",
+                                "name": "osmosis.gamm.v1beta1.Query/PoolParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1611,7 +1459,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorage",
+                                "name": "osmosis.gamm.v1beta1.Query/PoolType",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1629,7 +1477,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
+                                "name": "osmosis.gamm.v1beta1.Query/Pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1647,7 +1495,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Clients",
+                                "name": "osmosis.gamm.v1beta1.Query/SpotPrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1665,7 +1513,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPayments",
+                                "name": "osmosis.gamm.v1beta1.Query/TotalLiquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1683,7 +1531,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
+                                "name": "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1701,7 +1549,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SdkPairing",
+                                "name": "osmosis.gamm.v1beta1.Query/TotalShares",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1719,7 +1567,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/GetPairing",
+                                "name": "osmosis.incentives.Query/ActiveGauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1737,7 +1585,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Params",
+                                "name": "osmosis.incentives.Query/ActiveGaugesPerDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1755,7 +1603,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
+                                "name": "osmosis.incentives.Query/GaugeByID",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1773,7 +1621,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
+                                "name": "osmosis.incentives.Query/Gauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1791,7 +1639,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Providers",
+                                "name": "osmosis.incentives.Query/LockableDurations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1809,7 +1657,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
+                                "name": "osmosis.incentives.Query/ModuleDistributedCoins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1827,7 +1675,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
+                                "name": "osmosis.incentives.Query/ModuleToDistributeCoins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1845,82 +1693,9 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UserEntry",
+                                "name": "osmosis.incentives.Query/RewardsEst",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "lavanet.lava.pairing.Query/VerifyPairing",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "block",
-                                        ":"
-                                    ],
-                                    "parser_func": "PARSE_DICTIONARY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "lavanet.lava.spec.Query/Chain",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "lavanet.lava.spec.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "lavanet.lava.spec.Query/ShowAllChains",
-                                "block_parsing": {
-                                    "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
@@ -1936,7 +1711,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                                "name": "osmosis.incentives.Query/UpcomingGauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1954,7 +1729,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Spec",
+                                "name": "osmosis.incentives.Query/UpcomingGaugesPerDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1972,7 +1747,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAll",
+                                "name": "osmosis.lockup.Query/AccountLockedCoins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1981,24 +1756,6 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "router.v1.Query.Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
@@ -2008,7 +1765,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecRaw",
+                                "name": "osmosis.lockup.Query/AccountLockedDuration",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2026,7 +1783,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/ListProjects",
+                                "name": "osmosis.lockup.Query/AccountLockedLongerDuration",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2044,7 +1801,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/AllIndices",
+                                "name": "osmosis.lockup.Query/AccountLockedLongerDurationDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2062,7 +1819,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConsumerConflicts",
+                                "name": "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2080,7 +1837,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.protocol.Query/Params",
+                                "name": "osmosis.lockup.Query/AccountLockedPastTime",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2098,7 +1855,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAllRaw",
+                                "name": "osmosis.lockup.Query/AccountLockedPastTimeDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2116,7 +1873,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Info",
+                                "name": "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2134,7 +1891,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/StoreKeys",
+                                "name": "osmosis.lockup.Query/AccountUnlockableCoins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2152,7 +1909,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Params",
+                                "name": "osmosis.lockup.Query/AccountUnlockedBeforeTime",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2170,7 +1927,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Entry",
+                                "name": "osmosis.lockup.Query/AccountUnlockingCoins",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2188,7 +1945,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/BlockReward",
+                                "name": "osmosis.lockup.Query/LockedByID",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2206,7 +1963,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/Params",
+                                "name": "osmosis.lockup.Query/LockedDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2224,7 +1981,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewards",
+                                "name": "osmosis.lockup.Query/ModuleBalance",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2242,7 +1999,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryDowntime",
+                                "name": "osmosis.lockup.Query/ModuleLockedAmount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2260,7 +2017,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/Next",
+                                "name": "osmosis.lockup.Query/SyntheticLockupsByLockupID",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2278,7 +2035,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Info",
+                                "name": "osmosis.mint.v1beta1.Query/EpochProvisions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2296,7 +2053,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EffectivePolicy",
+                                "name": "osmosis.mint.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2314,7 +2071,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/List",
+                                "name": "osmosis.poolincentives.v1beta1.Query/DistrInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2332,7 +2089,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Params",
+                                "name": "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2350,7 +2107,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/StaticProvidersList",
+                                "name": "osmosis.poolincentives.v1beta1.Query/GaugeIds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2368,7 +2125,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryParams",
+                                "name": "osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2386,7 +2143,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Params",
+                                "name": "osmosis.poolincentives.v1beta1.Query/LockableDurations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2404,7 +2161,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Params",
+                                "name": "osmosis.poolincentives.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2422,7 +2179,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/ProviderDelegators",
+                                "name": "osmosis.superfluid.Query/AllAssets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2440,7 +2197,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/List",
+                                "name": "osmosis.superfluid.Query/AllIntermediaryAccounts",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2458,7 +2215,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Versions",
+                                "name": "osmosis.superfluid.Query/AssetMultiplier",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2476,7 +2233,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/StoreKeys",
+                                "name": "osmosis.superfluid.Query/AssetType",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2494,7 +2251,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Pools",
+                                "name": "osmosis.superfluid.Query/ConnectedIntermediaryAccount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2512,7 +2269,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ProviderConflicts",
+                                "name": "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2530,7 +2287,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderMonthlyPayout",
+                                "name": "osmosis.superfluid.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2548,7 +2305,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SubscriptionMonthlyPayout",
+                                "name": "osmosis.superfluid.Query/SuperfluidDelegationAmount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2566,7 +2323,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Current",
+                                "name": "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2584,7 +2341,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/AllTimers",
+                                "name": "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2602,7 +2359,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Developer",
+                                "name": "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2620,7 +2377,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorProviders",
+                                "name": "osmosis.superfluid.Query/TotalDelegationByDelegator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2638,7 +2395,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/NextToMonthExpiry",
+                                "name": "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2656,7 +2413,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedRewards",
+                                "name": "osmosis.superfluid.Query/TotalSuperfluidDelegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2674,7 +2431,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcProviderRewardEstimation",
+                                "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2692,7 +2449,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/TrackedUsage",
+                                "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2710,7 +2467,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedValidatorRewards",
+                                "name": "osmosis.tokenfactory.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2728,7 +2485,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewardsList",
+                                "name": "osmosis.twap.v1beta1.Query/ArithmeticTwap",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2746,7 +2503,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcSpecReward",
+                                "name": "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2764,7 +2521,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProvidersEpochCu",
+                                "name": "osmosis.twap.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2782,7 +2539,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/SpecTrackedInfo",
+                                "name": "osmosis.txfees.v1beta1.Query/BaseDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2800,7 +2557,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Provider",
+                                "name": "osmosis.txfees.v1beta1.Query/DenomPoolId",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2818,7 +2575,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPairingChance",
+                                "name": "osmosis.txfees.v1beta1.Query/DenomSpotPrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2836,7 +2593,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/ShowIprpcData",
+                                "name": "osmosis.txfees.v1beta1.Query/FeeTokens",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2862,7 +2619,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "osmosis-1"
                                     }
                                 ]
                             },
@@ -2870,11 +2627,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
+                                        "latest_distance": 17280
                                     }
                                 ]
                             }
@@ -2884,7 +2637,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 17040
                                 }
                             }
                         ]
@@ -2906,7 +2659,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "osmosis-1"
                                     }
                                 ]
                             },
@@ -2914,7 +2667,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 17280
                                     },
                                     {
                                         "extension": "archive",
@@ -2928,8 +2681,98 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 17040
                                 }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "OSMOSIST",
+                "name": "osmosis testnet",
+                "enabled": true,
+                "imports": [
+                    "OSMOSIS"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "47500000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "osmo-test-5"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "osmo-test-5"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "osmo-test-5"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -2937,5 +2780,5 @@
             }
         ]
     },
-    "deposit": "1750000000ulava"
+    "deposit": "10000000ulava"
 }

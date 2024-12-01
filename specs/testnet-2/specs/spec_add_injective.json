@@ -1,27 +1,25 @@
 {
     "proposal": {
-        "title": "Add Specs: Lava",
-        "description": "Adding new specification support for relaying Lava data on Lava",
+        "title": "Add Specs: Injective",
+        "description": "Adding new specification support for relaying injective data on Lava",
         "specs": [
             {
-                "index": "LAVA",
-                "name": "lava mainnet",
-                "identity": "327af7338affeb1f0d0e2ec3b95d802571fbff4d",
+                "index": "INJECTIVE",
+                "name": "injective mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK"
+                    "COSMOSSDKFULL"
                 ],
-                "providers_types": 1,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 15000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "average_block_time": 600,
+                "allowed_block_lag_for_qos_sync": 16,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
@@ -34,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote/{index}",
+                                "name": "/injective/exchange/v1beta1/atomic_order_fee_multiplier",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -52,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/params",
+                                "name": "/injective/exchange/v1beta1/balance_mismatches/{dust_factor}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -70,7 +68,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/epoch_details",
+                                "name": "/injective/exchange/v1beta1/balances_with_balance_holds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -88,7 +86,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params",
+                                "name": "/injective/exchange/v1beta1/binary_options/markets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -106,7 +104,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/params",
+                                "name": "/injective/exchange/v1beta1/derivative/market_address/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -124,7 +122,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage",
+                                "name": "/injective/exchange/v1beta1/derivative/markets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -142,7 +140,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
+                                "name": "/injective/exchange/v1beta1/derivative/markets/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -160,7 +158,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/clients/{chainID}",
+                                "name": "/injective/exchange/v1beta1/derivative/mid_price_and_tob/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -178,7 +176,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments",
+                                "name": "/injective/exchange/v1beta1/derivative/orderbook/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -196,7 +194,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments/{index}",
+                                "name": "/injective/exchange/v1beta1/derivative/orders/conditional/{market_id}/{subaccount_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -214,7 +212,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
+                                "name": "/injective/exchange/v1beta1/derivative/orders/{market_id}/account/{account_address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -232,7 +230,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/params",
+                                "name": "/injective/exchange/v1beta1/derivative/orders/{market_id}/{subaccount_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -250,7 +248,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage",
+                                "name": "/injective/exchange/v1beta1/derivative/orders_by_hashes/{market_id}/{subaccount_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -268,7 +266,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
+                                "name": "/injective/exchange/v1beta1/derivative/transient_orders/{market_id}/{subaccount_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -286,7 +284,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers/{chainID}",
+                                "name": "/injective/exchange/v1beta1/effective_positions/{subaccount_id}/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -304,7 +302,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
+                                "name": "/injective/exchange/v1beta1/exchange/aggregateMarketVolume/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -322,7 +320,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
+                                "name": "/injective/exchange/v1beta1/exchange/aggregateMarketVolumes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -340,12 +338,696 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
+                                "name": "/injective/exchange/v1beta1/exchange/aggregateVolume/{account}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/aggregateVolumes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/denom_decimal/{denom}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/denom_decimals",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/exchangeBalances",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/subaccountDeposit",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/subaccountDeposits",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchange/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/exchangeParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/expiry_market_info/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/fee_discount_account_info/{account}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/fee_discount_schedule",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/fee_discount_tier_stats",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/historical_trade_records",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/is_opted_out_of_rewards/{account}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/market_volatility/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/mito_vault_infos",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/module_state",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/opted_out_of_rewards_accounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/order_metadata/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/orders/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/pending_trade_reward_points",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/perpetual_market_funding/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/perpetual_market_info/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/positions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/positions/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/positions/{subaccount_id}/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/full_market/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/full_markets",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/markets",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/markets/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/mid_price_and_tob/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/orderbook/{market_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/orders/{market_id}/account/{account_address}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/orders/{market_id}/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/orders_by_hashes/{market_id}/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/spot/transient_orders/{market_id}/{subaccount_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/trade_reward_campaign",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/injective/exchange/v1beta1/trade_reward_points",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -358,14 +1040,12 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
+                                "name": "/injective/exchange/v1beta1/vault_market_id/{vault_address}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block",
-                                        "=",
-                                        "3"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -378,7 +1058,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/show_all_plans",
+                                "name": "/injective/wasmx/v1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -396,7 +1076,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
+                                "name": "/injective/wasmx/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -414,7 +1094,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/chain/{chainID}",
+                                "name": "/injective/wasmx/v1/registration_info/{contract_address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -432,7 +1112,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/params",
+                                "name": "/chainlink/ocr/v1beta1/feed_config/{feed_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -450,7 +1130,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/show_all_chains",
+                                "name": "/chainlink/ocr/v1beta1/feed_config_info/{feed_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -468,7 +1148,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
+                                "name": "/chainlink/ocr/v1beta1/latest_round/{feed_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -486,7 +1166,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec",
+                                "name": "/chainlink/ocr/v1beta1/latest_transmission_details/{feed_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -504,7 +1184,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{index}",
+                                "name": "/chainlink/ocr/v1beta1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -522,7 +1202,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/next/{store_key}/{prefix}",
+                                "name": "/chainlink/ocr/v1beta1/owed_amount/{transmitter}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -540,7 +1220,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/params",
+                                "name": "/chainlink/ocr/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -558,7 +1238,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/store_keys",
+                                "name": "/injective/auction/v1beta1/basket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -576,7 +1256,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/sdk_pairing",
+                                "name": "/injective/auction/v1beta1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -594,7 +1274,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/pools",
+                                "name": "/injective/auction/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -612,7 +1292,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/all_timers/{store_key}/{prefix}",
+                                "name": "/injective/oracle/v1beta1/band_ibc_price_states",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -630,7 +1310,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/params",
+                                "name": "/injective/oracle/v1beta1/band_price_states",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -648,7 +1328,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/Entry/{store_key}/{prefix}/{key}/{block}",
+                                "name": "/injective/oracle/v1beta1/band_relayers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -666,7 +1346,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/params",
+                                "name": "/injective/oracle/v1beta1/coinbase_price_states",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -684,7 +1364,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list_projects/{subscription}",
+                                "name": "/injective/oracle/v1beta1/historical_price_records",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -702,7 +1382,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/provider_delegators/{provider}",
+                                "name": "/injective/oracle/v1beta1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -720,7 +1400,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}",
+                                "name": "/injective/oracle/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -738,7 +1418,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw/{ChainID}",
+                                "name": "/injective/oracle/v1beta1/price",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -756,7 +1436,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/params",
+                                "name": "/injective/oracle/v1beta1/pricefeed_price_states",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -774,7 +1454,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/info/{project}",
+                                "name": "/injective/oracle/v1beta1/provider_price_state/{provider}/{symbol}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -792,7 +1472,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_providers/{delegator}",
+                                "name": "/injective/oracle/v1beta1/provider_prices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -810,7 +1490,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/developer/{developer}",
+                                "name": "/injective/oracle/v1beta1/providers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -828,7 +1508,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}",
+                                "name": "/injective/oracle/v1beta1/pyth_price",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -846,7 +1526,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/block_reward",
+                                "name": "/injective/oracle/v1beta1/pyth_price_states",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -864,7 +1544,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/list",
+                                "name": "/injective/oracle/v1beta1/volatility",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -882,7 +1562,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/current/{consumer}",
+                                "name": "/injective/insurance/v1beta1/estimated_redemptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -900,7 +1580,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/static_providers_list/{chainID}",
+                                "name": "/injective/insurance/v1beta1/insurance_fund/{market_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -918,7 +1598,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/provider_conflicts/{provider}",
+                                "name": "/injective/insurance/v1beta1/insurance_funds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -936,7 +1616,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params/{index}",
+                                "name": "/injective/insurance/v1beta1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -954,7 +1634,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/protocol/params",
+                                "name": "/injective/insurance/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -972,7 +1652,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote",
+                                "name": "/injective/insurance/v1beta1/pending_redemptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -990,7 +1670,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_monthly_payout/{provider}",
+                                "name": "/peggy/v1/batch",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1008,7 +1688,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}",
+                                "name": "/peggy/v1/batch/confirms",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1026,7 +1706,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}",
+                                "name": "/peggy/v1/batch/last",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1044,7 +1724,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/query_downtime",
+                                "name": "/peggy/v1/batch/outgoingtx",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1062,7 +1742,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/consumer_conflicts/{consumer}",
+                                "name": "/peggy/v1/batchfees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1080,7 +1760,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}",
+                                "name": "/peggy/v1/confirms/{nonce}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1098,7 +1778,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw",
+                                "name": "/peggy/v1/cosmos_originated/denom_to_erc20",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1116,7 +1796,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/store_keys",
+                                "name": "/peggy/v1/cosmos_originated/erc20_to_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1134,7 +1814,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{ChainID}",
+                                "name": "/peggy/v1/missing_nonces",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1152,7 +1832,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/params",
+                                "name": "/peggy/v1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1170,7 +1850,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/params",
+                                "name": "/peggy/v1/oracle/event/{address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1188,7 +1868,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/info/{plan_index}",
+                                "name": "/peggy/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1206,7 +1886,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list",
+                                "name": "/peggy/v1/pending_send_to_eth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1224,7 +1904,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/next_to_month_expiry",
+                                "name": "/peggy/v1/query_delegate_keys_by_eth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1242,7 +1922,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_spec_reward/{spec}",
+                                "name": "/peggy/v1/query_delegate_keys_by_orchestrator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1260,7 +1940,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}",
+                                "name": "/peggy/v1/query_delegate_keys_by_validator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1278,7 +1958,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/tracked_usage/{subscription}",
+                                "name": "/peggy/v1/valset",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1296,7 +1976,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_provider_reward/{provider}",
+                                "name": "/peggy/v1/valset/confirm",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1314,7 +1994,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}",
+                                "name": "/peggy/v1/valset/current",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1332,7 +2012,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}",
+                                "name": "/peggy/v1/valset/last",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1350,7 +2030,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/SpecTrackedInfo/{chain_id}/{provider}",
+                                "name": "/peggy/v1/valset/requests",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1368,7 +2048,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers_epoch_cu",
+                                "name": "/injective/tokenfactory/v1beta1/denoms/{creator}/{sub_denom}/authority_metadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1386,7 +2066,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider/{address}/{chainID}",
+                                "name": "/injective/tokenfactory/v1beta1/denoms_from_creator/{creator}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1404,7 +2084,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}",
+                                "name": "/injective/tokenfactory/v1beta1/module_state",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1422,7 +2102,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/show_iprpc_data",
+                                "name": "/injective/tokenfactory/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1448,7 +2128,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "injective-1"
                                     }
                                 ]
                             },
@@ -1456,11 +2136,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
+                                        "latest_distance": 86400
                                     }
                                 ]
                             }
@@ -1470,7 +2146,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 85500
                                 }
                             }
                         ]
@@ -1485,7 +2161,7 @@
                         },
                         "apis": [
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVote",
+                                "name": "injective.auction.v1beta1.Query/AuctionModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1503,7 +2179,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
+                                "name": "injective.auction.v1beta1.Query/AuctionParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1521,7 +2197,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/Params",
+                                "name": "injective.auction.v1beta1.Query/CurrentAuctionBasket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1539,7 +2215,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/EpochDetails",
+                                "name": "injective.exchange.v1beta1.Query/AccountAddressDerivativeOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1557,7 +2233,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParams",
+                                "name": "injective.exchange.v1beta1.Query/AccountAddressSpotOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1575,7 +2251,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
+                                "name": "injective.exchange.v1beta1.Query/AggregateMarketVolume",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1593,7 +2269,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/Params",
+                                "name": "injective.exchange.v1beta1.Query/AggregateMarketVolumes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1611,7 +2287,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorage",
+                                "name": "injective.exchange.v1beta1.Query/AggregateVolume",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1629,7 +2305,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
+                                "name": "injective.exchange.v1beta1.Query/AggregateVolumes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1647,7 +2323,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Clients",
+                                "name": "injective.exchange.v1beta1.Query/BalanceMismatches",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1665,7 +2341,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPayments",
+                                "name": "injective.exchange.v1beta1.Query/BalanceWithBalanceHolds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1683,7 +2359,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
+                                "name": "injective.exchange.v1beta1.Query/BinaryOptionsMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1701,7 +2377,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SdkPairing",
+                                "name": "injective.exchange.v1beta1.Query/DenomDecimal",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1719,7 +2395,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/GetPairing",
+                                "name": "injective.exchange.v1beta1.Query/DenomDecimals",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1737,7 +2413,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Params",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1755,7 +2431,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarketAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1773,7 +2449,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1791,7 +2467,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Providers",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMidPriceAndTOB",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1809,7 +2485,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeOrderbook",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1827,7 +2503,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeOrdersByHashes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1845,12 +2521,840 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UserEntry",
+                                "name": "injective.exchange.v1beta1.Query/ExchangeBalances",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/ExchangeModuleState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/ExpiryFuturesMarketInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountAccountInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountSchedule",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountTierStatistics",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/FullSpotMarket",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/FullSpotMarkets",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/HistoricalTradeRecords",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/IsOptedOutOfRewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/MarketAtomicExecutionFeeMultiplier",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/MarketVolatility",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/MitoVaultInfos",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/OptedOutOfRewardsAccounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/PendingTradeRewardPoints",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/PerpetualMarketFunding",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/PerpetualMarketInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/Positions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/QueryExchangeParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/QueryMarketIDFromVault",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SpotMarket",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SpotMarkets",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SpotMidPriceAndTOB",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SpotOrderbook",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SpotOrdersByHashes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountDeposit",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountDeposits",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountEffectivePositionInMarket",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountOrderMetadata",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountPositionInMarket",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountPositions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/SubaccountTradeNonce",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TradeRewardCampaign",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TradeRewardPoints",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeConditionalOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeTransientOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TraderSpotOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.exchange.v1beta1.Query/TraderSpotTransientOrders",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/EstimatedRedemptions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/InsuranceFund",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/InsuranceFunds",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/InsuranceModuleState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/InsuranceParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.insurance.v1beta1.Query/PendingRedemptions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.ocr.v1beta1.Query/FeedConfig",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1863,13 +3367,12 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/VerifyPairing",
+                                "name": "injective.ocr.v1beta1.Query/FeedConfigInfo",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block",
-                                        ":"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_DICTIONARY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1882,7 +3385,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Chain",
+                                "name": "injective.ocr.v1beta1.Query/LatestRound",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1900,7 +3403,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Params",
+                                "name": "injective.ocr.v1beta1.Query/LatestTransmissionDetails",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1918,7 +3421,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowAllChains",
+                                "name": "injective.ocr.v1beta1.Query/OcrModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1936,7 +3439,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                                "name": "injective.ocr.v1beta1.Query/OwedAmount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1954,7 +3457,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Spec",
+                                "name": "injective.ocr.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1972,7 +3475,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAll",
+                                "name": "injective.oracle.v1beta1.Query/BandIBCPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1990,7 +3493,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "router.v1.Query.Params",
+                                "name": "injective.oracle.v1beta1.Query/BandPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1998,7 +3501,7 @@
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
-                                "enabled": false,
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
@@ -2008,7 +3511,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecRaw",
+                                "name": "injective.oracle.v1beta1.Query/BandRelayers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2026,7 +3529,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/ListProjects",
+                                "name": "injective.oracle.v1beta1.Query/CoinbasePriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2044,7 +3547,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/AllIndices",
+                                "name": "injective.oracle.v1beta1.Query/HistoricalPriceRecords",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2062,7 +3565,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConsumerConflicts",
+                                "name": "injective.oracle.v1beta1.Query/OracleModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2080,7 +3583,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.protocol.Query/Params",
+                                "name": "injective.oracle.v1beta1.Query/OraclePrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2098,7 +3601,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAllRaw",
+                                "name": "injective.oracle.v1beta1.Query/OracleProviderPrices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2116,7 +3619,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Info",
+                                "name": "injective.oracle.v1beta1.Query/OracleProvidersInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2134,7 +3637,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/StoreKeys",
+                                "name": "injective.oracle.v1beta1.Query/OracleVolatility",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2152,7 +3655,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Params",
+                                "name": "injective.oracle.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2170,7 +3673,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Entry",
+                                "name": "injective.oracle.v1beta1.Query/PriceFeedPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2188,7 +3691,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/BlockReward",
+                                "name": "injective.oracle.v1beta1.Query/ProviderPriceState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2206,7 +3709,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/Params",
+                                "name": "injective.oracle.v1beta1.Query/PythPrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2224,7 +3727,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewards",
+                                "name": "injective.oracle.v1beta1.Query/PythPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2242,7 +3745,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryDowntime",
+                                "name": "injective.peggy.v1.Query/BatchConfirms",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2260,7 +3763,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/Next",
+                                "name": "injective.peggy.v1.Query/BatchFees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2278,7 +3781,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Info",
+                                "name": "injective.peggy.v1.Query/BatchRequestByNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2296,7 +3799,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EffectivePolicy",
+                                "name": "injective.peggy.v1.Query/CurrentValset",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2314,7 +3817,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/List",
+                                "name": "injective.peggy.v1.Query/DenomToERC20",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2332,7 +3835,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Params",
+                                "name": "injective.peggy.v1.Query/ERC20ToDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2350,7 +3853,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/StaticProvidersList",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByEth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2368,7 +3871,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryParams",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByOrchestrator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2386,7 +3889,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Params",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByValidator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2404,7 +3907,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Params",
+                                "name": "injective.peggy.v1.Query/GetPendingSendToEth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2422,7 +3925,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/ProviderDelegators",
+                                "name": "injective.peggy.v1.Query/LastEventByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2440,7 +3943,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/List",
+                                "name": "injective.peggy.v1.Query/LastPendingBatchRequestByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2458,7 +3961,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Versions",
+                                "name": "injective.peggy.v1.Query/LastPendingValsetRequestByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2476,7 +3979,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/StoreKeys",
+                                "name": "injective.peggy.v1.Query/LastValsetRequests",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2494,7 +3997,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Pools",
+                                "name": "injective.peggy.v1.Query/MissingPeggoNonces",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2512,7 +4015,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ProviderConflicts",
+                                "name": "injective.peggy.v1.Query/OutgoingTxBatches",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2530,7 +4033,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderMonthlyPayout",
+                                "name": "injective.peggy.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2548,7 +4051,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SubscriptionMonthlyPayout",
+                                "name": "injective.peggy.v1.Query/PeggyModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2566,7 +4069,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Current",
+                                "name": "injective.peggy.v1.Query/ValsetConfirm",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2584,7 +4087,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/AllTimers",
+                                "name": "injective.peggy.v1.Query/ValsetConfirmsByNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2602,7 +4105,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Developer",
+                                "name": "injective.peggy.v1.Query/ValsetRequest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2620,7 +4123,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorProviders",
+                                "name": "injective.permissions.v1beta1.Query/AddressRoles",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2638,7 +4141,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/NextToMonthExpiry",
+                                "name": "injective.permissions.v1beta1.Query/AddressesByRole",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2656,7 +4159,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedRewards",
+                                "name": "injective.permissions.v1beta1.Query/AllNamespaces",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2674,7 +4177,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcProviderRewardEstimation",
+                                "name": "injective.permissions.v1beta1.Query/NamespaceByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2692,7 +4195,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/TrackedUsage",
+                                "name": "injective.permissions.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2710,7 +4213,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedValidatorRewards",
+                                "name": "injective.permissions.v1beta1.Query/VouchersForAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2728,7 +4231,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewardsList",
+                                "name": "injective.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2746,7 +4249,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcSpecReward",
+                                "name": "injective.tokenfactory.v1beta1.Query/DenomsFromCreator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2764,7 +4267,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProvidersEpochCu",
+                                "name": "injective.tokenfactory.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2782,7 +4285,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/SpecTrackedInfo",
+                                "name": "injective.tokenfactory.v1beta1.Query/TokenfactoryModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2800,7 +4303,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Provider",
+                                "name": "injective.wasmx.v1.Query/ContractRegistrationInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2818,7 +4321,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPairingChance",
+                                "name": "injective.wasmx.v1.Query/WasmxModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2836,7 +4339,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/ShowIprpcData",
+                                "name": "injective.wasmx.v1.Query/WasmxParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2862,7 +4365,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "injective-1"
                                     }
                                 ]
                             },
@@ -2870,11 +4373,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
+                                        "latest_distance": 86400
                                     }
                                 ]
                             }
@@ -2884,7 +4383,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 85500
                                 }
                             }
                         ]
@@ -2906,7 +4405,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "injective-1"
                                     }
                                 ]
                             },
@@ -2914,7 +4413,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 86400
                                     },
                                     {
                                         "extension": "archive",
@@ -2928,8 +4427,98 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 82800
                                 }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "INJECTIVET",
+                "name": "injective testnet",
+                "enabled": true,
+                "imports": [
+                    "INJECTIVE"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 600,
+                "allowed_block_lag_for_qos_sync": 16,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "47500000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "injective-888"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "injective-888"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "injective-888"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -2937,5 +4526,5 @@
             }
         ]
     },
-    "deposit": "1750000000ulava"
+    "deposit": "10000000ulava"
 }

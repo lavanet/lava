@@ -1,27 +1,25 @@
 {
     "proposal": {
-        "title": "Add Specs: Lava",
-        "description": "Adding new specification support for relaying Lava data on Lava",
+        "title": "Add Specs: ELYS",
+        "description": "Adding new specification support for relaying elys data on Lava",
         "specs": [
             {
-                "index": "LAVA",
-                "name": "lava mainnet",
-                "identity": "327af7338affeb1f0d0e2ec3b95d802571fbff4d",
+                "index": "ELYS",
+                "name": "elys testnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK"
+                    "COSMOSSDKFULL"
                 ],
-                "providers_types": 1,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 15000,
+                "average_block_time": 4500,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
@@ -34,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote/{index}",
+                                "name": "/elys-network/elys/accountedpool/accounted_pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -52,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/params",
+                                "name": "/elys-network/elys/accountedpool/accounted_pool/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -70,7 +68,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/epoch_details",
+                                "name": "/elys-network/elys/amm/balance/{address}/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -88,7 +86,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params",
+                                "name": "/elys-network/elys/amm/denom_liquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -106,7 +104,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/params",
+                                "name": "/elys-network/elys/amm/denom_liquidity/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -124,7 +122,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage",
+                                "name": "/elys-network/elys/amm/exit_pool_estimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -142,7 +140,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
+                                "name": "/elys-network/elys/amm/in_route_by_denom/{denom_in}/{denom_out}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -160,7 +158,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/clients/{chainID}",
+                                "name": "/elys-network/elys/amm/join_pool_estimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -178,7 +176,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments",
+                                "name": "/elys-network/elys/amm/out_route_by_denom/{denom_out}/{denom_in}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -196,7 +194,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/epoch_payments/{index}",
+                                "name": "/elys-network/elys/amm/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -214,7 +212,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
+                                "name": "/elys-network/elys/amm/pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -232,7 +230,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/params",
+                                "name": "/elys-network/elys/amm/pool/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -250,7 +248,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage",
+                                "name": "/elys-network/elys/amm/slippage_track/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -268,7 +266,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
+                                "name": "/elys-network/elys/amm/slippage_tracks",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -286,7 +284,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers/{chainID}",
+                                "name": "/elys-network/elys/amm/swap_estimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -304,7 +302,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
+                                "name": "/elys-network/elys/amm/swap_estimation_by_denom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -322,7 +320,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
+                                "name": "/elys-network/elys/assetprofile/entry",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -340,83 +338,9 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
+                                "name": "/elys-network/elys/assetprofile/entry/{base_denom}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "block",
-                                        "=",
-                                        "3"
-                                    ],
-                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/plans/show_all_plans",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/lavanet/lava/spec/chain/{chainID}",
-                                "block_parsing": {
-                                    "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
@@ -432,7 +356,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/params",
+                                "name": "/elys-network/elys/assetprofile/entry/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -450,7 +374,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/show_all_chains",
+                                "name": "/elys-network/elys/assetprofile/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -468,7 +392,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
+                                "name": "/elys-network/elys/burner/history",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -486,7 +410,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec",
+                                "name": "/elys-network/elys/burner/history/{timestamp}/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -504,7 +428,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{index}",
+                                "name": "/elys-network/elys/burner/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -522,7 +446,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/next/{store_key}/{prefix}",
+                                "name": "/elys/clock/v1/contracts",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -540,7 +464,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/params",
+                                "name": "/elys/clock/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -558,7 +482,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/store_keys",
+                                "name": "/elys-network/elys/commitment/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -576,7 +500,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/sdk_pairing",
+                                "name": "/elys-network/elys/commitment/show_commitments/{creator}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -594,7 +518,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/pools",
+                                "name": "/elys-network/elys/epochs/v1/current_epoch",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -612,7 +536,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/all_timers/{store_key}/{prefix}",
+                                "name": "/elys-network/elys/epochs/v1/epochs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -630,7 +554,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/params",
+                                "name": "/elys-network/elys/incentive/apr/{withdraw_type}/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -648,7 +572,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/Entry/{store_key}/{prefix}/{key}/{block}",
+                                "name": "/elys-network/elys/incentive/aprs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -666,7 +590,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/params",
+                                "name": "/elys-network/elys/incentive/community_pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -684,7 +608,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list_projects/{subscription}",
+                                "name": "/elys-network/elys/incentive/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -702,7 +626,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/provider_delegators/{provider}",
+                                "name": "/elys-network/elys/incentive/pool_aprs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -720,7 +644,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}",
+                                "name": "/elys-network/elys/incentive/pool_rewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -738,7 +662,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw/{ChainID}",
+                                "name": "/elys-network/elys/leveragelp/is-whitelisted",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -756,7 +680,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/params",
+                                "name": "/elys-network/elys/leveragelp/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -774,7 +698,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/info/{project}",
+                                "name": "/elys-network/elys/leveragelp/pool/{index}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -792,7 +716,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_providers/{delegator}",
+                                "name": "/elys-network/elys/leveragelp/pool/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -810,7 +734,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/developer/{developer}",
+                                "name": "/elys-network/elys/leveragelp/position/{address}/{id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -828,7 +752,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}",
+                                "name": "/elys-network/elys/leveragelp/positions-by-pool/{amm_pool_id}/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -846,7 +770,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/block_reward",
+                                "name": "​/elys-network​/elys​/leveragelp​/positions-for-address​/{address}​/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -864,7 +788,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/list",
+                                "name": "/elys-network/elys/leveragelp/positions/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -882,7 +806,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/current/{consumer}",
+                                "name": "/elys-network/elys/leveragelp/status",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -900,7 +824,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/static_providers_list/{chainID}",
+                                "name": "/elys-network/elys/leveragelp/whitelist/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -918,7 +842,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/provider_conflicts/{provider}",
+                                "name": "/elys-network/elys/oracle/asset_info",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -936,7 +860,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/epochstorage/fixated_params/{index}",
+                                "name": "/elys-network/elys/oracle/asset_info/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -954,7 +878,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/protocol/params",
+                                "name": "/elys-network/elys/oracle/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -972,7 +896,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/conflict_vote",
+                                "name": "/elys-network/elys/oracle/price",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -990,7 +914,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_monthly_payout/{provider}",
+                                "name": "/elys-network/elys/oracle/price_feeder",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1008,7 +932,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}",
+                                "name": "/elys-network/elys/oracle/price_feeder/{feeder}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1026,7 +950,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}",
+                                "name": "/elys/oracle/band_price_result/{request_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1044,7 +968,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/downtime/v1/query_downtime",
+                                "name": "/elys/oracle/last_band_price_request_id",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1062,7 +986,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/conflict/consumer_conflicts/{consumer}",
+                                "name": "/elys-network/elys/parameter/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1080,7 +1004,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}",
+                                "name": "​/elys-network​/elys​/perpetual​/is-whitelisted",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1098,7 +1022,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec_raw",
+                                "name": "/elys-network/elys/perpetual/mtp/{address}/{id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1116,7 +1040,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/timerstore/store_keys",
+                                "name": "​/elys-network​/elys​/perpetual​/mtps-by-pool​/{amm_pool_id}​/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1134,7 +1058,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/spec/spec/{ChainID}",
+                                "name": "/elys-network/elys/perpetual/mtps-for-address/{address}/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1152,7 +1076,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/params",
+                                "name": "/elys-network/elys/perpetual/open-estimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1170,7 +1094,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/projects/params",
+                                "name": "/elys-network/elys/perpetual/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1188,7 +1112,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/plans/info/{plan_index}",
+                                "name": "/elys-network/elys/perpetual/pool/{index}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1206,7 +1130,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/list",
+                                "name": "/elys-network/elys/perpetual/pool/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1224,7 +1148,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/next_to_month_expiry",
+                                "name": "/elys-network/elys/perpetual/positions/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1242,7 +1166,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_spec_reward/{spec}",
+                                "name": "​/elys-network​/elys​/perpetual​/status",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1260,7 +1184,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}",
+                                "name": "/elys-network/elys/perpetual/whitelist/{pagination.key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1278,7 +1202,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/tracked_usage/{subscription}",
+                                "name": "/elys-network/elys/stablestake/borrow-ratio",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1296,7 +1220,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/iprpc_provider_reward/{provider}",
+                                "name": "/elys-network/elys/stablestake/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1314,7 +1238,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}",
+                                "name": "​/elys-network​/elys​/tokenomics​/airdrop",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1332,7 +1256,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}",
+                                "name": "/elys-network/elys/tokenomics/airdrop/{intent}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1350,7 +1274,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/SpecTrackedInfo/{chain_id}/{provider}",
+                                "name": "/elys-network/elys/tokenomics/genesis_inflation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1368,7 +1292,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/providers_epoch_cu",
+                                "name": "/elys-network/elys/tokenomics/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1386,7 +1310,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider/{address}/{chainID}",
+                                "name": "/elys-network/elys/tokenomics/time_based_inflation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1404,7 +1328,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}",
+                                "name": "/elys-network/elys/tokenomics/time_based_inflation/{start_block_height}/{end_block_height}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1422,7 +1346,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/lavanet/lava/rewards/show_iprpc_data",
+                                "name": "​/elys-network​/elys​/transferhook​/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1448,7 +1372,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "elystestnet-1"
                                     }
                                 ]
                             },
@@ -1456,7 +1380,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 19200
                                     },
                                     {
                                         "extension": "archive",
@@ -1470,7 +1394,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 19000
                                 }
                             }
                         ]
@@ -1485,7 +1409,7 @@
                         },
                         "apis": [
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVote",
+                                "name": "elys.accountedpool.Query/AccountedPool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1503,7 +1427,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
+                                "name": "elys.accountedpool.Query/AllAccountedPool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1521,7 +1445,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/Params",
+                                "name": "elys.amm.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1539,7 +1463,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/EpochDetails",
+                                "name": "elys.amm.Query/Pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1557,7 +1481,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParams",
+                                "name": "elys.amm.Query/DenomLiquidity",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1575,7 +1499,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
+                                "name": "elys.amm.Query/DenomLiquidityAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1593,7 +1517,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/Params",
+                                "name": "elys.amm.Query/SwapEstimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1611,7 +1535,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorage",
+                                "name": "elys.amm.Query/JoinPoolEstimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1629,7 +1553,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
+                                "name": "elys.amm.Query/ExitPoolEstimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1647,7 +1571,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Clients",
+                                "name": "elys.amm.Query/SlippageTrack",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1665,7 +1589,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPayments",
+                                "name": "elys.amm.Query/SlippageTrackAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1683,7 +1607,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
+                                "name": "elys.amm.Query/Balance",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1701,7 +1625,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SdkPairing",
+                                "name": "elys.amm.Query/InRouteByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1719,7 +1643,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/GetPairing",
+                                "name": "elys.amm.Query/OutRouteByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1737,7 +1661,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Params",
+                                "name": "elys.amm.Query/SwapEstimationByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1755,7 +1679,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
+                                "name": "elys.assetprofile.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1773,7 +1697,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
+                                "name": "elys.assetprofile.Query/Entry",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1791,7 +1715,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Providers",
+                                "name": "elys.assetprofile.Query/EntryByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1809,7 +1733,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
+                                "name": "elys.assetprofile.Query/EntryAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1827,7 +1751,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
+                                "name": "elys.burner.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1845,12 +1769,120 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UserEntry",
+                                "name": "elys.burner.Query/History",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.burner.Query/HistoryAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.clock.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.clock.v1.Query/ClockContracts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.commitment.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.commitment.Query/ShowCommitments",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "elys.epochs.v1.Query/EpochInfos",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1863,13 +1895,12 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/VerifyPairing",
+                                "name": "elys.epochs.v1.Query/CurrentEpoch",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block",
-                                        ":"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_DICTIONARY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1882,7 +1913,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Chain",
+                                "name": "elys.estaking.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1900,7 +1931,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Params",
+                                "name": "elys.estaking.Query/Rewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1918,7 +1949,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowAllChains",
+                                "name": "elys.incentive.Query/Apr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1936,7 +1967,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                                "name": "elys.incentive.Query/Aprs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1954,7 +1985,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Spec",
+                                "name": "elys.incentive.Query/PoolRewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1972,7 +2003,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAll",
+                                "name": "elys.incentive.Query/AllProgramRewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1990,7 +2021,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "router.v1.Query.Params",
+                                "name": "elys.leveragelp.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1998,7 +2029,7 @@
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
-                                "enabled": false,
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
@@ -2008,7 +2039,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecRaw",
+                                "name": "elys.leveragelp.Query/QueryPositions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2026,7 +2057,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/ListProjects",
+                                "name": "elys.leveragelp.Query/QueryPositionsByPool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2044,7 +2075,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/AllIndices",
+                                "name": "elys.leveragelp.Query/GetStatus",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2062,7 +2093,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConsumerConflicts",
+                                "name": "elys.leveragelp.Query/QueryPositionsForAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2080,7 +2111,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.protocol.Query/Params",
+                                "name": "elys.leveragelp.Query/GetWhitelist",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2098,7 +2129,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAllRaw",
+                                "name": "elys.leveragelp.Query/IsWhitelisted",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2116,7 +2147,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Info",
+                                "name": "elys.leveragelp.Query/Pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2134,7 +2165,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/StoreKeys",
+                                "name": "elys.leveragelp.Query/Pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2152,7 +2183,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Params",
+                                "name": "elys.leveragelp.Query/Positions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2170,7 +2201,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Entry",
+                                "name": "elys.masterchef.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2188,7 +2219,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/BlockReward",
+                                "name": "elys.masterchef.Query/ExternalIncentive",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2206,7 +2237,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/Params",
+                                "name": "elys.masterchef.Query/PoolInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2224,7 +2255,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewards",
+                                "name": "elys.masterchef.Query/PoolRewardInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2242,7 +2273,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryDowntime",
+                                "name": "elys.masterchef.Query/UserRewardInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2260,7 +2291,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/Next",
+                                "name": "elys.masterchef.Query/UserPendingReward",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2278,7 +2309,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Info",
+                                "name": "elys.masterchef.Query/StableStakeApr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2296,7 +2327,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EffectivePolicy",
+                                "name": "elys.masterchef.Query/PoolAprs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2314,7 +2345,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/List",
+                                "name": "elys.oracle.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2332,7 +2363,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/Params",
+                                "name": "elys.oracle.Query/BandPriceResult",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2350,7 +2381,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/StaticProvidersList",
+                                "name": "elys.oracle.Query/LastBandRequestId",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2368,7 +2399,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.downtime.v1.Query/QueryParams",
+                                "name": "elys.oracle.Query/AssetInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2386,7 +2417,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Params",
+                                "name": "elys.oracle.Query/AssetInfoAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2404,7 +2435,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Params",
+                                "name": "elys.oracle.Query/Price",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2422,7 +2453,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/ProviderDelegators",
+                                "name": "elys.oracle.Query/PriceAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2440,7 +2471,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.plans.Query/List",
+                                "name": "elys.oracle.Query/PriceFeeder",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2458,7 +2489,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/Versions",
+                                "name": "elys.oracle.Query/PriceFeederAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2476,7 +2507,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.fixationstore.Query/StoreKeys",
+                                "name": "elys.parameter.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2494,7 +2525,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/Pools",
+                                "name": "elys.perpetual.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2512,7 +2543,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ProviderConflicts",
+                                "name": "elys.perpetual.Query/GetPositions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2530,7 +2561,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderMonthlyPayout",
+                                "name": "elys.perpetual.Query/GetPositionsByPool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2548,7 +2579,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/SubscriptionMonthlyPayout",
+                                "name": "elys.perpetual.Query/GetStatus",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2566,7 +2597,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/Current",
+                                "name": "elys.perpetual.Query/GetPositionsForAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2584,7 +2615,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.timerstore.Query/AllTimers",
+                                "name": "elys.perpetual.Query/GetWhitelist",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2602,7 +2633,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.projects.Query/Developer",
+                                "name": "elys.perpetual.Query/IsWhitelisted",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2620,7 +2651,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorProviders",
+                                "name": "elys.perpetual.Query/Pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2638,7 +2669,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/NextToMonthExpiry",
+                                "name": "elys.perpetual.Query/Pools",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2656,7 +2687,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedRewards",
+                                "name": "elys.perpetual.Query/MTP",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2674,7 +2705,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcProviderRewardEstimation",
+                                "name": "elys.perpetual.Query/OpenEstimation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2692,7 +2723,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/TrackedUsage",
+                                "name": "elys.stablestake.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2710,7 +2741,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.subscription.Query/EstimatedValidatorRewards",
+                                "name": "elys.stablestake.Query/BorrowRatio",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2728,7 +2759,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.dualstaking.Query/DelegatorRewardsList",
+                                "name": "elys.tokenomics.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2746,7 +2777,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/IprpcSpecReward",
+                                "name": "elys.tokenomics.Query/Airdrop",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2764,7 +2795,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProvidersEpochCu",
+                                "name": "elys.tokenomics.Query/AirdropAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2782,7 +2813,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/SpecTrackedInfo",
+                                "name": "elys.tokenomics.Query/GenesisInflation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2800,7 +2831,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Provider",
+                                "name": "elys.tokenomics.Query/TimeBasedInflation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2818,7 +2849,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPairingChance",
+                                "name": "elys.tokenomics.Query/TimeBasedInflationAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2836,7 +2867,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.rewards.Query/ShowIprpcData",
+                                "name": "elys.transferhook.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2862,7 +2893,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "elystestnet-1"
                                     }
                                 ]
                             },
@@ -2870,7 +2901,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 19200
                                     },
                                     {
                                         "extension": "archive",
@@ -2884,7 +2915,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 19000
                                 }
                             }
                         ]
@@ -2906,7 +2937,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-mainnet-1"
+                                        "expected_value": "elystestnet-1"
                                     }
                                 ]
                             },
@@ -2914,7 +2945,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 19200
                                     },
                                     {
                                         "extension": "archive",
@@ -2928,7 +2959,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 5680
+                                    "block": 19000
                                 }
                             }
                         ]
@@ -2937,5 +2968,5 @@
             }
         ]
     },
-    "deposit": "1750000000ulava"
+    "deposit": "10000000ulava"
 }
