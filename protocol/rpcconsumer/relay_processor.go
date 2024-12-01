@@ -86,7 +86,8 @@ func NewRelayProcessor(
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
 	}
-	relayProcessor.RelayStateMachine.SetRelayProcessor(relayProcessor)
+	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
+	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
 	return relayProcessor
 }
 

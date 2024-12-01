@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/maps"
 	epochstorage "github.com/lavanet/lava/v4/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
@@ -24,8 +25,16 @@ type PolicyInf interface {
 	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
 }
 
+type InternalPath struct {
+	Path           string
+	Enabled        bool
+	ApiInterface   string
+	ConnectionType string
+	Addon          string
+}
+
 type BaseChainParser struct {
-	internalPaths   map[string]struct{}
+	internalPaths   map[string]InternalPath
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec            spectypes.Spec
 	rwLock          sync.RWMutex
@@ -233,7 +242,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 	return retVerifications, nil
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]InternalPath, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
 	verifications map[VerificationKey]map[string][]VerificationContainer,
 ) {
@@ -282,7 +291,16 @@ func (bcp *BaseChainParser) IsTagInCollection(tag spectypes.FUNCTION_TAG, collec
 func (bcp *BaseChainParser) GetAllInternalPaths() []string {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
-	return lavaslices.KeysSlice(bcp.internalPaths)
+	return lavaslices.Map(maps.ValuesSlice(bcp.internalPaths), func(internalPath InternalPath) string {
+		return internalPath.Path
+	})
+}
+
+func (bcp *BaseChainParser) IsInternalPathEnabled(internalPath string, apiInterface string, addon string) bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	internalPathObj, ok := bcp.internalPaths[internalPath]
+	return ok && internalPathObj.Enabled && internalPathObj.ApiInterface == apiInterface && internalPathObj.Addon == addon
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
@@ -421,8 +439,18 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey]map[string][]VerificationContainer) {
-	retInternalPaths = map[string]struct{}{}
+func getServiceApis(
+	spec spectypes.Spec,
+	rpcInterface string,
+) (
+	retInternalPaths map[string]InternalPath,
+	retServerApis map[ApiKey]ApiContainer,
+	retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+	retApiCollections map[CollectionKey]*spectypes.ApiCollection,
+	retHeaders map[ApiKey]*spectypes.Header,
+	retVerifications map[VerificationKey]map[string][]VerificationContainer,
+) {
+	retInternalPaths = map[string]InternalPath{}
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
@@ -443,7 +471,13 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 			}
 
 			// add as a valid internal path
-			retInternalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+			retInternalPaths[apiCollection.CollectionData.InternalPath] = InternalPath{
+				Path:           apiCollection.CollectionData.InternalPath,
+				Enabled:        apiCollection.Enabled,
+				ApiInterface:   apiCollection.CollectionData.ApiInterface,
+				ConnectionType: apiCollection.CollectionData.Type,
+				Addon:          apiCollection.CollectionData.AddOn,
+			}
 
 			for _, parsing := range apiCollection.ParseDirectives {
 				taggedApis[parsing.FunctionTag] = TaggedContainer{

@@ -2,7 +2,8 @@
 endpoints:
   - api-interface: jsonrpc
     chain-id: AVAX
-    network-address: 127.0.0.1:2221
+    network-address:
+      address: 127.0.0.1:2221
     node-urls:
       - url: ws://127.0.0.1:3333/C/rpc/ws
         internal-path: "/C/rpc" # c chain like specified in the spec

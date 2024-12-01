@@ -129,7 +129,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       spectypes.LATEST_BLOCK,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            20 * time.Millisecond, // 150 is one way travel time
+			timeout:            25 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,

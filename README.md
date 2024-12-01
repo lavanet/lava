@@ -30,7 +30,7 @@ The best way to start working with lava is to use docker, for additional reading
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute. If you want to follow the updates or learn more about the latest design then join our [Discord](https://discord.gg/lavanetxyz).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute. If you want to follow the updates or learn more about the latest design then join our [Discord](https://discord.com/invite/Tbk5NxTCdA).
 
 ## Developing 
 
@@ -71,7 +71,7 @@ Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 ### Add `lavad`/`lavap` autocomplete
 
-You can add a useful autocomplete feature to `lavad` & `lavap` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/lava_auto_completion_install.sh).
+You can add a useful autocomplete feature to `lavad` & `lavap` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/automation_scripts/lava_auto_completion_install.sh).
 
 ## Join Lava
 
@@ -82,5 +82,5 @@ Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?u
 ## Community
 
 - [Github Discussions](https://github.com/lavanet/lava/discussions)
-- [Discord](https://discord.gg/lavanetxyz)
-- [Twitter](https://twitter.com/lavanetxyz)
+- [Discord](https://discord.com/invite/Tbk5NxTCdA)
+- [X (formerly Twitter)](https://x.com/lavanetxyz)
