@@ -172,6 +172,46 @@ func sendRelay(ts *tester, provider string, clientAcc sigs.Account, chainIDs []s
 	return types.MsgRelayPayment{Creator: provider, Relays: relays}
 }
 
+func TestPartialMonthDelegation(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
+
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
+	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 50 // 50% commission
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
+
+	_, err = ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.NoError(t, err)
+
+	ts.AdvanceTimeHours(time.Hour)
+
+	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)) // equal to provider
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, delegationAmount1)
+	require.NoError(t, err)
+	ts.AdvanceEpochs(20) // apply delegations
+
+	stakeEntryResp, err := ts.Keepers.Pairing.Provider(ts.Ctx, &types.QueryProviderRequest{
+		Address: provider,
+		ChainID: ts.spec.Index,
+	})
+	require.Nil(t, err)
+	stakeEntry := stakeEntryResp.StakeEntries[0]
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(res.Delegations))
+	require.Equal(t, stakeEntry.DelegateCommission, metadata.DelegateCommission)
+
+	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
+}
+
 func TestProviderRewardWithCommission(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
