@@ -1324,7 +1324,7 @@
                                 "api_name": "accountSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"accountUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"accountUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "accountUnsubscribe"
                             },
@@ -1333,7 +1333,7 @@
                                 "api_name": "blockSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"blockUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"blockUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "blockUnsubscribe"
                             },
@@ -1342,7 +1342,7 @@
                                 "api_name": "logsSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"logsUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"logsUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "logsUnsubscribe"
                             },
@@ -1351,7 +1351,7 @@
                                 "api_name": "programSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"programUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"programUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "programUnsubscribe"
                             },
@@ -1360,7 +1360,7 @@
                                 "api_name": "rootSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"rootUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"rootUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "rootUnsubscribe"
                             },
@@ -1369,7 +1369,7 @@
                                 "api_name": "signatureSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"signatureUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"signatureUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "signatureUnsubscribe"
                             },
@@ -1378,7 +1378,7 @@
                                 "api_name": "slotSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "slotUnsubscribe"
                             },
@@ -1387,7 +1387,7 @@
                                 "api_name": "slotsUpdatesSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotsUpdatesUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotsUpdatesUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "slotsUpdatesUnsubscribe"
                             },
@@ -1396,7 +1396,7 @@
                                 "api_name": "voteSubscribe"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"voteUnsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"voteUnsubscribe\",\"params\":[%d],\"id\":1}",
                                 "function_tag": "UNSUBSCRIBE",
                                 "api_name": "voteUnsubscribe"
                             }
