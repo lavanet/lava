@@ -429,9 +429,21 @@ func getServiceApis(
 			}
 
 			for _, parsing := range apiCollection.ParseDirectives {
-				taggedApis[parsing.FunctionTag] = TaggedContainer{
-					Parsing:       parsing,
-					ApiCollection: apiCollection,
+				// We do this because some specs may have multiple parse directives
+				// with the same tag - SUBSCRIBE (like in Solana).
+				//
+				// Since the function tag is not used for handling the subscription flow,
+				// we can ignore the extra parse directives and take only the first one. The
+				// subscription flow is handled by the consumer websocket manager and the chain router
+				// that uses the api collection to fetch the correct parse directive.
+				//
+				// The only place the SUBSCRIBE tag is checked against the taggedApis map is in the chain parser with GetParsingByTag.
+				// But there, we're not interested in the parse directive, only if the tag is present.
+				if _, ok := taggedApis[parsing.FunctionTag]; !ok {
+					taggedApis[parsing.FunctionTag] = TaggedContainer{
+						Parsing:       parsing,
+						ApiCollection: apiCollection,
+					}
 				}
 			}
 
