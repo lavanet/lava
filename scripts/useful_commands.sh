@@ -169,3 +169,45 @@ echo "---------------------------------------------"
 echo "-            ENV Validation Done            -"
 echo "---------------------------------------------"
 }
+
+get_base_specs() {
+    local priority_specs=(
+        "./specs/mainnet-1/specs/ibc.json"
+        "./specs/mainnet-1/specs/cosmoswasm.json"
+        "./specs/mainnet-1/specs/tendermint.json"
+        "./specs/mainnet-1/specs/cosmossdk.json"
+        "./specs/mainnet-1/specs/cosmossdkv45.json"
+        "./specs/mainnet-1/specs/cosmossdkv50.json"
+        "./specs/mainnet-1/specs/ethermint.json"
+        "./specs/mainnet-1/specs/ethereum.json"
+    )
+
+    (IFS=,; echo "${priority_specs[*]}")
+}
+
+get_all_specs() {
+    # Define the priority specs in order
+    local priority_specs=$(get_base_specs)
+    
+    local other_specs=()
+    
+    # Get all json files and filter out the priority ones
+    while IFS= read -r file; do
+        # Skip if file is in priority_specs
+        local is_priority=false
+        for pspec in "${priority_specs[@]}"; do
+            if [[ "./$file" == "$pspec" ]]; then
+                is_priority=true
+                break
+            fi
+        done
+        
+        # If not priority and not lava.json, add to other_specs
+        if [[ "$is_priority" == "false" ]]; then
+            other_specs+=("$file")
+        fi
+    done < <(find specs/{mainnet-1,testnet-2}/specs -name "*.json")
+    
+    # Combine priority specs with other specs and join with commas
+    (IFS=,; echo "${priority_specs[*]},${other_specs[*]}")
+}

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "mainnet-1/specs/*.json"
+      - "testnet-2/specs/*.json"
   # Optionally allow manual triggers
   workflow_dispatch:
 
@@ -27,8 +28,8 @@ jobs:
 
       - name: Copy specs to lava
         run: |
-          rm -rf lava/specs/mainnet-1/specs
-          cp -r $GITHUB_WORKSPACE/mainnet-1/specs lava/specs/mainnet-1/specs
+          rm -rf lava/specs
+          cp -r $GITHUB_WORKSPACE lava/specs
 
       - name: Run Tests
         working-directory: lava/x/spec/keeper

@@ -94,7 +94,7 @@ services:
     volumes:
       - lava_data:/lava
       - ../common/post_node_init.sh:/lava/config/post_node_init.sh
-      - ../../specs/mainnet-1/specs/:/lava/specs/mainnet-1/specs/
+      - ../../specs/:/lava/specs/
       - ../../cookbook/plans/:/lava/cookbook/plans/
     networks:
       - lava_network

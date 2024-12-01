@@ -68,7 +68,8 @@ if [ "$dry" = false ]; then
 
     GASPRICE="0.00002ulava"
     # add all existing specs so inheritance works
-    lavad tx gov submit-legacy-proposal spec-add ${__dir}/../specs/mainnet-1/specs/ibc.json,${__dir}/../specs/mainnet-1/specs/cosmoswasm.json,${__dir}/../specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,${__dir}/../specs/mainnet-1/specs/cosmossdkv45.json,${__dir}/../specs/mainnet-1/specs/cosmossdkv50.json,${__dir}/../specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,${__dir}/../specs/mainnet-1/specs/cosmoshub.json,${__dir}/../specs/mainnet-1/specs/lava.json,${__dir}/../specs/mainnet-1/specs/osmosis.json,${__dir}/../specs/mainnet-1/specs/fantom.json,${__dir}/../specs/mainnet-1/specs/celo.json,${__dir}/../specs/mainnet-1/specs/optimism.json,${__dir}/../specs/mainnet-1/specs/arbitrum.json,${__dir}/../specs/mainnet-1/specs/starknet.json,${__dir}/../specs/mainnet-1/specs/aptos.json,${__dir}/../specs/mainnet-1/specs/juno.json,${__dir}/../specs/mainnet-1/specs/polygon.json,${__dir}/../specs/mainnet-1/specs/evmos.json,${__dir}/../specs/mainnet-1/specs/base.json,${__dir}/../specs/mainnet-1/specs/canto.json,${__dir}/../specs/mainnet-1/specs/sui.json,${__dir}/../specs/mainnet-1/specs/solana.json,${__dir}/../specs/mainnet-1/specs/bsc.json,${__dir}/../specs/mainnet-1/specs/axelar.json,${__dir}/../specs/mainnet-1/specs/avalanche.json,${__dir}/../specs/mainnet-1/specs/fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
+    specs=$(get_all_specs)
+    lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
     wait_next_block
     wait_next_block
     lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

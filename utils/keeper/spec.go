@@ -144,19 +144,55 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 	} else {
 		ctx = *ctxArg
 	}
-	proposalDirectory := "specs/mainnet-1/specs/"
-	proposalFiles := []string{
-		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json", "cosmossdkv45.json", "cosmossdkv50.json",
-		"ethereum.json", "cosmoshub.json", "lava.json", "osmosis.json", "fantom.json", "celo.json",
-		"optimism.json", "arbitrum.json", "starknet.json", "aptos.json", "juno.json", "polygon.json",
-		"evmos.json", "base.json", "canto.json", "sui.json", "solana.json", "bsc.json", "axelar.json",
-		"avalanche.json", "fvm.json", "near.json",
+
+	proposalDirectories := []string{
+		"specs/mainnet-1/specs/",
+		"specs/testnet-2/specs/",
 	}
-	for _, fileName := range proposalFiles {
-		spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
-		if err == nil {
-			return spec, nil
+	baseProposalFiles := []string{
+		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json",
+		"cosmossdkv45.json", "cosmossdkv50.json", "ethereum.json",
+	}
+
+	// Create a map of base files for quick lookup
+	baseFiles := make(map[string]struct{})
+	for _, f := range baseProposalFiles {
+		baseFiles[f] = struct{}{}
+	}
+
+	// Try each directory
+	for _, proposalDirectory := range proposalDirectories {
+		// Try base proposal files first
+		for _, fileName := range baseProposalFiles {
+			spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
+			if err == nil {
+				return spec, nil
+			}
+		}
+
+		// Read all files from the proposal directory
+		files, err := os.ReadDir(getToTopMostPath + proposalDirectory)
+		if err != nil {
+			continue // Skip to next directory if this one fails
+		}
+
+		// Try additional JSON files that aren't in baseProposalFiles
+		for _, file := range files {
+			fileName := file.Name()
+			// Skip if not a JSON file or if it's in baseProposalFiles
+			if !strings.HasSuffix(fileName, ".json") {
+				continue
+			}
+			if _, exists := baseFiles[fileName]; exists {
+				continue
+			}
+
+			spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
+			if err == nil {
+				return spec, nil
+			}
 		}
 	}
+
 	return spectypes.Spec{}, fmt.Errorf("spec not found %s", specIndex)
 }

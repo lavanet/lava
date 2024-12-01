@@ -823,13 +823,20 @@ func TestMainnetSpecs(t *testing.T) {
 	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
 
+	getToTopMostPath = "../../.././specs/testnet-2/specs/"
+
+	specsFilesTestnet, err := getAllFilesInDirectory(getToTopMostPath)
+	require.NoError(t, err)
+
+	specsFiles = append(specsFiles, specsFilesTestnet...)
+
 	// Sort specs by hierarchy - specs that are imported by others should come first
 	specImports := make(map[string][]string)
 	specProposals := make(map[string]types.Spec)
 
 	// First read all spec contents
 	for _, fileName := range specsFiles {
-		contents, err := os.ReadFile(getToTopMostPath + fileName)
+		contents, err := os.ReadFile(fileName)
 		require.NoError(t, err)
 
 		// Parse imports from spec
@@ -917,7 +924,7 @@ func getAllFilesInDirectory(directory string) ([]string, error) {
 			// Skip directories; we only want files
 			continue
 		}
-		files = append(files, entry.Name())
+		files = append(files, directory+entry.Name())
 	}
 
 	return files, nil
