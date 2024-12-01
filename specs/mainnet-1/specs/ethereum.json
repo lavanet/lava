@@ -1491,7 +1491,7 @@
             {
                 "index": "SEP1",
                 "name": "ethereum testnet sepolia",
-                "enabled": false,
+                "enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -1535,7 +1535,7 @@
             {
                 "index": "HOL1",
                 "name": "ethereum testnet holesky",
-                "enabled": false,
+                "enabled": true,
                 "imports": [
                     "ETH1"
                 ],
