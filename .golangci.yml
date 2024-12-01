@@ -41,6 +41,14 @@ linters:
     - whitespace
 
 issues:
+  exclude-files:
+    - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
+    - "protocol/chainlib/grpc.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
+    - "ecosystem/lavajs/*"
+    - "ecosystem/lava-sdk/*"
   exclude-rules:
     - text: "singleCaseSwitch"
       linters:
@@ -56,7 +64,7 @@ issues:
     - text: "ST1016:"
       linters:
         - stylecheck
-    - text: "SA1019:.*\"github.com/golang/protobuf/proto\" is deprecated.*" # proto is deprecated, but some places couldn't be removed
+    - text: 'SA1019:.*"github.com/golang/protobuf/proto" is deprecated.*' # proto is deprecated, but some places couldn't be removed
       linters:
         - staticcheck
     - path: "migrations"
