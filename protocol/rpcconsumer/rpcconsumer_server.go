@@ -1582,6 +1582,7 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
 	return resp, err
 }
+
 func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(
 	ctx context.Context,
 	relayState *RelayState,
