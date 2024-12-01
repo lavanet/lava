@@ -98,6 +98,10 @@
                                     {
                                         "parse_path": ".params.block_id",
                                         "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
                                     }
                                 ]
                             },
@@ -143,6 +147,10 @@
                                 "parsers": [
                                     {
                                         "parse_path": ".params.chunk_id",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
                                     }
                                 ]
