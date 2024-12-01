@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/chaintracker"
@@ -93,9 +92,9 @@ func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryCl
 	return specResponse, err
 }
 
-func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
+func NewStateTracker(ctx context.Context, txFactory tx.Factory, stateQuery *updaters.StateQuery, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
 	// validate chainId
-	status, err := clientCtx.Client.Status(ctx)
+	status, err := stateQuery.Status(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed getting status", err)
 	}
@@ -103,7 +102,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
 
-	eventTracker := &updaters.EventTracker{ClientCtx: clientCtx}
+	eventTracker := &updaters.EventTracker{StateQuery: stateQuery}
 	for i := 0; i < updaters.BlockResultRetry; i++ {
 		err = eventTracker.UpdateBlockResults(0)
 		if err == nil {
@@ -114,7 +113,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	if err != nil {
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
-	specQueryClient := spectypes.NewQueryClient(clientCtx)
+	specQueryClient := stateQuery.GetSpecQueryClient()
 	specResponse, err := GetLavaSpecWithRetry(ctx, specQueryClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed querying lava spec for state tracker", err)

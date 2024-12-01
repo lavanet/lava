@@ -219,7 +219,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 
 	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
 
-	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, options.clientCtx, rpcp.addr.String())
+	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker.StateQuery.StateQuery, rpcp.addr.String())
 
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
 
@@ -282,9 +282,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	return nil
 }
 
-func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, clientCtx client.Context, publicAddress string) {
-	queryClient := pairingtypes.NewQueryClient(clientCtx)
-	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(queryClient, publicAddress, rpcp.providerMetricsManager)
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, stateQuery *updaters.StateQuery, publicAddress string) {
+	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
 }
 
