@@ -111,6 +111,7 @@ func NewScoreStore_Refactor(scoreType string) ScoreStorer_Refactor {
 		// default availability: 1
 		availabilityScoreStore, err := NewCustomScoreStore_Refactor(scoreType, DefaultAvailabilityNum_Refactor, 1, time.Now().Add(-InitialDataStaleness_Refactor))
 		if err != nil {
+			utils.LavaFormatFatal("cannot create default "+scoreType+" ScoreStore", err)
 		}
 		return availabilityScoreStore
 	default:
