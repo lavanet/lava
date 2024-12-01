@@ -41,21 +41,23 @@ type OptimizerQoSReport struct {
 	LatencyScore      float64
 	GenericScore      float64
 	EntryIndex        int
+	TierChances       map[int]float64
 }
 
 type optimizerQoSReportToSend struct {
-	Timestamp         time.Time `json:"timestamp"`
-	SyncScore         float64   `json:"sync_score"`
-	AvailabilityScore float64   `json:"availability_score"`
-	LatencyScore      float64   `json:"latency_score"`
-	GenericScore      float64   `json:"generic_score"`
-	ProviderAddress   string    `json:"provider"`
-	ConsumerOrigin    string    `json:"consumer"`
-	ChainId           string    `json:"chain_id"`
-	NodeErrorRate     float64   `json:"node_error_rate"`
-	Epoch             uint64    `json:"epoch"`
-	ProviderStake     int64     `json:"provider_stake"`
-	EntryIndex        int       `json:"entry_index"`
+	Timestamp         time.Time       `json:"timestamp"`
+	SyncScore         float64         `json:"sync_score"`
+	AvailabilityScore float64         `json:"availability_score"`
+	LatencyScore      float64         `json:"latency_score"`
+	GenericScore      float64         `json:"generic_score"`
+	ProviderAddress   string          `json:"provider"`
+	ConsumerOrigin    string          `json:"consumer"`
+	ChainId           string          `json:"chain_id"`
+	NodeErrorRate     float64         `json:"node_error_rate"`
+	Epoch             uint64          `json:"epoch"`
+	ProviderStake     int64           `json:"provider_stake"`
+	EntryIndex        int             `json:"entry_index"`
+	TierChances       map[int]float64 `json:"tier_chances"`
 }
 
 func (oqosr optimizerQoSReportToSend) String() string {
