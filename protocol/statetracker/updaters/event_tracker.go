@@ -2,14 +2,12 @@ package updaters
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v4/utils"
@@ -25,8 +23,8 @@ const (
 var TimeOutForFetchingLavaBlocks = time.Second * 5
 
 type EventTracker struct {
-	lock               sync.RWMutex
-	ClientCtx          client.Context
+	lock sync.RWMutex
+	*StateQuery
 	blockResults       *ctypes.ResultBlockResults
 	latestUpdatedBlock int64
 }
@@ -38,7 +36,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
 			timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
-			res, err = et.ClientCtx.Client.Status(timeoutCtx)
+			res, err = et.StateQuery.Status(timeoutCtx)
 			cancel()
 			if err == nil {
 				break
@@ -50,14 +48,10 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
 
-	brp, err := TryIntoTendermintRPC(et.ClientCtx.Client)
-	if err != nil {
-		return utils.LavaFormatError("failed converting client.TendermintRPC to tendermintRPC", err)
-	}
 	var blockResults *ctypes.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
 		timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
-		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
+		blockResults, err = et.StateQuery.BlockResults(timeoutCtx, &latestBlock)
 		cancel()
 		if err == nil {
 			break
@@ -215,12 +209,4 @@ type tendermintRPC interface {
 		ctx context.Context,
 		height *int64,
 	) (*ctypes.ResultConsensusParams, error)
-}
-
-func TryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
-	brp, ok := cl.(tendermintRPC)
-	if !ok {
-		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)
-	}
-	return brp, nil
 }

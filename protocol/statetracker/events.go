@@ -65,11 +65,8 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	defer ticker.Stop()
 	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
 		for block := blockFrom; block < blockTo; block++ {
-			brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-			if err != nil {
-				utils.LavaFormatFatal("invalid blockResults provider", err)
-			}
-			blockResults, err := brp.BlockResults(ctx, &block)
+			queryInst := updaters.NewStateQueryAccessInst(clientCtx)
+			blockResults, err := queryInst.BlockResults(ctx, &block)
 			if err != nil {
 				utils.LavaFormatError("invalid blockResults status", err)
 				return
@@ -275,14 +272,11 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			continue
 		}
 		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
-		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-		if err != nil {
-			utils.LavaFormatFatal("invalid blockResults provider", err)
-		}
+		queryInst := updaters.NewStateQueryAccessInst(clientCtx)
 		var blockResults *coretypes.ResultBlockResults
 		for retry := 0; retry < 3; retry++ {
 			ctxWithTimeout, cancelContextWithTimeout := context.WithTimeout(ctx, time.Second*30)
-			blockResults, err = brp.BlockResults(ctxWithTimeout, &block)
+			blockResults, err = queryInst.BlockResults(ctxWithTimeout, &block)
 			cancelContextWithTimeout()
 			if err != nil {
 				utils.LavaFormatWarning("@@@@ failed fetching block results will retry", err, utils.LogAttr("block_number", block))
@@ -660,10 +654,7 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 		utils.LogAttr("starting_block", latestHeight-numberOfBlocksInADay),
 	)
 
-	tmClient, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-	if err != nil {
-		utils.LavaFormatFatal("invalid blockResults provider", err)
-	}
+	queryInst := updaters.NewStateQueryAccessInst(clientCtx)
 	// i is days
 	// j are blocks in that day
 	// starting from current day and going backwards
@@ -697,7 +688,7 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 					defer wg.Done()
 					ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 					defer cancel()
-					blockResults, err := tmClient.BlockResults(ctxWithTimeout, &k)
+					blockResults, err := queryInst.BlockResults(ctxWithTimeout, &k)
 					if err != nil {
 						utils.LavaFormatError("invalid blockResults status", err)
 						return
