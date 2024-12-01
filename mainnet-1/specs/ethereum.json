@@ -6,7 +6,7 @@
             {
                 "index": "ETH1",
                 "name": "ethereum mainnet",
-                "enabled": false,
+                "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 8,
@@ -16,7 +16,7 @@
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "15000000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -1491,7 +1491,7 @@
             {
                 "index": "SEP1",
                 "name": "ethereum testnet sepolia",
-                "enabled": false,
+                "enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -1504,7 +1504,7 @@
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "15000000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -1535,7 +1535,7 @@
             {
                 "index": "HOL1",
                 "name": "ethereum testnet holesky",
-                "enabled": false,
+                "enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -1578,5 +1578,5 @@
             }
         ]
     },
-    "deposit": "1ulava"
+    "deposit": "10000000ulava"
 }
