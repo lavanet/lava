@@ -49,7 +49,7 @@ lavad config node $NODE
 (
 cd /lava/specs/mainnet-1/specs/
 lavad tx gov submit-legacy-proposal spec-add \
-  ./ibc.json,./tendermint.json,./cosmoswasm.json,./cosmossdk.json,./cosmossdk_45.json,./cosmossdk_full.json,./ethermint.json,./ethereum.json,./cosmoshub.json,./lava.json \
+  ./ibc.json,./tendermint.json,./cosmoswasm.json,./cosmossdk.json,./cosmossdkv45.json,./cosmossdkv50.json,./ethermint.json,./ethereum.json,./cosmoshub.json,./lava.json \
   --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 )
 vote_yes_on_all_pending_proposals
