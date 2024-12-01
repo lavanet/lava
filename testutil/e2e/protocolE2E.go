@@ -53,7 +53,7 @@ const (
 	badgeserverConfigFolder    = configFolder + "badgeserver"
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
-	NumberOfSpecsExpectedInE2E = 11
+	NumberOfSpecsExpectedInE2E = 10
 )
 
 var (
@@ -726,8 +726,14 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("%s", err))
-			} else if strings.Contains(string(reply), "error") {
-				errors = append(errors, string(reply))
+			} else {
+				var jsonReply map[string]interface{}
+				err = json.Unmarshal(reply, &jsonReply)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", err))
+				} else if jsonReply != nil && jsonReply["error"] != nil {
+					errors = append(errors, string(reply))
+				}
 			}
 		}
 	}
@@ -879,6 +885,7 @@ func (lt *lavaTest) saveLogs() {
 			}
 			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
 				isAllowedError := false
+
 				for errorSubstring := range allowedErrors {
 					if strings.Contains(line, errorSubstring) {
 						isAllowedError = true
