@@ -598,6 +598,17 @@
                                         "expected_value": "*"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_BLOCK_BY_NUM"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "1"
+                                    }
+                                ]
                             }
                         ]
                     },
