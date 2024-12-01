@@ -186,14 +186,12 @@ get_base_specs() {
 }
 
 get_all_specs() {
-    # Define the priority specs in order
-    local priority_specs=$(get_base_specs)
-    
+    local priority_specs=($(get_base_specs)) # Ensure it's an array
     local other_specs=()
     
-    # Get all json files and filter out the priority ones
+    find specs/{mainnet-1,testnet-2}/specs -name "*.json" > /tmp/specs_list.txt
+    
     while IFS= read -r file; do
-        # Skip if file is in priority_specs
         local is_priority=false
         for pspec in "${priority_specs[@]}"; do
             if [[ "./$file" == "$pspec" ]]; then
@@ -202,12 +200,12 @@ get_all_specs() {
             fi
         done
         
-        # If not priority and not lava.json, add to other_specs
         if [[ "$is_priority" == "false" ]]; then
             other_specs+=("$file")
         fi
-    done < <(find specs/{mainnet-1,testnet-2}/specs -name "*.json")
+    done < /tmp/specs_list.txt
     
-    # Combine priority specs with other specs and join with commas
+    rm /tmp/specs_list.txt
+    
     (IFS=,; echo "${priority_specs[*]},${other_specs[*]}")
 }

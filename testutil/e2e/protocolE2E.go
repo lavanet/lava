@@ -53,7 +53,7 @@ const (
 	badgeserverConfigFolder    = configFolder + "badgeserver"
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
-	NumberOfSpecsExpectedInE2E = 10
+	NumberOfSpecsExpectedInE2E = 11
 )
 
 var (

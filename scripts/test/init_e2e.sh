@@ -9,8 +9,7 @@ GASPRICE="0.00002ulava"
 
 # Specs proposal
 echo ---- Specs proposal ----
-specs=$(get_all_specs)
-lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal spec-add $(get_base_specs),./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 6 # need to sleep because plan policies need the specs when setting chain policies verifications
