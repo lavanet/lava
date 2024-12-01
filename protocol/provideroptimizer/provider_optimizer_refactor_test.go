@@ -1,13 +1,13 @@
 package provideroptimizer
 
 import (
-	"slices"
 	"strconv"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -831,7 +831,7 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	highStakeProviderIndexes := []int{1, 3, 5}
 	weights := map[string]int64{}
 	for i := 0; i < providersCount; i++ {
-		if slices.Contains(highStakeProviderIndexes, i) {
+		if lavaslices.Contains(highStakeProviderIndexes, i) {
 			weights[providersGen.providersAddresses[i]] = highStake
 		} else {
 			weights[providersGen.providersAddresses[i]] = normalStake
