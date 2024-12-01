@@ -815,10 +815,10 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	}
 }
 
-func TestCookbookSpecs(t *testing.T) {
+func TestMainnetSpecs(t *testing.T) {
 	ts := newTester(t)
 
-	getToTopMostPath := "../../.././cookbook/specs/"
+	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
 
 	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)

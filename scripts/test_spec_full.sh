@@ -2,7 +2,7 @@
 # call this bash with this format:
 # test_spec_full [SPEC_file_path] {[api_interface] [service-url] ...} [--install]
 # example:
-# test_spec_full cookbook/specs/lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
+# test_spec_full specs/mainnet-1/specs/lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
@@ -68,7 +68,7 @@ if [ "$dry" = false ]; then
 
     GASPRICE="0.00002ulava"
     # add all existing specs so inheritance works
-    lavad tx gov submit-legacy-proposal spec-add ${__dir}/../cookbook/specs/ibc.json,${__dir}/../cookbook/specs/cosmoswasm.json,${__dir}/../cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,${__dir}/../cookbook/specs/cosmossdk_45.json,${__dir}/../cookbook/specs/cosmossdk_full.json,${__dir}/../cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,${__dir}/../cookbook/specs/cosmoshub.json,${__dir}/../cookbook/specs/lava.json,${__dir}/../cookbook/specs/osmosis.json,${__dir}/../cookbook/specs/fantom.json,${__dir}/../cookbook/specs/celo.json,${__dir}/../cookbook/specs/optimism.json,${__dir}/../cookbook/specs/arbitrum.json,${__dir}/../cookbook/specs/starknet.json,${__dir}/../cookbook/specs/aptos.json,${__dir}/../cookbook/specs/juno.json,${__dir}/../cookbook/specs/polygon.json,${__dir}/../cookbook/specs/evmos.json,${__dir}/../cookbook/specs/base.json,${__dir}/../cookbook/specs/canto.json,${__dir}/../cookbook/specs/sui.json,${__dir}/../cookbook/specs/solana.json,${__dir}/../cookbook/specs/bsc.json,${__dir}/../cookbook/specs/axelar.json,${__dir}/../cookbook/specs/avalanche.json,${__dir}/../cookbook/specs/fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
+    lavad tx gov submit-legacy-proposal spec-add ${__dir}/../specs/mainnet-1/specs/ibc.json,${__dir}/../specs/mainnet-1/specs/cosmoswasm.json,${__dir}/../specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,${__dir}/../specs/mainnet-1/specs/cosmossdk_45.json,${__dir}/../specs/mainnet-1/specs/cosmossdk_full.json,${__dir}/../specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,${__dir}/../specs/mainnet-1/specs/cosmoshub.json,${__dir}/../specs/mainnet-1/specs/lava.json,${__dir}/../specs/mainnet-1/specs/osmosis.json,${__dir}/../specs/mainnet-1/specs/fantom.json,${__dir}/../specs/mainnet-1/specs/celo.json,${__dir}/../specs/mainnet-1/specs/optimism.json,${__dir}/../specs/mainnet-1/specs/arbitrum.json,${__dir}/../specs/mainnet-1/specs/starknet.json,${__dir}/../specs/mainnet-1/specs/aptos.json,${__dir}/../specs/mainnet-1/specs/juno.json,${__dir}/../specs/mainnet-1/specs/polygon.json,${__dir}/../specs/mainnet-1/specs/evmos.json,${__dir}/../specs/mainnet-1/specs/base.json,${__dir}/../specs/mainnet-1/specs/canto.json,${__dir}/../specs/mainnet-1/specs/sui.json,${__dir}/../specs/mainnet-1/specs/solana.json,${__dir}/../specs/mainnet-1/specs/bsc.json,${__dir}/../specs/mainnet-1/specs/axelar.json,${__dir}/../specs/mainnet-1/specs/avalanche.json,${__dir}/../specs/mainnet-1/specs/fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
     wait_next_block
     wait_next_block
     lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

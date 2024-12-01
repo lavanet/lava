@@ -144,7 +144,7 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 	} else {
 		ctx = *ctxArg
 	}
-	proposalDirectory := "cookbook/specs/"
+	proposalDirectory := "specs/mainnet-1/specs/"
 	proposalFiles := []string{
 		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json", "cosmossdk_full.json",
 		"ethereum.json", "cosmoshub.json", "lava.json", "osmosis.json", "fantom.json", "celo.json",
