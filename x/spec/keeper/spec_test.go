@@ -819,48 +819,88 @@ func TestCookbookSpecs(t *testing.T) {
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././cookbook/specs/"
-	// base specs needs to be proposed first
-	baseSpecs := []string{"ibc.json", "tendermint.json", "ethermint.json", "cosmoswasm.json", "cosmossdk.json", "cosmossdk_45.json", "cosmossdk_full.json", "ethereum.json", "solana.json"}
 
-	Specs, err := getAllFilesInDirectory(getToTopMostPath)
+	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
 
-	// remove the base specs so there wont be a duplicate
-	Specs = removeSetFromSet(baseSpecs, Specs)
-	Specs = append(baseSpecs, Specs...)
-	for _, fileName := range Specs {
-		proposal := utils.SpecAddProposalJSON{}
+	// Sort specs by hierarchy - specs that are imported by others should come first
+	specImports := make(map[string][]string)
+	specProposals := make(map[string]types.Spec)
 
+	// First read all spec contents
+	for _, fileName := range specsFiles {
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.NoError(t, err)
 
+		// Parse imports from spec
+		var proposal utils.SpecAddProposalJSON
 		decoder := json.NewDecoder(bytes.NewReader(contents))
 		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 		err = decoder.Decode(&proposal)
 		require.NoError(t, err, fileName)
 
-		for _, sp := range proposal.Proposal.Specs {
-			ts.setSpec(sp)
-			fullspec, err := ts.expandSpec(sp)
-			require.NoError(t, err)
-			require.NotNil(t, fullspec)
-			verifications := []*types.Verification{}
-			for _, apiCol := range fullspec.ApiCollections {
-				for _, verification := range apiCol.Verifications {
-					require.NotNil(t, verification.ParseDirective)
-					if verification.ParseDirective.FunctionTag == types.FUNCTION_TAG_VERIFICATION {
-						require.NotEqual(t, "", verification.ParseDirective.ApiName)
-					}
-				}
-				verifications = append(verifications, apiCol.Verifications...)
+		imports := []string{}
+		for _, spec := range proposal.Proposal.Specs {
+			if spec.Imports != nil {
+				imports = append(imports, spec.Imports...)
 			}
-			if fullspec.Enabled {
-				// all specs need to have verifications
-				require.Greater(t, len(verifications), 0, fullspec.Index)
-			}
-			_, err = fullspec.ValidateSpec(10000000)
-			require.NoError(t, err, sp.Name)
+			specImports[spec.Index] = imports
+			specProposals[spec.Index] = spec
 		}
+	}
+
+	// Topologically sort based on imports
+	var sortedSpecs []string
+	visited := make(map[string]bool)
+	visiting := make(map[string]bool)
+
+	var visit func(string)
+	visit = func(spec string) {
+		if visiting[spec] {
+			require.Fail(t, "Circular dependency detected")
+		}
+		if visited[spec] {
+			return
+		}
+		visiting[spec] = true
+		for _, imp := range specImports[spec] {
+			visit(imp)
+		}
+		visiting[spec] = false
+		visited[spec] = true
+		sortedSpecs = append(sortedSpecs, spec)
+	}
+
+	for spec := range specImports {
+		if !visited[spec] {
+			visit(spec)
+		}
+	}
+
+	for _, specName := range sortedSpecs {
+		sp, found := specProposals[specName]
+		require.True(t, found, specName)
+
+		ts.setSpec(sp)
+		fullspec, err := ts.expandSpec(sp)
+		require.NoError(t, err)
+		require.NotNil(t, fullspec)
+		verifications := []*types.Verification{}
+		for _, apiCol := range fullspec.ApiCollections {
+			for _, verification := range apiCol.Verifications {
+				require.NotNil(t, verification.ParseDirective)
+				if verification.ParseDirective.FunctionTag == types.FUNCTION_TAG_VERIFICATION {
+					require.NotEqual(t, "", verification.ParseDirective.ApiName)
+				}
+			}
+			verifications = append(verifications, apiCol.Verifications...)
+		}
+		if fullspec.Enabled {
+			// all specs need to have verifications
+			require.Greater(t, len(verifications), 0, fullspec.Index)
+		}
+		_, err = fullspec.ValidateSpec(10000000)
+		require.NoError(t, err, sp.Name)
 	}
 }
 

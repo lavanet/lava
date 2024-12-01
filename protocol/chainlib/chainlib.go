@@ -65,6 +65,7 @@ type ChainParser interface {
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
 	IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool
 	GetAllInternalPaths() []string
+	IsInternalPathEnabled(internalPath string, apiInterface string, addon string) bool
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
@@ -148,7 +149,7 @@ type ChainListener interface {
 
 type ChainRouter interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
-	ExtensionsSupported([]string) bool
+	ExtensionsSupported(internalPath string, extensions []string) bool
 }
 
 type ChainProxy interface {

@@ -37,3 +37,19 @@ func GetMaxKey[T constraints.Ordered, V any](m map[T]V) T {
 	}
 	return maxKey
 }
+
+func KeysSlice[T comparable, V any](in map[T]V) []T {
+	keys := []T{}
+	for k := range in {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func ValuesSlice[T comparable, V any](in map[T]V) []V {
+	values := []V{}
+	for _, v := range in {
+		values = append(values, v)
+	}
+	return values
+}

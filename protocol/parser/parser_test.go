@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,10 @@ func (rpcInputTest *RPCInputTest) GetResult() json.RawMessage {
 }
 
 func (rpcInputTest *RPCInputTest) GetID() json.RawMessage {
+	return nil
+}
+
+func (rpcInputTest *RPCInputTest) GetError() *rpcclient.JsonError {
 	return nil
 }
 
@@ -596,6 +601,7 @@ func TestParseBlockFromReply(t *testing.T) {
 		blockParser    spectypes.BlockParser
 		genericParsers []spectypes.GenericParser
 		expected       int64
+		expectedError  string
 	}{
 		{
 			name: "generic_parser_happy_flow_default_value",
@@ -713,6 +719,47 @@ func TestParseBlockFromReply(t *testing.T) {
 			},
 			expected: spectypes.LATEST_BLOCK,
 		},
+		{
+			name: "generic_parser_parse_from_result_happy_flow",
+			rpcInput: &RPCInputTest{
+				Result: []byte(`
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				`),
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".result.foo.bar",
+					Value:     "123",
+					ParseType: spectypes.PARSER_TYPE_RESULT,
+				},
+			},
+			expected: 123,
+		},
+		{
+			name: "generic_parser_parse_from_result_error",
+			rpcInput: &RPCInputTest{
+				Result: []byte(`
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				`),
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".result.foo.bar",
+					Value:     "321",
+					ParseType: spectypes.PARSER_TYPE_RESULT,
+				},
+			},
+			expected:      123,
+			expectedError: "expected 321, received 123",
+		},
 	}
 
 	for _, test := range tests {
@@ -720,6 +767,11 @@ func TestParseBlockFromReply(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			parsedInput := ParseBlockFromReply(test.rpcInput, test.blockParser, test.genericParsers)
+			if test.expectedError != "" {
+				require.Equal(t, test.expectedError, parsedInput.GetParserError())
+			} else {
+				require.Empty(t, parsedInput.GetParserError())
+			}
 			require.Equal(t, test.expected, parsedInput.GetBlock())
 		})
 	}
