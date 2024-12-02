@@ -21,11 +21,6 @@ const (
 	INTERNAL_ADDRESS = "internal-addr"
 )
 
-var (
-	IgnoreSubscriptionNotConfiguredError     = true
-	IgnoreSubscriptionNotConfiguredErrorFlag = "ignore-subscription-not-configured-error"
-)
-
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:

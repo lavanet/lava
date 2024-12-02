@@ -326,14 +326,11 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
-		err := utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
+		return nil, utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
 			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
 			utils.LogAttr("supportedMap", supportedMap),
 			utils.LogAttr("required", WebSocketExtension),
 		)
-		if !IgnoreSubscriptionNotConfiguredError {
-			return nil, err
-		}
 	}
 
 	utils.LavaFormatDebug("router keys", utils.LogAttr("chainProxyRouter", chainProxyRouter))

@@ -40,8 +40,6 @@ func TestChainRouterWithDisabledWebSocketInSpec(t *testing.T) {
 	chainParser, err := NewChainParser(apiInterface)
 	require.NoError(t, err)
 
-	IgnoreSubscriptionNotConfiguredError = false
-
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
 
@@ -399,8 +397,6 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 	apiInterface := spectypes.APIInterfaceJsonRPC
 	chainParser, err := NewChainParser(apiInterface)
 	require.NoError(t, err)
-
-	IgnoreSubscriptionNotConfiguredError = false
 
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
@@ -794,8 +790,6 @@ func TestChainRouterWithMethodRoutes(t *testing.T) {
 	apiInterface := spectypes.APIInterfaceRest
 	chainParser, err := NewChainParser(apiInterface)
 	require.NoError(t, err)
-
-	IgnoreSubscriptionNotConfiguredError = false
 
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
@@ -2180,8 +2174,6 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 		t.Run(play.apiInterface+"__"+play.name, func(t *testing.T) {
 			chainParser, err := NewChainParser(play.apiInterface)
 			require.NoError(t, err)
-
-			IgnoreSubscriptionNotConfiguredError = false
 
 			spec := testcommon.CreateMockSpec()
 			spec.ApiCollections = play.specApiCollections
