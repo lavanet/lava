@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -229,11 +230,15 @@ func (ts *tester) payAndVerifyBalance(
 	require.Nil(ts.T, err)
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
-
-	// advance month + blocksToSave + 1 to trigger the provider monthly payment
-	ts.AdvanceMonths(1)
-	ts.AdvanceEpoch()
-	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	timeToExpiry := time.Unix(int64(sub.Sub.MonthExpiryTime), 0)
+	if timeToExpiry.After(ts.Ctx.BlockTime()) {
+		ts.AdvanceTimeHours(timeToExpiry.Sub(ts.Ctx.BlockTime()))
+	} else {
+		// advance month + blocksToSave + 1 to trigger the provider monthly payment
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
 
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))

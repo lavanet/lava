@@ -49,14 +49,14 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	creditTimestamp := time.Unix(delegation.CreditTimestamp, 0)
 	// we normalize dates before we start the calculation
 	// maximum scope is 30 days, we start with the delegation truncation then the credit
-	monthAgo := currentTimestamp.AddDate(0, 0, -30)
-	if monthAgo.Unix() >= delegationTimestamp.Unix() {
+	monthAgo := currentTimestamp.AddDate(0, -1, 0)
+	if monthAgo.After(delegationTimestamp) {
 		// in the case the delegation wasn't changed for 30 days or more we truncate the timestamp to 30 days ago
 		// and disable the credit for older dates since they are irrelevant
 		delegationTimestamp = monthAgo
 		creditTimestamp = delegationTimestamp
 		creditAmount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
-	} else if monthAgo.Unix() > creditTimestamp.Unix() {
+	} else if monthAgo.After(creditTimestamp) {
 		// delegation is less than 30 days, but credit might be older, so truncate it to 30 days
 		creditTimestamp = monthAgo
 	}

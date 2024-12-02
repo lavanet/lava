@@ -174,28 +174,29 @@ func sendRelay(ts *tester, provider string, clientAcc sigs.Account, chainIDs []s
 
 func TestPartialMonthDelegation(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.setupForPayments(0, 1, 1)                   // 1 client, 1 providersToPair
 	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
 	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
-	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
-	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.NoError(t, err)
+
+	ts.AdvanceTimeHours(time.Hour * 24 * 15) // 15 days passed form the subs timer
+
+	// add another provider after 15 days
+	err = ts.addProvider(1)
+	require.Nil(ts.T, err)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+	require.NotNil(t, providerAcc)
 	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
 	require.NoError(t, err)
 	metadata.DelegateCommission = 50 // 50% commission
 	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 
-	_, err = ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.NoError(t, err)
-
-	ts.AdvanceTimeHours(time.Hour)
-
-	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)) // equal to provider
-	_, err = ts.TxDualstakingDelegate(delegator1, provider, delegationAmount1)
-	require.NoError(t, err)
-	ts.AdvanceEpochs(20) // apply delegations
+	ts.AdvanceTimeHours(time.Hour * 24 * 15) // 5 days passed from the provider stake, total 20 days
 
 	stakeEntryResp, err := ts.Keepers.Pairing.Provider(ts.Ctx, &types.QueryProviderRequest{
 		Address: provider,
@@ -203,13 +204,20 @@ func TestPartialMonthDelegation(t *testing.T) {
 	})
 	require.Nil(t, err)
 	stakeEntry := stakeEntryResp.StakeEntries[0]
+
+	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake*3/2)) // provider did 100000 for 15 days delegator will have 150000 for 10 days so they are equal
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, delegationAmount1)
+	require.NoError(t, err)
+
 	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	require.Equal(t, stakeEntry.DelegateCommission, metadata.DelegateCommission)
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
+	// we have a provider that staked after 15/30 days, and a delegator that staked after 20/30 days
+	// provider has 100k stake for 15 days, delegator has 150k stake for 10 days so they should divide half half, and the provider commission is 50%
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 75)
 }
 
 func TestProviderRewardWithCommission(t *testing.T) {
