@@ -12,11 +12,11 @@ type CustomLavaTransport struct {
 	transport          http.RoundTripper
 	lock               sync.RWMutex
 	secondaryTransport http.RoundTripper
-	consecutiveFails   atomic.Uint64
+	consecutiveFails   atomic.Uint64 // TODO: export to metrics
 }
 
 func NewCustomLavaTransport(httpTransport http.RoundTripper, secondaryTransport http.RoundTripper) *CustomLavaTransport {
-	return &CustomLavaTransport{transport: httpTransport}
+	return &CustomLavaTransport{transport: httpTransport, secondaryTransport: secondaryTransport}
 }
 
 func (c *CustomLavaTransport) SetSecondaryTransport(secondaryTransport http.RoundTripper) {
