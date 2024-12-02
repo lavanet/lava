@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
 	"github.com/lavanet/lava/v4/protocol/chainlib"
@@ -44,6 +45,7 @@ type ConsumerRelaySender interface {
 		consumerIp string,
 		metadata []pairingtypes.Metadata,
 	) (protocolMessage chainlib.ProtocolMessage, err error)
+	GetExtensionParser() *extensionslib.ExtensionParser
 }
 
 type tickerMetricSetterInf interface {
@@ -192,7 +194,8 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 	go func() {
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool, 1)
-		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
+		protocolMessage := crsm.GetProtocolMessage()
+		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(protocolMessage)
 		if crsm.debugRelays {
 			utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
 		}
