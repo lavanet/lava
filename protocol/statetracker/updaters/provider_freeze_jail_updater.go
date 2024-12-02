@@ -6,15 +6,15 @@ import (
 
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	"google.golang.org/grpc"
+	grpc "google.golang.org/grpc"
 )
 
 const (
 	CallbackKeyForFreezeUpdate = "freeze-update"
 )
 
-type ProviderPairingStatusStateQueryInf interface {
-	Provider(ctx context.Context, in *pairingtypes.QueryProviderRequest, opts ...grpc.CallOption) (*pairingtypes.QueryProviderResponse, error)
+type ProviderQueryGetter interface {
+	GetPairingQueryClient() pairingtypes.QueryClient
 }
 
 type ProviderMetricsManagerInf interface {
@@ -30,27 +30,31 @@ const (
 	FROZEN
 )
 
+type ProviderPairingStatusStateQueryInf interface {
+	Provider(ctx context.Context, in *pairingtypes.QueryProviderRequest, opts ...grpc.CallOption) (*pairingtypes.QueryProviderResponse, error)
+}
+
 type ProviderFreezeJailUpdater struct {
-	pairingQueryClient ProviderPairingStatusStateQueryInf
-	metricsManager     ProviderMetricsManagerInf
-	publicAddress      string
+	querier        ProviderPairingStatusStateQueryInf
+	metricsManager ProviderMetricsManagerInf
+	publicAddress  string
 }
 
 func NewProviderFreezeJailUpdater(
-	pairingQueryClient ProviderPairingStatusStateQueryInf,
+	querier ProviderPairingStatusStateQueryInf,
 	publicAddress string,
 	metricsManager ProviderMetricsManagerInf,
 ) *ProviderFreezeJailUpdater {
 	return &ProviderFreezeJailUpdater{
-		pairingQueryClient: pairingQueryClient,
-		publicAddress:      publicAddress,
-		metricsManager:     metricsManager,
+		querier:        querier,
+		publicAddress:  publicAddress,
+		metricsManager: metricsManager,
 	}
 }
 
 func (pfu *ProviderFreezeJailUpdater) UpdateEpoch(epoch uint64) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	response, err := pfu.pairingQueryClient.Provider(ctx, &pairingtypes.QueryProviderRequest{Address: pfu.publicAddress})
+	response, err := pfu.querier.Provider(ctx, &pairingtypes.QueryProviderRequest{Address: pfu.publicAddress})
 	cancel()
 
 	if err != nil {
