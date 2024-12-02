@@ -19,7 +19,7 @@ def group_by_provider(data):
         grouped_data[entry['provider']].append(entry)
     return grouped_data
 
-def plot_graphs(data, provider, output_file):
+def plot_graphs(data, provider, output_file, is_refactored=False):
     timestamps = [parser.parse(entry['timestamp']) for entry in data]
     sync_scores = [float(entry['sync_score']) for entry in data]
     availability_scores = [float(entry['availability_score']) for entry in data]
@@ -37,12 +37,38 @@ def plot_graphs(data, provider, output_file):
     plt.plot(timestamps, generic_scores, label='Generic Score')
     plt.xlabel('Timestamp')
     plt.ylabel('Scores')
-    plt.title(f'Provider: {provider}, Avg Node Error Rate: {avg_node_error_rate:.2f}, Stake: {provider_stake}')
+    title_suffix = " (Refactor)" if is_refactored else ""
+    plt.title(f'Provider: {provider}, Avg Node Error Rate: {avg_node_error_rate:.2f}, Stake: {provider_stake}{title_suffix}')
     plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(output_file)
     print(f"Plot saved as {output_file}")
+
+def plot_tier_chances_over_time(data, provider, output_file, is_refactored=False):
+    timestamps = [parser.parse(entry['timestamp']) for entry in data]
+    tier_chances_dicts = [
+        {int(k): float(v) for k, v in (item.split(': ') for item in entry['tier_chances'].split(', ') if item)}
+        for entry in data
+    ]
+
+    # Collect all unique tiers
+    all_tiers = set(tier for tier_chances in tier_chances_dicts for tier in tier_chances.keys())
+
+    plt.figure(figsize=(10, 5))
+    for tier in sorted(all_tiers):
+        tier_chances_over_time = [tier_chances.get(tier, 0) for tier_chances in tier_chances_dicts]
+        plt.plot(timestamps, tier_chances_over_time, label=f'Tier {tier}')
+
+    plt.xlabel('Timestamp')
+    plt.ylabel('Chance')
+    title_suffix = " (Refactor)" if is_refactored else ""
+    plt.title(f'Provider: {provider} Tier Chances Over Time{title_suffix}')
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(output_file)
+    print(f"Tier chances over time plot saved as {output_file}")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -74,4 +100,7 @@ if __name__ == '__main__':
 
     # Plot graphs for both datasets
     plot_graphs(current_selected_data, selected_provider, f"provider_{provider_suffix}_current.png")
-    plot_graphs(refactored_selected_data, selected_provider, f"provider_{provider_suffix}_refactor.png") 
+    plot_tier_chances_over_time(current_selected_data, selected_provider, f"provider_{provider_suffix}_current_tier_chances.png")
+
+    plot_graphs(refactored_selected_data, selected_provider, f"provider_{provider_suffix}_refactor.png", is_refactored=True)
+    plot_tier_chances_over_time(refactored_selected_data, selected_provider, f"provider_{provider_suffix}_refactor_tier_chances.png", is_refactored=True) 
