@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -77,6 +79,7 @@ type RPCConsumerServer struct {
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
+	initialized                    atomic.Bool
 }
 
 type relayResponse struct {
@@ -166,8 +169,11 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 		// Only start after everything is initialized - check consumer session manager
 		rpccs.waitForPairing()
 	}
-
-	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	if success {
+		rpccs.initialized.Store(true)
+	}
+	return success, err
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
@@ -1549,6 +1555,32 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
+}
+
+func (rpccs *RPCConsumerServer) IsInitialized() bool {
+	if rpccs == nil {
+		return false
+	}
+
+	return rpccs.initialized.Load()
+}
+
+func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	guid := utils.GenerateUniqueIdentifier()
+	ctx = utils.WithUniqueIdentifier(ctx, guid)
+	url, data, connectionType, metadata, err := rpccs.chainParser.ExtractDataFromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	relayResult, err := rpccs.SendRelay(ctx, url, data, connectionType, "", "", nil, metadata)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
+	return resp, err
 }
 
 func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(

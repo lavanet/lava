@@ -18,12 +18,14 @@ import (
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
+	MAINNET_SPEC                   = "LAVA"
+	TESTNET_SPEC                   = "LAV1"
 )
 
 var (
 	lavaSpecName = ""
 	// TODO: add a governance param change that indicates what spec id belongs to lava.
-	lavaSpecOptions = []string{"LAV1", "LAVA"}
+	LavaSpecOptions = []string{TESTNET_SPEC, MAINNET_SPEC}
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -68,7 +70,7 @@ func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryCl
 	var err error
 	for i := 0; i < updaters.BlockResultRetry; i++ {
 		if lavaSpecName == "" { // spec name is not initialized, try fetching specs.
-			for _, specId := range lavaSpecOptions {
+			for _, specId := range LavaSpecOptions {
 				specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 					ChainID: specId,
 				})
@@ -194,4 +196,13 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 // For lavavisor access
 func (st *StateTracker) GetEventTracker() *updaters.EventTracker {
 	return st.EventTracker
+}
+
+func IsLavaNativeSpec(checked string) bool {
+	for _, nativeLavaChain := range LavaSpecOptions {
+		if checked == nativeLavaChain {
+			return true
+		}
+	}
+	return false
 }
