@@ -673,7 +673,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 							ChainID:        statetracker.TESTNET_SPEC,
 							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
 						}
-					}
+					} else if strings.Contains(networkChainId, "testnet") || networkChainId=="lava" {
+						return &lavasession.RPCEndpoint{
+							NetworkAddress: chainlib.INTERNAL_ADDRESS,
+							ChainID:        statetracker.TESTNET_SPEC,
+							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
+						}
 					utils.LavaFormatError("could not find a native lava chain for the current network", nil, utils.LogAttr("networkChainId", networkChainId))
 					return nil
 				}()
