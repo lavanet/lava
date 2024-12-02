@@ -173,11 +173,19 @@ func (po *ProviderOptimizer_Refactor) CalculateQoSScoresForMetrics(allAddresses 
 	for idx, entry := range rawScores {
 		qosReport := providersScores[entry.Address]
 		qosReport.EntryIndex = idx
-		qosReport.TierChances = tierChances
+		qosReport.TierChances = PrintTierChances(tierChances)
 		reports = append(reports, qosReport)
 	}
 
 	return reports
+}
+
+func PrintTierChances(tierChances map[int]float64) string {
+	var tierChancesString string
+	for tier, chance := range tierChances {
+		tierChancesString += fmt.Sprintf("%d: %f, ", tier, chance)
+	}
+	return tierChancesString
 }
 
 func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration_Refactor, map[string]*metrics.OptimizerQoSReport) {

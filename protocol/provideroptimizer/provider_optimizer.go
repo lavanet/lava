@@ -206,7 +206,7 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 	for idx, entry := range rawScores {
 		qosReport := providersScores[entry.Address]
 		qosReport.EntryIndex = idx
-		qosReport.TierChances = tierChances
+		qosReport.TierChances = PrintTierChances(tierChances)
 		reports = append(reports, qosReport)
 	}
 
