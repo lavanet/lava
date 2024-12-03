@@ -17,7 +17,7 @@ import (
 
 var (
 	DefaultFailureCost           int64 = 3
-	DefaultSyncFactor                  = sdk.NewDecWithPrec(1, 1) // 0.1
+	DefaultSyncFactor                  = sdk.NewDecWithPrec(3, 1) // 0.3
 	DefaultStrategyFactor              = BalancedStrategyFactor
 	DefaultBlockErrorProbability       = sdk.NewDec(-1) // default: BlockErrorProbability should not be used
 

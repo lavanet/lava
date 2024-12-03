@@ -31,8 +31,8 @@ const (
 )
 
 var (
-	OptimizerNumTiers_Refactor = 4 // TODO: make it a configurable parameter in the optimizer
-	MinimumEntries_Refactor    = 5 // TODO: make it a configurable parameter in the optimizer
+	OptimizerNumTiers_Refactor = 4
+	MinimumEntries_Refactor    = 5
 	ATierChance_Refactor       = 0.75
 	LastTierChance_Refactor    = 0.0
 )
@@ -48,6 +48,10 @@ type cacheInf_Refactor interface {
 	Set(key, value interface{}, cost int64) bool
 }
 
+type consumerOptimizerQoSClientInf_Refactor interface {
+	UpdatePairingListStake(stakeMap map[string]int64, chainId string, epoch uint64)
+}
+
 type ProviderOptimizer_Refactor struct {
 	strategy                        Strategy_Refactor
 	providersStorage                cacheInf_Refactor
@@ -58,6 +62,8 @@ type ProviderOptimizer_Refactor struct {
 	selectionWeighter               SelectionWeighter // weights are the providers stake
 	OptimizerNumTiers               int               // number of tiers to use
 	OptimizerMinTierEntries         int               // minimum number of entries in a tier to be considered for selection
+	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf_Refactor
+	chainId                         string
 }
 
 // The exploration mechanism makes the optimizer return providers that were not talking
@@ -126,8 +132,13 @@ func (s Strategy_Refactor) GetStrategyFactor() math.LegacyDec {
 }
 
 // UpdateWeights update the selection weighter weights
-func (po *ProviderOptimizer_Refactor) UpdateWeights_Refactor(weights map[string]int64) {
+func (po *ProviderOptimizer_Refactor) UpdateWeights_Refactor(weights map[string]int64, epoch uint64) {
 	po.selectionWeighter.SetWeights(weights)
+
+	// Update the stake map for metrics
+	if po.consumerOptimizerQoSClient != nil {
+		po.consumerOptimizerQoSClient.UpdatePairingListStake(weights, po.chainId, epoch)
+	}
 }
 
 // AppendRelayFailure updates a provider's QoS metrics for a failed relay
@@ -495,7 +506,7 @@ func (po *ProviderOptimizer_Refactor) getRelayStatsTimes_Refactor(providerAddres
 	return nil
 }
 
-func NewProviderOptimizer_Refactor(strategy Strategy_Refactor, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer_Refactor {
+func NewProviderOptimizer_Refactor(strategy Strategy_Refactor, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf_Refactor, chainId string) *ProviderOptimizer_Refactor {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -517,6 +528,8 @@ func NewProviderOptimizer_Refactor(strategy Strategy_Refactor, averageBlockTIme 
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers_Refactor,
 		OptimizerMinTierEntries:         MinimumEntries_Refactor,
+		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
+		chainId:                         chainId,
 	}
 }
 
