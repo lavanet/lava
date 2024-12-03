@@ -15,6 +15,7 @@ import (
 	common "github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -44,6 +45,14 @@ func (a PolicySt) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointSe
 type ConsumerRelaySenderMock struct {
 	retValue    error
 	tickerValue time.Duration
+}
+
+func (crsm *ConsumerRelaySenderMock) GetExtensionParser() *extensionslib.ExtensionParser {
+	return nil
+}
+
+func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error) {
+	return crsm.retValue
 }
 
 func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
