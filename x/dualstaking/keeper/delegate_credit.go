@@ -49,7 +49,7 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	creditTimestamp := time.Unix(delegation.CreditTimestamp, 0)
 	// we normalize dates before we start the calculation
 	// maximum scope is 30 days, we start with the delegation truncation then the credit
-	monthAgo := currentTimestamp.AddDate(0, -1, 0)
+	monthAgo := currentTimestamp.AddDate(0, 0, -30) // we are doing 30 days not a month a month can be a different amount of days
 	if monthAgo.After(delegationTimestamp) {
 		// in the case the delegation wasn't changed for 30 days or more we truncate the timestamp to 30 days ago
 		// and disable the credit for older dates since they are irrelevant

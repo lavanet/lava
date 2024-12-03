@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
+	"github.com/lavanet/lava/v4/utils"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/keeper"
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
@@ -255,15 +256,12 @@ func TestCalculateMonthlyCredit(t *testing.T) {
 
 func TestDelegationSet(t *testing.T) {
 	ts := newTester(t)
-
 	// 1 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
 	ts.setupForDelegation(1, 1, 0, 0)
-	ctx := ts.Ctx
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	k := ts.Keepers.Dualstaking
 	bondDenom := commontypes.TokenDenom
-	timeNow := ctx.BlockTime()
 	tests := []struct {
 		amount                sdk.Coin
 		expectedMonthlyCredit sdk.Coin
@@ -303,7 +301,7 @@ func TestDelegationSet(t *testing.T) {
 		{ // 6
 			timeWait:              15 * time.Hour * 24,
 			amount:                sdk.NewCoin(bondDenom, sdk.NewInt(500*720)),
-			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720/2+500*720/2)),
+			expectedMonthlyCredit: sdk.NewCoin(bondDenom, sdk.NewInt(1000*720/2+500*720/2)), // 540000
 		},
 		{ // 7
 			timeWait:              15 * time.Hour * 24,
@@ -372,16 +370,16 @@ func TestDelegationSet(t *testing.T) {
 				Amount:    tests[iteration].amount,
 			}
 			if tests[iteration].remove {
-				k.RemoveDelegation(ctx, delegation)
+				k.RemoveDelegation(ts.Ctx, delegation)
 			}
-			timeNow = ctx.BlockTime()
-			ctx = ctx.WithBlockTime(timeNow.Add(tests[iteration].timeWait))
+			utils.LavaFormatDebug("block times for credit", utils.LogAttr("block time", ts.Ctx.BlockTime()), utils.LogAttr("time wait", tests[iteration].timeWait))
+			ts.Ctx = ts.Ctx.WithBlockTime(ts.Ctx.BlockTime().Add(tests[iteration].timeWait))
 
-			err := k.SetDelegation(ctx, delegation)
+			err := k.SetDelegation(ts.Ctx, delegation)
 			require.NoError(t, err)
-			delegationGot, found := k.GetDelegation(ctx, delegation.Provider, delegation.Delegator)
+			delegationGot, found := k.GetDelegation(ts.Ctx, delegation.Provider, delegation.Delegator)
 			require.True(t, found)
-			monthlyCredit := k.CalculateMonthlyCredit(ctx, delegationGot)
+			monthlyCredit := k.CalculateMonthlyCredit(ts.Ctx, delegationGot)
 			require.Equal(t, tests[iteration].expectedMonthlyCredit, monthlyCredit)
 		})
 	}
