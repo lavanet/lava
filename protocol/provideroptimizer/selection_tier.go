@@ -152,7 +152,7 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor
 			}
 		} else {
-			if initialTierChances[i] > 0 {
+			if initialTierChances[i] > LastTierChance {
 				shiftedTierChances[i] = initialTierChances[i] + averageChance*offsetFactor
 			}
 		}

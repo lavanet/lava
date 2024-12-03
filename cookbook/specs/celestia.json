@@ -345,6 +345,15 @@
                         "parse_directives": [],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
+                            {
                                 "name": "chain-id",
                                 "values": [
                                     {
@@ -711,6 +720,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -1480,6 +1498,15 @@
                         "parse_directives": [],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
+                            {
                                 "name": "chain-id",
                                 "values": [
                                     {
@@ -1502,6 +1529,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -1594,6 +1630,15 @@
                         "parse_directives": [],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
+                            {
                                 "name": "chain-id",
                                 "values": [
                                     {
@@ -1616,6 +1661,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [

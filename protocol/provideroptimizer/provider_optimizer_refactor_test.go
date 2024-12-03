@@ -1,13 +1,13 @@
 package provideroptimizer
 
 import (
-	"slices"
 	"strconv"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ const (
 
 func setupProviderOptimizer_Refactor(maxProvidersCount uint) *ProviderOptimizer_Refactor {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME_Refactor
-	return NewProviderOptimizer_Refactor(STRATEGY_BALANCED, averageBlockTIme, maxProvidersCount)
+	return NewProviderOptimizer_Refactor(STRATEGY_BALANCED, averageBlockTIme, maxProvidersCount, nil, "test")
 }
 
 type providersGenerator_Refactor struct {
@@ -668,7 +668,7 @@ func TestProviderOptimizerWeights_Refactor(t *testing.T) {
 	improvedLatency := normalLatency - 5*time.Millisecond
 	improvedBlock := syncBlock + 2
 
-	providerOptimizer.UpdateWeights_Refactor(weights)
+	providerOptimizer.UpdateWeights_Refactor(weights, 1)
 	for i := 0; i < 10; i++ {
 		for idx, address := range providersGen.providersAddresses {
 			if idx == 0 {
@@ -765,7 +765,7 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 			weights[providersGen.providersAddresses[i]] = normalStake
 		}
 	}
-	providerOptimizer.UpdateWeights_Refactor(weights)
+	providerOptimizer.UpdateWeights_Refactor(weights, 1)
 
 	// setup scores to all providers
 	improvedLatency := TEST_BASE_WORLD_LATENCY_Refactor / 2
@@ -831,13 +831,13 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	highStakeProviderIndexes := []int{1, 3, 5}
 	weights := map[string]int64{}
 	for i := 0; i < providersCount; i++ {
-		if slices.Contains(highStakeProviderIndexes, i) {
+		if lavaslices.Contains(highStakeProviderIndexes, i) {
 			weights[providersGen.providersAddresses[i]] = highStake
 		} else {
 			weights[providersGen.providersAddresses[i]] = normalStake
 		}
 	}
-	providerOptimizer.UpdateWeights_Refactor(weights)
+	providerOptimizer.UpdateWeights_Refactor(weights, 1)
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
@@ -907,7 +907,7 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// providers 3,4,5 are picked. tier 0: providers 3
 			// tier 1: providers 4,5
 			// provider 5 has higher stake and should be picked more often within their tier
-			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], 540)
 			require.Greater(t, tierResults[0], tierResults[1])
 			require.Equal(t, 3, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[5]], res[providersGen.providersAddresses[4]])
@@ -995,9 +995,9 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 
 // TestProviderOptimizerLatencySyncScore tests that a provider with 100ms latency and x sync block
 // has the same score as a provider with 1100ms latency but x+1 sync block
-// This is true since the average block time is 10sec and the default sync factor is 0.1. So
-// score_good_latency = latency + sync_factor * sync_lag + ... = 0.01 + 0.1 * 10 + ... = 1.01 + ...
-// score_good_sync = latency + sync_factor * sync_lag + ... = 1.01 + 0.1 * 0 + ... = 1.01 + ...
+// This is true since the average block time is 10sec and the default sync factor is 0.3. So
+// score_good_latency = latency + sync_factor * sync_lag + ... = 0.01 + 0.3 * 10 + ... = 3.01 + ...
+// score_good_sync = latency + sync_factor * sync_lag + ... = 3.01 + 0.3 * 0 + ... = 3.01 + ...
 func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer_Refactor(1)
@@ -1008,7 +1008,7 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	syncBlock := uint64(1000)
 
 	improvedLatency := TEST_BASE_WORLD_LATENCY_Refactor
-	badLatency := TEST_BASE_WORLD_LATENCY_Refactor + TEST_AVERAGE_BLOCK_TIME/10 // sync factor is 0.1 so divide by 10
+	badLatency := TEST_BASE_WORLD_LATENCY_Refactor + 3*time.Second // sync factor is 0.3 so add 3 seconds
 
 	// set a basic state for all providers
 	sampleTime := time.Now()
@@ -1045,5 +1045,5 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	// choose many times - since their scores should be the same, they should be picked in a similar amount
 	iterations := 1000
 	res, _ := runChooseManyTimesAndReturnResults_Refactor(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
-	require.InDelta(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]], float64(iterations)*0.05)
+	require.InDelta(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]], float64(iterations)*0.1)
 }

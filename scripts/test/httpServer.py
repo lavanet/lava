@@ -3,6 +3,8 @@ import csv
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sys
 
+payload_ret = "OK"
+
 class RequestHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.csv_file_name = kwargs.pop('csv_file_name', 'data.csv')

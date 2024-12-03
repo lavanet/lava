@@ -6,7 +6,7 @@ import (
 )
 
 // Config defines a collection of parameters that can be used by ScoreStore. ScoreStore is a
-// decaying weighted average object that is used to collect providers performace metrics samples.
+// decaying weighted average object that is used to collect providers performance metrics samples.
 // These are used to calculate the providers QoS excellence score, used by the provider optimizer
 // when choosing providers to be paired with a consumer.
 //

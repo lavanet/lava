@@ -16,14 +16,17 @@ type BlockedProvidersInf interface {
 
 func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
+	originalUnwantedProviders := map[string]struct{}{} // we need a new map as map changes are changed by pointer
 	if blockedProviders != nil {
 		providerAddressesToBlock := blockedProviders.GetBlockedProviders()
 		if len(providerAddressesToBlock) > 0 {
 			for _, providerAddress := range providerAddressesToBlock {
 				unwantedProviders[providerAddress] = struct{}{}
+				originalUnwantedProviders[providerAddress] = struct{}{}
 			}
 		}
 	}
+
 	return &UsedProviders{
 		uniqueUsedProviders: map[string]*UniqueUsedProviders{GetEmptyRouterKey().String(): {
 			providers:         map[string]struct{}{},
@@ -33,7 +36,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		}},
 		// we keep the original unwanted providers so when we create more unique used providers
 		// we can reuse it as its the user's instructions.
-		originalUnwantedProviders: unwantedProviders,
+		originalUnwantedProviders: originalUnwantedProviders,
 	}
 }
 

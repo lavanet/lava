@@ -32,8 +32,8 @@ const (
 )
 
 var (
-	OptimizerNumTiers_Refactor = 4 // TODO: make it a configurable parameter in the optimizer
-	MinimumEntries_Refactor    = 5 // TODO: make it a configurable parameter in the optimizer
+	OptimizerNumTiers_Refactor = 4
+	MinimumEntries_Refactor    = 5
 	ATierChance_Refactor       = 0.75
 	LastTierChance_Refactor    = 0.0
 )
@@ -49,6 +49,10 @@ type cacheInf_Refactor interface {
 	Set(key, value interface{}, cost int64) bool
 }
 
+type consumerOptimizerQoSClientInf_Refactor interface {
+	UpdatePairingListStake(stakeMap map[string]int64, chainId string, epoch uint64)
+}
+
 type ProviderOptimizer_Refactor struct {
 	strategy                        Strategy
 	providersStorage                cacheInf_Refactor
@@ -59,6 +63,8 @@ type ProviderOptimizer_Refactor struct {
 	selectionWeighter               SelectionWeighter // weights are the providers stake
 	OptimizerNumTiers               int               // number of tiers to use
 	OptimizerMinTierEntries         int               // minimum number of entries in a tier to be considered for selection
+	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf_Refactor
+	chainId                         string
 }
 
 // The exploration mechanism makes the optimizer return providers that were not talking
@@ -91,8 +97,13 @@ func (s Strategy) GetStrategyFactor() math.LegacyDec {
 }
 
 // UpdateWeights update the selection weighter weights
-func (po *ProviderOptimizer_Refactor) UpdateWeights_Refactor(weights map[string]int64) {
+func (po *ProviderOptimizer_Refactor) UpdateWeights_Refactor(weights map[string]int64, epoch uint64) {
 	po.selectionWeighter.SetWeights(weights)
+
+	// Update the stake map for metrics
+	if po.consumerOptimizerQoSClient != nil {
+		po.consumerOptimizerQoSClient.UpdatePairingListStake(weights, po.chainId, epoch)
+	}
 }
 
 // AppendRelayFailure updates a provider's QoS metrics for a failed relay
@@ -238,14 +249,13 @@ func (po *ProviderOptimizer_Refactor) CalculateSelectionTiers_Refactor(allAddres
 				utils.LogAttr("provider", providerAddress),
 				utils.LogAttr("qos_report", qos.String()),
 			)
-			return NewSelectionTier(), Exploration_Refactor{}, providerScores
+			return NewSelectionTier(), Exploration_Refactor{}, nil
 		}
-
 		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
 			ProviderAddress:   providerAddress,
 			SyncScore:         qos.Sync.MustFloat64(),
-			LatencyScore:      qos.Latency.MustFloat64(),
 			AvailabilityScore: qos.Availability.MustFloat64(),
+			LatencyScore:      qos.Latency.MustFloat64(),
 			GenericScore:      score.MustFloat64(),
 		}
 
@@ -494,7 +504,7 @@ func (po *ProviderOptimizer_Refactor) getRelayStatsTimes_Refactor(providerAddres
 	return nil
 }
 
-func NewProviderOptimizer_Refactor(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer_Refactor {
+func NewProviderOptimizer_Refactor(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf_Refactor, chainId string) *ProviderOptimizer_Refactor {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -516,6 +526,8 @@ func NewProviderOptimizer_Refactor(strategy Strategy, averageBlockTIme time.Dura
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers_Refactor,
 		OptimizerMinTierEntries:         MinimumEntries_Refactor,
+		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
+		chainId:                         chainId,
 	}
 }
 
@@ -559,4 +571,18 @@ func (po *ProviderOptimizer_Refactor) GetExcellenceQoSReportForProvider_Refactor
 	)
 
 	return report, providerData.Latency.GetLastUpdateTime()
+}
+
+func (po *ProviderOptimizer_Refactor) CalculateQoSScoresForMetrics_Refactor(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+	selectionTier, _, providersScores := po.CalculateSelectionTiers_Refactor(allAddresses, ignoredProviders, cu, requestedBlock)
+	reports := []*metrics.OptimizerQoSReport{}
+
+	rawScores := selectionTier.GetRawScores()
+	for idx, entry := range rawScores {
+		qosReport := providersScores[entry.Address]
+		qosReport.EntryIndex = idx
+		reports = append(reports, qosReport)
+	}
+
+	return reports
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -77,6 +79,7 @@ type RPCConsumerServer struct {
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
+	initialized                    atomic.Bool
 }
 
 type relayResponse struct {
@@ -166,8 +169,11 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 		// Only start after everything is initialized - check consumer session manager
 		rpccs.waitForPairing()
 	}
-
-	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	if success {
+		rpccs.initialized.Store(true)
+	}
+	return success, err
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
@@ -246,11 +252,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessor, nil)
+		err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessor, nil)
+			err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -445,7 +451,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if task.IsDone() {
 			return relayProcessor, task.err
 		}
-		err := rpccs.sendRelayToProvider(ctx, task.protocolMessage, relayProcessor, task.analytics)
+		err := rpccs.sendRelayToProvider(ctx, task.relayState, relayProcessor, task.analytics)
 		relayProcessor.UpdateBatch(err)
 	}
 
@@ -471,9 +477,111 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 	}
 }
 
+func (rpccs *RPCConsumerServer) getEarliestBlockHashRequestedFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) (int64, int64) {
+	blocksHashesToHeights := cacheReply.GetBlocksHashesToHeights()
+	earliestRequestedBlock := spectypes.NOT_APPLICABLE
+	latestRequestedBlock := spectypes.NOT_APPLICABLE
+
+	for _, blockHashToHeight := range blocksHashesToHeights {
+		if blockHashToHeight.Height >= 0 && (earliestRequestedBlock == spectypes.NOT_APPLICABLE || blockHashToHeight.Height < earliestRequestedBlock) {
+			earliestRequestedBlock = blockHashToHeight.Height
+		}
+		if blockHashToHeight.Height >= 0 && (latestRequestedBlock == spectypes.NOT_APPLICABLE || blockHashToHeight.Height > latestRequestedBlock) {
+			latestRequestedBlock = blockHashToHeight.Height
+		}
+	}
+	return latestRequestedBlock, earliestRequestedBlock
+}
+
+func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock int64, latestBlockHashRequested int64, protocolMessage chainlib.ProtocolMessage) int64 {
+	if reqBlock == spectypes.LATEST_BLOCK && seenBlock != 0 {
+		// make optimizer select a provider that is likely to have the latest seen block
+		reqBlock = seenBlock
+	}
+
+	// Following logic to set the requested block as a new value fetched from the cache reply.
+	// 1. We managed to get a value from the cache reply. (latestBlockHashRequested >= 0)
+	// 2. We didn't manage to parse the block and used the default value meaning we didnt have knowledge of the requested block (reqBlock == spectypes.LATEST_BLOCK && protocolMessage.GetUsedDefaultValue())
+	// 3. The requested block is smaller than the latest block hash requested from the cache reply (reqBlock >= 0 && reqBlock < latestBlockHashRequested)
+	// 4. The requested block is not applicable meaning block parsing failed completely (reqBlock == spectypes.NOT_APPLICABLE)
+	if latestBlockHashRequested >= 0 &&
+		((reqBlock == spectypes.LATEST_BLOCK && protocolMessage.GetUsedDefaultValue()) ||
+			reqBlock >= 0 && reqBlock < latestBlockHashRequested) {
+		reqBlock = latestBlockHashRequested
+	}
+	return reqBlock
+}
+
+func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool, relayState *RelayState) ([]*pairingtypes.BlockHashToHeight, bool) {
+	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
+	// 1. The current extension is archive.
+	// 2. The user requested a single block hash.
+	// 3. The archive extension rule is set
+
+	// Adding to cache only if we upgraded to archive, meaning normal relay didn't work and archive did.
+	// It is safe to assume in most cases this hash should be used with archive.
+	// And if it is not, it will only increase archive load but wont result in user errors.
+	// After the finalized cache duration it will be reset until next time.
+	if relayState == nil {
+		return blockHashesToHeights, finalized
+	}
+	if !relayState.GetIsUpgraded() {
+		if relayState.GetIsEarliestUsed() && relayState.GetIsArchive() && chainMessage.GetUsedDefaultValue() {
+			finalized = true
+		}
+		return blockHashesToHeights, finalized
+	}
+
+	isArchiveRelay := false
+	var rule *spectypes.Rule
+	for _, extension := range extensions {
+		if extension.Name == extensionslib.ArchiveExtension {
+			isArchiveRelay = true
+			rule = extension.Rule
+			break
+		}
+	}
+	requestedBlocksHashes := chainMessage.GetRequestedBlocksHashes()
+	isUserRequestedSingleBlocksHashes := len(requestedBlocksHashes) == 1
+
+	if isArchiveRelay && isUserRequestedSingleBlocksHashes && rule != nil {
+		ruleBlock := int64(rule.Block)
+		if ruleBlock >= 0 {
+			height := latestBlock - ruleBlock - 1
+			if height < 0 {
+				height = 0
+			}
+			blockHashesToHeights = append(blockHashesToHeights, &pairingtypes.BlockHashToHeight{
+				Hash:   requestedBlocksHashes[0],
+				Height: height,
+			})
+			// we can assume this result is finalized.
+			finalized = true
+		}
+	}
+
+	return blockHashesToHeights, finalized
+}
+
+func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
+	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
+	for _, blockHash := range requestedBlockHashes {
+		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: spectypes.NOT_APPLICABLE})
+	}
+	return blocksHashesToHeights
+}
+
+func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashes map[int64]string) []*pairingtypes.BlockHashToHeight {
+	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
+	for height, blockHash := range finalizedBlockHashes {
+		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: height})
+	}
+	return blocksHashesToHeights
+}
+
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
-	protocolMessage chainlib.ProtocolMessage,
+	relayState *RelayState,
 	relayProcessor *RelayProcessor,
 	analytics *metrics.RelayMetrics,
 ) (errRet error) {
@@ -488,6 +596,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
+	protocolMessage := relayState.GetProtocolMessage()
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
@@ -502,6 +611,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	reqBlock, _ := protocolMessage.RequestedBlock()
 
 	// try using cache before sending relay
+	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
+	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
 	if rpccs.cache.CacheActive() { // use cache only if its defined.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
@@ -513,14 +624,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				} else {
 					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
-						RequestHash:    hashKey,
-						RequestedBlock: reqBlock,
-						ChainId:        chainId,
-						BlockHash:      nil,
-						Finalized:      false,
-						SharedStateId:  sharedStateId,
-						SeenBlock:      protocolMessage.RelayPrivateData().SeenBlock,
-					}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+						RequestHash:           hashKey,
+						RequestedBlock:        reqBlock,
+						ChainId:               chainId,
+						BlockHash:             nil,
+						Finalized:             false,
+						SharedStateId:         sharedStateId,
+						SeenBlock:             protocolMessage.RelayPrivateData().SeenBlock,
+						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
+					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
 					reply := cacheReply.GetReply()
 
@@ -555,6 +667,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						})
 						return nil
 					}
+					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
+					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested))
 					// cache failed, move on to regular relay
 					if performance.NotConnectedError.Is(cacheError) {
 						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
@@ -566,14 +680,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		}
 	}
 
-	if reqBlock == spectypes.LATEST_BLOCK && protocolMessage.RelayPrivateData().SeenBlock != 0 {
-		// make optimizer select a provider that is likely to have the latest seen block
-		reqBlock = protocolMessage.RelayPrivateData().SeenBlock
-	}
+	addon := chainlib.GetAddon(protocolMessage)
+	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, protocolMessage)
+	// check whether we need a new protocol message with the new earliest block hash requested
+	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
+
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
-	addon := chainlib.GetAddon(protocolMessage)
 	extensions := protocolMessage.GetExtensions()
+	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions))
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch)
 	if err != nil {
@@ -695,7 +810,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("Provider", providerPublicAddress),
 					)
 				}
-
 				return
 			}
 
@@ -776,6 +890,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
+					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
 
 					go func() {
 						// deal with copying error.
@@ -791,22 +906,40 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							return
 						}
 
+						blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0)
+
+						var finalizedBlockHashesObj map[int64]string
+						err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
+						if err != nil {
+							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
+								utils.LogAttr("GUID", ctx),
+								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
+								utils.LogAttr("providerAddr", providerPublicAddress),
+							)
+						} else {
+							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
+						}
+						var finalized bool
+						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
+						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights))
+
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
 						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
-							RequestHash:      hashKey,
-							ChainId:          chainId,
-							RequestedBlock:   requestedBlock,
-							SeenBlock:        seenBlock,
-							BlockHash:        nil, // consumer cache doesn't care about block hashes
-							Response:         copyReply,
-							Finalized:        localRelayResult.Finalized,
-							OptionalMetadata: nil,
-							SharedStateId:    sharedStateId,
-							AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
-							IsNodeError:      isNodeError,
+							RequestHash:           hashKey,
+							ChainId:               chainId,
+							RequestedBlock:        requestedBlock,
+							SeenBlock:             seenBlock,
+							BlockHash:             nil, // consumer cache doesn't care about block hashes
+							Response:              copyReply,
+							Finalized:             finalized,
+							OptionalMetadata:      nil,
+							SharedStateId:         sharedStateId,
+							AverageBlockTime:      int64(averageBlockTime), // by using average block time we can set longer TTL
+							IsNodeError:           isNodeError,
+							BlocksHashesToHeights: blockHashesToHeights,
 						})
 						if err2 != nil {
 							utils.LavaFormatWarning("error updating cache with new entry", err2)
@@ -1169,7 +1302,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			rpccs.relayRetriesManager,
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 		)
-		err := rpccs.sendRelayToProvider(ctx, dataReliabilityProtocolMessage, relayProcessorDataReliability, nil)
+		err := rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
@@ -1358,6 +1491,12 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.REQUESTED_BLOCK_HEADER_NAME,
+				Value: strconv.FormatInt(protocolMessage.RelayPrivateData().GetRequestBlock(), 10),
+			})
+
 		routerKey := lavasession.NewRouterKeyFromExtensions(protocolMessage.GetExtensions())
 		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders(routerKey)
 		if len(erroredProviders) > 0 {
@@ -1416,4 +1555,60 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
+}
+
+func (rpccs *RPCConsumerServer) IsInitialized() bool {
+	if rpccs == nil {
+		return false
+	}
+
+	return rpccs.initialized.Load()
+}
+
+func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	guid := utils.GenerateUniqueIdentifier()
+	ctx = utils.WithUniqueIdentifier(ctx, guid)
+	url, data, connectionType, metadata, err := rpccs.chainParser.ExtractDataFromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	relayResult, err := rpccs.SendRelay(ctx, url, data, connectionType, "", "", nil, metadata)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
+	return resp, err
+}
+
+func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(
+	ctx context.Context,
+	relayState *RelayState,
+	protocolMessage chainlib.ProtocolMessage,
+	earliestBlockHashRequested int64,
+	addon string,
+) chainlib.ProtocolMessage {
+	if !relayState.GetIsEarliestUsed() && earliestBlockHashRequested != spectypes.NOT_APPLICABLE {
+		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
+		// and update the extension rules with the new earliest block data as it might be archive.
+		// Setting earliest used to attempt this only once.
+		relayState.SetIsEarliestUsed()
+		relayRequestData := protocolMessage.RelayPrivateData()
+		userData := protocolMessage.GetUserData()
+		newProtocolMessage, err := rpccs.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, nil)
+		if err != nil {
+			utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
+			return protocolMessage
+		}
+
+		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
+		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
+			relayState.SetIsArchive(true)
+		}
+		relayState.SetProtocolMessage(newProtocolMessage)
+		return newProtocolMessage
+	}
+	return protocolMessage
 }
