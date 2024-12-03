@@ -2154,7 +2154,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 					ChainId:               specId,
 					SeenBlock:             1005,
 					BlocksHashesToHeights: []*pairingtypes.BlockHashToHeight{{Hash: blockHash, Height: spectypes.NOT_APPLICABLE}},
-				}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 				cancel()
 				if err != nil {
 					continue

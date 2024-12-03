@@ -237,13 +237,16 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 		h.handleSubscriptionResultTendermint(msg)
 		return true
 	case msg.isEthereumNotification():
-		if strings.HasSuffix(msg.Method, notificationMethodSuffix) {
+		if strings.HasSuffix(msg.Method, ethereumNotificationMethodSuffix) {
 			h.handleSubscriptionResultEthereum(msg)
+			return true
+		} else if strings.HasSuffix(msg.Method, solanaNotificationMethodSuffix) {
+			h.handleSubscriptionResultSolana(msg)
 			return true
 		}
 		return false
 	case msg.isStarkNetPathfinderNotification():
-		if strings.HasSuffix(msg.Method, notificationMethodSuffix) {
+		if strings.HasSuffix(msg.Method, ethereumNotificationMethodSuffix) {
 			h.handleSubscriptionResultStarkNetPathfinder(msg)
 			return true
 		}
@@ -258,7 +261,7 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 }
 
 func (h *handler) handleSubscriptionResultStarkNetPathfinder(msg *JsonrpcMessage) {
-	var result starkNetPathfinderSubscriptionResult
+	var result integerIdSubscriptionResult
 	if err := json.Unmarshal(msg.Result, &result); err != nil {
 		utils.LavaFormatTrace("Dropping invalid starknet pathfinder subscription message",
 			utils.LogAttr("err", err),
@@ -287,6 +290,21 @@ func (h *handler) handleSubscriptionResultEthereum(msg *JsonrpcMessage) {
 	}
 	if h.clientSubs[result.ID] != nil {
 		h.clientSubs[result.ID].deliver(msg)
+	}
+}
+
+func (h *handler) handleSubscriptionResultSolana(msg *JsonrpcMessage) {
+	var result integerIdSubscriptionResult
+	if err := json.Unmarshal(msg.Params, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid solana subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("params", string(msg.Params)),
+		)
+		h.log.Debug("Dropping invalid subscription message")
+		return
+	}
+	if h.clientSubs[strconv.Itoa(result.ID)] != nil {
+		h.clientSubs[strconv.Itoa(result.ID)].deliver(msg)
 	}
 }
 

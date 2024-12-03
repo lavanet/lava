@@ -45,6 +45,8 @@ type ConsumerMetricsManager struct {
 	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
 	totalWsSubscriptionDissconnectMetric        *prometheus.CounterVec
 	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalLoLSuccessMetric                       prometheus.Counter
+	totalLoLErrorsMetric                        prometheus.Counter
 	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
@@ -117,6 +119,16 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
 		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
+
+	totalLoLSuccessMetric := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "lava_consumer_total_lol_successes",
+		Help: "The total number of requests sent to lava over lava successfully",
+	})
+
+	totalLoLErrorsMetric := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "lava_consumer_total_lol_errors",
+		Help: "The total number of requests sent to lava over lava and failed",
+	})
 
 	totalWebSocketConnectionsActive := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_total_websocket_connections_active",
@@ -241,6 +253,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalFailedWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalDuplicatedWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalWsSubscriptionDissconnectMetric)
+	prometheus.MustRegister(totalLoLSuccessMetric)
+	prometheus.MustRegister(totalLoLErrorsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -274,6 +288,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
+		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
+		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
 		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
 	}
 
@@ -563,6 +579,17 @@ func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chain
 		return
 	}
 	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
+	if pme == nil {
+		return
+	}
+	if success {
+		pme.totalLoLSuccessMetric.Inc()
+	} else {
+		pme.totalLoLErrorsMetric.Inc()
+	}
 }
 
 func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -11,13 +12,13 @@ import (
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
 	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
-var (
-	IgnoreSubscriptionNotConfiguredError     = true
-	IgnoreSubscriptionNotConfiguredErrorFlag = "ignore-subscription-not-configured-error"
+const (
+	INTERNAL_ADDRESS = "internal-addr"
 )
 
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
@@ -44,6 +45,10 @@ func NewChainListener(
 	refererData *RefererData,
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (ChainListener, error) {
+	if listenEndpoint.NetworkAddress == INTERNAL_ADDRESS {
+		utils.LavaFormatDebug("skipping chain listener for internal address")
+		return NewEmptyChainListener(), nil
+	}
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
@@ -76,6 +81,8 @@ type ChainParser interface {
 	UpdateBlockTime(newBlockTime time.Duration)
 	GetUniqueName() string
 	ExtensionsParser() *extensionslib.ExtensionParser
+	ExtractDataFromRequest(*http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error)
+	SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error)
 }
 
 type ChainMessage interface {
@@ -172,4 +179,18 @@ func GetChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint *lavas
 		return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
 	}
 	return newChainRouter(ctx, nConns, *rpcProviderEndpoint, chainParser, proxyConstructor)
+}
+
+type EmptyChainListener struct{}
+
+func NewEmptyChainListener() ChainListener {
+	return &EmptyChainListener{}
+}
+
+func (*EmptyChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
+	// do nothing
+}
+
+func (*EmptyChainListener) GetListeningAddress() string {
+	return ""
 }
