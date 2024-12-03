@@ -88,7 +88,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, msg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, msg, apiCollection, false), nil
 }
 
 // this func parses message data into chain message object
@@ -111,6 +111,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	blockHashes := []string{}
+	parsedDefault := true
 	for idx, msg := range msgs {
 		parsedInput := parser.NewParsedInput()
 		internalPath := ""
@@ -145,6 +146,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
 				blockHashes = append(blockHashes, hashes...)
 			}
+			if !parsedInput.UsedDefaultValue {
+				parsedDefault = false
+			}
 		} else {
 			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
 			parsedInput.SetBlock(parsedBlock)
@@ -154,6 +158,8 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
 				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
 
@@ -205,9 +211,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection, parsedDefault)
 	} else {
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +222,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -230,11 +236,12 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 		parseDirective:           nil,
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg, err
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedBlockHashes []string, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedBlockHashes []string, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
@@ -243,6 +250,7 @@ func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedB
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -658,7 +666,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		// try to parse node error as json message
 		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
 		if rpcMessage == nil {
-			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr), utils.LogAttr("nodeUrl", cp.NodeUrl.Url))
 			return nil, "", nil, nodeErr
 		}
 	}

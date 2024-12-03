@@ -105,6 +105,10 @@ func (rm RestMessage) GetID() json.RawMessage {
 	return nil
 }
 
+func (rm RestMessage) GetError() *rpcclient.JsonError {
+	return nil
+}
+
 // ParseBlock parses default block number from string to int
 func (rm RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)

@@ -3,6 +3,8 @@ package chainlib
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
@@ -12,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/maps"
 	epochstorage "github.com/lavanet/lava/v4/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
@@ -22,8 +25,16 @@ type PolicyInf interface {
 	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
 }
 
+type InternalPath struct {
+	Path           string
+	Enabled        bool
+	ApiInterface   string
+	ConnectionType string
+	Addon          string
+}
+
 type BaseChainParser struct {
-	internalPaths   map[string]struct{}
+	internalPaths   map[string]InternalPath
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec            spectypes.Spec
 	rwLock          sync.RWMutex
@@ -231,7 +242,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 	return retVerifications, nil
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]InternalPath, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
 	verifications map[VerificationKey]map[string][]VerificationContainer,
 ) {
@@ -280,7 +291,16 @@ func (bcp *BaseChainParser) IsTagInCollection(tag spectypes.FUNCTION_TAG, collec
 func (bcp *BaseChainParser) GetAllInternalPaths() []string {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
-	return lavaslices.KeysSlice(bcp.internalPaths)
+	return lavaslices.Map(maps.ValuesSlice(bcp.internalPaths), func(internalPath InternalPath) string {
+		return internalPath.Path
+	})
+}
+
+func (bcp *BaseChainParser) IsInternalPathEnabled(internalPath string, apiInterface string, addon string) bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	internalPathObj, ok := bcp.internalPaths[internalPath]
+	return ok && internalPathObj.Enabled && internalPathObj.ApiInterface == apiInterface && internalPathObj.Addon == addon
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
@@ -338,6 +358,55 @@ func (apip *BaseChainParser) isValidInternalPath(path string) bool {
 	return ok
 }
 
+// take an http request and direct it through the consumer
+func (apip *BaseChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	// Extract relative URL path
+	url = request.URL.Path
+	// Extract connection type
+	connectionType = request.Method
+
+	// Extract metadata
+	for key, values := range request.Header {
+		for _, value := range values {
+			metadata = append(metadata, pairingtypes.Metadata{
+				Name:  key,
+				Value: value,
+			})
+		}
+	}
+
+	// Extract data
+	if request.Body != nil {
+		bodyBytes, err := io.ReadAll(request.Body)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		data = string(bodyBytes)
+	}
+
+	return url, data, connectionType, metadata, nil
+}
+
+func (apip *BaseChainParser) SetResponseFromRelayResult(relayResult *common.RelayResult) (*http.Response, error) {
+	if relayResult == nil {
+		return nil, errors.New("relayResult is nil")
+	}
+	response := &http.Response{
+		StatusCode: relayResult.StatusCode,
+		Header:     make(http.Header),
+	}
+
+	for _, values := range relayResult.Reply.Metadata {
+		response.Header.Add(values.Name, values.Value)
+	}
+
+	if relayResult.Reply != nil && relayResult.Reply.Data != nil {
+		response.Body = io.NopCloser(strings.NewReader(string(relayResult.Reply.Data)))
+	}
+
+	return response, nil
+}
+
 // getSupportedApi fetches service api from spec by name
 func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	// Guard that the GrpcChainParser instance exists
@@ -370,8 +439,18 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey]map[string][]VerificationContainer) {
-	retInternalPaths = map[string]struct{}{}
+func getServiceApis(
+	spec spectypes.Spec,
+	rpcInterface string,
+) (
+	retInternalPaths map[string]InternalPath,
+	retServerApis map[ApiKey]ApiContainer,
+	retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+	retApiCollections map[CollectionKey]*spectypes.ApiCollection,
+	retHeaders map[ApiKey]*spectypes.Header,
+	retVerifications map[VerificationKey]map[string][]VerificationContainer,
+) {
+	retInternalPaths = map[string]InternalPath{}
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
@@ -392,12 +471,30 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 			}
 
 			// add as a valid internal path
-			retInternalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+			retInternalPaths[apiCollection.CollectionData.InternalPath] = InternalPath{
+				Path:           apiCollection.CollectionData.InternalPath,
+				Enabled:        apiCollection.Enabled,
+				ApiInterface:   apiCollection.CollectionData.ApiInterface,
+				ConnectionType: apiCollection.CollectionData.Type,
+				Addon:          apiCollection.CollectionData.AddOn,
+			}
 
 			for _, parsing := range apiCollection.ParseDirectives {
-				taggedApis[parsing.FunctionTag] = TaggedContainer{
-					Parsing:       parsing,
-					ApiCollection: apiCollection,
+				// We do this because some specs may have multiple parse directives
+				// with the same tag - SUBSCRIBE (like in Solana).
+				//
+				// Since the function tag is not used for handling the subscription flow,
+				// we can ignore the extra parse directives and take only the first one. The
+				// subscription flow is handled by the consumer websocket manager and the chain router
+				// that uses the api collection to fetch the correct parse directive.
+				//
+				// The only place the SUBSCRIBE tag is checked against the taggedApis map is in the chain parser with GetParsingByTag.
+				// But there, we're not interested in the parse directive, only if the tag is present.
+				if _, ok := taggedApis[parsing.FunctionTag]; !ok {
+					taggedApis[parsing.FunctionTag] = TaggedContainer{
+						Parsing:       parsing,
+						ApiCollection: apiCollection,
+					}
 				}
 			}
 
