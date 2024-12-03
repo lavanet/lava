@@ -231,15 +231,24 @@ func (ts *tester) payAndVerifyBalance(
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
 	timeToExpiry := time.Unix(int64(sub.Sub.MonthExpiryTime), 0)
-	if timeToExpiry.After(ts.Ctx.BlockTime()) {
+	durLeft := sub.Sub.DurationLeft
+	if timeToExpiry.After(ts.Ctx.BlockTime()) && relayPayment.DescriptionString == exactConst {
 		ts.AdvanceTimeHours(timeToExpiry.Sub(ts.Ctx.BlockTime()))
+		// subs only pays after blocks to save
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 	} else {
 		// advance month + blocksToSave + 1 to trigger the provider monthly payment
 		ts.AdvanceMonths(1)
 		ts.AdvanceEpoch()
 		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 	}
-
+	if durLeft > 0 {
+		sub, err = ts.QuerySubscriptionCurrent(proj.Project.Subscription)
+		require.Nil(ts.T, err)
+		require.NotNil(ts.T, sub.Sub)
+		require.Equal(ts.T, durLeft-1, sub.Sub.DurationLeft, "month expiry time: %s current time: %s", time.Unix(int64(sub.Sub.MonthExpiryTime), 0).UTC(), ts.BlockTime().UTC())
+	}
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
 	want := sdk.ZeroInt()
