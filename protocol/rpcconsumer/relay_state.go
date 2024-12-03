@@ -150,7 +150,7 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 }
 
 func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
-	if rs == nil || rs.archiveStatus == nil || numberOfNodeErrors == 0 {
+	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()

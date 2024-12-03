@@ -41,6 +41,10 @@ func (m *MockProviderPairingStatusStateQueryInf) EXPECT() *MockProviderPairingSt
 	return m.recorder
 }
 
+func (m *MockProviderPairingStatusStateQueryInf) GetPairingQueryClient() ProviderPairingStatusStateQueryInf {
+	return m
+}
+
 // Provider mocks base method.
 func (m *MockProviderPairingStatusStateQueryInf) Provider(ctx context.Context, in *types.QueryProviderRequest, opts ...grpc.CallOption) (*types.QueryProviderResponse, error) {
 	m.ctrl.T.Helper()
