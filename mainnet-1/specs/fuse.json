@@ -66,7 +66,11 @@
                             }
                         ]
                     }
-                ]
+                ],
+                "contributor": [
+                  "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
+                ],
+                "contributor_percentage": "0.015"
             },
             {
                 "index": "SPARK",
@@ -110,7 +114,11 @@
                             }
                         ]
                     }
-                ]
+                ],
+                "contributor": [
+                  "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
+                ],
+                "contributor_percentage": "0.015"
             }
         ]
     },
