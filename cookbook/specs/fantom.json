@@ -977,7 +977,7 @@
             },
             {
                 "index": "SONICT",
-                "name": "sonic testnet (blaze)",
+                "name": "sonic testnet blaze",
                 "enabled": true,
                 "imports": [
                     "FTM250"
