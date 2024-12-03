@@ -275,7 +275,13 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "commit",
@@ -479,7 +485,13 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "tx_search",
