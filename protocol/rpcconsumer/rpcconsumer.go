@@ -131,6 +131,33 @@ type rpcConsumerStartOptions struct {
 	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
 }
 
+func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
+	keyName, err := sigs.GetKeyName(clientCtx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed getting key name from clientCtx: %w", err)
+	}
+
+	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed getting private key from key name %s: %w", keyName, err)
+	}
+
+	clientKey, _ := clientCtx.Keyring.Key(keyName)
+	pubkey, err := clientKey.GetPubKey()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed getting public key from key name %s: %w", keyName, err)
+	}
+
+	var consumerAddr sdk.AccAddress
+	err = consumerAddr.Unmarshal(pubkey.Address())
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed unmarshaling public address for key %s (pubkey: %v): %w",
+			keyName, pubkey.Address(), err)
+	}
+
+	return consumerAddr, privKey, nil
+}
+
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
@@ -139,11 +166,16 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
+	consumerAddr, privKey, err := getConsumerAddressAndKeys(options.clientCtx)
+	if err != nil {
+		utils.LavaFormatFatal("failed to get consumer address and keys", err)
+	}
+
 	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress) // start up relay server reporting
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                  // start up optimizer qos client
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                                         // start up optimizer qos client
 	}
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
 		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
@@ -179,26 +211,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	lavaChainFetcher.FetchLatestBlockNum(ctx)
 
 	lavaChainID := options.clientCtx.ChainID
-	keyName, err := sigs.GetKeyName(options.clientCtx)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
-	}
-	privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
-	}
-	clientKey, _ := options.clientCtx.Keyring.Key(keyName)
 
-	pubkey, err := clientKey.GetPubKey()
-	if err != nil {
-		utils.LavaFormatFatal("failed getting public key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
-	}
-
-	var consumerAddr sdk.AccAddress
-	err = consumerAddr.Unmarshal(pubkey.Address())
-	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubkey.Address()})
-	}
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
 	for _, endpoint := range options.rpcEndpoints {
