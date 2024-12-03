@@ -33,11 +33,12 @@ import (
 )
 
 const (
-	Vsn                      = "2.0"
-	serviceMethodSeparator   = "_"
-	subscribeMethodSuffix    = "_subscribe"
-	unsubscribeMethodSuffix  = "_unsubscribe"
-	notificationMethodSuffix = "_subscription"
+	Vsn                              = "2.0"
+	serviceMethodSeparator           = "_"
+	subscribeMethodSuffix            = "_subscribe"
+	unsubscribeMethodSuffix          = "_unsubscribe"
+	ethereumNotificationMethodSuffix = "_subscription"
+	solanaNotificationMethodSuffix   = "Notification"
 
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
@@ -49,7 +50,7 @@ type ethereumSubscriptionResult struct {
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
-type starkNetPathfinderSubscriptionResult struct {
+type integerIdSubscriptionResult struct {
 	ID     int             `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
 }
