@@ -13,6 +13,14 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 )
 
+// WebsocketConnection defines the interface for websocket connections
+type WebsocketConnection interface {
+	// Add only the methods you need to mock
+	RemoteAddr() net.Addr
+	Locals(key string) interface{}
+	WriteMessage(messageType int, data []byte) error
+}
+
 // Will limit a certain amount of connections per IP
 type WebsocketConnectionLimiter struct {
 	ipToNumberOfActiveConnections map[string]int64
@@ -47,7 +55,7 @@ func (wcl *WebsocketConnectionLimiter) handleFiberRateLimitFlags(c *fiber.Ctx) {
 	c.Locals(WebSocketOpenConnectionsLimitHeader, connectionLimit)
 }
 
-func (wcl *WebsocketConnectionLimiter) getConnectionLimit(websocketConn *websocket.Conn) int64 {
+func (wcl *WebsocketConnectionLimiter) getConnectionLimit(websocketConn WebsocketConnection) int64 {
 	connectionLimitHeaderValue, ok := websocketConn.Locals(WebSocketOpenConnectionsLimitHeader).(int64)
 	if !ok || connectionLimitHeaderValue < 0 {
 		connectionLimitHeaderValue = 0
@@ -60,9 +68,10 @@ func (wcl *WebsocketConnectionLimiter) getConnectionLimit(websocketConn *websock
 	return utils.Max(MaximumNumberOfParallelWebsocketConnectionsPerIp, connectionLimitHeaderValue)
 }
 
-func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocket.Conn) (bool, func()) {
+func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn WebsocketConnection) (bool, func()) {
 	// Check which connection limit is higher and use that.
 	connectionLimit := wcl.getConnectionLimit(websocketConn)
+	decreaseIpConnectionCallback := func() {}
 	if connectionLimit > 0 { // 0 is disabled.
 		ipForwardedInterface := websocketConn.Locals(common.IP_FORWARDING_HEADER_NAME)
 		ipForwarded, assertionSuccessful := ipForwardedInterface.(string)
@@ -75,31 +84,41 @@ func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocke
 			userAgent = ""
 		}
 		key := wcl.getKey(ip, ipForwarded, userAgent)
-		numberOfActiveConnections := wcl.addIpConnectionAndGetCurrentAmount(key)
 
-		if numberOfActiveConnections > connectionLimit {
+		// Check current connections before incrementing
+		currentConnections := wcl.getCurrentAmountOfConnections(key)
+		// If already at or exceeding limit, deny the connection
+		if currentConnections >= connectionLimit {
 			websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Too Many Open Connections, limited to %d", connectionLimit)))
-			return false, func() { wcl.decreaseIpConnection(key) }
+			return false, decreaseIpConnectionCallback
 		}
+		// If under limit, increment and return cleanup function
+		wcl.addIpConnectionAndGetCurrentAmount(key)
+		decreaseIpConnectionCallback = func() { wcl.decreaseIpConnection(key) }
 	}
-	return true, func() {}
+	return true, decreaseIpConnectionCallback
 }
 
-func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) int64 {
+func (wcl *WebsocketConnectionLimiter) getCurrentAmountOfConnections(key string) int64 {
+	wcl.lock.RLock()
+	defer wcl.lock.RUnlock()
+	return wcl.ipToNumberOfActiveConnections[key]
+}
+
+func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(key string) {
 	wcl.lock.Lock()
 	defer wcl.lock.Unlock()
 	// wether it exists or not we add 1.
-	wcl.ipToNumberOfActiveConnections[ip] += 1
-	return wcl.ipToNumberOfActiveConnections[ip]
+	wcl.ipToNumberOfActiveConnections[key] += 1
 }
 
-func (wcl *WebsocketConnectionLimiter) decreaseIpConnection(ip string) {
+func (wcl *WebsocketConnectionLimiter) decreaseIpConnection(key string) {
 	wcl.lock.Lock()
 	defer wcl.lock.Unlock()
-	// wether it exists or not we add 1.
-	wcl.ipToNumberOfActiveConnections[ip] -= 1
-	if wcl.ipToNumberOfActiveConnections[ip] == 0 {
-		delete(wcl.ipToNumberOfActiveConnections, ip)
+	// it must exist as we dont get here without adding it prior
+	wcl.ipToNumberOfActiveConnections[key] -= 1
+	if wcl.ipToNumberOfActiveConnections[key] == 0 {
+		delete(wcl.ipToNumberOfActiveConnections, key)
 	}
 }
 
