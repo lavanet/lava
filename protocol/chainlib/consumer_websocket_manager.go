@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -20,6 +21,7 @@ import (
 var (
 	WebSocketRateLimit   = -1               // rate limit requests per second on websocket connection
 	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
+	MaxIdleTimeInSeconds = int64(20 * 60)   // 20 minutes of idle time will disconnect the websocket connection
 )
 
 const (
@@ -178,7 +180,31 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 	}()
 
+	idleFor := atomic.Int64{}
+	idleFor.Store(time.Now().Unix())
+	go (func() {
+		if MaxIdleTimeInSeconds <= 0 {
+			return // unlimited idle time
+		}
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-webSocketCtx.Done():
+				utils.LavaFormatDebug("ctx done in idle time checker")
+				return
+			case <-ticker.C:
+				utils.LavaFormatDebug("checking idle time", utils.LogAttr("idleFor", idleFor.Load()), utils.LogAttr("maxIdleTime", MaxIdleTimeInSeconds), utils.LogAttr("now", time.Now().Unix()))
+				idleDuration := idleFor.Load() + MaxIdleTimeInSeconds
+				if time.Now().Unix() > idleDuration {
+					websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Connection idle for too long, closing connection. Idle time: %d", idleDuration)))
+				}
+			}
+		}
+	})()
+
 	for {
+		idleFor.Store(time.Now().Unix())
 		startTime := time.Now()
 		msgSeed := guidString + "_" + strconv.Itoa(rand.Intn(10000000000)) // use message seed with original guid and new int
 
