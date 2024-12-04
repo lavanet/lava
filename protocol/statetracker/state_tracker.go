@@ -49,20 +49,20 @@ type SpecUpdaterInf interface {
 }
 
 // Either register for spec updates or set spec for offline spec, used in both consumer and provider process
-func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf) (err error) {
-	if specPath != "" {
-		// offline spec mode.
-		parsedOfflineSpec, loadError := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
-		if loadError != nil {
-			err = utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
-		}
-		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-		chainParser.SetSpec(parsedOfflineSpec)
-	} else {
-		// register for spec updates
-		err = specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
+func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf) error {
+	if specPath == "" {
+		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
-	return
+
+	// offline spec mode.
+	parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+	if err != nil {
+		return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+	}
+	utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+	chainParser.SetSpec(parsedOfflineSpec)
+
+	return nil
 }
 
 func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryClient) (*spectypes.QueryGetSpecResponse, error) {
