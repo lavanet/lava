@@ -20,6 +20,11 @@ type WebsocketConnectionLimiter struct {
 }
 
 func (wcl *WebsocketConnectionLimiter) handleFiberRateLimitFlags(c *fiber.Ctx) {
+	userAgent := c.Get("User-Agent")
+	utils.LavaFormatDebug("User-Agent", utils.LogAttr("userAgent", userAgent))
+	// Store the User-Agent in locals for later use
+	c.Locals("User-Agent", userAgent)
+
 	forwardedFor := c.Get(common.IP_FORWARDING_HEADER_NAME)
 	if forwardedFor == "" {
 		// If not present, fallback to c.IP() which retrieves the real IP

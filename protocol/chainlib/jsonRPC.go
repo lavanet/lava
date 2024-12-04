@@ -365,11 +365,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
-			userAgent := c.Get("User-Agent")
-			utils.LavaFormatDebug("User-Agent", utils.LogAttr("userAgent", userAgent))
-			// Store the User-Agent in locals for later use
-			c.Locals("User-Agent", userAgent)
-
 			c.Locals("allowed", true)
 			return c.Next()
 		}
