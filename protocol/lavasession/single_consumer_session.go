@@ -25,9 +25,10 @@ type SingleConsumerSession struct {
 	BlockListed        bool // if session lost sync we blacklist it.
 	ConsecutiveErrors  []error
 	errorsCount        uint64
-	relayProcessor     UsedProvidersInf
+	usedProviders      UsedProvidersInf
 	providerUniqueId   string
 	StaticProvider     bool
+	routerKey          RouterKey
 }
 
 // returns the expected latency to a threshold.
@@ -103,7 +104,7 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	}
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
@@ -111,15 +112,17 @@ func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, 
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
 		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
 	}
-	scs.relayProcessor = usedProviders
+	scs.usedProviders = usedProviders
+	scs.routerKey = routerKey
 	return nil
 }
 
 func (scs *SingleConsumerSession) Free(err error) {
-	if scs.relayProcessor != nil {
-		scs.relayProcessor.RemoveUsed(scs.Parent.PublicLavaAddress, err)
-		scs.relayProcessor = nil
+	if scs.usedProviders != nil {
+		scs.usedProviders.RemoveUsed(scs.Parent.PublicLavaAddress, scs.routerKey, err)
+		scs.usedProviders = nil
 	}
+	scs.routerKey = NewRouterKey(nil)
 	scs.EndpointConnection.decreaseSessionUsingConnection()
 	scs.lock.Unlock()
 }
@@ -130,7 +133,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
-		if session.relayProcessor != nil {
+		if session.usedProviders != nil {
 			utils.LavaFormatError("session misuse detected, usedProviders isn't nil, missing Free call, blocking", nil, utils.LogAttr("session", session.SessionId))
 			session.BlockListed = true
 			session.lock.Unlock()

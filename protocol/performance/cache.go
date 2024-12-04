@@ -2,22 +2,56 @@ package performance
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
-type Cache struct {
-	client  pairingtypes.RelayerCacheClient
-	address string
+type relayerCacheClientStore struct {
+	client       pairingtypes.RelayerCacheClient
+	lock         sync.RWMutex
+	ctx          context.Context
+	address      string
+	reconnecting atomic.Bool
 }
 
-func ConnectGRPCConnectionToRelayerCacheService(ctx context.Context, addr string) (*pairingtypes.RelayerCacheClient, error) {
-	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+const (
+	reconnectInterval = 5 * time.Second
+)
+
+func newRelayerCacheClientStore(ctx context.Context, address string) (*relayerCacheClientStore, error) {
+	clientStore := &relayerCacheClientStore{
+		client:  nil,
+		ctx:     ctx,
+		address: address,
+	}
+	return clientStore, clientStore.connectClient()
+}
+
+func (r *relayerCacheClientStore) getClient() pairingtypes.RelayerCacheClient {
+	if r == nil {
+		return nil
+	}
+
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	if r.client == nil {
+		go r.reconnectClient()
+	}
+
+	return r.client // might be nil
+}
+
+func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (*pairingtypes.RelayerCacheClient, error) {
+	connectCtx, cancel := context.WithTimeout(r.ctx, 3*time.Second)
 	defer cancel()
 
-	conn, err := lavasession.ConnectGRPCClient(connectCtx, addr, false, true, false)
+	conn, err := lavasession.ConnectGRPCClient(connectCtx, r.address, false, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -27,40 +61,91 @@ func ConnectGRPCConnectionToRelayerCacheService(ctx context.Context, addr string
 	return &c, nil
 }
 
-func InitCache(ctx context.Context, addr string) (*Cache, error) {
-	relayerCacheClient, err := ConnectGRPCConnectionToRelayerCacheService(ctx, addr)
-	if err != nil {
-		return &Cache{client: nil, address: addr}, err
+func (r *relayerCacheClientStore) connectClient() error {
+	relayerCacheClient, err := r.connectGRPCConnectionToRelayerCacheService()
+	if err == nil {
+		utils.LavaFormatInfo("Connected to cache service", utils.LogAttr("address", r.address))
+		func() {
+			r.lock.Lock()
+			defer r.lock.Unlock()
+			r.client = *relayerCacheClient
+		}()
+
+		r.reconnecting.Store(false)
+		return nil // connected
 	}
-	cache := Cache{client: *relayerCacheClient, address: addr}
-	return &cache, nil
+
+	utils.LavaFormatDebug("Failed to connect to cache service", utils.LogAttr("address", r.address), utils.LogAttr("error", err))
+	return err
+}
+
+func (r *relayerCacheClientStore) reconnectClient() {
+	// This is a simple atomic operation to ensure that only one goroutine is reconnecting at a time.
+	// reconnecting.CompareAndSwap(false, true):
+	// if reconnecting == false {
+	// 	reconnecting = true
+	// 	return true -> reconnect
+	// }
+	// return false -> already reconnecting
+	if !r.reconnecting.CompareAndSwap(false, true) {
+		return
+	}
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return
+		case <-time.After(reconnectInterval):
+			if r.connectClient() != nil {
+				return
+			}
+		}
+	}
+}
+
+type Cache struct {
+	clientStore *relayerCacheClientStore
+	address     string
+	serviceCtx  context.Context
+}
+
+func InitCache(ctx context.Context, addr string) (*Cache, error) {
+	clientStore, err := newRelayerCacheClientStore(ctx, addr)
+	return &Cache{
+		clientStore: clientStore,
+		address:     addr,
+		serviceCtx:  ctx,
+	}, err
 }
 
 func (cache *Cache) GetEntry(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (reply *pairingtypes.CacheRelayReply, err error) {
 	if cache == nil {
-		// TODO: try to connect again once in a while
 		return nil, NotInitializedError
 	}
-	if cache.client == nil {
-		return nil, NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
+
+	client := cache.clientStore.getClient()
+	if client == nil {
+		return nil, NotConnectedError
 	}
-	// TODO: handle disconnections and error types here
-	return cache.client.GetRelay(ctx, relayCacheGet)
+
+	reply, err = client.GetRelay(ctx, relayCacheGet)
+	return reply, err
 }
 
 func (cache *Cache) CacheActive() bool {
-	return cache != nil
+	return cache != nil && cache.clientStore.getClient() != nil
 }
 
 func (cache *Cache) SetEntry(ctx context.Context, cacheSet *pairingtypes.RelayCacheSet) error {
 	if cache == nil {
-		// TODO: try to connect again once in a while
 		return NotInitializedError
 	}
-	if cache.client == nil {
-		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
+
+	client := cache.clientStore.getClient()
+	if client == nil {
+		return NotConnectedError
 	}
-	// TODO: handle disconnections and SetRelay error types here
-	_, err := cache.client.SetRelay(ctx, cacheSet)
+
+	_, err := client.SetRelay(ctx, cacheSet)
 	return err
 }

@@ -96,6 +96,10 @@
                                         "parse_type": "DEFAULT_VALUE"
                                     },
                                     {
+                                        "parse_path": ".params.block_id",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
                                         "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
                                     }
@@ -141,6 +145,10 @@
                                 },
                                 "extra_compute_units": 0,
                                 "parsers": [
+                                    {
+                                        "parse_path": ".params.chunk_id",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
                                     {
                                         "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
@@ -339,7 +347,17 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 10000
+                                "timeout_ms": 10000,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.tx_hash",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "EXPERIMENTAL_tx_status",
@@ -357,7 +375,17 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.tx_hash",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "EXPERIMENTAL_receipt",
@@ -430,6 +458,32 @@
                             }
                         ],
                         "verifications": [
+                            {
+                                "name": "tracking-shards",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"floor.is.lava\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "parse_directive": {

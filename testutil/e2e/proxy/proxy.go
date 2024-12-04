@@ -195,9 +195,46 @@ func startProxyProcess(process proxyProcess) {
 				break
 			}
 			// Print the message to the console
-			log.Printf("Received: %s\n", msg)
-			// Write message back to browser
-			if err = conn.WriteMessage(msgType, msg); err != nil {
+			log.Printf("WS Received: %s\n", msg)
+
+			var respmsg rpcclient.JsonrpcMessage
+			err = json.Unmarshal(msg, &respmsg)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+
+			replyMessage, err := rpcInterfaceMessages.ConvertJsonRPCMsg(&respmsg)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+
+			jStruct := &jsonStruct{}
+			err = json.Unmarshal(msg, jStruct)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+			jStruct.ID = 0
+			rawBodySNoID, _ := json.Marshal(jStruct)
+
+			if val, ok := process.mock.requests[string(rawBodySNoID)]; ok && process.cache {
+				orderedJSON := idInsertedResponse(val, replyMessage)
+				println(dotsStr+process.port+dotsStr+process.id+" ::: Cached Response ::: ", orderedJSON)
+				cacheCount += 1
+
+				// Change Response
+				if fakeResponse {
+					val = fakeResult(val, "0xe000000000000000000")
+					// val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
+					println(process.port+" ::: Fake Response ::: ", val)
+					fakeCount += 1
+				}
+				time.Sleep(500 * time.Millisecond)
+				conn.WriteMessage(msgType, []byte(orderedJSON))
+			} else if err = conn.WriteMessage(msgType, msg); err != nil {
+				// Write message back to browser
 				log.Println("Write error:", err)
 				break
 			}
@@ -250,7 +287,7 @@ func fakeResult(val, fake string) string {
 	return strings.Join(parts, ",")
 }
 
-func idInstertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcMessage) string {
+func idInsertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcMessage) string {
 	// Extract ID from raw message
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMessage.ID)
 	if idErr != nil {
@@ -320,7 +357,7 @@ func (p proxyProcess) LavaTestProxy(responseWriter http.ResponseWriter, request 
 		jStruct.ID = 0
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
-			orderedJSON := idInstertedResponse(val, replyMessage)
+			orderedJSON := idInsertedResponse(val, replyMessage)
 			println(dotsStr+p.port+dotsStr+p.id+" ::: Cached Response ::: ", orderedJSON)
 			cacheCount += 1
 

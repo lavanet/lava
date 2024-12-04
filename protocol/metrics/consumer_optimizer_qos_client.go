@@ -21,15 +21,17 @@ var (
 )
 
 type ConsumerOptimizerQoSClient struct {
-	consumerOrigin string
-	queueSender    *QueueSender
-	optimizers     map[string]OptimizerInf // keys are chain ids
+	consumerHostname string
+	consumerAddress  string
+	queueSender      *QueueSender
+	optimizers       map[string]OptimizerInf // keys are chain ids
 	// keys are chain ids, values are maps with provider addresses as keys
 	chainIdToProviderToRelaysCount     map[string]map[string]uint64
 	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
 	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
 	currentEpoch                       atomic.Uint64
 	lock                               sync.RWMutex
+	reportsToSend                      []OptimizerQoSReportToSend
 }
 
 type OptimizerQoSReport struct {
@@ -41,14 +43,15 @@ type OptimizerQoSReport struct {
 	EntryIndex        int
 }
 
-type optimizerQoSReportToSend struct {
+type OptimizerQoSReportToSend struct {
 	Timestamp         time.Time `json:"timestamp"`
 	SyncScore         float64   `json:"sync_score"`
 	AvailabilityScore float64   `json:"availability_score"`
 	LatencyScore      float64   `json:"latency_score"`
 	GenericScore      float64   `json:"generic_score"`
 	ProviderAddress   string    `json:"provider"`
-	ConsumerOrigin    string    `json:"consumer"`
+	ConsumerHostname  string    `json:"consumer_hostname"`
+	ConsumerAddress   string    `json:"consumer_pub_address"`
 	ChainId           string    `json:"chain_id"`
 	NodeErrorRate     float64   `json:"node_error_rate"`
 	Epoch             uint64    `json:"epoch"`
@@ -56,7 +59,7 @@ type optimizerQoSReportToSend struct {
 	EntryIndex        int       `json:"entry_index"`
 }
 
-func (oqosr optimizerQoSReportToSend) String() string {
+func (oqosr OptimizerQoSReportToSend) String() string {
 	bytes, err := json.Marshal(oqosr)
 	if err != nil {
 		return ""
@@ -68,15 +71,15 @@ type OptimizerInf interface {
 	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
 }
 
-func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
+func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
 	hostname, err := os.Hostname()
 	if err != nil {
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
-
 	return &ConsumerOptimizerQoSClient{
-		consumerOrigin:                     hostname,
+		consumerHostname:                   hostname,
+		consumerAddress:                    consumerAddress,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
 		optimizers:                         map[string]OptimizerInf{},
 		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
@@ -126,12 +129,12 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(chainId, provider
 	return 0
 }
 
-func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) {
+func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) OptimizerQoSReportToSend {
 	// must be called under read lock
-
-	optimizerQoSReportToSend := optimizerQoSReportToSend{
+	optimizerQoSReportToSend := OptimizerQoSReportToSend{
 		Timestamp:         time.Now(),
-		ConsumerOrigin:    coqc.consumerOrigin,
+		ConsumerHostname:  coqc.consumerHostname,
+		ConsumerAddress:   coqc.consumerAddress,
 		SyncScore:         report.SyncScore,
 		AvailabilityScore: report.AvailabilityScore,
 		LatencyScore:      report.LatencyScore,
@@ -145,9 +148,10 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
+	return optimizerQoSReportToSend
 }
 
-func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
+func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() []OptimizerQoSReportToSend {
 	coqc.lock.RLock() // we only read from the maps here
 	defer coqc.lock.RUnlock()
 
@@ -156,7 +160,7 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 	requestedBlock := spectypes.LATEST_BLOCK
 
 	currentEpoch := coqc.currentEpoch.Load()
-
+	reportsToSend := []OptimizerQoSReportToSend{}
 	for chainId, optimizer := range coqc.optimizers {
 		providersMap, ok := coqc.chainIdToProviderToEpochToStake[chainId]
 		if !ok {
@@ -165,9 +169,22 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 
 		reports := optimizer.CalculateQoSScoresForMetrics(maps.Keys(providersMap), ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
-			coqc.appendOptimizerQoSReport(report, chainId, currentEpoch)
+			reportsToSend = append(reportsToSend, coqc.appendOptimizerQoSReport(report, chainId, currentEpoch))
 		}
 	}
+	return reportsToSend
+}
+
+func (coqc *ConsumerOptimizerQoSClient) SetReportsToSend(reports []OptimizerQoSReportToSend) {
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+	coqc.reportsToSend = reports
+}
+
+func (coqc *ConsumerOptimizerQoSClient) GetReportsToSend() []OptimizerQoSReportToSend {
+	coqc.lock.RLock()
+	defer coqc.lock.RUnlock()
+	return coqc.reportsToSend
 }
 
 func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx context.Context, samplingInterval time.Duration) {
@@ -183,7 +200,7 @@ func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx 
 				utils.LavaFormatTrace("ConsumerOptimizerQoSClient context done")
 				return
 			case <-time.After(samplingInterval):
-				coqc.getReportsFromOptimizers()
+				coqc.SetReportsToSend(coqc.getReportsFromOptimizers())
 			}
 		}
 	}()

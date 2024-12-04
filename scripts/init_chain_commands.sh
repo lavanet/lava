@@ -52,6 +52,7 @@ PROVIDERSTAKE="500000000000ulava"
 PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
+# PROVIDER4_LISTENER="127.0.0.1:2224"
 
 sleep 4
 
@@ -64,10 +65,10 @@ wait_count_blocks 2
 echo; echo "#### Voting on plans del proposal ####"
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-echo; echo "#### Sending proposal for plans del ####"
+echo; echo "#### Buy DefaultPlan subscription for user1 ####"
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) --enable-auto-renewal -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 # wait_count_blocks 2
-# lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+# lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_extension.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # MANTLE
 CHAINS="ETH1,SEP1,HOL1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSMOSHUB,POLYGON1,EVMOS,OPTM,BASES,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR,SQDSUBGRAPH,AGR,AGRT,KOIIT,AVAXT,CELESTIATM"
@@ -81,6 +82,9 @@ lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER2_LIS
 
 echo; echo "#### Staking provider 3 ####"
 lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 $(operator_address) -y --delegate-commission 50  --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+# echo; echo "#### Staking provider 4 ####"
+# lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER4_LISTENER,1" 1 $(operator_address) -y --delegate-commission 50  --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Waiting 1 block ####"
 wait_count_blocks 1

@@ -19,7 +19,7 @@ import (
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ProviderStateTracker struct {
-	stateQuery *updaters.ProviderStateQuery
+	StateQuery *updaters.ProviderStateQuery
 	txSender   *ProviderTxSender
 	*StateTracker
 	*EmergencyTracker
@@ -27,7 +27,8 @@ type ProviderStateTracker struct {
 
 func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
+	stateQuery := updaters.NewProviderStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, stateQuery.StateQuery, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	}
 	pst := &ProviderStateTracker{
 		StateTracker:     stateTrackerBase,
-		stateQuery:       updaters.NewProviderStateQuery(ctx, clientCtx),
+		StateQuery:       stateQuery,
 		txSender:         txSender,
 		EmergencyTracker: emergencyTracker,
 	}
@@ -49,7 +50,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
-	epochUpdater := updaters.NewEpochUpdater(&pst.stateQuery.EpochStateQuery)
+	epochUpdater := updaters.NewEpochUpdater(&pst.StateQuery.EpochStateQuery)
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*updaters.EpochUpdater)
 	if !ok {
@@ -60,7 +61,7 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 
 func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
+	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.StateQuery, pst.EventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
@@ -71,7 +72,7 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 
 func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error {
 	// register for spec verifications sets spec and verifies when a spec has been modified
-	specUpdater := updaters.NewSpecUpdater(chainId, pst.stateQuery, pst.EventTracker)
+	specUpdater := updaters.NewSpecUpdater(chainId, pst.StateQuery, pst.EventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
@@ -81,7 +82,7 @@ func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Contex
 }
 
 func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
-	versionUpdater := updaters.NewVersionUpdater(pst.stateQuery, pst.EventTracker, version, versionValidator)
+	versionUpdater := updaters.NewVersionUpdater(pst.StateQuery, pst.EventTracker, version, versionValidator)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*updaters.VersionUpdater)
 	if !ok {
@@ -114,7 +115,7 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 
 func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
-	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
+	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(pst.StateQuery, pst.EventTracker)
 	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*updaters.DowntimeParamsUpdater)
 	if !ok {
@@ -141,31 +142,31 @@ func (pst *ProviderStateTracker) LatestBlock() int64 {
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
-	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
+	return pst.StateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
 func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
-	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
+	return pst.StateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 
 func (pst *ProviderStateTracker) GetEpochSize(ctx context.Context) (uint64, error) {
-	return pst.stateQuery.GetEpochSize(ctx)
+	return pst.StateQuery.GetEpochSize(ctx)
 }
 
 func (pst *ProviderStateTracker) EarliestBlockInMemory(ctx context.Context) (uint64, error) {
-	return pst.stateQuery.EarliestBlockInMemory(ctx)
+	return pst.StateQuery.EarliestBlockInMemory(ctx)
 }
 
 func (pst *ProviderStateTracker) GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
-	return pst.stateQuery.GetRecommendedEpochNumToCollectPayment(ctx)
+	return pst.StateQuery.GetRecommendedEpochNumToCollectPayment(ctx)
 }
 
 func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
-	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
+	return pst.StateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 }
 
 func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error) {
-	return pst.stateQuery.GetProtocolVersion(ctx)
+	return pst.StateQuery.GetProtocolVersion(ctx)
 }
 
 func (pst *ProviderStateTracker) GetAverageBlockTime() time.Duration {

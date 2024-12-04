@@ -9,6 +9,7 @@ var allowedErrors = map[string]string{
 	"purging provider after all endpoints are disabled provider":     "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
 	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
+	"Failed To Connect to cache at address":                          "This error is allowed because it is caused by cache being connected only during the test and not during the bootup",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
@@ -16,6 +17,7 @@ var allowedErrorsDuringEmergencyMode = map[string]string{
 	"Connection refused":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
 	"connection reset by peer":     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
 	"Failed Querying EpochDetails": "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"http://[IP_ADDRESS]:26657":    "This error is allowed because it can happen when EOF error happens when we shut down the node in emergency mode",
 }
 
 var allowedErrorsPaymentE2E = map[string]string{

@@ -30,6 +30,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v4/protocol/upgrade"
 	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	epochstorage "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -110,6 +111,7 @@ type rpcProviderStartOptions struct {
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
 	staticSpecPath            string
+	relayLoadLimit            uint64
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -123,24 +125,26 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 	// all of the following members need to be concurrency proof
-	providerMetricsManager    *metrics.ProviderMetricsManager
-	rewardServer              *rewardserver.RewardServer
-	privKey                   *btcec.PrivateKey
-	lavaChainID               string
-	addr                      sdk.AccAddress
-	blockMemorySize           uint64
-	chainMutexes              map[string]*sync.Mutex
-	parallelConnections       uint
-	cache                     *performance.Cache
-	shardID                   uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers             *common.SafeSyncMap[string, *chaintracker.ChainTracker]
-	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
-	relaysHealthCheckEnabled  bool
-	relaysHealthCheckInterval time.Duration
-	grpcHealthCheckEndpoint   string
-	providerUniqueId          string
-	staticProvider            bool
-	staticSpecPath            string
+	providerMetricsManager       *metrics.ProviderMetricsManager
+	rewardServer                 *rewardserver.RewardServer
+	privKey                      *btcec.PrivateKey
+	lavaChainID                  string
+	addr                         sdk.AccAddress
+	blockMemorySize              uint64
+	chainMutexes                 map[string]*sync.Mutex
+	parallelConnections          uint
+	cache                        *performance.Cache
+	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers                *common.SafeSyncMap[string, *chaintracker.ChainTracker]
+	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
+	relaysHealthCheckEnabled     bool
+	relaysHealthCheckInterval    time.Duration
+	grpcHealthCheckEndpoint      string
+	providerUniqueId             string
+	staticProvider               bool
+	staticSpecPath               string
+	relayLoadLimit               uint64
+	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -165,7 +169,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
-
+	rpcp.relayLoadLimit = options.relayLoadLimit
+	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -189,6 +194,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 	}
+
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -210,8 +216,13 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
+
 	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
+
+	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker.StateQuery.StateQuery, rpcp.addr.String())
+
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
+
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
@@ -271,6 +282,11 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	return nil
 }
 
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, stateQuery *updaters.StateQuery, publicAddress string) {
+	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
+	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
+}
+
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
 	activeEndpoints := map[*lavasession.RPCProviderEndpoint]struct{}{}
 	for _, endpoint := range rpcProviderEndpoints {
@@ -307,9 +323,7 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
-	chainIds := make(map[string]struct{})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
@@ -341,11 +355,20 @@ func GetAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *Provi
 	return policy
 }
 
+func GetAllNodeUrlsInternalPaths(nodeUrls []common.NodeUrl) []string {
+	paths := []string{}
+	for _, nodeUrl := range nodeUrls {
+		paths = append(paths, nodeUrl.InternalPath)
+	}
+	return paths
+}
+
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
+
 	chainID := rpcProviderEndpoint.ChainID
 	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
@@ -359,6 +382,18 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+	}
+
+	// warn if not all internal paths are configured
+	configuredInternalPaths := GetAllNodeUrlsInternalPaths(rpcProviderEndpoint.NodeUrls)
+	chainInternalPaths := chainParser.GetAllInternalPaths()
+	overConfiguredInternalPaths := lavaslices.Difference(configuredInternalPaths, chainInternalPaths)
+	if len(overConfiguredInternalPaths) > 0 {
+		utils.LavaFormatWarning("Some configured internal paths are not in the chain's spec", nil,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("internalPaths", strings.Join(overConfiguredInternalPaths, ",")),
+		)
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
@@ -404,8 +439,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
-
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
+	var loadManager *ProviderLoadManager
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
 		defer rpcp.chainMutexes[chainID].Unlock()
@@ -450,6 +485,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			chainTracker = chainTrackerLoaded
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
+
+		// create provider load manager per chain ID
+		loadManager, _, err = rpcp.providerLoadManagersPerChain.LoadOrStore(rpcProviderEndpoint.ChainID, NewProviderLoadManager(rpcp.relayLoadLimit))
+		if err != nil {
+			utils.LavaFormatError("Failed LoadOrStore providerLoadManagersPerChain", err, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID), utils.LogAttr("rpcp.relayLoadLimit", rpcp.relayLoadLimit))
+		}
 		return nil
 	}
 	err = chainCommonSetup()
@@ -485,8 +526,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, numberOfRetriesAllowedOnNodeErrors)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -717,6 +757,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if stickinessHeaderName != "" {
 				RPCProviderStickinessHeaderName = stickinessHeaderName
 			}
+			relayLoadLimit := viper.GetUint64(common.RateLimitRequestPerSecondFlag)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
@@ -754,6 +795,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
 				offlineSpecPath,
+				relayLoadLimit,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -787,10 +829,9 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
-	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
-
+	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

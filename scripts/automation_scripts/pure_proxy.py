@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 from aiohttp import web
 from functools import partial
+import json
 
 port_url_map = {
     5555: "http://localhost:1317",  # Replace with actual target URLs
@@ -21,6 +22,8 @@ async def proxy_handler(request, server_port):
         url += f"?{query_string}"
 
     print(f"Proxying request to: {url}")  # Debug print
+    print(f"Request path: {path}")  # Debug print
+    print(f"Request query: {query_string}")  # Debug print
     print(f"Request headers: {request.headers}")  # Debug print
 
     try:
@@ -28,6 +31,21 @@ async def proxy_handler(request, server_port):
             method = request.method
             headers = {k: v for k, v in request.headers.items() if k.lower() not in ('host', 'content-length')}
             data = await request.read()
+            
+            # Print the data, decoding it as JSON if possible
+            try:
+                json_data = data.decode('utf-8')
+                print(f"Request data (raw): {json_data}")  # Debug print
+                print("")
+                print("Copy for curl:")
+                print(f'curl -X POST -H "Content-Type: application/json" {target_url} --data {json_data} -v')
+                print("")
+                print("")
+                json_parsed_data = json.loads(json_data)
+                print(f"Request data (parsed JSON): {json.dumps(json_parsed_data, indent=2)}")  # Debug print
+            except Exception as e:
+                print(f"Error decoding request data as JSON: {e}")
+                print(f"Request data (raw bytes): {data}")  # Debug print
 
             async with session.request(method, url, headers=headers, data=data, allow_redirects=False) as resp:
                 print(f"Response status: {resp.status}")  # Debug print

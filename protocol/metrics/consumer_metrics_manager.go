@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -44,6 +45,8 @@ type ConsumerMetricsManager struct {
 	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
 	totalWsSubscriptionDissconnectMetric        *prometheus.CounterVec
 	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalLoLSuccessMetric                       prometheus.Counter
+	totalLoLErrorsMetric                        prometheus.Counter
 	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
@@ -64,11 +67,14 @@ type ConsumerMetricsManager struct {
 	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
 	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
 	averageProcessingLatency                    map[string]*LatencyTracker
+	consumerOptimizerQoSClient                  *ConsumerOptimizerQoSClient
 }
 
 type ConsumerMetricsManagerOptions struct {
-	NetworkAddress     string
-	AddMethodsApiGauge bool
+	NetworkAddress             string
+	AddMethodsApiGauge         bool
+	EnableQoSListener          bool
+	ConsumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
 func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerMetricsManager {
@@ -113,6 +119,16 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
 		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
+
+	totalLoLSuccessMetric := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "lava_consumer_total_lol_successes",
+		Help: "The total number of requests sent to lava over lava successfully",
+	})
+
+	totalLoLErrorsMetric := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "lava_consumer_total_lol_errors",
+		Help: "The total number of requests sent to lava over lava and failed",
+	})
 
 	totalWebSocketConnectionsActive := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_total_websocket_connections_active",
@@ -237,6 +253,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalFailedWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalDuplicatedWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalWsSubscriptionDissconnectMetric)
+	prometheus.MustRegister(totalLoLSuccessMetric)
+	prometheus.MustRegister(totalLoLErrorsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -270,9 +288,26 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
+		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
+		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
+		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/provider_optimizer_metrics", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		reports := consumerMetricsManager.consumerOptimizerQoSClient.GetReportsToSend()
+		jsonData, err := json.Marshal(reports)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonData)
+	})
 
 	overallHealthHandler := func(w http.ResponseWriter, r *http.Request) {
 		statusCode := http.StatusOK
@@ -544,4 +579,39 @@ func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chain
 		return
 	}
 	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
+	if pme == nil {
+		return
+	}
+	if success {
+		pme.totalLoLSuccessMetric.Inc()
+	} else {
+		pme.totalLoLErrorsMetric.Inc()
+	}
+}
+
+func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var report OptimizerQoSReportToSend
+	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Process the received QoS report here
+	utils.LavaFormatDebug("Received QoS report",
+		utils.LogAttr("provider", report.ProviderAddress),
+		utils.LogAttr("chain_id", report.ChainId),
+		utils.LogAttr("sync_score", report.SyncScore),
+		utils.LogAttr("availability_score", report.AvailabilityScore),
+		utils.LogAttr("latency_score", report.LatencyScore),
+	)
+
+	w.WriteHeader(http.StatusOK)
 }

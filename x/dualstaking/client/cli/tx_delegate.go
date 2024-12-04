@@ -59,37 +59,30 @@ func CmdDelegate() *cobra.Command {
 	return cmd
 }
 
+// GetValidator gets a validator that is delegated by the `from` address
+// The dualstaking mecahnism makes providers delegate to a validator when they're staking.
+// Assuming that the `from` address (of the clientCtx) is a staked provider address, this
+// function returns a validator that the provider is delegated to (the one with the largest delegation).
 func GetValidator(clientCtx client.Context) string {
 	provider := clientCtx.GetFromAddress().String()
 	q := stakingtypes.NewQueryClient(clientCtx)
 	ctx := context.Background()
-	resD, err := q.DelegatorValidators(ctx, &stakingtypes.QueryDelegatorValidatorsRequest{DelegatorAddr: provider})
+	resD, err := q.DelegatorDelegations(ctx, &stakingtypes.QueryDelegatorDelegationsRequest{DelegatorAddr: provider})
 
-	if err == nil && len(resD.Validators) > 0 {
-		validatorBiggest := resD.Validators[0]
-		for _, validator := range resD.Validators {
-			if sdk.AccAddress(validator.OperatorAddress).String() == provider {
-				return validator.OperatorAddress
+	if err == nil && len(resD.DelegationResponses) > 0 {
+		delegationBiggest := resD.DelegationResponses[0]
+		for _, delegationResponse := range resD.DelegationResponses {
+			if sdk.AccAddress(delegationResponse.Delegation.ValidatorAddress).String() == provider {
+				return delegationResponse.Delegation.ValidatorAddress
 			}
-			if validator.Tokens.GT(validatorBiggest.Tokens) {
-				validatorBiggest = validator
+			if delegationResponse.Balance.IsGTE(delegationBiggest.Balance) {
+				delegationBiggest = delegationResponse
 			}
 		}
-		return validatorBiggest.OperatorAddress
+		if !delegationBiggest.Balance.IsZero() {
+			return delegationBiggest.Delegation.ValidatorAddress
+		}
 	}
 
-	resV, err := q.Validators(ctx, &stakingtypes.QueryValidatorsRequest{})
-	if err != nil {
-		panic("failed to fetch list of validators")
-	}
-	validatorBiggest := resV.Validators[0]
-	for _, validator := range resV.Validators {
-		if sdk.AccAddress(validator.OperatorAddress).String() == provider {
-			return validator.OperatorAddress
-		}
-		if validator.Tokens.GT(validatorBiggest.Tokens) {
-			validatorBiggest = validator
-		}
-	}
-	return validatorBiggest.OperatorAddress
+	return ""
 }
