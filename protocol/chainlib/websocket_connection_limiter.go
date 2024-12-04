@@ -20,10 +20,9 @@ type WebsocketConnectionLimiter struct {
 }
 
 func (wcl *WebsocketConnectionLimiter) handleFiberRateLimitFlags(c *fiber.Ctx) {
-	userAgent := c.Get("User-Agent")
-	utils.LavaFormatDebug("User-Agent", utils.LogAttr("userAgent", userAgent))
+	userAgent := c.Get(fiber.HeaderUserAgent)
 	// Store the User-Agent in locals for later use
-	c.Locals("User-Agent", userAgent)
+	c.Locals(fiber.HeaderUserAgent, userAgent)
 
 	forwardedFor := c.Get(common.IP_FORWARDING_HEADER_NAME)
 	if forwardedFor == "" {
@@ -79,7 +78,7 @@ func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocke
 		numberOfActiveConnections := wcl.addIpConnectionAndGetCurrentAmount(key)
 
 		if numberOfActiveConnections > connectionLimit {
-			websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", connectionLimit)))
+			websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Too Many Open Connections, limited to %d", connectionLimit)))
 			return false, func() { wcl.decreaseIpConnection(key) }
 		}
 	}
