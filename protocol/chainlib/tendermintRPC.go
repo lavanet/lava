@@ -381,7 +381,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		if !apil.websocketConnectionLimiter.canOpenConnection(websocketConn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.canOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
 			return
 		}
 

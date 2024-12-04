@@ -165,7 +165,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			case <-ticker.C:
 				// check if rate limit reached, and ban is required
 				currentRequestsPerSecondLoad := requestsPerSecond.Load()
-				if WebSocketBanDuration > 0 && (cwm.headerRateLimit > currentRequestsPerSecondLoad || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
+				if WebSocketBanDuration > 0 && (currentRequestsPerSecondLoad > cwm.headerRateLimit || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
 					// wait the ban duration before resetting the store.
 					select {
 					case <-webSocketCtx.Done():

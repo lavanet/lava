@@ -56,7 +56,7 @@ func (wcl *WebsocketConnectionLimiter) getConnectionLimit(websocketConn *websock
 	return utils.Max(MaximumNumberOfParallelWebsocketConnectionsPerIp, connectionLimitHeaderValue)
 }
 
-func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocket.Conn) bool {
+func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocket.Conn) (bool, func()) {
 	// Check which connection limit is higher and use that.
 	connectionLimit := wcl.getConnectionLimit(websocketConn)
 	if connectionLimit > 0 { // 0 is disabled.
@@ -66,15 +66,19 @@ func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn *websocke
 			ipForwarded = ""
 		}
 		ip := websocketConn.RemoteAddr().String()
-		key := wcl.getKey(ip, ipForwarded)
+		userAgent, assertionSuccessful := websocketConn.Locals("User-Agent").(string)
+		if !assertionSuccessful {
+			userAgent = ""
+		}
+		key := wcl.getKey(ip, ipForwarded, userAgent)
 		numberOfActiveConnections := wcl.addIpConnectionAndGetCurrentAmount(key)
-		defer wcl.decreaseIpConnectionAndGetCurrentAmount(key)
+
 		if numberOfActiveConnections > connectionLimit {
 			websocketConn.WriteMessage(1, []byte(fmt.Sprintf("Too Many Open Connections, limited to %d", connectionLimit)))
-			return false
+			return false, func() { wcl.decreaseIpConnection(key) }
 		}
 	}
-	return true
+	return true, func() {}
 }
 
 func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip string) int64 {
@@ -85,7 +89,7 @@ func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(ip str
 	return wcl.ipToNumberOfActiveConnections[ip]
 }
 
-func (wcl *WebsocketConnectionLimiter) decreaseIpConnectionAndGetCurrentAmount(ip string) {
+func (wcl *WebsocketConnectionLimiter) decreaseIpConnection(ip string) {
 	wcl.lock.Lock()
 	defer wcl.lock.Unlock()
 	// wether it exists or not we add 1.
@@ -95,7 +99,7 @@ func (wcl *WebsocketConnectionLimiter) decreaseIpConnectionAndGetCurrentAmount(i
 	}
 }
 
-func (wcl *WebsocketConnectionLimiter) getKey(ip string, forwardedIp string) string {
+func (wcl *WebsocketConnectionLimiter) getKey(ip string, forwardedIp string, userAgent string) string {
 	returnedKey := ""
 	ipOriginal := net.ParseIP(ip)
 	if ipOriginal != nil {
@@ -118,5 +122,6 @@ func (wcl *WebsocketConnectionLimiter) getKey(ip string, forwardedIp string) str
 			}
 		}
 	}
+	returnedKey += SEP + userAgent
 	return returnedKey
 }

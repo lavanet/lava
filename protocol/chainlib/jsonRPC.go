@@ -352,6 +352,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
+			userAgent := c.Get("User-Agent")
+			utils.LavaFormatDebug("User-Agent", utils.LogAttr("userAgent", userAgent))
+			// Store the User-Agent in locals for later use
+			c.Locals("User-Agent", userAgent)
+
 			c.Locals("allowed", true)
 			return c.Next()
 		}
@@ -362,7 +367,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		if !apil.websocketConnectionLimiter.canOpenConnection(websocketConn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.canOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
 			return
 		}
 		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
