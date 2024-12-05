@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/conflict/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/conflict/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -99,7 +99,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			ConsensusVote = false
 			continue
 		}
-		stake := entry.EffectiveStake()
+		stake := entry.TotalStake()
 		totalVotes = totalVotes.Add(stake) // count all the stake in the vote
 		votersStake[vote.Address] = stake  // save stake for reward weight
 		switch vote.Result {               // count vote for each provider

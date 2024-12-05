@@ -31,18 +31,18 @@ wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1,archive,debug" 1 $(operator_address) -y --from servicer1 --delegate-limit $STAKE --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 $(operator_address) -y --from servicer2 --delegate-limit $STAKE --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2223,1" 1 $(operator_address) -y --from servicer3 --delegate-limit $STAKE --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2224,1" 1 $(operator_address) -y --from servicer4 --delegate-limit $STAKE --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2225,1" 1 $(operator_address) -y --from servicer5 --delegate-limit $STAKE --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1,archive,debug" 1 $(operator_address) -y --from servicer1  --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 $(operator_address) -y --from servicer2  --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2223,1" 1 $(operator_address) -y --from servicer3  --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2224,1" 1 $(operator_address) -y --from servicer4  --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2225,1" 1 $(operator_address) -y --from servicer5  --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Lava tendermint/rest providers
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2261,1" 1 $(operator_address) -y --from servicer6 --delegate-limit $STAKE --provider-moniker "servicer6" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2262,1" 1 $(operator_address) -y --from servicer7 --delegate-limit $STAKE --provider-moniker "servicer7" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2263,1" 1 $(operator_address) -y --from servicer8 --delegate-limit $STAKE --provider-moniker "servicer8" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2264,1" 1 $(operator_address) -y --from servicer9 --delegate-limit $STAKE --provider-moniker "servicer9" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,1" 1 $(operator_address) -y --from servicer10 --delegate-limit $STAKE --provider-moniker "servicer10"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2261,1" 1 $(operator_address) -y --from servicer6  --provider-moniker "servicer6" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2262,1" 1 $(operator_address) -y --from servicer7  --provider-moniker "servicer7" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2263,1" 1 $(operator_address) -y --from servicer8  --provider-moniker "servicer8" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2264,1" 1 $(operator_address) -y --from servicer9  --provider-moniker "servicer9" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,1" 1 $(operator_address) -y --from servicer10  --provider-moniker "servicer10"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # subscribed clients
 # (actually, only user1 is used in testutils/e2e/e2e.go, but having same count

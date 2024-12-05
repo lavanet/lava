@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -107,7 +107,7 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
 		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
-			utils.LavaFormatFatal("Failed to parse unix socket, provide address in this format unix:/tmp/example.sock: %v\n", err)
+			utils.LavaFormatFatal("Failed to parse unix socket, provide address in this format unix:/tmp/example.sock", err)
 			return
 		}
 
@@ -115,26 +115,26 @@ func (cs *CacheServer) Serve(ctx context.Context,
 
 		addr, err := net.ResolveUnixAddr(host, port)
 		if err != nil {
-			utils.LavaFormatFatal("Failed to resolve unix socket address: %v\n", err)
+			utils.LavaFormatFatal("Failed to resolve unix socket address", err)
 			return
 		}
 
 		lis, err = net.ListenUnix(host, addr)
 		if err != nil {
-			utils.LavaFormatFatal("Faild to listen to unix socket listener: %v\n", err)
+			utils.LavaFormatFatal("Failed to listen to unix socket listener", err)
 			return
 		}
 
 		// Set permissions for the Unix socket
 		err = os.Chmod(port, 0o600)
 		if err != nil {
-			utils.LavaFormatFatal("Failed to set permissions for Unix socket: %v\n", err)
+			utils.LavaFormatFatal("Failed to set permissions for Unix socket", err)
 			return
 		}
 	} else {
 		lis, err = net.Listen("tcp", listenAddr)
 		if err != nil {
-			utils.LavaFormatFatal("Cache server failure setting up TCP listener: %v\n", err)
+			utils.LavaFormatFatal("Cache server failure setting up TCP listener", err)
 			return
 		}
 	}

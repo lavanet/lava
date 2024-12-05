@@ -27,6 +27,25 @@ var JsonRpcMethodNotFoundError = JsonRPCErrorMessage{
 	},
 }
 
+var JsonRpcRateLimitError = JsonRPCErrorMessage{
+	JsonRPC: "2.0",
+	Id:      1,
+	Error: JsonRPCError{
+		Code:    429,
+		Message: "Too Many Requests",
+	},
+}
+
+var JsonRpcParseError = JsonRPCErrorMessage{
+	JsonRPC: "2.0",
+	Id:      -1,
+	Error: JsonRPCError{
+		Code:    -32700,
+		Message: "Parse error",
+		Data:    "Failed to parse the request body as JSON",
+	},
+}
+
 var JsonRpcSubscriptionNotFoundError = JsonRPCErrorMessage{
 	JsonRPC: "2.0",
 	Id:      1,

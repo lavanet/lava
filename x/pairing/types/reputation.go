@@ -3,7 +3,7 @@ package types
 import (
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 )
 
 var (
