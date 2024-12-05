@@ -351,6 +351,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				)
 
 				for subscriptionMsgReply := range subscriptionMsgsChan {
+					idleFor.Store(time.Now().Unix())
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(subscriptionMsgReply.Data)}
 				}
 
