@@ -94,9 +94,9 @@ func TestQosCompute(t *testing.T) {
 	qos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Sync: sdk.OneDec(), Availability: sdk.OneDec()}
 
 	// with the given QoS report and the default config, the expected score results:
-	// normal: score = latency + sync*syncFactor + ((1/availability) - 1) * FailureCost = 1 + 1*0.1 + (1/1 - 1) * 3 = 1.1
+	// normal: score = latency + sync*syncFactor + ((1/availability) - 1) * FailureCost = 1 + 1*0.3 + (1/1 - 1) * 3 = 1.3
 	// with block error probability: score = latency + blockErrorProbability * FailureCost + ((1/availability) - 1) * FailureCost = 1 + 1*3 + (1/1 - 1) * 3 = 4
-	expectedScoreDefault := sdk.NewDecWithPrec(11, 1)
+	expectedScoreDefault := sdk.NewDecWithPrec(13, 1)
 	expectedScoreBlockErrorProbability := sdk.NewDec(4)
 
 	template := []struct {
