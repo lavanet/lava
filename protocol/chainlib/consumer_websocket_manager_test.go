@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"net"
-
 	"testing"
 
 	"github.com/golang/mock/gomock"
