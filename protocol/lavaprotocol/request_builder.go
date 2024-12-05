@@ -6,14 +6,14 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/v3/x/conflict/types/construct"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/v4/x/conflict/types/construct"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type HeaderFilterer interface {
@@ -151,7 +151,14 @@ func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayRep
 	}
 
 	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(reply1.Data)}, utils.Attribute{Key: "Data1", Value: reply2.Data})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil,
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("Request0", request1.RelayData),
+		utils.LogAttr("Data0", string(reply1.Data)),
+		utils.LogAttr("Request1", request2.RelayData),
+		utils.LogAttr("Data1", string(reply2.Data)),
+	)
+
 	responseConflict = &conflicttypes.ResponseConflict{
 		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(&reply1, &request1),
 		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(&reply2, &request2),

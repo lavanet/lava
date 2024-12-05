@@ -3,7 +3,7 @@ package format
 import (
 	"testing"
 
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

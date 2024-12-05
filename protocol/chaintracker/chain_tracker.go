@@ -11,14 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	rand "github.com/lavanet/lava/v3/utils/rand"
+	rand "github.com/lavanet/lava/v4/utils/rand"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -68,6 +68,10 @@ type ChainTracker struct {
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
 	pmetrics                *metrics.ProviderMetricsManager
+
+	// initial config
+	averageBlockTime time.Duration
+	serverAddress    string
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -570,6 +574,16 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
+func (ct *ChainTracker) StartAndServe(ctx context.Context) error {
+	err := ct.start(ctx, ct.averageBlockTime)
+	if err != nil {
+		return err
+	}
+
+	err = ct.serve(ctx, ct.serverAddress)
+	return err
+}
+
 func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
 	if !rand.Initialized() {
 		utils.LavaFormatFatal("can't start chainTracker with nil rand source", nil)
@@ -598,16 +612,13 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 		startupTime:             time.Now(),
 		pmetrics:                config.Pmetrics,
 		pollingTimeMultiplier:   time.Duration(pollingTime),
+		averageBlockTime:        config.AverageBlockTime,
+		serverAddress:           config.ServerAddress,
 	}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
 	chainTracker.endpoint = chainFetcher.FetchEndpoint()
-	err = chainTracker.start(ctx, config.AverageBlockTime)
-	if err != nil {
-		return nil, err
-	}
 
-	err = chainTracker.serve(ctx, config.ServerAddress)
 	return chainTracker, err
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -10,10 +11,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/lavanet/lava/v3/utils"
-	dualstakingclient "github.com/lavanet/lava/v3/x/dualstaking/client/cli"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils"
+	dualstakingclient "github.com/lavanet/lava/v4/x/dualstaking/client/cli"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +43,9 @@ func CmdUnstakeProvider() *cobra.Command {
 				validator = args[1]
 			} else {
 				validator = dualstakingclient.GetValidator(clientCtx)
+			}
+			if validator == "" {
+				return fmt.Errorf("cannot unstake, the provider is not delegated to any validator.\nthe provider might have all zero delegations, to resolve please delegated to one of the validators a small amount")
 			}
 
 			msgs := []sdk.Msg{}

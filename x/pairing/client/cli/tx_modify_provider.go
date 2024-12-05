@@ -6,17 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"github.com/spf13/cobra"
 )
 
@@ -124,7 +122,7 @@ func CmdModifyProvider() *cobra.Command {
 
 				if !providerEntry.Stake.IsEqual(newStake) {
 					if cmd.Flags().Changed(ValidatorFlag) {
-						validator, err = cmd.Flags().GetString(types.FlagMoniker)
+						validator, err = cmd.Flags().GetString(ValidatorFlag)
 						if err != nil {
 							return err
 						}
@@ -165,17 +163,6 @@ func CmdModifyProvider() *cobra.Command {
 
 			if cmd.Flags().Changed(types.FlagCommission) {
 				providerEntry.DelegateCommission, err = cmd.Flags().GetUint64(types.FlagCommission)
-				if err != nil {
-					return err
-				}
-			}
-
-			if cmd.Flags().Changed(types.FlagDelegationLimit) {
-				delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
-				if err != nil {
-					return err
-				}
-				providerEntry.DelegateLimit, err = sdk.ParseCoinNormalized(delegationLimitStr)
 				if err != nil {
 					return err
 				}
@@ -226,15 +213,10 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Stake,
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
-				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
 				providerEntry.Address,
 				description,
 			)
-
-			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
-				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-			}
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -248,7 +230,6 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(ValidatorFlag, "", "the validator to delegate/bond to with dualstaking")
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
-	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
 	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")

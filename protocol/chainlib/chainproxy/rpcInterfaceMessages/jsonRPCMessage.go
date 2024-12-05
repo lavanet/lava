@@ -6,11 +6,11 @@ import (
 	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
 )
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
@@ -56,7 +56,7 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	if result.Error == nil {
+	if result.Error == nil { // no error
 		return false, ""
 	}
 	return result.Error.Message != "", result.Error.Message
@@ -121,11 +121,7 @@ func (jm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCI
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
 	}
 
-	// Make sure the response does not have an error
-	if msg.Error != nil && msg.Result == nil {
-		return nil, utils.LavaFormatError("response is an error message", msg.Error)
-	}
-	return ParsableRPCInput{Result: msg.Result}, nil
+	return ParsableRPCInput{Result: msg.Result, Error: msg.Error}, nil
 }
 
 func (jm JsonrpcMessage) GetParams() interface{} {
@@ -145,6 +141,10 @@ func (jm JsonrpcMessage) GetResult() json.RawMessage {
 
 func (jm JsonrpcMessage) GetID() json.RawMessage {
 	return jm.ID
+}
+
+func (jm JsonrpcMessage) GetError() *rpcclient.JsonError {
+	return jm.Error
 }
 
 func (jm JsonrpcMessage) ParseBlock(inp string) (int64, error) {

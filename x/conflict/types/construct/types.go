@@ -1,9 +1,9 @@
 package construct
 
 import (
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) *types.ReplyMetadata {
