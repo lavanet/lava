@@ -82,6 +82,20 @@ func TestGenesis(t *testing.T) {
 				BadgeUsedCuKey: []byte{byte(1)},
 			},
 		},
+		Reputations: []types.ReputationGenesis{
+			{
+				ChainId:    "0",
+				Cluster:    "0",
+				Provider:   "0",
+				Reputation: types.Reputation{},
+			},
+			{
+				ChainId:    "1",
+				Cluster:    "1",
+				Provider:   "1",
+				Reputation: types.Reputation{},
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -97,5 +111,6 @@ func TestGenesis(t *testing.T) {
 	require.ElementsMatch(t, genesisState.ProviderEpochCus, got.ProviderEpochCus)
 	require.ElementsMatch(t, genesisState.ProviderConsumerEpochCus, got.ProviderConsumerEpochCus)
 	require.ElementsMatch(t, genesisState.BadgeUsedCuList, got.BadgeUsedCuList)
+	require.ElementsMatch(t, genesisState.Reputations, got.Reputations)
 	// this line is used by starport scaffolding # genesis/test/assert
 }
