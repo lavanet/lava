@@ -198,6 +198,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				idleDuration := idleFor.Load() + MaxIdleTimeInSeconds
 				if time.Now().Unix() > idleDuration {
 					websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Connection idle for too long, closing connection. Idle time: %d", idleDuration)))
+					return
 				}
 			}
 		}
