@@ -204,7 +204,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.LogAttr("provider", relay.Provider),
 				)
 			}
-			effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.EffectiveStake())
+			effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.TotalStake())
 
 			// note the current weight used is by relay num. In the future, it might change
 			k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.RelayNum), effectiveStake)
