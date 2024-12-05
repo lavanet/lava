@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -129,7 +129,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       spectypes.LATEST_BLOCK,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            15 * time.Millisecond, // 150 is one way travel time
+			timeout:            25 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,

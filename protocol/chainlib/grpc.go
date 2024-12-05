@@ -9,17 +9,16 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/goccy/go-json"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/grpcproxy"
-	dyncodec "github.com/lavanet/lava/v3/protocol/chainlib/grpcproxy/dyncodec"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/grpcproxy"
+	dyncodec "github.com/lavanet/lava/v4/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -30,15 +29,15 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
@@ -48,25 +47,6 @@ const GRPCStatusCodeOnFailedMessages = 32
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 	ErrorCode    uint32 `json:"error_code"`
-}
-
-type grpcDescriptorCache struct {
-	cachedDescriptors sync.Map // method name is the key, method descriptor is the value
-}
-
-func (gdc *grpcDescriptorCache) getDescriptor(methodName string) *desc.MethodDescriptor {
-	if descriptor, ok := gdc.cachedDescriptors.Load(methodName); ok {
-		converted, success := descriptor.(*desc.MethodDescriptor) // convert to a descriptor
-		if success {
-			return converted
-		}
-		utils.LavaFormatError("Failed Converting method descriptor", nil, utils.Attribute{Key: "Method", Value: methodName})
-	}
-	return nil
-}
-
-func (gdc *grpcDescriptorCache) setDescriptor(methodName string, descriptor *desc.MethodDescriptor) {
-	gdc.cachedDescriptors.Store(methodName, descriptor)
 }
 
 type GrpcChainParser struct {
@@ -135,7 +115,9 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, grpcMessage, apiCollection), nil
+	parsedInput := &parser.ParsedInput{}
+	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+	return apip.newChainMessage(apiCont.api, parsedInput, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -148,7 +130,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Check API is supported and save it in nodeMsg.
 	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
+		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, utils.LogAttr("url", url), utils.LogAttr("connectionType", connectionType))
 	}
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -185,18 +167,19 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
 			)
 			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
-	parsedBlock := parsedInput.GetBlock()
-	blockHashes, _ := parsedInput.GetBlockHashes()
-
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, requestedHashes []string, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	requestedBlock := parsedInput.GetBlock()
+	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
 		api:                      api,
 		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
@@ -205,6 +188,7 @@ func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),
+		usedDefaultValue:         parsedInput.UsedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -222,7 +206,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -388,7 +372,7 @@ func (apil *GrpcChainListener) GetListeningAddress() string {
 type GrpcChainProxy struct {
 	BaseChainProxy
 	conn             grpcConnectorInterface
-	descriptorsCache *grpcDescriptorCache
+	descriptorsCache *common.SafeSyncMap[string, *desc.MethodDescriptor]
 }
 type grpcConnectorInterface interface {
 	Close()
@@ -413,7 +397,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
 		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID, HashedNodeUrl: chainproxy.HashURL(rpcProviderEndpoint.NodeUrls[0].Url)},
-		descriptorsCache: &grpcDescriptorCache{},
+		descriptorsCache: &common.SafeSyncMap[string, *desc.MethodDescriptor]{},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -471,9 +455,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 
-	// check if we have method descriptor already cached.
-	methodDescriptor := cp.descriptorsCache.getDescriptor(methodName)
-	if methodDescriptor == nil { // method descriptor not cached yet, need to fetch it and add to cache
+	// Check if we have method descriptor already cached.
+	// The reason we do Load and then Store here, instead of LoadOrStore:
+	// On the worst case scenario, where 2 threads are accessing the map at the same time, the same descriptor will be stored twice.
+	// It is better than the alternative, which is always creating the descriptor, since the outcome is the same.
+	methodDescriptor, found, _ := cp.descriptorsCache.Load(methodName)
+	if !found { // method descriptor not cached yet, need to fetch it and add to cache
 		var descriptor desc.Descriptor
 		if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
 			return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
@@ -488,7 +475,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 
 		// add the descriptor to the chainProxy cache
-		cp.descriptorsCache.setDescriptor(methodName, methodDescriptor)
+		cp.descriptorsCache.Store(methodName, methodDescriptor)
 	}
 
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()

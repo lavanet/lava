@@ -15,17 +15,17 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -61,7 +61,12 @@ func (apip *TendermintChainParser) getSupportedApi(name, connectionType string) 
 
 func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -85,7 +90,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 		return nil, err
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.ApiName}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection, false), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -138,6 +143,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, spectypes.LATEST_BLOCK
 	blockHashes := []string{}
+	parsedDefault := true
 	for idx, msg := range msgs {
 		parsedInput := parser.NewParsedInput()
 		// Check api is supported and save it in nodeMsg
@@ -166,6 +172,9 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
 				blockHashes = append(blockHashes, hashes...)
 			}
+			if !parsedInput.UsedDefaultValue {
+				parsedDefault = false
+			}
 		} else {
 			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
 			parsedInput.SetBlock(parsedBlock)
@@ -175,6 +184,8 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
 				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
 
@@ -232,10 +243,10 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
 		var err error
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -245,7 +256,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -259,11 +270,18 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+// overwritten because tendermintrpc doesnt use POST but an empty connecionType
+func (apip *TendermintChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	url, data, _, metadata, err = apip.BaseChainParser.ExtractDataFromRequest(request)
+	return url, data, "", metadata, err
+}
+
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
@@ -272,6 +290,7 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -289,7 +308,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -601,11 +620,11 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 				ErrorHandler:     &TendermintRPCErrorHandler{},
 				ChainID:          rpcProviderEndpoint.ChainID,
 			},
-			conn: map[string]*chainproxy.Connector{},
+			conn: nil,
 		},
 	}
 
-	return cp, cp.start(ctx, nConns, nodeUrl, nil)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
@@ -646,8 +665,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	httpClient := cp.httpClient
 
 	// appending hashed url
-	internalPath := chainMessage.GetApiCollection().GetCollectionData().InternalPath
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.NodeUrl.Url + "/" + nodeMessage.Path
@@ -723,23 +741,18 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
 	var rpc *rpcclient.Client
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-
-	connector := cp.conn[internalPath]
-
-	rpc, err = connector.GetRpc(ctx, true)
+	rpc, err = cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
 	// return the rpc connection to the websocket pool after the function completes
-	defer connector.ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, connector.GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.RPCResponse
 	var sub *rpcclient.ClientSubscription
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
@@ -768,13 +781,13 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		// perform the rpc call
 		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
-		if err != nil {
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
-				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+		if nodeErr != nil {
+			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
-			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
+			if parsedError := cp.HandleNodeError(ctx, nodeErr); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}
@@ -782,27 +795,27 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
-
 	if nodeErr != nil {
-		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
-		return nil, "", nil, nodeErr
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			return nil, "", nil, nodeErr
+		}
 	}
 
-	replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
+	replyMsg, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC error", err)
 	}
 
 	// if we didn't get a node error.
-	if replyMessage.Error == nil {
+	if replyMsg.Error == nil {
 		// validate result is valid
-		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
 		if responseIsNilValidationError != nil {
 			return nil, "", nil, responseIsNilValidationError
 		}
 	}
-	replyMsg = replyMessage
-
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,

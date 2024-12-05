@@ -4,9 +4,9 @@ import (
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type AddonFilter struct {

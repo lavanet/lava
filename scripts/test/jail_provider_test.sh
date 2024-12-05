@@ -74,11 +74,11 @@ $PROVIDER4_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 $PROVIDER4_LISTENER LAV1 grpc '$LAVA_GRPC' \
 $EXTRA_PROVIDER_FLAGS --chain-id=lava --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer4 2>&1 | tee $LOGS_DIR/PROVIDER4.log"
 
-# Setup Portal
+# Setup Consumer
 screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3333 ETH1 jsonrpc \
 127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
-$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log"
+$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMER.log"
 
 
 # need to wait 8 epochs for the provider to be jail eligible

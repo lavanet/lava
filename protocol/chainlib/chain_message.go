@@ -4,12 +4,12 @@ import (
 	"math"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type updatableRPCInput interface {
@@ -31,11 +31,28 @@ type baseChainMessageContainer struct {
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
 	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
+	usedDefaultValue       bool
 
 	inputHashCache []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	updatedSuccessfully := false
+	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
+		// check earliest is not unset (0) or incoming is lower than current value
+		if bcmc.earliestRequestedBlock == 0 || bcmc.earliestRequestedBlock > incomingEarliest {
+			bcmc.earliestRequestedBlock = incomingEarliest
+			updatedSuccessfully = true
+		}
+	}
+	return updatedSuccessfully
+}
+
+func (bcnc *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
+	return bcnc.requestedBlockHashes
 }
 
 func (bcnc *baseChainMessageContainer) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
@@ -154,6 +171,10 @@ func (bcnc *baseChainMessageContainer) OverrideExtensions(extensionNames []strin
 	}
 }
 
+func (bcnc *baseChainMessageContainer) GetUsedDefaultValue() bool {
+	return bcnc.usedDefaultValue
+}
+
 func (bcnc *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
 	if len(bcnc.extensions) > 0 {
 		for _, ext := range bcnc.extensions {
@@ -179,6 +200,7 @@ type CraftData struct {
 	Path           string
 	Data           []byte
 	ConnectionType string
+	InternalPath   string
 }
 
 func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {

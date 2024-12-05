@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -48,7 +48,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 }
 
 // Distribute bonus rewards to providers across all chains based on performance
-func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
+func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 	coins := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	totalRewarded := sdk.ZeroInt()
@@ -88,11 +88,11 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, reward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, providerOnlyReward.String())
 			}
 
 			// count iprpc cu
@@ -145,7 +145,7 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = sdk.ZeroDec()
 		for _, entry := range stakeEntries {
-			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.EffectiveStake()))
+			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.TotalStake()))
 		}
 
 		chainStake[chainID] = chainStake[chainID].MulInt64(int64(spec.Shares))
@@ -178,10 +178,14 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 	}
 
 	totalBasePay := math.ZeroInt()
+	stakedBasePays := []types.BasePayWithIndex{}
 	for _, basepay := range basepays {
-		totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+		if _, found := k.epochstorage.GetStakeEntryCurrent(ctx, basepay.ChainId, basepay.Provider); found {
+			totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+			stakedBasePays = append(stakedBasePays, basepay)
+		}
 	}
-	return basepays, totalBasePay
+	return stakedBasePays, totalBasePay
 }
 
 // ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool

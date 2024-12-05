@@ -24,7 +24,6 @@ const (
 const (
 	FlagMoniker                  = "provider-moniker"
 	FlagCommission               = "delegate-commission"
-	FlagDelegationLimit          = "delegate-limit"
 	FlagProvider                 = "provider"
 	FlagIdentity                 = "identity"
 	FlagWebsite                  = "website"
