@@ -360,7 +360,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
-		apil.websocketConnectionLimiter.handleFiberRateLimitFlags(c)
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
 
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
@@ -375,7 +375,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.canOpenConnection(websocketConn)
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
 		defer decreaseIpConnection()
 		if !canOpenConnection {
 			return

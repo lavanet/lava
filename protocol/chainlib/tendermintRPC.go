@@ -390,7 +390,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
-		apil.websocketConnectionLimiter.handleFiberRateLimitFlags(c)
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -400,7 +400,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.canOpenConnection(websocketConn)
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
 		defer decreaseIpConnection()
 		if !canOpenConnection {
 			return

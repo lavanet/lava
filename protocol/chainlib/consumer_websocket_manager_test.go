@@ -105,7 +105,7 @@ func TestWebsocketConnectionLimiter(t *testing.T) {
 
 			// Test the connection
 			for _, expectSuccess := range tt.expectSuccess {
-				canOpen, _ := wcl.canOpenConnection(mockWsConn)
+				canOpen, _ := wcl.CanOpenConnection(mockWsConn)
 				if expectSuccess {
 					assert.True(t, canOpen, "Expected connection to be allowed")
 				} else {

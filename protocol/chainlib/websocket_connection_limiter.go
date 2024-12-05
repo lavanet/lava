@@ -27,7 +27,7 @@ type WebsocketConnectionLimiter struct {
 	lock                          sync.RWMutex
 }
 
-func (wcl *WebsocketConnectionLimiter) handleFiberRateLimitFlags(c *fiber.Ctx) {
+func (wcl *WebsocketConnectionLimiter) HandleFiberRateLimitFlags(c *fiber.Ctx) {
 	userAgent := c.Get(fiber.HeaderUserAgent)
 	// Store the User-Agent in locals for later use
 	c.Locals(fiber.HeaderUserAgent, userAgent)
@@ -68,7 +68,7 @@ func (wcl *WebsocketConnectionLimiter) getConnectionLimit(websocketConn Websocke
 	return utils.Max(MaximumNumberOfParallelWebsocketConnectionsPerIp, connectionLimitHeaderValue)
 }
 
-func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn WebsocketConnection) (bool, func()) {
+func (wcl *WebsocketConnectionLimiter) CanOpenConnection(websocketConn WebsocketConnection) (bool, func()) {
 	// Check which connection limit is higher and use that.
 	connectionLimit := wcl.getConnectionLimit(websocketConn)
 	decreaseIpConnectionCallback := func() {}
@@ -93,7 +93,7 @@ func (wcl *WebsocketConnectionLimiter) canOpenConnection(websocketConn Websocket
 			return false, decreaseIpConnectionCallback
 		}
 		// If under limit, increment and return cleanup function
-		wcl.addIpConnectionAndGetCurrentAmount(key)
+		wcl.addIpConnection(key)
 		decreaseIpConnectionCallback = func() { wcl.decreaseIpConnection(key) }
 	}
 	return true, decreaseIpConnectionCallback
@@ -105,7 +105,7 @@ func (wcl *WebsocketConnectionLimiter) getCurrentAmountOfConnections(key string)
 	return wcl.ipToNumberOfActiveConnections[key]
 }
 
-func (wcl *WebsocketConnectionLimiter) addIpConnectionAndGetCurrentAmount(key string) {
+func (wcl *WebsocketConnectionLimiter) addIpConnection(key string) {
 	wcl.lock.Lock()
 	defer wcl.lock.Unlock()
 	// wether it exists or not we add 1.
