@@ -152,10 +152,12 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 	}()
 
-	// rate limit routine
+	// set up a routine to check for rate limits or idle time
+	idleFor := atomic.Int64{}
+	idleFor.Store(time.Now().Unix())
 	requestsPerSecond := &atomic.Uint64{}
 	go func() {
-		if WebSocketRateLimit <= 0 && cwm.headerRateLimit <= 0 {
+		if WebSocketRateLimit <= 0 && cwm.headerRateLimit <= 0 && MaxIdleTimeInSeconds <= 0 {
 			return
 		}
 		ticker := time.NewTicker(time.Second) // rate limit per second.
@@ -163,46 +165,33 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		for {
 			select {
 			case <-webSocketCtx.Done():
+				utils.LavaFormatDebug("ctx done in time checker")
 				return
 			case <-ticker.C:
-				// check if rate limit reached, and ban is required
-				currentRequestsPerSecondLoad := requestsPerSecond.Load()
-				if WebSocketBanDuration > 0 && (currentRequestsPerSecondLoad > cwm.headerRateLimit || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
-					// wait the ban duration before resetting the store.
-					select {
-					case <-webSocketCtx.Done():
+				if MaxIdleTimeInSeconds > 0 {
+					utils.LavaFormatDebug("checking idle time", utils.LogAttr("idleFor", idleFor.Load()), utils.LogAttr("maxIdleTime", MaxIdleTimeInSeconds), utils.LogAttr("now", time.Now().Unix()))
+					idleDuration := idleFor.Load() + MaxIdleTimeInSeconds
+					if time.Now().Unix() > idleDuration {
+						websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Connection idle for too long, closing connection. Idle time: %d", idleDuration)))
 						return
-					case <-time.After(WebSocketBanDuration): // just continue
 					}
 				}
-				requestsPerSecond.Store(0)
+				if cwm.headerRateLimit > 0 || WebSocketRateLimit > 0 {
+					// check if rate limit reached, and ban is required
+					currentRequestsPerSecondLoad := requestsPerSecond.Load()
+					if WebSocketBanDuration > 0 && (currentRequestsPerSecondLoad > cwm.headerRateLimit || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
+						// wait the ban duration before resetting the store.
+						select {
+						case <-webSocketCtx.Done():
+							return
+						case <-time.After(WebSocketBanDuration): // just continue
+						}
+					}
+					requestsPerSecond.Store(0)
+				}
 			}
 		}
 	}()
-
-	idleFor := atomic.Int64{}
-	idleFor.Store(time.Now().Unix())
-	go (func() {
-		if MaxIdleTimeInSeconds <= 0 {
-			return // unlimited idle time
-		}
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-webSocketCtx.Done():
-				utils.LavaFormatDebug("ctx done in idle time checker")
-				return
-			case <-ticker.C:
-				utils.LavaFormatDebug("checking idle time", utils.LogAttr("idleFor", idleFor.Load()), utils.LogAttr("maxIdleTime", MaxIdleTimeInSeconds), utils.LogAttr("now", time.Now().Unix()))
-				idleDuration := idleFor.Load() + MaxIdleTimeInSeconds
-				if time.Now().Unix() > idleDuration {
-					websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Connection idle for too long, closing connection. Idle time: %d", idleDuration)))
-					return
-				}
-			}
-		}
-	})()
 
 	for {
 		idleFor.Store(time.Now().Unix())
