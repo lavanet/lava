@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	FailureCost       int64 = 3000 // failed relay cost for QoS excellence report computation in milliseconds
+	TruncateStdMargin int64 = 3    // number of standard deviations that determine the truncation limit
+
 	// zero QoS score is: score = 0, var = 0
 	ZeroQosScore = QosScore{
 		Score:    Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
@@ -40,4 +43,48 @@ func NewQosScore(score Frac, variance Frac) QosScore {
 
 func (qs QosScore) Equal(other QosScore) bool {
 	return qs.Score.Equal(other.Score) && qs.Variance.Equal(other.Variance)
+}
+
+// Validate validates that both nums are non-negative and both denoms are strictly positive (non-zero)
+func (qs QosScore) Validate() bool {
+	if qs.Score.Num.IsNegative() || !qs.Score.Denom.IsPositive() || qs.Variance.Num.IsNegative() ||
+		!qs.Variance.Denom.IsPositive() {
+		return false
+	}
+	return true
+}
+
+// Update updates a QosScore with a new score from the QoS excellence report. The new score is truncated by the
+// current variance. Then, it's updated using the weight (which is currently the relay num)
+func (qs QosScore) Update(score math.LegacyDec, truncate bool, weight int64) QosScore {
+	if truncate {
+		score = qs.truncate(score)
+	}
+
+	// updated_score_num = qos_score_num + score * weight
+	// updated_score_denom = qos_score_denom + weight
+	qs.Score.Num = qs.Score.Num.Add(score.MulInt64(weight))
+	qs.Score.Denom = qs.Score.Denom.Add(math.LegacyNewDec(weight))
+
+	// updated_variance_num = qos_variance_num + (qos_score_num - score)^2 * weight
+	// updated_score_denom = qos_score_denom + weight
+	qs.Variance.Num = qs.Variance.Num.Add((qs.Score.Num.Sub(score)).Power(2).MulInt64(weight))
+	qs.Variance.Denom = qs.Variance.Denom.Add(math.LegacyNewDec(weight))
+
+	return qs
+}
+
+// Truncate truncates the QoS excellece report score by the current QoS score variance
+func (qs QosScore) truncate(score math.LegacyDec) math.LegacyDec {
+	std, err := qs.Variance.Num.ApproxSqrt()
+	if err != nil {
+		utils.LavaFormatError("QosScore truncate: truncate failed, could not calculate qos variance sqrt", err,
+			utils.LogAttr("qos_score_variance", qs.Variance.String()),
+		)
+		return score
+	}
+
+	// truncated score = max(min(score, qos_score_num + 3*std), qos_score_num - 3*std)
+	return math.LegacyMaxDec(math.LegacyMinDec(score, qs.Score.Num.Add(std.MulInt64(TruncateStdMargin))),
+		qs.Score.Num.Sub(std.MulInt64(TruncateStdMargin)))
 }
