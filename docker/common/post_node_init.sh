@@ -65,6 +65,6 @@ sleep 1
 echo "Staking provider"
 PROVIDERSTAKE="500000000000ulava"
 PROVIDER_ADDRESS="nginx:80"
-lavad tx pairing stake-provider LAV1 $PROVIDERSTAKE "$PROVIDER_ADDRESS,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider LAV1 $PROVIDERSTAKE "$PROVIDER_ADDRESS,1" 1 $(operator_address) -y --delegate-commission 50  --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo "### Post node init finished successfully ###"

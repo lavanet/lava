@@ -1,8 +1,9 @@
 package maps
 
 import (
-	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/maps"
 )
 
 func FindLargestIntValueInMap[K comparable](myMap map[K]int) (K, int) {
@@ -22,11 +23,7 @@ func FindLargestIntValueInMap[K comparable](myMap map[K]int) (K, int) {
 }
 
 func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
-	keys := make([]T, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-
+	keys := maps.Keys(m)
 	lavaslices.SortStable(keys)
 	return keys
 }
@@ -39,4 +36,20 @@ func GetMaxKey[T constraints.Ordered, V any](m map[T]V) T {
 		}
 	}
 	return maxKey
+}
+
+func KeysSlice[T comparable, V any](in map[T]V) []T {
+	keys := []T{}
+	for k := range in {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func ValuesSlice[T comparable, V any](in map[T]V) []V {
+	values := []V{}
+	for _, v := range in {
+		values = append(values, v)
+	}
+	return values
 }

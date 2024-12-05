@@ -39,11 +39,11 @@ if [ $# -eq 0 ]; then
 
     lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_extension.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER2_LISTENER,2" 2 $(operator_address) -y --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER3_LISTENER,2" 2 $(operator_address) -y --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER4_LISTENER,2,archive" 2 $(operator_address) -y --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER5_LISTENER,1,archive" 1 $(operator_address) -y --from servicer5 --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER2_LISTENER,2" 2 $(operator_address) -y --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER3_LISTENER,2" 2 $(operator_address) -y --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER4_LISTENER,2,archive" 2 $(operator_address) -y --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER5_LISTENER,1,archive" 1 $(operator_address) -y --from servicer5 --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
 
     sleep_until_next_epoch
     lavad q pairing effective-policy ETH1 $(lavad keys show user1 -a)
@@ -67,7 +67,7 @@ screen -d -m -S provider$i bash -c "source ~/.bashrc; lavap rpcprovider \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer$i --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER$i.log" && sleep 0.25
 
 screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/ethereum_example.yml\
-$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 echo "--- setting up screens done ---"
 screen -ls
 

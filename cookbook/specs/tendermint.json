@@ -139,7 +139,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -474,7 +474,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -563,6 +563,45 @@
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "height",
+                                        "=",
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header_by_hash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,

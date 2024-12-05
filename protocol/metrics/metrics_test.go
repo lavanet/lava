@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
+func Test_StoreAggregatedData_OnMetricService(t *testing.T) {
 	// setup
 	metricService := MetricService{
 		AggregatedMetricMap: &map[string]map[string]map[string]map[RelaySource]map[string]*AggregatedMetric{},

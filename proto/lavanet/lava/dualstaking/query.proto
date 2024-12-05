@@ -8,7 +8,7 @@ import "lavanet/lava/dualstaking/params.proto";
 import "lavanet/lava/dualstaking/delegate.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-option go_package = "github.com/lavanet/lava/v3/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -76,8 +76,8 @@ message QueryDelegatorRewardsResponse {
 }
 
 message DelegatorRewardInfo {
+  reserved 2;
   string provider = 1;
-  string chain_id = 2;
   repeated cosmos.base.v1beta1.Coin amount = 3 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (gogoproto.nullable)     = false

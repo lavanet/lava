@@ -130,7 +130,7 @@ CHAINS="SEP1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN
 (trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 
 sleep_until_next_epoch >/dev/null
-(trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20 --delegate-limit 1000ulava --amount $PROVIDERSTAKE --endpoints "127.0.0.2:2222,1" $txoptions)>/dev/null
+(trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20  --amount $PROVIDERSTAKE --endpoints "127.0.0.2:2222,1" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing freeze ETH1,CELO $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
