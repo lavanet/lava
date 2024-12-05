@@ -5,14 +5,14 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	commonconsts "github.com/lavanet/lava/v3/testutil/common/consts"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/pairing/keeper"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/keeper"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1292,10 +1292,10 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 	creationTime := ts.BlockTime().UTC().Unix()
 	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
 	require.True(t, found)
-	stake := sdk.NewCoin(entry.Stake.Denom, entry.EffectiveStake().AddRaw(1))
+	stake := sdk.NewCoin(entry.Stake.Denom, entry.TotalStake().AddRaw(1))
 
 	// stake some more coins and advance epoch
-	err = ts.StakeProvider(entry.Vault, entry.Address, ts.spec, entry.EffectiveStake().Int64())
+	err = ts.StakeProvider(entry.Vault, entry.Address, ts.spec, entry.TotalStake().Int64())
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -1324,7 +1324,7 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 
 	entry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
 	require.True(t, found)
-	stakeAfterUpdate := sdk.NewCoin(entry.Stake.Denom, entry.EffectiveStake())
+	stakeAfterUpdate := sdk.NewCoin(entry.Stake.Denom, entry.TotalStake())
 
 	require.False(t, stakeAfterUpdate.IsEqual(stake))
 	require.True(t, reputation.Stake.IsEqual(stakeAfterUpdate))

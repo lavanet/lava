@@ -10,15 +10,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	commonlib "github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider"
-	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	commonlib "github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider"
+	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -79,6 +79,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
+			chainTracker.StartAndServe(ctx)
 			_ = chainTracker // let the chain tracker work and make queries
 			return nil
 		}(rpcProviderEndpoint)

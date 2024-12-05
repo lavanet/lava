@@ -11,22 +11,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/parser"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/parser"
+	"github.com/lavanet/lava/v4/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type RestChainParser struct {
@@ -47,7 +47,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 		var data []byte = nil
 		urlPath := string(craftData.Data)
 		if craftData.ConnectionType == http.MethodPost {
-			// on post we need to send the data provided in the templace with the api as method
+			// on post we need to send the data provided in the template with the api as method
 			data = craftData.Data
 			urlPath = craftData.Path
 		}
@@ -69,12 +69,13 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	api := apiCont.api
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, nil, restMessage, apiCollection), nil
+	parsedInput := parser.NewParsedInput()
+	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+	return apip.newChainMessage(apiCont.api, parsedInput, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -126,26 +127,28 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
 			)
 			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
-	parsedBlock := parsedInput.GetBlock()
-	blockHashes, _ := parsedInput.GetBlockHashes()
-
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, requestedHashes []string, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	requestedBlock := parsedInput.GetBlock()
+	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
-		api:                      serviceApi,
-		apiCollection:            apiCollection,
+		api:                      api,
 		msg:                      restMessage,
-		latestRequestedBlock:     requestBlock,
+		latestRequestedBlock:     requestedBlock,
 		requestedBlockHashes:     requestedHashes,
+		apiCollection:            apiCollection,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
-		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		parseDirective:           GetParseDirective(api, apiCollection),
+		usedDefaultValue:         parsedInput.UsedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -202,7 +205,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceRest)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)

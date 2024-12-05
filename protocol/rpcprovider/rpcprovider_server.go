@@ -15,24 +15,24 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/protocol/metrics"
-	"github.com/lavanet/lava/v3/protocol/performance"
-	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
-	rewardserver "github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v3/protocol/upgrade"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/protocopy"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	rewardserver "github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v4/protocol/upgrade"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/protocopy"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -71,6 +71,7 @@ type RPCProviderServer struct {
 	providerUniqueId                string
 	StaticProvider                  bool
 	providerStateMachine            *ProviderStateMachine
+	providerLoadManager             *ProviderLoadManager
 }
 
 type ReliabilityManagerInf interface {
@@ -112,6 +113,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
+	providerLoadManager *ProviderLoadManager,
+	numberOfRetries int,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -133,7 +136,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
+	rpcps.providerLoadManager = providerLoadManager
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -180,7 +184,17 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId))
+	// get the number of simultaneous relay calls
+	currentLoad := rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
+	defer func() {
+		// add load metric and subtract the load at the end of the relay using a routine.
+		go func() {
+			rpcps.providerLoadManager.subtractRelayCall()
+			rpcps.metrics.SetLoadRate(currentLoad)
+		}()
+	}()
+	trailerMd := metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
+	grpc.SetTrailer(ctx, trailerMd)
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
@@ -315,7 +329,13 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	}
 	// we only need the chainMessage for a static provider
 	if rpcps.StaticProvider {
-		return nil, nil, chainMessage, nil
+		// extract consumer address from signature
+		extractedConsumerAddress, err := rpcps.ExtractConsumerAddress(ctx, request.RelaySession)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		return nil, extractedConsumerAddress, chainMessage, nil
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
@@ -339,7 +359,7 @@ func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extension
 	if apiCollection.CollectionData.AddOn != addon {
 		return utils.LavaFormatWarning("invalid addon in relay, parsed addon is not the same as requested", nil, utils.Attribute{Key: "requested addon", Value: addon[0]}, utils.Attribute{Key: "parsed addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn})
 	}
-	if !rpcps.chainRouter.ExtensionsSupported(extensions) {
+	if !rpcps.chainRouter.ExtensionsSupported(apiCollection.CollectionData.InternalPath, extensions) {
 		return utils.LavaFormatWarning("requested extensions are unsupported in chainRouter", nil, utils.Attribute{Key: "requested extensions", Value: extensions})
 	}
 	return nil
@@ -588,7 +608,7 @@ func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, rela
 	} else {
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(relaySession)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, utils.LavaFormatWarning("failed to extract signer address from relay session", err, utils.LogAttr("GUID", ctx))
 		}
 	}
 	return extractedConsumerAddress, nil
@@ -780,6 +800,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if rpcps.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
 		}
+	} else if len(request.RelayData.Extensions) > 0 {
+		// if cached, Add Archive trailer if requested by the consumer.
+		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
 	if dataReliabilityEnabled {
@@ -1205,6 +1228,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
+	trailer.Append(common.LavaChainIdMetadataKey, rpcps.lavaChainID)
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }

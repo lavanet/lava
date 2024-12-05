@@ -8,10 +8,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -27,6 +27,10 @@ const (
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	USER_REQUEST_TYPE                               = "lava-user-request-type"
+	STATEFUL_API_HEADER                             = "lava-stateful-api"
+	REQUESTED_BLOCK_HEADER_NAME                     = "lava-parsed-requested-block"
+	LAVA_IDENTIFIED_NODE_ERROR_HEADER               = "lava-identified-node-error"
 	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
@@ -73,7 +77,7 @@ func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
-		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")"
+		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")" + ", internal-path: " + nurl.InternalPath
 	}
 	return urlStr
 }
@@ -258,6 +262,7 @@ type RelayResult struct {
 	StatusCode      int
 	Quorum          int
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError     bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {

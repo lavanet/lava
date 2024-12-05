@@ -92,6 +92,16 @@ A consumer sends requests to a provider's endpoint to communicate with them. The
 
 Stake entries' storage is managed by the epochstorage module. For more details, see its README.
 
+Providers `DelegateTotal` is the delegators delegations part for this chain and is calculated by as follows: `total_provider_delegations` * `stake` / `total_stake`
+
+when:
+
+`stake` is the providers stake on a specific chain
+
+`total_stake` is the total stake of the provider across all chains
+
+`total_provider_delegations` is the total delegations for the provider
+
 #### Unstake
 
 A provider can unstake and retrieve their coins. When a provider unstakes, they are removed from the pairing list starting from the next epoch. After a specified number of blocks called `UnstakeHoldBlocks` (a parameter of the epochstorage module), the provider is eligible to receive their coins back.
@@ -372,6 +382,7 @@ The pairing module supports the following transactions:
 | `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) --grant-provider-gas-fees-auth (bool)| stake a provider in a chain with multiple endpoints                 |
 | `unfreeze`     | chain-ids ([]string)  | unfreeze a provider in multiple chains                  |
 | `unstake-provider`     | chain-ids ([]string), validator (string, optional)  | unstake a provider from multiple chains                  |
+| `move-provider-stake`     | src-chain dst-chain  amount (Coin)| move provider stake amount from one chain to another                  |
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument. The `Endpoint` type defines a provider endpoint. From the CLI, use "my-provider-grpc-addr.com:9090,1" for one endpoint (includes the endpoint's URL+port and the endpoint's geolocation). When it comes to staking-related transactions, the geolocation argument should encompass the geolocations of all the endpoints combined.
 

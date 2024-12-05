@@ -1,6 +1,8 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sys
 
+payload_ret = "OK"
+
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.print_request()
@@ -26,10 +28,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             print(f"Body:\n{body.decode('utf-8')}")
 
         # Send a response back to the client
+        response = payload_ret.encode('utf-8')
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(b"OK")
+        self.wfile.write(response)
 
 def run_server(port=8000):
     server_address = ('', port)
@@ -40,6 +43,8 @@ def run_server(port=8000):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
+        if len(sys.argv) > 2:
+            payload_ret = sys.argv[2]
         run_server(port)
     else:
         run_server()

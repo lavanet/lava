@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/maps"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/maps"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
@@ -20,6 +20,11 @@ func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *type
 }
 
 func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.ResponseConflict, clientAddr sdk.AccAddress) error {
+	// 0. validate conflictData is not nil
+	if conflictData.IsDataNil() {
+		return fmt.Errorf("ValidateResponseConflict: conflict data is nil")
+	}
+
 	// 1. validate mismatching data
 	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecId
 	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecId {
@@ -279,6 +284,10 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 
 func (k Keeper) validateBlockHeights(relayFinalization *types.RelayFinalization, spec *spectypes.Spec) (finalizedBlocksMarshalled map[int64]string, earliestFinalizedBlock int64, latestFinalizedBlock int64, err error) {
 	EMPTY_MAP := map[int64]string{}
+	// verify spec is not nil
+	if spec == nil {
+		return EMPTY_MAP, 0, 0, fmt.Errorf("validateBlockHeights: spec is nil")
+	}
 
 	// Unmarshall finalized blocks
 	finalizedBlocks := map[int64]string{}
@@ -312,6 +321,9 @@ func (k Keeper) validateBlockHeights(relayFinalization *types.RelayFinalization,
 }
 
 func (k Keeper) validateFinalizedBlock(relayFinalization *types.RelayFinalization, latestFinalizedBlock int64, spec *spectypes.Spec) error {
+	if spec == nil {
+		return fmt.Errorf("validateFinalizedBlock: spec is nil")
+	}
 	latestBlock := relayFinalization.GetLatestBlock()
 	blockDistanceToFinalization := int64(spec.BlockDistanceForFinalizedData)
 

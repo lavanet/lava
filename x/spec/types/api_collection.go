@@ -65,6 +65,9 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // changes in place inside the apic
 // nil merge maps means not to combine that field
 func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled, allowOverwrite bool) (err error) {
+	if apic == nil {
+		return fmt.Errorf("CombineWithOthers: API collection is nil")
+	}
 	mergedApis := map[string]interface{}{}
 	mergedHeaders := map[string]interface{}{}
 	mergedParsers := map[string]interface{}{}

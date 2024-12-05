@@ -25,7 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type Account struct {
@@ -110,21 +110,6 @@ func EncodeUint64(val uint64) []byte {
 	encodedVal := make([]byte, 8)
 	binary.LittleEndian.PutUint64(encodedVal, val)
 	return encodedVal
-}
-
-// Join() is faster than bytes.Join because it does what
-// bytes.Join() does without appending (empty) separators
-func Join(s [][]byte) []byte {
-	n := 0
-	for _, v := range s {
-		n += len(v)
-	}
-
-	b, i := make([]byte, n), 0
-	for _, v := range s {
-		i += copy(b[i:], v)
-	}
-	return b
 }
 
 func GetKeyName(clientCtx client.Context) (string, error) {

@@ -1,7 +1,7 @@
 package rpcclient
 
 import (
-	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v4/utils/sigs"
 )
 
 func CreateHashFromParams(params []byte) string {

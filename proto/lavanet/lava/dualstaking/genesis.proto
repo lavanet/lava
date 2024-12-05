@@ -3,17 +3,15 @@ package lavanet.lava.dualstaking;
 
 import "gogoproto/gogo.proto";
 import "lavanet/lava/dualstaking/params.proto";
-import "lavanet/lava/fixationstore/fixation.proto";
-import "lavanet/lava/timerstore/timer.proto";
 import "lavanet/lava/dualstaking/delegator_reward.proto";
+import "lavanet/lava/dualstaking/delegate.proto";
 
-option go_package = "github.com/lavanet/lava/v3/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
 
 // GenesisState defines the dualstaking module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  lavanet.lava.fixationstore.GenesisState delegationsFS = 2 [(gogoproto.nullable) = false];
-  lavanet.lava.fixationstore.GenesisState delegatorsFS = 3 [(gogoproto.nullable) = false];
-  reserved 4;
+  reserved 2,3,4;
   repeated DelegatorReward delegator_reward_list = 5 [(gogoproto.nullable) = false];
+  repeated Delegation Delegations = 6 [(gogoproto.nullable) = false];
 }

@@ -36,7 +36,7 @@ func (psg PairingSlotGroup) Subtract(other *PairingSlotGroup) *PairingSlot {
 		otherReq, found := other.Reqs[key]
 		if !found {
 			reqsDiff[key] = req
-		} else if !req.Equal(otherReq) {
+		} else if req != nil && !req.Equal(otherReq) {
 			reqsDiff[key] = req
 		}
 	}

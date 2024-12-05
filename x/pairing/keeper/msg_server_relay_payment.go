@@ -8,12 +8,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	"github.com/lavanet/lava/v4/utils"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 )
 
 type BadgeData struct {
@@ -204,7 +204,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.LogAttr("provider", relay.Provider),
 				)
 			}
-			effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.EffectiveStake())
+			effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.TotalStake())
 
 			// note the current weight used is by relay num. In the future, it might change
 			k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.RelayNum), effectiveStake)
@@ -417,6 +417,7 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 			"cu":                         strconv.FormatUint(complainerCuToAdd, 10),
 			"epoch":                      strconv.FormatUint(epoch, 10),
 			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
+			"chainID":                    chainID,
 		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}

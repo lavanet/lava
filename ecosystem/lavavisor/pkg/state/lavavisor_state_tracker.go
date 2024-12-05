@@ -6,12 +6,12 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/statetracker"
-	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v3/utils"
-	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/statetracker"
+	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/utils"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 // Lava visor doesn't require complicated state tracker, it just needs to periodically fetch the protocol version.
@@ -24,7 +24,8 @@ type LavaVisorStateTracker struct {
 
 func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (lvst *LavaVisorStateTracker, err error) {
 	// validate chainId
-	status, err := clientCtx.Client.Status(ctx)
+	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	status, err := stateQuery.Status(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("[Lavavisor] failed getting status", err)
 	}
@@ -36,7 +37,7 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 	if err != nil {
 		utils.LavaFormatFatal("chain is missing Lava spec, cant initialize lavavisor", err)
 	}
-	lst := &LavaVisorStateTracker{stateQuery: updaters.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
+	lst := &LavaVisorStateTracker{stateQuery: stateQuery, averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
 	return lst, nil
 }
 
