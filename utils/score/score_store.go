@@ -299,6 +299,7 @@ const (
 	LatencyScoreType_Refactor      = "latency"
 	SyncScoreType_Refactor         = "sync"
 	AvailabilityScoreType_Refactor = "availability"
+	TotalScoreType_Refactor        = "total"
 
 	// Worst score results for each QoS excellence metric for truncation
 	WorstLatencyScore_Refactor      float64 = 30        // seconds

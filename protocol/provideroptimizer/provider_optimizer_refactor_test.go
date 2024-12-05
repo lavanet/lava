@@ -20,7 +20,7 @@ const (
 
 func setupProviderOptimizer_Refactor(maxProvidersCount uint) *ProviderOptimizer_Refactor {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME_Refactor
-	return NewProviderOptimizer_Refactor(StrategyBalanced_Refactor, averageBlockTIme, maxProvidersCount, nil, "test")
+	return NewProviderOptimizer_Refactor(STRATEGY_BALANCED, averageBlockTIme, maxProvidersCount, nil, "test")
 }
 
 type providersGenerator_Refactor struct {
@@ -433,21 +433,21 @@ func TestProviderOptimizerExploration_Refactor(t *testing.T) {
 	}
 
 	// with a cost strategy we expect exploration at a 10% rate
-	providerOptimizer.strategy = StrategyBalanced_Refactor // that's the default but to be explicit
-	providerOptimizer.wantedNumProvidersInConcurrency = 2  // that's in the constructor but to be explicit
+	providerOptimizer.strategy = STRATEGY_BALANCED        // that's the default but to be explicit
+	providerOptimizer.wantedNumProvidersInConcurrency = 2 // that's in the constructor but to be explicit
 	iterations := 10000
 	exploration = testProvidersExploration(iterations)
 	require.Less(t, exploration, float64(1.4)*float64(iterations)*DefaultExplorationChance_Refactor)    // allow mistake buffer of 40% because of randomness
 	require.Greater(t, exploration, float64(0.6)*float64(iterations)*DefaultExplorationChance_Refactor) // allow mistake buffer of 40% because of randomness
 
 	// with a cost strategy we expect exploration to happen once in 100 samples
-	providerOptimizer.strategy = StrategyCost_Refactor
+	providerOptimizer.strategy = STRATEGY_COST
 	exploration = testProvidersExploration(iterations)
 	require.Less(t, exploration, float64(1.4)*float64(iterations)*CostExplorationChance_Refactor)    // allow mistake buffer of 40% because of randomness
 	require.Greater(t, exploration, float64(0.6)*float64(iterations)*CostExplorationChance_Refactor) // allow mistake buffer of 40% because of randomness
 
 	// privacy disables exploration
-	providerOptimizer.strategy = StrategyPrivacy_Refactor
+	providerOptimizer.strategy = STRATEGY_PRIVACY
 	exploration = testProvidersExploration(iterations)
 	require.Equal(t, exploration, float64(0))
 }
@@ -546,7 +546,7 @@ func TestProviderOptimizerStrategiesScoring_Refactor(t *testing.T) {
 	providerOptimizer.appendRelayData_Refactor(providersGen.providersAddresses[1], normalLatency, true, cu, improvedBlock, sampleTime)
 
 	time.Sleep(4 * time.Millisecond)
-	providerOptimizer.strategy = StrategyBalanced_Refactor
+	providerOptimizer.strategy = STRATEGY_BALANCED
 	// a balanced strategy should pick provider 2 because of it's high availability
 	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses, nil, cu, requestBlock)
 	tier0 := selectionTier.GetTier(0, 4, 3)
@@ -554,7 +554,7 @@ func TestProviderOptimizerStrategiesScoring_Refactor(t *testing.T) {
 	// we have the best score on the top tier and it's sorted
 	require.Equal(t, providersGen.providersAddresses[2], tier0[0].Address)
 
-	providerOptimizer.strategy = StrategyCost_Refactor
+	providerOptimizer.strategy = STRATEGY_COST
 	// with a cost strategy we expect the same as balanced
 	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses, nil, cu, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
@@ -562,14 +562,14 @@ func TestProviderOptimizerStrategiesScoring_Refactor(t *testing.T) {
 	// we have the best score on the top tier and it's sorted
 	require.Equal(t, providersGen.providersAddresses[2], tier0[0].Address)
 
-	providerOptimizer.strategy = StrategyLatency_Refactor
+	providerOptimizer.strategy = STRATEGY_LATENCY
 	// latency strategy should pick the best latency
 	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, cu, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
 	require.Greater(t, len(tier0), 0) // shouldn't be empty
 	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
 
-	providerOptimizer.strategy = StrategySyncFreshness_Refactor
+	providerOptimizer.strategy = STRATEGY_SYNC_FRESHNESS
 	// freshness strategy should pick the most advanced provider
 	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers_Refactor(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, cu, requestBlock)
 	tier0 = selectionTier.GetTier(0, 4, 3)
