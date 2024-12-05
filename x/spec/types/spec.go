@@ -10,8 +10,8 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	"github.com/lavanet/lava/v4/utils"
+	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 )
 
 const (
@@ -200,6 +200,9 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 }
 
 func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
+	if spec == nil {
+		return fmt.Errorf("CombineCollections: spec is nil")
+	}
 	collectionDataList := make([]CollectionData, 0)
 	// Populate the keys slice with the map keys
 	for key := range parentsCollections {
@@ -225,7 +228,7 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 				break
 			}
 		}
-		if !combined.Enabled {
+		if combined == nil || !combined.Enabled {
 			// no collections enabled to combine, we skip this
 			continue
 		}

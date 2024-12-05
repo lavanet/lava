@@ -32,7 +32,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 var (
@@ -181,7 +181,7 @@ func (n *Notifier) send(sub *Subscription, data json.RawMessage) error {
 	ctx := context.Background()
 	return n.h.conn.writeJSON(ctx, &JsonrpcMessage{
 		Version: Vsn,
-		Method:  n.namespace + notificationMethodSuffix,
+		Method:  n.namespace + ethereumNotificationMethodSuffix,
 		Params:  params,
 	})
 }

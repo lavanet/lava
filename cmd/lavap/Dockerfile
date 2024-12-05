@@ -14,12 +14,13 @@ RUN apk add --no-cache \
 
 WORKDIR /lava
 
-COPY go.mod go.sum ./
-
+ENV GOCACHE=/root/.cache/go-build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
-    go mod download
-
+    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    go mod download -x
+    
 COPY . .
 
 ARG GIT_VERSION

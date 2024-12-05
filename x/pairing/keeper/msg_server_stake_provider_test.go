@@ -7,11 +7,11 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/testutil/common"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/client/cli"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/client/cli"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,9 +27,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(common.MockDescription()))
+	stakeEntry, err := ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(common.MockDescription()))
 
 	// modify description
 	dNew := stakingtypes.NewDescription("bla", "blan", "bal", "lala", "asdasd")
@@ -38,9 +38,9 @@ func TestModifyStakeProviderWithDescription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-	require.True(t, foundProvider)
-	require.True(t, stakeEntry.Description.Equal(dNew))
+	stakeEntry, err = ts.QueryPairingProvider(providerAddr, ts.spec.Index)
+	require.NoError(t, err)
+	require.True(t, stakeEntry.StakeEntries[0].Description.Equal(dNew))
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
@@ -207,7 +207,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription())
+				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription(), 100)
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -657,7 +657,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, common.MockDescription())
+			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, common.MockDescription(), 100)
 			if play.success {
 				require.NoError(t, err)
 
@@ -746,7 +746,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
-	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
+	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.TotalStake())
 
 	// try to unfreeze -> should fail
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
@@ -755,20 +755,19 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
 	// provider should still be frozen
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
-	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())
+	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.TotalStake())
 
 	// try to unfreeze -> should succeed
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
@@ -790,42 +789,42 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
-	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, 100, "", "", "", "", "")
+	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// there are no delegations, can change as much as we want
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, 120, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, 140, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// add delegator and delegate to provider
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()               // apply delegation
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// same values, should pass
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
 	require.Error(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
 	require.NoError(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, 100, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, "", "", "", "", "")
 	require.Error(t, err)
 }
 
@@ -856,11 +855,12 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 		provider sdk.AccAddress
 		spec     spectypes.Spec
 		valid    bool
+		fail     bool
 	}{
-		{"stake provider = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true},
-		{"stake provider != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true},
-		{"stake existing provider", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false},
-		{"stake existing provider different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, true},
+		{"stake provider = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true, false},
+		{"stake provider != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true, false},
+		{"stake existing provider", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false, false},
+		{"stake existing provider different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, false, true},
 	}
 
 	for _, tt := range tests {
@@ -882,10 +882,14 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 
 				// stake entry
 				_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
+				if tt.fail {
+					require.False(t, found)
+					return
+				}
 				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			} else {
@@ -906,7 +910,7 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
@@ -964,7 +968,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			} else {
@@ -985,7 +989,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
@@ -1009,17 +1013,18 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 
 	provider := acc.Addr.String()
 	vault := acc.GetVaultAddr()
-	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())
 	require.True(t, found)
+
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
 
 	// consts for stake entry changes
 	const (
 		STAKE = iota + 1
 		ENDPOINTS_GEOLOCATION
 		DESCRIPTION
-		DELEGATE_LIMIT
 		DELEGATE_COMMISSION
 		PROVIDER
 	)
@@ -1034,7 +1039,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"stake change vault", vault, STAKE, true},
 		{"endpoints_geo change vault", vault, ENDPOINTS_GEOLOCATION, true},
 		{"description change vault", vault, DESCRIPTION, true},
-		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
 		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
 		{"provider change vault", vault, PROVIDER, true},
 
@@ -1042,7 +1046,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"stake change provider", provider, STAKE, false},
 		{"endpoints_geo change provider", provider, ENDPOINTS_GEOLOCATION, true},
 		{"description change provider", provider, DESCRIPTION, true},
-		{"delegate total change provider", provider, DELEGATE_LIMIT, false},
 		{"delegate commission change provider", provider, DELEGATE_COMMISSION, false},
 		{"provider change provider", provider, PROVIDER, true},
 	}
@@ -1051,13 +1054,11 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := types.MsgStakeProvider{
 				Creator:            tt.creator,
-				Validator:          sdk.ValAddress(valAcc.Addr).String(),
 				ChainID:            stakeEntry.Chain,
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,
 				Endpoints:          stakeEntry.Endpoints,
-				DelegateLimit:      stakeEntry.DelegateLimit,
-				DelegateCommission: stakeEntry.DelegateCommission,
+				DelegateCommission: metadata.DelegateCommission,
 				Address:            stakeEntry.Address,
 				Description:        stakeEntry.Description,
 			}
@@ -1070,8 +1071,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.Geolocation = 2
 			case DESCRIPTION:
 				msg.Description = stakingtypes.NewDescription("bla", "bla", "", "", "")
-			case DELEGATE_LIMIT:
-				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
 			case DELEGATE_COMMISSION:
 				msg.DelegateCommission -= 10
 			case PROVIDER:
@@ -1086,7 +1085,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.Endpoints,
 				msg.Geolocation,
 				msg.DelegateCommission,
-				msg.DelegateLimit.Amount.Uint64(),
 				msg.Description.Moniker,
 				msg.Description.Identity,
 				msg.Description.Website,
@@ -1134,7 +1132,7 @@ func TestDelegatorStakesAfterProviderUnstakes(t *testing.T) {
 
 			// create delegator and delegate to provider
 			_, delegator := ts.AddAccount(common.CONSUMER, 0, testBalance)
-			_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			_, err := ts.TxDualstakingDelegate(delegator, provider, common.NewCoin(ts.TokenDenom(), testBalance/4))
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
@@ -1142,7 +1140,7 @@ func TestDelegatorStakesAfterProviderUnstakes(t *testing.T) {
 			_, err = ts.TxPairingUnstakeProvider(vault, ts.spec.Index)
 			require.NoError(t, err)
 
-			res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+			res, err := ts.QueryDualstakingDelegatorProviders(delegator)
 			require.NoError(t, err)
 			require.Len(t, res.Delegations, 1)
 			require.Equal(t, delegator, res.Delegations[0].Delegator)
@@ -1190,7 +1188,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 
 			// create apple apple and delegate to banana
 			_, apple := ts.AddAccount(common.CONSUMER, 0, testBalance)
-			_, err = ts.TxDualstakingDelegate(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			_, err = ts.TxDualstakingDelegate(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
@@ -1199,7 +1197,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
-			res, err := ts.QueryDualstakingDelegatorProviders(apple, false)
+			res, err := ts.QueryDualstakingDelegatorProviders(apple)
 			require.NoError(t, err)
 			require.Len(t, res.Delegations, 1)
 			require.Equal(t, apple, res.Delegations[0].Delegator)
@@ -1219,10 +1217,10 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				require.True(t, found)
 				require.NotZero(t, stakeEntry.DelegateTotal.Amount.Int64())
 
-				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
-				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				res, err := ts.QueryDualstakingProviderDelegators(banana)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, banana, res.Delegations[0].Provider)
@@ -1237,10 +1235,10 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				require.True(t, found)
 				require.Zero(t, stakeEntry.DelegateTotal.Amount.Int64())
 
-				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
-				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				res, err := ts.QueryDualstakingProviderDelegators(banana)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			}

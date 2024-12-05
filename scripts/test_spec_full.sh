@@ -88,7 +88,6 @@ if [ "$dry" = false ]; then
     sleep 4
 
     PROVIDERSTAKE="500000000000ulava"
-    DELEGATE_LIMIT="0ulava"
 
     # do not change this port without modifying the input_yaml
     PROVIDER1_LISTENER="127.0.0.1:2220"
@@ -98,7 +97,7 @@ if [ "$dry" = false ]; then
     for index in ${index_list[@]}
     do
         echo "Processing index: $index"
-        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --delegate-limit $DELEGATE_LIMIT  --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
         wait_next_block
     done
 
@@ -207,7 +206,7 @@ done
 echo "[+]generated consumer config: $output_consumer_yaml"
 cat $output_consumer_yaml
 if [ "$dry" = false ]; then
-    screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/PORTAL.log"
+    screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMER.log"
 
     echo "[+] letting providers start and running health check then running command with flags: $test_consumer_command_args"
     sleep 10

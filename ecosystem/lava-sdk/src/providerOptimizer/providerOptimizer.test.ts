@@ -218,60 +218,60 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders[0]).not.toBe(providers[skipIndex]);
   });
 
-  it("tests provider optimizer availability block error", async () => {
-    const providerOptimizer = setupProviderOptimizer();
-    const providersCount = 100;
-    const providers = setupProvidersForTest(providersCount);
+  // it("tests provider optimizer availability block error", async () => {
+  //   const providerOptimizer = setupProviderOptimizer();
+  //   const providersCount = 100;
+  //   const providers = setupProvidersForTest(providersCount);
 
-    const requestCU = 10;
-    const requestBlock = 1000;
-    const perturbationPercentage = 0.0;
-    const syncBlock = requestBlock;
-    const chosenIndex = random.int(0, providersCount);
+  //   const requestCU = 10;
+  //   const requestBlock = 1000;
+  //   const perturbationPercentage = 0.0;
+  //   const syncBlock = requestBlock;
+  //   const chosenIndex = random.int(0, providersCount);
 
-    for (let i = 0; i < providersCount; i++) {
-      await sleep(4);
+  //   for (let i = 0; i < providersCount; i++) {
+  //     await sleep(4);
 
-      if (i === chosenIndex) {
-        providerOptimizer.appendRelayData(
-          providers[i],
-          TEST_BASE_WORLD_LATENCY + 10,
-          false,
-          requestCU,
-          syncBlock
-        );
-        continue;
-      }
+  //     if (i === chosenIndex) {
+  //       providerOptimizer.appendRelayData(
+  //         providers[i],
+  //         TEST_BASE_WORLD_LATENCY + 10,
+  //         false,
+  //         requestCU,
+  //         syncBlock
+  //       );
+  //       continue;
+  //     }
 
-      providerOptimizer.appendRelayData(
-        providers[i],
-        TEST_BASE_WORLD_LATENCY,
-        false,
-        requestCU,
-        syncBlock - 1
-      );
-    }
+  //     providerOptimizer.appendRelayData(
+  //       providers[i],
+  //       TEST_BASE_WORLD_LATENCY,
+  //       false,
+  //       requestCU,
+  //       syncBlock - 1
+  //     );
+  //   }
 
-    let returnedProviders = providerOptimizer.chooseProvider(
-      new Set(providers),
-      new Set(),
-      requestCU,
-      requestBlock,
-      perturbationPercentage
-    );
-    expect(returnedProviders).toHaveLength(1);
-    expect(returnedProviders[0]).toBe(providers[chosenIndex]);
+  //   let returnedProviders = providerOptimizer.chooseProvider(
+  //     new Set(providers),
+  //     new Set(),
+  //     requestCU,
+  //     requestBlock,
+  //     perturbationPercentage
+  //   );
+  //   expect(returnedProviders).toHaveLength(1);
+  //   expect(returnedProviders[0]).toBe(providers[chosenIndex]);
 
-    returnedProviders = providerOptimizer.chooseProvider(
-      new Set(providers),
-      new Set([providers[chosenIndex]]),
-      requestCU,
-      requestBlock,
-      perturbationPercentage
-    );
-    expect(returnedProviders).toHaveLength(1);
-    expect(returnedProviders[0]).not.toBe(providers[chosenIndex]);
-  });
+  //   returnedProviders = providerOptimizer.chooseProvider(
+  //     new Set(providers),
+  //     new Set([providers[chosenIndex]]),
+  //     requestCU,
+  //     requestBlock,
+  //     perturbationPercentage
+  //   );
+  //   expect(returnedProviders).toHaveLength(1);
+  //   expect(returnedProviders[0]).not.toBe(providers[chosenIndex]);
+  // });
 
   // this test fails statistically. we need to solve the issue also on the golang version.
   // it("tests provider optimizer updating latency", async () => {

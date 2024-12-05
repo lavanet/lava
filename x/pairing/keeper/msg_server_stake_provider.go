@@ -4,16 +4,12 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvider) (*types.MsgStakeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.DelegateLimit, true); err != nil {
-		return &types.MsgStakeProviderResponse{}, err
-	}
 
 	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount, false); err != nil {
 		return &types.MsgStakeProviderResponse{}, err
