@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v3/testutil/common"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	"github.com/lavanet/lava/v3/x/pairing/keeper"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/testutil/common"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/keeper"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -429,7 +429,7 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	// jail first time
 	jailProvider()
 	// try to unfreeze with increase of self delegation
-	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, common.NewCoin(ts.TokenDenom(), 1))
 	require.Nil(t, err)
 
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
@@ -457,7 +457,7 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	// jail third time
 	jailProvider()
 	// try to unfreeze with increase of self delegation
-	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, common.NewCoin(ts.TokenDenom(), 1))
 	require.Nil(t, err)
 
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)

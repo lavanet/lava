@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreezeProvider) (*types.MsgUnfreezeProviderResponse, error) {
@@ -26,7 +26,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 		}
 
 		minStake := k.Keeper.specKeeper.GetMinStake(ctx, chainId)
-		if stakeEntry.EffectiveStake().LT(minStake.Amount) {
+		if stakeEntry.TotalStake().LT(minStake.Amount) {
 			return nil, utils.LavaFormatWarning("Unfreeze_insufficient_stake", types.UnFreezeInsufficientStakeError,
 				[]utils.Attribute{
 					{Key: "chainID", Value: chainId},

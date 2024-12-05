@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lavanet/lava/v3/utils"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -41,6 +41,10 @@ type ProviderMetricsManager struct {
 	endpointsHealthChecksOk       uint64
 	relaysMonitors                map[string]*RelaysMonitor
 	relaysMonitorsLock            sync.RWMutex
+	frozenStatusMetric            *prometheus.GaugeVec
+	jailStatusMetric              *prometheus.GaugeVec
+	jailedCountMetric             *prometheus.GaugeVec
+	loadRateMetric                *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -107,24 +111,47 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "The total number of get latest block queries that succeeded by chainfetcher",
 	}, []string{"spec"})
 
+	loadRateMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_load_rate",
+		Help: "The load rate according to the load rate limit - Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.",
+	}, []string{"spec"})
+
 	fetchBlockSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_block_success",
 		Help: "The total number of get specific block queries that succeeded by chainfetcher",
 	}, []string{"spec"})
+
 	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+
 	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "lava_provider_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
 	endpointsHealthChecksOkMetric.Set(1)
 
+	frozenStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_frozen_status",
+		Help: "Frozen: 1, Not Frozen: 0",
+	}, []string{"chainID"})
+
+	jailStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_jail_status",
+		Help: "Jailed: 1, Not Jailed: 0",
+	}, []string{"chainID"})
+
+	jailedCountMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_jailed_count",
+		Help: "The amount of times the provider was jailed in the last 24 hours",
+	}, []string{"chainID"})
+
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
 		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000 patch := version % 1000",
 	}, []string{"version"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -141,6 +168,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
+	prometheus.MustRegister(frozenStatusMetric)
+	prometheus.MustRegister(jailStatusMetric)
+	prometheus.MustRegister(jailedCountMetric)
+	prometheus.MustRegister(loadRateMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:               map[string]*ProviderMetrics{},
@@ -161,6 +192,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
 		relaysMonitors:                map[string]*RelaysMonitor{},
+		frozenStatusMetric:            frozenStatusMetric,
+		jailStatusMetric:              jailStatusMetric,
+		jailedCountMetric:             jailedCountMetric,
+		loadRateMetric:                loadRateMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -209,7 +244,7 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface strin
 	}
 
 	if pme.getProviderMetric(specID, apiInterface) == nil {
-		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric)
+		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric)
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)
@@ -349,4 +384,28 @@ func (pme *ProviderMetricsManager) RegisterRelaysMonitor(chainID, apiInterface s
 	pme.relaysMonitorsLock.Lock()
 	defer pme.relaysMonitorsLock.Unlock()
 	pme.relaysMonitors[chainID+apiInterface] = relaysMonitor
+}
+
+func (pme *ProviderMetricsManager) SetFrozenStatus(chain string, frozen bool) {
+	if pme == nil {
+		return
+	}
+
+	pme.frozenStatusMetric.WithLabelValues(chain).Set(utils.Btof(frozen))
+}
+
+func (pme *ProviderMetricsManager) SetJailStatus(chain string, jailed bool) {
+	if pme == nil {
+		return
+	}
+
+	pme.jailStatusMetric.WithLabelValues(chain).Set(utils.Btof(jailed))
+}
+
+func (pme *ProviderMetricsManager) SetJailedCount(chain string, jailedCount uint64) {
+	if pme == nil {
+		return
+	}
+
+	pme.jailedCountMetric.WithLabelValues(chain).Set(float64(jailedCount))
 }

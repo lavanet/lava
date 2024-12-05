@@ -11,12 +11,12 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 12000,
+                "average_block_time": 30000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -36,7 +36,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -156,7 +156,7 @@
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -445,7 +445,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -598,6 +598,98 @@
                                         "expected_value": "*"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_BLOCK_BY_NUM"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "1"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "WS-ONLY",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "pathfinder_subscribe",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 1000,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "pathfinder_unsubscribe",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "parse_directives": [
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "pathfinder_subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"pathfinder_unsubscribe\",\"params\":[%s],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "pathfinder_unsubscribe"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
                             }
                         ]
                     },
@@ -630,6 +722,69 @@
                             {
                                 "api_interface": "jsonrpc",
                                 "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws/rpc/v0_6",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "/rpc/v0_6",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_7",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws/rpc/v0_7",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "/rpc/v0_7",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
                                 "type": "POST",
                                 "add_on": ""
                             }
@@ -724,6 +879,93 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/pathfinder/v0.1",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "pathfinder_version",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "pathfinder_getProof",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "pathfinder_getTransactionStatus",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"pathfinder_version\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "latest"
+                                        ],
+                                        "parser_func": "DEFAULT"
+                                    },
+                                    "api_name": "pathfinder_version"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
@@ -738,11 +980,11 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 1800000,
+                "average_block_time": 32000,
                 "allowed_block_lag_for_qos_sync": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -750,6 +992,29 @@
                         "collection_data": {
                             "api_interface": "jsonrpc",
                             "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f5345504f4c4941"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -795,7 +1060,76 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
+                            "internal_path": "/ws/rpc/v0_6",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f5345504f4c4941"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_5",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f5345504f4c4941"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_7",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f5345504f4c4941"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws/rpc/v0_7",
                             "type": "POST",
                             "add_on": ""
                         },

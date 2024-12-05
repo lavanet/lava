@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v3/x/protocol/types"
+	"github.com/lavanet/lava/v4/x/protocol/types"
 )
 
 type (

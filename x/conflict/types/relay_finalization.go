@@ -1,14 +1,15 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	fmt "fmt"
 
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
 func NewRelayFinalizationFromReplyMetadataAndRelayRequest(reply ReplyMetadata, req pairingtypes.RelayRequest, consumerAddr sdk.AccAddress) RelayFinalization {
@@ -55,7 +56,7 @@ func (rf RelayFinalization) DataToSign() []byte {
 		sdkAccAddress,
 		relaySessionHash,
 	}
-	return sigs.Join(msgParts)
+	return bytes.Join(msgParts, nil)
 }
 
 func (rfm RelayFinalization) HashRounds() int {

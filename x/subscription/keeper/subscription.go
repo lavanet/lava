@@ -8,11 +8,11 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
-	"github.com/lavanet/lava/v3/x/subscription/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	"github.com/lavanet/lava/v4/x/subscription/types"
 )
 
 // GetSubscription returns the subscription of a given consumer
@@ -192,6 +192,9 @@ func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
 	block uint64, autoRenewalFlag bool,
 ) (types.Subscription, error) {
+	if plan == nil {
+		return types.Subscription{}, utils.LavaFormatError("plan is nil", fmt.Errorf("createNewSubscription: cannot create new subscription"))
+	}
 	autoRenewalNextPlan := types.AUTO_RENEWAL_PLAN_NONE
 	if autoRenewalFlag {
 		// On subscription creation, auto renewal is set to the subscription's plan
@@ -223,6 +226,13 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 }
 
 func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription, newPlan *planstypes.Plan) error {
+	if newPlan == nil {
+		return utils.LavaFormatError("new plan is nil", fmt.Errorf("upgradeSubscriptionPlan: cannot upgrade subscription plan"))
+	}
+	if sub == nil {
+		return utils.LavaFormatError("subscription is nil", fmt.Errorf("upgradeSubscriptionPlan: cannot upgrade subscription plan"))
+	}
+
 	block := uint64(ctx.BlockHeight())
 
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)

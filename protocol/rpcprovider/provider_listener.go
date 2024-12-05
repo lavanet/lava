@@ -10,12 +10,12 @@ import (
 
 	"github.com/gogo/status"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v3/protocol/lavasession"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -67,7 +67,6 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32), // setting receive size to 32mb instead of 4mb default
 	}
 	grpcServer := grpc.NewServer(opts...)
-
 	wrappedServer := grpcweb.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers

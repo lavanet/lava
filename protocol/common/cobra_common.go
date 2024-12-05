@@ -3,7 +3,7 @@ package common
 import (
 	"time"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,6 +33,23 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+
+	// optimizer flags
+	SetProviderOptimizerBestTierPickChance    = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance   = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
+
+	// optimizer qos server flags
+	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
+	OptimizerQosListenFlag                 = "optimizer-qos-listen"            // enable listening for qos reports on metrics endpoint
+	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
+	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
+	// websocket flags
+	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
+	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
+	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
+	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
+	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 )
 
 const (

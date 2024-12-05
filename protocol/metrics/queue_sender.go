@@ -11,7 +11,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v4/utils"
 )
 
 type QueueSender struct {
@@ -64,7 +64,12 @@ func (crc *QueueSender) sendQueueTick() {
 	crc.lock.Lock()
 	defer crc.lock.Unlock()
 
-	if !crc.isSendQueueRunning && len(crc.addQueue) > 0 {
+	if len(crc.addQueue) == 0 {
+		utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] sendQueueTick: addQueue is empty", crc.name))
+		return
+	}
+
+	if !crc.isSendQueueRunning {
 		sendQueue := crc.addQueue
 		crc.addQueue = make([]fmt.Stringer, 0)
 		crc.isSendQueueRunning = true

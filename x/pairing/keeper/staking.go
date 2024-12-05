@@ -7,11 +7,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v3/utils"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
-	"github.com/lavanet/lava/v3/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v3/x/plans/types"
-	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v4/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 const (
@@ -23,6 +24,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		// first provider with this address
+		metadata = epochstoragetypes.ProviderMetadata{
+			Provider:         provider,
+			Vault:            creator,
+			Chains:           []string{chainID},
+			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+		}
+	} else {
+		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
+	}
+
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
 		return utils.LavaFormatWarning("spec not found or not active", err,
@@ -31,14 +45,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	// if we get here, the spec is active and supported
-	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
-		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
-			utils.Attribute{Key: "spec", Value: specChainID},
-			utils.Attribute{Key: "provider", Value: creator},
-			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
-		)
-	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid address", err,
@@ -94,17 +100,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			// verify that the provider only tries to change non-stake related traits of the stake entry
 			// a provider can be the same as the vault, so we verify it's not the case
 			if isProvider {
-				if delegationCommission != existingEntry.DelegateCommission ||
-					!delegationLimit.Equal(existingEntry.DelegateLimit) ||
+				if delegationCommission != metadata.DelegateCommission ||
 					!amount.Equal(existingEntry.Stake) {
 					return utils.LavaFormatWarning("only vault address can change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
 						utils.LogAttr("creator", creator),
 						utils.LogAttr("vault", existingEntry.Vault),
 						utils.LogAttr("provider", provider),
 						utils.LogAttr("description", description.String()),
-						utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
-						utils.LogAttr("req_delegation_limit", delegationLimit),
-						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
+						utils.LogAttr("current_delegation_commission", metadata.DelegateCommission),
 						utils.LogAttr("req_delegation_commission", delegationCommission),
 						utils.LogAttr("current_stake", existingEntry.Stake.String()),
 						utils.LogAttr("req_stake", amount.String()),
@@ -133,58 +136,52 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
 			// if there was a change in the last 24h than we dont allow changes
-			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
-				if delegationCommission != existingEntry.DelegateCommission || !existingEntry.DelegateLimit.IsEqual(delegationLimit) {
+			if ctx.BlockTime().UTC().Unix()-int64(metadata.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
+				if delegationCommission != metadata.DelegateCommission {
 					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
-						utils.LogAttr("last_change_time", existingEntry.LastChange))
+						utils.LogAttr("last_change_time", metadata.LastChange))
 				}
 			}
 
 			// check that the change is not mode than MAX_CHANGE_RATE
-			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
+			if int64(delegationCommission)-int64(metadata.DelegateCommission) > MAX_CHANGE_RATE {
 				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE),
-					utils.LogAttr("original_commission", existingEntry.DelegateCommission),
+					utils.LogAttr("original_commission", metadata.DelegateCommission),
 					utils.LogAttr("wanted_commission", delegationCommission),
-				)
-			}
-
-			// check that the change in delegation limit is decreasing and that new_limit*100/old_limit < (100-MAX_CHANGE_RATE)
-			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
-				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE),
-					utils.LogAttr("change_percentage", delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount)),
-					utils.LogAttr("original_limit", existingEntry.DelegateLimit),
-					utils.LogAttr("wanted_limit", delegationLimit),
 				)
 			}
 		}
 
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+		beforeAmount := existingEntry.Stake
+		increase := amount.Amount.GT(existingEntry.Stake.Amount)
+		decrease := amount.Amount.LT(existingEntry.Stake.Amount)
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
-		existingEntry.Description = description
-		existingEntry.DelegateCommission = delegationCommission
-		existingEntry.DelegateLimit = delegationLimit
-		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+		metadata.Description = description
+		metadata.DelegateCommission = delegationCommission
+		metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+		existingEntry.Stake = amount
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
-
-		if amount.Amount.GT(existingEntry.Stake.Amount) {
+		k.epochStorageKeeper.SetMetadata(ctx, metadata)
+		if increase {
 			// delegate the difference
-			diffAmount := amount.Sub(existingEntry.Stake)
-			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount)
+			diffAmount := amount.Sub(beforeAmount)
+			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount, true)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
-				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+				return utils.LavaFormatWarning("failed to increase stake", err,
 					details...,
 				)
 			}
-		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
+		} else if decrease {
 			// unbond the difference
-			diffAmount := existingEntry.Stake.Sub(amount)
-			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount, false)
+			diffAmount := beforeAmount.Sub(amount)
+			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount, true)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
-				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+				return utils.LavaFormatWarning("failed to decrease stake", err,
 					details...,
 				)
 			}
@@ -213,6 +210,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 	}
 
+	if creator != metadata.Vault {
+		return utils.LavaFormatWarning("creator does not match the provider vault", err,
+			utils.Attribute{Key: "vault", Value: metadata.Vault},
+			utils.Attribute{Key: "creator", Value: creator},
+		)
+	}
+
 	// entry isn't staked so add him
 	details := []utils.Attribute{
 		{Key: "spec", Value: specChainID},
@@ -232,40 +236,49 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider, nextEpoch)
-	if err != nil {
-		utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.LogAttr("provider", provider),
-			utils.LogAttr("block", nextEpoch),
+	stakeAmount := amount
+	// creating a new provider, fetch old delegation
+	if len(metadata.Chains) == 1 {
+		delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
+		if err == nil {
+			for _, d := range delegations {
+				if d.Delegator == creator {
+					stakeAmount = stakeAmount.Add(d.Amount)
+				} else {
+					metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
+				}
+			}
+		}
+	}
+
+	if stakeAmount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
+		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
+			utils.Attribute{Key: "spec", Value: specChainID},
+			utils.Attribute{Key: "provider", Value: creator},
+			utils.Attribute{Key: "stake", Value: amount},
+			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
 
-	for _, d := range delegations {
-		if (d.Delegator == creator && d.Provider == provider) || d.ChainID != chainID {
-			// ignore provider self delegation (delegator = vault, provider = provider) or delegations from other chains
-			continue
-		}
-		delegateTotal = delegateTotal.Add(d.Amount.Amount)
-	}
-
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
-		Address:            provider,
-		StakeAppliedBlock:  stakeAppliedBlock,
-		Endpoints:          endpointsVerified,
-		Geolocation:        geolocation,
-		Chain:              chainID,
-		Description:        description,
-		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
-		DelegateLimit:      delegationLimit,
-		DelegateCommission: delegationCommission,
-		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
-		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
+		Stake:             stakeAmount,
+		Address:           provider,
+		StakeAppliedBlock: stakeAppliedBlock,
+		Endpoints:         endpointsVerified,
+		Geolocation:       geolocation,
+		Chain:             chainID,
+		DelegateTotal:     sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
+		Vault:             creator, // the stake-provider TX creator is always regarded as the vault address
 	}
 
+	metadata.DelegateCommission = delegationCommission
+	metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+	metadata.Description = description
+
+	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 
-	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, chainID, amount)
+	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, amount, true)
 	if err != nil {
 		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,

@@ -21,15 +21,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/lavanet/lava/v3/app"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chaintracker"
-	"github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
-	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/rand"
-	"github.com/lavanet/lava/v3/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/app"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chaintracker"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
+	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v4/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -64,11 +65,8 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	defer ticker.Stop()
 	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
 		for block := blockFrom; block < blockTo; block++ {
-			brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-			if err != nil {
-				utils.LavaFormatFatal("invalid blockResults provider", err)
-			}
-			blockResults, err := brp.BlockResults(ctx, &block)
+			queryInst := updaters.NewStateQueryAccessInst(clientCtx)
+			blockResults, err := queryInst.BlockResults(ctx, &block)
 			if err != nil {
 				utils.LavaFormatError("invalid blockResults status", err)
 				return
@@ -122,6 +120,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	if err != nil {
 		return utils.LavaFormatError("failed setting up chain tracker", err)
 	}
+	chainTracker.StartAndServe(ctx)
 	_ = chainTracker
 	select {
 	case <-ctx.Done():
@@ -273,14 +272,11 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			continue
 		}
 		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
-		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-		if err != nil {
-			utils.LavaFormatFatal("invalid blockResults provider", err)
-		}
+		queryInst := updaters.NewStateQueryAccessInst(clientCtx)
 		var blockResults *coretypes.ResultBlockResults
 		for retry := 0; retry < 3; retry++ {
 			ctxWithTimeout, cancelContextWithTimeout := context.WithTimeout(ctx, time.Second*30)
-			blockResults, err = brp.BlockResults(ctxWithTimeout, &block)
+			blockResults, err = queryInst.BlockResults(ctxWithTimeout, &block)
 			cancelContextWithTimeout()
 			if err != nil {
 				utils.LavaFormatWarning("@@@@ failed fetching block results will retry", err, utils.LogAttr("block_number", block))
@@ -658,15 +654,12 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 		utils.LogAttr("starting_block", latestHeight-numberOfBlocksInADay),
 	)
 
-	tmClient, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-	if err != nil {
-		utils.LavaFormatFatal("invalid blockResults provider", err)
-	}
+	queryInst := updaters.NewStateQueryAccessInst(clientCtx)
 	// i is days
 	// j are blocks in that day
 	// starting from current day and going backwards
 	var wg sync.WaitGroup
-	totalTxPerDay := sync.Map{}
+	totalTxPerDay := &common.SafeSyncMap[int64, int]{}
 
 	// Process each day from the earliest to the latest
 	for i := int64(1); i <= numberOfDays; i++ {
@@ -695,7 +688,7 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 					defer wg.Done()
 					ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 					defer cancel()
-					blockResults, err := tmClient.BlockResults(ctxWithTimeout, &k)
+					blockResults, err := queryInst.BlockResults(ctxWithTimeout, &k)
 					if err != nil {
 						utils.LavaFormatError("invalid blockResults status", err)
 						return
@@ -703,14 +696,13 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 					transactionResults := blockResults.TxsResults
 					utils.LavaFormatInfo("Number of tx for block", utils.LogAttr("_routine", end-k), utils.LogAttr("block_number", k), utils.LogAttr("number_of_tx", len(transactionResults)))
 					// Update totalTxPerDay safely
-					actual, _ := totalTxPerDay.LoadOrStore(i, len(transactionResults))
-					if actual != nil {
-						val, ok := actual.(int)
-						if !ok {
-							utils.LavaFormatError("Failed converting int", nil)
-							return
-						}
-						totalTxPerDay.Store(i, val+len(transactionResults))
+					actual, loaded, err := totalTxPerDay.LoadOrStore(i, len(transactionResults))
+					if err != nil {
+						utils.LavaFormatError("failed to load or store", err)
+						return
+					}
+					if loaded {
+						totalTxPerDay.Store(i, actual+len(transactionResults))
 					}
 				}(k)
 			}
@@ -722,23 +714,17 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	}
 
 	// Log the transactions per day results
-	totalTxPerDay.Range(func(key, value interface{}) bool {
-		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", key), utils.LogAttr("totalTx", value))
+	totalTxPerDay.Range(func(day int64, totalTx int) bool {
+		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", day), utils.LogAttr("totalTx", totalTx))
 		return true // continue iteration
 	})
 
 	// Prepare the JSON data
 	jsonData := make(map[string]int)
-	totalTxPerDay.Range(func(key, value interface{}) bool {
-		day, ok := key.(int64)
-		if ok {
-			date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
-			dateKey := fmt.Sprintf("date_%s", date)
-			val, ok2 := value.(int)
-			if ok2 {
-				jsonData[dateKey] = val
-			}
-		}
+	totalTxPerDay.Range(func(day int64, totalTx int) bool {
+		date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
+		dateKey := fmt.Sprintf("date_%s", date)
+		jsonData[dateKey] = totalTx
 		return true
 	})
 

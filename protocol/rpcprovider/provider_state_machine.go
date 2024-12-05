@@ -4,29 +4,31 @@ import (
 	"context"
 	"time"
 
-	"github.com/lavanet/lava/v3/protocol/chainlib"
-	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v3/protocol/common"
-	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v3/utils"
-	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v4/utils"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
-type RelaySender interface {
+type ProviderRelaySender interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (relayReply *chainlib.RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error)
 }
 
 type ProviderStateMachine struct {
 	relayRetriesManager lavaprotocol.RelayRetriesManagerInf
 	chainId             string
-	relaySender         RelaySender
+	relaySender         ProviderRelaySender
+	numberOfRetries     int
 }
 
-func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender RelaySender) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int) *ProviderStateMachine {
 	return &ProviderStateMachine{
 		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,
 		relaySender:         relaySender,
+		numberOfRetries:     numberOfRetries,
 	}
 }
 
@@ -41,7 +43,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
-	for retryAttempt := 0; retryAttempt <= numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
+	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
 		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
