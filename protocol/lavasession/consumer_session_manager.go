@@ -113,7 +113,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
-	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
+	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})

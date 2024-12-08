@@ -50,6 +50,8 @@ const (
 	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	// specification default flags
+	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
 )
 
 const (
