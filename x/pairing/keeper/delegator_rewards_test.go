@@ -222,6 +222,7 @@ func TestPartialMonthDelegation(t *testing.T) {
 	relayPaymentMessage.DescriptionString = exactConst
 	// we have a provider that staked after 15/30 days, and a delegator that staked after 20/30 days
 	// provider has 100k stake for 15 days, delegator has 150k stake for 10 days so they should divide half half, and the provider commission is 50%
+	// 0.5 * reward (due to stake amount) + 0.5 * 0.5 * reward (half the delegator reward due to 50% commission) = 75%
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 75)
 }
 

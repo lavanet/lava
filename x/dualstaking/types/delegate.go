@@ -58,11 +58,6 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 	return true
 }
 
-func (delegation *Delegation) IsFirstWeekPassed(currentTimestamp int64) bool {
-	// this is a temporary code to reduce the time to 1 week instead of month, will be changed in the gradual delegation increase feature.
-	return delegation.Timestamp <= currentTimestamp
-}
-
 func NewDelegator(delegator, provider string) Delegator {
 	return Delegator{
 		Providers: []string{provider},

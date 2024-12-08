@@ -1,21 +1,39 @@
 package keeper
 
-// Delegation allows securing funds for a specific provider to effectively increase
-// its stake so it will be paired with consumers more often. The delegators do not
-// transfer the funds to the provider but only bestow the funds with it. In return
-// to locking the funds there, delegators get some of the provider’s profit (after
-// commission deduction).
+// The credit mechanism is designed to fairly distribute rewards to delegators
+// based on both the amount of tokens they delegate and the duration of their
+// delegation. It ensures that rewards are proportional to the effective stake
+// over time, rather than just the nominal amount of tokens delegated.
 //
-// The delegated funds are stored in the module's BondedPoolName account. On request
-// to terminate the delegation, they are then moved to the modules NotBondedPoolName
-// account, and remain locked there for staking.UnbondingTime() witholding period
-// before finally released back to the delegator. The timers for bonded funds are
-// tracked are indexed by the delegator, provider, and chainID.
+// Key Components:
+// - Credit: Represents the effective delegation for a delegator, adjusted for
+//   the time their tokens have been staked.
+// - CreditTimestamp: Records the last time the credit was updated, allowing
+//   for accurate calculation of rewards over time.
 //
-// The delegation state is stores with fixation using two maps: one for delegations
-// indexed by the combination <provider,chainD,delegator>, used to track delegations
-// and find/access delegations by provider (and chainID); and another for delegators
-// tracking the list of providers for a delegator, indexed by the delegator.
+// How It Works:
+// 1. When a delegation is made or modified, the credit is calculated based on
+//    the current amount and the time elapsed since the last update.
+// 2. The credit is normalized over a 30-day period to ensure consistent reward
+//    distribution.
+//
+// Example 1:
+// Consider two delegators, Alice and Bob, with a total delegators reward pool of 500 tokens.
+// - Alice delegates 100 tokens for the full month, earning a credit of 100 tokens.
+// - Bob delegates 200 tokens but only for half the month, earning a credit of 100 tokens.
+//
+// Total credit-adjusted delegations: Alice (100) + Bob (100) = 200 tokens.
+// - Alice's reward: (500 * 100 / 200) = 250 tokens
+// - Bob's reward: (500 * 100 / 200) = 250 tokens
+//
+// Example 2 (Mid-Month Delegation Change):
+// Suppose Alice initially delegates 100 tokens, and halfway through the month,
+// she increases her delegation to 150 tokens.
+// - For the first half of the month, Alice's credit is calculated on 100 tokens.
+// - When she increases her delegation, the credit is updated to reflect the rewards
+//   earned so far (e.g., 50 tokens for 15 days).
+// - The CreditTimestamp is updated to the current time.
+// - For the remaining half of the month, her credit is calculated on 150 tokens.
 
 import (
 	"time"
@@ -29,9 +47,10 @@ const (
 	hourSeconds = 3600
 )
 
-// calculate the delegation credit based on the timestamps, and the amounts of delegations
-// amounts and credits represent daily value, rounded down
-// can be used to calculate the credit for distribution or update the credit fields in the delegation
+// CalculateCredit calculates the credit value for a delegation, which represents the
+// average stake over time used for reward distribution.
+// The credit is normalized according to the difference between credit timestamp and the latest delegation change (in hours)
+// The credit is updated only when the delegation amount changes, but is also used to calculate rewards for the current delegation (without updating the entry).
 func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (credit sdk.Coin, creditTimestampRet int64) {
 	// Calculate the credit for the delegation
 	currentAmount := delegation.Amount
@@ -85,7 +104,16 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	return credit, creditTimestamp.Unix()
 }
 
-// this function takes the delegation and returns it's credit within the last 30 days
+// CalculateMonthlyCredit returns the total credit value for a delegation, normalized over a 30-day period (hours resolution).
+// it does so by calculating the historical credit over the difference between the credit timestamp and the delegation timestamp (in hours) and normalizing it to 30 days
+// it then adds the current delegation over the difference between the delegation timestamp and now (in hours) and normalizing it to 30 days
+// the function does not modify the delegation amounts nor the timestamps, yet calculates the values for distribution with the current time
+//
+// For example:
+// - If a delegator stakes 100 tokens for a full month, their credit will be 100
+// - If they stake 100 tokens for half a month, their credit will be 50
+// - If they stake 100 tokens for 15 days then increase to 200 tokens, their credit
+// will be calculated as: (100 * 15 + 200 * 15) / 30 = 150
 func (k Keeper) CalculateMonthlyCredit(ctx sdk.Context, delegation types.Delegation) (credit sdk.Coin) {
 	credit, creditTimeEpoch := k.CalculateCredit(ctx, delegation)
 	if credit.IsNil() || credit.IsZero() || creditTimeEpoch <= 0 {
