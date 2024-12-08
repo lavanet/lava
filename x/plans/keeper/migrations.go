@@ -4,11 +4,8 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v2 "github.com/lavanet/lava/v4/x/plans/migrations/v2"
-	v3 "github.com/lavanet/lava/v4/x/plans/migrations/v3"
 	v7 "github.com/lavanet/lava/v4/x/plans/migrations/v7"
 	v8 "github.com/lavanet/lava/v4/x/plans/migrations/v8"
-	projectsv3 "github.com/lavanet/lava/v4/x/projects/migrations/v3"
 )
 
 type Migrator struct {
@@ -17,80 +14,6 @@ type Migrator struct {
 
 func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
-}
-
-// Migrate2to3 implements store migration from v1 to v2:
-//   - Trigger the version upgrade of the planFS fixation store
-//   - Update plan policy
-func (m Migrator) Migrate2to3(ctx sdk.Context) error {
-	planIndices := m.keeper.plansFS.AllEntryIndicesFilter(ctx, "", nil)
-
-	for _, planIndex := range planIndices {
-		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex)
-		for _, block := range blocks {
-			var plan_v2 v2.Plan
-			m.keeper.plansFS.ReadEntry(ctx, planIndex, block, &plan_v2)
-
-			// create policy struct
-			planPolicy := projectsv3.Policy{
-				GeolocationProfile: uint64(1),
-				TotalCuLimit:       plan_v2.ComputeUnits,
-				EpochCuLimit:       plan_v2.ComputeUnitsPerEpoch,
-				MaxProvidersToPair: plan_v2.MaxProvidersToPair,
-			}
-
-			// convert plan from type v2.Plan to types.Plan
-			plan_v3 := v3.Plan{
-				Index:                    plan_v2.Index,
-				Block:                    plan_v2.Block,
-				Price:                    plan_v2.Price,
-				OveruseRate:              plan_v2.OveruseRate,
-				AllowOveruse:             plan_v2.AllowOveruse,
-				Description:              plan_v2.Description,
-				Type:                     plan_v2.Type,
-				AnnualDiscountPercentage: plan_v2.AnnualDiscountPercentage,
-				PlanPolicy:               planPolicy,
-			}
-
-			m.keeper.plansFS.ModifyEntry(ctx, planIndex, block, &plan_v3)
-		}
-	}
-
-	return nil
-}
-
-// Migrate3to4 implements store migration from v3 to v4:
-//   - Trigger the version upgrade of the planFS fixation store
-//   - Replace the store prefix from module-name ("plan") to "plan-fs"
-func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	// This migration used to call a deprecated fixationstore function called MigrateVersionAndPrefix
-
-	return nil
-}
-
-// Migrate4to5 implements store migration from v4 to v5:
-//   - Trigger the version upgrade of the planFS fixation store (so it will
-//     call the version upgrade of its timer store).
-func (m Migrator) Migrate4to5(ctx sdk.Context) error {
-	// This migration used to call a deprecated fixationstore function called MigrateVersion
-
-	return nil
-}
-
-// Migrate5to6 implements store migration from v5 to v6:
-// -- trigger fixation migration, deleteat and live variables
-func (m Migrator) Migrate5to6(ctx sdk.Context) error {
-	// This migration used to call a deprecated fixationstore function called MigrateVersion
-
-	return nil
-}
-
-// Migrate6to7 implements store migration from v6 to v7:
-// -- trigger fixation migration (v4->v5), initialize IsLatest field
-func (m Migrator) Migrate6to7(ctx sdk.Context) error {
-	// This migration used to call a deprecated fixationstore function called MigrateVersion
-
-	return nil
 }
 
 func (m Migrator) Migrate7to8(ctx sdk.Context) error {
