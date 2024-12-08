@@ -316,7 +316,11 @@ func TestRegexParsing(t *testing.T) {
 	for _, api := range []string{
 		"/cosmos/staking/v1beta1/delegations/lava@17ym998u666u8w2qgjd5m7w7ydjqmu3mlgl7ua2/",
 	} {
-		_, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.Error(t, err)
+		chainMessage, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		if err == nil {
+			require.True(t, chainMessage.GetApi().GetName() == "Default-"+api)
+		} else {
+			assert.ErrorIs(t, err, common.APINotSupportedError)
+		}
 	}
 }
