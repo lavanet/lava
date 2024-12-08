@@ -85,3 +85,16 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 
 	return nil
 }
+
+func (m Migrator) MigrateVersion6To7(ctx sdk.Context) error {
+	// set all delegations to have a timestamp of 30 days ago
+	allDelegations, err := m.keeper.GetAllDelegations(ctx)
+	if err != nil {
+		for _, delegation := range allDelegations {
+			delegation.Timestamp = ctx.BlockTime().AddDate(0, 0, -30).UTC().Unix()
+			m.keeper.SetDelegation(ctx, delegation)
+		}
+	}
+
+	return nil
+}

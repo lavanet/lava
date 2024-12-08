@@ -6,23 +6,23 @@ This document specifies the dualstaking module of Lava Protocol.
 
 In the Lava blockchain there are two kinds of staking users, the first ones are validators, legacy to cosmos, the second ones are providers.
 Validators play a role in the consensus mechanism, while providers offer services to consumers and compete with other providers by staking tokens.
-Since a lot of tokens are expected to be staked by providers, to enhance the security of the chain, Lava lets providers to participate in the consensus via dualstaking. 
+Since a lot of tokens are expected to be staked by providers, to enhance the security of the chain, Lava lets providers to participate in the consensus via dualstaking.
 Dualstaking makes this happen by "duplicating" delegations, for each validator delegation a parallel provider delegation will be created for the delegator, As a result, providers gain power in the consensus, influencing governance and block creation.
 
-
 ## Contents
+
 * [Concepts](#concepts)
-    * [Delegation](#delegation)
-    * [Empty Provider](#empty-provider)
-    * [Dualstaking](#dualstaking)
-        * [Validator Delegation](#validator-delegation)
-        * [Validator Unbonding](#validator-unbonding)
-        * [Validator Slashing](#validator-slashing)
-        * [Provider Delegation](#provider-delegation)
-        * [Provider Unbonding](#provider-unbonding)
-    * [Hooks](#hooks)
-    * [RedelegateFlag](#redelegateflag)
-    * [Rewards](#rewards)
+  * [Delegation](#delegation)
+  * [Empty Provider](#empty-provider)
+  * [Dualstaking](#dualstaking)
+    * [Validator Delegation](#validator-delegation)
+    * [Validator Unbonding](#validator-unbonding)
+    * [Validator Slashing](#validator-slashing)
+    * [Provider Delegation](#provider-delegation)
+    * [Provider Unbonding](#provider-unbonding)
+  * [Hooks](#hooks)
+  * [RedelegateFlag](#redelegateflag)
+  * [Credit](#credit)
 * [Parameters](#parameters)
 * [Queries](#queries)
 * [Transactions](#transactions)
@@ -38,7 +38,7 @@ When a provider stakes tokens, they create a self-delegation entry. Whenever a p
 
 ### Empty Provider
 
-The empty provider is a place holder for provider delegations that are issued by the staking module. 
+The empty provider is a place holder for provider delegations that are issued by the staking module.
 To support the functionality of the legacy Staking module, when a user delegates to a validator (it can't define the provider to delegate to in the legacy message), the dual staking module will delegate the same ammount to the empty provider.
 The user can than choose to redelegate from the empty provider to an actual provider.
 
@@ -84,15 +84,34 @@ The following are use cases of the dualstaking module:
 ### Hooks
 
 Dual staking module uses [staking hooks](keeper/hooks.go) to achieve its functionality.
+
 1. AfterDelegationModified: this hook is called whenever a delegation is changed, whether it is created, or modified (NOT when completly removed). it calculates the difference in providers and validators stake to determine the action of the user (delegation or unbonding) depending on who is higher and than does the same with provider delegation.
     * If provider delegations > validator delegations: user unbonded, uniform unbond from providers delegations (priority to empty provider).
     * If provider delegations < validator delegations: user delegation, delegate to the empty provider.
 2. BeforeDelegationRemoved: this hook is called when a delegation to a validator is removed (unbonding of all the tokens). uniform unbond from providers delegations
-3. BeforeValidatorSlashed: this hook is called when a validator is being slashed. to make sure the balance between validator and provider delegation is kept it uniform unbond from providers delegations the slashed amount. 
+3. BeforeValidatorSlashed: this hook is called when a validator is being slashed. to make sure the balance between validator and provider delegation is kept it uniform unbond from providers delegations the slashed amount.
 
 ### RedelegateFlag
 
 To prevent the dual staking module from taking action in the case of validator redelegation, we utilize the [antehandler](ante/ante_handler.go). When a redelegation message is being processed, the RedelegateFlag is set to true, and the hooks will disregard any delegation changes. It is important to note that the RedelegateFlag is stored in memory and not in the chain’s state.
+
+### Credit
+
+Credit Mechanism Overview
+The credit mechanism ensures fair reward distribution to delegators based on both the amount and duration of their delegation. It calculates rewards proportionally to the effective stake over time.
+
+Key Components
+
+Credit: Effective delegation for a delegator, adjusted for staking duration.
+CreditTimestamp: Last update time for the credit, enabling accurate reward calculations.
+How It Works
+
+Credit is calculated when a delegation is made or modified, based on the current amount and elapsed time.
+Rewards are normalized over a 30-day period for consistency.
+Example
+Alice delegates 100 tokens for a full month, earning a credit of 100 tokens. Bob delegates 200 tokens for half a month, also earning a credit of 100 tokens. With a total reward pool of 500 tokens, both receive 250 tokens, reflecting their credit-adjusted stakes.
+
+If Alice increases her delegation to 150 tokens mid-month, her credit is updated to reflect rewards earned so far, and future rewards are calculated on the new amount. This ensures fair distribution based on both delegation amount and duration.
 
 ## Parameters
 
@@ -128,7 +147,6 @@ The Dualstaking module supports the following transactions:
 | `unbond`     | validator-addr (string) provider-addr (string) amount (coin) | undong from validator and provider the given amount                  |
 | `claim-rewards`     | optional: provider-addr (string)| claim the rewards from a given provider or all rewards |
 
-
 ## Proposals
 
 The Dualstaking module does not have proposals.
@@ -136,6 +154,7 @@ The Dualstaking module does not have proposals.
 ### Events
 
 The Dualstaking module has the following events:
+
 | Event             | When it happens       |
 | ----------        | --------------- |
 | `delegate_to_provider`        | a successful provider delegation  |

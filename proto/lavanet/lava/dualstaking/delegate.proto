@@ -11,7 +11,9 @@ message Delegation {
     string provider = 1;  // provider receives the delegated funds
     string delegator = 3; // delegator that owns the delegated funds
     cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
-    int64 timestamp = 5; // Unix timestamp of the delegation (+ month)
+    int64 timestamp = 5; // Unix timestamp of the last change
+    cosmos.base.v1beta1.Coin  credit = 6 [(gogoproto.nullable) = false]; // amount of credit earned by the delegation over the period
+    int64 credit_timestamp = 7; // Unix timestamp of the delegation credit latest calculation capped at 30d
 }
 
 message Delegator {
