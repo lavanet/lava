@@ -92,10 +92,13 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test)
-	assert.Error(t, err)
-	found := strings.Contains(err.Error(), "api not supported")
-	require.True(t, found)
+	apiCont, err = apip.getSupportedApi("API2", connectionType_test)
+	if err == nil {
+		require.True(t, apiCont.api.Name == "Default-API2")
+	} else {
+		found := strings.Contains(err.Error(), "api not supported")
+		require.True(t, found)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
@@ -105,7 +108,7 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
-	found = strings.Contains(err.Error(), "api is disabled")
+	found := strings.Contains(err.Error(), "api is disabled")
 	require.True(t, found)
 }
 

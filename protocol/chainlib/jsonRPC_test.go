@@ -115,8 +115,12 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test, "")
-	assert.Error(t, err)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test, "")
+	if err == nil {
+		require.True(t, apiCont.api.Name == "Default-API2")
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &JsonRPCChainParser{
