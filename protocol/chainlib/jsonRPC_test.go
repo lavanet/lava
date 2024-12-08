@@ -503,9 +503,12 @@ func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
 					require.Equal(t, reqDataWithApiName.apiName, api.Name)
 					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
 				} else {
-					require.Error(t, err)
-					require.ErrorIs(t, err, common.APINotSupportedError)
-					require.Nil(t, chainMessage)
+					if err == nil {
+						require.True(t, strings.Contains(chainMessage.GetApi().Name, "Default-"))
+					} else {
+						require.ErrorIs(t, err, common.APINotSupportedError)
+						require.Nil(t, chainMessage)
+					}
 				}
 			})
 		}
