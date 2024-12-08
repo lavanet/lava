@@ -87,7 +87,7 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 	}
 	apiCont, err := apip.getSupportedApi("API2", connectionType_test)
 	if err == nil {
-		require.True(t, apiCont.api.Name == "Default-API2")
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
 	} else {
 		assert.ErrorIs(t, err, common.APINotSupportedError)
 	}

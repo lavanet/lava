@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -94,10 +93,9 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	apiCont, err = apip.getSupportedApi("API2", connectionType_test)
 	if err == nil {
-		require.True(t, apiCont.api.Name == "Default-API2")
+		require.Equal(t, "Default-API2", apiCont.api.Name)
 	} else {
-		found := strings.Contains(err.Error(), "api not supported")
-		require.True(t, found)
+		require.Contains(t, err.Error(), "api not supported")
 	}
 
 	// Test case 3: Returns error if the API is disabled
@@ -108,8 +106,7 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
-	found := strings.Contains(err.Error(), "api is disabled")
-	require.True(t, found)
+	require.Contains(t, err.Error(), "api is disabled")
 }
 
 func TestGRPCParseMessage(t *testing.T) {

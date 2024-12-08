@@ -90,7 +90,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	}
 	apiCont, err := apip.getSupportedApi("API2", connectionType_test)
 	if err == nil {
-		require.True(t, apiCont.api.Name == "Default-API2")
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
 	} else {
 		assert.ErrorIs(t, err, common.APINotSupportedError)
 	}
@@ -318,7 +318,7 @@ func TestRegexParsing(t *testing.T) {
 	} {
 		chainMessage, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
-			require.True(t, chainMessage.GetApi().GetName() == "Default-"+api)
+			require.Equal(t, "Default-"+api, chainMessage.GetApi().GetName())
 		} else {
 			assert.ErrorIs(t, err, common.APINotSupportedError)
 		}
