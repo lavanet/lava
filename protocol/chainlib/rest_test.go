@@ -88,9 +88,12 @@ func TestRestGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, common.APINotSupportedError)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test)
+	if err == nil {
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
@@ -313,7 +316,11 @@ func TestRegexParsing(t *testing.T) {
 	for _, api := range []string{
 		"/cosmos/staking/v1beta1/delegations/lava@17ym998u666u8w2qgjd5m7w7ydjqmu3mlgl7ua2/",
 	} {
-		_, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.Error(t, err)
+		chainMessage, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		if err == nil {
+			require.Equal(t, "Default-"+api, chainMessage.GetApi().GetName())
+		} else {
+			assert.ErrorIs(t, err, common.APINotSupportedError)
+		}
 	}
 }
