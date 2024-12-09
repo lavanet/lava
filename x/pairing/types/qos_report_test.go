@@ -215,12 +215,12 @@ func TestQosReport(t *testing.T) {
 	require.NoError(t, errQos2)
 	require.NoError(t, errQos3)
 	require.NoError(t, errQos4)
-	require.True(t, qos1Res.LT(qos2Res))
-	require.True(t, qos1Res.LT(qos3Res))
-	require.True(t, qos1Res.LT(qos4Res))
+	require.True(t, qos1Res.GT(qos2Res))
+	require.True(t, qos1Res.GT(qos3Res))
+	require.True(t, qos4Res.GT(qos1Res))
 
-	require.True(t, qos2Res.GT(qos3Res))
-	require.True(t, qos2Res.GT(qos4Res))
+	require.True(t, qos2Res.LT(qos3Res))
+	require.True(t, qos2Res.LT(qos4Res))
 
-	require.True(t, qos4Res.LT(qos3Res))
+	require.True(t, qos4Res.GT(qos3Res))
 }
