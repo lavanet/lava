@@ -815,7 +815,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	}
 }
 
-func TestMainnetSpecs(t *testing.T) {
+func TestSpecs(t *testing.T) {
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
