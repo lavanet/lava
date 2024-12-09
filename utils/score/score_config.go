@@ -26,12 +26,12 @@ import (
 // is only partial since it considers only the CU amount
 
 const (
-	DefaultHalfLifeTime_Refactor = time.Hour
-	MaxHalfTime_Refactor         = 3 * time.Hour
+	DefaultHalfLifeTime = time.Hour
+	MaxHalfTime         = 3 * time.Hour
 
-	DefaultWeight_Refactor     float64 = 1
-	ProbeUpdateWeight_Refactor float64 = 0.25
-	RelayUpdateWeight_Refactor float64 = 1
+	DefaultWeight     float64 = 1
+	ProbeUpdateWeight float64 = 0.25
+	RelayUpdateWeight float64 = 1
 
 	// TODO: find actual numbers from info of latencies of high/mid/low CU from "stats.lavanet.xyz".
 	// Do a distribution and find average factor to multiply the failure cost by.
@@ -44,20 +44,20 @@ const (
 	MidCuThreshold  = uint64(50)
 )
 
-type Config_Refactor struct {
+type Config struct {
 	Weight          float64
 	HalfLife        time.Duration
 	LatencyCuFactor float64 // should only be used for latency samples
 }
 
-var defaultConfig = Config_Refactor{
-	Weight:          DefaultWeight_Refactor,
-	HalfLife:        DefaultHalfLifeTime_Refactor,
+var defaultConfig = Config{
+	Weight:          DefaultWeight,
+	HalfLife:        DefaultHalfLifeTime,
 	LatencyCuFactor: DefaultCuLatencyFactor,
 }
 
 // Validate validates the Config's fields hold valid values
-func (c Config_Refactor) Validate() error {
+func (c Config) Validate() error {
 	if c.Weight <= 0 {
 		return fmt.Errorf("invalid config: weight must be strictly positive, weight: %f", c.Weight)
 	}
@@ -71,27 +71,27 @@ func (c Config_Refactor) Validate() error {
 }
 
 // String prints a Config's fields
-func (c Config_Refactor) String() string {
+func (c Config) String() string {
 	return fmt.Sprintf("weight: %f, decay_half_life_time_sec: %f, latency_cu_factor: %f", c.Weight, c.HalfLife.Seconds(), c.LatencyCuFactor)
 }
 
 // Option is used as a generic and elegant way to configure a new ScoreStore
-type Option_Refactor func(*Config_Refactor)
+type Option func(*Config)
 
-func WithWeight(weight float64) Option_Refactor {
-	return func(c *Config_Refactor) {
+func WithWeight(weight float64) Option {
+	return func(c *Config) {
 		c.Weight = weight
 	}
 }
 
-func WithDecayHalfLife(halfLife time.Duration) Option_Refactor {
-	return func(c *Config_Refactor) {
+func WithDecayHalfLife(halfLife time.Duration) Option {
+	return func(c *Config) {
 		c.HalfLife = halfLife
 	}
 }
 
-func WithLatencyCuFactor(factor float64) Option_Refactor {
-	return func(c *Config_Refactor) {
+func WithLatencyCuFactor(factor float64) Option {
+	return func(c *Config) {
 		c.LatencyCuFactor = factor
 	}
 }

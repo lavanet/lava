@@ -72,7 +72,7 @@ var strategyNames = []string{
 	"distributed",
 }
 
-var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
+var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.StrategyBalanced}
 
 func (s *strategyValue) String() string {
 	return strategyNames[int(s.Strategy)]
@@ -358,10 +358,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var loaded bool
 		var err error
 
-		baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-
 		// Create / Use existing optimizer
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
 			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -625,7 +623,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-			if strategyFlag.Strategy != provideroptimizer.STRATEGY_BALANCED {
+			if strategyFlag.Strategy != provideroptimizer.StrategyBalanced {
 				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
 

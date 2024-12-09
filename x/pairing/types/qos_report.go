@@ -30,9 +30,9 @@ var (
 	SyncFreshnessStrategyFactor = sdk.NewDec(30)           // 3
 )
 
-// Config_Refactor defines a collection of parameters that can be used when calculating
+// Config defines a collection of parameters that can be used when calculating
 // a QoS excellence report score
-type Config_Refactor struct {
+type Config struct {
 	SyncFactor            sdk.Dec // a fractional factor to diminish the sync score influence compared to the latency score
 	FailureCost           int64   // the cost (in seconds) for a provider failing to service a relay
 	StrategyFactor        sdk.Dec // a factor to further configure the sync factor
@@ -40,7 +40,7 @@ type Config_Refactor struct {
 }
 
 // Validate validates the Config's fields hold valid values
-func (c Config_Refactor) Validate() error {
+func (c Config) Validate() error {
 	if c.SyncFactor.IsNegative() || c.SyncFactor.GT(sdk.OneDec()) {
 		return fmt.Errorf("invalid config: sync factor must be between 0-1, sync factor: %s", c.SyncFactor.String())
 	}
@@ -58,13 +58,13 @@ func (c Config_Refactor) Validate() error {
 }
 
 // String prints a Config's fields
-func (c Config_Refactor) String() string {
+func (c Config) String() string {
 	return fmt.Sprintf("sync factor: %s, failure cost sec: %d, strategy factor: %s, block error probability: %s",
 		c.SyncFactor.String(), c.FailureCost, c.StrategyFactor.String(), c.BlockErrorProbability.String())
 }
 
 // Default configuration
-var DefaultConfig = Config_Refactor{
+var DefaultConfig = Config{
 	SyncFactor:            DefaultSyncFactor,
 	FailureCost:           DefaultFailureCost,
 	StrategyFactor:        DefaultStrategyFactor,
@@ -72,28 +72,28 @@ var DefaultConfig = Config_Refactor{
 }
 
 // Option is used as a generic and elegant way to configure a new ScoreStore
-type Option func(*Config_Refactor)
+type Option func(*Config)
 
 func WithSyncFactor(factor sdk.Dec) Option {
-	return func(c *Config_Refactor) {
+	return func(c *Config) {
 		c.SyncFactor = factor
 	}
 }
 
 func WithFailureCost(cost int64) Option {
-	return func(c *Config_Refactor) {
+	return func(c *Config) {
 		c.FailureCost = cost
 	}
 }
 
 func WithStrategyFactor(factor sdk.Dec) Option {
-	return func(c *Config_Refactor) {
+	return func(c *Config) {
 		c.StrategyFactor = factor
 	}
 }
 
 func WithBlockErrorProbability(probability sdk.Dec) Option {
-	return func(c *Config_Refactor) {
+	return func(c *Config) {
 		c.BlockErrorProbability = probability
 	}
 }
@@ -111,7 +111,7 @@ func WithBlockErrorProbability(probability sdk.Dec) Option {
 //
 // Important: when using this function from the node's code, do not configure the block error probability
 // (in default mode, it's unused)
-func (qos *QualityOfServiceReport) ComputeQoSExcellence_Refactor(opts ...Option) (sdk.Dec, error) {
+func (qos *QualityOfServiceReport) ComputeQoSExcellence(opts ...Option) (sdk.Dec, error) {
 	if err := qos.Validate(); err != nil {
 		return sdk.ZeroDec(), err
 	}
@@ -147,4 +147,14 @@ func (qos *QualityOfServiceReport) Validate() error {
 	}
 
 	return nil
+}
+
+func (qos *QualityOfServiceReport) ComputeQoS() (sdk.Dec, error) {
+	if qos.Availability.GT(sdk.OneDec()) || qos.Availability.LT(sdk.ZeroDec()) ||
+		qos.Latency.GT(sdk.OneDec()) || qos.Latency.LT(sdk.ZeroDec()) ||
+		qos.Sync.GT(sdk.OneDec()) || qos.Sync.LT(sdk.ZeroDec()) {
+		return sdk.ZeroDec(), fmt.Errorf("QoS scores is not between 0-1")
+	}
+
+	return qos.Availability.Mul(qos.Sync).Mul(qos.Latency).ApproxRoot(3)
 }
