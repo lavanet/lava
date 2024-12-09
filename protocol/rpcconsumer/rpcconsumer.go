@@ -129,6 +129,7 @@ type rpcConsumerStartOptions struct {
 	stateShare               bool
 	refererData              *chainlib.RefererData
 	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
+	geoLocation              uint64
 }
 
 func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
@@ -174,8 +175,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress) // start up relay server reporting
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                                         // start up optimizer qos client
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
 		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
@@ -716,6 +717,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				rpcConsumerSharedState,
 				refererData,
 				staticProviderEndpoints,
+				geolocation,
 			})
 			return err
 		},
