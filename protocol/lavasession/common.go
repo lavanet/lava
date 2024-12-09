@@ -180,7 +180,7 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 }
 
 func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geolocation) {
-	latencyToGeo := func(a, b planstypes.Geolocation) uint64 {
+	latencyToGeo := func(a, b planstypes.Geolocation) int64 {
 		_, latency := scores.CalcGeoLatency(a, []planstypes.Geolocation{b})
 		return latency
 	}

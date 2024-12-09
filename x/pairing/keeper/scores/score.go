@@ -148,22 +148,20 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot P
 			}
 
 			newScoreComp := req.Score(*score)
-			if newScoreComp == math.ZeroUint() {
+			if newScoreComp == math.LegacyZeroDec() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreCompDec := sdk.NewDecFromInt(math.Int(newScoreComp))
-			newScoreCompDec = newScoreCompDec.Power(weight)
-			newScoreComp = math.Uint(newScoreCompDec.TruncateInt())
+			newScoreComp = newScoreComp.Power(weight)
 
 			// update the score component map
 			score.ScoreComponents[reqName] = newScoreComp
 		}
 
 		// calc new score
-		newScore := math.OneUint()
+		newScore := math.LegacyOneDec()
 		for _, scoreComp := range score.ScoreComponents {
 			newScore = newScore.Mul(scoreComp)
 		}
@@ -200,8 +198,8 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, 
 			groupIndex = -1
 			effectiveScore = totalScore
 		}
-		randomValue := uint64(rng.Int63n(effectiveScore.BigInt().Int64())) + 1
-		newScoreSum := math.ZeroUint()
+		randomValue := rng.Int63n(effectiveScore.RoundInt64()) + 1
+		newScoreSum := math.LegacyZeroDec()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if !scores[idx].IsValidForSelection(groupIndex) {
@@ -210,7 +208,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, 
 			}
 			providerScore := scores[idx]
 			newScoreSum = newScoreSum.Add(providerScore.Score)
-			if randomValue <= newScoreSum.Uint64() {
+			if randomValue <= newScoreSum.RoundInt64() {
 				// we hit our chosen provider
 				// remove this provider from the random pool, so the sum is lower now
 
@@ -228,27 +226,27 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, 
 // the negative score modifiers contain the total stake of providers that are not allowed
 // so if a provider is not allowed in slot X, it will be added to the total score but will have slotIndexScore[X]+= providerStake
 // and during the selection of slot X we will have the selection effective sum as: totalScore - slotIndexScore[X], and that provider that is not allowed can't be selected
-func CalculateTotalScoresForGroup(scores []*PairingScore, groupIndexes []int) (totalScore math.Uint, slotIndexScore map[int]math.Uint, err error) {
+func CalculateTotalScoresForGroup(scores []*PairingScore, groupIndexes []int) (totalScore math.LegacyDec, slotIndexScore map[int]math.LegacyDec, err error) {
 	if len(scores) == 0 {
-		return math.ZeroUint(), nil, fmt.Errorf("invalid scores length")
+		return math.LegacyZeroDec(), nil, fmt.Errorf("invalid scores length")
 	}
-	totalScore = math.ZeroUint()
-	slotIndexScore = map[int]math.Uint{}
+	totalScore = math.LegacyZeroDec()
+	slotIndexScore = map[int]math.LegacyDec{}
 	for _, groupIndex := range groupIndexes {
-		slotIndexScore[groupIndex] = math.ZeroUint()
+		slotIndexScore[groupIndex] = math.LegacyZeroDec()
 	}
 	// all all providers to selection possibilities
 	for _, providerScore := range scores {
 		totalScore, slotIndexScore = AddProviderToSelection(providerScore, groupIndexes, totalScore, slotIndexScore)
 	}
 
-	if totalScore == math.ZeroUint() {
-		return math.ZeroUint(), nil, utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
+	if totalScore == math.LegacyZeroDec() {
+		return math.LegacyZeroDec(), nil, utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 	}
 	return totalScore, slotIndexScore, nil
 }
 
-func AddProviderToSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.Uint, slotIndexScore map[int]math.Uint) (math.Uint, map[int]math.Uint) {
+func AddProviderToSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.LegacyDec, slotIndexScore map[int]math.LegacyDec) (math.LegacyDec, map[int]math.LegacyDec) {
 	if providerScore.SkipForSelection {
 		return totalScore, slotIndexScore
 	}
@@ -260,7 +258,7 @@ func AddProviderToSelection(providerScore *PairingScore, groupIndexes []int, tot
 	return totalScore, slotIndexScore
 }
 
-func RemoveProviderFromSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.Uint, slotIndexScore map[int]math.Uint) (math.Uint, map[int]math.Uint) {
+func RemoveProviderFromSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.LegacyDec, slotIndexScore map[int]math.LegacyDec) (math.LegacyDec, map[int]math.LegacyDec) {
 	// remove this provider from the total score
 	totalScore = totalScore.Sub(providerScore.Score)
 	// remove this provider for the subtraction scores as well
