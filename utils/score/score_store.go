@@ -299,6 +299,7 @@ const (
 	LatencyScoreType      = "latency"
 	SyncScoreType         = "sync"
 	AvailabilityScoreType = "availability"
+	TotalScoreType        = "total"
 
 	// Worst score results for each QoS excellence metric for truncation
 	WorstLatencyScore      float64 = 30        // seconds
