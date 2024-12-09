@@ -1,9 +1,12 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -25,74 +28,77 @@ func (k Keeper) Hooks() *Hooks {
 }
 
 // initialize validator distribution record
-func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
+func (h Hooks) AfterValidatorCreated(ctx context.Context, valAddr sdk.ValAddress) error {
 	return nil
 }
 
 // AfterValidatorRemoved performs clean up after a validator is removed
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	return nil
 }
 
 // increment period
-func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationCreated(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
 	return nil
 }
 
 // withdraw delegation rewards (which also increments period)
-func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationSharesModified(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
 	return nil
 }
 
 // create new delegation period record
 // add description
-func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	originalGasMeter := ctx.GasMeter()
-	ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+func (h Hooks) AfterDelegationModified(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	originalGasMeter := sdkCtx.GasMeter()
+	sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 	providers := 0
 	defer func() {
-		consumedGas := ctx.GasMeter().GasConsumed()
-		ctx = ctx.WithGasMeter(originalGasMeter)
+		consumedGas := sdkCtx.GasMeter().GasConsumed()
+		sdkCtx = sdkCtx.WithGasMeter(originalGasMeter)
 		if providers >= PROVIDERS_NUM_GAS_REFUND {
-			ctx.GasMeter().ConsumeGas(consumedGas, "consume hooks gas")
+			sdkCtx.GasMeter().ConsumeGas(consumedGas, "consume hooks gas")
 		}
 	}()
 
-	if h.k.GetDisableDualstakingHook(ctx) {
+	if h.k.GetDisableDualstakingHook(sdkCtx) {
 		return nil
 	}
 
 	var err error
-	providers, err = h.k.BalanceDelegator(ctx, delAddr)
+	providers, err = h.k.BalanceDelegator(sdkCtx, delAddr)
 	return err
 }
 
-func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) error {
-	slashedValidators := h.k.GetSlashedValidators(ctx)
+func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction math.LegacyDec) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	slashedValidators := h.k.GetSlashedValidators(sdkCtx)
 	slashedValidators = append(slashedValidators, valAddr.String())
-	h.k.SetSlashedValidators(ctx, slashedValidators)
+	h.k.SetSlashedValidators(sdkCtx, slashedValidators)
 	return nil
 }
 
-func (h Hooks) BeforeValidatorModified(_ sdk.Context, _ sdk.ValAddress) error {
+func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBonded(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBonded(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBeginUnbonding(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	if h.k.GetDisableDualstakingHook(ctx) {
+func (h Hooks) BeforeDelegationRemoved(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if h.k.GetDisableDualstakingHook(sdkCtx) {
 		return nil
 	}
 
-	delegation, found := h.k.stakingKeeper.GetDelegation(ctx, delAddr, valAddr)
-	if !found {
+	delegation, err := h.k.stakingKeeper.GetDelegation(ctx, delAddr, valAddr)
+	if err != nil {
 		return fmt.Errorf("could not find delegation for dualstaking hook")
 	}
 	validator, err := h.k.stakingKeeper.GetDelegatorValidator(ctx, delAddr, valAddr)
@@ -103,7 +109,7 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 		)
 	}
 	amount := validator.TokensFromSharesRoundUp(delegation.Shares).Ceil().TruncateInt()
-	err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), amount))
+	err = h.k.UnbondUniformProviders(sdkCtx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), amount))
 	if err != nil {
 		return utils.LavaFormatError("delegation removed hook failed", err,
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
@@ -115,7 +121,7 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 	return nil
 }
 
-func (h Hooks) AfterUnbondingInitiated(_ sdk.Context, _ uint64) error {
+func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
 	return nil
 }
 

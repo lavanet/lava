@@ -1,7 +1,8 @@
 package timerstore
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
+	"context"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -59,15 +60,17 @@ type AppModule struct {
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-func (a AppModule) BeginBlock(context sdk.Context, _ abci.RequestBeginBlock) {
-	a.k.BeginBlock(context)
+func (a AppModule) BeginBlock(context context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(context)
+	a.k.BeginBlock(sdkCtx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
-func (a AppModule) EndBlock(context sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	a.k.EndBlock(context)
-	return []abci.ValidatorUpdate{}
+func (a AppModule) EndBlock(context context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(context)
+	a.k.EndBlock(sdkCtx)
+	return nil
 }
 
 // RegisterServices registers a GRPC query service to respond to the
@@ -75,3 +78,9 @@ func (a AppModule) EndBlock(context sdk.Context, _ abci.RequestEndBlock) []abci.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.k)
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}

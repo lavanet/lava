@@ -4,7 +4,6 @@ import (
 	context "context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
@@ -43,7 +42,7 @@ type SpecKeeper interface {
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
 type AccountKeeper interface {
-	GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	// Methods imported from account should be defined here
 }
 
@@ -54,5 +53,5 @@ type BankKeeper interface {
 }
 
 type StakingKeeper interface {
-	BondDenom(ctx sdk.Context) string
+	BondDenom(ctx context.Context) (string, error)
 }

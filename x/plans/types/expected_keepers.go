@@ -1,6 +1,8 @@
 package types
 
 import (
+	context "context"
+
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -21,5 +23,5 @@ type FixationStoreKeeper interface {
 }
 
 type StakingKeeper interface {
-	BondDenom(ctx sdk.Context) string
+	BondDenom(ctx context.Context) (string, error)
 }

@@ -101,6 +101,13 @@ func (a AppModule) RegisterServices(configurator module.Configurator) {
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-func (a AppModule) BeginBlock(context sdk.Context, _ abci.RequestBeginBlock) {
-	a.k.BeginBlock(context)
+func (a AppModule) BeginBlock(context context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(context)
+	a.k.BeginBlock(sdkCtx)
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
