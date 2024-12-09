@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
@@ -220,7 +221,11 @@ type TestStruct struct {
 }
 
 func (ts *TestStruct) BondDenom() string {
-	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+	denom, err := ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+	if err != nil {
+		panic(err)
+	}
+	return denom
 }
 
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
@@ -235,10 +240,10 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(ts.Validator.Addr),
 		ts.Validator.PubKey,
-		sdk.NewCoin(ts.BondDenom(), sdk.NewIntFromUint64(uint64(balance))),
+		sdk.NewCoin(ts.BondDenom(), math.NewIntFromUint64(uint64(balance))),
 		stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
-		sdk.ZeroInt(),
+		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1)),
+		math.ZeroInt(),
 	)
 	require.NoError(t, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.Ctx, msg)

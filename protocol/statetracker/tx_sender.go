@@ -12,6 +12,7 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/feegrant"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -50,7 +51,7 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 
 func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasUsed uint64, txFactory tx.Factory) error {
 	txEvents := simResult.GetResult().Events
-	lavaReward := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(0))
+	lavaReward := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(0))
 	for _, txEvent := range txEvents {
 		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {

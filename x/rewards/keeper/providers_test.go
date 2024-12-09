@@ -74,7 +74,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
-	expectedReward, _, _ := ts.DeductParticipationFees(sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU))
+	expectedReward, _, _ := ts.DeductParticipationFees(math.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU))
 	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String())
 	require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.AmountOf(ts.BondDenom()), sdk.NewIntFromUint64(baserewards*subscription.LIMIT_TOKEN_PER_CU))
+	require.Equal(t, res.Rewards[0].Amount.AmountOf(ts.BondDenom()), math.NewIntFromUint64(baserewards*subscription.LIMIT_TOKEN_PER_CU))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -179,7 +179,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 
-	require.Equal(t, sdk.NewDecWithPrec(15, 1).MulInt(distBalance).Sub(sdk.NewDecWithPrec(5, 1).MulInt(ts.plan.Price.Amount.MulRaw(7))).TruncateInt().QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
+	require.Equal(t, math.LegacyNewDecWithPrec(15, 1).MulInt(distBalance).Sub(math.LegacyNewDecWithPrec(5, 1).MulInt(ts.plan.Price.Amount.MulRaw(7))).TruncateInt().QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -464,12 +464,12 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	// communityTax = 50%
 	// validatorsSubscriptionParticipation = 10%
 	distParams := distributiontypes.DefaultParams()
-	distParams.CommunityTax = sdk.NewDecWithPrec(5, 1) // 0.5
+	distParams.CommunityTax = math.LegacyNewDecWithPrec(5, 1) // 0.5
 	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
 	require.NoError(t, err)
 
 	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
-	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	newDecParam, err := math.LegacyNewDecWithPrec(1, 1).MarshalJSON() // 0.1
 	require.Nil(ts.T, err)
 	paramVal := string(newDecParam)
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
@@ -497,7 +497,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
+	expectedReward := math.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
@@ -708,12 +708,12 @@ func TestCommunityTaxOne(t *testing.T) {
 	// communityTax = 100%
 	// validatorsSubscriptionParticipation = 10%
 	distParams := distributiontypes.DefaultParams()
-	distParams.CommunityTax = sdk.OneDec()
+	distParams.CommunityTax = math.LegacyOneDec()
 	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
 	require.NoError(t, err)
 
 	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
-	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	newDecParam, err := math.LegacyNewDecWithPrec(1, 1).MarshalJSON() // 0.1
 	require.Nil(ts.T, err)
 	paramVal := string(newDecParam)
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
@@ -741,7 +741,7 @@ func TestCommunityTaxOne(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
+	expectedReward := math.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 0)
@@ -789,7 +789,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 			if tt.mode == Delegator {
 				// delegate to the provider
 				// advance ctx by a month and a day to make the delegation count
-				_, err := ts.TxDualstakingDelegate(consumer, provider, sdk.NewInt64Coin(ts.TokenDenom(), testStake/2))
+				_, err := ts.TxDualstakingDelegate(consumer, provider, math.NewInt64Coin(ts.TokenDenom(), testStake/2))
 				require.NoError(t, err)
 				ts.AdvanceMonths(1)
 			}
@@ -817,17 +817,17 @@ func TestEstimateRewardsQuery(t *testing.T) {
 
 			// subscription expected rewards (for two specs)
 			if tt.mode == Delegation {
-				trackedCuFactor := sdk.OneDec().Add(sdk.NewDec(testStake / 2).QuoInt64(tt.denom))
+				trackedCuFactor := math.LegacyOneDec().Add(sdk.NewDec(testStake / 2).QuoInt64(tt.denom))
 				cu = trackedCuFactor.MulInt64(cu).TruncateInt64()
 			}
-			expectedSubSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedSubSpec0 := math.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 			expectedSubSpec0AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec0)
-			expectedSubSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedSubSpec1 := math.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 			expectedSubSpec1AfterTax, _, _ := ts.DeductParticipationFees(expectedSubSpec1)
 
 			// providers bonus expected rewards (basic bonus of single provider are the same as sub rewards but without tax)
-			expectedBonusSpec0 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
-			expectedBonusSpec1 := sdk.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedBonusSpec0 := math.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
+			expectedBonusSpec1 := math.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)
 
 			// iprpc expected rewards
 			expectedIprpc := iprpcFunds.AmountOf(ts.BondDenom()).Sub(minIprpcCost.Amount)
@@ -864,7 +864,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 				require.Empty(t, info)
 			} else {
 				// run the estimated rewards query for delegation simulation (should not have info, it's only for providers)
-				delegation := sdk.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
+				delegation := math.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
 				total, info := ts.EstimateProviderRewards(provider, delegation)
 
 				// expectedTotal = trackedCuFactor.MulInt(expectedTotal).TruncateInt()

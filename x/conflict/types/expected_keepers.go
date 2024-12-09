@@ -3,6 +3,7 @@ package types
 import (
 	context "context"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
@@ -16,7 +17,7 @@ type PairingKeeper interface {
 	VerifyPairingData(ctx sdk.Context, chainID string, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error)
 	JailEntry(ctx sdk.Context, address string, chainID string, jailStartBlock, jailBlocks uint64, bail sdk.Coin) error
 	BailEntry(ctx sdk.Context, address string, chainID string, bail sdk.Coin) error
-	SlashEntry(ctx sdk.Context, address string, chainID string, percentage sdk.Dec) (sdk.Coin, error)
+	SlashEntry(ctx sdk.Context, address string, chainID string, percentage math.LegacyDec) (sdk.Coin, error)
 	GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error)
 	ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU uint64, pairedProviders []epochstoragetypes.StakeEntry, errorRet error)
 }

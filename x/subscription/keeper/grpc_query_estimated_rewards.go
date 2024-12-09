@@ -33,7 +33,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 
 	// parse the delegator/delegation optional argument (delegate if needed)
 	delegator := req.AmountDelegator
-	trackedCuFactor := sdk.ZeroDec()
+	trackedCuFactor := math.LegacyZeroDec()
 	if req.AmountDelegator != "" {
 		details = append(details, utils.LogAttr("delegator_amount", req.AmountDelegator))
 		delegation, err := sdk.ParseCoinNormalized(req.AmountDelegator)
@@ -51,7 +51,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get delegator", err, details...)
 			}
 
-			totalDelegations := sdk.ZeroInt()
+			totalDelegations := math.ZeroInt()
 			md, err := k.epochstorageKeeper.GetMetadata(ctx, req.Provider)
 			if err != nil {
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get provider metadata", err, details...)
@@ -192,9 +192,9 @@ func (k Keeper) getClaimableRewards(ctx sdk.Context, provider string, delegator 
 
 // getRewardsInfoFromEvents build the estimated reward info array by checking events details
 // it also returns the total reward amount for validation
-func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (infos []types.EstimatedRewardInfo, total sdk.DecCoins) {
+func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (infos []types.EstimatedRewardInfo, total math.LegacyDecCoins) {
 	events := ctx.EventManager().ABCIEvents()
-	rewardsInfo := map[string]sdk.DecCoins{}
+	rewardsInfo := map[string]math.LegacyDecCoins{}
 
 	for _, event := range events {
 		// get reward info from event (!ok == event not relevant)
@@ -237,7 +237,7 @@ func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (info
 // it builds the "source" string that is required for the estimated rewards info. Also it returns the
 // rewards amount of the provider for a specific payment type and a specific chain
 // if it returns ok == false, the event is not relevant and can be skipped
-func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo map[string]math.LegacyDecCoins, ok bool) {
 	subEventName := utils.EventPrefix + types.SubscriptionPayoutEventName
 	boostEventName := utils.EventPrefix + rewardstypes.ProvidersBonusRewardsEventName
 	iprpcEventName := utils.EventPrefix + rewardstypes.IprpcPoolEmissionEventName
@@ -258,8 +258,8 @@ func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo 
 // extractInfoFromSubscriptionEvent extract a map of source string keys (source = "Subscription: <chain_id>")
 // that hold rewards amount. The subscription payout event holds multiple keys of each reward for each chain ID.
 // All of the rewards keys are prefixed with provider addresses
-func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
-	eventRewardsInfo = map[string]sdk.DecCoins{}
+func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventRewardsInfo map[string]math.LegacyDecCoins, ok bool) {
+	eventRewardsInfo = map[string]math.LegacyDecCoins{}
 
 	for _, atr := range event.Attributes {
 		if strings.HasPrefix(atr.Key, provider) {
@@ -319,13 +319,13 @@ func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventR
 
 // extractInfoFromIprpcEvent extract a map of source string keys that hold rewards amount from
 // a boost payout event
-func extractInfoFromBoostEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+func extractInfoFromBoostEvent(event abci.Event, provider string) (eventRewardsInfo map[string]math.LegacyDecCoins, ok bool) {
 	return extractInfoFromIprpcAndBoostEvent(event, provider, "Boost: ")
 }
 
 // extractInfoFromIprpcEvent extract a map of source string keys that hold rewards amount from
 // an IPRPC payout event
-func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsInfo map[string]math.LegacyDecCoins, ok bool) {
 	return extractInfoFromIprpcAndBoostEvent(event, provider, "Pools: ")
 }
 
@@ -334,9 +334,9 @@ func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsI
 // All keys are prefixed with provider addresses. Since the events are emitted per chain ID,
 // we expect a single reward key for a specific provider. Also, the reward string in the event
 // is of type sdk.Coins.
-func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, sourcePrefix string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
+func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, sourcePrefix string) (eventRewardsInfo map[string]math.LegacyDecCoins, ok bool) {
 	var rewardStr, chainID string
-	eventRewardsInfo = map[string]sdk.DecCoins{}
+	eventRewardsInfo = map[string]math.LegacyDecCoins{}
 
 	for _, atr := range event.Attributes {
 		if strings.HasPrefix(atr.Key, provider) {

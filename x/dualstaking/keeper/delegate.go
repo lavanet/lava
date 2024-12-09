@@ -105,7 +105,7 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	}
 
 	// get all entries
-	TotalSelfDelegation := sdk.ZeroInt()
+	TotalSelfDelegation := math.ZeroInt()
 	entries := []*epochstoragetypes.StakeEntry{}
 	for _, chain := range metadata.Chains {
 		entry, found := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chain, provider)
@@ -417,7 +417,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		if delegations[i].Amount.Amount.LT(amountToDeduct) {
 			unbondAmount[delegations[i].Provider] = delegations[i].Amount
 			amount = amount.Sub(delegations[i].Amount)
-			delegations[i].Amount.Amount = sdk.ZeroInt()
+			delegations[i].Amount.Amount = math.ZeroInt()
 		} else {
 			coinToDeduct := sdk.NewCoin(delegations[i].Amount.Denom, amountToDeduct)
 			unbondAmount[delegations[i].Provider] = coinToDeduct
@@ -460,7 +460,7 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 		return math.ZeroInt(), 0, err
 	}
 
-	sumProviderDelegations := sdk.ZeroInt()
+	sumProviderDelegations := math.ZeroInt()
 	for _, p := range providers {
 		d, found := k.GetDelegation(ctx, p, delAddr.String())
 		if found {
@@ -468,7 +468,7 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 		}
 	}
 
-	sumValidatorDelegations := sdk.ZeroInt()
+	sumValidatorDelegations := math.ZeroInt()
 	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
 	for _, d := range delegations {
 		v, found := k.stakingKeeper.GetValidator(ctx, d.GetValidatorAddr())

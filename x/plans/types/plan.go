@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	sdkerrors "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 )
 
 // Function to validate a plan object fields
@@ -55,7 +55,7 @@ func (p Plan) ValidatePlan() error {
 
 // PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type math.Int)
 func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-	if t == reflect.TypeOf(sdk.NewInt(0)) {
+	if t == reflect.TypeOf(math.NewInt(0)) {
 		amountStr, ok := data.(string)
 		if !ok {
 			return nil, fmt.Errorf("unexpected data type for amount field")
@@ -66,7 +66,7 @@ func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (inte
 		if !ok {
 			return nil, fmt.Errorf("failed to convert amount to math.Int")
 		}
-		return sdk.NewIntFromBigInt(amount), nil
+		return math.NewIntFromBigInt(amount), nil
 	}
 
 	return data, nil

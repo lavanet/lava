@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/v4/app"
 	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
@@ -84,13 +83,7 @@ func main() {
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		switch e := err.(type) {
-		case server.ErrorCode:
-			os.Exit(e.Code)
-
-		default:
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 }
 

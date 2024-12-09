@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v4/utils"
@@ -62,7 +63,7 @@ type UsedProvidersInf interface {
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	StakeSize         sdk.Coin
-	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
+	QoSSummeryResult  math.LegacyDec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
@@ -88,7 +89,7 @@ type QoSReport struct {
 	LastQoSReport              *pairingtypes.QualityOfServiceReport
 	LastExcellenceQoSReport    *pairingtypes.QualityOfServiceReport
 	LastExcellenceQoSReportRaw *pairingtypes.QualityOfServiceReport
-	LatencyScoreList           []sdk.Dec
+	LatencyScoreList           []math.LegacyDec
 	SyncScoreSum               int64
 	TotalSyncScore             int64
 	TotalRelays                uint64
@@ -593,9 +594,9 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	return connected, endpointsList, cswp.PublicLavaAddress, nil
 }
 
-func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {
-	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
-	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet math.LegacyDec) {
+	downtimePercentage := math.LegacyNewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(math.LegacyNewDecWithPrec(int64(qosReport.TotalRelays), 0))
+	scaledAvailabilityScore := sdk.MaxDec(math.LegacyZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	return downtimePercentage, scaledAvailabilityScore
 }
 

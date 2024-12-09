@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
 	tmdb "github.com/cometbft/cometbft-db"
@@ -64,7 +65,7 @@ func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.NewCoin("utest", sdk.NewInt(int64(i+1))))
+		coins = append(coins, sdk.NewCoin("utest", math.NewInt(int64(i+1))))
 	}
 
 	for _, play := range playbook {

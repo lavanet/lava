@@ -156,7 +156,7 @@ func TestFundIprpcTX(t *testing.T) {
 func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // setup funds IPRPC for mock2 spec
-	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
 
 	// get consumers and providers (note, only c1 is IPRPC eligible)
 	c1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -190,10 +190,10 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 		provider string
 		fund     sdk.Coins
 	}
-	tax := sdk.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
+	tax := math.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
 	expectedProviderRewards := []providerRewards{
-		{provider: p1, fund: iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))},
-		{provider: p2, fund: iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(4)).QuoInt(sdk.NewInt(5))},
+		{provider: p1, fund: iprpcFunds.Sub(minIprpcCost).QuoInt(math.NewInt(5))},
+		{provider: p2, fund: iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(4)).QuoInt(math.NewInt(5))},
 	}
 	for _, expectedProviderReward := range expectedProviderRewards {
 		res, err := ts.QueryRewardsIprpcProviderRewardEstimation(expectedProviderReward.provider)
@@ -209,7 +209,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	for i, expectedProviderReward := range expectedProviderRewards {
 		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].GetVaultAddr(), expectedProviderReward.provider, ts.specs[1].Index)
 		require.NoError(t, err)
-		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund.MulInt(tax).QuoInt(sdk.NewInt(100)))) // taking 0 index because there are no delegators
+		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund.MulInt(tax).QuoInt(math.NewInt(100)))) // taking 0 index because there are no delegators
 	}
 }
 
@@ -256,36 +256,36 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	// second + third month: mock2 - 2000ulava, mockspec - 100000ulava
 	duration := int64(3)
 	_, err := ts.TxRewardsFundIprpc(consumer, ts.specs[0].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000).Add(minIprpcCost.Amount))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	_, err = ts.TxRewardsFundIprpc(consumer, ts.specs[1].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000).Add(minIprpcCost.Amount))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(2000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	expectedResults := []rewardstypes.IprpcReward{
 		{
 			Id: 1, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
-					sdk.NewCoin(ts.BondDenom(), sdk.NewInt(1000)))},
+				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ibcDenom, math.NewInt(500)),
+					sdk.NewCoin(ts.BondDenom(), math.NewInt(1000)))},
 			},
 		},
 		{
 			Id: 2, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
-				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
+				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(2000)))},
 			},
 		},
 		{
 			Id: 3, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
-				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
+				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(2000)))},
 			},
 		},
 		{
 			Id: 4, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
-				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
+				{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(2000)))},
 			},
 		},
 	}
@@ -299,17 +299,17 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	mockspecExpectedResults := []rewardstypes.IprpcReward{
 		{
 			Id: 2, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
 			},
 		},
 		{
 			Id: 3, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
 			},
 		},
 		{
 			Id: 4, SpecFunds: []rewardstypes.Specfund{
-				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
+				{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
 			},
 		},
 	}
@@ -324,10 +324,10 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 
 	afterMonthExpectedResults := expectedResults[1:]
 	afterMonthExpectedResults[0].SpecFunds = []rewardstypes.Specfund{
-		{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000)))},
+		{Spec: ts.specs[0].Index, Fund: sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), math.NewInt(100000)))},
 		{Spec: ts.specs[1].Index, Fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), sdk.NewInt(3000)),
-			sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(3000)),
+			sdk.NewCoin(ibcDenom, math.NewInt(500)),
 		)},
 	}
 	res, err = ts.QueryRewardsIprpcSpecReward("")
@@ -412,7 +412,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 1)
 	require.Equal(t, uint64(2), res.CurrentMonthId)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
 
 	// make a provider service an IPRPC eligible consumer and advance a month
 	// there should be no iprpc rewards objects
@@ -436,9 +436,9 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 func TestFundIprpcTwice(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
-	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
-	validatorTax := sdk.NewInt(10)
-	tax := sdk.NewInt(100).Sub(validatorTax).SubRaw(45) // tax is 10% validators and 45% community
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
+	validatorTax := math.NewInt(10)
+	tax := math.NewInt(100).Sub(validatorTax).SubRaw(45) // tax is 10% validators and 45% community
 
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
 	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
@@ -466,9 +466,9 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first funding (=iprpcFunds)
 	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(math.NewInt(100)).IsEqual(res.Rewards[0].Amount))
 
-	taxed := iprpcFunds.Sub(minIprpcCost).MulInt(validatorTax).QuoInt(sdk.NewInt(100))
+	taxed := iprpcFunds.Sub(minIprpcCost).MulInt(validatorTax).QuoInt(math.NewInt(100))
 	validatorDistributionPoolTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.ValidatorsRewardsDistributionPoolName)
 	require.Equal(t, validatorDistributionPoolTokens.AmountOf(ibcDenom), taxed.AmountOf(ibcDenom))
 
@@ -482,7 +482,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first + second funding (=iprpcFunds*3)
 	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(math.NewInt(100)).IsEqual(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
@@ -495,7 +495,7 @@ func TestIprpcMinCost(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, sdk.NewCoins(sdk.NewCoin(ibcDenom, sdk.NewInt(500))))
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, sdk.NewCoins(sdk.NewCoin(ibcDenom, math.NewInt(500))))
 
 	_, poorConsumer := ts.AddAccount(common.CONSUMER, 1, minIprpcCost.Amount.Int64()-10)
 
@@ -508,13 +508,13 @@ func TestIprpcMinCost(t *testing.T) {
 		{
 			name:    "Happy flow - creator with enough funds and above min iprpc cost",
 			creator: consumer,
-			fund:    sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))),
+			fund:    sdk.NewCoins(minIprpcCost.AddAmount(math.NewInt(10))),
 			success: true,
 		},
 		{
 			name:    "fund without min iprpc cost",
 			creator: consumer,
-			fund:    sdk.NewCoins(minIprpcCost.SubAmount(sdk.NewInt(10))),
+			fund:    sdk.NewCoins(minIprpcCost.SubAmount(math.NewInt(10))),
 			success: false,
 		},
 		{
@@ -526,7 +526,7 @@ func TestIprpcMinCost(t *testing.T) {
 		{
 			name:    "insufficient balance for fund",
 			creator: poorConsumer,
-			fund:    sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))),
+			fund:    sdk.NewCoins(minIprpcCost.AddAmount(math.NewInt(10))),
 			success: false,
 		},
 	}
@@ -588,10 +588,10 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 		res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
 		require.NoError(t, err)
 		require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
-		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(math.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
 
 		// fund the pool again (advance month to apply)
-		_, err = ts.TxRewardsFundIprpc(c1Acc.Addr.String(), mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))))
+		_, err = ts.TxRewardsFundIprpc(c1Acc.Addr.String(), mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(math.NewInt(10))))
 		require.NoError(ts.T, err)
 		ts.AdvanceMonths(1).AdvanceEpoch()
 
@@ -648,13 +648,13 @@ func TestMultipleIprpcSpec(t *testing.T) {
 
 	// fund iprpc pool for mock2 spec for 1 months
 	duration := uint64(1)
-	mock2Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(1700))
+	mock2Fund := sdk.NewCoin(ts.BondDenom(), math.NewInt(1700))
 	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, duration, sdk.NewCoins(mock2Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
 	// fund iprpc pool for mock3 spec for 3 months
 	duration = uint64(3)
-	mock3Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(400))
+	mock3Fund := sdk.NewCoin(ts.BondDenom(), math.NewInt(400))
 	_, err = ts.TxRewardsFundIprpc(c1, mockSpec3, duration, sdk.NewCoins(mock3Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
@@ -695,10 +695,10 @@ func TestMultipleIprpcSpec(t *testing.T) {
 		for _, sf := range res.SpecFunds {
 			switch sf.Spec {
 			case mockSpec2:
-				expectedReward := sdk.NewCoins(mock2Fund).QuoInt(sdk.NewInt(2))
+				expectedReward := sdk.NewCoins(mock2Fund).QuoInt(math.NewInt(2))
 				require.True(t, expectedReward.IsEqual(sf.Fund))
 			case mockSpec3:
-				expectedReward := sdk.NewCoins(mock3Fund).QuoInt(sdk.NewInt(2))
+				expectedReward := sdk.NewCoins(mock3Fund).QuoInt(math.NewInt(2))
 				require.True(t, expectedReward.IsEqual(sf.Fund))
 			}
 		}
@@ -720,7 +720,7 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 
 	// make community participation percentage to be 100% to make the provider not get rewarded for its service later
 	distParams := distributiontypes.DefaultParams()
-	distParams.CommunityTax = sdk.OneDec()
+	distParams.CommunityTax = math.LegacyOneDec()
 	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
 	require.NoError(t, err)
 

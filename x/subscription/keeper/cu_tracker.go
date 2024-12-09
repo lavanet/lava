@@ -165,8 +165,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	block := trackedCuList[0].Block
 
 	totalTokenAmount := timerData.Credit.Amount
-	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
-		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
+	if totalTokenAmount.Quo(math.NewIntFromUint64(totalCuTracked)).GT(math.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
+		totalTokenAmount = math.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
 	// get the adjustment factor, and delete the entries
@@ -176,7 +176,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	details := map[string]string{}
 
-	totalTokenRewarded := sdk.ZeroInt()
+	totalTokenRewarded := math.ZeroInt()
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.TrackedCu
 		provider := trackedCuInfo.Provider
@@ -204,7 +204,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				)
 				return
 			}
-			providerAdjustment = sdk.OneDec().Quo(sdk.NewDecFromInt(sdk.NewIntFromUint64(maxRewardBoost)))
+			providerAdjustment = math.LegacyOneDec().Quo(sdk.NewDecFromInt(math.NewIntFromUint64(maxRewardBoost)))
 		}
 
 		// calculate the provider reward (smaller than totalMonthlyReward
@@ -259,7 +259,7 @@ func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, tr
 		return math.ZeroInt()
 	}
 
-	totalMonthlyReward := totalAmount.Mul(sdk.NewIntFromUint64(trackedCu)).Quo(sdk.NewIntFromUint64(totalCuUsedBySub))
+	totalMonthlyReward := totalAmount.Mul(math.NewIntFromUint64(trackedCu)).Quo(math.NewIntFromUint64(totalCuUsedBySub))
 	return totalMonthlyReward
 }
 

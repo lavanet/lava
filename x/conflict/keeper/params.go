@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/conflict/types"
 )
@@ -21,7 +22,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // MajorityPercent returns the MajorityPercent param
-func (k Keeper) MajorityPercent(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) MajorityPercent(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyMajorityPercent, &res)
 	return
 }

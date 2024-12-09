@@ -31,12 +31,12 @@ func newTester(t *testing.T) *tester {
 
 	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
 		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
-		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.ZeroInt())))
 	require.Nil(ts.T, err)
 
 	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
 		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
-		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.ZeroInt())))
 	require.Nil(ts.T, err)
 
 	ts.DisableParticipationFees()
@@ -127,12 +127,12 @@ func (ts *tester) addProviderExtra(
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
 	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
 		testutil.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
-		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.ZeroInt())))
 	require.Nil(ts.T, err)
 
 	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
 		testutil.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
-		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.ZeroInt())))
 	require.Nil(ts.T, err)
 
 	ts.addValidators(1)
@@ -198,7 +198,7 @@ func (ts *tester) payAndVerifyBalance(
 	var totalPaid uint64
 
 	qosWeight := ts.Keepers.Pairing.QoSWeight(ts.Ctx)
-	qosWeightComplement := sdk.OneDec().Sub(qosWeight)
+	qosWeightComplement := math.LegacyOneDec().Sub(qosWeight)
 
 	for _, relay := range relayPayment.Relays {
 		cuUsed := relay.CuSum
@@ -237,7 +237,7 @@ func (ts *tester) payAndVerifyBalance(
 
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
-	want := sdk.ZeroInt()
+	want := math.ZeroInt()
 	if totalCuUsed != 0 {
 		want = credit.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}

@@ -619,9 +619,9 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	return ret, rawQosReport
 }
 
-func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {
+func turnFloatToDec(floatNum float64, precision int64) math.LegacyDec {
 	integerNum := int64(math.Round(floatNum * math.Pow(10, float64(precision))))
-	return sdk.NewDecWithPrec(integerNum, precision)
+	return math.LegacyNewDecWithPrec(integerNum, precision)
 }
 
 func (po *ProviderOptimizer) Strategy() Strategy {

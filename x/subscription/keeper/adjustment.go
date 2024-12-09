@@ -159,7 +159,7 @@ func (k Keeper) RemoveConsumerAdjustments(ctx sdk.Context, consumer string) {
 	}
 }
 
-func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types.Adjustment) map[string]sdk.Dec {
+func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types.Adjustment) map[string]math.LegacyDec {
 	type usage struct {
 		total    int64
 		adjusted int64
@@ -179,7 +179,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 		providers = append(providers, provider)
 	}
 
-	providerAdjustment := map[string]sdk.Dec{}
+	providerAdjustment := map[string]math.LegacyDec{}
 	// we use providers list to iterate deterministically
 	for _, provider := range providers {
 		if _, ok := providerAdjustment[provider]; !ok {

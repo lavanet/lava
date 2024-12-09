@@ -34,7 +34,7 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	}
 
 	// send the minimum cost to the validators allocation pool (and subtract them from the fund)
-	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(sdk.NewIntFromUint64(duration))
+	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(math.NewIntFromUint64(duration))
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.ValidatorsRewardsAllocationPoolName), minIprpcFundCostCoins)
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool", err,
@@ -174,7 +174,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
+			providerIprpcReward := specFund.Fund.MulInt(math.NewIntFromUint64(providerCU.CU)).QuoInt(math.NewIntFromUint64(specCu.TotalCu))
 
 			UsedRewardTemp := UsedReward.Add(providerIprpcReward...)
 			if UsedReward.IsAnyGT(specFund.Fund) {

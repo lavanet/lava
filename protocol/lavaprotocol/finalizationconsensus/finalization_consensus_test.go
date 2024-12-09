@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -308,7 +309,7 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, int64(3), singleConsumerSession.QoSInfo.SyncScoreSum)
 				require.Equal(t, int64(3), singleConsumerSession.QoSInfo.TotalSyncScore)
 
-				require.Equal(t, sdk.ZeroDec(), singleConsumerSession.QoSInfo.LastQoSReport.Availability) // because availability below 95% is 0
+				require.Equal(t, math.LegacyZeroDec(), singleConsumerSession.QoSInfo.LastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Latency)
 
@@ -319,7 +320,7 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, int64(3), singleConsumerSession.QoSInfo.SyncScoreSum)
 				require.Equal(t, int64(4), singleConsumerSession.QoSInfo.TotalSyncScore)
 
-				require.Equal(t, sdk.ZeroDec(), singleConsumerSession.QoSInfo.LastQoSReport.Availability) // because availability below 95% is 0
+				require.Equal(t, math.LegacyZeroDec(), singleConsumerSession.QoSInfo.LastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.MustNewDecFromStr("0.75"), singleConsumerSession.QoSInfo.LastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Latency)
 				latestServicedBlock = expectedBH + 1

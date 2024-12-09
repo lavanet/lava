@@ -1,7 +1,6 @@
 package lavasession
 
 import (
-	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -38,7 +37,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 }
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
-func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
+func (cs *SingleConsumerSession) getQosComputedResultOrZero() math.LegacyDec {
 	if cs.QoSInfo.LastExcellenceQoSReport != nil {
 		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoSExcellence()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
@@ -46,7 +45,7 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 		}
 		utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport))
 	}
-	return sdk.ZeroDec()
+	return math.LegacyZeroDec()
 }
 
 func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
@@ -64,9 +63,9 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 		utils.LavaFormatDebug("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
 
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(math.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(math.NewInt(int64(latency)))))
 
-	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+	insertSorted := func(list []math.LegacyDec, value math.LegacyDec) []math.LegacyDec {
 		index := sort.Search(len(list), func(i int) bool {
 			return list[i].GTE(value)
 		})

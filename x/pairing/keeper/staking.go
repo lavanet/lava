@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -31,7 +32,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			Provider:         provider,
 			Vault:            creator,
 			Chains:           []string{chainID},
-			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
 		}
 	} else {
 		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
@@ -227,7 +228,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	// if there are registered delegations to the provider, count them in the delegateTotal
-	delegateTotal := sdk.ZeroInt()
+	delegateTotal := math.ZeroInt()
 	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,

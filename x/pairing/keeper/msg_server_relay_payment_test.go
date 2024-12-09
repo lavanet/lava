@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
@@ -397,17 +398,17 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 func TestRelayPaymentQoS(t *testing.T) {
 	tests := []struct {
 		name         string
-		availability sdk.Dec
-		latency      sdk.Dec
-		sync         sdk.Dec
+		availability math.LegacyDec
+		latency      math.LegacyDec
+		sync         math.LegacyDec
 		valid        bool
 	}{
-		{"InvalidLatency", sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), false},
-		{"InvalidAvailability", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), false},
-		{"Invalidsync", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), false},
-		{"PerfectScore", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
-		{"MediumScore", sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
-		{"ZeroScore", sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec(), true},
+		{"InvalidLatency", math.LegacyNewDecWithPrec(2, 0), math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(1, 0), false},
+		{"InvalidAvailability", math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(2, 0), math.LegacyNewDecWithPrec(1, 0), false},
+		{"Invalidsync", math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(2, 0), false},
+		{"PerfectScore", math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(1, 0), true},
+		{"MediumScore", math.LegacyNewDecWithPrec(5, 1), math.LegacyNewDecWithPrec(1, 0), math.LegacyNewDecWithPrec(1, 0), true},
+		{"ZeroScore", math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec(), true},
 	}
 
 	for _, tt := range tests {
@@ -452,9 +453,9 @@ func TestVaultProviderRelayPayment(t *testing.T) {
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	vault := providerAcc.GetVaultAddr()
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.OneDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.OneDec(),
+		Latency:      math.LegacyOneDec(),
+		Availability: math.LegacyOneDec(),
+		Sync:         math.LegacyOneDec(),
 	}
 
 	tests := []struct {
@@ -561,9 +562,9 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	qos := types.QualityOfServiceReport{
-		Latency:      sdk.OneDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.OneDec(),
+		Latency:      math.LegacyOneDec(),
+		Availability: math.LegacyOneDec(),
+		Sync:         math.LegacyOneDec(),
 	}
 
 	relaySession := ts.newRelaySession(providerAddr, 0, 1, ts.BlockHeight(), 0)
@@ -601,9 +602,9 @@ func TestBadgeValidation(t *testing.T) {
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.NewDecWithPrec(1, 0),
-		Availability: sdk.NewDecWithPrec(1, 0),
-		Sync:         sdk.NewDecWithPrec(1, 0),
+		Latency:      math.LegacyNewDecWithPrec(1, 0),
+		Availability: math.LegacyNewDecWithPrec(1, 0),
+		Sync:         math.LegacyNewDecWithPrec(1, 0),
 	}
 
 	epochStart := ts.EpochStart()
@@ -692,9 +693,9 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	var relays []*types.RelaySession
 	for i := 0; i < 5; i++ {
 		qos := &types.QualityOfServiceReport{
-			Latency:      sdk.NewDecWithPrec(1, 0),
-			Availability: sdk.NewDecWithPrec(1, 0),
-			Sync:         sdk.NewDecWithPrec(1, 0),
+			Latency:      math.LegacyNewDecWithPrec(1, 0),
+			Availability: math.LegacyNewDecWithPrec(1, 0),
+			Sync:         math.LegacyNewDecWithPrec(1, 0),
 		}
 
 		// vary session ID to avoid double spending
@@ -742,9 +743,9 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.NewDecWithPrec(1, 0),
-		Availability: sdk.NewDecWithPrec(1, 0),
-		Sync:         sdk.NewDecWithPrec(1, 0),
+		Latency:      math.LegacyNewDecWithPrec(1, 0),
+		Availability: math.LegacyNewDecWithPrec(1, 0),
+		Sync:         math.LegacyNewDecWithPrec(1, 0),
 	}
 
 	tests := []struct {
@@ -816,9 +817,9 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.NewDecWithPrec(1, 0),
-		Availability: sdk.NewDecWithPrec(1, 0),
-		Sync:         sdk.NewDecWithPrec(1, 0),
+		Latency:      math.LegacyNewDecWithPrec(1, 0),
+		Availability: math.LegacyNewDecWithPrec(1, 0),
+		Sync:         math.LegacyNewDecWithPrec(1, 0),
 	}
 
 	relayNum := 5
@@ -896,9 +897,9 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.NewDecWithPrec(1, 0),
-		Availability: sdk.NewDecWithPrec(1, 0),
-		Sync:         sdk.NewDecWithPrec(1, 0),
+		Latency:      math.LegacyNewDecWithPrec(1, 0),
+		Availability: math.LegacyNewDecWithPrec(1, 0),
+		Sync:         math.LegacyNewDecWithPrec(1, 0),
 	}
 
 	cuSum := badgeCuAllocation
@@ -952,7 +953,7 @@ func TestIntOverflow(t *testing.T) {
 		Description:              "whale",
 		Type:                     "rpc",
 		Block:                    ts.BlockHeight(),
-		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000)),
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, math.NewInt(1000)),
 		AllowOveruse:             true,
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,
@@ -965,7 +966,7 @@ func TestIntOverflow(t *testing.T) {
 		Description:              "whale2",
 		Type:                     "rpc",
 		Block:                    ts.BlockHeight(),
-		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1001)),
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, math.NewInt(1001)),
 		AllowOveruse:             true,
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,

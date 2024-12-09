@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -47,7 +48,7 @@ func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk
 }
 
 func (k mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
-	total := sdk.NewCoin(denom, sdk.ZeroInt())
+	total := sdk.NewCoin(denom, math.ZeroInt())
 	for _, coins := range balance {
 		for _, coin := range coins {
 			if coin.Denom == denom {
@@ -69,7 +70,7 @@ func (k mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom s
 			return coins[i]
 		}
 	}
-	return sdk.NewCoin(denom, sdk.ZeroInt())
+	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
 func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {

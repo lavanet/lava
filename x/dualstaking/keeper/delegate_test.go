@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var zeroCoin = sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
+var zeroCoin = sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
 
 func TestDelegateFail(t *testing.T) {
 	ts := newTester(t)
@@ -69,8 +69,8 @@ func TestDelegateFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
-			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
+			amount := sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
+			amount.Amount = amount.Amount.Add(math.NewInt(tt.amount))
 			_, err := ts.TxDualstakingDelegate(tt.delegator, tt.provider, amount)
 			require.Error(t, err, tt.name)
 		})
@@ -89,7 +89,7 @@ func TestDelegate(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	// not yet in effect
@@ -135,7 +135,7 @@ func TestRedelegateFail(t *testing.T) {
 	_, provider4Addr := ts.GetAccount(common.PROVIDER, 3)
 
 	// delegate once for setup
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -207,8 +207,8 @@ func TestRedelegateFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
-			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
+			amount := sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
+			amount.Amount = amount.Amount.Add(math.NewInt(tt.amount))
 			_, err := ts.TxDualstakingRedelegate(
 				tt.delegator, tt.provider1, tt.provider2, amount)
 			require.Error(t, err, tt.name)
@@ -230,7 +230,7 @@ func TestRedelegate(t *testing.T) {
 	delegated2 := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(
 		client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
@@ -245,7 +245,7 @@ func TestRedelegate(t *testing.T) {
 	require.True(t, delegated2.IsEqual(stakeEntry2.DelegateTotal))
 
 	// redelegate once
-	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(5000))
 	_, err = ts.TxDualstakingRedelegate(
 		client1Addr, provider1Addr, provider2Addr, amount)
 	require.NoError(t, err)
@@ -267,7 +267,7 @@ func TestRedelegate(t *testing.T) {
 	require.NoError(t, err)
 
 	// redelegate from unstaking provider
-	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(5000))
 	_, err = ts.TxDualstakingRedelegate(client1Addr, provider1Addr, provider2Addr, amount)
 	require.NoError(t, err)
 	// advance epoch to digest the delegate
@@ -291,7 +291,7 @@ func TestUnbondFail(t *testing.T) {
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
 	// delegate once for setup
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -341,8 +341,8 @@ func TestUnbondFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
-			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
+			amount := sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
+			amount.Amount = amount.Amount.Add(math.NewInt(tt.amount))
 			_, err := ts.TxDualstakingUnbond(tt.delegator, tt.provider, amount)
 			require.Error(t, err, tt.name)
 		})
@@ -368,7 +368,7 @@ func TestUnbond(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -387,7 +387,7 @@ func TestUnbond(t *testing.T) {
 	require.Len(t, res.Delegations, 1)
 
 	// unbond once
-	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(1000))
 	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -462,7 +462,7 @@ func TestBondUnbondBond(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -503,7 +503,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 
 	provider1Acct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+	staked := sdk.NewCoin("ulava", math.NewInt(testStake))
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
 	amountToUnbond := staked.Sub(minSelfDelegation.AddAmount(math.OneInt()))
 
@@ -531,7 +531,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesError(t *testin
 
 	provider1Acct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+	staked := sdk.NewCoin("ulava", math.NewInt(testStake))
 	amountToUnbond := staked.SubAmount(math.OneInt())
 
 	// unbond once (not unstaking completely but still below min stake)
@@ -547,10 +547,10 @@ func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
 
 	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
-	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+	staked := sdk.NewCoin("ulava", math.NewInt(testStake))
 
 	// delegate once
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin("ulava", math.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(provider1Acct.GetVaultAddr(), provider1Addr, amount)
 	require.NoError(t, err)
 
@@ -572,7 +572,7 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
-	stake := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+	stake := sdk.NewCoin("ulava", math.NewInt(testStake))
 
 	// redelegate once
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
@@ -621,7 +621,7 @@ func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	provider1Acct, _ := ts.GetAccount(common.PROVIDER, 0)
 	validator1Acct, _ := ts.GetAccount(common.VALIDATOR, 0)
 
-	stakeInt := sdk.NewInt(testStake)
+	stakeInt := math.NewInt(testStake)
 	stake := sdk.NewCoin("ulava", stakeInt)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)

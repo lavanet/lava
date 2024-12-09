@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -139,7 +140,10 @@ lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1704707673 --
 				balances.Address = moduleAddress
 				genAccount = authtypes.NewModuleAccount(baseAccount, args[0], authtypes.Burner, authtypes.Staking)
 			} else if !vestingAmt.IsZero() {
-				baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
+				baseVestingAccount, err := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
+				if err != nil {
+					return fmt.Errorf("failed to create base vesting account: %w", err)
+				}
 
 				if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
 					baseVestingAccount.OriginalVesting.IsAnyGT(balances.Coins) {
@@ -163,17 +167,20 @@ lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1704707673 --
 					if err := periodicFirst.Validate(); err != nil {
 						return errors.New("periodic account must have vesting first emission none negative " + err.Error())
 					}
-					if !vestingAmt.QuoInt(sdk.NewInt(periodicNumber)).MulInt(sdk.NewInt(periodicNumber)).IsEqual(vestingAmt) {
+					if !vestingAmt.QuoInt(math.NewInt(periodicNumber)).MulInt(math.NewInt(periodicNumber)).Equal(vestingAmt) {
 						return errors.New("periodic vesting amount must be divisble by the periodicNumber")
 					}
 
 					periods := []authvesting.Period{{Length: 0, Amount: periodicFirst}}
 					for i := int64(0); i < periodicNumber; i++ {
-						period := authvesting.Period{Length: periodicLength, Amount: vestingAmt.QuoInt(sdk.NewInt(periodicNumber))}
+						period := authvesting.Period{Length: periodicLength, Amount: vestingAmt.QuoInt(math.NewInt(periodicNumber))}
 						periods = append(periods, period)
 					}
 
-					genAccount = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt.Add(periodicFirst...), vestingStart, periods)
+					genAccount, err = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt.Add(periodicFirst...), vestingStart, periods)
+					if err != nil {
+						return fmt.Errorf("failed to create periodic vesting account: %w", err)
+					}
 				case vestingStart != 0 && vestingEnd != 0:
 					genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
 

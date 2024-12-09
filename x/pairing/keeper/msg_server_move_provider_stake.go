@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/pairing/types"
@@ -45,5 +46,5 @@ func (k Keeper) MoveProviderStake(ctx sdk.Context, creator, srcChain, dstChain s
 
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, srcEntry)
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, dstEntry)
-	return k.dualstakingKeeper.AfterDelegationModified(ctx, srcEntry.Vault, srcEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), false, true)
+	return k.dualstakingKeeper.AfterDelegationModified(ctx, srcEntry.Vault, srcEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()), false, true)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
@@ -21,7 +22,7 @@ import (
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc sigs.Account) {
 	acc = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
 	testkeeper.Randomizer.Inc()
-	coins := sdk.NewCoins(sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(balance)))
+	coins := sdk.NewCoins(sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), math.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return
 }
@@ -36,10 +37,10 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		Creator:            acc.Addr.String(),
 		Address:            acc.Addr.String(),
 		ChainID:            spec.Index,
-		Amount:             sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)),
+		Amount:             sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), math.NewInt(stake)),
 		Geolocation:        1,
 		Endpoints:          endpoints,
-		DelegateLimit:      sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), math.ZeroInt()),
 		DelegateCommission: 100,
 		Validator:          sdk.ValAddress(validator.Addr).String(),
 		Description:        MockDescription(),
@@ -163,7 +164,7 @@ func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictR
 		CuSum:       0,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
-		QosReport:   &pairingtypes.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
+		QosReport:   &pairingtypes.QualityOfServiceReport{Latency: math.LegacyOneDec(), Availability: math.LegacyOneDec(), Sync: math.LegacyOneDec()},
 	}
 }
 

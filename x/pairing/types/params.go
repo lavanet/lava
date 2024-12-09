@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -17,8 +17,8 @@ var (
 )
 
 var (
-	KeyQoSWeight             = []byte("QoSWeight")
-	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) // 0.5
+	KeyQoSWeight                    = []byte("QoSWeight")
+	DefaultQoSWeight math.LegacyDec = math.LegacyNewDecWithPrec(5, 1) // 0.5
 )
 
 var (
@@ -34,7 +34,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	epochBlocksOverlap uint64,
-	qoSWeight sdk.Dec,
+	qoSWeight math.LegacyDec,
 	recommendedEpochNumToCollectPayment uint64,
 ) Params {
 	return Params{
@@ -95,12 +95,12 @@ func validateEpochBlocksOverlap(v interface{}) error {
 
 // validateDataReliabilityReward validates the param
 func validateQoSWeight(v interface{}) error {
-	QoSWeight, ok := v.(sdk.Dec)
+	QoSWeight, ok := v.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if QoSWeight.GT(sdk.OneDec()) || QoSWeight.LT(sdk.ZeroDec()) {
+	if QoSWeight.GT(math.LegacyOneDec()) || QoSWeight.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid parameter QoSWeight")
 	}
 

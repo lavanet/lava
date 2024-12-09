@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 )
@@ -32,7 +33,7 @@ func NewDelegation(delegator, provider string, blockTime time.Time, tokenDenom s
 	return Delegation{
 		Delegator: delegator,
 		Provider:  provider,
-		Amount:    sdk.NewCoin(tokenDenom, sdk.ZeroInt()),
+		Amount:    sdk.NewCoin(tokenDenom, math.ZeroInt()),
 		Timestamp: blockTime.AddDate(0, 0, 7).UTC().Unix(),
 	}
 }

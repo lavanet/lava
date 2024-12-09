@@ -29,10 +29,10 @@ const (
 
 var (
 	ibcDenom     string    = "uibc"
-	minIprpcCost sdk.Coin  = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(100))
+	minIprpcCost sdk.Coin  = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(100))
 	iprpcFunds   sdk.Coins = sdk.NewCoins(
-		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
-		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
+		sdk.NewCoin(commontypes.TokenDenom, math.NewInt(1100)),
+		sdk.NewCoin(ibcDenom, math.NewInt(500)),
 	)
 	mockSpec2 string = "mockspec2"
 )
@@ -129,7 +129,7 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 
 	if fundIprpcPool {
 		duration := uint64(1)
-		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(sdk.NewIntFromUint64(duration)))
+		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewIntFromUint64(duration)))
 		require.NoError(ts.T, err)
 		balanceBeforeFund := ts.GetBalances(consumerAcc.Addr)
 		_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
@@ -193,7 +193,7 @@ func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Acco
 //  2. TxCreateValidator was used with init funds of 30000000000000/3
 func (ts *tester) makeBondedRatioNonZero() {
 	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	if bondedRatio.Equal(sdk.NewDecWithPrec(25, 2)) {
+	if bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2)) {
 		return
 	}
 
@@ -209,5 +209,5 @@ func (ts *tester) makeBondedRatioNonZero() {
 	require.False(ts.T, stakingBondedPoolBalance.IsZero())
 
 	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+	require.True(ts.T, bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 }

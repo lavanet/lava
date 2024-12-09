@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/lavanet/lava/v4/testutil/common"
@@ -1099,7 +1100,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:         "free",
 		Block:         uint64(ctx.BlockHeight()),
-		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), math.NewInt(1)),
 		ProjectsLimit: 3,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 4, // USE
@@ -1112,7 +1113,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:         "basic",
 		Block:         uint64(ctx.BlockHeight()),
-		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), math.NewInt(1)),
 		ProjectsLimit: 5,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 0, // GLS
@@ -1125,7 +1126,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	premiumPlan := planstypes.Plan{
 		Index:         "premium",
 		Block:         uint64(ctx.BlockHeight()),
-		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), math.NewInt(1)),
 		ProjectsLimit: 10,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 65535, // GL

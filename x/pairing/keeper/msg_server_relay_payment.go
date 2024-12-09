@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
@@ -216,7 +217,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.NewDecFromInt(sdk.NewIntFromUint64(rewardedCU))
+		rewardedCUDec := sdk.NewDecFromInt(math.NewIntFromUint64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -246,7 +247,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["QoSSync"] = relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
-			rewardedCUDec = rewardedCUDec.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
+			rewardedCUDec = rewardedCUDec.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(math.LegacyOneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
 		}
 
 		if relay.QosExcellenceReport != nil {

@@ -169,7 +169,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 		unbondings := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
 
 		for _, unbonding := range unbondings {
-			totalBalance := sdk.ZeroInt()
+			totalBalance := math.ZeroInt()
 			for _, entry := range unbonding.Entries {
 				totalBalance = totalBalance.Add(entry.Balance)
 			}
@@ -178,7 +178,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			}
 
 			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
-			slashingFactor = sdk.MinDec(sdk.OneDec(), slashingFactor)
+			slashingFactor = sdk.MinDec(math.LegacyOneDec(), slashingFactor)
 			slashedAmount := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
 			slashedAmount = sdk.MinInt(total, slashedAmount)
 			total = total.Sub(slashedAmount)

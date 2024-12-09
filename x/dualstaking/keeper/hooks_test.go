@@ -25,7 +25,7 @@ func TestCreateValidator(t *testing.T) {
 
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
 
-	amount := sdk.NewIntFromUint64(100)
+	amount := math.NewIntFromUint64(100)
 	ts.TxCreateValidator(validator, amount)
 
 	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
@@ -40,7 +40,7 @@ func TestDelegateToValidator(t *testing.T) {
 
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
 
-	amount := sdk.NewIntFromUint64(100)
+	amount := math.NewIntFromUint64(100)
 	ts.TxCreateValidator(validator, amount)
 
 	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
@@ -67,7 +67,7 @@ func TestReDelegateToValidator(t *testing.T) {
 	validator1, _ := ts.GetAccount(common.VALIDATOR, 0)
 	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
 
-	amount := sdk.NewIntFromUint64(100)
+	amount := math.NewIntFromUint64(100)
 	ts.TxCreateValidator(validator1, amount)
 	ts.TxCreateValidator(validator2, amount)
 
@@ -110,7 +110,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts.addClients(1)
 
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(10000)
+	amount := math.NewIntFromUint64(10000)
 	ts.TxCreateValidator(validator, amount)
 
 	acc, provider := ts.GetAccount(common.PROVIDER, 0)
@@ -171,7 +171,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 	// create validator and providers
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(10000)
+	amount := math.NewIntFromUint64(10000)
 	ts.TxCreateValidator(validator, amount)
 
 	for i := 0; i < 5; i++ {
@@ -184,16 +184,16 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 	// delegate to validator (automatically delegates to empty provider)
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
-	_, err = ts.TxDelegateValidator(delegatorAcc, validator, sdk.NewInt(210))
+	_, err = ts.TxDelegateValidator(delegatorAcc, validator, math.NewInt(210))
 	require.NoError(t, err)
 
 	// redelegate from empty provider to all providers with fixed amounts
 	redelegateAmts := []math.Int{
-		sdk.NewInt(10),
-		sdk.NewInt(20),
-		sdk.NewInt(50),
-		sdk.NewInt(60),
-		sdk.NewInt(70),
+		math.NewInt(10),
+		math.NewInt(20),
+		math.NewInt(50),
+		math.NewInt(60),
+		math.NewInt(70),
 	}
 	var providers []string
 	for i := 0; i < 5; i++ {
@@ -207,7 +207,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 	}
 
 	// unbond 25*5 tokens from validator
-	_, err = ts.TxUnbondValidator(delegatorAcc, validator, sdk.NewInt(25*5))
+	_, err = ts.TxUnbondValidator(delegatorAcc, validator, math.NewInt(25*5))
 	require.NoError(t, err)
 
 	res, err := ts.QueryDualstakingDelegatorProviders(delegator)
@@ -234,7 +234,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 func TestValidatorSlash(t *testing.T) {
 	ts := newTester(t)
 	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*1000000000)
-	amount := sdk.NewIntFromUint64(1000000000)
+	amount := math.NewIntFromUint64(1000000000)
 
 	// create valAcc and providers
 	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -252,7 +252,7 @@ func TestValidatorSlash(t *testing.T) {
 	require.Equal(t, amount, resQ.Delegations[0].Amount.Amount)
 
 	// slash 0.6*ConsensusPowerTokens = 0.6*100000 from the validator and check balance
-	expectedTokensToBurn := ts.SlashValidator(valAcc, sdk.NewDecWithPrec(6, 1), 1, ts.Ctx.BlockHeight()) // fraction = 0.6
+	expectedTokensToBurn := ts.SlashValidator(valAcc, math.LegacyNewDecWithPrec(6, 1), 1, ts.Ctx.BlockHeight()) // fraction = 0.6
 
 	// sanity check: validator should have 0.6*ConsensusPowerTokens = 0.6*100000
 	val = ts.GetValidator(valAcc.Addr)
@@ -376,26 +376,26 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	})
 
 	// slash consensusPowerTokens*0.6 tokens from the validator and check balance
-	expectedTokensSlashed := ts.SlashValidator(valAcc, sdk.NewDecWithPrec(6, 1), power, ts.Ctx.BlockHeight()) // fraction = 0.6
+	expectedTokensSlashed := ts.SlashValidator(valAcc, math.LegacyNewDecWithPrec(6, 1), power, ts.Ctx.BlockHeight()) // fraction = 0.6
 	expectedValidatorTokens = expectedValidatorTokens.Sub(expectedTokensSlashed)
 	val = ts.GetValidator(valAcc.Addr)
 	require.Equal(t, expectedValidatorTokens, val.Tokens)
 
 	// hard coded effective fraction of slash
-	fraction := sdk.MustNewDecFromStr("0.001967213114754099")
+	fraction := math.LegacyMustNewDecFromStr("0.001967213114754099")
 
 	// both the validator and providers have a single delegation that was created by their
 	// self delegation. Check that the new amount after slash is (1-fraction) * old_amount
 	res, err = ts.QueryDualstakingDelegatorProviders(valAcc.Addr.String())
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 1)
-	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
+	require.Equal(t, math.LegacyOneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
 
 	for _, p := range providersAccs {
 		res, err = ts.QueryDualstakingDelegatorProviders(p.GetVaultAddr())
 		require.NoError(t, err)
 		require.Len(t, res.Delegations, 1)
-		require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
+		require.Equal(t, math.LegacyOneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
 	}
 
 	// the total token to deduct from the delegator's provider delegations is:
@@ -407,7 +407,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	for _, d := range res.Delegations {
 		totalDelegations = totalDelegations.Add(d.Amount.Amount)
 	}
-	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).RoundInt(), totalDelegations)
+	require.Equal(t, math.LegacyOneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).RoundInt(), totalDelegations)
 
 	// verify once again that the delegator's delegations balance is preserved
 	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
@@ -421,7 +421,7 @@ func TestCancelUnbond(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
 	ts.addClients(1)
-	amount := sdk.NewIntFromUint64(10000)
+	amount := math.NewIntFromUint64(10000)
 
 	// create validator and providers
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -431,11 +431,11 @@ func TestCancelUnbond(t *testing.T) {
 
 	// delegate to validator (automatically delegates to empty provider)
 	delegator, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, err := ts.TxDelegateValidator(delegator, validator, sdk.NewInt(250))
+	_, err := ts.TxDelegateValidator(delegator, validator, math.NewInt(250))
 	require.NoError(t, err)
 
 	// unbond and advance blocks
-	_, err = ts.TxUnbondValidator(delegator, validator, sdk.NewInt(250))
+	_, err = ts.TxUnbondValidator(delegator, validator, math.NewInt(250))
 	require.NoError(t, err)
 	ts.verifyDelegatorsBalance()
 
@@ -443,7 +443,7 @@ func TestCancelUnbond(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// cancel the unbond TX and check for balances
-	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(50)))
+	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(ts.TokenDenom(), math.NewInt(50)))
 	require.NoError(t, err)
 
 	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
@@ -459,7 +459,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*1000000000)
 	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*1000000000)
 	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*1000000000)
-	amount := sdk.NewIntFromUint64(1000)
+	amount := math.NewIntFromUint64(1000)
 
 	// create validatorAcc and providers
 	validatorAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -485,14 +485,14 @@ func TestHooksRandomDelegations(t *testing.T) {
 			delegatorAcc = prevDelegatorAcc
 			delegator = prevDelegator
 		}
-		_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
+		_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(d))))
 		require.NoError(t, err)
 
 		_, found := ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
 		require.True(t, found)
 
 		valConsAddr := sdk.GetConsAddress(validatorAcc.ConsKey.PubKey())
-		ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, sdk.NewDecWithPrec(1, 1), 1, ts.Ctx.BlockHeight())
+		ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, math.LegacyNewDecWithPrec(1, 1), 1, ts.Ctx.BlockHeight())
 	}
 }
 
@@ -503,7 +503,7 @@ func TestNotRoundedShares(t *testing.T) {
 	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*10000000000)
 	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*10000000000)
 	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*10000000000)
-	delAmount := sdk.NewIntFromUint64(1000000000000)
+	delAmount := math.NewIntFromUint64(1000000000000)
 
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
 
@@ -536,31 +536,31 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 
 	// create validator and providers
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(9999)
+	amount := math.NewIntFromUint64(9999)
 	ts.TxCreateValidator(validator, amount)
 
 	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
-	amount2 := sdk.NewIntFromUint64(9998)
+	amount2 := math.NewIntFromUint64(9998)
 	ts.TxCreateValidator(validator2, amount2)
 
 	delegatorAcc1, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, sdk.NewInt(9999))
+	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, math.NewInt(9999))
 	require.NoError(t, err)
 
 	delegatorAcc2, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, sdk.NewInt(9998))
+	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, math.NewInt(9998))
 	require.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
+		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, math.NewIntFromUint64(9999).Int64())
 		require.NoError(t, err)
 	}
 
 	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// provider completely unbond from validator, delegation is removed
-	_, err = ts.TxUnbondValidator(*providerAcct.Vault, validator, sdk.NewInt(9999))
+	_, err = ts.TxUnbondValidator(*providerAcct.Vault, validator, math.NewInt(9999))
 	require.Error(t, err)
 }
 
@@ -575,19 +575,19 @@ func TestUndelegateProvider(t *testing.T) {
 
 	// create validator and providers
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(9999)
+	amount := math.NewIntFromUint64(9999)
 	ts.TxCreateValidator(validator, amount)
 
 	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
-	amount2 := sdk.NewIntFromUint64(9998)
+	amount2 := math.NewIntFromUint64(9998)
 	ts.TxCreateValidator(validator2, amount2)
 
 	delegatorAcc1, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, sdk.NewInt(9999))
+	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, math.NewInt(9999))
 	require.NoError(t, err)
 
 	delegatorAcc2, _ := ts.GetAccount(common.CONSUMER, 1)
-	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, sdk.NewInt(9998))
+	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, math.NewInt(9998))
 	require.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
@@ -608,7 +608,7 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+		sdk.NewCoin(ts.TokenDenom(), math.NewInt(9999)))
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -632,7 +632,7 @@ func TestUndelegateProvider(t *testing.T) {
 	ts.AdvanceEpochUntilStale()
 
 	// stake provider again
-	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
+	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, math.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
 	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
@@ -643,7 +643,7 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
+		sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)))
 	require.NoError(t, err)
 
 	_, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
@@ -654,7 +654,7 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc2.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
+		sdk.NewCoin(ts.TokenDenom(), math.NewInt(9998)))
 	require.NoError(t, err)
 
 	// delegator 1 can only redelegate 9998 to Empty Provider
@@ -663,12 +663,12 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+		sdk.NewCoin(ts.TokenDenom(), math.NewInt(9999)))
 	require.Error(t, err)
 
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
+		sdk.NewCoin(ts.TokenDenom(), math.NewInt(9998)))
 	require.NoError(t, err)
 }

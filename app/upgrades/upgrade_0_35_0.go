@@ -1,6 +1,8 @@
 package upgrades
 
 import (
+	"context"
+
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -17,7 +19,8 @@ func v_35_0(
 	_ BaseAppParamManager,
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+	return func(context context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		ctx := sdk.UnwrapSDKContext(context)
 		// reset allowlist to empty
 		lk.SpecKeeper.AllowlistReset(ctx)
 

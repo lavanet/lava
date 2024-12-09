@@ -231,7 +231,7 @@ func (ts *Tester) StakeProviderFull(
 		}
 	}
 
-	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
+	stake := sdk.NewCoin(ts.TokenDenom(), math.NewInt(amount))
 	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
 	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description, commission)
 
@@ -344,7 +344,7 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 // misc shortcuts
 
 func NewCoin(tokenDenom string, amount int64) sdk.Coin {
-	return sdk.NewCoin(tokenDenom, sdk.NewInt(amount))
+	return sdk.NewCoin(tokenDenom, math.NewInt(amount))
 }
 
 func NewCoins(tokenDenom string, amount ...int64) []sdk.Coin {
@@ -608,7 +608,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), math.ZeroInt()),
 		DelegateCommission: commission,
 		Address:            provider,
 		Description:        description,
@@ -753,8 +753,8 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 		validator.PubKey,
 		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 		stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
-		sdk.ZeroInt(),
+		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1)),
+		math.ZeroInt(),
 	)
 	require.Nil(ts.T, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
@@ -1259,13 +1259,13 @@ func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []
 // DisableParticipationFees zeros validators and community participation fees
 func (ts *Tester) DisableParticipationFees() {
 	distParams := distributiontypes.DefaultParams()
-	distParams.CommunityTax = sdk.ZeroDec()
+	distParams.CommunityTax = math.LegacyZeroDec()
 	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
 	require.Nil(ts.T, err)
 	require.True(ts.T, ts.Keepers.Distribution.GetParams(ts.Ctx).CommunityTax.IsZero())
 
 	paramKey := string(rewardstypes.KeyValidatorsSubscriptionParticipation)
-	zeroDec, err := sdk.ZeroDec().MarshalJSON()
+	zeroDec, err := math.LegacyZeroDec().MarshalJSON()
 	require.Nil(ts.T, err)
 	paramVal := string(zeroDec)
 	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)

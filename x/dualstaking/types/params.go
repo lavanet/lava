@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
@@ -13,7 +14,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyMinSelfDelegation              = []byte("MinSelfDelegation")
-	DefaultMinSelfDelegation sdk.Coin = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(100000000)) // 100 lava = 100,000,000 ulava
+	DefaultMinSelfDelegation sdk.Coin = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(100000000)) // 100 lava = 100,000,000 ulava
 )
 
 // ParamKeyTable the param key table for launch module

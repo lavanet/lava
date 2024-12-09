@@ -7,17 +7,20 @@ import (
 	"path/filepath"
 
 	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
-	snapshotoptions "cosmossdk.io/store/snapshots/types"
-
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
-	dbm "github.com/cometbft/cometbft-db"
+	snapshotoptions "cosmossdk.io/store/snapshots/types"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
+	cosmosdb "github.com/cosmos/cosmos-db"
+
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -31,6 +34,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
@@ -152,11 +156,11 @@ func initLavaProtocolRootCmd(
 	rootCmd.AddCommand(
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome),
+		keys.Commands(),
 	)
 
 	rootCmd.AddCommand(
-		config.Cmd(),
+		confixcmd.ConfigCommand(),
 	)
 }
 
@@ -200,22 +204,23 @@ func initRootCmd(
 	if !ok {
 		panic("cant get gentx module")
 	}
-
+	valOperAddressCodec := address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, gentxModule.GenTxValidator),
-		genutilcli.MigrateGenesisCmd(),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, gentxModule.GenTxValidator, valOperAddressCodec),
+		// genutilcli.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(
 			app.ModuleBasics,
 			encodingConfig.TxConfig,
 			banktypes.GenesisBalancesIterator{},
 			app.DefaultNodeHome,
+			valOperAddressCodec,
 		),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
-		config.Cmd(),
+		confixcmd.ConfigCommand(),
 		// this line is used by starport scaffolding # root/commands
 	)
 
@@ -234,10 +239,10 @@ func initRootCmd(
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
-		rpc.StatusCommand(),
+		server.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome),
+		keys.Commands(),
 	)
 }
 
@@ -272,9 +277,9 @@ func queryCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		authcmd.GetAccountCmd(),
+		CmdModuleNameToAddress(),
 		rpc.ValidatorCommand(),
-		rpc.BlockCommand(),
+		server.QueryBlockCmd(),
 		authcmd.QueryTxsByEventsCmd(),
 		authcmd.QueryTxCmd(),
 	)
@@ -340,11 +345,11 @@ type appCreator struct {
 // newApp creates a new Cosmos SDK app
 func (a appCreator) newApp(
 	logger log.Logger,
-	db dbm.DB,
+	db cosmosdb.DB,
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
-	var cache sdk.MultiStorePersistentCache
+	var cache storetypes.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
 		cache = store.NewCommitKVStoreCacheManager()
@@ -362,7 +367,7 @@ func (a appCreator) newApp(
 
 	snapshotDir := filepath.Join(
 		cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
+	snapshotDB, err := cosmosdb.NewGoLevelDB("metadata", snapshotDir, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -417,7 +422,7 @@ func (a appCreator) newApp(
 // appExport creates a new simapp (optionally at a given height)
 func (a appCreator) appExport(
 	logger log.Logger,
-	db dbm.DB,
+	db cosmosdb.DB,
 	traceStore io.Writer,
 	height int64,
 	forZeroHeight bool,
@@ -505,4 +510,21 @@ query_gas_limit = 300000
 lru_size = 0`
 
 	return customAppTemplate, customAppConfig
+}
+
+func CmdModuleNameToAddress() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "module-name-to-address [module-name]",
+		Short: "module name to address",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			address := authtypes.NewModuleAddress(args[0])
+			return clientCtx.PrintString(address.String())
+		},
+	}
+
+	flags.AddPaginationFlagsToCmd(cmd, cmd.Use)
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
 }

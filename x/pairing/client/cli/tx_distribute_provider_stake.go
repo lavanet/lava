@@ -58,7 +58,7 @@ func CmdDistributeProviderStake() *cobra.Command {
 type data struct {
 	chain    string
 	original math.Int
-	percent  sdk.Dec
+	percent  math.LegacyDec
 	target   math.Int
 	diff     math.Int
 }
@@ -69,8 +69,8 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 		return nil, fmt.Errorf("args must: chain,percent,chain,percent")
 	}
 
-	totalStake := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
-	totalP := sdk.ZeroDec()
+	totalStake := sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
+	totalP := math.LegacyZeroDec()
 	distributions := []data{}
 	for i := 0; i < len(splitedArgs); i += 2 {
 		p, err := sdk.NewDecFromStr(splitedArgs[i+1])

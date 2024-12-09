@@ -1,6 +1,7 @@
 package common
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
 	plantypes "github.com/lavanet/lava/v4/x/plans/types"
@@ -16,7 +17,7 @@ func CreateMockSpec() spectypes.Spec {
 	spec.ReliabilityThreshold = 4294967295
 	spec.BlockDistanceForFinalizedData = 0
 	spec.DataReliabilityEnabled = true
-	spec.MinStakeProvider = sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000))
+	spec.MinStakeProvider = sdk.NewCoin(commonconsts.TestTokenDenom, math.NewInt(1000))
 	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
 	spec.BlockDistanceForFinalizedData = 0
 	spec.Shares = 1
@@ -29,7 +30,7 @@ func CreateMockPlan() plantypes.Plan {
 		Description:              "plan for testing",
 		Type:                     "rpc",
 		Block:                    100,
-		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(100)),
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, math.NewInt(100)),
 		AllowOveruse:             true,
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,

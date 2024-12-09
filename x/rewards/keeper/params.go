@@ -23,25 +23,25 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // MinBondedTarget returns the MinBondedTarget param
-func (k Keeper) MinBondedTarget(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) MinBondedTarget(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyMinBondedTarget, &res)
 	return
 }
 
 // MaxBondedTarget returns the MaxBondedTarget param
-func (k Keeper) MaxBondedTarget(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) MaxBondedTarget(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyMaxBondedTarget, &res)
 	return
 }
 
 // LowFactor returns the LowFactor param
-func (k Keeper) LowFactor(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) LowFactor(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyLowFactor, &res)
 	return
 }
 
 // LeftoverBurnRate returns the LeftoverBurnRate param
-func (k Keeper) LeftoverBurnRate(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) LeftoverBurnRate(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyLeftoverBurnRate, &res)
 	return
 }
@@ -53,7 +53,7 @@ func (k Keeper) MaxRewardBoost(ctx sdk.Context) (res uint64) {
 }
 
 // ValidatorsSubscriptionParticipation returns the ValidatorsSubscriptionParticipation param
-func (k Keeper) ValidatorsSubscriptionParticipation(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) ValidatorsSubscriptionParticipation(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyValidatorsSubscriptionParticipation, &res)
 	return
 }

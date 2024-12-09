@@ -78,7 +78,7 @@ type DualStakingKeeper interface {
 }
 
 type RewardsKeeper interface {
-	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int)
+	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment math.LegacyDec, rewards math.Int)
 	MaxRewardBoost(ctx sdk.Context) (res uint64)
 	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward sdk.Coin, senderModule string) (updatedReward sdk.Coin, err error)
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
@@ -87,7 +87,7 @@ type RewardsKeeper interface {
 	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
 	TotalPoolTokens(ctx sdk.Context, pool rewardstypes.Pool) sdk.Coins
 	SpecEmissionParts(ctx sdk.Context) (emissions []rewardstypes.SpecEmissionPart)
-	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
+	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards math.LegacyDec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
 	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64

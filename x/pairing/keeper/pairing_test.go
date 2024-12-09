@@ -1040,7 +1040,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:         "free",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)),
 		ProjectsLimit: 3,
 		PlanPolicy:    freePlanPolicy,
 	}
@@ -1048,7 +1048,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:         "basic",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)),
 		ProjectsLimit: 5,
 		PlanPolicy:    basicPlanPolicy,
 	}
@@ -1056,7 +1056,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	premiumPlan := planstypes.Plan{
 		Index:         "premium",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)),
 		ProjectsLimit: 7,
 		PlanPolicy:    premiumPlanPolicy,
 	}
@@ -1248,7 +1248,7 @@ func TestDuplicateProviders(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:         "basic",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)),
 		ProjectsLimit: 5,
 		PlanPolicy:    basicPlanPolicy,
 	}
@@ -1300,7 +1300,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:         "free",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), math.NewInt(1)),
 		ProjectsLimit: 3,
 		PlanPolicy:    freePlanPolicy,
 	}

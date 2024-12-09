@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -42,7 +43,7 @@ func newStakingRedelegateMsg() *stakingtypes.MsgBeginRedelegate {
 		sdk.AccAddress("del1"),
 		sdk.ValAddress("val1"),
 		sdk.ValAddress("val2"),
-		sdk.NewCoin(commontypes.TokenDenom, sdk.OneInt()),
+		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }
 
@@ -50,7 +51,7 @@ func newStakingDelegateMsg() *stakingtypes.MsgDelegate {
 	return stakingtypes.NewMsgDelegate(
 		sdk.AccAddress("del1"),
 		sdk.ValAddress("val1"),
-		sdk.NewCoin(commontypes.TokenDenom, sdk.OneInt()),
+		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }
 
@@ -58,7 +59,7 @@ func newStakingUndelegateMsg() *stakingtypes.MsgUndelegate {
 	return stakingtypes.NewMsgUndelegate(
 		sdk.AccAddress("del1"),
 		sdk.ValAddress("val1"),
-		sdk.NewCoin(commontypes.TokenDenom, sdk.OneInt()),
+		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }
 

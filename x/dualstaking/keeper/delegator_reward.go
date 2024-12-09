@@ -76,7 +76,7 @@ func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegat
 	providerReward = totalReward.MulInt(selfDelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
 	if !totalDelegations.IsZero() && commission != 0 {
 		rawDelegatorsReward := totalReward.MulInt(totalDelegations).QuoInt(totalDelegationsWithSelf)
-		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(commission)).QuoInt(sdk.NewInt(100))
+		providerCommission := rawDelegatorsReward.MulInt(math.NewIntFromUint64(commission)).QuoInt(math.NewInt(100))
 		providerReward = providerReward.Add(providerCommission...)
 	}
 
@@ -157,10 +157,10 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 	}
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
-	contributorsNum := sdk.NewInt(int64(len(contributorAddresses)))
+	contributorsNum := math.NewInt(int64(len(contributorAddresses)))
 	contributorReward := zeroCoins
 	if !contributorsNum.IsZero() && contributorPart.GT(math.LegacyZeroDec()) {
-		contributorReward = totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(sdk.NewInt(spectypes.ContributorPrecision))
+		contributorReward = totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(math.NewInt(spectypes.ContributorPrecision))
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoInt(contributorsNum).MulInt(contributorsNum)
 		if !calcOnlyContributor {
@@ -172,7 +172,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 	}
 
 	relevantDelegations := []types.Delegation{}
-	totalDelegations := sdk.ZeroInt()
+	totalDelegations := math.ZeroInt()
 	var selfdelegation types.Delegation
 	// fetch relevant delegations (those who are passed the first week of delegation), self delegation and sum the total delegations
 	for _, d := range delegations {
@@ -238,7 +238,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 		utils.LavaFormatError("contributor addresses for pay are empty", nil)
 		return nil
 	}
-	rewardCoins := contributorReward.QuoInt(sdk.NewInt(int64(len(contributorAddresses))))
+	rewardCoins := contributorReward.QuoInt(math.NewInt(int64(len(contributorAddresses))))
 	details := map[string]string{
 		"total_reward_coins":           contributorReward.String(),
 		"reward_coins_per_contributor": rewardCoins.String(),

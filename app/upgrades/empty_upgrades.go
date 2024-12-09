@@ -1,9 +1,10 @@
 package upgrades
 
 import (
+	"context"
+
 	store "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/lavanet/lava/v4/app/keepers"
 )
@@ -14,7 +15,7 @@ func defaultUpgradeHandler(
 	bapm BaseAppParamManager,
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		return m.RunMigrations(ctx, c, vm)
 	}
 }

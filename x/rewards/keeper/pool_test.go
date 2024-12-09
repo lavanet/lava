@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
@@ -96,7 +97,7 @@ func TestBurnRateParam(t *testing.T) {
 
 	// change the burn rate param to be zero
 	paramKey := string(types.KeyLeftoverBurnRate)
-	zeroBurnRate, err := sdk.ZeroDec().MarshalJSON()
+	zeroBurnRate, err := math.LegacyZeroDec().MarshalJSON()
 	require.NoError(t, err)
 	paramVal := string(zeroBurnRate)
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
@@ -198,16 +199,16 @@ func TestValidatorBlockRewards(t *testing.T) {
 	// by default, BondedRatio staking module param is smaller than MinBonded rewards module param
 	// so bondedTargetFactor = 1. We change MinBonded to zero to change bondedTargetFactor
 	params := types.DefaultParams()
-	params.MinBondedTarget = sdk.ZeroDec()
-	params.MaxBondedTarget = sdk.NewDecWithPrec(8, 1) // 0.8
-	params.LowFactor = sdk.NewDecWithPrec(5, 1)       // 0.5
+	params.MinBondedTarget = math.LegacyZeroDec()
+	params.MaxBondedTarget = math.LegacyNewDecWithPrec(8, 1) // 0.8
+	params.LowFactor = math.LegacyNewDecWithPrec(5, 1)       // 0.5
 	params.LeftoverBurnRate = sdk.OneDec()
 	ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 	// calc the expected BondedTargetFactor with its formula. with the values defined above,
 	// and bondedRatio = 0.25, should be (0.8 - 0.25) / 0.8 + 0.5 * (0.25/0.8) = 0.84375
 	// compare the new block reward to refBlockReward
-	expectedBondedTargetFactor := sdk.NewDecWithPrec(84375, 5).TruncateInt() // 0.84375
+	expectedBondedTargetFactor := math.LegacyNewDecWithPrec(84375, 5).TruncateInt() // 0.84375
 
 	// verify that the current reward amount is as expected by checking the bondedTargetFactor alone
 	res, err := ts.QueryRewardsBlockReward()

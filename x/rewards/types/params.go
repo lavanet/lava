@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
@@ -11,23 +12,23 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMinBondedTarget             = []byte("MinBondedTarget")
-	DefaultMinBondedTarget sdk.Dec = sdk.NewDecWithPrec(6, 1) // 0.6
+	KeyMinBondedTarget                    = []byte("MinBondedTarget")
+	DefaultMinBondedTarget math.LegacyDec = math.LegacyNewDecWithPrec(6, 1) // 0.6
 )
 
 var (
-	KeyMaxBondedTarget             = []byte("MaxBondedTarget")
-	DefaultMaxBondedTarget sdk.Dec = sdk.NewDecWithPrec(8, 1) // 0.8
+	KeyMaxBondedTarget                    = []byte("MaxBondedTarget")
+	DefaultMaxBondedTarget math.LegacyDec = math.LegacyNewDecWithPrec(8, 1) // 0.8
 )
 
 var (
-	KeyLowFactor             = []byte("LowFactor")
-	DefaultLowFactor sdk.Dec = sdk.NewDecWithPrec(5, 1) // 0.5
+	KeyLowFactor                    = []byte("LowFactor")
+	DefaultLowFactor math.LegacyDec = math.LegacyNewDecWithPrec(5, 1) // 0.5
 )
 
 var (
-	KeyLeftoverBurnRate             = []byte("LeftoverBurnRate")
-	DefaultLeftOverBurnRate sdk.Dec = sdk.OneDec()
+	KeyLeftoverBurnRate                    = []byte("LeftoverBurnRate")
+	DefaultLeftOverBurnRate math.LegacyDec = sdk.OneDec()
 )
 
 var (
@@ -36,8 +37,8 @@ var (
 )
 
 var (
-	KeyValidatorsSubscriptionParticipation             = []byte("ValidatorsSubscriptionParticipation")
-	DefaultValidatorsSubscriptionParticipation sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
+	KeyValidatorsSubscriptionParticipation                    = []byte("ValidatorsSubscriptionParticipation")
+	DefaultValidatorsSubscriptionParticipation math.LegacyDec = math.LegacyNewDecWithPrec(5, 2) // 0.05
 )
 
 // ParamKeyTable the param key table for launch module
@@ -47,12 +48,12 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	minBondedTarget sdk.Dec,
-	maxBondedTarget sdk.Dec,
-	lowFactor sdk.Dec,
-	leftoverBurnRate sdk.Dec,
+	minBondedTarget math.LegacyDec,
+	maxBondedTarget math.LegacyDec,
+	lowFactor math.LegacyDec,
+	leftoverBurnRate math.LegacyDec,
 	maxRewardBoost uint64,
-	validatorsSubscriptionParticipation sdk.Dec,
+	validatorsSubscriptionParticipation math.LegacyDec,
 ) Params {
 	return Params{
 		MinBondedTarget:                     minBondedTarget,
@@ -129,12 +130,12 @@ func (p Params) String() string {
 
 // validateDec validates the Dec param is between 0 and 1
 func validateDec(v interface{}) error {
-	param, ok := v.(sdk.Dec)
+	param, ok := v.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if param.GT(sdk.OneDec()) || param.LT(sdk.ZeroDec()) {
+	if param.GT(sdk.OneDec()) || param.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid dec parameter")
 	}
 

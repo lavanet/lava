@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -41,7 +42,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 	}
 
 	delegation, found := k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
-	amountBefore := sdk.ZeroInt()
+	amountBefore := math.ZeroInt()
 	if found {
 		amountBefore = delegation.Amount.Amount
 	}
