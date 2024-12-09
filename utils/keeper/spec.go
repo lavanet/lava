@@ -151,7 +151,7 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 	}
 	baseProposalFiles := []string{
 		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json",
-		"cosmossdkv45.json", "cosmossdkv50.json", "ethereum.json", "ethermint.json",
+		"cosmossdkv45.json", "cosmossdkv50.json", "ethereum.json", "ethermint.json", "solana.json",
 	}
 
 	// Create a map of base files for quick lookup
