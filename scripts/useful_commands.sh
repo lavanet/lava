@@ -180,6 +180,7 @@ get_base_specs() {
         "./specs/mainnet-1/specs/cosmossdkv50.json"
         "./specs/mainnet-1/specs/ethermint.json"
         "./specs/mainnet-1/specs/ethereum.json"
+        "./specs/mainnet-1/specs/solana.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")
