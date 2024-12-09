@@ -11,18 +11,18 @@ import (
 func TestQosConfigValidation(t *testing.T) {
 	template := []struct {
 		name   string
-		config types.Config_Refactor
+		config types.Config
 		valid  bool
 	}{
 		{name: "valid", config: types.DefaultConfig, valid: true},
-		{name: "valid - default block error probabililty (-1)", config: types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: types.DefaultBlockErrorProbability}, valid: true},
+		{name: "valid - default block error probabililty (-1)", config: types.Config{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: types.DefaultBlockErrorProbability}, valid: true},
 
-		{name: "invalid negative sync factor", config: types.Config_Refactor{SyncFactor: sdk.NewDec(-1), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
-		{name: "invalid greater than one sync factor", config: types.Config_Refactor{SyncFactor: sdk.NewDec(2), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
-		{name: "invalid negative failure cost", config: types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: -3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
-		{name: "invalid negative strategy factor", config: types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.NewDec(-1), BlockErrorProbability: sdk.OneDec()}, valid: false},
-		{name: "invalid negative block error probabililty (excluding default)", config: types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.NewDec(-2)}, valid: false},
-		{name: "invalid greater than 1 block error probabililty", config: types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.NewDec(2)}, valid: false},
+		{name: "invalid negative sync factor", config: types.Config{SyncFactor: sdk.NewDec(-1), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
+		{name: "invalid greater than one sync factor", config: types.Config{SyncFactor: sdk.NewDec(2), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
+		{name: "invalid negative failure cost", config: types.Config{SyncFactor: sdk.OneDec(), FailureCost: -3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.OneDec()}, valid: false},
+		{name: "invalid negative strategy factor", config: types.Config{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.NewDec(-1), BlockErrorProbability: sdk.OneDec()}, valid: false},
+		{name: "invalid negative block error probabililty (excluding default)", config: types.Config{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.NewDec(-2)}, valid: false},
+		{name: "invalid greater than 1 block error probabililty", config: types.Config{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: sdk.NewDec(2)}, valid: false},
 	}
 
 	for _, tt := range template {
@@ -38,7 +38,7 @@ func TestQosConfigValidation(t *testing.T) {
 }
 
 func TestQosConfigModification(t *testing.T) {
-	config := types.Config_Refactor{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: types.DefaultBlockErrorProbability}
+	config := types.Config{SyncFactor: sdk.OneDec(), FailureCost: 3, StrategyFactor: sdk.OneDec(), BlockErrorProbability: types.DefaultBlockErrorProbability}
 	syncFactor := sdk.NewDec(2)
 	failureCost := int64(3)
 	strategyFactor := sdk.NewDec(2)
@@ -94,9 +94,9 @@ func TestQosCompute(t *testing.T) {
 	qos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Sync: sdk.OneDec(), Availability: sdk.OneDec()}
 
 	// with the given QoS report and the default config, the expected score results:
-	// normal: score = latency + sync*syncFactor + ((1/availability) - 1) * FailureCost = 1 + 1*0.1 + (1/1 - 1) * 3 = 1.1
+	// normal: score = latency + sync*syncFactor + ((1/availability) - 1) * FailureCost = 1 + 1*0.3 + (1/1 - 1) * 3 = 1.3
 	// with block error probability: score = latency + blockErrorProbability * FailureCost + ((1/availability) - 1) * FailureCost = 1 + 1*3 + (1/1 - 1) * 3 = 4
-	expectedScoreDefault := sdk.NewDecWithPrec(11, 1)
+	expectedScoreDefault := sdk.NewDecWithPrec(13, 1)
 	expectedScoreBlockErrorProbability := sdk.NewDec(4)
 
 	template := []struct {
@@ -110,7 +110,7 @@ func TestQosCompute(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			score, err := qos.ComputeQoSExcellence_Refactor(tt.opts...)
+			score, err := qos.ComputeQoSExcellence(tt.opts...)
 			require.NoError(t, err)
 			require.True(t, tt.expectedScore.Equal(score))
 		})
@@ -122,15 +122,15 @@ func TestQosFailureCost(t *testing.T) {
 	qos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Sync: sdk.OneDec(), Availability: sdk.NewDecWithPrec(5, 1)}
 	failureCost, highFailureCost := int64(1), int64(3)
 
-	score, err := qos.ComputeQoSExcellence_Refactor(types.WithFailureCost(failureCost))
+	score, err := qos.ComputeQoSExcellence(types.WithFailureCost(failureCost))
 	require.NoError(t, err)
-	scoreHighFailure, err := qos.ComputeQoSExcellence_Refactor(types.WithFailureCost(highFailureCost))
+	scoreHighFailure, err := qos.ComputeQoSExcellence(types.WithFailureCost(highFailureCost))
 	require.NoError(t, err)
 	require.True(t, scoreHighFailure.GT(score))
 
-	scoreWithProb, err := qos.ComputeQoSExcellence_Refactor(types.WithFailureCost(failureCost), types.WithBlockErrorProbability(sdk.OneDec()))
+	scoreWithProb, err := qos.ComputeQoSExcellence(types.WithFailureCost(failureCost), types.WithBlockErrorProbability(sdk.OneDec()))
 	require.NoError(t, err)
-	scoreHighFailureWithProb, err := qos.ComputeQoSExcellence_Refactor(types.WithFailureCost(highFailureCost), types.WithBlockErrorProbability(sdk.OneDec()))
+	scoreHighFailureWithProb, err := qos.ComputeQoSExcellence(types.WithFailureCost(highFailureCost), types.WithBlockErrorProbability(sdk.OneDec()))
 	require.NoError(t, err)
 	require.True(t, scoreHighFailureWithProb.GT(scoreWithProb))
 }
@@ -140,9 +140,9 @@ func TestQosSyncFactor(t *testing.T) {
 	qos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Sync: sdk.OneDec(), Availability: sdk.NewDecWithPrec(5, 1)}
 	syncFactor, highSyncFactor := sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(8, 1)
 
-	score, err := qos.ComputeQoSExcellence_Refactor(types.WithSyncFactor(syncFactor))
+	score, err := qos.ComputeQoSExcellence(types.WithSyncFactor(syncFactor))
 	require.NoError(t, err)
-	scoreHighSyncFactor, err := qos.ComputeQoSExcellence_Refactor(types.WithSyncFactor(highSyncFactor))
+	scoreHighSyncFactor, err := qos.ComputeQoSExcellence(types.WithSyncFactor(highSyncFactor))
 	require.NoError(t, err)
 	require.True(t, scoreHighSyncFactor.GT(score))
 }
@@ -156,18 +156,18 @@ func TestQosStrategyFactor(t *testing.T) {
 
 	// we get the balancedScore with a balanced strategy and subtract the latency component of the balancedScore
 	// this way, our balancedScore will only be syncFactor*sync (syncFactor = configuredSyncFactor * strategyFactor)
-	balancedScore, err := qos.ComputeQoSExcellence_Refactor(types.WithStrategyFactor(types.BalancedStrategyFactor))
+	balancedScore, err := qos.ComputeQoSExcellence(types.WithStrategyFactor(types.BalancedStrategyFactor))
 	require.NoError(t, err)
 	balancedScore = balancedScore.Sub(sdk.OneDec())
 
 	// calculate score with latency strategy - sync component should be smaller than the component in balancedScore
-	latencyScore, err := qos.ComputeQoSExcellence_Refactor(types.WithStrategyFactor(types.LatencyStrategyFactor))
+	latencyScore, err := qos.ComputeQoSExcellence(types.WithStrategyFactor(types.LatencyStrategyFactor))
 	require.NoError(t, err)
 	latencyScore = latencyScore.Sub(sdk.OneDec())
 	require.True(t, balancedScore.GT(latencyScore))
 
 	// calculate score with sync freshness strategy - sync component should be bigger than the component in balancedScore
-	syncScore, err := qos.ComputeQoSExcellence_Refactor(types.WithStrategyFactor(types.SyncFreshnessStrategyFactor))
+	syncScore, err := qos.ComputeQoSExcellence(types.WithStrategyFactor(types.SyncFreshnessStrategyFactor))
 	require.NoError(t, err)
 	syncScore = syncScore.Sub(sdk.OneDec())
 	require.True(t, balancedScore.LT(syncScore))
@@ -178,9 +178,49 @@ func TestQosBlockErrorProbability(t *testing.T) {
 	qos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Sync: sdk.OneDec(), Availability: sdk.OneDec()}
 	probabililty, highProbabililty := sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(8, 1)
 
-	score, err := qos.ComputeQoSExcellence_Refactor(types.WithBlockErrorProbability(probabililty))
+	score, err := qos.ComputeQoSExcellence(types.WithBlockErrorProbability(probabililty))
 	require.NoError(t, err)
-	scoreHighProbabililty, err := qos.ComputeQoSExcellence_Refactor(types.WithBlockErrorProbability(highProbabililty))
+	scoreHighProbabililty, err := qos.ComputeQoSExcellence(types.WithBlockErrorProbability(highProbabililty))
 	require.NoError(t, err)
 	require.True(t, scoreHighProbabililty.GT(score))
+}
+
+func TestQosReport(t *testing.T) {
+	qos1 := &types.QualityOfServiceReport{
+		Latency:      sdk.MustNewDecFromStr("1.5"),
+		Availability: sdk.MustNewDecFromStr("1"),
+		Sync:         sdk.MustNewDecFromStr("0.1"),
+	}
+	qos2 := &types.QualityOfServiceReport{
+		Latency:      sdk.MustNewDecFromStr("0.2"),
+		Availability: sdk.MustNewDecFromStr("1"),
+		Sync:         sdk.MustNewDecFromStr("0.1"),
+	}
+	qos3 := &types.QualityOfServiceReport{
+		Latency:      sdk.MustNewDecFromStr("0.1"),
+		Availability: sdk.MustNewDecFromStr("1"),
+		Sync:         sdk.MustNewDecFromStr("0.5"),
+	}
+	qos4 := &types.QualityOfServiceReport{
+		Latency:      sdk.MustNewDecFromStr("0.1"),
+		Availability: sdk.MustNewDecFromStr("0.5"),
+		Sync:         sdk.MustNewDecFromStr("0.5"),
+	}
+
+	qos1Res, errQos1 := qos1.ComputeQoSExcellence()
+	qos2Res, errQos2 := qos2.ComputeQoSExcellence()
+	qos3Res, errQos3 := qos3.ComputeQoSExcellence()
+	qos4Res, errQos4 := qos4.ComputeQoSExcellence()
+	require.NoError(t, errQos1)
+	require.NoError(t, errQos2)
+	require.NoError(t, errQos3)
+	require.NoError(t, errQos4)
+	require.True(t, qos1Res.LT(qos2Res))
+	require.True(t, qos1Res.LT(qos3Res))
+	require.True(t, qos1Res.LT(qos4Res))
+
+	require.True(t, qos2Res.GT(qos3Res))
+	require.True(t, qos2Res.GT(qos4Res))
+
+	require.True(t, qos4Res.LT(qos3Res))
 }
