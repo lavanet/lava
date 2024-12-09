@@ -202,7 +202,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	params.MinBondedTarget = math.LegacyZeroDec()
 	params.MaxBondedTarget = math.LegacyNewDecWithPrec(8, 1) // 0.8
 	params.LowFactor = math.LegacyNewDecWithPrec(5, 1)       // 0.5
-	params.LeftoverBurnRate = sdk.OneDec()
+	params.LeftoverBurnRate = math.LegacyOneDec()
 	ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 	// calc the expected BondedTargetFactor with its formula. with the values defined above,
@@ -216,7 +216,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	blockReward := res.Reward.Amount
 	distPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	blocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
-	bondedTargetFactor := sdk.OneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
+	bondedTargetFactor := math.LegacyOneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
 	require.True(t, bondedTargetFactor.Equal(expectedBondedTargetFactor))
 
 	// return the params to default values
@@ -323,9 +323,9 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 	for _, tt := range playbook {
 		t.Run(tt.name, func(t *testing.T) {
 			params := types.Params{
-				MinBondedTarget:                     sdk.MustNewDecFromStr(tt.minBonded),
-				MaxBondedTarget:                     sdk.MustNewDecFromStr(tt.maxBonded),
-				LowFactor:                           sdk.MustNewDecFromStr(tt.lowFactor),
+				MinBondedTarget:                     math.LegacyMustNewDecFromStr(tt.minBonded),
+				MaxBondedTarget:                     math.LegacyMustNewDecFromStr(tt.maxBonded),
+				LowFactor:                           math.LegacyMustNewDecFromStr(tt.lowFactor),
 				LeftoverBurnRate:                    types.DefaultLeftOverBurnRate,
 				MaxRewardBoost:                      types.DefaultMaxRewardBoost,
 				ValidatorsSubscriptionParticipation: types.DefaultValidatorsSubscriptionParticipation,
@@ -341,7 +341,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 			}
 
 			bondedTargetFactor := ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx)
-			require.Equal(t, sdk.MustNewDecFromStr(tt.expectedBondedTargetFactor), bondedTargetFactor)
+			require.Equal(t, math.LegacyMustNewDecFromStr(tt.expectedBondedTargetFactor), bondedTargetFactor)
 		})
 	}
 }

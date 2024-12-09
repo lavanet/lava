@@ -596,7 +596,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 
 func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet math.LegacyDec) {
 	downtimePercentage := math.LegacyNewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(math.LegacyNewDecWithPrec(int64(qosReport.TotalRelays), 0))
-	scaledAvailabilityScore := sdk.MaxDec(math.LegacyZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+	scaledAvailabilityScore := math.LegacyMaxDec(math.LegacyZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	return downtimePercentage, scaledAvailabilityScore
 }
 

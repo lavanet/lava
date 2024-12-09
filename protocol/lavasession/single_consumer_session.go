@@ -1,11 +1,12 @@
 package lavasession
 
 import (
+	"math"
 	"sort"
 	"strconv"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmosmath "cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
@@ -37,7 +38,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 }
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
-func (cs *SingleConsumerSession) getQosComputedResultOrZero() math.LegacyDec {
+func (cs *SingleConsumerSession) getQosComputedResultOrZero() cosmosmath.LegacyDec {
 	if cs.QoSInfo.LastExcellenceQoSReport != nil {
 		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoSExcellence()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
@@ -45,7 +46,7 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() math.LegacyDec {
 		}
 		utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport))
 	}
-	return math.LegacyZeroDec()
+	return cosmosmath.LegacyZeroDec()
 }
 
 func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
@@ -59,13 +60,13 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 
 	downtimePercentage, scaledAvailabilityScore := CalculateAvailabilityScore(&cs.QoSInfo)
 	cs.QoSInfo.LastQoSReport.Availability = scaledAvailabilityScore
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
+	if cosmosmath.LegacyOneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
 		utils.LavaFormatDebug("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
 
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(math.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(math.NewInt(int64(latency)))))
+	latencyScore := cosmosmath.LegacyMinDec(cosmosmath.LegacyOneDec(), cosmosmath.LegacyNewDecFromInt(cosmosmath.NewInt(int64(expectedLatency))).Quo(cosmosmath.LegacyNewDecFromInt(cosmosmath.NewInt(int64(latency)))))
 
-	insertSorted := func(list []math.LegacyDec, value math.LegacyDec) []math.LegacyDec {
+	insertSorted := func(list []cosmosmath.LegacyDec, value cosmosmath.LegacyDec) []cosmosmath.LegacyDec {
 		index := sort.Search(len(list), func(i int) bool {
 			return list[i].GTE(value)
 		})
@@ -87,8 +88,8 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 			cs.QoSInfo.SyncScoreSum++
 		}
 		cs.QoSInfo.TotalSyncScore++
-		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
-		if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+		cs.QoSInfo.LastQoSReport.Sync = cosmosmath.LegacyNewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+		if cosmosmath.LegacyOneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
 			utils.LavaFormatDebug("QoS Sync report",
 				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
 				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
@@ -99,7 +100,7 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 		}
 	} else {
 		// we prefer to give them a score of 1 when there is no other data, since otherwise we damage their payments
-		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(1)
+		cs.QoSInfo.LastQoSReport.Sync = cosmosmath.LegacyNewDec(1)
 	}
 }
 

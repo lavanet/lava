@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/subscription/types"
@@ -44,7 +46,7 @@ func (k Keeper) RemoveAdjustment(
 // GetAllAdjustment returns all Adjustment
 func (k Keeper) GetAllAdjustment(ctx sdk.Context) (list []types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -132,7 +134,7 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 func (k Keeper) GetConsumerAdjustments(ctx sdk.Context, consumer string) (list []types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	// set consumer prefix
-	iterator := sdk.KVStorePrefixIterator(store, []byte(consumer))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(consumer))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -147,7 +149,7 @@ func (k Keeper) GetConsumerAdjustments(ctx sdk.Context, consumer string) (list [
 func (k Keeper) RemoveConsumerAdjustments(ctx sdk.Context, consumer string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	// set consumer prefix
-	iterator := sdk.KVStorePrefixIterator(store, []byte(consumer))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(consumer))
 	defer iterator.Close()
 
 	keysToDelete := []string{}

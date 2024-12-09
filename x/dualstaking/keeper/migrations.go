@@ -4,6 +4,7 @@ import (
 	_ "embed"
 
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
@@ -50,7 +51,7 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 
 	// set rewards
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(DelegatorRewardKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -69,7 +70,7 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 	// now delete the stores
 	deleteStore := func(prefixString string) {
 		store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(prefixString))
-		iterator := sdk.KVStorePrefixIterator(store, []byte{})
+		iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 		defer iterator.Close()
 

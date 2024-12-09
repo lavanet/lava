@@ -19,7 +19,7 @@ import (
 func ConflictKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	epochstorage, stateStore, db := EpochstorageKeeperWithDB(t)
 
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)

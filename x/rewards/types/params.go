@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -28,7 +27,7 @@ var (
 
 var (
 	KeyLeftoverBurnRate                    = []byte("LeftoverBurnRate")
-	DefaultLeftOverBurnRate math.LegacyDec = sdk.OneDec()
+	DefaultLeftOverBurnRate math.LegacyDec = math.LegacyOneDec()
 )
 
 var (
@@ -135,7 +134,7 @@ func validateDec(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if param.GT(sdk.OneDec()) || param.LT(math.LegacyZeroDec()) {
+	if param.GT(math.LegacyOneDec()) || param.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid dec parameter")
 	}
 

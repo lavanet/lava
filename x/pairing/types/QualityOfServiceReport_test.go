@@ -3,30 +3,30 @@ package types
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQosReport(t *testing.T) {
 	qos1 := &QualityOfServiceReport{
-		Latency:      sdk.MustNewDecFromStr("1.5"),
-		Availability: sdk.MustNewDecFromStr("1"),
-		Sync:         sdk.MustNewDecFromStr("0.1"),
+		Latency:      math.LegacyMustNewDecFromStr("1.5"),
+		Availability: math.LegacyMustNewDecFromStr("1"),
+		Sync:         math.LegacyMustNewDecFromStr("0.1"),
 	}
 	qos2 := &QualityOfServiceReport{
-		Latency:      sdk.MustNewDecFromStr("0.2"),
-		Availability: sdk.MustNewDecFromStr("1"),
-		Sync:         sdk.MustNewDecFromStr("0.1"),
+		Latency:      math.LegacyMustNewDecFromStr("0.2"),
+		Availability: math.LegacyMustNewDecFromStr("1"),
+		Sync:         math.LegacyMustNewDecFromStr("0.1"),
 	}
 	qos3 := &QualityOfServiceReport{
-		Latency:      sdk.MustNewDecFromStr("0.1"),
-		Availability: sdk.MustNewDecFromStr("1"),
-		Sync:         sdk.MustNewDecFromStr("0.5"),
+		Latency:      math.LegacyMustNewDecFromStr("0.1"),
+		Availability: math.LegacyMustNewDecFromStr("1"),
+		Sync:         math.LegacyMustNewDecFromStr("0.5"),
 	}
 	qos4 := &QualityOfServiceReport{
-		Latency:      sdk.MustNewDecFromStr("0.1"),
-		Availability: sdk.MustNewDecFromStr("0.5"),
-		Sync:         sdk.MustNewDecFromStr("0.5"),
+		Latency:      math.LegacyMustNewDecFromStr("0.1"),
+		Availability: math.LegacyMustNewDecFromStr("0.5"),
+		Sync:         math.LegacyMustNewDecFromStr("0.5"),
 	}
 
 	qos1Res, errQos1 := qos1.ComputeQoSExcellence()

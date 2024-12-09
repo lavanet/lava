@@ -510,7 +510,7 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex SafeIndex,
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex SafeIndex, _ uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	// "stale" entry versions are ones that reached refcount zero at least
@@ -589,7 +589,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex SafeIndex
 func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry Entry) {
 	store := fs.getEntryStore(ctx, lastEntry.SafeIndex())
 
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	// first collect all the candidates, and later remove them (as the iterator
@@ -655,7 +655,7 @@ func (fs *FixationStore) FindRawEntry(ctx sdk.Context, index string, block uint6
 	}
 
 	store := fs.getEntryStore(ctx, safeIndex)
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var entry Entry
@@ -675,7 +675,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	store := fs.getEntryStore(ctx, safeIndex)
 	ctxBlock := uint64(ctx.BlockHeight())
 
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	// iterate over entries in reverse order of version (block), and return the
@@ -972,7 +972,7 @@ func (fs *FixationStore) putFutureEntry(ctx sdk.Context, safeIndex SafeIndex, bl
 
 	store := fs.getEntryStore(ctx, safeIndex)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -991,7 +991,7 @@ func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, b
 
 	store := fs.getEntryStore(ctx, safeIndex)
 
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -1166,7 +1166,7 @@ func (fs FixationStore) isEntryIndexLive(ctx sdk.Context, safeIndex SafeIndex) b
 func (fs FixationStore) AllEntryIndicesFilter(ctx sdk.Context, prefix string, filter func(k, v []byte) bool) []string {
 	store := fs.getEntryIndexStore(ctx)
 	entryPrefix := KeyPrefix(prefix)
-	iterator := sdk.KVStorePrefixIterator(store, entryPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, entryPrefix)
 	defer iterator.Close()
 
 	// iterate over the store's values and save the indices in a list

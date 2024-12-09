@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	v2 "github.com/lavanet/lava/v4/x/subscription/migrations/v2"
@@ -34,7 +35,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		v2.KeyPrefix(v2.SubscriptionKeyPrefix),
 	)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {

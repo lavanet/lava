@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/rewards/types"
 )
@@ -32,7 +33,7 @@ func (k Keeper) getBasePay(
 // GetAllBasePay returns all BasePay
 func (k Keeper) GetAllBasePay(ctx sdk.Context) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -58,7 +59,7 @@ func (k Keeper) SetAllBasePay(ctx sdk.Context, list []types.BasePayWithIndex) {
 
 func (k Keeper) getAllBasePayForChain(ctx sdk.Context, chainID string, provider string) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.BasePayWithIndex{ChainId: chainID, Provider: provider}.Index()))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(types.BasePayWithIndex{ChainId: chainID, Provider: provider}.Index()))
 
 	defer iterator.Close()
 
@@ -75,7 +76,7 @@ func (k Keeper) getAllBasePayForChain(ctx sdk.Context, chainID string, provider 
 
 func (k Keeper) popAllBasePayForChain(ctx sdk.Context, chainID string) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte(chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(chainID))
 
 	defer iterator.Close()
 
@@ -95,7 +96,7 @@ func (k Keeper) popAllBasePayForChain(ctx sdk.Context, chainID string) (list []t
 
 func (k Keeper) removeAllBasePay(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

@@ -23,14 +23,14 @@ import (
 )
 
 func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
-	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
+	epochStoreKey := storetypes.NewKVStoreKey(epochstoragetypes.StoreKey)
 	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
 	stateStore.MountStoreWithDB(epochStoreKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(epochMemStoreKey, storetypes.StoreTypeMemory, nil)

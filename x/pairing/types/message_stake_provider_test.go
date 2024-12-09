@@ -24,7 +24,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            "invalid_address",
 				Description:        d,
-				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
 				Amount:             types.NewCoin(commontypes.TokenDenom, math.OneInt()),
@@ -37,7 +37,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
 				Description:        d,
-				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
 				Amount:             types.NewCoin(commontypes.TokenDenom, math.OneInt()),
@@ -50,7 +50,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
 				Description:        d,
-				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          "invalid_address",
 				Amount:             types.NewCoin(commontypes.TokenDenom, math.OneInt()),
@@ -63,7 +63,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
 				Description:        d,
-				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
 				Address:            sample.AccAddress(),
@@ -75,7 +75,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
 				Description:        d,
-				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
 				Amount:             types.NewCoin(commontypes.TokenDenom, math.OneInt()),

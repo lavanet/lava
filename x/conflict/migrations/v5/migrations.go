@@ -18,7 +18,7 @@ func DeleteOpenConflicts(ctx sdk.Context, storeKey storetypes.StoreKey, cdc code
 	store := ctx.KVStore(storeKey)
 	log.Println("@@@ REMOVING OLD STORAGE KEYS @@@")
 	oldStore := prefix.NewStore(store, types.KeyPrefix(ConflictVoteKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(oldStore, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(oldStore, []byte{})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		log.Printf("@@@ Key: %s @@@", string(iterator.Key()))

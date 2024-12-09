@@ -152,7 +152,7 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs GenesisState) {
 	// get all time timers (measured in block time)
 	store := tstore.getStoreTimer(ctx, BlockTime)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := DecodeBlockAndKey(iterator.Key())
 		gs.TimeEntries = append(gs.TimeEntries, GenesisTimerEntry{
@@ -166,7 +166,7 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs GenesisState) {
 	// get all block timers (measured in block height)
 	store = tstore.getStoreTimer(ctx, BlockHeight)
 
-	iterator = sdk.KVStorePrefixIterator(store, []byte{})
+	iterator = storetypes.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := DecodeBlockAndKey(iterator.Key())
 		gs.BlockEntries = append(gs.BlockEntries, GenesisTimerEntry{
@@ -339,7 +339,7 @@ func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64,
 func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which TimerType) []*TimerInfo {
 	store := tstore.getStoreTimer(ctx, which)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	timers := []*TimerInfo{}
@@ -369,7 +369,7 @@ func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which TimerType) (uint6
 	// because the key is block height/timestamp, the iterator yields entries
 	// ordered by height/timestamp. so the front (earliest) one is the first.
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -408,7 +408,7 @@ func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which TimerType) (keys
 	store := tstore.getStoreTimer(ctx, which)
 	nextTimeoutValue := tstore.getNextTimeout(ctx, which)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -470,7 +470,7 @@ func timerMigrate1to2(ctx sdk.Context, tstore *TimerStore) error {
 	for _, which := range []TimerType{BlockHeight, BlockTime} {
 		store := tstore.getStoreTimer(ctx, which)
 
-		iterator := sdk.KVStorePrefixIterator(store, []byte{})
+		iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 		defer iterator.Close()
 
 		for ; iterator.Valid(); iterator.Next() {

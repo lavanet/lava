@@ -67,7 +67,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
-	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
+	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, math.LegacyOneDec())
 	k.MovePoolToPool(ctx, types.ValidatorsRewardsLeftOverPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 1 {

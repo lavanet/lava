@@ -2,11 +2,13 @@ package provideroptimizer
 
 import (
 	"math"
+
+	cosmosmath "cosmossdk.io/math"
+
 	"strings"
 	"sync"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/metrics"
@@ -593,7 +595,7 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	syncScore := turnFloatToDec(providerData.Sync.Num/providerData.Sync.Denom, precision)
 	// if our sync score is un initialized due to lack of providers
 	if syncScore.IsZero() {
-		syncScore = sdk.OneDec()
+		syncScore = cosmosmath.LegacyOneDec()
 	}
 	availabilityScore := turnFloatToDec(providerData.Availability.Num/providerData.Availability.Denom, precision)
 	ret := &pairingtypes.QualityOfServiceReport{
@@ -619,9 +621,9 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	return ret, rawQosReport
 }
 
-func turnFloatToDec(floatNum float64, precision int64) math.LegacyDec {
+func turnFloatToDec(floatNum float64, precision int64) cosmosmath.LegacyDec {
 	integerNum := int64(math.Round(floatNum * math.Pow(10, float64(precision))))
-	return math.LegacyNewDecWithPrec(integerNum, precision)
+	return cosmosmath.LegacyNewDecWithPrec(integerNum, precision)
 }
 
 func (po *ProviderOptimizer) Strategy() Strategy {

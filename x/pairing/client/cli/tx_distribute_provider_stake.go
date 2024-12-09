@@ -73,7 +73,7 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 	totalP := math.LegacyZeroDec()
 	distributions := []data{}
 	for i := 0; i < len(splitedArgs); i += 2 {
-		p, err := sdk.NewDecFromStr(splitedArgs[i+1])
+		p, err := math.LegacyNewDecFromStr(splitedArgs[i+1])
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 	if len(distributions) != len(entries) {
 		return nil, fmt.Errorf("must specify percentages for all chains the provider is staked on")
 	}
-	if !totalP.Equal(sdk.NewDec(100)) {
+	if !totalP.Equal(math.LegacyNewDec(100)) {
 		return nil, fmt.Errorf("total percentages must be 100")
 	}
 

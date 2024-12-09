@@ -12,6 +12,7 @@ import (
 	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/chainlib"
@@ -747,7 +748,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 			if rpccs.debugRelays && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
 				singleConsumerSession.QoSInfo.LastQoSReport.Sync.BigInt() != nil &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(math.LegacyMustNewDecFromStr("0.9")) {
 				utils.LavaFormatDebug("identified QoS mismatch",
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},

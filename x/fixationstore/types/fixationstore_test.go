@@ -753,6 +753,6 @@ func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
 }
 
 var (
-	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockStoreKey    = storetypes.NewKVStoreKey("storeKey")
 	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )

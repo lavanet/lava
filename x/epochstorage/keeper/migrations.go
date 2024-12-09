@@ -8,6 +8,7 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -28,7 +29,7 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
 
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(v3.StakeStorageKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -51,7 +52,7 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate: epochstorage to include detailed description")
 
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(v3.StakeStorageKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -79,7 +80,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 	k := m.keeper
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), v3.KeyPrefix(v3.StakeStorageKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

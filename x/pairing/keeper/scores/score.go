@@ -154,7 +154,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot P
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreCompDec := sdk.NewDecFromInt(math.Int(newScoreComp))
+			newScoreCompDec := math.LegacyNewDecFromInt(math.Int(newScoreComp))
 			newScoreCompDec = newScoreCompDec.Power(weight)
 			newScoreComp = math.Uint(newScoreCompDec.TruncateInt())
 

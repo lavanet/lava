@@ -178,7 +178,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			}
 
 			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
-			slashingFactor = sdk.MinDec(math.LegacyOneDec(), slashingFactor)
+			slashingFactor = math.LegacyMinDec(math.LegacyOneDec(), slashingFactor)
 			slashedAmount := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
 			slashedAmount = sdk.MinInt(total, slashedAmount)
 			total = total.Sub(slashedAmount)

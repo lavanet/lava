@@ -512,14 +512,14 @@ func TestNotRoundedShares(t *testing.T) {
 
 	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validatorAcc.Addr))
 	require.True(t, found)
-	val.DelegatorShares = sdk.MustNewDecFromStr("4540404040405.050505050505050505")
+	val.DelegatorShares = math.LegacyMustNewDecFromStr("4540404040405.050505050505050505")
 	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, delAmount.Int64())
 	require.NoError(t, err)
 
-	shares := sdk.MustNewDecFromStr("1010101010101.010101010101010101")
+	shares := math.LegacyMustNewDecFromStr("1010101010101.010101010101010101")
 	require.NoError(t, err)
 	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr), shares))
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,13 +43,13 @@ func TestGenesis(t *testing.T) {
 	store1 := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
 		KeyPrefix(fs.prefix))
-	iterator1 := sdk.KVStorePrefixIterator(store1, []byte{})
+	iterator1 := storetypes.KVStorePrefixIterator(store1, []byte{})
 	defer iterator1.Close()
 
 	store2 := prefix.NewStore(
 		emptyCtx.KVStore(fs.storeKey),
 		KeyPrefix(fs.prefix))
-	iterator2 := sdk.KVStorePrefixIterator(store2, []byte{})
+	iterator2 := storetypes.KVStorePrefixIterator(store2, []byte{})
 	defer iterator2.Close()
 
 	for ; iterator1.Valid(); iterator1.Next() {

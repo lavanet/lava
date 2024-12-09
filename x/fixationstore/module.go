@@ -59,7 +59,7 @@ type AppModule struct {
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-func (a AppModule) BeginBlock(_ context.Context) error {}
+func (a AppModule) BeginBlock(_ context.Context) error { return nil }
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.

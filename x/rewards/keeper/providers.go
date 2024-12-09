@@ -36,7 +36,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 	var found bool
 	bp.BasePay, found = k.getBasePay(ctx, bp)
 	adjustedPay := adjustment.MulInt(rewards)
-	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
+	adjustedPay = math.LegacyMinDec(adjustedPay, math.LegacyNewDecFromInt(rewards))
 	if !found {
 		bp.BasePay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
 	} else {
@@ -71,7 +71,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 		// calculate the maximum rewards for the spec
 		specTotalPayout := math.LegacyZeroDec()
 		if !totalbasepay.IsZero() {
-			specTotalPayout = k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+			specTotalPayout = k.SpecTotalPayout(ctx, total, math.LegacyNewDecFromInt(totalbasepay), spec)
 		}
 		details := map[string]string{}
 		// distribute the rewards to all providers
@@ -125,7 +125,7 @@ func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, to
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.MaxRewardBoost(ctx)))
 	diminishingRewards := sdk.MaxDec(math.LegacyZeroDec(), (math.LegacyNewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(math.LegacyNewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
-	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
+	return math.LegacyMinDec(math.LegacyMinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
 func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
@@ -145,7 +145,7 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = math.LegacyZeroDec()
 		for _, entry := range stakeEntries {
-			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.TotalStake()))
+			chainStake[chainID] = chainStake[chainID].Add(math.LegacyNewDecFromInt(entry.TotalStake()))
 		}
 
 		chainStake[chainID] = chainStake[chainID].MulInt64(int64(spec.Shares))

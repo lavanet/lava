@@ -30,7 +30,7 @@ func SpecKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 }
 
 func specKeeper() (*keeper.Keeper, sdk.Context, error) {
-	storeKey := sdk.NewKVStoreKey(spectypes.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(spectypes.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(spectypes.MemStoreKey)
 
 	db := tmdb.NewMemDB()

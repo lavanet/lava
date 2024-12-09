@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/lavanet/lava/v4/x/pairing/types"
@@ -30,7 +31,7 @@ func (k Keeper) GetPairingRelayCache(ctx sdk.Context, project string, chainID st
 // will be deleted before it's written to the state
 func (k Keeper) ResetPairingRelayCache(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

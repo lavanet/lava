@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/conflict/types"
 )
@@ -47,7 +48,7 @@ func (k Keeper) RemoveConflictVote(
 // GetAllConflictVote returns all conflictVote
 func (k Keeper) GetAllConflictVote(ctx sdk.Context) (list []types.ConflictVote) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ConflictVoteKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

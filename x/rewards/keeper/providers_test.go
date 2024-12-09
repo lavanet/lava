@@ -789,7 +789,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 			if tt.mode == Delegator {
 				// delegate to the provider
 				// advance ctx by a month and a day to make the delegation count
-				_, err := ts.TxDualstakingDelegate(consumer, provider, math.NewInt64Coin(ts.TokenDenom(), testStake/2))
+				_, err := ts.TxDualstakingDelegate(consumer, provider, sdk.NewInt64Coin(ts.TokenDenom(), testStake/2))
 				require.NoError(t, err)
 				ts.AdvanceMonths(1)
 			}
@@ -864,7 +864,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 				require.Empty(t, info)
 			} else {
 				// run the estimated rewards query for delegation simulation (should not have info, it's only for providers)
-				delegation := math.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
+				delegation := sdk.NewInt64Coin(ts.TokenDenom(), testStake/2).String()
 				total, info := ts.EstimateProviderRewards(provider, delegation)
 
 				// expectedTotal = trackedCuFactor.MulInt(expectedTotal).TruncateInt()

@@ -257,7 +257,7 @@ func TestTimerEarlyExpiry(t *testing.T) {
 }
 
 var (
-	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockStoreKey    = storetypes.NewKVStoreKey("storeKey")
 	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )
 

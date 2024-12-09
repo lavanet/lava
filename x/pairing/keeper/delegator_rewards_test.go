@@ -95,7 +95,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.Equal(t, 3, len(res.Delegations))
 
 			// calc useful consts
-			totalReward := sdk.NewDec(int64(relayCuSum))
+			totalReward := math.LegacyNewDec(int64(relayCuSum))
 
 			// send relay and check provider balance according to expected providerRewardPerc (done inside payAndVerifyBalance)
 			relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -223,7 +223,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, relevantDelegations, stakeEntry.DelegateCommission)
 
-	require.True(t, totalReward.IsEqual(providerReward))
+	require.True(t, totalReward.Equal(providerReward))
 
 	// check that the expected reward equals to the provider's new balance minus old balance
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -556,7 +556,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.NoError(t, err)
-	require.True(t, fakeReward.IsEqual(providerReward)) // if the delegator got anything, this would fail
+	require.True(t, fakeReward.Equal(providerReward)) // if the delegator got anything, this would fail
 
 	// verify again that the delegator has no unclaimed rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
@@ -618,11 +618,11 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	provider1Reward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
-	require.True(t, fakeReward.IsEqual(provider1Reward)) // if the delegator got anything, this would fail
+	require.True(t, fakeReward.Equal(provider1Reward)) // if the delegator got anything, this would fail
 	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
-	require.False(t, fakeReward.IsEqual(providerReward)) // the delegator should have rewards
+	require.False(t, fakeReward.Equal(providerReward)) // the delegator should have rewards
 
 	// verify again that the delegator has no unclaimed rewards with provider1 but has some with provider
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator, provider1, ts.spec.Index)

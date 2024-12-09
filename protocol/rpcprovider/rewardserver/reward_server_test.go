@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/testutil/common"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -31,9 +32,9 @@ func stubPaymentEvents(num int, specId string, sessionId uint64) (tos []map[stri
 			Provider:    "lava@test0",
 			RelayNum:    5,
 			QosReport: &pairingtypes.QualityOfServiceReport{
-				Latency:      sdk.OneDec(),
-				Availability: sdk.OneDec(),
-				Sync:         sdk.OneDec(),
+				Latency:      math.LegacyOneDec(),
+				Availability: math.LegacyOneDec(),
+				Sync:         math.LegacyOneDec(),
 			},
 			Epoch:                 20,
 			UnresponsiveProviders: nil,

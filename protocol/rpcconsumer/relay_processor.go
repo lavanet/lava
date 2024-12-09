@@ -10,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
@@ -306,7 +306,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	countMap := make(map[string]int) // Map to store the count of each unique result.Reply.Data
 	deterministic := rp.RelayStateMachine.GetProtocolMessage().GetApi().Category.Deterministic
 	var bestQosResult common.RelayResult
-	bestQos := sdktypes.ZeroDec()
+	bestQos := math.LegacyZeroDec()
 	nilReplies := 0
 	nilReplyIdx := -1
 	for idx, result := range results {

@@ -204,7 +204,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				)
 				return
 			}
-			providerAdjustment = math.LegacyOneDec().Quo(sdk.NewDecFromInt(math.NewIntFromUint64(maxRewardBoost)))
+			providerAdjustment = math.LegacyOneDec().Quo(math.LegacyNewDecFromInt(math.NewIntFromUint64(maxRewardBoost)))
 		}
 
 		// calculate the provider reward (smaller than totalMonthlyReward

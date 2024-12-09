@@ -29,7 +29,7 @@ import (
 )
 
 func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
 	db := tmdb.NewMemDB()
@@ -62,13 +62,13 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
-	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
+	downtimeKey := storetypes.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
-	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	stakingStoreKey := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
 	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
-	distributionStoreKey := sdk.NewKVStoreKey(distributiontypes.StoreKey)
+	distributionStoreKey := storetypes.NewKVStoreKey(distributiontypes.StoreKey)
 	distributionKeeper := distributionkeeper.NewKeeper(cdc, distributionStoreKey, mockAccountKeeper{}, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, stakingKeeper)

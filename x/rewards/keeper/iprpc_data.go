@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/rewards/types"
@@ -67,7 +68,7 @@ func (k Keeper) RemoveIprpcSubscription(ctx sdk.Context, address string) {
 // GetAllIprpcSubscription returns all subscription from the IprpcSubscription store
 func (k Keeper) GetAllIprpcSubscription(ctx sdk.Context) []string {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcSubscriptionPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

@@ -217,7 +217,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.NewDecFromInt(math.NewIntFromUint64(rewardedCU))
+		rewardedCUDec := math.LegacyNewDecFromInt(math.NewIntFromUint64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]

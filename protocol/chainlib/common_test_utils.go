@@ -238,7 +238,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 
 	ts.Validator = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
 	msg, err := stakingtypes.NewMsgCreateValidator(
-		sdk.ValAddress(ts.Validator.Addr),
+		sdk.ValAddress(ts.Validator.Addr).String(),
 		ts.Validator.PubKey,
 		sdk.NewCoin(ts.BondDenom(), math.NewIntFromUint64(uint64(balance))),
 		stakingtypes.Description{},

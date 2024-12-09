@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"go/build"
 	"math"
+
+	cosmosmath "cosmossdk.io/math"
+
 	"os"
 	"os/exec"
 	"strings"
@@ -117,7 +120,7 @@ func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards of address %s. err: %s", sdkAddr.String(), err.Error())
 		}
-		total := sdk.NewCoin(commonconsts.TestTokenDenom, math.ZeroInt())
+		total := sdk.NewCoin(commonconsts.TestTokenDenom, cosmosmath.ZeroInt())
 		for _, r := range res.Rewards {
 			total = total.AddAmount(r.Amount.AmountOf(commonconsts.TestTokenDenom))
 		}
@@ -166,7 +169,7 @@ func (lt *lavaTest) checkPayment(providers []string, startRewards []sdk.Coin) {
 				utils.Attribute{Key: "provider", Value: providers[i]},
 				utils.Attribute{Key: "start_balance", Value: startRewards[i].String()},
 				utils.Attribute{Key: "expected_payout", Value: expectedPayoutArr[i]},
-				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(math.NewIntFromUint64(expectedPayoutArr[i])).String()},
+				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(cosmosmath.NewIntFromUint64(expectedPayoutArr[i])).String()},
 				utils.Attribute{Key: "actual_balance", Value: newRewards[i]},
 			))
 		}

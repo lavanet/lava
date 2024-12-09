@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/spec/types"
 	typesv1 "github.com/lavanet/lava/v4/x/spec/types/migrations/v1"
@@ -28,7 +29,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

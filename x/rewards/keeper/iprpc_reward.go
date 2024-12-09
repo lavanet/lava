@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/rewards/types"
 )
@@ -59,7 +60,7 @@ func (k Keeper) RemoveIprpcReward(ctx sdk.Context, id uint64) {
 // GetAllIprpcReward returns all IprpcReward
 func (k Keeper) GetAllIprpcReward(ctx sdk.Context) (list []types.IprpcReward) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
