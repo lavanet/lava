@@ -274,7 +274,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stakingparams := stakingtypes.DefaultParams()
 	stakingparams.BondDenom = commonconsts.TestTokenDenom
 	ks.StakingKeeper.SetParams(ctx, stakingparams)
-	ks.Distribution.SetParams(ctx, distributiontypes.DefaultParams())
+	ks.Distribution.Params.Set(ctx, distributiontypes.DefaultParams())
 	ks.SlashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())

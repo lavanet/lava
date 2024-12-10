@@ -465,7 +465,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	// validatorsSubscriptionParticipation = 10%
 	distParams := distributiontypes.DefaultParams()
 	distParams.CommunityTax = math.LegacyNewDecWithPrec(5, 1) // 0.5
-	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distParams)
 	require.NoError(t, err)
 
 	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
@@ -514,8 +514,9 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 
 	// check actual balance of the commuinty pool
 	// community pool should have 40% of expected reward
-	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	communityPool, err := ts.Keepers.Distribution.FeePool.Get(ts.Ctx)
+	require.NoError(t, err)
+	communityBalance := communityPool.CommunityPool.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.True(t, expectedReward.Mul(communityPerc).QuoRaw(100).Equal(communityBalance))
 }
 
@@ -709,7 +710,7 @@ func TestCommunityTaxOne(t *testing.T) {
 	// validatorsSubscriptionParticipation = 10%
 	distParams := distributiontypes.DefaultParams()
 	distParams.CommunityTax = math.LegacyOneDec()
-	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distParams)
 	require.NoError(t, err)
 
 	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
@@ -751,8 +752,9 @@ func TestCommunityTaxOne(t *testing.T) {
 
 	// check actual balance of the commuinty pool
 	// community pool should have 100% of expected reward
-	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	communityPool, err := ts.Keepers.Distribution.FeePool.Get(ts.Ctx)
+	require.NoError(t, err)
+	communityBalance := communityPool.CommunityPool.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.Equal(t, expectedReward, communityBalance)
 }
 

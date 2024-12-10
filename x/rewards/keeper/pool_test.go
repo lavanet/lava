@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/lavanet/lava/v4/testutil/common"
@@ -190,7 +189,8 @@ func TestValidatorBlockRewards(t *testing.T) {
 	ts := newTester(t, false)
 
 	// create validator
-	stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+	stakingSupply, err := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+	require.NoError(ts.T, err)
 	valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
 	ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -333,7 +333,8 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 			if tt.unzeroBondedRatio {
-				stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+				stakingSupply, err := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+				require.NoError(ts.T, err)
 				valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
 				ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
 				validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -396,7 +397,7 @@ func TestBlockRewardsWith2Tokens(t *testing.T) {
 	startTokens = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 
 	ts.AdvanceBlock()
-	distribution.BeginBlocker(ts.Ctx, abci.RequestBeginBlock{}, ts.Keepers.Distribution)
+	distribution.BeginBlocker(ts.Ctx, ts.Keepers.Distribution)
 
 	currentTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 	require.Equal(t, currentTokens.AmountOf(ibcDenom), currentTokens.AmountOf(ts.BondDenom()))

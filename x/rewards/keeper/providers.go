@@ -129,7 +129,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards math.LegacyDec, spec types.SpecEmissionPart) math.LegacyDec {
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.MaxRewardBoost(ctx)))
-	diminishingRewards := sdk.MaxDec(math.LegacyZeroDec(), (math.LegacyNewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(math.LegacyNewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
+	diminishingRewards := math.LegacyMaxDec(math.LegacyZeroDec(), (math.LegacyNewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(math.LegacyNewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return math.LegacyMinDec(math.LegacyMinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 

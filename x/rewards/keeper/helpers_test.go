@@ -192,7 +192,8 @@ func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Acco
 //  1. validators was created using addValidators(1) and TxCreateValidator
 //  2. TxCreateValidator was used with init funds of 30000000000000/3
 func (ts *tester) makeBondedRatioNonZero() {
-	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	bondedRatio, err := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.NoError(ts.T, err)
 	if bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2)) {
 		return
 	}
@@ -203,11 +204,12 @@ func (ts *tester) makeBondedRatioNonZero() {
 	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
 	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
 	require.False(ts.T, bondedPoolBalance.IsZero())
-	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
+	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
 	require.Nil(ts.T, err)
 	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
 	require.False(ts.T, stakingBondedPoolBalance.IsZero())
 
-	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	bondedRatio, err = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.NoError(ts.T, err)
 	require.True(ts.T, bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 }

@@ -19,11 +19,15 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 
 	// check fund consists of minimum amount of ulava (min_iprpc_cost)
 	minIprpcFundCost := k.GetMinIprpcCost(ctx)
-	if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if fund.AmountOf(bondDenom).LT(minIprpcFundCost.Amount) {
 		return utils.LavaFormatWarning("insufficient ulava tokens in fund. should be at least min iprpc cost * duration", types.ErrFundIprpc,
 			utils.LogAttr("min_iprpc_cost", k.GetMinIprpcCost(ctx).String()),
 			utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
-			utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
+			utils.LogAttr("fund_ulava_amount", fund.AmountOf(bondDenom)),
 		)
 	}
 

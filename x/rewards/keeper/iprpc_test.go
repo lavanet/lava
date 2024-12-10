@@ -156,7 +156,8 @@ func TestFundIprpcTX(t *testing.T) {
 func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // setup funds IPRPC for mock2 spec
-	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
+	require.NoError(ts.T, err)
 
 	// get consumers and providers (note, only c1 is IPRPC eligible)
 	c1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -436,7 +437,8 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 func TestFundIprpcTwice(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
-	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distributiontypes.Params{CommunityTax: math.LegacyOneDec().QuoInt64(2)})
+	require.NoError(ts.T, err)
 	validatorTax := math.NewInt(10)
 	tax := math.NewInt(100).Sub(validatorTax).SubRaw(45) // tax is 10% validators and 45% community
 
@@ -444,7 +446,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
 
 	// fund iprpc pool
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
+	err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
 	require.NoError(ts.T, err)
 	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds)
 	require.NoError(ts.T, err)
@@ -721,7 +723,7 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	// make community participation percentage to be 100% to make the provider not get rewarded for its service later
 	distParams := distributiontypes.DefaultParams()
 	distParams.CommunityTax = math.LegacyOneDec()
-	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distParams)
 	require.NoError(t, err)
 
 	// make providers service the IPRPC eligible consumer

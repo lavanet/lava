@@ -67,7 +67,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
-	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, math.LegacyOneDec())
+	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, cosmosmath.LegacyOneDec())
 	k.MovePoolToPool(ctx, types.ValidatorsRewardsLeftOverPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 1 {
@@ -82,10 +82,15 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC()
 	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth.Unix()), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
 
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		// TODO yarom
+		return
+	}
 	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
-	valDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
+	valDistPoolBalance := coins.AmountOf(bondDenom).Int64()
 	coins = k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
-	providerDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
+	providerDistPoolBalance := coins.AmountOf(bondDenom).Int64()
 	nextRefillBlock := k.blocksToNextTimerExpiry(ctx, nextMonth.Unix()-ctx.BlockTime().UTC().Unix()) + ctx.BlockHeight()
 	details := map[string]string{
 		"allocation_pool_remaining_lifetime":   strconv.FormatUint(monthsLeft, 10),
