@@ -132,10 +132,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 			weightMsgStakeClient = defaultWeightMsgStakeClient
 		},
 	)
-	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgStakeClient,
-		pairingsimulation.SimulateMsgStakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
 
 	var weightMsgUnstakeProvider int
 	simState.AppParams.GetOrGenerate(
@@ -160,10 +156,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 			weightMsgUnstakeClient = defaultWeightMsgUnstakeClient
 		},
 	)
-	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgUnstakeClient,
-		pairingsimulation.SimulateMsgUnstakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
 
 	var weightMsgRelayPayment int
 	simState.AppParams.GetOrGenerate(

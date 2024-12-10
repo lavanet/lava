@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,10 +15,10 @@ import (
 // account keeper mock
 type mockAccountKeeper struct{}
 
-func (k mockAccountKeeper) IterateAccounts(ctx context.Context, process func(authtypes.AccountI) (stop bool)) {
+func (k mockAccountKeeper) IterateAccounts(ctx context.Context, process func(sdk.AccountI) (stop bool)) {
 }
 
-func (k mockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (k mockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	return nil
 }
 
@@ -32,7 +33,11 @@ func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return GetModuleAddress(moduleName)
 }
 
-func (k mockAccountKeeper) SetModuleAccount(context.Context, authtypes.ModuleAccountI) {
+func (k mockAccountKeeper) SetModuleAccount(context.Context, sdk.ModuleAccountI) {
+}
+
+func (k mockAccountKeeper) AddressCodec() address.Codec {
+	return nil
 }
 
 // mock bank keeper

@@ -456,10 +456,5 @@ func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowa
 		)
 	}
 
-	err = msg.ValidateBasic()
-	if err != nil {
-		return nil, err
-	}
-
 	return msg, nil
 }

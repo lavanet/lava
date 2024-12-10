@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -11,6 +12,7 @@ import (
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/ante"
 	"github.com/stretchr/testify/require"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 // TestDisableRedelegationHooks verifies that the DisableRedelegationHooks works as expected, i.e. disables
@@ -78,4 +80,16 @@ func (tmock TxMock) GetMsgs() []sdk.Msg {
 
 func (tmock TxMock) ValidateBasic() error {
 	return nil
+}
+
+func (tmock TxMock) GetMsgsV2() ([]protov2.Message, error) {
+	msgs := make([]protov2.Message, len(tmock.msgs))
+	for i, msg := range tmock.msgs {
+		protoMsg, ok := msg.(protov2.Message)
+		if !ok {
+			return nil, fmt.Errorf("message %T does not implement protov2.Message", msg)
+		}
+		msgs[i] = protoMsg
+	}
+	return msgs, nil
 }

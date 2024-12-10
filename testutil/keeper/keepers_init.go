@@ -12,14 +12,15 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/rpc/core"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -187,7 +188,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	paramsStoreKey := storetypes.NewKVStoreKey(paramstypes.StoreKey)
 	stateStore.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
-	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+	tkey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
 	stateStore.MountStoreWithDB(tkey, storetypes.StoreTypeIAVL, db)
 
 	conflictStoreKey := storetypes.NewKVStoreKey(conflicttypes.StoreKey)
@@ -248,20 +249,21 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
 	init_balance()
-	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	ks.Distribution = distributionkeeper.NewKeeper(cdc, distributionStoreKey, ks.AccountKeeper, ks.BankKeeper, ks.StakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, runtime.NewKVStoreService(stakingStoreKey), ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()))
+	ks.Distribution = distributionkeeper.NewKeeper(cdc, runtime.NewKVStoreService(distributionStoreKey), ks.AccountKeeper, ks.BankKeeper, ks.StakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	// register the staking hooks
 	ks.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(ks.Dualstaking.Hooks()))
-	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, runtime.NewKVStoreService(slashingStoreKey), ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper, ks.StakingKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	distributionKeeperWrapper := rewardstypes.DistributionKeeperWrapper{Keeper: &ks.Distribution}
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, &distributionKeeperWrapper, authtypes.FeeCollectorName, ks.TimerStoreKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.Spec, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
@@ -479,10 +481,6 @@ func NewBlock(ctx sdk.Context, ks *Keepers) {
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
 			beginBlocker.BeginBlock(ctx)
-		}
-
-		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlockerWithRequest); ok {
-			beginBlocker.BeginBlock(ctx, abci.RequestBeginBlock{})
 		}
 	}
 }

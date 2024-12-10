@@ -112,7 +112,7 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch, sampl
 	for block := prevEpoch; block <= epoch; block += sampleStep {
 		// Get current block's height and timestamp
 		blockInt64 := int64(block)
-		blockCore, err := core.Block(nil, &blockInt64)
+		blockCore, err := core.Environment.BlockStore.LoadBlock(nil, &blockInt64)
 		if err != nil {
 			return nil, fmt.Errorf("could not get current block header, block: %v, err: %s", blockInt64, err)
 		}
