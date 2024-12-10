@@ -50,7 +50,12 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 // Distribute bonus rewards to providers across all chains based on performance
 func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 	coins := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
-	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		utils.LavaFormatError("failed to distribute monthly bonus rewards", err, utils.LogAttr("bond_denom", bondDenom))
+		return
+	}
+	total := coins.AmountOf(bondDenom)
 	totalRewarded := math.ZeroInt()
 	// specs emissions from the total reward pool base on stake
 	specs := k.SpecEmissionParts(ctx)
@@ -88,7 +93,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(bondDenom, reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
@@ -101,7 +106,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 
 		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
 		details["chainid"] = spec.ChainID
-		details["total_rewards"] = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalbasepay).String()
+		details["total_rewards"] = sdk.NewCoin(bondDenom, totalbasepay).String()
 		details["total_cu"] = totalbasepay.String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}

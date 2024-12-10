@@ -230,7 +230,11 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 		return details, err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), spec.MinStakeProvider, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, spec.MinStakeProvider, false); err != nil {
 		details := map[string]string{
 			"spec":    spec.Name,
 			"status":  strconv.FormatBool(spec.Enabled),

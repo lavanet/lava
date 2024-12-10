@@ -199,7 +199,11 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 // updateDelegatorsReward updates the delegator rewards map
 func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, delegatorsReward sdk.Coins, senderModule string, calcOnly bool) (leftoverRewards sdk.Coins) {
-	usedDelegatorRewards := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())) // the delegator rewards are calculated using int division, so there might be leftovers
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return leftoverRewards
+	}
+	usedDelegatorRewards := sdk.NewCoins(sdk.NewCoin(bondDenom, math.ZeroInt())) // the delegator rewards are calculated using int division, so there might be leftovers
 
 	for _, delegation := range delegations {
 		delegatorReward := k.CalcDelegatorReward(ctx, delegatorsReward, totalDelegations, delegation)

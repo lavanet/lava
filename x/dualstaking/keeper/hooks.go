@@ -109,7 +109,11 @@ func (h Hooks) BeforeDelegationRemoved(ctx context.Context, delAddr sdk.AccAddre
 		)
 	}
 	amount := validator.TokensFromSharesRoundUp(delegation.Shares).Ceil().TruncateInt()
-	err = h.k.UnbondUniformProviders(sdkCtx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), amount))
+	bondDenom, err := h.k.stakingKeeper.BondDenom(sdkCtx)
+	if err != nil {
+		return err
+	}
+	err = h.k.UnbondUniformProviders(sdkCtx, delAddr.String(), sdk.NewCoin(bondDenom, amount))
 	if err != nil {
 		return utils.LavaFormatError("delegation removed hook failed", err,
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},

@@ -25,9 +25,13 @@ func (k Keeper) BailEntry(ctx sdk.Context, address string, chainID string, bail 
 }
 
 func (k Keeper) SlashEntry(ctx sdk.Context, address string, chainID string, percentage math.LegacyDec) (sdk.Coin, error) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return sdk.NewCoin(bondDenom, math.ZeroInt()), err
+	}
 	// TODO: jail user, and count problems
 	if !utils.IsBech32Address(address) {
-		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()), fmt.Errorf("invalid address")
+		return sdk.NewCoin(bondDenom, math.ZeroInt()), fmt.Errorf("invalid address")
 	}
-	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()), nil
+	return sdk.NewCoin(bondDenom, math.ZeroInt()), nil
 }

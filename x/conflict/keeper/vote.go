@@ -57,7 +57,11 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	secondProviderVotes := math.ZeroInt()
 	noneProviderVotes := math.ZeroInt()
 	var providersWithoutVote []string
-	rewardPool := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return
+	}
+	rewardPool := sdk.NewCoin(bondDenom, math.ZeroInt())
 	rewardCount := math.ZeroInt()
 	votersStake := map[string]math.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
@@ -114,7 +118,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
 			bail.Quo(math.NewIntFromUint64(BailStakeDiv))
-			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
+			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(bondDenom, bail))
 			if err != nil {
 				utils.LavaFormatWarning("jailing failed at vote conflict", err)
 				// not skipping to continue to slash
@@ -218,7 +222,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					utils.Attribute{Key: "voteAddress", Value: winnersAddr},
 				)
 			} else {
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), winnerReward.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(bondDenom, winnerReward.TruncateInt()))
 				if !ok {
 					utils.LavaFormatWarning("failed to credit client", err)
 				}
@@ -254,7 +258,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					)
 					continue
 				}
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardVoter.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(bondDenom, rewardVoter.TruncateInt()))
 				if !ok {
 					details := map[string]string{}
 					if err != nil {

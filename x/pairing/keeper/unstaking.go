@@ -102,6 +102,10 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
@@ -130,7 +134,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, sdk.NewCoin(bondDenom, amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation", err,
 				utils.LogAttr("provider", existingEntry.Address),

@@ -11,10 +11,14 @@ import (
 )
 
 func (k Keeper) SetIprpcData(ctx sdk.Context, cost sdk.Coin, subs []string) error {
-	if cost.Denom != k.stakingKeeper.BondDenom(ctx) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if cost.Denom != bondDenom {
 		return utils.LavaFormatWarning("min iprpc cost must be in acceptable denom", fmt.Errorf("invalid cost"),
 			utils.LogAttr("cost", cost.String()),
-			utils.LogAttr("acceptable_denom", k.stakingKeeper.BondDenom(ctx)),
+			utils.LogAttr("acceptable_denom", bondDenom),
 		)
 	}
 	k.SetMinIprpcCost(ctx, cost)

@@ -24,7 +24,10 @@ const (
 func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegationLimit sdk.Coin, delegationCommission uint64, provider string, description stakingtypes.Description) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
-
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
 		// first provider with this address
@@ -32,7 +35,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			Provider:         provider,
 			Vault:            creator,
 			Chains:           []string{chainID},
-			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
+			TotalDelegations: sdk.NewCoin(bondDenom, math.ZeroInt()),
 		}
 	} else {
 		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
@@ -268,7 +271,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Endpoints:         endpointsVerified,
 		Geolocation:       geolocation,
 		Chain:             chainID,
-		DelegateTotal:     sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
+		DelegateTotal:     sdk.NewCoin(bondDenom, delegateTotal),
 		Vault:             creator, // the stake-provider TX creator is always regarded as the vault address
 	}
 

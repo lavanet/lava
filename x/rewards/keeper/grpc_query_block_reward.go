@@ -34,7 +34,11 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 
 	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
-	reward := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	reward := sdk.NewCoin(bondDenom, validatorsRewards)
 
 	return &types.QueryBlockRewardResponse{Reward: reward}, nil
 }

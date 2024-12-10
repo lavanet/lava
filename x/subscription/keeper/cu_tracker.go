@@ -210,7 +210,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
 		totalMonthlyRewardAmount := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
-		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyRewardAmount)
+		bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return
+		}
+		creditToSub := sdk.NewCoin(bondDenom, totalMonthlyRewardAmount)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
 		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount)
@@ -273,7 +277,11 @@ func (k Keeper) returnCreditToSub(ctx sdk.Context, sub string, credit math.Int) 
 	} else {
 		// sub expired (no need to update credit), send rewards remainder to the validators
 		pool := rewardstypes.ValidatorsRewardsDistributionPoolName
-		err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(pool), sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), credit)))
+		bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return sdk.Coin{}
+		}
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(pool), sdk.NewCoins(sdk.NewCoin(bondDenom, credit)))
 		if err != nil {
 			utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
 				utils.Attribute{Key: "rewards_remainder", Value: credit.String()},
@@ -281,7 +289,7 @@ func (k Keeper) returnCreditToSub(ctx sdk.Context, sub string, credit math.Int) 
 		}
 	}
 
-	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+	return sdk.Coin{}
 }
 
 // wrapper function for calculating the validators and community participation fees

@@ -23,8 +23,8 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return valErr
 	}
 
-	validatorType, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
+	validatorType, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !err {
 		return stakingtypes.ErrNoValidatorFound
 	}
 
@@ -37,7 +37,11 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, amount, false); err != nil {
 		return err
 	}
 

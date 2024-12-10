@@ -190,6 +190,11 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate 7->8: subscriptions")
 
+	bondDenom, err := m.keeper.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
 		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
 			// read current subscription from fixation to new subscription struct
@@ -208,7 +213,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				continue
 			}
 			creditAmount := plan.Price.Amount.MulRaw(int64(s8.DurationLeft))
-			credit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), creditAmount)
+			credit := sdk.NewCoin(bondDenom, creditAmount)
 
 			// calculate future sub's credit
 			if s8.FutureSubscription != nil {
@@ -224,7 +229,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				}
 
 				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
-				futureCredit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), futureCreditAmount)
+				futureCredit := sdk.NewCoin(bondDenom, futureCreditAmount)
 				s8.FutureSubscription.Credit = futureCredit
 			}
 

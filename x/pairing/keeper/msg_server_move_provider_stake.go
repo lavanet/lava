@@ -46,5 +46,10 @@ func (k Keeper) MoveProviderStake(ctx sdk.Context, creator, srcChain, dstChain s
 
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, srcEntry)
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, dstEntry)
-	return k.dualstakingKeeper.AfterDelegationModified(ctx, srcEntry.Vault, srcEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()), false, true)
+
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	return k.dualstakingKeeper.AfterDelegationModified(ctx, srcEntry.Vault, srcEntry.Address, sdk.NewCoin(bondDenom, math.ZeroInt()), false, true)
 }

@@ -118,9 +118,14 @@ func (k Keeper) MovePoolToPool(ctx sdk.Context, from types.Pool, to types.Pool) 
 func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
 	coins := k.TotalPoolTokens(ctx, distributionPool)
-	distPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		utils.LavaFormatError("failed to get bond denom", err, utils.LogAttr("distribution_pool", string(distributionPool)))
+		return
+	}
+	distPoolBalance := coins.AmountOf(bondDenom)
 	tokensToBurn := burnRate.MulInt(distPoolBalance).TruncateInt()
-	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn, k.stakingKeeper.BondDenom(ctx))
+	err = k.BurnPoolTokens(ctx, distributionPool, tokensToBurn, bondDenom)
 	if err != nil {
 		utils.LavaFormatError("critical - could not burn distribution pool tokens", err,
 			utils.Attribute{Key: "distribution_pool", Value: string(distributionPool)},
@@ -130,9 +135,9 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
 	coins = k.TotalPoolTokens(ctx, allocationPool)
-	allocPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	allocPoolBalance := coins.AmountOf(bondDenom)
 	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
-		monthlyQuota := sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
+		monthlyQuota := sdk.Coin{Denom: bondDenom, Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
 
 		err = k.bankKeeper.SendCoinsFromModuleToModule(
 			ctx,

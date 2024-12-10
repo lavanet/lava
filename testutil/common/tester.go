@@ -311,7 +311,7 @@ func (ts *Tester) Policy(name string) planstypes.Policy {
 }
 
 func (ts *Tester) TokenDenom() string {
-	return ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
+	return ts.BondDenom()
 }
 
 func (ts *Tester) AddProjectData(name string, pd projectstypes.ProjectData) *Tester {
@@ -354,8 +354,7 @@ func NewCoins(tokenDenom string, amount ...int64) []sdk.Coin {
 // keeper helpers
 
 func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
-	denom := ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
-	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
+	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, ts.BondDenom()).Amount.Int64()
 }
 
 func (ts *Tester) GetBalances(accAddr sdk.AccAddress) sdk.Coins {
@@ -608,7 +607,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), math.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(ts.BondDenom(), math.ZeroInt()),
 		DelegateCommission: commission,
 		Address:            provider,
 		Description:        description,
@@ -751,7 +750,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
 		validator.PubKey,
-		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
+		sdk.NewCoin(ts.BondDenom(), amount),
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1)),
 		math.ZeroInt(),
@@ -767,7 +766,7 @@ func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount 
 	msg := stakingtypes.NewMsgDelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
+		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
 }
@@ -778,7 +777,7 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 		delegator.Addr,
 		sdk.ValAddress(fromValidator.Addr),
 		sdk.ValAddress(toValidator.Addr),
-		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
+		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	rf := dualstakingante.NewRedelegationFlager(ts.Keepers.Dualstaking)
 	err := rf.DisableRedelegationHooks(ts.Ctx, []sdk.Msg{msg})
@@ -791,7 +790,7 @@ func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount ma
 	msg := stakingtypes.NewMsgUndelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
+		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
 }

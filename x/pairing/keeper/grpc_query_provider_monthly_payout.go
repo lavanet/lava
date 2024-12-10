@@ -66,12 +66,15 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			}
 
 			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, totalCuTracked)
-			denom := k.stakingKeeper.BondDenom(ctx)
+			denom, err := k.stakingKeeper.BondDenom(ctx)
+			if err != nil {
+				return nil, err
+			}
 			validatorsFee, communityFee, err := k.subscriptionKeeper.CalculateParticipationFees(ctx, sdk.NewCoin(denom, totalMonthlyReward))
 			if err != nil {
 				return nil, err
 			}
-			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
+			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(denom, totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
 
 			// calculate only the provider reward
 			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, providerRewardAfterFees, subsciptiontypes.ModuleName, true, true, true)
@@ -82,9 +85,9 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			details = append(details, &types.SubscriptionPayout{
 				Subscription: sub,
 				ChainId:      chainID,
-				Amount:       providerReward.AmountOf(k.stakingKeeper.BondDenom(ctx)).Uint64(),
+				Amount:       providerReward.AmountOf(denom).Uint64(),
 			})
-			total += providerReward.AmountOf(k.stakingKeeper.BondDenom(ctx)).Uint64()
+			total += providerReward.AmountOf(denom).Uint64()
 		}
 	}
 

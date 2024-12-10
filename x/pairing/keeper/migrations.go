@@ -72,8 +72,11 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		if err != nil {
 			return err
 		}
-
-		metadata.TotalDelegations = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+		bondDenom, err := m.keeper.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return err
+		}
+		metadata.TotalDelegations = sdk.NewCoin(bondDenom, math.ZeroInt())
 		for _, d := range delegations {
 			if d.Delegator != metadata.Vault {
 				metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
@@ -97,7 +100,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// calculate delegate total and update the entry
 		for _, entry := range entries {
 			metadata.Chains = lavaslices.AddUnique(metadata.Chains, entry.Chain)
-			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+			entry.DelegateTotal = sdk.NewCoin(bondDenom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
 			entry.Description = types1.Description{}
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 		}

@@ -201,6 +201,11 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 		autoRenewalNextPlan = plan.Index
 	}
 
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return types.Subscription{}, err
+	}
+
 	sub := types.Subscription{
 		Creator:             creator,
 		Consumer:            consumer,
@@ -209,7 +214,7 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 		PlanBlock:           plan.Block,
 		DurationTotal:       0,
 		AutoRenewalNextPlan: autoRenewalNextPlan,
-		Credit:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
+		Credit:              sdk.NewCoin(bondDenom, math.ZeroInt()),
 	}
 
 	sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
@@ -217,7 +222,7 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 	sub.Cluster = types.GetClusterKey(sub)
 
 	// new subscription needs a default project
-	err := k.projectsKeeper.CreateAdminProject(ctx, consumer, *plan)
+	err = k.projectsKeeper.CreateAdminProject(ctx, consumer, *plan)
 	if err != nil {
 		return types.Subscription{}, utils.LavaFormatWarning("failed to create default project", err)
 	}
@@ -346,8 +351,11 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 			utils.Attribute{Key: "consumer", Value: sub.Creator},
 		)
 	}
-
-	if k.bankKeeper.GetBalance(ctx, creatorAcct, k.stakingKeeper.BondDenom(ctx)).IsLT(price) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if k.bankKeeper.GetBalance(ctx, creatorAcct, bondDenom).IsLT(price) {
 		return utils.LavaFormatWarning("renew subscription failed", legacyerrors.ErrInsufficientFunds,
 			utils.LogAttr("creator", sub.Creator),
 			utils.LogAttr("price", price),
@@ -483,9 +491,17 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 		creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
 		sub.Credit = sub.Credit.SubAmount(creditReward)
 
+		bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
+				utils.Attribute{Key: "block", Value: block},
+			)
+			return
+		}
+
 		timerData := types.CuTrackerTimerData{
 			Block:  sub.Block,
-			Credit: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), creditReward),
+			Credit: sdk.NewCoin(bondDenom, creditReward),
 		}
 		marshaledTimerData, err := k.cdc.Marshal(&timerData)
 		if err != nil {
@@ -572,14 +588,19 @@ func (k Keeper) applyPlanDiscountIfEligible(duration uint64, plan *planstypes.Pl
 }
 
 func (k Keeper) chargeFromCreatorAccountToModule(ctx sdk.Context, creator sdk.AccAddress, price sdk.Coin) error {
-	if k.bankKeeper.GetBalance(ctx, creator, k.stakingKeeper.BondDenom(ctx)).IsLT(price) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+
+	if k.bankKeeper.GetBalance(ctx, creator, bondDenom).IsLT(price) {
 		return utils.LavaFormatWarning("create subscription failed", legacyerrors.ErrInsufficientFunds,
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("price", price),
 		)
 	}
 
-	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, creator, types.ModuleName, []sdk.Coin{price})
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creator, types.ModuleName, []sdk.Coin{price})
 	if err != nil {
 		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
 			utils.LogAttr("creator", creator),
