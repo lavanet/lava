@@ -69,8 +69,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	var weightMsgBuy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgBuy, &weightMsgBuy, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgBuy,
+		&weightMsgBuy,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgBuy = defaultWeightMsgBuy
 		},
 	)
@@ -80,8 +83,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgAddProject int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddProject, &weightMsgAddProject, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgAddProject,
+		&weightMsgAddProject,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgAddProject = defaultWeightMsgAddProject
 		},
 	)
@@ -91,8 +97,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgDelProject int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelProject, &weightMsgDelProject, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgDelProject,
+		&weightMsgDelProject,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgDelProject = defaultWeightMsgDelProject
 		},
 	)
@@ -102,8 +111,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgAutoRenewal int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAutoRenewal, &weightMsgAutoRenewal, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgAutoRenewal,
+		&weightMsgAutoRenewal,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgAutoRenewal = defaultWeightMsgAutoRenewal
 		},
 	)

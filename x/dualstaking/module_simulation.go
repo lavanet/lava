@@ -67,8 +67,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	var weightMsgDelegate int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelegate, &weightMsgDelegate, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgDelegate,
+		&weightMsgDelegate,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgDelegate = defaultWeightMsgDelegate
 		},
 	)
@@ -78,8 +81,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgRedelegate int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRedelegate, &weightMsgRedelegate, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgRedelegate,
+		&weightMsgRedelegate,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgRedelegate = defaultWeightMsgRedelegate
 		},
 	)
@@ -89,8 +95,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgUnbond int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnbond, &weightMsgUnbond, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgUnbond,
+		&weightMsgUnbond,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgUnbond = defaultWeightMsgUnbond
 		},
 	)
@@ -100,8 +109,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgClaimRewards int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgClaimRewards, &weightMsgClaimRewards, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgClaimRewards,
+		&weightMsgClaimRewards,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgClaimRewards = defaultWeightMsgClaimRewards
 		},
 	)

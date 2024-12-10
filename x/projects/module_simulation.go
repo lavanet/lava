@@ -69,8 +69,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	var weightMsgAddKeys int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddKeys, &weightMsgAddKeys, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgAddKeys,
+		&weightMsgAddKeys,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgAddKeys = defaultWeightMsgAddKeys
 		},
 	)
@@ -80,8 +83,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgDelKeys int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelKeys, &weightMsgDelKeys, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgDelKeys,
+		&weightMsgDelKeys,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgDelKeys = defaultWeightMsgDelKeys
 		},
 	)
@@ -91,8 +97,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgSetPolicy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetPolicy, &weightMsgSetPolicy, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgSetPolicy,
+		&weightMsgSetPolicy,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgSetPolicy = defaultWeightMsgSetPolicy
 		},
 	)
@@ -102,8 +111,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgSetSubscriptionPolicy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetSubscriptionPolicy, &weightMsgSetSubscriptionPolicy, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgSetSubscriptionPolicy,
+		&weightMsgSetSubscriptionPolicy,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgSetSubscriptionPolicy = defaultWeightMsgSetSubscriptionPolicy
 		},
 	)
