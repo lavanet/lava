@@ -23,7 +23,9 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 	acc = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
 	testkeeper.Randomizer.Inc()
 	bondDenom, err := keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx))
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, math.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return

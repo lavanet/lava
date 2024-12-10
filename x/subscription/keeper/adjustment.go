@@ -191,7 +191,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 			if totalUsage == 0 {
 				continue
 			}
-			providerAdjustment[provider] = sdk.NewDec(totalAdjustedUsage).QuoInt64(totalUsage)
+			providerAdjustment[provider] = math.LegacyNewDec(totalAdjustedUsage).QuoInt64(totalUsage)
 		}
 	}
 	return providerAdjustment

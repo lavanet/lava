@@ -63,6 +63,7 @@ func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 func (a AppModule) BeginBlock(context context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(context)
 	a.k.BeginBlock(sdkCtx)
+	return nil
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It

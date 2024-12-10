@@ -25,8 +25,8 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		return nil, err
 	}
 
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-	if !found {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if err != nil {
 		return nil, fmt.Errorf("validator not found")
 	}
 
@@ -35,8 +35,8 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 	totalStakedTokens := math.ZeroInt()
 	// self delegation
 	if req.AmountDelegator == "" {
-		del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
-		if !found {
+		del, err := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
+		if err != nil {
 			return nil, fmt.Errorf("self delegation not found")
 		}
 		delegatorPart = del.Shares.Add(val.DelegatorShares.Sub(del.Shares).Mul(val.Commission.Rate)).Quo(val.DelegatorShares)
@@ -44,8 +44,8 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		delAddress, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		// existing delegator
 		if err == nil {
-			del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
-			if !found {
+			del, err := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
+			if err != nil {
 				return nil, fmt.Errorf("delegation not found")
 			}
 			delegatorPart = del.Shares.Quo(val.DelegatorShares).Mul(math.LegacyOneDec().Sub(val.Commission.Rate))
@@ -62,7 +62,10 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		}
 	}
 
-	validators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	validators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bonded validators by power", err)
+	}
 
 	for _, v := range validators {
 		totalStakedTokens = totalStakedTokens.Add(v.Tokens)
@@ -86,7 +89,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 
 	monthsLeft := k.rewardsKeeper.AllocationPoolMonthsLeft(ctx)
 	allocationPool := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ValidatorsRewardsAllocationPoolName)
-	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(sdk.NewDec(monthsLeft))
+	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(math.LegacyNewDec(monthsLeft))
 	communityTax := k.rewardsKeeper.GetCommunityTax(ctx)
 	blockRewards = blockRewards.MulDec(math.LegacyOneDec().Sub(communityTax))
 

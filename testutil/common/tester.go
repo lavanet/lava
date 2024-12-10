@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -242,8 +241,8 @@ func (ts *Tester) StakeProviderFull(
 // Usually, you get the account of your created validator with ts.GetAccount
 // so input valAcc.addr to this function
 func (ts *Tester) GetValidator(addr sdk.AccAddress) stakingtypes.Validator {
-	v, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(addr))
-	require.True(ts.T, found)
+	v, err := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(addr))
+	require.NoError(ts.T, err)
 	return v
 }
 
@@ -254,8 +253,7 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	valConsAddr := sdk.GetConsAddress(valAcc.PubKey)
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
 
-	var req abci.RequestBeginBlock
-	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
+	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx)
 
 	// calculate expected burned tokens
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)
@@ -764,8 +762,8 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 // TxDelegateValidator: implement 'tx staking delegate'
 func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgDelegateResponse, error) {
 	msg := stakingtypes.NewMsgDelegate(
-		delegator.Addr,
-		sdk.ValAddress(validator.Addr),
+		delegator.Addr.String(),
+		sdk.ValAddress(validator.Addr).String(),
 		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
@@ -774,9 +772,9 @@ func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount 
 // TxReDelegateValidator: implement 'tx staking redelegate'
 func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator sigs.Account, amount math.Int) (*stakingtypes.MsgBeginRedelegateResponse, error) {
 	msg := stakingtypes.NewMsgBeginRedelegate(
-		delegator.Addr,
-		sdk.ValAddress(fromValidator.Addr),
-		sdk.ValAddress(toValidator.Addr),
+		delegator.Addr.String(),
+		sdk.ValAddress(fromValidator.Addr).String(),
+		sdk.ValAddress(toValidator.Addr).String(),
 		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	rf := dualstakingante.NewRedelegationFlager(ts.Keepers.Dualstaking)
@@ -788,8 +786,8 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 // TxUnbondValidator: implement 'tx staking undond'
 func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgUndelegateResponse, error) {
 	msg := stakingtypes.NewMsgUndelegate(
-		delegator.Addr,
-		sdk.ValAddress(validator.Addr),
+		delegator.Addr.String(),
+		sdk.ValAddress(validator.Addr).String(),
 		sdk.NewCoin(ts.BondDenom(), amount),
 	)
 	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
@@ -798,8 +796,8 @@ func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount ma
 // TxUnbondValidator: implement 'tx staking undond'
 func (ts *Tester) TxCancelUnbondValidator(delegator, validator sigs.Account, block int64, amount sdk.Coin) (*stakingtypes.MsgCancelUnbondingDelegationResponse, error) {
 	msg := stakingtypes.NewMsgCancelUnbondingDelegation(
-		delegator.Addr,
-		sdk.ValAddress(validator.Addr),
+		delegator.Addr.String(),
+		sdk.ValAddress(validator.Addr).String(),
 		block,
 		amount,
 	)
@@ -1259,9 +1257,11 @@ func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []
 func (ts *Tester) DisableParticipationFees() {
 	distParams := distributiontypes.DefaultParams()
 	distParams.CommunityTax = math.LegacyZeroDec()
-	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	err := ts.Keepers.Distribution.Params.Set(ts.Ctx, distParams)
 	require.Nil(ts.T, err)
-	require.True(ts.T, ts.Keepers.Distribution.GetParams(ts.Ctx).CommunityTax.IsZero())
+	params, err := ts.Keepers.Distribution.Params.Get(ts.Ctx)
+	require.Nil(ts.T, err)
+	require.True(ts.T, params.CommunityTax.IsZero())
 
 	paramKey := string(rewardstypes.KeyValidatorsSubscriptionParticipation)
 	zeroDec, err := math.LegacyZeroDec().MarshalJSON()
