@@ -312,11 +312,13 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, s
 		return err
 	}
 
-	feePool := k.distributionKeeper.GetFeePool(ctx)
+	feePool, err := k.distributionKeeper.GetFeePool(ctx)
+	if err != nil {
+		return err
+	}
 	feePool.CommunityPool = feePool.CommunityPool.Add(sdk.NewDecCoinsFromCoins(amount...)...)
-	k.distributionKeeper.SetFeePool(ctx, feePool)
 
-	return nil
+	return k.distributionKeeper.SetFeePool(ctx, feePool)
 }
 
 // isEndOfMonth checks that we're close to next timer expiry by at least 24 hours

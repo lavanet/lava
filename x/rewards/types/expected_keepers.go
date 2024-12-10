@@ -6,6 +6,7 @@ import (
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distribution "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -61,8 +62,24 @@ type DualStakingKeeper interface {
 }
 
 type DistributionKeeper interface {
-	GetParams(ctx sdk.Context) (params distributiontypes.Params)
-	GetFeePool(ctx sdk.Context) (feePool distributiontypes.FeePool)
-	SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool)
+	GetParams(ctx sdk.Context) (distributiontypes.Params, error)
+	GetFeePool(ctx sdk.Context) (distributiontypes.FeePool, error)
+	SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool) error
 	// Methods imported from bank should be defined here
+}
+
+type DistributionKeeperWrapper struct {
+	Keeper *distribution.Keeper
+}
+
+func (dkw *DistributionKeeperWrapper) GetParams(ctx sdk.Context) (distributiontypes.Params, error) {
+	return dkw.Keeper.Params.Get(ctx)
+}
+
+func (dkw *DistributionKeeperWrapper) GetFeePool(ctx sdk.Context) (distributiontypes.FeePool, error) {
+	return dkw.Keeper.FeePool.Get(ctx)
+}
+
+func (dkw *DistributionKeeperWrapper) SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool) error {
+	return dkw.Keeper.FeePool.Set(ctx, feePool)
 }

@@ -536,6 +536,7 @@ func New(
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	distributionKeeperWrapper := rewardsmoduletypes.DistributionKeeperWrapper{Keeper: &app.DistrKeeper}
 	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
 		appCodec,
 		keys[rewardsmoduletypes.StoreKey],
@@ -548,7 +549,7 @@ func New(
 		app.DowntimeKeeper,
 		app.StakingKeeper,
 		app.DualstakingKeeper,
-		app.DistrKeeper,
+		&distributionKeeperWrapper,
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),

@@ -141,14 +141,12 @@ func NewMultiSendTxCmd() *cobra.Command {
 			}
 
 			getResponse := func(account string, sequence uint64) bool {
-				tmEvents := []string{
-					fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence),
-				}
+				tmEvents := fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence)
 
 				var err error
 				var txs *sdk.SearchTxsResult
 				for i := 0; i < retries; i++ {
-					txs, err = authtx.QueryTxsByEvents(clientCtxOrigin, tmEvents, query.DefaultPage, query.DefaultLimit, "")
+					txs, err = authtx.QueryTxsByEvents(clientCtxOrigin, query.DefaultPage, query.DefaultLimit, tmEvents, "")
 					if err == nil {
 						break
 					}
@@ -266,7 +264,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 					}
 
 					if progress.Progress == PRG_bank_send_verified || progress.Progress == PRG_ready {
-						msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
+						msg := banktypes.NewMsgMultiSend(banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount), output)
 						fmt.Printf("*********************sending records from %d to %d, total tokens %s*******************\n", progress.Index, i, totalAmount.String())
 						currentSequence, err := getSequence(clientCtxHotWallet.FromAddress.String())
 						if err != nil {
@@ -383,10 +381,9 @@ func NewQueryTotalGasCmd() *cobra.Command {
 			}
 
 			getResponse := func(account string, sequence uint64) *sdk.TxResponse {
-				tmEvents := []string{
-					fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence),
-				}
-				txs, err := authtx.QueryTxsByEvents(clientCtx, tmEvents, query.DefaultPage, query.DefaultLimit, "")
+				tmEvents := fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence)
+
+				txs, err := authtx.QueryTxsByEvents(clientCtx, query.DefaultPage, query.DefaultLimit, tmEvents, "")
 				if err != nil {
 					fmt.Printf("failed to query tx %s\n", err)
 					return nil
