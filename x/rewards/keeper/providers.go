@@ -269,7 +269,10 @@ func (k Keeper) CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Cont
 
 // CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool
 func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.Int) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
-	communityTax := k.GetCommunityTax(ctx)
+	communityTax, err := k.GetCommunityTax(ctx)
+	if err != nil {
+		return math.LegacyZeroDec(), math.LegacyZeroDec(), err
+	}
 	if communityTax.Equal(math.LegacyOneDec()) {
 		return math.LegacyZeroDec(), math.LegacyOneDec(), nil
 	}
@@ -333,6 +336,7 @@ func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
 	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > NextExpiery
 }
 
-func (k Keeper) GetCommunityTax(ctx sdk.Context) math.LegacyDec {
-	return k.distributionKeeper.GetParams(ctx).CommunityTax
+func (k Keeper) GetCommunityTax(ctx sdk.Context) (math.LegacyDec, error) {
+	params, err := k.distributionKeeper.GetParams(ctx)
+	return params.CommunityTax, err
 }

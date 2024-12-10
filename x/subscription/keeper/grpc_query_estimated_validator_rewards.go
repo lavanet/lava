@@ -90,7 +90,10 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 	monthsLeft := k.rewardsKeeper.AllocationPoolMonthsLeft(ctx)
 	allocationPool := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ValidatorsRewardsAllocationPoolName)
 	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(math.LegacyNewDec(monthsLeft))
-	communityTax := k.rewardsKeeper.GetCommunityTax(ctx)
+	communityTax, err := k.rewardsKeeper.GetCommunityTax(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get community tax")
+	}
 	blockRewards = blockRewards.MulDec(math.LegacyOneDec().Sub(communityTax))
 
 	iprpcReward, found := k.rewardsKeeper.GetIprpcReward(ctx, k.rewardsKeeper.GetIprpcRewardsCurrentId(ctx))

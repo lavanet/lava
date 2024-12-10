@@ -91,7 +91,7 @@ type RewardsKeeper interface {
 	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64
-	GetCommunityTax(ctx sdk.Context) math.LegacyDec
+	GetCommunityTax(ctx sdk.Context) (math.LegacyDec, error)
 	DistributeMonthlyBonusRewards(ctx sdk.Context)
 	GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, after24HoursBlock uint64, err error)
 }

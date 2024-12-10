@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,14 +14,14 @@ import (
 // account keeper mock
 type mockAccountKeeper struct{}
 
-func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) (stop bool)) {
+func (k mockAccountKeeper) IterateAccounts(ctx context.Context, process func(authtypes.AccountI) (stop bool)) {
 }
 
-func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (k mockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) authtypes.AccountI {
 	return nil
 }
 
-func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) authtypes.ModuleAccountI {
+func (k mockAccountKeeper) GetModuleAccount(ctx context.Context, module string) sdk.ModuleAccountI {
 	moduleAddress := authtypes.NewModuleAddress(module).String()
 	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
 	baseAccount.Address = moduleAddress
@@ -31,7 +32,7 @@ func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return GetModuleAddress(moduleName)
 }
 
-func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccountI) {
+func (k mockAccountKeeper) SetModuleAccount(context.Context, authtypes.ModuleAccountI) {
 }
 
 // mock bank keeper
@@ -43,11 +44,11 @@ func init_balance() {
 	balance = make(map[string]sdk.Coins)
 }
 
-func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
 }
 
-func (k mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
+func (k mockBankKeeper) GetSupply(ctx context.Context, denom string) sdk.Coin {
 	total := sdk.NewCoin(denom, math.ZeroInt())
 	for _, coins := range balance {
 		for _, coin := range coins {
@@ -59,11 +60,11 @@ func (k mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
 	return total
 }
 
-func (k mockBankKeeper) LockedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) LockedCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.GetAllBalances(ctx, addr)
 }
 
-func (k mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (k mockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	coins := balance[addr.String()]
 	for i := 0; i < coins.Len(); i++ {
 		if coins.GetDenomByIndex(i) == denom {
@@ -73,11 +74,11 @@ func (k mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom s
 	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
-func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return balance[addr.String()]
 }
 
-func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	moduleAcc := GetModuleAddress(recipientModule)
 	accountCoins := k.GetAllBalances(ctx, senderAddr)
 	if !accountCoins.IsAllGTE(amt) {
@@ -89,11 +90,11 @@ func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr
 	return nil
 }
 
-func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return k.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
 
-func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	moduleAcc := GetModuleAddress(senderModule)
 	accountCoins := k.GetAllBalances(ctx, moduleAcc)
 	if !accountCoins.IsAllGTE(amt) {
@@ -105,29 +106,29 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 	return nil
 }
 
-func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx context.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
 	senderModuleAcc := GetModuleAddress(senderModule)
 	return k.SendCoinsFromAccountToModule(ctx, senderModuleAcc, recipientModule, amt)
 }
 
-func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
 	return k.SendCoinsFromAccountToModule(ctx, senderAddr, recipientModule, amt)
 }
 
-func (k mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k mockBankKeeper) MintCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	acc := GetModuleAddress(moduleName)
 	k.AddToBalance(acc, amounts)
 	return nil
 }
 
-func (k mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k mockBankKeeper) BurnCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	acc := GetModuleAddress(moduleName)
 	k.SubFromBalance(acc, amounts)
 	return nil
 }
 
-func (k mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
+func (k mockBankKeeper) SetBalance(ctx context.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
 	balance[addr.String()] = amounts
 	return nil
 }
