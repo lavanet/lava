@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/utils"
 )
@@ -50,7 +50,7 @@ func (r *RelayErrors) sanitizeError(err error) string {
 
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
-	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
+	bestResult := sdkmath.LegacyZeroDec()
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.relayErrors {
 		errorMessage := r.sanitizeError(relayError.err)

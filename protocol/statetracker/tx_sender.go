@@ -73,7 +73,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 
 	gasFee := txFactory.GasPrices()[0]
 	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
-	lavaRewardDec := math.LegacyNewDecCoinFromCoin(lavaReward)
+	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
 
 	if gasFee.IsGTE(lavaRewardDec) {
 		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, utils.Attribute{Key: "gasFee", Value: gasFee}, utils.Attribute{Key: "lava_reward:", Value: lavaRewardDec})
@@ -87,9 +87,6 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Con
 		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
 	}
 
-	if err := msg.ValidateBasic(); err != nil {
-		return err
-	}
 	clientCtx := ts.clientCtx
 	txfactory, err := ts.prepareFactory(txfactory)
 	if err != nil {

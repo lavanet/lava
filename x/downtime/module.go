@@ -104,6 +104,7 @@ func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 func (a AppModule) BeginBlock(context context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(context)
 	a.k.BeginBlock(sdkCtx)
+	return nil
 }
 
 // IsAppModule implements the appmodule.AppModule interface.

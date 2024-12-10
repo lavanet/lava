@@ -8,9 +8,10 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	tmdb "github.com/cometbft/cometbft-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -736,8 +737,8 @@ func TestGetAllEntries(t *testing.T) {
 }
 
 func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -747,7 +748,7 @@ func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewTestLogger(t))
 
 	return ctx, cdc
 }

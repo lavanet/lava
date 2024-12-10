@@ -74,7 +74,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 				utils.LavaFormatError("invalid blockResults status", err)
 				return
 			}
-			for _, event := range blockResults.BeginBlockEvents {
+			for _, event := range blockResults.FinalizeBlockEvents {
 				checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
 			}
 			transactionResults := blockResults.TxsResults

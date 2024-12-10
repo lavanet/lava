@@ -271,7 +271,7 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 		}
 	}
 
-	beginBlockEvents := blockResults.BeginBlockEvents
+	beginBlockEvents := blockResults.FinalizeBlockEvents
 	for _, event := range beginBlockEvents {
 		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
 			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)

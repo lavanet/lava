@@ -40,25 +40,25 @@ func TestDisableRedelegationHooks(t *testing.T) {
 
 func newStakingRedelegateMsg() *stakingtypes.MsgBeginRedelegate {
 	return stakingtypes.NewMsgBeginRedelegate(
-		sdk.AccAddress("del1"),
-		sdk.ValAddress("val1"),
-		sdk.ValAddress("val2"),
+		sdk.AccAddress("del1").String(),
+		sdk.ValAddress("val1").String(),
+		sdk.ValAddress("val2").String(),
 		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }
 
 func newStakingDelegateMsg() *stakingtypes.MsgDelegate {
 	return stakingtypes.NewMsgDelegate(
-		sdk.AccAddress("del1"),
-		sdk.ValAddress("val1"),
+		sdk.AccAddress("del1").String(),
+		sdk.ValAddress("val1").String(),
 		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }
 
 func newStakingUndelegateMsg() *stakingtypes.MsgUndelegate {
 	return stakingtypes.NewMsgUndelegate(
-		sdk.AccAddress("del1"),
-		sdk.ValAddress("val1"),
+		sdk.AccAddress("del1").String(),
+		sdk.ValAddress("val1").String(),
 		sdk.NewCoin(commontypes.TokenDenom, math.OneInt()),
 	)
 }

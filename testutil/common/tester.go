@@ -746,7 +746,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 
 	// create a validator
 	msg, err := stakingtypes.NewMsgCreateValidator(
-		sdk.ValAddress(validator.Addr),
+		sdk.ValAddress(validator.Addr).String(),
 		validator.PubKey,
 		sdk.NewCoin(ts.BondDenom(), amount),
 		stakingtypes.Description{},
@@ -1148,7 +1148,11 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 }
 
 func (ts *Tester) BondDenom() string {
-	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+	denom, err := ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+	if err != nil {
+		panic("BondDenom: failed to fetch: " + err.Error())
+	}
+	return denom
 }
 
 // AdvanceMonth advanced blocks by given months, like AdvanceMonthsFrom,

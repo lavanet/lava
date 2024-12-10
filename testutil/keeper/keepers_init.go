@@ -10,12 +10,13 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	tmdb "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/rpc/core"
 	tenderminttypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -113,10 +114,6 @@ type Servers struct {
 	DistributionServer distributiontypes.MsgServer
 }
 
-type KeeperBeginBlockerWithRequest interface {
-	BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock)
-}
-
 type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
@@ -131,8 +128,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	Randomizer = sigs.NewZeroReader(seed)
 	fmt.Println("Reproduce With testing seed: ", seed)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)

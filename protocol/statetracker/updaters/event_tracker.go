@@ -107,7 +107,7 @@ func (et *EventTracker) getLatestVersionEvents(latestBlock int64) (updated bool,
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && attribute.Value == "Version" {
@@ -126,7 +126,7 @@ func (et *EventTracker) getLatestDowntimeParamsUpdateEvents(latestBlock int64) (
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && (attribute.Value == "DowntimeDuration" || attribute.Value == "EpochDuration") {
@@ -149,7 +149,7 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 		utils.EventPrefix + spectypes.SpecModifyEventName,
 		utils.EventPrefix + spectypes.SpecRefreshEventName,
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if slices.Contains(eventsListToListenTo, event.Type) {
 			utils.LavaFormatInfo("Spec update event identified", utils.LogAttr("Event", event.Type))
 			return true, nil
@@ -179,7 +179,7 @@ func (et *EventTracker) getLatestVoteEvents(latestBlock int64) (votes []*reliabi
 		}
 	}
 
-	beginBlockEvents := et.blockResults.BeginBlockEvents
+	beginBlockEvents := et.blockResults.FinalizeBlockEvents
 	for _, event := range beginBlockEvents {
 		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
 			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
@@ -217,7 +217,7 @@ type tendermintRPC interface {
 	) (*ctypes.ResultConsensusParams, error)
 }
 
-func TryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
+func TryIntoTendermintRPC(cl client.CometRPC) (tendermintRPC, error) {
 	brp, ok := cl.(tendermintRPC)
 	if !ok {
 		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)

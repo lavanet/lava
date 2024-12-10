@@ -123,11 +123,23 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			utils.LogAttr("vault", existingEntry.Vault),
 		)
 	}
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
+	delegations, err := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
+	if err != nil {
+		return utils.LavaFormatError("can't unstake entry, failed to get delegations", err,
+			utils.LogAttr("delegator", vaultAcc.String()),
+		)
+	}
 
 	for _, delegation := range delegations {
-		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
-		if !found {
+		validatorAddr, err := sdk.ValAddressFromBech32(delegation.GetValidatorAddr())
+		if err != nil {
+			return utils.LavaFormatError("can't unstake entry, invalid validator address", err,
+				utils.LogAttr("delegator", vaultAcc.String()),
+				utils.LogAttr("validator", delegation.GetValidatorAddr()),
+			)
+		}
+		validator, err := k.stakingKeeper.GetValidator(ctx, validatorAddr)
+		if err != nil {
 			continue
 		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()

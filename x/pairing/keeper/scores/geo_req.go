@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 )
@@ -100,7 +99,7 @@ func calculateCostFromLatency(latency uint64) math.Uint {
 		utils.LavaFormatWarning("got latency 0 when calculating geo req score", fmt.Errorf("invalid geo req score"))
 		return math.OneUint()
 	}
-	return sdk.NewUint(maxGeoLatency / latency)
+	return math.NewUint(maxGeoLatency / latency)
 }
 
 // GEO_LATENCY_MAP is a map of lists of GeoLatency that defines the cost of geo mismatch
