@@ -24,7 +24,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 	}
 
 	validatorType, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !err {
+	if err != nil {
 		return stakingtypes.ErrNoValidatorFound
 	}
 

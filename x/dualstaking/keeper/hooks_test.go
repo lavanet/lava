@@ -306,7 +306,8 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
 	_, err = ts.TxDelegateValidator(delegatorAcc, valAcc, consensusPowerTokens.MulRaw(250))
 	require.NoError(t, err)
-	delegatorValDelegations := ts.Keepers.StakingKeeper.GetAllDelegatorDelegations(ts.Ctx, delegatorAcc.Addr)
+	delegatorValDelegations, err := ts.Keepers.StakingKeeper.GetAllDelegatorDelegations(ts.Ctx, delegatorAcc.Addr)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(delegatorValDelegations))
 	val = ts.GetValidator(valAcc.Addr)
 	require.Equal(t, consensusPowerTokens.MulRaw(250), val.TokensFromShares(delegatorValDelegations[0].Shares).TruncateInt())
@@ -488,8 +489,8 @@ func TestHooksRandomDelegations(t *testing.T) {
 		_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(d))))
 		require.NoError(t, err)
 
-		_, found := ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
-		require.True(t, found)
+		_, err = ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
+		require.NoError(t, err)
 
 		valConsAddr := sdk.GetConsAddress(validatorAcc.ConsKey.PubKey())
 		ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, math.LegacyNewDecWithPrec(1, 1), 1, ts.Ctx.BlockHeight())
@@ -510,18 +511,18 @@ func TestNotRoundedShares(t *testing.T) {
 	validatorAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 	ts.TxCreateValidator(validatorAcc, math.NewIntFromUint64(4495000000001))
 
-	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validatorAcc.Addr))
-	require.True(t, found)
+	val, err := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validatorAcc.Addr))
+	require.NoError(t, err)
 	val.DelegatorShares = math.LegacyMustNewDecFromStr("4540404040405.050505050505050505")
 	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, delAmount.Int64())
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, delAmount.Int64())
 	require.NoError(t, err)
 
 	shares := math.LegacyMustNewDecFromStr("1010101010101.010101010101010101")
 	require.NoError(t, err)
-	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr), shares))
+	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr.String(), sdk.ValAddress(validatorAcc.Addr).String(), shares))
 
 	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), delAmount))
 	require.NoError(t, err)
