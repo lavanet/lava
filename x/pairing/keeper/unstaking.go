@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"fmt"
-	"math"
 	"strconv"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -170,7 +171,10 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 
 	// this method goes over all unbondings and tries to slash them
 	slashUnbonding := func() {
-		unbondings := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
+		unbondings, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
+		if err != nil {
+			return
+		}
 
 		for _, unbonding := range unbondings {
 			totalBalance := math.ZeroInt()

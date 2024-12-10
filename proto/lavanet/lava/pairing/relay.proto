@@ -97,17 +97,17 @@ message RelayReply {
 message QualityOfServiceReport{
     string latency = 1 [
         (gogoproto.moretags) = "yaml:\"Latency\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
         (gogoproto.nullable)   = false
         ];
     string availability  = 2 [
         (gogoproto.moretags) = "yaml:\"availability\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
         (gogoproto.nullable)   = false
         ];
     string sync = 3 [
         (gogoproto.moretags) = "yaml:\"sync\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
         (gogoproto.nullable)   = false
         ];
 }

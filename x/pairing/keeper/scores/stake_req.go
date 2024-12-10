@@ -2,7 +2,6 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 )
 
@@ -24,7 +23,7 @@ func (sr *StakeReq) Score(score PairingScore) math.Uint {
 	if !effectiveStake.IsPositive() {
 		return math.OneUint()
 	}
-	return sdk.NewUint(effectiveStake.Uint64())
+	return math.NewUint(effectiveStake.Uint64())
 }
 
 func (sr *StakeReq) GetName() string {

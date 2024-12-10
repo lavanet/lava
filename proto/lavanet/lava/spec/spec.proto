@@ -34,7 +34,7 @@ message Spec {
   repeated ApiCollection api_collections = 16;
   repeated string contributor =17;
   string contributor_percentage=18 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec"
     ];
   uint64 shares = 19;
   string identity = 20;

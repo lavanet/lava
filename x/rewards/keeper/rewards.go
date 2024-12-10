@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	sdkmath "cosmossdk.io/math"
+	cosmosmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -30,7 +30,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	}
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(sdk.NewDec(blocksToNextTimerExpiry)).TruncateDecimal()
+	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(cosmosmath.LegacyNewDec(blocksToNextTimerExpiry)).TruncateDecimal()
 	if !validatorsRewards.IsZero() {
 		// distribute rewards to validators (same as Cosmos mint module)
 		err := k.addCollectedFees(ctx, validatorsRewards)
@@ -115,7 +115,7 @@ func (k Keeper) MovePoolToPool(ctx sdk.Context, from types.Pool, to types.Pool) 
 	}
 }
 
-func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
+func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate cosmosmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
 	coins := k.TotalPoolTokens(ctx, distributionPool)
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
@@ -165,7 +165,7 @@ func (k Keeper) blocksToNextTimerExpiry(ctx sdk.Context, timeToNextTimerExpiry i
 		return 30
 	}
 
-	effectiveTimeToNextTimerExpiry := sdkmath.LegacyNewDec(timeToNextTimerExpiry)
+	effectiveTimeToNextTimerExpiry := cosmosmath.LegacyNewDec(timeToNextTimerExpiry)
 	if timeToNextTimerExpiry != math.MaxInt64 {
 		effectiveTimeToNextTimerExpiry = types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry)
 	}

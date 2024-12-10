@@ -817,7 +817,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 
 			// subscription expected rewards (for two specs)
 			if tt.mode == Delegation {
-				trackedCuFactor := math.LegacyOneDec().Add(sdk.NewDec(testStake / 2).QuoInt64(tt.denom))
+				trackedCuFactor := math.LegacyOneDec().Add(math.LegacyNewDec(testStake / 2).QuoInt64(tt.denom))
 				cu = trackedCuFactor.MulInt64(cu).TruncateInt64()
 			}
 			expectedSubSpec0 := math.NewIntFromUint64(uint64(cu) * subscription.LIMIT_TOKEN_PER_CU)

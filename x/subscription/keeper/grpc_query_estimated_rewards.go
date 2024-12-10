@@ -125,7 +125,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	// get detailed info for providers only
 	if req.AmountDelegator == "" {
 		info, total := k.getRewardsInfoFromEvents(ctx, req.Provider)
-		if !total.IsEqual(res.Total) {
+		if !total.Equal(res.Total) {
 			// total amount sanity check
 			return nil, utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
 				fmt.Errorf("total rewards from info is different than total claimable rewards difference"),
