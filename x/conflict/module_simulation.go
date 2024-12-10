@@ -80,8 +80,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	var weightMsgDetection int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDetection, &weightMsgDetection, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgDetection,
+		&weightMsgDetection,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgDetection = defaultWeightMsgDetection
 		},
 	)
@@ -91,8 +94,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgConflictVoteCommit int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgConflictVoteCommit, &weightMsgConflictVoteCommit, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgConflictVoteCommit,
+		&weightMsgConflictVoteCommit,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgConflictVoteCommit = defaultWeightMsgConflictVoteCommit
 		},
 	)
@@ -102,8 +108,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgConflictVoteReveal int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgConflictVoteReveal, &weightMsgConflictVoteReveal, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgConflictVoteReveal,
+		&weightMsgConflictVoteReveal,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgConflictVoteReveal = defaultWeightMsgConflictVoteReveal
 		},
 	)

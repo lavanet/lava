@@ -110,8 +110,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	var weightMsgStakeProvider int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgStakeProvider, &weightMsgStakeProvider, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgStakeProvider,
+		&weightMsgStakeProvider,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgStakeProvider = defaultWeightMsgStakeProvider
 		},
 	)
@@ -121,15 +124,25 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgStakeClient int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgStakeClient, &weightMsgStakeClient, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgStakeClient,
+		&weightMsgStakeClient,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgStakeClient = defaultWeightMsgStakeClient
 		},
 	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgStakeClient,
+		pairingsimulation.SimulateMsgStakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
 
 	var weightMsgUnstakeProvider int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnstakeProvider, &weightMsgUnstakeProvider, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgUnstakeProvider,
+		&weightMsgUnstakeProvider,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgUnstakeProvider = defaultWeightMsgUnstakeProvider
 		},
 	)
@@ -139,15 +152,25 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgUnstakeClient int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnstakeClient, &weightMsgUnstakeClient, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgUnstakeClient,
+		&weightMsgUnstakeClient,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgUnstakeClient = defaultWeightMsgUnstakeClient
 		},
 	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgUnstakeClient,
+		pairingsimulation.SimulateMsgUnstakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
 
 	var weightMsgRelayPayment int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRelayPayment, &weightMsgRelayPayment, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgRelayPayment,
+		&weightMsgRelayPayment,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgRelayPayment = defaultWeightMsgRelayPayment
 		},
 	)
@@ -157,8 +180,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgFreeze int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgFreeze, &weightMsgFreeze, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgFreeze,
+		&weightMsgFreeze,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgFreeze = defaultWeightMsgFreeze
 		},
 	)
@@ -168,8 +194,11 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	))
 
 	var weightMsgUnfreeze int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnfreeze, &weightMsgUnfreeze, nil,
-		func(_ *rand.Rand) {
+	simState.AppParams.GetOrGenerate(
+		opWeightMsgUnfreeze,
+		&weightMsgUnfreeze,
+		simState.Rand,
+		func(r *rand.Rand) {
 			weightMsgUnfreeze = defaultWeightMsgUnfreeze
 		},
 	)
