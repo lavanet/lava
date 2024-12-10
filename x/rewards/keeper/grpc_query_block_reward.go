@@ -24,7 +24,11 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 
 	// get validator block pool balance
 	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
-	blockPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	blockPoolBalance := coins.AmountOf(bondDenom)
 	if blocksToNextTimerExpiry == 0 {
 		return nil, utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
@@ -34,10 +38,6 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 
 	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return nil, err
-	}
 	reward := sdk.NewCoin(bondDenom, validatorsRewards)
 
 	return &types.QueryBlockRewardResponse{Reward: reward}, nil

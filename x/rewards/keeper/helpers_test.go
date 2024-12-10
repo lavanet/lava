@@ -135,7 +135,7 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 		_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 		require.NoError(ts.T, err)
 		expectedBalanceAfterFund := balanceBeforeFund.Sub(iprpcFunds.MulInt(math.NewIntFromUint64(duration))...)
-		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).IsEqual(expectedBalanceAfterFund))
+		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).Equal(expectedBalanceAfterFund))
 		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
 	}
 }

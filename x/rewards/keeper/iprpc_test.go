@@ -75,7 +75,7 @@ func TestFundIprpcTX(t *testing.T) {
 		sdk.NewCoin(ts.BondDenom(), math.NewInt(400)),
 		sdk.NewCoin(ibcDenom, math.NewInt(1970)),
 	)
-	require.True(t, expectedIprpcTotalBalance.IsEqual(iprpcTotalBalance))
+	require.True(t, expectedIprpcTotalBalance.Equal(iprpcTotalBalance))
 
 	// Expected IPRPC rewards (by months, first month is skipped):
 	//   1. mockspec: 10ulava + 180uibc(=50+130), mockspec2: 100ulava(=10+90) + 150uibc(=30+120)
@@ -209,7 +209,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	for i, expectedProviderReward := range expectedProviderRewards {
 		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].GetVaultAddr(), expectedProviderReward.provider, ts.specs[1].Index)
 		require.NoError(t, err)
-		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund.MulInt(tax).QuoInt(math.NewInt(100)))) // taking 0 index because there are no delegators
+		require.True(t, res2.Rewards[0].Amount.Equal(expectedProviderReward.fund.MulInt(tax).QuoInt(math.NewInt(100)))) // taking 0 index because there are no delegators
 	}
 }
 
@@ -385,7 +385,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(0), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).Equal(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month to reach the first iprpc reward (first object is with id=1)
@@ -400,7 +400,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(1), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).Equal(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month without any provider service, there should be one IPRPC object with combined reward
@@ -412,7 +412,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 1)
 	require.Equal(t, uint64(2), res.CurrentMonthId)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(2)).Equal(res.IprpcRewards[0].SpecFunds[0].Fund))
 
 	// make a provider service an IPRPC eligible consumer and advance a month
 	// there should be no iprpc rewards objects
@@ -466,7 +466,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first funding (=iprpcFunds)
 	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(math.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(math.NewInt(100)).Equal(res.Rewards[0].Amount))
 
 	taxed := iprpcFunds.Sub(minIprpcCost).MulInt(validatorTax).QuoInt(math.NewInt(100))
 	validatorDistributionPoolTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.ValidatorsRewardsDistributionPoolName)
@@ -482,7 +482,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first + second funding (=iprpcFunds*3)
 	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(math.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(math.NewInt(100)).Equal(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
@@ -587,8 +587,8 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 		require.NoError(t, err)
 		res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
 		require.NoError(t, err)
-		require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
-		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(math.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
+		require.True(t, res1.SpecFunds[0].Fund.Equal(res2.SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(math.NewInt(2)).Equal(res1.SpecFunds[0].Fund))
 
 		// fund the pool again (advance month to apply)
 		_, err = ts.TxRewardsFundIprpc(c1Acc.Addr.String(), mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(math.NewInt(10))))
@@ -696,10 +696,10 @@ func TestMultipleIprpcSpec(t *testing.T) {
 			switch sf.Spec {
 			case mockSpec2:
 				expectedReward := sdk.NewCoins(mock2Fund).QuoInt(math.NewInt(2))
-				require.True(t, expectedReward.IsEqual(sf.Fund))
+				require.True(t, expectedReward.Equal(sf.Fund))
 			case mockSpec3:
 				expectedReward := sdk.NewCoins(mock3Fund).QuoInt(math.NewInt(2))
-				require.True(t, expectedReward.IsEqual(sf.Fund))
+				require.True(t, expectedReward.Equal(sf.Fund))
 			}
 		}
 	}
