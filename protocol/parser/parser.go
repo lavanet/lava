@@ -180,12 +180,14 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_PARAMS)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
+	utils.LavaFormatTrace("ParseBlockFromParams result", utils.LogAttr("parsedInput", parsedInput))
 	return parsedInput
 }
 
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_RESULT)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
+	utils.LavaFormatTrace("ParseBlockFromReply result", utils.LogAttr("parsedInput", parsedInput))
 	return parsedInput
 }
 
