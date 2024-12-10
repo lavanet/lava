@@ -14,7 +14,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.1
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/cometbft/cometbft v0.38.12
-	github.com/cometbft/cometbft-db v0.11.0
+	github.com/cometbft/cometbft-db v0.11.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.50.10
 	github.com/cosmos/ibc-go/v8 v8.2.1
 	github.com/ethereum/go-ethereum v1.10.18
