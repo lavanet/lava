@@ -44,6 +44,7 @@ type ConsumerRelaySender interface {
 		consumerIp string,
 		metadata []pairingtypes.Metadata,
 	) (protocolMessage chainlib.ProtocolMessage, err error)
+	GetEndpoint() *lavasession.RPCEndpoint
 }
 
 type tickerMetricSetterInf interface {

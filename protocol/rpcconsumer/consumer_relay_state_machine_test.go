@@ -46,6 +46,10 @@ type ConsumerRelaySenderMock struct {
 	tickerValue time.Duration
 }
 
+func (crsm *ConsumerRelaySenderMock) GetEndpoint() *lavasession.RPCEndpoint {
+	return nil
+}
+
 func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	if crsm.tickerValue != 0 {
 		return time.Second * 50000, crsm.tickerValue

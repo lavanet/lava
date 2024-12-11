@@ -368,28 +368,55 @@ func (cf *ChainFetcher) constructRelayData(conectionType string, path string, da
 	return relayData
 }
 
-func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+func findFormatDirective(template, data string) string {
+	for i := 0; i < len(template); i++ {
+		if template[i] != data[i] {
+			return template[i : i+2] // Assuming the directive is two characters long, like %x or %d
+		}
+	}
+	return ""
+}
+
+func (cf *ChainFetcher) FetchBlock(ctx context.Context, blockNum int64) (response string, format string, err error) {
+	parsing, _, _, _, data, _, reply, _, _, err := cf.fetchSpecificBlock(ctx, blockNum)
+	if err != nil {
+		return "", "", err
+	}
+	template := parsing.FunctionTemplate
+	format = findFormatDirective(template, string(data))
+	return string(reply.RelayReply.Data), format, nil
+}
+
+func (cf *ChainFetcher) fetchSpecificBlock(ctx context.Context, blockNum int64) (*spectypes.ParseDirective, string, spectypes.CollectionData, string, []byte, ChainMessageForSend, *RelayReplyWrapper, common.NodeUrl, string, error) {
 	parsing, apiCollection, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM.String()
 	if !ok {
-		return "", utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil, "", spectypes.CollectionData{}, "", nil, nil, nil, common.NodeUrl{}, "", utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	collectionData := apiCollection.CollectionData
 
 	if parsing.FunctionTemplate == "" {
-		return "", utils.LavaFormatError(tagName+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil, "", spectypes.CollectionData{}, "", nil, nil, nil, common.NodeUrl{}, "", utils.LavaFormatError(tagName+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
 	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}, cf.ChainFetcherMetadata())
 	if err != nil {
-		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil, "", spectypes.CollectionData{}, "", nil, nil, nil, common.NodeUrl{}, "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	start := time.Now()
 	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		timeTaken := time.Since(start)
-		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil, "", spectypes.CollectionData{}, "", nil, nil, nil, common.NodeUrl{}, "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+	return parsing, tagName, collectionData, path, data, chainMessage, reply, proxyUrl, chainId, nil
+}
+
+func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	parsing, tagName, collectionData, path, data, chainMessage, reply, proxyUrl, chainId, err := cf.fetchSpecificBlock(ctx, blockNum)
+	if err != nil {
+		return "", err
 	}
 	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 	if err != nil {

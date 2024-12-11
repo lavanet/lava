@@ -83,6 +83,7 @@ type ChainParser interface {
 	ExtensionsParser() *extensionslib.ExtensionParser
 	ExtractDataFromRequest(*http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error)
 	SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error)
+	SetBlockErrorPattern(string)
 }
 
 type ChainMessage interface {

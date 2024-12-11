@@ -36,17 +36,22 @@ type InternalPath struct {
 }
 
 type BaseChainParser struct {
-	internalPaths   map[string]InternalPath
-	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec            spectypes.Spec
-	rwLock          sync.RWMutex
-	serverApis      map[ApiKey]ApiContainer
-	apiCollections  map[CollectionKey]*spectypes.ApiCollection
-	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons   map[string]bool
-	extensionParser extensionslib.ExtensionParser
-	active          bool
+	internalPaths     map[string]InternalPath
+	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec              spectypes.Spec
+	rwLock            sync.RWMutex
+	serverApis        map[ApiKey]ApiContainer
+	apiCollections    map[CollectionKey]*spectypes.ApiCollection
+	headers           map[ApiKey]*spectypes.Header
+	verifications     map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
+	allowedAddons     map[string]bool
+	extensionParser   extensionslib.ExtensionParser
+	active            bool
+	blockErrorPattern string
+}
+
+func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string) {
+	bcp.blockErrorPattern = pattern
 }
 
 func (bcp *BaseChainParser) Activate() {

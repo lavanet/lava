@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -160,6 +162,10 @@ func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64, key str
 	rpccs.consumerConsistency.SetSeenBlockFromKey(blockSeen, key)
 }
 
+func (rpccs *RPCConsumerServer) GetEndpoint() *lavasession.RPCEndpoint {
+	return rpccs.listenEndpoint
+}
+
 func (rpccs *RPCConsumerServer) GetListeningAddress() string {
 	return rpccs.chainListener.GetListeningAddress()
 }
@@ -173,7 +179,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	if success {
 		rpccs.initialized.Store(true)
 	}
-	go rpccs.ExtractNodeData()
+	go rpccs.ExtractNodeData(context.Background())
 	return success, err
 }
 
@@ -1617,23 +1623,14 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 // we implement rpcConsumerServer as a chain router so we can use it in a chainFetcher
 // SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 // ExtensionsSupported(internalPath string, extensions []string) bool
-func (rpccs *RPCConsumerServer) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessage, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer pairingtypes.RelayerClient, proxyUrl common.NodeUrl, chainId string, err error) {
+func (rpccs *RPCConsumerServer) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (relayReply *chainlib.RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
 	ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-	reqBlock, _ := chainMessage.RequestedBlock()
+	url, data := chainMessage.GetOriginal()
 	userData := common.UserData{DappId: initRelaysDappId, ConsumerIp: initRelaysConsumerIp}
-	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(userData)
 	collectionData := chainMessage.GetApiCollection().CollectionData
-	path, data := chainMessage.GetOriginal()
-	relay := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
-	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, userData.DappId, userData.ConsumerIp)
-	chainId = rpccs.listenEndpoint.ChainID
-	proxyUrl = common.NodeUrl{Url: "rpcconsumer"}
-	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, nil)
-	if err != nil && !relayProcessor.HasResults() {
-		return nil, "", nil, proxyUrl, chainId, err
-	}
-	returnedResult, err := relayProcessor.ProcessingResult()
-	return returnedResult.Reply, "", nil, proxyUrl, chainId, err
+	metadata := chainMessage.GetRPCMessage().GetHeaders()
+	relayResult, err := rpccs.SendRelay(ctx, url, string(data), collectionData.Type, userData.DappId, userData.ConsumerIp, nil, metadata)
+	return &chainlib.RelayReplyWrapper{StatusCode: relayResult.StatusCode, RelayReply: relayResult.Reply}, "", nil, proxyUrl, chainId, err
 }
 
 func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensions []string) bool {
@@ -1651,6 +1648,37 @@ func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensi
 }
 
 // this function sends relays to the provider and according to the results enhances capabilities of the consumer such as parsing of data and errors
-func (rpccs *RPCConsumerServer) ExtractNodeData() {
-
+func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
+	chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+		ChainRouter: rpccs,
+		ChainParser: rpccs.chainParser,
+		Endpoint:    nil,
+		Cache:       nil,
+	})
+	// we want a block that will surely fail
+	response, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
+	if err != nil {
+		utils.LavaFormatError("failed sending a fault block fetch to parse errors", err)
+		return
+	}
+	if response != "" {
+		blockError := ""
+		formatted := fmt.Sprintf(format, math.MaxInt64)
+		re := regexp.MustCompile(formatted)
+		blockError = re.ReplaceAllString(response, format)
+		if blockError == response {
+			// this shouldnt happen if the block exists in the response
+			return
+		}
+		response2, _, err := chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
+		if err != nil {
+			utils.LavaFormatError("failed fetching block for Node Data", err)
+		}
+		formatted = fmt.Sprintf(blockError, math.MaxInt64-1)
+		if formatted == response2 {
+			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
+			rpccs.chainParser.SetBlockErrorPattern(blockError)
+			return
+		}
+	}
 }
