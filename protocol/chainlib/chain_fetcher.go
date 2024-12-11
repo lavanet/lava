@@ -377,14 +377,15 @@ func findFormatDirective(template, data string) string {
 	return ""
 }
 
-func (cf *ChainFetcher) FetchBlock(ctx context.Context, blockNum int64) (response string, format string, err error) {
-	parsing, _, _, _, data, _, reply, _, _, err := cf.fetchSpecificBlock(ctx, blockNum)
+func (cf *ChainFetcher) FetchBlock(ctx context.Context, blockNum int64) (response string, errorMessage string, format string, err error) {
+	parsing, _, _, _, data, chainMessage, reply, _, _, err := cf.fetchSpecificBlock(ctx, blockNum)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	template := parsing.FunctionTemplate
 	format = findFormatDirective(template, string(data))
-	return string(reply.RelayReply.Data), format, nil
+	_, errorMessage = chainMessage.CheckResponseError(reply.RelayReply.Data, reply.StatusCode)
+	return string(reply.RelayReply.Data), errorMessage, format, nil
 }
 
 func (cf *ChainFetcher) fetchSpecificBlock(ctx context.Context, blockNum int64) (*spectypes.ParseDirective, string, spectypes.CollectionData, string, []byte, ChainMessageForSend, *RelayReplyWrapper, common.NodeUrl, string, error) {

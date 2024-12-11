@@ -1656,26 +1656,26 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
 		Cache:       nil,
 	})
 	// we want a block that will surely fail
-	response, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
+	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
 	if err != nil {
 		utils.LavaFormatError("failed sending a fault block fetch to parse errors", err)
 		return
 	}
-	if response != "" {
+	if responseErrorMessage != "" {
 		blockError := ""
 		formatted := fmt.Sprintf(format, math.MaxInt64)
 		re := regexp.MustCompile(formatted)
-		blockError = re.ReplaceAllString(response, format)
-		if blockError == response {
+		blockError = re.ReplaceAllString(responseErrorMessage, format)
+		if blockError == responseErrorMessage {
 			// this shouldnt happen if the block exists in the response
 			return
 		}
-		response2, _, err := chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
+		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
 		if err != nil {
 			utils.LavaFormatError("failed fetching block for Node Data", err)
 		}
 		formatted = fmt.Sprintf(blockError, math.MaxInt64-1)
-		if formatted == response2 {
+		if formatted == responseErrorMessage {
 			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
 			rpccs.chainParser.SetBlockErrorPattern(blockError)
 			return
