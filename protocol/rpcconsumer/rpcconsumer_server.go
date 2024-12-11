@@ -173,6 +173,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	if success {
 		rpccs.initialized.Store(true)
 	}
+	go rpccs.ExtractNodeData()
 	return success, err
 }
 
@@ -1611,4 +1612,45 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 		return newProtocolMessage
 	}
 	return protocolMessage
+}
+
+// we implement rpcConsumerServer as a chain router so we can use it in a chainFetcher
+// SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+// ExtensionsSupported(internalPath string, extensions []string) bool
+func (rpccs *RPCConsumerServer) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessage, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer pairingtypes.RelayerClient, proxyUrl common.NodeUrl, chainId string, err error) {
+	ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+	reqBlock, _ := chainMessage.RequestedBlock()
+	userData := common.UserData{DappId: initRelaysDappId, ConsumerIp: initRelaysConsumerIp}
+	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(userData)
+	collectionData := chainMessage.GetApiCollection().CollectionData
+	path, data := chainMessage.GetOriginal()
+	relay := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
+	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, userData.DappId, userData.ConsumerIp)
+	chainId = rpccs.listenEndpoint.ChainID
+	proxyUrl = common.NodeUrl{Url: "rpcconsumer"}
+	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, nil)
+	if err != nil && !relayProcessor.HasResults() {
+		return nil, "", nil, proxyUrl, chainId, err
+	}
+	returnedResult, err := relayProcessor.ProcessingResult()
+	return returnedResult.Reply, "", nil, proxyUrl, chainId, err
+}
+
+func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensions []string) bool {
+	configuredExtensions := rpccs.chainParser.ExtensionsParser().GetConfiguredExtensions()
+	configured := map[string]struct{}{}
+	for _, extension := range configuredExtensions {
+		configured[extension.Name] = struct{}{}
+	}
+	for _, extension := range extensions {
+		if _, found := configured[extension]; !found {
+			return false
+		}
+	}
+	return true
+}
+
+// this function sends relays to the provider and according to the results enhances capabilities of the consumer such as parsing of data and errors
+func (rpccs *RPCConsumerServer) ExtractNodeData() {
+
 }

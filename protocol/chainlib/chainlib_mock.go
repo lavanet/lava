@@ -320,6 +320,14 @@ func (m *MockChainMessage) CheckResponseError(data []byte, httpStatusCode int) (
 	return ret0, ret1
 }
 
+func (m *MockChainMessage) GetOriginal() (string,[]byte) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOriginal")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[0].([]byte)
+	return ret0,ret1
+}
+
 // CheckResponseError indicates an expected call of CheckResponseError.
 func (mr *MockChainMessageMockRecorder) CheckResponseError(data, httpStatusCode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()

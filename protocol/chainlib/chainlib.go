@@ -113,6 +113,7 @@ type ChainMessageForSend interface {
 	GetApiCollection() *spectypes.ApiCollection
 	GetParseDirective() *spectypes.ParseDirective
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+	GetOriginal() (path string, data []byte)
 }
 
 type HealthReporter interface {

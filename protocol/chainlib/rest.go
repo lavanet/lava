@@ -75,7 +75,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	}
 	parsedInput := parser.NewParsedInput()
 	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
-	return apip.newChainMessage(apiCont.api, parsedInput, restMessage, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, parsedInput, restMessage, apiCollection, OriginalRaw{Path: restMessage.Path, Data: restMessage.Msg}), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -132,12 +132,12 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &restMessage, apiCollection, OriginalRaw{Data: data, Path: urlPath})
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection, originalRaw OriginalRaw) *baseChainMessageContainer {
 	requestedBlock := parsedInput.GetBlock()
 	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
@@ -149,6 +149,7 @@ func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.
 		resultErrorParsingMethod: restMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),
 		usedDefaultValue:         parsedInput.UsedDefaultValue,
+		originalRaw:              originalRaw,
 	}
 	return nodeMsg
 }
