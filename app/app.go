@@ -398,6 +398,7 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		bApp.Logger(),
 	)
+
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
@@ -1178,4 +1179,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // SimulationManager implements the SimulationApp interface
 func (app *LavaApp) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+func (app *LavaApp) ModuleManager() module.Manager {
+	return *app.mm
 }

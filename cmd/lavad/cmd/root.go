@@ -13,13 +13,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
 	snapshotoptions "cosmossdk.io/store/snapshots/types"
-	confixcmd "cosmossdk.io/tools/confix/cmd"
-
-	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
@@ -30,11 +31,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -143,26 +146,51 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		},
 	}
 
-	initLavaProtocolRootCmd(rootCmd, encodingConfig)
+	tempApplication := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, app.DefaultNodeHome, 5, encodingConfig, sims.EmptyAppOptions{})
+
+	initLavaProtocolRootCmd(rootCmd, tempApplication.ModuleBasics)
 	addLogFlagsToSubCommands(rootCmd)
+
+	if err := autoCliOpts(initClientCtx, tempApplication).EnhanceRootCommand(rootCmd); err != nil {
+		panic(err)
+	}
 
 	return rootCmd
 }
 
+func autoCliOpts(initClientCtx client.Context, tempApp *app.LavaApp) autocli.AppOptions {
+	modules := make(map[string]appmodule.AppModule, 0)
+	for _, m := range tempApp.ModuleManager().Modules {
+		if moduleWithName, ok := m.(module.HasName); ok {
+			moduleName := moduleWithName.Name()
+			if appModule, ok := moduleWithName.(appmodule.AppModule); ok {
+				modules[moduleName] = appModule
+			}
+		}
+	}
+
+	return autocli.AppOptions{
+		Modules:               modules,
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(tempApp.ModuleManager().Modules),
+		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		ClientCtx:             initClientCtx,
+	}
+}
+
 func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
-	encodingConfig appparams.EncodingConfig,
+	moduleBasics module.BasicManager,
 ) {
 	InitSDKConfig()
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 	)
 
-	tempApplication := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, app.DefaultNodeHome, 5, encodingConfig, sims.EmptyAppOptions{})
-
 	rootCmd.AddCommand(
-		queryCommand(tempApplication.ModuleBasics),
-		txCommand(tempApplication.ModuleBasics),
+		queryCommand(moduleBasics),
+		txCommand(moduleBasics),
 		keys.Commands(),
 	)
 
