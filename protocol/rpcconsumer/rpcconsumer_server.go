@@ -1665,8 +1665,31 @@ func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensi
 	return true
 }
 
-// this function sends relays to the provider and according to the results enhances capabilities of the consumer such as parsing of data and errors
+const (
+	RetryInterval   = 10 * time.Minute // X time for retrying on failure
+	RefreshInterval = 24 * time.Hour   // Y time for refreshing on success
+)
+
 func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
+	for {
+		success := rpccs.tryExtractNodeData(ctx)
+		var timer *time.Timer
+		if success {
+			timer = time.NewTimer(RefreshInterval)
+		} else {
+			timer = time.NewTimer(RetryInterval)
+		}
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+			timer.Stop()
+		}
+	}
+}
+
+func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) bool {
 	endpoint := &lavasession.RPCProviderEndpoint{ChainID: rpccs.listenEndpoint.ChainID, ApiInterface: rpccs.listenEndpoint.ApiInterface, NodeUrls: []common.NodeUrl{{
 		Url: "Internal",
 	}}}
@@ -1679,8 +1702,8 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
 	// we want a block that will surely fail
 	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
 	if err != nil {
-		utils.LavaFormatError("failed sending a fault block fetch to parse errors", err)
-		return
+		utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors", err)
+		return false
 	}
 	if responseErrorMessage != "" {
 		blockError := ""
@@ -1688,18 +1711,20 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
 		re := regexp.MustCompile(formatted)
 		blockError = re.ReplaceAllString(responseErrorMessage, format)
 		if blockError == responseErrorMessage {
-			// this shouldnt happen if the block exists in the response
-			return
+			// this shouldn't happen if the block exists in the response
+			return false
 		}
 		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
 		if err != nil {
-			utils.LavaFormatError("failed fetching block for Node Data", err)
+			utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors maxInt-1", err)
+			return false
 		}
 		formatted = fmt.Sprintf(blockError, math.MaxInt64-1)
 		if formatted == responseErrorMessage {
 			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
 			rpccs.chainParser.SetBlockErrorPattern(blockError)
-			return
+			return true
 		}
 	}
+	return false
 }
