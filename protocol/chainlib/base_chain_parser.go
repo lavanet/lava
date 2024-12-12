@@ -51,6 +51,8 @@ type BaseChainParser struct {
 }
 
 func (bcp *BaseChainParser) IdentifyBlockNodeError(message string) (isBlockError bool, blockHeight int64) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
 	if bcp.blockErrorPattern == "" {
 		return false, 0
 	}
@@ -62,14 +64,20 @@ func (bcp *BaseChainParser) IdentifyBlockNodeError(message string) (isBlockError
 }
 
 func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string) {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
 	bcp.blockErrorPattern = pattern
 }
 
 func (bcp *BaseChainParser) Activate() {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
 	bcp.active = true
 }
 
 func (bcp *BaseChainParser) Active() bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
 	return bcp.active
 }
 
