@@ -110,7 +110,7 @@ func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage
 	return msg, nil
 }
 
-func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
 	return false
 }
 
@@ -191,7 +191,7 @@ func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
 	return nil, WontCalculateBatchHash
 }
 
-func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
 	return false
 }
 

@@ -19,7 +19,7 @@ type OriginalRaw struct {
 
 type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
-	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
+	UpdateLatestBlockInMessage(latestBlock uint64) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
 	GetRawRequestHash() ([]byte, error)
@@ -139,17 +139,13 @@ func (bcnc baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.Gener
 	return bcnc.msg
 }
 
-func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
+func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64) (modifiedOnLatestReq bool) {
 	requestedBlock, _ := bcnc.RequestedBlock()
-	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
+	if requestedBlock > latestBlock || latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
 		return false
 	}
-	success := bcnc.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
-	if success {
-		bcnc.latestRequestedBlock = latestBlock
-		return true
-	}
-	return false
+	bcnc.latestRequestedBlock = latestBlock
+	return true
 }
 
 func (bcnc *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {

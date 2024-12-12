@@ -284,7 +284,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			require.NoError(t, err)
 			latestReqBlock, _ := chainMessage.RequestedBlock()
 			require.Equal(t, test.requestedBlock, latestReqBlock)
-			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the block only if it's a latest request
+			chainMessage.UpdateLatestBlockInMessage(test.block) // will update the block only if it's a latest request
 			latestReqBlock, _ = chainMessage.RequestedBlock()
 			require.Equal(t, test.block, latestReqBlock) // expected behavior is that it doesn't change the original requested block
 			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)

@@ -380,7 +380,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 		// the consumer either configured an invalid value or is modifying the requested block as part of a data reliability message
 		// see if this modification is supported
 		providerRequestedBlockPreUpdate := reqBlock
-		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock, true)
+		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock)
 		// if after UpdateLatestBlockInMessage it's not aligned we have a problem
 		reqBlock, _ = chainMessage.RequestedBlock()
 		if reqBlock != request.RelayData.RequestBlock {
@@ -991,7 +991,7 @@ func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
 	}
 
 	// TODO: take latestBlock and lastSeenBlock and put the greater one of them
-	updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
+	updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock)
 
 	modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 	if modifiedReqBlock != request.RelayData.RequestBlock {

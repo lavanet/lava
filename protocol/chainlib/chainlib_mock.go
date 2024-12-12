@@ -533,17 +533,16 @@ func (mr *MockChainMessageMockRecorder) TimeoutOverride(arg0 ...interface{}) *go
 }
 
 // UpdateLatestBlockInMessage mocks base method.
-func (m *MockChainMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) bool {
+func (m *MockChainMessage) UpdateLatestBlockInMessage(latestBlock int64) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateLatestBlockInMessage", latestBlock, modifyContent)
+	ret := m.ctrl.Call(m, "UpdateLatestBlockInMessage", latestBlock)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// UpdateLatestBlockInMessage indicates an expected call of UpdateLatestBlockInMessage.
-func (mr *MockChainMessageMockRecorder) UpdateLatestBlockInMessage(latestBlock, modifyContent interface{}) *gomock.Call {
+func (mr *MockChainMessageMockRecorder) UpdateLatestBlockInMessage(latestBlock interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLatestBlockInMessage", reflect.TypeOf((*MockChainMessage)(nil).UpdateLatestBlockInMessage), latestBlock, modifyContent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLatestBlockInMessage", reflect.TypeOf((*MockChainMessage)(nil).UpdateLatestBlockInMessage), latestBlock)
 }
 
 // MockChainMessageForSend is a mock of ChainMessageForSend interface.

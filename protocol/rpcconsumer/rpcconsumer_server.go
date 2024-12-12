@@ -1606,25 +1606,34 @@ func (rpccs *RPCConsumerServer) UpdateProtocolMessageIfNeededWithNewData(
 	newEarliestBlockRequested int64,
 	dataKind chainlib.DataKind,
 ) chainlib.ProtocolMessage {
-	if !relayState.GetIsEarliestUsed() && newEarliestBlockRequested != spectypes.NOT_APPLICABLE {
-		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
-		// and update the extension rules with the new earliest block data as it might be archive.
-		// Setting earliest used to attempt this only once.
-		relayState.SetIsEarliestUsed()
-		relayRequestData := protocolMessage.RelayPrivateData()
-		userData := protocolMessage.GetUserData()
-		newProtocolMessage, err := rpccs.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, nil)
-		if err != nil {
-			utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
-			return protocolMessage
+	if newEarliestBlockRequested != spectypes.NOT_APPLICABLE {
+		if !relayState.GetIsEarliestUsed() || dataKind == chainlib.LATEST {
+			// we can't make changes in the protocol message without creating a new one
+			if dataKind == chainlib.EARLIEST {
+				// if We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
+				// and update the extension rules with the new earliest block data as it might be archive.
+				// Setting earliest used to attempt this only once.
+				relayState.SetIsEarliestUsed()
+			}
+			relayRequestData := protocolMessage.RelayPrivateData()
+			userData := protocolMessage.GetUserData()
+			newProtocolMessage, err := rpccs.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, nil)
+			if err != nil {
+				utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
+				return protocolMessage
+			}
+			if dataKind == chainlib.EARLIEST {
+				addon := chainlib.GetAddon(protocolMessage)
+				extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
+				if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
+					relayState.SetIsArchive(true)
+				}
+			} else if dataKind == chainlib.LATEST {
+				newProtocolMessage.UpdateLatestBlockInMessage(newEarliestBlockRequested)
+			}
+			relayState.SetProtocolMessage(newProtocolMessage)
+			return newProtocolMessage
 		}
-		addon := chainlib.GetAddon(protocolMessage)
-		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
-		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
-			relayState.SetIsArchive(true)
-		}
-		relayState.SetProtocolMessage(newProtocolMessage)
-		return newProtocolMessage
 	}
 	return protocolMessage
 }

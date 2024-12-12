@@ -82,11 +82,9 @@ func (gm GrpcMessage) GetParams() interface{} {
 	return parsedData
 }
 
-func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
-	// return gm.SetLatestBlockWithHeader(latestBlock, modifyContent)
-	// disabled due to cosmos sdk inconsistency with the headers that needs to be handled
+func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
+	// return gm.SetLatestBlockWithHeader(latestBlock)
 	return false
-	// when !done: we need a different setter
 }
 
 func (gm GrpcMessage) dynamicResolve() (interface{}, error) {
