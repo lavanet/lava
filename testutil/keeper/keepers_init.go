@@ -13,7 +13,6 @@ import (
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/rpc/core"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -311,8 +310,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
 	ss.RewardsServer = rewardskeeper.NewMsgServerImpl(ks.Rewards)
 	ss.DistributionServer = distributionkeeper.NewMsgServerImpl(ks.Distribution)
-
-	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
