@@ -95,7 +95,7 @@ func (ts *Tester) SetChainID(chainID string) {
 	blockHeader := ts.Ctx.BlockHeader()
 	blockHeader.ChainID = chainID
 	ts.Ctx = ts.Ctx.WithBlockHeader(blockHeader)
-	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
+	ts.GoCtx = ts.Ctx
 }
 
 func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {

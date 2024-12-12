@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/app"
 	"github.com/lavanet/lava/v4/x/downtime/keeper"
 	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
@@ -41,7 +40,7 @@ func TestQueryServer_QueryDowntime(t *testing.T) {
 	dk.SetDowntime(ctx, downtime.Block, downtime.Duration)
 
 	t.Run("ok", func(t *testing.T) {
-		resp, err := qs.QueryDowntime(sdk.WrapSDKContext(ctx), &v1.QueryDowntimeRequest{
+		resp, err := qs.QueryDowntime(ctx, &v1.QueryDowntimeRequest{
 			EpochStartBlock: uint64(1),
 		})
 		require.NoError(t, err)
@@ -59,7 +58,7 @@ func TestQueryServer_QueryParams(t *testing.T) {
 	wantParams := v1.DefaultParams()
 	dk.SetParams(ctx, wantParams)
 
-	resp, err := qs.QueryParams(sdk.WrapSDKContext(ctx), &v1.QueryParamsRequest{})
+	resp, err := qs.QueryParams(ctx, &v1.QueryParamsRequest{})
 	require.NoError(t, err)
 	require.Equal(t, &v1.QueryParamsResponse{Params: &wantParams}, resp)
 }

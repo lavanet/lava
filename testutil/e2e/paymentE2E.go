@@ -7,14 +7,12 @@ import (
 	"fmt"
 	"go/build"
 	"math"
-
-	cosmosmath "cosmossdk.io/math"
-
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"

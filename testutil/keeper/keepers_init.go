@@ -344,7 +344,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	NewBlock(ctx, &ks)
 
-	return &ss, &ks, sdk.WrapSDKContext(ctx)
+	return &ss, &ks, ctx
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
@@ -403,7 +403,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	EndBlock(unwrapedCtx, ks)
 	unwrapedCtx = UpdateBlockCtx(ctx, ks, customBlockTime...)
 	NewBlock(unwrapedCtx, ks)
-	return sdk.WrapSDKContext(unwrapedCtx)
+	return unwrapedCtx
 }
 
 func UpdateBlockCtx(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) sdk.Context {

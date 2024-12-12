@@ -94,7 +94,7 @@ func (k Keeper) CalcDelegatorReward(ctx sdk.Context, delegatorsReward sdk.Coins,
 }
 
 func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string) (sdk.Coins, error) {
-	goCtx := sdk.WrapSDKContext(ctx)
+	goCtx := ctx
 
 	delegatorAcc, err := sdk.AccAddressFromBech32(delegator)
 	if err != nil {

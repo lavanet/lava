@@ -125,7 +125,7 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 	// reset time to the start of the month
 	startOfMonth := time.Date(ts.Ctx.BlockTime().Year(), ts.Ctx.BlockTime().Month(), 1, 0, 0, 0, 0, ts.Ctx.BlockTime().Location())
 	ts.Ctx = ts.Ctx.WithBlockTime(startOfMonth)
-	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
+	ts.GoCtx = ts.Ctx
 
 	if fundIprpcPool {
 		duration := uint64(1)

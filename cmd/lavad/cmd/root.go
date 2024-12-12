@@ -17,7 +17,6 @@ import (
 	"cosmossdk.io/store/snapshots"
 	snapshotoptions "cosmossdk.io/store/snapshots/types"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
-	cosmosdb "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -50,7 +49,6 @@ import (
 	// this line is used by starport scaffolding # root/moduleImport
 
 	"github.com/lavanet/lava/v4/app"
-	"github.com/lavanet/lava/v4/app/params"
 	appparams "github.com/lavanet/lava/v4/app/params"
 )
 
@@ -153,7 +151,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 
 func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
-	encodingConfig params.EncodingConfig,
+	encodingConfig appparams.EncodingConfig,
 ) {
 	InitSDKConfig()
 	rootCmd.AddCommand(
@@ -355,7 +353,7 @@ type appCreator struct {
 // newApp creates a new Cosmos SDK app
 func (a appCreator) newApp(
 	logger log.Logger,
-	db cosmosdb.DB,
+	db dbm.DB,
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
@@ -377,7 +375,7 @@ func (a appCreator) newApp(
 
 	snapshotDir := filepath.Join(
 		cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := cosmosdb.NewGoLevelDB("metadata", snapshotDir, nil)
+	snapshotDB, err := dbm.NewGoLevelDB("metadata", snapshotDir, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -432,7 +430,7 @@ func (a appCreator) newApp(
 // appExport creates a new simapp (optionally at a given height)
 func (a appCreator) appExport(
 	logger log.Logger,
-	db cosmosdb.DB,
+	db dbm.DB,
 	traceStore io.Writer,
 	height int64,
 	forZeroHeight bool,

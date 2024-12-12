@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +14,7 @@ import (
 
 func TestEpochDetailsQuery(t *testing.T) {
 	keeper, ctx := keepertest.EpochstorageKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	item := createTestEpochDetails(keeper, ctx)
 	for _, tc := range []struct {
 		desc     string

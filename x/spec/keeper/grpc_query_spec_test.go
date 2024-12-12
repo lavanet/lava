@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -20,7 +19,7 @@ var _ = strconv.IntSize
 
 func TestSpecQuerySingle(t *testing.T) {
 	keeper, ctx := specutils.SpecKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNSpec(keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
@@ -71,7 +70,7 @@ func TestSpecQuerySingle(t *testing.T) {
 
 func TestSpecQuerySingleRaw(t *testing.T) {
 	keeper, ctx := specutils.SpecKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNSpec(keeper, ctx, 2)
 
 	msgs[0].ApiCollections = []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}}}
@@ -99,7 +98,7 @@ func TestSpecQuerySingleRaw(t *testing.T) {
 
 func TestSpecQueryPaginated(t *testing.T) {
 	keeper, ctx := specutils.SpecKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNSpec(keeper, ctx, 5)
 
 	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllSpecRequest {

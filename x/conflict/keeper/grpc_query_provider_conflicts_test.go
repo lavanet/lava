@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
@@ -16,7 +15,7 @@ var _ = strconv.IntSize
 
 func TestProviderConflicts(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNConflictVote(keeper, ctx, 8)
 
 	const (

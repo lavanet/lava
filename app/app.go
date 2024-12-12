@@ -259,9 +259,7 @@ var (
 	}
 )
 
-var (
-	_ runtime.AppI = (*LavaApp)(nil)
-)
+var _ runtime.AppI = (*LavaApp)(nil)
 
 func init() {
 	userHomeDir, err := os.UserHomeDir()
@@ -611,7 +609,7 @@ func New(
 		AddRoute(plansmoduletypes.ProposalsRouterKey, plansmodule.NewPlansProposalsHandler(app.PlansKeeper)).
 		AddRoute(pairingmoduletypes.ProposalsRouterKey, pairingmodule.NewPairingProposalsHandler(app.PairingKeeper))
 
-	//TODO check all these proposals still work YAROM
+	// TODO check all these proposals still work YAROM
 	// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 	// AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 	// AddRoute(ibcexported.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))

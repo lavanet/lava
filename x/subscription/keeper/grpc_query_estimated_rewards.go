@@ -157,7 +157,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 // helper function that returns a map of provider->rewards
 func (k Keeper) getClaimableRewards(ctx sdk.Context, provider string, delegator string) (rewards sdk.Coins, err error) {
 	var qRes *dualstakingtypes.QueryDelegatorRewardsResponse
-	goCtx := sdk.WrapSDKContext(ctx)
+	goCtx := ctx
 
 	// get delegator rewards
 	if delegator == "" {

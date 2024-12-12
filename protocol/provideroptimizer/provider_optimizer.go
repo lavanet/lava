@@ -2,13 +2,11 @@ package provideroptimizer
 
 import (
 	"math"
-
-	cosmosmath "cosmossdk.io/math"
-
 	"strings"
 	"sync"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/metrics"

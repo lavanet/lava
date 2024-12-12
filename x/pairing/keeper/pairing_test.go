@@ -3,13 +3,11 @@ package keeper_test
 import (
 	"fmt"
 	"math"
-
-	cosmosmath "cosmossdk.io/math"
-
 	"sort"
 	"testing"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"

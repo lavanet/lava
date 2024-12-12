@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
 	"github.com/lavanet/lava/v4/x/conflict/types"
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ var _ = strconv.IntSize
 
 func TestConsumerConflicts(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNConflictVote(keeper, ctx, 10)
 	for i, msg := range msgs {
 		msg.ClientAddress = "client" + strconv.Itoa(i%2)
