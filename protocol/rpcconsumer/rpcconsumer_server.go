@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -160,6 +162,10 @@ func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64, key str
 	rpccs.consumerConsistency.SetSeenBlockFromKey(blockSeen, key)
 }
 
+func (rpccs *RPCConsumerServer) GetEndpoint() *lavasession.RPCEndpoint {
+	return rpccs.listenEndpoint
+}
+
 func (rpccs *RPCConsumerServer) GetListeningAddress() string {
 	return rpccs.chainListener.GetListeningAddress()
 }
@@ -173,6 +179,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	if success {
 		rpccs.initialized.Store(true)
 	}
+	go rpccs.ExtractNodeData(context.Background())
 	return success, err
 }
 
@@ -683,7 +690,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	addon := chainlib.GetAddon(protocolMessage)
 	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, protocolMessage)
 	// check whether we need a new protocol message with the new earliest block hash requested
-	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
+	protocolMessage = rpccs.UpdateProtocolMessageIfNeededWithNewData(ctx, relayState, protocolMessage, earliestBlockHashRequested, chainlib.EARLIEST)
 
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
@@ -875,8 +882,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
-			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+			isNodeError, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
+			if isNodeError {
+				// if it's a node error we might be able to extract a block number from the error message
+				blockError, blockNumber := rpccs.chainParser.IdentifyBlockNodeError(errorMessage)
+				if blockError {
+					// we identified a block number in the error message, meaning we requested a specific block
+					// we can't modify the chain message here, only on the creation of a new state so store this in the state for the transition to use
+					relayState.SetBlockTransitionData(blockNumber)
+				}
+			}
 			if rpccs.debugRelays {
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode))
 			}
@@ -1583,14 +1599,14 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	return resp, err
 }
 
-func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(
+func (rpccs *RPCConsumerServer) UpdateProtocolMessageIfNeededWithNewData(
 	ctx context.Context,
 	relayState *RelayState,
 	protocolMessage chainlib.ProtocolMessage,
-	earliestBlockHashRequested int64,
-	addon string,
+	newEarliestBlockRequested int64,
+	dataKind chainlib.DataKind,
 ) chainlib.ProtocolMessage {
-	if !relayState.GetIsEarliestUsed() && earliestBlockHashRequested != spectypes.NOT_APPLICABLE {
+	if !relayState.GetIsEarliestUsed() && newEarliestBlockRequested != spectypes.NOT_APPLICABLE {
 		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
 		// and update the extension rules with the new earliest block data as it might be archive.
 		// Setting earliest used to attempt this only once.
@@ -1602,8 +1618,8 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 			utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
 			return protocolMessage
 		}
-
-		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
+		addon := chainlib.GetAddon(protocolMessage)
+		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
 		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
 			relayState.SetIsArchive(true)
 		}
@@ -1611,4 +1627,67 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 		return newProtocolMessage
 	}
 	return protocolMessage
+}
+
+// we implement rpcConsumerServer as a chain router so we can use it in a chainFetcher
+// SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+// ExtensionsSupported(internalPath string, extensions []string) bool
+func (rpccs *RPCConsumerServer) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (relayReply *chainlib.RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
+	ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+	url, data := chainMessage.GetOriginal()
+	userData := common.UserData{DappId: initRelaysDappId, ConsumerIp: initRelaysConsumerIp}
+	collectionData := chainMessage.GetApiCollection().CollectionData
+	metadata := chainMessage.GetRPCMessage().GetHeaders()
+	relayResult, err := rpccs.SendRelay(ctx, url, string(data), collectionData.Type, userData.DappId, userData.ConsumerIp, nil, metadata)
+	return &chainlib.RelayReplyWrapper{StatusCode: relayResult.StatusCode, RelayReply: relayResult.Reply}, "", nil, proxyUrl, chainId, err
+}
+
+func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensions []string) bool {
+	configuredExtensions := rpccs.chainParser.ExtensionsParser().GetConfiguredExtensions()
+	configured := map[string]struct{}{}
+	for _, extension := range configuredExtensions {
+		configured[extension.Name] = struct{}{}
+	}
+	for _, extension := range extensions {
+		if _, found := configured[extension]; !found {
+			return false
+		}
+	}
+	return true
+}
+
+// this function sends relays to the provider and according to the results enhances capabilities of the consumer such as parsing of data and errors
+func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
+	chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+		ChainRouter: rpccs,
+		ChainParser: rpccs.chainParser,
+		Endpoint:    nil,
+		Cache:       nil,
+	})
+	// we want a block that will surely fail
+	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
+	if err != nil {
+		utils.LavaFormatError("failed sending a fault block fetch to parse errors", err)
+		return
+	}
+	if responseErrorMessage != "" {
+		blockError := ""
+		formatted := fmt.Sprintf(format, math.MaxInt64)
+		re := regexp.MustCompile(formatted)
+		blockError = re.ReplaceAllString(responseErrorMessage, format)
+		if blockError == responseErrorMessage {
+			// this shouldnt happen if the block exists in the response
+			return
+		}
+		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
+		if err != nil {
+			utils.LavaFormatError("failed fetching block for Node Data", err)
+		}
+		formatted = fmt.Sprintf(blockError, math.MaxInt64-1)
+		if formatted == responseErrorMessage {
+			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
+			rpccs.chainParser.SetBlockErrorPattern(blockError)
+			return
+		}
+	}
 }

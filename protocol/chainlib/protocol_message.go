@@ -15,11 +15,17 @@ type UserData struct {
 	DappId     string
 }
 
+type hashedRequestResponse struct {
+	hashed          []byte
+	outputFormatter func([]byte) []byte
+}
+
 type BaseProtocolMessage struct {
 	ChainMessage
 	directiveHeaders map[string]string
 	relayRequestData *pairingtypes.RelayPrivateData
 	userData         common.UserData
+	hashedRequest    hashedRequestResponse
 }
 
 func (bpm *BaseProtocolMessage) GetUserData() common.UserData {
@@ -35,7 +41,17 @@ func (bpm *BaseProtocolMessage) RelayPrivateData() *pairingtypes.RelayPrivateDat
 }
 
 func (bpm *BaseProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error) {
-	return HashCacheRequest(bpm.relayRequestData, chainId)
+	if bpm == nil {
+		return nil, nil, nil
+	}
+	if bpm.hashedRequest.hashed != nil && bpm.hashedRequest.outputFormatter != nil {
+		return bpm.hashedRequest.hashed, bpm.hashedRequest.outputFormatter, nil
+	}
+	hash, formatter, err := HashCacheRequest(bpm.relayRequestData, chainId)
+	if err == nil {
+		bpm.hashedRequest = hashedRequestResponse{hash, formatter}
+	}
+	return hash, formatter, err
 }
 
 // addMissingExtensions adds any extensions from updatedProtocolExtensions that are not in currentPrivateDataExtensions

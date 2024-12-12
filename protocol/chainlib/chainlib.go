@@ -83,6 +83,8 @@ type ChainParser interface {
 	ExtensionsParser() *extensionslib.ExtensionParser
 	ExtractDataFromRequest(*http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error)
 	SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error)
+	SetBlockErrorPattern(string)
+	IdentifyBlockNodeError(message string) (isBlockError bool, blockHeight int64)
 }
 
 type ChainMessage interface {
@@ -113,6 +115,7 @@ type ChainMessageForSend interface {
 	GetApiCollection() *spectypes.ApiCollection
 	GetParseDirective() *spectypes.ParseDirective
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+	GetOriginal() (path string, data []byte)
 }
 
 type HealthReporter interface {

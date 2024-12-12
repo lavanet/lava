@@ -12,6 +12,11 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
+type OriginalRaw struct {
+	Path string
+	Data []byte
+}
+
 type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
@@ -32,11 +37,15 @@ type baseChainMessageContainer struct {
 	forceCacheRefresh      bool
 	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
 	usedDefaultValue       bool
-
-	inputHashCache []byte
+	originalRaw            OriginalRaw
+	inputHashCache         []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (bcmc *baseChainMessageContainer) GetOriginal() (path string, data []byte) {
+	return bcmc.originalRaw.Path, bcmc.originalRaw.Data
 }
 
 func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
