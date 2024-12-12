@@ -490,7 +490,7 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("lavanet/lava/subscription/query.proto", fileDescriptor_e870698c9d8ccc09)
+	// proto.RegisterFile("lavanet/lava/subscription/query.proto", fileDescriptor_e870698c9d8ccc09)
 }
 
 var fileDescriptor_e870698c9d8ccc09 = []byte{
