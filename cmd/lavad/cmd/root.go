@@ -183,7 +183,6 @@ func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
 	moduleBasics module.BasicManager,
 ) {
-	InitSDKConfig()
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 	)
@@ -233,9 +232,6 @@ func initRootCmd(
 	encodingConfig appparams.EncodingConfig,
 	moduleBasics module.BasicManager,
 ) {
-	// Set config
-	InitSDKConfig()
-
 	gentxModule, ok := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	if !ok {
 		panic("cant get gentx module")

@@ -6,7 +6,7 @@ import (
 	"github.com/lavanet/lava/v4/app"
 )
 
-func InitSDKConfig() {
+func init() {
 	// Set prefixes
 	accountPubKeyPrefix := app.AccountAddressPrefix + "pub"
 	validatorAddressPrefix := app.AccountAddressPrefix + "valoper"

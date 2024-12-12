@@ -14,7 +14,6 @@ import (
 
 	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
 	e2esdk "github.com/lavanet/lava/v4/testutil/e2e/sdk"
 	"github.com/lavanet/lava/v4/utils"
@@ -267,7 +266,6 @@ var (
 )
 
 func runPaymentE2E(timeout time.Duration) {
-	cmd.InitSDKConfig()
 	os.RemoveAll(protocolLogsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
