@@ -43,7 +43,11 @@ type ChainFetcher struct {
 }
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
-	return *cf.endpoint
+	endpoint := cf.endpoint
+	if endpoint == nil {
+		return lavasession.RPCProviderEndpoint{}
+	}
+	return *endpoint
 }
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {

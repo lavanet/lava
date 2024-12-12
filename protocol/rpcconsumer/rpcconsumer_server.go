@@ -1667,10 +1667,13 @@ func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensi
 
 // this function sends relays to the provider and according to the results enhances capabilities of the consumer such as parsing of data and errors
 func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
+	endpoint := &lavasession.RPCProviderEndpoint{ChainID: rpccs.listenEndpoint.ChainID, ApiInterface: rpccs.listenEndpoint.ApiInterface, NodeUrls: []common.NodeUrl{{
+		Url: "Internal",
+	}}}
 	chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
 		ChainRouter: rpccs,
 		ChainParser: rpccs.chainParser,
-		Endpoint:    nil,
+		Endpoint:    endpoint,
 		Cache:       nil,
 	})
 	// we want a block that will surely fail
