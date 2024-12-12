@@ -33,6 +33,13 @@ type RelayParserInf interface {
 		metadata []pairingtypes.Metadata,
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 	GetEndpoint() *lavasession.RPCEndpoint
+	UpdateProtocolMessageIfNeededWithNewData(
+		ctx context.Context,
+		relayState *RelayState,
+		protocolMessage chainlib.ProtocolMessage,
+		newEarliestBlockRequested int64,
+		dataKind chainlib.DataKind,
+	) chainlib.ProtocolMessage
 }
 
 type ArchiveStatus struct {
@@ -51,6 +58,10 @@ func (as *ArchiveStatus) Copy() *ArchiveStatus {
 	return archiveStatus
 }
 
+type TransitionData struct {
+	block int64
+}
+
 type RelayState struct {
 	archiveStatus   *ArchiveStatus
 	stateNumber     int
@@ -59,6 +70,19 @@ type RelayState struct {
 	relayParser     RelayParserInf
 	ctx             context.Context
 	lock            sync.RWMutex
+	transitionData  TransitionData
+}
+
+func (rs *RelayState) GetTransitionData() TransitionData {
+	rs.lock.RLock()
+	defer rs.lock.RUnlock()
+	return rs.transitionData
+}
+
+func (rs *RelayState) SetBlockTransitionData(blockNumber int64) {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+	rs.transitionData.block = blockNumber
 }
 
 func GetEmptyRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage) *RelayState {
@@ -71,7 +95,7 @@ func GetEmptyRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMe
 	}
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveStatus *ArchiveStatus) *RelayState {
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveStatus *ArchiveStatus, transitionData TransitionData) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
 	if archiveStatus == nil {
 		utils.LavaFormatError("misuse detected archiveStatus is nil", nil, utils.Attribute{Key: "protocolMessage.GetApi", Value: protocolMessage.GetApi()})
@@ -84,8 +108,21 @@ func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage
 		cache:           cache,
 		relayParser:     relayParser,
 		archiveStatus:   archiveStatus,
+		transitionData:  TransitionData{}, // we set an empty transition for the next state
 	}
 	rs.archiveStatus.isArchive.Store(rs.CheckIsArchive(relayRequestData))
+	// if we have transition data, we need to update the protocol message with the new earliest block
+	if transitionData.block > 0 {
+		latest, earliest := protocolMessage.RequestedBlock()
+		if transitionData.block < earliest {
+			// allows overwriting earliest requested block
+			rs.archiveStatus.isEarliestUsed.Store(false)
+			relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.EARLIEST)
+		}
+		if latest > 0 && transitionData.block > latest {
+			relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.LATEST)
+		}
+	}
 	return rs
 }
 
@@ -157,6 +194,7 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
+	protocolMessage := rs.GetProtocolMessage()
 	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
 	if rs.archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
@@ -172,7 +210,7 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 				// we got here because we had a lot of failed retries and we got upgraded without hashes, cache the relay
 				endpoint := rs.relayParser.GetEndpoint()
 				if endpoint != nil {
-					hash, _, err := rs.GetProtocolMessage().HashCacheRequest(endpoint.ChainID)
+					hash, _, err := protocolMessage.HashCacheRequest(endpoint.ChainID)
 					if err == nil {
 						hashes = []string{string(hash)}
 					}
@@ -199,7 +237,7 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 			// We had node error, and we have a hash parsed.
 		} else if NumberOfRetriesToUpgradeToArchive == 5 {
 			endpoint := rs.relayParser.GetEndpoint()
-			hash, _, err := rs.GetProtocolMessage().HashCacheRequest(endpoint.ChainID)
+			hash, _, err := protocolMessage.HashCacheRequest(endpoint.ChainID)
 			if err == nil && !rs.cache.CheckHashInCache(string(hash)) {
 				rs.upgradeToArchive()
 			}

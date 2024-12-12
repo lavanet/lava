@@ -46,6 +46,16 @@ type ConsumerRelaySenderMock struct {
 	tickerValue time.Duration
 }
 
+func (crsm *ConsumerRelaySenderMock) UpdateProtocolMessageIfNeededWithNewData(
+	ctx context.Context,
+	relayState *RelayState,
+	protocolMessage chainlib.ProtocolMessage,
+	newEarliestBlockRequested int64,
+	dataKind chainlib.DataKind,
+) chainlib.ProtocolMessage {
+	return protocolMessage
+}
+
 func (crsm *ConsumerRelaySenderMock) GetEndpoint() *lavasession.RPCEndpoint {
 	return nil
 }

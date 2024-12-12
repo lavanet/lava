@@ -690,7 +690,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	addon := chainlib.GetAddon(protocolMessage)
 	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, protocolMessage)
 	// check whether we need a new protocol message with the new earliest block hash requested
-	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
+	protocolMessage = rpccs.UpdateProtocolMessageIfNeededWithNewData(ctx, relayState, protocolMessage, earliestBlockHashRequested, chainlib.EARLIEST)
 
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
@@ -882,8 +882,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
-			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+			isNodeError, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
+			if isNodeError {
+				// if it's a node error we might be able to extract a block number from the error message
+				blockError, blockNumber := rpccs.chainParser.IdentifyBlockNodeError(errorMessage)
+				if blockError {
+					// we identified a block number in the error message, meaning we requested a specific block
+					// we can't modify the chain message here, only on the creation of a new state so store this in the state for the transition to use
+					relayState.SetBlockTransitionData(blockNumber)
+				}
+			}
 			if rpccs.debugRelays {
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode))
 			}
@@ -1590,14 +1599,14 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	return resp, err
 }
 
-func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(
+func (rpccs *RPCConsumerServer) UpdateProtocolMessageIfNeededWithNewData(
 	ctx context.Context,
 	relayState *RelayState,
 	protocolMessage chainlib.ProtocolMessage,
-	earliestBlockHashRequested int64,
-	addon string,
+	newEarliestBlockRequested int64,
+	dataKind chainlib.DataKind,
 ) chainlib.ProtocolMessage {
-	if !relayState.GetIsEarliestUsed() && earliestBlockHashRequested != spectypes.NOT_APPLICABLE {
+	if !relayState.GetIsEarliestUsed() && newEarliestBlockRequested != spectypes.NOT_APPLICABLE {
 		// We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
 		// and update the extension rules with the new earliest block data as it might be archive.
 		// Setting earliest used to attempt this only once.
@@ -1609,8 +1618,8 @@ func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData
 			utils.LavaFormatError("Failed copying protocol message in sendRelayToProvider", err)
 			return protocolMessage
 		}
-
-		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), earliestBlockHashRequested, addon, relayRequestData.SeenBlock)
+		addon := chainlib.GetAddon(protocolMessage)
+		extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
 		if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
 			relayState.SetIsArchive(true)
 		}

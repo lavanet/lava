@@ -50,6 +50,17 @@ type BaseChainParser struct {
 	blockErrorPattern string
 }
 
+func (bcp *BaseChainParser) IdentifyBlockNodeError(message string) (isBlockError bool, blockHeight int64) {
+	if bcp.blockErrorPattern == "" {
+		return false, 0
+	}
+	_, err := fmt.Sscanf(message, bcp.blockErrorPattern, &blockHeight)
+	if err != nil {
+		return false, 0
+	}
+	return true, blockHeight
+}
+
 func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string) {
 	bcp.blockErrorPattern = pattern
 }

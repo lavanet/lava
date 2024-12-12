@@ -84,6 +84,7 @@ type ChainParser interface {
 	ExtractDataFromRequest(*http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error)
 	SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error)
 	SetBlockErrorPattern(string)
+	IdentifyBlockNodeError(message string) (isBlockError bool, blockHeight int64)
 }
 
 type ChainMessage interface {
