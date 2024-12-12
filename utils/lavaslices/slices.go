@@ -348,7 +348,16 @@ func SplitGenericSliceIntoChunks[T any](arr []T, chunkSize int) [][]T {
 }
 
 func SortStable[T constraints.Ordered](slice []T) {
-	slices.SortStableFunc(slice, func(i, j T) bool { return i < j })
+	slices.SortStableFunc(slice, func(i, j T) int {
+		switch {
+		case i < j:
+			return -1
+		case i > j:
+			return 1
+		default:
+			return 0
+		}
+	})
 }
 
 // This function is used to check if the slice is consecutive.

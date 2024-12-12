@@ -301,6 +301,8 @@ type LavaApp struct {
 
 	// module configurator.
 	configurator module.Configurator
+
+	ModuleBasics module.BasicManager
 }
 
 // New returns a reference to an initialized blockchain app
@@ -923,6 +925,15 @@ func New(
 	)
 	app.sm.RegisterStoreDecoders()
 
+	app.ModuleBasics = module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			"gov": gov.NewAppModuleBasic(
+				[]govclient.ProposalHandler{},
+			),
+		},
+	)
+
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
@@ -1097,8 +1108,12 @@ func (app *LavaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register node gRPC service for grpc-gateway.
 	node.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
 	// Register legacy and grpc-gateway routes for all modules.
-	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	module.NewBasicManagerFromManager(app.mm, nil).RegisterGRPCGatewayRoutes(
+		clientCtx,
+		apiSvr.GRPCGatewayRouter,
+	)
 
 	// register app's OpenAPI routes.
 	docs.RegisterOpenAPIService(Name, apiSvr.Router)

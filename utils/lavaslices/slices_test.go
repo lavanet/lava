@@ -3,6 +3,7 @@ package lavaslices
 import (
 	"math"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -561,6 +562,29 @@ func TestDifference(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := Difference(tt.slice1, tt.slice2)
 			require.True(t, reflect.DeepEqual(result, tt.expected))
+		})
+	}
+}
+
+func TestSortStable(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{"empty slice", []int{}, []int{}},
+		{"already sorted", []int{1, 2, 3}, []int{1, 2, 3}},
+		{"reverse order", []int{3, 2, 1}, []int{1, 2, 3}},
+		{"duplicates", []int{3, 1, 3, 2}, []int{1, 2, 3, 3}},
+		{"negative numbers", []int{-2, 1, -3, 0}, []int{-3, -2, 0, 1}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SortStable(tt.input)
+			if !slices.Equal(tt.input, tt.expected) {
+				t.Errorf("got %v, want %v", tt.input, tt.expected)
+			}
 		})
 	}
 }

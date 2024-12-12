@@ -8,6 +8,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
@@ -21,6 +23,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -33,7 +36,6 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -48,6 +50,7 @@ import (
 	// this line is used by starport scaffolding # root/moduleImport
 
 	"github.com/lavanet/lava/v4/app"
+	"github.com/lavanet/lava/v4/app/params"
 	appparams "github.com/lavanet/lava/v4/app/params"
 )
 
@@ -60,9 +63,11 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
-		WithAccountRetriever(types.AccountRetriever{}).
+		WithAccountRetriever(authtypes.AccountRetriever{}).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper("")
+
+	tempApplication := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, app.DefaultNodeHome, 5, encodingConfig, sims.EmptyAppOptions{})
 
 	rootCmd := &cobra.Command{
 		Use:   app.Name + "d",
@@ -93,7 +98,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd, encodingConfig, tempApplication.ModuleBasics)
 	addLogFlagsToSubCommands(rootCmd)
 	return rootCmd, encodingConfig
 }
@@ -106,7 +111,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
-		WithAccountRetriever(types.AccountRetriever{}).
+		WithAccountRetriever(authtypes.AccountRetriever{}).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper("")
 
@@ -140,7 +145,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		},
 	}
 
-	initLavaProtocolRootCmd(rootCmd)
+	initLavaProtocolRootCmd(rootCmd, encodingConfig)
 	addLogFlagsToSubCommands(rootCmd)
 
 	return rootCmd
@@ -148,14 +153,18 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 
 func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
+	encodingConfig params.EncodingConfig,
 ) {
 	InitSDKConfig()
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 	)
+
+	tempApplication := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, app.DefaultNodeHome, 5, encodingConfig, sims.EmptyAppOptions{})
+
 	rootCmd.AddCommand(
-		queryCommand(),
-		txCommand(),
+		queryCommand(tempApplication.ModuleBasics),
+		txCommand(tempApplication.ModuleBasics),
 		keys.Commands(),
 	)
 
@@ -196,6 +205,7 @@ func initTendermintConfig() *tmcfg.Config {
 func initRootCmd(
 	rootCmd *cobra.Command,
 	encodingConfig appparams.EncodingConfig,
+	moduleBasics module.BasicManager,
 ) {
 	// Set config
 	InitSDKConfig()
@@ -240,8 +250,8 @@ func initRootCmd(
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		queryCommand(),
-		txCommand(),
+		queryCommand(moduleBasics),
+		txCommand(moduleBasics),
 		keys.Commands(),
 	)
 }
@@ -266,7 +276,7 @@ func setLogLevelFieldNameFromFlag(cmd *cobra.Command) error {
 }
 
 // queryCommand returns the sub-command to send queries to the app
-func queryCommand() *cobra.Command {
+func queryCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "query",
 		Aliases:                    []string{"q"},
@@ -284,14 +294,14 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-	app.ModuleBasics.AddQueryCommands(cmd)
+	moduleBasics.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }
 
 // txCommand returns the sub-command to send transactions to the app
-func txCommand() *cobra.Command {
+func txCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -311,7 +321,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-	app.ModuleBasics.AddTxCommands(cmd)
+	moduleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd

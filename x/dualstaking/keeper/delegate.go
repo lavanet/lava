@@ -426,8 +426,11 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		}
 	}
 
-	slices.SortFunc(delegations, func(i, j types.Delegation) bool {
-		return i.Amount.IsLT(j.Amount)
+	slices.SortFunc(delegations, func(i, j types.Delegation) int {
+		if i.Amount.IsLTE(j.Amount) {
+			return -1
+		}
+		return 1
 	})
 
 	unbondAmount := map[string]sdk.Coin{}

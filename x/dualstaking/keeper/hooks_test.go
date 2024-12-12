@@ -13,7 +13,7 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/utils/sigs"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
+	"github.com/lavanet/lava/v4/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 )
@@ -372,8 +372,11 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorProviders(delegator)
 	require.NoError(t, err)
 	delegationsBeforeSlash := res.Delegations
-	slices.SortFunc(delegationsBeforeSlash, func(i, j dualstakingtypes.Delegation) bool {
-		return i.Amount.IsLT(j.Amount)
+	slices.SortFunc(delegationsBeforeSlash, func(i, j types.Delegation) int {
+		if i.Amount.IsLTE(j.Amount) {
+			return -1
+		}
+		return 1
 	})
 
 	// slash consensusPowerTokens*0.6 tokens from the validator and check balance

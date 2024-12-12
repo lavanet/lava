@@ -186,10 +186,16 @@ func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geol
 	}
 
 	// sort the endpoints by geolocation relevance:
-	lessFunc := func(a *Endpoint, b *Endpoint) bool {
+	lessFunc := func(a *Endpoint, b *Endpoint) int {
 		latencyA := int(latencyToGeo(a.Geolocation, currentGeo))
 		latencyB := int(latencyToGeo(b.Geolocation, currentGeo))
-		return latencyA < latencyB
+		if latencyA < latencyB {
+			return -1
+		}
+		if latencyA > latencyB {
+			return 1
+		}
+		return 0
 	}
 	slices.SortStableFunc(pairingEndpoints, lessFunc)
 }
