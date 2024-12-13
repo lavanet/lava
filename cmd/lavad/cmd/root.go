@@ -100,6 +100,10 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 
 	initRootCmd(rootCmd, encodingConfig, tempApplication.ModuleBasics)
 	addLogFlagsToSubCommands(rootCmd)
+
+	if err := autoCliOpts(initClientCtx, tempApplication).EnhanceRootCommand(rootCmd); err != nil {
+		panic(err)
+	}
 	return rootCmd, encodingConfig
 }
 

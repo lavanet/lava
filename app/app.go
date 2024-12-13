@@ -323,7 +323,7 @@ func New(
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
 	level := appOpts.Get(flags.FlagLogLevel)
-	utils.SetGlobalLoggingLevel(cast.ToString(level))
+	utils.SetGlobalLoggingLevelSilent(cast.ToString(level))
 
 	bApp := baseapp.NewBaseApp(Name, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
@@ -936,7 +936,7 @@ func New(
 		app.mm,
 		map[string]module.AppModuleBasic{
 			"gov": gov.NewAppModuleBasic(
-				[]govclient.ProposalHandler{},
+				getGovProposalHandlers(),
 			),
 		},
 	)
