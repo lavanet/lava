@@ -265,6 +265,7 @@ func _BadgeGenerator_GenerateBadge_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+var BadgeGenerator_serviceDesc = _BadgeGenerator_serviceDesc
 var _BadgeGenerator_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.pairing.BadgeGenerator",
 	HandlerType: (*BadgeGeneratorServer)(nil),

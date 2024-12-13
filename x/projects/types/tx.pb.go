@@ -627,6 +627,7 @@ func _Msg_SetSubscriptionPolicy_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.projects.Msg",
 	HandlerType: (*MsgServer)(nil),

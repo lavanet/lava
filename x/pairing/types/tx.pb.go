@@ -1044,6 +1044,7 @@ func _Msg_MoveProviderStake_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.pairing.Msg",
 	HandlerType: (*MsgServer)(nil),
