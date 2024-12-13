@@ -29,11 +29,6 @@ func (msg *MsgSetVersion) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{authority}
 }
 
-func (msg *MsgSetVersion) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func (msg *MsgSetVersion) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
 		return sdkerrors.Wrap(err, "invalid authority address")

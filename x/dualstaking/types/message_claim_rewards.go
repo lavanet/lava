@@ -34,11 +34,6 @@ func (msg *MsgClaimRewards) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{delegator}
 }
 
-func (msg *MsgClaimRewards) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func (msg *MsgClaimRewards) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

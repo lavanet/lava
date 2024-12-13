@@ -4,7 +4,7 @@ import "amino/amino.proto";
 
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
-
+import "cosmos/msg/v1/msg.proto";
 option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
 
 // Msg defines the Msg service.
@@ -18,6 +18,7 @@ service Msg {
 
 message MsgDelegate {
   option (amino.name) = "dualstaking/Delegate";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string validator = 5;
   string provider = 2;
@@ -30,6 +31,7 @@ message MsgDelegateResponse {
 
 message MsgRedelegate {
   option (amino.name) = "dualstaking/Redelegate";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string from_provider = 2;
   string to_provider = 3;
@@ -43,6 +45,7 @@ message MsgRedelegateResponse {
 
 message MsgUnbond {
   option (amino.name) = "dualstaking/Unbond";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string validator = 5;
   string provider = 2;
@@ -55,6 +58,7 @@ message MsgUnbondResponse {
 
 message MsgClaimRewards {
   option (amino.name) = "dualstaking/MsgClaimRewards";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1; // delegator
   string provider = 2;
 }

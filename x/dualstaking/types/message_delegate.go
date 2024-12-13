@@ -37,11 +37,6 @@ func (msg *MsgDelegate) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{delegator}
 }
 
-func (msg *MsgDelegate) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func (msg *MsgDelegate) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

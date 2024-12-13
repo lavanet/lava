@@ -43,11 +43,6 @@ func (msg *MsgStakeProvider) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgStakeProvider) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func (msg *MsgStakeProvider) ValidateBasic() error {
 	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "Invalid validator address (%s) %s", err.Error(), msg.Validator)
