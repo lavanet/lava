@@ -502,7 +502,7 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 			continue
 		}
 		v, err := k.stakingKeeper.GetValidator(ctx, valaddr)
-		if err != nil {
+		if err == nil {
 			sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromSharesRoundUp(d.Shares).Ceil().TruncateInt())
 		}
 	}
