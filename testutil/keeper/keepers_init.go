@@ -21,6 +21,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -245,7 +246,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks := Keepers{}
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
-	ks.AccountKeeper = mockAccountKeeper{}
+	ks.AccountKeeper = mockAccountKeeper{ac: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())}
 	ks.BankKeeper = mockBankKeeper{}
 	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, runtime.NewKVStoreService(stakingStoreKey), ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()))

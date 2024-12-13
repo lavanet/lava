@@ -13,7 +13,9 @@ import (
 )
 
 // account keeper mock
-type mockAccountKeeper struct{}
+type mockAccountKeeper struct {
+	ac address.Codec
+}
 
 func (k mockAccountKeeper) IterateAccounts(ctx context.Context, process func(sdk.AccountI) (stop bool)) {
 }
@@ -37,7 +39,7 @@ func (k mockAccountKeeper) SetModuleAccount(context.Context, sdk.ModuleAccountI)
 }
 
 func (k mockAccountKeeper) AddressCodec() address.Codec {
-	return nil
+	return k.ac
 }
 
 // mock bank keeper

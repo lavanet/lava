@@ -749,9 +749,9 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 		sdk.ValAddress(validator.Addr).String(),
 		validator.PubKey,
 		sdk.NewCoin(ts.BondDenom(), amount),
-		stakingtypes.Description{},
+		stakingtypes.Description{Moniker: "test_validator"},
 		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1)),
-		math.ZeroInt(),
+		math.OneInt(),
 	)
 	require.Nil(ts.T, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
