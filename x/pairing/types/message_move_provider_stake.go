@@ -27,14 +27,6 @@ func (msg *MsgMoveProviderStake) Type() string {
 	return TypeMsgMoveProviderStake
 }
 
-func (msg *MsgMoveProviderStake) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgMoveProviderStake) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

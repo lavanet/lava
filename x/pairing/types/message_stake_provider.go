@@ -35,14 +35,6 @@ func (msg *MsgStakeProvider) Type() string {
 	return TypeMsgStakeProvider
 }
 
-func (msg *MsgStakeProvider) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgStakeProvider) ValidateBasic() error {
 	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "Invalid validator address (%s) %s", err.Error(), msg.Validator)

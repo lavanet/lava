@@ -29,14 +29,6 @@ func (msg *MsgFundIprpc) Type() string {
 	return TypeMsgFundIprpc
 }
 
-func (msg *MsgFundIprpc) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgFundIprpc) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

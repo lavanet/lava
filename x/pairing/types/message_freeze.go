@@ -30,14 +30,6 @@ func (msg *MsgFreezeProvider) Type() string {
 	return TypeMsgFreeze
 }
 
-func (msg *MsgFreezeProvider) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgFreezeProvider) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

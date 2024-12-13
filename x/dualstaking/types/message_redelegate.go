@@ -30,14 +30,6 @@ func (msg *MsgRedelegate) Type() string {
 	return TypeMsgRedelegate
 }
 
-func (msg *MsgRedelegate) GetSigners() []sdk.AccAddress {
-	delegator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{delegator}
-}
-
 func (msg *MsgRedelegate) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

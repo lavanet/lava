@@ -26,14 +26,6 @@ func (msg *MsgClaimRewards) Type() string {
 	return TypeMsgClaimRewards
 }
 
-func (msg *MsgClaimRewards) GetSigners() []sdk.AccAddress {
-	delegator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{delegator}
-}
-
 func (msg *MsgClaimRewards) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

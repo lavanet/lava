@@ -25,14 +25,6 @@ func (msg *MsgDelProject) Type() string {
 	return TypeMsgDelProject
 }
 
-func (msg *MsgDelProject) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgDelProject) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

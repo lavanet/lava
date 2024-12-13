@@ -29,14 +29,6 @@ func (msg *MsgUnbond) Type() string {
 	return TypeMsgUnbond
 }
 
-func (msg *MsgUnbond) GetSigners() []sdk.AccAddress {
-	delegator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{delegator}
-}
-
 func (msg *MsgUnbond) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

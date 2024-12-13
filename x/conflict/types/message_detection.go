@@ -36,14 +36,6 @@ func (msg *MsgDetection) Type() string {
 	return TypeMsgDetection
 }
 
-func (msg *MsgDetection) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgDetection) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

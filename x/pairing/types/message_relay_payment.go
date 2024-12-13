@@ -27,14 +27,6 @@ func (msg *MsgRelayPayment) Type() string {
 	return TypeMsgRelayPayment
 }
 
-func (msg *MsgRelayPayment) GetSigners() []sdk.AccAddress {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{creator}
-}
-
 func (msg *MsgRelayPayment) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {

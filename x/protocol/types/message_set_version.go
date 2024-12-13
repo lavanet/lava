@@ -24,11 +24,6 @@ func (msg *MsgSetVersion) Type() string {
 	return TypeMsgSetVersion
 }
 
-func (msg *MsgSetVersion) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
 func (msg *MsgSetVersion) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
 		return sdkerrors.Wrap(err, "invalid authority address")
