@@ -107,7 +107,7 @@ To contribute changes to lava-config:
 
    ```bash
    # Create a branch containing only the specs directory history
-   git subtree split --prefix=specs -b <branch-name>
+   git subtree split --prefix=specs -b <branch-name> --squash
 
    # Push your changes to your fork
    git push <your-fork-remote> <branch-name>
