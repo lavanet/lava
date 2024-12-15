@@ -3,6 +3,7 @@ package fixationstore
 import (
 	"context"
 
+	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -15,8 +16,11 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = AppModuleBasic{}
-	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = (*AppModule)(nil)
+
+	_ appmodule.AppModule       = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker   = (*AppModule)(nil)
 )
 
 const (
@@ -60,6 +64,8 @@ type AppModule struct {
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 func (a AppModule) BeginBlock(_ context.Context) error { return nil }
+
+func (am AppModule) EndBlock(_ context.Context) error { return nil }
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.

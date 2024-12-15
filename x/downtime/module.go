@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -19,8 +19,12 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = AppModuleBasic{}
-	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = (*AppModule)(nil)
+	_ module.HasGenesis     = (*AppModule)(nil)
+
+	_ appmodule.AppModule       = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker   = (*AppModule)(nil)
 )
 
 const (
@@ -75,14 +79,13 @@ type AppModule struct {
 	k keeper.Keeper
 }
 
-func (a AppModule) InitGenesis(context sdk.Context, jsonCodec codec.JSONCodec, message json.RawMessage) []abci.ValidatorUpdate {
+func (a AppModule) InitGenesis(context sdk.Context, jsonCodec codec.JSONCodec, message json.RawMessage) {
 	gs := new(v1.GenesisState)
 	jsonCodec.MustUnmarshalJSON(message, gs)
 	err := a.k.ImportGenesis(context, gs)
 	if err != nil {
 		panic(err)
 	}
-	return nil
 }
 
 func (a AppModule) ExportGenesis(context sdk.Context, jsonCodec codec.JSONCodec) json.RawMessage {
@@ -104,6 +107,11 @@ func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 func (a AppModule) BeginBlock(context context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(context)
 	a.k.BeginBlock(sdkCtx)
+	return nil
+}
+
+// EndBlock contains the logic that is automatically triggered at the end of each block
+func (am AppModule) EndBlock(_ context.Context) error {
 	return nil
 }
 
