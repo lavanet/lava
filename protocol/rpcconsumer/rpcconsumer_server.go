@@ -179,7 +179,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	if success {
 		rpccs.initialized.Store(true)
 	}
-	go rpccs.ExtractNodeData(context.Background())
+	go rpccs.tryExtractNodeData(context.Background())
 	return success, err
 }
 
@@ -1670,11 +1670,13 @@ const (
 	RefreshInterval = 24 * time.Hour   // Y time for refreshing on success
 )
 
-func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
+func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) {
 	for {
-		success := rpccs.tryExtractNodeData(ctx)
+		// identify the pattern for node errors with node too new
+		successTooNew := rpccs.ExtractNodeData(ctx, chainlib.LATEST)
+		successTooOld := rpccs.ExtractNodeData(ctx, chainlib.EARLIEST)
 		var timer *time.Timer
-		if success {
+		if successTooNew && successTooOld {
 			timer = time.NewTimer(RefreshInterval)
 		} else {
 			timer = time.NewTimer(RetryInterval)
@@ -1689,7 +1691,7 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context) {
 	}
 }
 
-func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) bool {
+func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context, kind chainlib.DataKind) bool {
 	endpoint := &lavasession.RPCProviderEndpoint{ChainID: rpccs.listenEndpoint.ChainID, ApiInterface: rpccs.listenEndpoint.ApiInterface, NodeUrls: []common.NodeUrl{{
 		Url: "Internal",
 	}}}
@@ -1700,29 +1702,36 @@ func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) bool {
 		Cache:       nil,
 	})
 	// we want a block that will surely fail
-	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, math.MaxInt64)
+	fetchBlock := int64(0)
+	if kind == chainlib.LATEST {
+		fetchBlock = math.MaxInt64
+	} else if kind == chainlib.EARLIEST {
+		// TODO: make it earliest and make sure it fails
+	}
+	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, fetchBlock)
 	if err != nil {
 		utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors", err)
 		return false
 	}
 	if responseErrorMessage != "" {
 		blockError := ""
-		formatted := fmt.Sprintf(format, math.MaxInt64)
+		formatted := fmt.Sprintf(format, fetchBlock)
 		re := regexp.MustCompile(formatted)
 		blockError = re.ReplaceAllString(responseErrorMessage, format)
 		if blockError == responseErrorMessage {
 			// this shouldn't happen if the block exists in the response
 			return false
 		}
-		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, math.MaxInt64-1)
+		fetchBlock = fetchBlock - 1
+		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, fetchBlock)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors maxInt-1", err)
 			return false
 		}
-		formatted = fmt.Sprintf(blockError, math.MaxInt64-1)
+		formatted = fmt.Sprintf(blockError, math.MaxInt64)
 		if formatted == responseErrorMessage {
 			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
-			rpccs.chainParser.SetBlockErrorPattern(blockError)
+			rpccs.chainParser.SetBlockErrorPattern(blockError, chainlib.LATEST)
 			return true
 		}
 	}

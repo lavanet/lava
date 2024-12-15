@@ -171,7 +171,10 @@ func CreateChainLibMocks(
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
 		allCombinations := generateCombinations(extensions)
 		for _, extensionsList := range allCombinations {
-			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
+			nodeUrl := common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)}
+			// this is used to identify this header in the handler
+			nodeUrl.AuthConfig = common.AuthConfig{AuthHeaders: map[string]string{"Addon": strings.Join(extensionsList, ",")}}
+			endpoint.NodeUrls = append(endpoint.NodeUrls, nodeUrl)
 		}
 		go func() {
 			service := myServiceImplementation{serverCallback: httpServerCallback}

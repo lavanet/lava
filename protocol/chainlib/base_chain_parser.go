@@ -35,6 +35,15 @@ type InternalPath struct {
 	Addon          string
 }
 
+type ErrorPattern struct {
+	TooNewPattern string
+	TooOldPattern string
+}
+
+func (bep *ErrorPattern) IsEmpty() bool {
+	return bep.TooNewPattern == "" && bep.TooOldPattern == ""
+}
+
 type BaseChainParser struct {
 	internalPaths     map[string]InternalPath
 	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
@@ -47,26 +56,41 @@ type BaseChainParser struct {
 	allowedAddons     map[string]bool
 	extensionParser   extensionslib.ExtensionParser
 	active            bool
-	blockErrorPattern string
+	blockErrorPattern ErrorPattern
 }
 
-func (bcp *BaseChainParser) IdentifyBlockNodeError(message string) (isBlockError bool, blockHeight int64) {
+// allows an optional kind to specify the type of error to identify
+// LATEST is identifying too new error
+// EARLIEST is identifying too old error
+func (bcp *BaseChainParser) IdentifyBlockNodeError(message string, kind ...DataKind) (isBlockError bool, blockHeight int64) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
-	if bcp.blockErrorPattern == "" {
+	if bcp.blockErrorPattern.IsEmpty() {
 		return false, 0
 	}
-	_, err := fmt.Sscanf(message, bcp.blockErrorPattern, &blockHeight)
-	if err != nil {
-		return false, 0
+	if len(kind) == 0 || kind[0] == LATEST {
+		_, err := fmt.Sscanf(message, bcp.blockErrorPattern.TooNewPattern, &blockHeight)
+		if err == nil {
+			return true, blockHeight
+		}
 	}
-	return true, blockHeight
+	if len(kind) == 0 || kind[0] == EARLIEST {
+		_, err := fmt.Sscanf(message, bcp.blockErrorPattern.TooOldPattern, &blockHeight)
+		if err == nil {
+			return true, blockHeight
+		}
+	}
+	return false, 0
 }
 
-func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string) {
+func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string, kind DataKind) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
-	bcp.blockErrorPattern = pattern
+	if kind == EARLIEST {
+		bcp.blockErrorPattern.TooOldPattern = pattern
+	} else if kind == LATEST {
+		bcp.blockErrorPattern.TooNewPattern = pattern
+	}
 }
 
 func (bcp *BaseChainParser) Activate() {

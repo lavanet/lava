@@ -2189,3 +2189,137 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 		})
 	}
 }
+
+func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
+	playbook := []struct {
+		name                string
+		apiInterface        string
+		errorFormat         string
+		managedToParseBlock bool
+		reqFormat           string
+	}{
+		{
+			name:                "tendermint",
+			apiInterface:        spectypes.APIInterfaceTendermintRPC,
+			errorFormat:         `{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"height %d must be less than or equal to the current blockchain height 1837105"}}`,
+			managedToParseBlock: true,
+			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
+		},
+		{
+			name:                "tendermint",
+			apiInterface:        spectypes.APIInterfaceJsonRPC,
+			errorFormat:         `{"jsonrpc":"2.0","id":-1,"result":null}}`,
+			managedToParseBlock: false,
+			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
+		},
+	}
+	for _, play := range playbook {
+		t.Run("unconfiguredApiWithArchiveRequest", func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "LAV1"
+			apiInterface := play.apiInterface
+			epoch := uint64(100)
+			lavaChainID := "lava"
+			numProviders := 2
+
+			consumerListenAddress := addressGen.GetAddress()
+
+			type providerData struct {
+				account                sigs.Account
+				endpoint               *lavasession.RPCProviderEndpoint
+				server                 *rpcprovider.RPCProviderServer
+				replySetter            *ReplySetter
+				mockChainFetcher       *MockChainFetcher
+				mockReliabilityManager *MockReliabilityManager
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			archiveCalled := make(chan bool, 10)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				addons := []string(nil)
+				if i == 0 {
+					// one provider will have archive
+					addons = []string{"archive"}
+				}
+
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           addons,
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+					if bytes.Equal(req, []byte(`{"jsonrpc":"2.0","method":"block","params":[9223372036854775807],"id":1}`)) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775807)), 500
+					}
+					if bytes.Equal(req, []byte(`{"jsonrpc":"2.0","method":"block","params":[9223372036854775806],"id":1}`)) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775806)), 500
+					}
+					for key, val := range header {
+						if key == "Addon" {
+							if val[0] == "archive" {
+								archiveCalled <- true
+							}
+						}
+					}
+					return []byte(`{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"height 1 must be less than or equal to the current blockchain height 1837105"}}`), 500
+				}
+			}
+
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			for i := 0; i < numProviders; i++ {
+				extensions := map[string]struct{}{}
+				if i == 0 {
+					extensions = map[string]struct{}{"archive": {}}
+				}
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+							Extensions:     extensions,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
+			success := rpcConsumerOut.rpcConsumerServer.ExtractNodeData(ctx)
+			require.Equal(t, play.managedToParseBlock, success)
+
+		})
+	}
+}
