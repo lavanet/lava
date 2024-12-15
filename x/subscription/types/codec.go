@@ -36,11 +36,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-var (
-	Amino     = codec.NewLegacyAmino()
-	ModuleCdc = codec.NewAminoCodec(Amino)
-	// ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
-)
+var Amino = codec.NewLegacyAmino()
 
 func init() {
 	RegisterCodec(Amino)
