@@ -18,6 +18,8 @@ import (
 	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
 )
 
+var DisableDR = false
+
 type ConsumerTxSenderInf interface {
 	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error
 }
@@ -29,10 +31,9 @@ type ConsumerStateTracker struct {
 	ConsumerTxSenderInf
 	*StateTracker
 	ConsumerEmergencyTrackerInf
-	disableConflictTransactions bool
 }
 
-func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager, disableConflictTransactions bool) (ret *ConsumerStateTracker, err error) {
+func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, stateQuery.StateQuery, chainFetcher, blockNotFoundCallback)
@@ -48,7 +49,6 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		StateQuery:                  stateQuery,
 		ConsumerTxSenderInf:         txSender,
 		ConsumerEmergencyTrackerInf: emergencyTracker,
-		disableConflictTransactions: disableConflictTransactions,
 	}
 
 	err = cst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
@@ -105,7 +105,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 }
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-	if cst.disableConflictTransactions {
+	if DisableDR {
 		utils.LavaFormatInfo("found Conflict, but transactions are disabled, returning")
 		return nil
 	}

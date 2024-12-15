@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/lavasession"
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/statetracker"
 	"github.com/lavanet/lava/v4/protocol/upgrade"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/protocopy"
@@ -1254,6 +1255,9 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	if statetracker.DisableDR {
+		return nil
+	}
 	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(protocolMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
 	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
