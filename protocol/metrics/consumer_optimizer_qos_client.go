@@ -32,6 +32,7 @@ type ConsumerOptimizerQoSClient struct {
 	currentEpoch                       atomic.Uint64
 	lock                               sync.RWMutex
 	reportsToSend                      []OptimizerQoSReportToSend
+	geoLocation                        uint64
 }
 
 type OptimizerQoSReport struct {
@@ -57,6 +58,7 @@ type OptimizerQoSReportToSend struct {
 	Epoch             uint64    `json:"epoch"`
 	ProviderStake     int64     `json:"provider_stake"`
 	EntryIndex        int       `json:"entry_index"`
+	GeoLocation       uint64    `json:"geo_location"`
 }
 
 func (oqosr OptimizerQoSReportToSend) String() string {
@@ -71,7 +73,7 @@ type OptimizerInf interface {
 	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
 }
 
-func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
+func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, geoLocation uint64, interval ...time.Duration) *ConsumerOptimizerQoSClient {
 	hostname, err := os.Hostname()
 	if err != nil {
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
@@ -85,6 +87,7 @@ func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, inte
 		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
 		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
 		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
+		geoLocation:                        geoLocation,
 	}
 }
 
@@ -145,6 +148,7 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		Epoch:             epoch,
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
+		GeoLocation:       coqc.geoLocation,
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)

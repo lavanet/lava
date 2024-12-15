@@ -973,6 +973,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		utils.LavaFormatTrace("Sending relay to provider",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
+			utils.LogAttr("providerAddress", providerPublicAddress),
+			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
+			utils.LogAttr("seenBlock", relayResult.Request.RelayData.SeenBlock),
+			utils.LogAttr("extensions", relayResult.Request.RelayData.Extensions),
 		)
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()

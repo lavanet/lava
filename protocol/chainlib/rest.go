@@ -176,6 +176,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
+		if AllowMissingApisByDefault {
+			apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
+			return apip.defaultApiContainer(apiKey)
+		}
 		utils.LavaFormatDebug("rest api not supported",
 			utils.LogAttr("name", name),
 			utils.LogAttr("connectionType", connectionType),
