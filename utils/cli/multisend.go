@@ -132,7 +132,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 					return 0, err
 				}
 
-				acc, ok := res.Account.GetCachedValue().(authtypes.AccountI)
+				acc, ok := res.Account.GetCachedValue().(sdk.AccountI)
 				if !ok {
 					return 0, fmt.Errorf("cant unmarshal")
 				}

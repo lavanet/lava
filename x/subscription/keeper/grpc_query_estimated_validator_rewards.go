@@ -64,7 +64,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 
 	validators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get bonded validators by power", err)
+		return nil, fmt.Errorf("failed to get bonded validators by power, err: %w", err)
 	}
 
 	for _, v := range validators {

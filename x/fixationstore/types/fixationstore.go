@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/v4/utils"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 )
@@ -281,7 +282,7 @@ func (fs *FixationStore) AppendEntry(
 	ctx sdk.Context,
 	index string,
 	block uint64,
-	entryData codec.ProtoMarshaler,
+	entryData proto.Message,
 ) error {
 	safeIndex, err := SanitizeIndex(index)
 	if err != nil {
@@ -409,7 +410,7 @@ func (fs *FixationStore) AppendEntry(
 	return nil
 }
 
-func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key, data []byte) {
+func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key, _ []byte) {
 	safeIndex, block, kind := decodeFromTimer(key)
 
 	AssertSanitizedIndex(safeIndex, fs.prefix)
@@ -616,7 +617,7 @@ func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry Entry) {
 
 // ReadEntry returns and existing entry with index and specific block
 // (should be called only for existing entries; will panic otherwise)
-func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
+func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, entryData proto.Message) {
 	safeIndex, err := SanitizeIndex(index)
 	if err != nil {
 		// panic:ok: entry expected to exist as is
@@ -632,7 +633,7 @@ func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, 
 
 // ModifyEntry modifies an existing entry in the store
 // (should be called only for existing entries; will panic otherwise)
-func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
+func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData proto.Message) {
 	safeIndex, err := SanitizeIndex(index)
 	if err != nil {
 		// panic:ok: entry expected to exist as is
@@ -717,7 +718,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 }
 
 // FindEntryDetailed returns the entry by index, whether it's deleted, and block without changing the refcount
-func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (entryBlock uint64, isDeleted bool, isLatest bool, found bool) {
+func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block uint64, entryData proto.Message) (entryBlock uint64, isDeleted bool, isLatest bool, found bool) {
 	safeIndex, err := SanitizeIndex(index)
 	if err != nil {
 		utils.LavaFormatError("FindEntry failed (invalid index)", err,
@@ -744,7 +745,7 @@ func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block 
 }
 
 // FindEntry returns the entry by index and block without changing the refcount
-func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
+func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData proto.Message) bool {
 	_, _, _, found := fs.FindEntryDetailed(ctx, index, block, entryData)
 	return found
 }
@@ -777,7 +778,7 @@ func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) b
 
 // GetEntry returns the latest entry by index and increments the refcount
 // (while ignoring entries in stale-period)
-func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
+func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData proto.Message) bool {
 	safeIndex, err := SanitizeIndex(index)
 	if err != nil {
 		utils.LavaFormatError("GetEntry failed (invalid index)", err,
