@@ -815,20 +815,13 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	}
 }
 
-func TestSpecs(t *testing.T) {
+func TestCookbookSpecs(t *testing.T) {
 	ts := newTester(t)
 
-	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+	getToTopMostPath := "../../.././cookbook/specs/"
 
 	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
-
-	getToTopMostPath = "../../.././specs/testnet-2/specs/"
-
-	specsFilesTestnet, err := getAllFilesInDirectory(getToTopMostPath)
-	require.NoError(t, err)
-
-	specsFiles = append(specsFiles, specsFilesTestnet...)
 
 	// Sort specs by hierarchy - specs that are imported by others should come first
 	specImports := make(map[string][]string)
@@ -836,7 +829,7 @@ func TestSpecs(t *testing.T) {
 
 	// First read all spec contents
 	for _, fileName := range specsFiles {
-		contents, err := os.ReadFile(fileName)
+		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.NoError(t, err)
 
 		// Parse imports from spec
@@ -924,7 +917,7 @@ func getAllFilesInDirectory(directory string) ([]string, error) {
 			// Skip directories; we only want files
 			continue
 		}
-		files = append(files, directory+entry.Name())
+		files = append(files, entry.Name())
 	}
 
 	return files, nil
