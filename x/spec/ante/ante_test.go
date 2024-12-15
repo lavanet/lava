@@ -178,9 +178,8 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			k, ctx := specutils.SpecKeeper(t)
 			params := spectypes.DefaultParams()
 			params.AllowlistedExpeditedMsgs = []string{
