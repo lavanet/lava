@@ -16,16 +16,19 @@ type BlockedProvidersInf interface {
 
 func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
+	originalUnwantedProviders := map[string]struct{}{} // we need a new map as map changes are changed by pointer
 	if blockedProviders != nil {
 		providerAddressesToBlock := blockedProviders.GetBlockedProviders()
 		if len(providerAddressesToBlock) > 0 {
 			for _, providerAddress := range providerAddressesToBlock {
 				unwantedProviders[providerAddress] = struct{}{}
+				originalUnwantedProviders[providerAddress] = struct{}{}
 			}
 		}
 	}
+
 	return &UsedProviders{
-		uniqueUsedProviders: map[RouterKey]*UniqueUsedProviders{NewRouterKey([]string{}): {
+		uniqueUsedProviders: map[string]*UniqueUsedProviders{GetEmptyRouterKey().String(): {
 			providers:         map[string]struct{}{},
 			unwantedProviders: unwantedProviders,
 			blockOnSyncLoss:   map[string]struct{}{},
@@ -33,7 +36,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		}},
 		// we keep the original unwanted providers so when we create more unique used providers
 		// we can reuse it as its the user's instructions.
-		originalUnwantedProviders: unwantedProviders,
+		originalUnwantedProviders: originalUnwantedProviders,
 	}
 }
 
@@ -48,7 +51,7 @@ type UniqueUsedProviders struct {
 
 type UsedProviders struct {
 	lock                      sync.RWMutex
-	uniqueUsedProviders       map[RouterKey]*UniqueUsedProviders
+	uniqueUsedProviders       map[string]*UniqueUsedProviders
 	originalUnwantedProviders map[string]struct{}
 	selecting                 bool
 	sessionsLatestBatch       int
@@ -125,7 +128,8 @@ func (up *UsedProviders) AllUnwantedAddresses() []string {
 // if it does, return it. If it doesn't
 // creating a new instance and returning it.
 func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *UniqueUsedProviders {
-	uniqueUsedProviders, ok := up.uniqueUsedProviders[key]
+	keyString := key.String()
+	uniqueUsedProviders, ok := up.uniqueUsedProviders[keyString]
 	if !ok {
 		uniqueUsedProviders = &UniqueUsedProviders{
 			providers:         map[string]struct{}{},
@@ -133,7 +137,7 @@ func (up *UsedProviders) createOrUseUniqueUsedProvidersForKey(key RouterKey) *Un
 			blockOnSyncLoss:   map[string]struct{}{},
 			erroredProviders:  map[string]struct{}{},
 		}
-		up.uniqueUsedProviders[key] = uniqueUsedProviders
+		up.uniqueUsedProviders[keyString] = uniqueUsedProviders
 	}
 	return uniqueUsedProviders
 }

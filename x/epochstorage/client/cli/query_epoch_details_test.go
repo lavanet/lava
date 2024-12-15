@@ -49,8 +49,8 @@ func TestShowEpochDetails(t *testing.T) {
 			obj:  obj,
 		},
 	} {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
 			var args []string
 			args = append(args, tc.args...)
 			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowEpochDetails(), args)

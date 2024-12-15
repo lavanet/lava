@@ -52,7 +52,7 @@ type ConsumerSessionManager struct {
 	// contains a sorted list of blocked addresses, sorted by their cu used this epoch for higher chance of response
 	currentlyBlockedProviderAddresses []string
 
-	addonAddresses    map[RouterKey][]string
+	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
@@ -113,7 +113,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
-	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
+	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
@@ -129,13 +129,13 @@ func (csm *ConsumerSessionManager) Initialized() bool {
 func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
 	if addon == "" && len(extensions) == 0 {
 		// purge all
-		csm.addonAddresses = make(map[RouterKey][]string)
+		csm.addonAddresses = make(map[string][]string)
 	} else {
 		routerKey := NewRouterKey(append(extensions, addon))
 		if csm.addonAddresses == nil {
-			csm.addonAddresses = make(map[RouterKey][]string)
+			csm.addonAddresses = make(map[string][]string)
 		}
-		csm.addonAddresses[routerKey] = []string{}
+		csm.addonAddresses[routerKey.String()] = []string{}
 	}
 }
 
@@ -153,10 +153,11 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 // assuming csm is Rlocked
 func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
 	routerKey := NewRouterKey(append(extensions, addon))
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+	routerKeyString := routerKey.String()
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
 		return csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[routerKey]
+	return csm.addonAddresses[routerKeyString]
 }
 
 // After 2 epochs we need to close all open connections.
@@ -332,7 +333,7 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string,
 			}
 		}
 		csm.RemoveAddonAddresses(addon, extensions) // refresh the list
-		csm.addonAddresses[NewRouterKey(append(extensions, addon))] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[NewRouterKey(append(extensions, addon)).String()] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
 }
 
@@ -375,11 +376,12 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
 	defer csm.lock.Unlock()
 	routerKey := NewRouterKey(append(extensions, addon))
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+	routerKeyString := routerKey.String()
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
 		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKey] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[routerKey]
+	return csm.addonAddresses[routerKeyString]
 }
 
 // validating we still have providers, otherwise reset valid addresses list

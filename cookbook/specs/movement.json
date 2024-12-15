@@ -13,13 +13,105 @@
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 5,
-                "average_block_time": 200,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 1000,
                 "allowed_block_lag_for_qos_sync": 50,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "47500000000"
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "/transactions/wait_by_hash/{txn_hash}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [
+                            {
+                                "name": "x-aptos-gas-used",
+                                "kind": "pass_reply"
+                            }
+                        ],
+                        "inheritance_apis": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 2400
+                                    },
+                                    {
+                                      "extension": "archive",
+                                      "latest_distance": 0
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 2200
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "contributor": [
+                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                ],
+                "contributor_percentage": "0.025"
+            },
+            {
+                "index": "MOVEMENTT",
+                "name": "movement testnet bardock",
+                "enabled": true,
+                "imports": [
+                    "MOVEMENT"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 1000,
+                "allowed_block_lag_for_qos_sync": 30,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {
@@ -31,7 +123,6 @@
                             "add_on": ""
                         },
                         "apis": [],
-                        "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
@@ -39,7 +130,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "4"
+                                        "expected_value": "250"
                                     }
                                 ]
                             },
@@ -47,11 +138,11 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 432000
+                                        "latest_distance": 2400
                                     },
                                     {
-                                        "extension": "archive",
-                                        "expected_value": "0"
+                                      "extension": "archive",
+                                      "latest_distance": 0
                                     }
                                 ]
                             }
@@ -61,27 +152,18 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 427500
+                                    "block": 2200
                                 }
                             }
                         ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": []
-                    }                
-                ]
+                    }
+                ],
+                "contributor": [
+                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                ],
+                "contributor_percentage": "0.025"
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "1750000000ulava"
 }

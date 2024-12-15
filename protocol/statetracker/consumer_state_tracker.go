@@ -25,7 +25,7 @@ type ConsumerTxSenderInf interface {
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
-	stateQuery *updaters.ConsumerStateQuery
+	StateQuery *updaters.ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
 	ConsumerEmergencyTrackerInf
@@ -34,7 +34,8 @@ type ConsumerStateTracker struct {
 
 func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager, disableConflictTransactions bool) (ret *ConsumerStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
+	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, stateQuery.StateQuery, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	}
 	cst := &ConsumerStateTracker{
 		StateTracker:                stateTrackerBase,
-		stateQuery:                  updaters.NewConsumerStateQuery(ctx, clientCtx),
+		StateQuery:                  stateQuery,
 		ConsumerTxSenderInf:         txSender,
 		ConsumerEmergencyTrackerInf: emergencyTracker,
 		disableConflictTransactions: disableConflictTransactions,
@@ -56,7 +57,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint) {
 	// register this CSM to get the updated pairing list when a new epoch starts
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, consumerSessionManager.RPCEndpoint().ChainID)
+	pairingUpdater := updaters.NewPairingUpdater(cst.StateQuery, consumerSessionManager.RPCEndpoint().ChainID)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {
@@ -81,7 +82,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 }
 
 func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable, specId string) {
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, specId)
+	pairingUpdater := updaters.NewPairingUpdater(cst.StateQuery, specId)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {
@@ -94,7 +95,7 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 }
 
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
-	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery, finalizationConsensus.SpecId)
+	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.StateQuery, finalizationConsensus.SpecId)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
 	if !ok {
@@ -120,7 +121,7 @@ func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finali
 
 func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, cst.stateQuery, cst.EventTracker)
+	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, cst.StateQuery, cst.EventTracker)
 	specUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
@@ -130,11 +131,11 @@ func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 }
 
 func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
-	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
+	return cst.StateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
 }
 
 func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
-	versionUpdater := updaters.NewVersionUpdater(cst.stateQuery, cst.EventTracker, version, versionValidator)
+	versionUpdater := updaters.NewVersionUpdater(cst.StateQuery, cst.EventTracker, version, versionValidator)
 	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*updaters.VersionUpdater)
 	if !ok {
@@ -145,7 +146,7 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 
 func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
-	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(cst.stateQuery, cst.EventTracker)
+	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(cst.StateQuery, cst.EventTracker)
 	downtimeParamsUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*updaters.DowntimeParamsUpdater)
 	if !ok {
@@ -156,5 +157,5 @@ func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 }
 
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error) {
-	return cst.stateQuery.GetProtocolVersion(ctx)
+	return cst.StateQuery.GetProtocolVersion(ctx)
 }

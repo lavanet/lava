@@ -14,7 +14,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 6500,
+                "average_block_time": 12000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
@@ -344,6 +344,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -711,6 +720,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -1458,7 +1476,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 6500,
+                "average_block_time": 5100,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
@@ -1479,6 +1497,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -1502,6 +1529,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [
@@ -1594,6 +1630,15 @@
                         "parse_directives": [],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
+                            {
                                 "name": "chain-id",
                                 "values": [
                                     {
@@ -1616,6 +1661,15 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "values": [
+                                  {
+                                    "expected_value": "0.002000000000000000utia",
+                                    "severity": "Warning"
+                                  }
+                                ]
+                            },
                             {
                                 "name": "chain-id",
                                 "values": [

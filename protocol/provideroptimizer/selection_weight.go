@@ -28,6 +28,11 @@ func NewSelectionWeighter() SelectionWeighter {
 func (sw *selectionWeighterInst) Weight(address string) int64 {
 	sw.lock.RLock()
 	defer sw.lock.RUnlock()
+	return sw.weightInner(address)
+}
+
+// assumes lock is held
+func (sw *selectionWeighterInst) weightInner(address string) int64 {
 	weight, ok := sw.weights[address]
 	if !ok {
 		// default weight is 1
@@ -52,12 +57,12 @@ func (sw *selectionWeighterInst) WeightedChoice(entries []Entry) string {
 	defer sw.lock.RUnlock()
 	totalWeight := int64(0)
 	for _, entry := range entries {
-		totalWeight += int64(float64(sw.Weight(entry.Address)) * entry.Part)
+		totalWeight += int64(float64(sw.weightInner(entry.Address)) * entry.Part)
 	}
 	randWeight := rand.Int63n(totalWeight)
 	currentWeight := int64(0)
 	for _, entry := range entries {
-		currentWeight += int64(float64(sw.Weight(entry.Address)) * entry.Part)
+		currentWeight += int64(float64(sw.weightInner(entry.Address)) * entry.Part)
 		if currentWeight > randWeight {
 			return entry.Address
 		}
