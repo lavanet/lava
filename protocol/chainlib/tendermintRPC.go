@@ -90,7 +90,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 		return nil, err
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.ApiName}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection, false), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -143,6 +143,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, spectypes.LATEST_BLOCK
 	blockHashes := []string{}
+	parsedDefault := true
 	for idx, msg := range msgs {
 		parsedInput := parser.NewParsedInput()
 		// Check api is supported and save it in nodeMsg
@@ -171,6 +172,9 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
 				blockHashes = append(blockHashes, hashes...)
 			}
+			if !parsedInput.UsedDefaultValue {
+				parsedDefault = false
+			}
 		} else {
 			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
 			parsedInput.SetBlock(parsedBlock)
@@ -180,6 +184,8 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
 				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
 
@@ -237,10 +243,10 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
 		var err error
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +256,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -264,11 +270,18 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+// overwritten because tendermintrpc doesnt use POST but an empty connecionType
+func (apip *TendermintChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	url, data, _, metadata, err = apip.BaseChainParser.ExtractDataFromRequest(request)
+	return url, data, "", metadata, err
+}
+
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
@@ -277,6 +290,7 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -339,6 +353,7 @@ type TendermintRpcChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -356,6 +371,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -374,6 +390,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -383,6 +400,18 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
+		}
+
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
 		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
@@ -399,6 +428,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

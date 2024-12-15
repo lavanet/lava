@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -20,6 +21,12 @@ import (
 var (
 	WebSocketRateLimit   = -1               // rate limit requests per second on websocket connection
 	WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
+	MaxIdleTimeInSeconds = int64(20 * 60)   // 20 minutes of idle time will disconnect the websocket connection
+)
+
+const (
+	WebSocketRateLimitHeader            = "x-lava-websocket-rate-limit"
+	WebSocketOpenConnectionsLimitHeader = "x-lava-websocket-open-connections-limit"
 )
 
 type ConsumerWebsocketManager struct {
@@ -35,6 +42,7 @@ type ConsumerWebsocketManager struct {
 	relaySender                   RelaySender
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
+	headerRateLimit               uint64
 }
 
 type ConsumerWebsocketManagerOptions struct {
@@ -50,6 +58,7 @@ type ConsumerWebsocketManagerOptions struct {
 	RelaySender                   RelaySender
 	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
+	headerRateLimit               uint64
 }
 
 func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *ConsumerWebsocketManager {
@@ -66,6 +75,7 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		refererData:                   options.RefererData,
 		consumerWsSubscriptionManager: options.ConsumerWsSubscriptionManager,
 		WebsocketConnectionUID:        options.WebsocketConnectionUID,
+		headerRateLimit:               options.headerRateLimit,
 	}
 	return cwm
 }
@@ -142,10 +152,12 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 	}()
 
-	// rate limit routine
+	// set up a routine to check for rate limits or idle time
+	idleFor := atomic.Int64{}
+	idleFor.Store(time.Now().Unix())
 	requestsPerSecond := &atomic.Uint64{}
 	go func() {
-		if WebSocketRateLimit <= 0 {
+		if WebSocketRateLimit <= 0 && cwm.headerRateLimit <= 0 && MaxIdleTimeInSeconds <= 0 {
 			return
 		}
 		ticker := time.NewTicker(time.Second) // rate limit per second.
@@ -153,23 +165,36 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		for {
 			select {
 			case <-webSocketCtx.Done():
+				utils.LavaFormatDebug("ctx done in time checker")
 				return
 			case <-ticker.C:
-				// check if rate limit reached, and ban is required
-				if WebSocketBanDuration > 0 && requestsPerSecond.Load() > uint64(WebSocketRateLimit) {
-					// wait the ban duration before resetting the store.
-					select {
-					case <-webSocketCtx.Done():
+				if MaxIdleTimeInSeconds > 0 {
+					utils.LavaFormatDebug("checking idle time", utils.LogAttr("idleFor", idleFor.Load()), utils.LogAttr("maxIdleTime", MaxIdleTimeInSeconds), utils.LogAttr("now", time.Now().Unix()))
+					idleDuration := idleFor.Load() + MaxIdleTimeInSeconds
+					if time.Now().Unix() > idleDuration {
+						websocketConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Connection idle for too long, closing connection. Idle time: %d", idleDuration)))
 						return
-					case <-time.After(WebSocketBanDuration): // just continue
 					}
 				}
-				requestsPerSecond.Store(0)
+				if cwm.headerRateLimit > 0 || WebSocketRateLimit > 0 {
+					// check if rate limit reached, and ban is required
+					currentRequestsPerSecondLoad := requestsPerSecond.Load()
+					if WebSocketBanDuration > 0 && (currentRequestsPerSecondLoad > cwm.headerRateLimit || currentRequestsPerSecondLoad > uint64(WebSocketRateLimit)) {
+						// wait the ban duration before resetting the store.
+						select {
+						case <-webSocketCtx.Done():
+							return
+						case <-time.After(WebSocketBanDuration): // just continue
+						}
+					}
+					requestsPerSecond.Store(0)
+				}
 			}
 		}
 	}()
 
 	for {
+		idleFor.Store(time.Now().Unix())
 		startTime := time.Now()
 		msgSeed := guidString + "_" + strconv.Itoa(rand.Intn(10000000000)) // use message seed with original guid and new int
 
@@ -185,7 +210,9 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 
 		// Check rate limit is met
-		if WebSocketRateLimit > 0 && requestsPerSecond.Add(1) > uint64(WebSocketRateLimit) {
+		currentRequestsPerSecond := requestsPerSecond.Add(1)
+		if (cwm.headerRateLimit > 0 && currentRequestsPerSecond > cwm.headerRateLimit) ||
+			(WebSocketRateLimit > 0 && currentRequestsPerSecond > uint64(WebSocketRateLimit)) {
 			rateLimitResponse, err := cwm.handleRateLimitReached(msg)
 			if err == nil {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: rateLimitResponse}
@@ -218,7 +245,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 		metricsData := metrics.NewRelayAnalytics(dappID, cwm.chainId, cwm.apiInterface)
 
-		protocolMessage, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, userIp, metricsData, nil)
+		protocolMessage, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, userIp, nil)
 		if err != nil {
 			utils.LavaFormatDebug("ws manager could not parse message", utils.LogAttr("message", msg), utils.LogAttr("err", err))
 			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
@@ -313,6 +340,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				)
 
 				for subscriptionMsgReply := range subscriptionMsgsChan {
+					idleFor.Store(time.Now().Unix())
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(subscriptionMsgReply.Data)}
 				}
 

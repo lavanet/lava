@@ -100,9 +100,9 @@ $EXTRA_PROVIDER_FLAGS --geolocation "$GEOLOCATION" --log_level debug --from serv
 # $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 echo; echo "#### Starting consumer ####"
-# Setup Portal
+# Setup Consumer
 screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/full_consumer_example.yml\
-$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation "$GEOLOCATION" --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --strategy distributed 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation "$GEOLOCATION" --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --strategy distributed 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 # 127.0.0.1:3385 MANTLE jsonrpc \
 
 echo "--- setting up screens done ---"

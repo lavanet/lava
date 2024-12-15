@@ -1496,15 +1496,6 @@
             "parse_directives": [],
             "verifications": [
               {
-                "name": "minimum-gas-price",
-                "values": [
-                  {
-                    "expected_value": "CiQ1MDAwMDAwMDAwMC4wMDAwMDAwMDAwMDAwMDAwMDBhZXZtb3M",
-                    "severity": "Warning"
-                  }
-                ]
-              },
-              {
                 "name": "chain-id",
                 "values": [
                   {

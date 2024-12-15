@@ -181,7 +181,7 @@ func (n *Notifier) send(sub *Subscription, data json.RawMessage) error {
 	ctx := context.Background()
 	return n.h.conn.writeJSON(ctx, &JsonrpcMessage{
 		Version: Vsn,
-		Method:  n.namespace + notificationMethodSuffix,
+		Method:  n.namespace + ethereumNotificationMethodSuffix,
 		Params:  params,
 	})
 }
