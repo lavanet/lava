@@ -110,7 +110,7 @@ To contribute changes to lava-config:
    git subtree split --prefix=specs -b <branch-name>
 
    # Push your changes to your fork
-   git push <your-fork-remote> <branch-name>:main
+   git push <your-fork-remote> <branch-name>
    ```
 
 3. Create a Pull Request from your fork to the main lavanet/lava-config repository.
