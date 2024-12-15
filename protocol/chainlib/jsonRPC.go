@@ -28,7 +28,11 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
-const SEP = "&"
+const (
+	SEP = "&"
+)
+
+var MaximumNumberOfParallelWebsocketConnectionsPerIp int64 = 0
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -321,6 +325,7 @@ type JsonRPCChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -338,6 +343,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -354,6 +360,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
+
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -367,6 +375,17 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
+		}
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
 		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
@@ -383,6 +402,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
@@ -666,7 +686,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		// try to parse node error as json message
 		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
 		if rpcMessage == nil {
-			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr), utils.LogAttr("nodeUrl", cp.NodeUrl.Url))
 			return nil, "", nil, nodeErr
 		}
 	}

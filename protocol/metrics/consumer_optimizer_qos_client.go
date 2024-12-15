@@ -21,9 +21,10 @@ var (
 )
 
 type ConsumerOptimizerQoSClient struct {
-	consumerOrigin string
-	queueSender    *QueueSender
-	optimizers     map[string]OptimizerInf // keys are chain ids
+	consumerHostname string
+	consumerAddress  string
+	queueSender      *QueueSender
+	optimizers       map[string]OptimizerInf // keys are chain ids
 	// keys are chain ids, values are maps with provider addresses as keys
 	chainIdToProviderToRelaysCount     map[string]map[string]uint64
 	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
@@ -31,6 +32,7 @@ type ConsumerOptimizerQoSClient struct {
 	currentEpoch                       atomic.Uint64
 	lock                               sync.RWMutex
 	reportsToSend                      []OptimizerQoSReportToSend
+	geoLocation                        uint64
 }
 
 type OptimizerQoSReport struct {
@@ -49,12 +51,14 @@ type OptimizerQoSReportToSend struct {
 	LatencyScore      float64   `json:"latency_score"`
 	GenericScore      float64   `json:"generic_score"`
 	ProviderAddress   string    `json:"provider"`
-	ConsumerOrigin    string    `json:"consumer"`
+	ConsumerHostname  string    `json:"consumer_hostname"`
+	ConsumerAddress   string    `json:"consumer_pub_address"`
 	ChainId           string    `json:"chain_id"`
 	NodeErrorRate     float64   `json:"node_error_rate"`
 	Epoch             uint64    `json:"epoch"`
 	ProviderStake     int64     `json:"provider_stake"`
 	EntryIndex        int       `json:"entry_index"`
+	GeoLocation       uint64    `json:"geo_location"`
 }
 
 func (oqosr OptimizerQoSReportToSend) String() string {
@@ -69,19 +73,21 @@ type OptimizerInf interface {
 	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
 }
 
-func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Duration) *ConsumerOptimizerQoSClient {
+func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, geoLocation uint64, interval ...time.Duration) *ConsumerOptimizerQoSClient {
 	hostname, err := os.Hostname()
 	if err != nil {
 		utils.LavaFormatWarning("Error while getting hostname for ConsumerOptimizerQoSClient", err)
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
 	return &ConsumerOptimizerQoSClient{
-		consumerOrigin:                     hostname,
+		consumerHostname:                   hostname,
+		consumerAddress:                    consumerAddress,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
 		optimizers:                         map[string]OptimizerInf{},
 		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
 		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
 		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
+		geoLocation:                        geoLocation,
 	}
 }
 
@@ -130,7 +136,8 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 	// must be called under read lock
 	optimizerQoSReportToSend := OptimizerQoSReportToSend{
 		Timestamp:         time.Now(),
-		ConsumerOrigin:    coqc.consumerOrigin,
+		ConsumerHostname:  coqc.consumerHostname,
+		ConsumerAddress:   coqc.consumerAddress,
 		SyncScore:         report.SyncScore,
 		AvailabilityScore: report.AvailabilityScore,
 		LatencyScore:      report.LatencyScore,
@@ -141,6 +148,7 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		Epoch:             epoch,
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
+		GeoLocation:       coqc.geoLocation,
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)

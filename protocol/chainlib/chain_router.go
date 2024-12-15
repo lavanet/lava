@@ -80,9 +80,10 @@ func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon s
 	)
 }
 
-func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
-	routerKey := lavasession.NewRouterKey(extensions).String()
-	_, ok := cri.chainProxyRouter[routerKey]
+func (cri chainRouterImpl) ExtensionsSupported(internalPath string, extensions []string) bool {
+	routerKey := lavasession.NewRouterKey(extensions)
+	routerKey.ApplyInternalPath(internalPath)
+	_, ok := cri.chainProxyRouter[routerKey.String()]
 	return ok
 }
 
@@ -111,39 +112,47 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 		nodeUrl.InternalPath = internalPath // add internal path to the nodeUrl
 		nodeUrl.Url = baseUrl + internalPath
 		routerKey.ApplyInternalPath(internalPath)
-		if isWs {
-			addons, _, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
-			if err != nil {
-				return err
-			}
 
-			lookForSubscriptionTag := func() bool {
-				for _, connectionType := range []string{"POST", ""} {
-					if len(addons) == 0 {
-						addons = append(addons, "")
-					}
-
-					for _, addon := range addons {
-						// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
-						collectionKey := CollectionKey{
-							InternalPath:   internalPath,
-							Addon:          addon,
-							ConnectionType: connectionType,
-						}
-
-						if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
-							return true
-						}
-					}
-				}
-				return false
-			}
-
-			if !lookForSubscriptionTag() {
-				continue
-			}
+		addons, _, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
+		if err != nil {
+			return err
 		}
 
+		subscriptionTagFound := func() bool {
+			for _, connectionType := range []string{"POST", ""} {
+				if len(addons) == 0 {
+					addons = append(addons, "")
+				}
+
+				for _, addon := range addons {
+					// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
+					collectionKey := CollectionKey{
+						InternalPath:   internalPath,
+						Addon:          addon,
+						ConnectionType: connectionType,
+					}
+
+					if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+						return true
+					}
+				}
+			}
+			return false
+		}()
+
+		if isWs && !subscriptionTagFound {
+			// this is ws, don't auto generate http paths
+			continue
+		} else if !isWs && subscriptionTagFound {
+			// this is http, don't auto generate ws paths
+			continue
+		}
+
+		utils.LavaFormatDebug("auto generated internal path",
+			utils.LogAttr("nodeUrl", nodeUrl.Url),
+			utils.LogAttr("internalPath", internalPath),
+			utils.LogAttr("routerKey", routerKey.String()),
+		)
 		cri.setRouterKeyInBatch(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint, false) // will not override existing entries
 	}
 
@@ -195,9 +204,7 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 		}
 	}
 
-	// check if batch has http configured, if not, add a websocket one
-	// prefer one without internal path
-	if !httpRootRouteSet {
+	if !httpRootRouteSet && chainParser.IsInternalPathEnabled("", rpcProviderEndpoint.ApiInterface, "") {
 		return nil, utils.LavaFormatError("HTTP/HTTPS is mandatory. It is recommended to configure both HTTP/HTTP and WS/WSS.", nil, utils.LogAttr("nodeUrls", rpcProviderEndpoint.NodeUrls))
 	}
 
@@ -319,15 +326,14 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
-		err := utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
+		return nil, utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
 			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
 			utils.LogAttr("supportedMap", supportedMap),
 			utils.LogAttr("required", WebSocketExtension),
 		)
-		if !IgnoreSubscriptionNotConfiguredError {
-			return nil, err
-		}
 	}
+
+	utils.LavaFormatDebug("router keys", utils.LogAttr("chainProxyRouter", chainProxyRouter))
 
 	// make sure all chainProxyRouter entries have one without a method routing
 	for routerKey, chainRouterEntries := range chainProxyRouter {

@@ -26,7 +26,7 @@ Lava has many specs and participants can add and modify specs using governance p
 | reliability_threshold               | Threshold for VRF to decide when to do a data reliability check (i.e. re-execute query with another provider). Currently set to `268435455` on all specs resulting in a `1/16` ratio.|
 | data_reliability_enabled            | True/False for data reliability on/off for this spec.                                                                    |
 | block_distance_for_finalized_data   | Blockchains like Ethereum have probabilistic finality, this threshold sets what we expect to be a safe distance from the latest block (In eth it’s 7: i.e. any block bigger in distance than 7 from the latest block we consider final).|
-| blocks_in_finalization_proof        | Number of finalized blocks the provider keeps (from the chain he provides service for, not always Lava) for data reliability.                                                                                      |
+| blocks_in_finalization_proof        | Number of finalized blocks the provider keeps (from the chain he provides service for, not always Lava) for data reliability. Normally, this value should be: 1sec / average_block_time                                                                              |
 | average_block_time                  | Average block time on this blockchain, used for estimating time of future blocks.                                       |
 | allowed_block_lag_for_qos_sync      | Lag used to calculate QoS for providers.  this should be `(10000 (10 seconds) / average_block_time) AND bigger than 1`, beyond this distance the data is considered stale and irrelevant.                                                                             |
 | block_last_updated                  | The latest block in which the spec was updated.                                                                          |
@@ -65,7 +65,7 @@ Lava has many specs and participants can add and modify specs using governance p
 | deterministic| True/False. If an API is deterministic (executing the API twice in the same block will have the same result, which means different providers are supposed to get the same result), we can run data reliability checks on it. |
 | local        | True/False. Marks an API that is local to the node (like subscription APIs, which are not relevant to other nodes)                                                                                                                          |
 | subscription | True/False. Marks a subscription API. Requires an active connection to a node to get data pushed from a provider.                                                            |
-| stateful     | Requires local storage on the provider’s node.                                                                                          |
+| stateful     | True for transaction APIs.                                                                                          |
 | hanging_api  | True/False. Marks an API that is dependent on a creation of a new block (so the API hangs until this happens).                                                                                                                                      |
 
 ### How to propose a new spec?

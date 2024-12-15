@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -77,6 +79,7 @@ type RPCConsumerServer struct {
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
+	initialized                    atomic.Bool
 }
 
 type relayResponse struct {
@@ -166,8 +169,11 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 		// Only start after everything is initialized - check consumer session manager
 		rpccs.waitForPairing()
 	}
-
-	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	if success {
+		rpccs.initialized.Store(true)
+	}
+	return success, err
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
@@ -246,11 +252,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpccs.sendRelayToProvider(ctx, protocolMessage, nil, relayProcessor, nil)
+		err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpccs.sendRelayToProvider(ctx, protocolMessage, nil, relayProcessor, nil)
+			err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -445,7 +451,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if task.IsDone() {
 			return relayProcessor, task.err
 		}
-		err := rpccs.sendRelayToProvider(ctx, task.relayState.GetProtocolMessage(), task.relayState, relayProcessor, task.analytics)
+		err := rpccs.sendRelayToProvider(ctx, task.relayState, relayProcessor, task.analytics)
 		relayProcessor.UpdateBatch(err)
 	}
 
@@ -575,7 +581,6 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
-	protocolMessage chainlib.ProtocolMessage,
 	relayState *RelayState,
 	relayProcessor *RelayProcessor,
 	analytics *metrics.RelayMetrics,
@@ -591,6 +596,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
+	protocolMessage := relayState.GetProtocolMessage()
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
@@ -626,7 +632,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						SharedStateId:         sharedStateId,
 						SeenBlock:             protocolMessage.RelayPrivateData().SeenBlock,
 						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
-					}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
 					reply := cacheReply.GetReply()
 
@@ -967,6 +973,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		utils.LavaFormatTrace("Sending relay to provider",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
+			utils.LogAttr("providerAddress", providerPublicAddress),
+			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
+			utils.LogAttr("seenBlock", relayResult.Request.RelayData.SeenBlock),
+			utils.LogAttr("extensions", relayResult.Request.RelayData.Extensions),
 		)
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
@@ -1296,7 +1306,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			rpccs.relayRetriesManager,
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 		)
-		err := rpccs.sendRelayToProvider(ctx, dataReliabilityProtocolMessage, nil, relayProcessorDataReliability, nil)
+		err := rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
@@ -1549,6 +1559,32 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
+}
+
+func (rpccs *RPCConsumerServer) IsInitialized() bool {
+	if rpccs == nil {
+		return false
+	}
+
+	return rpccs.initialized.Load()
+}
+
+func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	guid := utils.GenerateUniqueIdentifier()
+	ctx = utils.WithUniqueIdentifier(ctx, guid)
+	url, data, connectionType, metadata, err := rpccs.chainParser.ExtractDataFromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	relayResult, err := rpccs.SendRelay(ctx, url, data, connectionType, "", "", nil, metadata)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
+	return resp, err
 }
 
 func (rpccs *RPCConsumerServer) updateProtocolMessageIfNeededWithNewEarliestData(

@@ -38,8 +38,17 @@ type ArchiveStatus struct {
 	isEarliestUsed atomic.Bool
 }
 
+func (as *ArchiveStatus) Copy() *ArchiveStatus {
+	archiveStatus := &ArchiveStatus{}
+	archiveStatus.isArchive.Store(as.isArchive.Load())
+	archiveStatus.isUpgraded.Store(as.isUpgraded.Load())
+	archiveStatus.isHashCached.Store(as.isHashCached.Load())
+	archiveStatus.isEarliestUsed.Store(as.isEarliestUsed.Load())
+	return archiveStatus
+}
+
 type RelayState struct {
-	archiveStatus   ArchiveStatus
+	archiveStatus   *ArchiveStatus
 	stateNumber     int
 	protocolMessage chainlib.ProtocolMessage
 	cache           RetryHashCacheInf
@@ -48,18 +57,30 @@ type RelayState struct {
 	lock            sync.RWMutex
 }
 
-func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveInfo *ArchiveStatus) *RelayState {
+func GetEmptyRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage) *RelayState {
+	archiveStatus := &ArchiveStatus{}
+	archiveStatus.isEarliestUsed.Store(true)
+	return &RelayState{
+		ctx:             ctx,
+		protocolMessage: protocolMessage,
+		archiveStatus:   archiveStatus,
+	}
+}
+
+func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage, stateNumber int, cache RetryHashCacheInf, relayParser RelayParserInf, archiveStatus *ArchiveStatus) *RelayState {
 	relayRequestData := protocolMessage.RelayPrivateData()
+	if archiveStatus == nil {
+		utils.LavaFormatError("misuse detected archiveStatus is nil", nil, utils.Attribute{Key: "protocolMessage.GetApi", Value: protocolMessage.GetApi()})
+		archiveStatus = &ArchiveStatus{}
+	}
 	rs := &RelayState{
 		ctx:             ctx,
 		protocolMessage: protocolMessage,
 		stateNumber:     stateNumber,
 		cache:           cache,
 		relayParser:     relayParser,
+		archiveStatus:   archiveStatus,
 	}
-	rs.archiveStatus.isUpgraded.Store(archiveInfo.isUpgraded.Load())
-	rs.archiveStatus.isHashCached.Store(archiveInfo.isHashCached.Load())
-	rs.archiveStatus.isEarliestUsed.Store(archiveInfo.isEarliestUsed.Load())
 	rs.archiveStatus.isArchive.Store(rs.CheckIsArchive(relayRequestData))
 	return rs
 }
@@ -69,7 +90,7 @@ func (rs *RelayState) CheckIsArchive(relayRequestData *pairingtypes.RelayPrivate
 }
 
 func (rs *RelayState) GetIsEarliestUsed() bool {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return true
 	}
 	return rs.archiveStatus.isEarliestUsed.Load()
@@ -90,14 +111,14 @@ func (rs *RelayState) GetIsUpgraded() bool {
 }
 
 func (rs *RelayState) SetIsEarliestUsed() {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 	rs.archiveStatus.isEarliestUsed.Store(true)
 }
 
 func (rs *RelayState) SetIsArchive(isArchive bool) {
-	if rs == nil {
+	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 	rs.archiveStatus.isArchive.Store(isArchive)
@@ -129,6 +150,9 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 }
 
 func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
+	if rs == nil || rs.archiveStatus == nil {
+		return
+	}
 	hashes := rs.GetProtocolMessage().GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
 	if rs.archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
@@ -147,7 +171,7 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		}
 		return
 	}
-	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 && numberOfNodeErrors > 0 {
+	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 {
 		// Launch archive only on the second retry attempt.
 		if numberOfRetriesLaunched == 1 {
 			// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.

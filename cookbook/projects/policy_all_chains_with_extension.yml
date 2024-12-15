@@ -110,6 +110,26 @@ Policy:
           extensions:
             - "archive"
           mixed: true
+    - chain_id: OSMOSIS
+      requirements:
+        - collection:
+            api_interface: "rest"
+            type: "GET"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "grpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "tendermintrpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
     - chain_id: COSMOSHUB
       requirements:
         - collection:

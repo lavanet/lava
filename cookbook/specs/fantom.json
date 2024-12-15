@@ -32,6 +32,24 @@
                         },
                         "apis": [
                             {
+                                "name": "ftm_accounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "ftm_chainId",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -62,6 +80,42 @@
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_coinbase",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_syncing",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -134,6 +188,78 @@
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_newBlockFilter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_newFilter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_newPendingTransactionFilter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_uninstallFilter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -230,6 +356,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "ftm_getBlockReceipts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "ftm_getStorageAt",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -309,6 +453,132 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 15,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getFilterChanges",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getFilterLogs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getLogs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getUncleByBlockHashAndIndex",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 15,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getUncleByBlockNumberAndIndex",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 15,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getUncleCountByBlockHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 15,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ftm_getUncleCountByBlockNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
                                 },
                                 "compute_units": 15,
                                 "enabled": true,
@@ -483,6 +753,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "ftm_hashrate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "ftm_estimateGas",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -512,331 +800,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "net_version",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "net_listening",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "rpc_modules",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 1,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_accounts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_coinbase",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 1,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_compileLLL",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getCompilers",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getFilterChanges",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getUncleByBlockHashAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 20,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getUncleByBlockNumberAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getUncleCountByBlockHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "2"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getUncleCountByBlockNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_getWork",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_hashrate",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 1,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_mining",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_newFilter",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "toBlock"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "compute_units": 20,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_protocolVersion",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "eth_syncing",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0

@@ -275,6 +275,12 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 	return nodeMsg, err
 }
 
+// overwritten because tendermintrpc doesnt use POST but an empty connecionType
+func (apip *TendermintChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	url, data, _, metadata, err = apip.BaseChainParser.ExtractDataFromRequest(request)
+	return url, data, "", metadata, err
+}
+
 func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
@@ -347,6 +353,7 @@ type TendermintRpcChainListener struct {
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -364,6 +371,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		logger:                        rpcConsumerLogs,
 		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -382,6 +390,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -391,6 +400,18 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
+		}
+
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
 		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
@@ -407,6 +428,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

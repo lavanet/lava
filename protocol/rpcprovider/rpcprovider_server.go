@@ -114,6 +114,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
 	providerLoadManager *ProviderLoadManager,
+	numberOfRetries int,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -135,7 +136,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
 	rpcps.providerLoadManager = providerLoadManager
 
 	rpcps.initRelaysMonitor(ctx)
@@ -358,7 +359,7 @@ func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extension
 	if apiCollection.CollectionData.AddOn != addon {
 		return utils.LavaFormatWarning("invalid addon in relay, parsed addon is not the same as requested", nil, utils.Attribute{Key: "requested addon", Value: addon[0]}, utils.Attribute{Key: "parsed addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn})
 	}
-	if !rpcps.chainRouter.ExtensionsSupported(extensions) {
+	if !rpcps.chainRouter.ExtensionsSupported(apiCollection.CollectionData.InternalPath, extensions) {
 		return utils.LavaFormatWarning("requested extensions are unsupported in chainRouter", nil, utils.Attribute{Key: "requested extensions", Value: extensions})
 	}
 	return nil
