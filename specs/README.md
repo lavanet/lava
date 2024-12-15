@@ -249,3 +249,51 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
   "deposit": "10000000ulava"
 }
 ```
+
+### Syncing Specs with `lavanet/lava-config` repository
+
+The specs in this directory need to be synchronized with the [lavanet/lava-config](https://github.com/lavanet/lava-config) repository. This ensures that the specifications are consistent across the Lava Network ecosystem.
+
+#### Initial Setup (Historical Reference)
+
+The specs directory was initially set up as a git subtree using these commands:
+
+```bash
+# Add a remote to track the lava-config repository
+git remote add lava-config git@github.com:lavanet/lava-config.git  # This creates a named reference to the remote repository
+
+# Add the subtree by pulling from the remote
+git subtree add --prefix specs lava-config main --squash
+```
+
+#### Pulling Updates from lava-config
+
+To get the latest changes from the lava-config repository:
+
+```bash
+git subtree pull --prefix specs lava-config main --squash
+```
+
+#### Contributing Changes
+
+To contribute changes to lava-config:
+
+1. First, fork the [lavanet/lava-config](https://github.com/lavanet/lava-config) repository to your GitHub account.
+
+2. After making your changes to the specs, you can:
+
+   ```bash
+   # Create a branch containing only the specs directory history
+   git subtree split --prefix=specs -b <branch-name>
+
+   # Push your changes to your fork
+   git push <your-fork-remote> <branch-name>:main
+   ```
+
+3. Create a Pull Request from your fork to the main lavanet/lava-config repository.
+
+The `git remote add` command creates a named reference ("lava-config") to the remote repository, making it easier to push and pull changes. Without it, you'd need to specify the full repository URL each time.
+
+The `git subtree split` command is useful when you want to extract the history of just the specs directory into its own branch. This can be helpful when preparing changes for a pull request, as it gives you a clean history of only the specs-related changes.
+
+Remember to always test your changes locally before submitting a PR to ensure the specifications are valid and properly formatted.
