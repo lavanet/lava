@@ -1,0 +1,264 @@
+Summary for method: starknet_addDeclareTransaction_20241030_205924.txt
+Total Calls: 76
+Average Latency: 0.3337 seconds
+Max Latency: 0.4445 seconds
+Min Latency: 0.1750 seconds
+Average CPU Usage: 0.46%
+Average RAM Usage: 0.73 MB
+Average Disk Usage: 0.01 MB
+Average GPU Usage: 0.02%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_addDeployAccountTransaction_20241030_210125.txt
+Total Calls: 107
+Average Latency: 0.0929 seconds
+Max Latency: 1.1835 seconds
+Min Latency: 0.0600 seconds
+Average CPU Usage: 0.39%
+Average RAM Usage: 0.59 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.04%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_addInvokeTransaction_20241030_210325.txt
+Total Calls: 111
+Average Latency: 0.0771 seconds
+Max Latency: 0.1242 seconds
+Min Latency: 0.0436 seconds
+Average CPU Usage: 0.25%
+Average RAM Usage: 0.73 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_blockHashAndNumber_20241030_210526.txt
+Total Calls: 78
+Average Latency: 0.3170 seconds
+Max Latency: 0.4245 seconds
+Min Latency: 0.0725 seconds
+Average CPU Usage: 0.21%
+Average RAM Usage: 0.72 MB
+Average Disk Usage: 0.01 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_blockNumber_20241030_210726.txt
+Total Calls: 111
+Average Latency: 0.0844 seconds
+Max Latency: 1.0679 seconds
+Min Latency: 0.0586 seconds
+Average CPU Usage: 0.23%
+Average RAM Usage: 0.70 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_call_20241030_210927.txt
+Total Calls: 112
+Average Latency: 0.0741 seconds
+Max Latency: 0.1013 seconds
+Min Latency: 0.0596 seconds
+Average CPU Usage: 0.27%
+Average RAM Usage: 0.67 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_chainId_20241030_211128.txt
+Total Calls: 80
+Average Latency: 0.2887 seconds
+Max Latency: 0.3979 seconds
+Min Latency: 0.0647 seconds
+Average CPU Usage: 0.33%
+Average RAM Usage: 0.83 MB
+Average Disk Usage: 0.01 MB
+Average GPU Usage: 0.05%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_estimateFee_20241030_211328.txt
+Total Calls: 110
+Average Latency: 0.0841 seconds
+Max Latency: 1.0810 seconds
+Min Latency: 0.0535 seconds
+Average CPU Usage: 0.28%
+Average RAM Usage: 0.61 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.05%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_estimateMessageFee_20241030_212231.txt
+Total Calls: 111
+Average Latency: 0.0763 seconds
+Max Latency: 0.1140 seconds
+Min Latency: 0.0652 seconds
+Average CPU Usage: 0.29%
+Average RAM Usage: 0.73 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.01%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getBlockTransactionCount_20241030_211529.txt
+Total Calls: 112
+Average Latency: 0.0762 seconds
+Max Latency: 0.1147 seconds
+Min Latency: 0.0584 seconds
+Average CPU Usage: 0.21%
+Average RAM Usage: 0.62 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.02%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getBlockWithTxHashes_20241030_211729.txt
+Total Calls: 81
+Average Latency: 0.2825 seconds
+Max Latency: 0.4276 seconds
+Min Latency: 0.0665 seconds
+Average CPU Usage: 0.27%
+Average RAM Usage: 0.65 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.01%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getBlockWithTxs_20241030_211930.txt
+Total Calls: 110
+Average Latency: 0.0872 seconds
+Max Latency: 1.1017 seconds
+Min Latency: 0.0583 seconds
+Average CPU Usage: 0.23%
+Average RAM Usage: 0.72 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.02%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getClassAt_20241030_210025.txt
+Total Calls: 107
+Average Latency: 0.1043 seconds
+Max Latency: 1.1067 seconds
+Min Latency: 0.0646 seconds
+Average CPU Usage: 0.19%
+Average RAM Usage: 0.76 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getClassHashAt_20241030_210225.txt
+Total Calls: 110
+Average Latency: 0.0774 seconds
+Max Latency: 0.1115 seconds
+Min Latency: 0.0542 seconds
+Average CPU Usage: 0.19%
+Average RAM Usage: 0.52 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getClass_20241030_212131.txt
+Total Calls: 110
+Average Latency: 0.0763 seconds
+Max Latency: 0.1630 seconds
+Min Latency: 0.0620 seconds
+Average CPU Usage: 0.39%
+Average RAM Usage: 1.47 MB
+Average Disk Usage: 0.95 MB
+Average GPU Usage: 0.01%
+Average Network Usage: 0.06 MB
+
+Summary for method: starknet_getEvents_20241030_210425.txt
+Total Calls: 112
+Average Latency: 0.0763 seconds
+Max Latency: 0.1038 seconds
+Min Latency: 0.0587 seconds
+Average CPU Usage: 0.24%
+Average RAM Usage: 0.70 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.04%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getNonce_20241030_210626.txt
+Total Calls: 107
+Average Latency: 0.1017 seconds
+Max Latency: 0.3829 seconds
+Min Latency: 0.0634 seconds
+Average CPU Usage: 0.20%
+Average RAM Usage: 0.65 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.02%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getStateUpdate_20241030_210827.txt
+Total Calls: 111
+Average Latency: 0.0764 seconds
+Max Latency: 0.1066 seconds
+Min Latency: 0.0611 seconds
+Average CPU Usage: 0.27%
+Average RAM Usage: 0.54 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getStorageAt_20241030_211028.txt
+Total Calls: 112
+Average Latency: 0.0752 seconds
+Max Latency: 0.1120 seconds
+Min Latency: 0.0542 seconds
+Average CPU Usage: 0.23%
+Average RAM Usage: 0.72 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getTransactionByBlockIdAndIndex_20241030_211228.txt
+Total Calls: 107
+Average Latency: 0.0999 seconds
+Max Latency: 0.4414 seconds
+Min Latency: 0.0600 seconds
+Average CPU Usage: 0.21%
+Average RAM Usage: 0.58 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.05%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_getTransactionByHash_20241030_211429.txt
+Total Calls: 112
+Average Latency: 0.0778 seconds
+Max Latency: 0.1228 seconds
+Min Latency: 0.0599 seconds
+Average CPU Usage: 0.24%
+Average RAM Usage: 0.51 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.03%
+Average Network Usage: 0.02 MB
+
+Summary for method: starknet_getTransactionReceipt_20241030_211629.txt
+Total Calls: 112
+Average Latency: 0.0755 seconds
+Max Latency: 0.1094 seconds
+Min Latency: 0.0611 seconds
+Average CPU Usage: 0.29%
+Average RAM Usage: 0.66 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.01%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_pendingTransactions_20241030_211830.txt
+Total Calls: 106
+Average Latency: 0.1052 seconds
+Max Latency: 0.3874 seconds
+Min Latency: 0.0605 seconds
+Average CPU Usage: 0.23%
+Average RAM Usage: 0.64 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.02%
+Average Network Usage: 0.01 MB
+
+Summary for method: starknet_syncing_20241030_212031.txt
+Total Calls: 111
+Average Latency: 0.0760 seconds
+Max Latency: 0.0981 seconds
+Min Latency: 0.0573 seconds
+Average CPU Usage: 0.29%
+Average RAM Usage: 0.57 MB
+Average Disk Usage: 0.00 MB
+Average GPU Usage: 0.04%
+Average Network Usage: 0.02 MB
+
