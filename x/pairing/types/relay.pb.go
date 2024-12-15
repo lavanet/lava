@@ -1113,7 +1113,6 @@ func _Relayer_Probe_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-var Relayer_serviceDesc = _Relayer_serviceDesc
 var _Relayer_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.pairing.Relayer",
 	HandlerType: (*RelayerServer)(nil),

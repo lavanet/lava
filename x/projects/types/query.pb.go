@@ -485,7 +485,6 @@ func _Query_Developer_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.projects.Query",
 	HandlerType: (*QueryServer)(nil),

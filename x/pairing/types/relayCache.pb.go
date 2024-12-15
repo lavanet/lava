@@ -681,7 +681,6 @@ func _RelayerCache_Health_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-var RelayerCache_serviceDesc = _RelayerCache_serviceDesc
 var _RelayerCache_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.pairing.RelayerCache",
 	HandlerType: (*RelayerCacheServer)(nil),
