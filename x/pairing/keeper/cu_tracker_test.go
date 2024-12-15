@@ -624,7 +624,9 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	fakeTimestamp := ts.BlockTime().AddDate(0, -2, 0)
 	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
 	require.NoError(t, err)
-
+	// need to do the same for the provider
+	err = ts.ChangeDelegationTimestamp(provider, providerAcct.GetVaultAddr(), ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
+	require.NoError(t, err)
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
 	relaySession2 := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)

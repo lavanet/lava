@@ -10,6 +10,7 @@ import (
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // account keeper mock
@@ -44,6 +45,60 @@ func (k mockAccountKeeper) AddressCodec() address.Codec {
 
 // mock bank keeper
 var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
+
+type mockStakingKeeperEmpty struct{}
+
+func (k mockStakingKeeperEmpty) ValidatorByConsAddr(context.Context, sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
+	return stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) UnbondingTime(ctx context.Context) (time.Duration, error) {
+	return time.Duration(0), nil
+}
+
+func (k mockStakingKeeperEmpty) GetAllDelegatorDelegations(ctx context.Context, delegator sdk.AccAddress) ([]stakingtypes.Delegation, error) {
+	return nil, nil
+}
+
+func (k mockStakingKeeperEmpty) GetDelegatorValidator(ctx context.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
+	return stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetDelegation(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.Delegation, error) {
+	return stakingtypes.Delegation{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error) {
+	return stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetValidatorDelegations(context context.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation, err error) {
+	return []stakingtypes.Delegation{}, nil
+}
+
+func (k mockStakingKeeperEmpty) BondDenom(context context.Context) (string, error) {
+	return "ulava", nil
+}
+
+func (k mockStakingKeeperEmpty) ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares math.LegacyDec, err error) {
+	return math.LegacyDec{}, nil
+}
+
+func (k mockStakingKeeperEmpty) Undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec) (time.Time, math.Int, error) {
+	return time.Time{}, math.Int{}, nil
+}
+
+func (k mockStakingKeeperEmpty) Delegate(ctx context.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares math.LegacyDec, err error) {
+	return math.LegacyDec{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetAllValidators(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
+}
 
 type mockBankKeeper struct{}
 

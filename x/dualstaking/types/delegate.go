@@ -34,7 +34,7 @@ func NewDelegation(delegator, provider string, blockTime time.Time, tokenDenom s
 		Delegator: delegator,
 		Provider:  provider,
 		Amount:    sdk.NewCoin(tokenDenom, math.ZeroInt()),
-		Timestamp: blockTime.AddDate(0, 0, 7).UTC().Unix(),
+		Timestamp: blockTime.UTC().Unix(),
 	}
 }
 
@@ -57,11 +57,6 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 		return false
 	}
 	return true
-}
-
-func (delegation *Delegation) IsFirstWeekPassed(currentTimestamp int64) bool {
-	// this is a temporary code to reduce the time to 1 week instead of month, will be changed in the gradual delegation increase feature.
-	return delegation.Timestamp <= currentTimestamp
 }
 
 func NewDelegator(delegator, provider string) Delegator {

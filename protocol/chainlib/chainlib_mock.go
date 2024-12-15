@@ -282,6 +282,15 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 	return m.recorder
 }
 
+
+// GetUsedDefaultValue mocks base method.
+func (m *MockChainMessage) GetUsedDefaultValue() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsedDefaultValue")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // AppendHeader mocks base method.
 func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
 	m.ctrl.T.Helper()
@@ -432,6 +441,20 @@ func (mr *MockChainMessageMockRecorder) GetRawRequestHash() *gomock.Call {
 func (m *MockChainMessage) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "OverrideExtensions", extensionNames, extensionParser)
+}
+
+// OverrideExtensions mocks base method.
+func (m *MockChainMessage) SetExtension(extension *types0.Extension) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetExtension", extension)
+}
+
+// OverrideExtensions mocks base method.
+func (m *MockChainMessage) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEarliestInMessage", incomingEarliest)
+	ret0, _ := ret[0].(bool)
+	return ret0
 }
 
 // OverrideExtensions indicates an expected call of OverrideExtensions.
@@ -714,18 +737,18 @@ func (mr *MockRelaySenderMockRecorder) CreateDappKey(userData interface{}) *gomo
 }
 
 // ParseRelay mocks base method.
-func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, analytics *metrics.RelayMetrics, metadata []types.Metadata) (ProtocolMessage, error) {
+func (m *MockRelaySender) ParseRelay(ctx context.Context, url, req, connectionType, dappID, consumerIp string, metadata []types.Metadata) (ProtocolMessage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	ret := m.ctrl.Call(m, "ParseRelay", ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	ret0, _ := ret[0].(ProtocolMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ParseRelay indicates an expected call of ParseRelay.
-func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRelay", reflect.TypeOf((*MockRelaySender)(nil).ParseRelay), ctx, url, req, connectionType, dappID, consumerIp, metadata)
 }
 
 // SendParsedRelay mocks base method.

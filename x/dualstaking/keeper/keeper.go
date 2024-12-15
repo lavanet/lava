@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/log"
@@ -91,7 +92,7 @@ func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, provider, d
 	if !found {
 		return fmt.Errorf("cannot change delegation timestamp: delegation not found. provider: %s, delegator: %s", provider, delegator)
 	}
-	d.Timestamp = timestamp
+	ctx = ctx.WithBlockTime(time.Unix(timestamp, 0))
 	return k.SetDelegation(ctx, d)
 }
 

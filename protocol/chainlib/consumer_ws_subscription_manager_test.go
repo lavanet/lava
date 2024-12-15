@@ -88,7 +88,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(protocolMessage1, nil).
 				AnyTimes()
 
@@ -244,7 +244,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(protocolMessage1, nil).
 				AnyTimes()
 
@@ -484,7 +484,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage1)
 					return areEqual
-				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(unsubscribeProtocolMessage1, nil).
 				AnyTimes()
 
@@ -495,7 +495,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData1)
 					return areEqual
-				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(subscribeProtocolMessage1, nil).
 				AnyTimes()
 
@@ -600,7 +600,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage2)
 					return areEqual
-				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(unsubscribeProtocolMessage2, nil).
 				AnyTimes()
 
@@ -611,7 +611,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData2)
 					return areEqual
-				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(subscribeProtocolMessage2, nil).
 				AnyTimes()
 

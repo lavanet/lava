@@ -38,15 +38,14 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider string, 
 		return err
 	}
 	// get, update the delegation entry
-	delegation, err := k.delegations.Get(ctx, types.DelegationKey(provider, delegator))
-	if err != nil {
+	delegation, found := k.GetDelegation(ctx, provider, delegator)
+	if !found {
 		// new delegation (i.e. not increase of existing one)
 		delegation = types.NewDelegation(delegator, provider, ctx.BlockTime(), bondDenom)
 	}
 
 	delegation.AddAmount(amount)
-
-	err = k.delegations.Set(ctx, types.DelegationKey(provider, delegator), delegation)
+	err = k.SetDelegation(ctx, delegation)
 	if err != nil {
 		return err
 	}
@@ -384,7 +383,17 @@ func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
 	return iter.Values()
 }
 
+// this function overwrites the time tag with the ctx time upon writing the delegation
 func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
+	delegation.Timestamp = ctx.BlockTime().UTC().Unix()
+	existingDelegation, found := k.GetDelegation(ctx, delegation.Provider, delegation.Delegator)
+	if !found {
+		return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
+	}
+	// calculate credit based on the existing delegation before changes
+	credit, creditTimestamp := k.CalculateCredit(ctx, existingDelegation)
+	delegation.Credit = credit
+	delegation.CreditTimestamp = creditTimestamp
 	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
 }
 

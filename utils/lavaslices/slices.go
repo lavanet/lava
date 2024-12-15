@@ -276,14 +276,6 @@ func Map[T, V any](slice []T, filter func(T) V) []V {
 	return values
 }
 
-func KeysSlice[T comparable, V any](in map[T]V) []T {
-	keys := []T{}
-	for k := range in {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
 func Filter[T any](slice []T, filter func(T) bool) []T {
 	values := make([]T, 0)
 	for _, v := range slice {

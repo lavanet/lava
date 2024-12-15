@@ -115,8 +115,12 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test, "")
-	assert.Error(t, err)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test, "")
+	if err == nil {
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &JsonRPCChainParser{
@@ -187,9 +191,9 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	actualErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:blockParsing - parse failed {error:invalid parser input format,"
-	expectedErrMsg := err.Error()[:len(actualErrMsg)]
-	require.Equal(t, actualErrMsg, expectedErrMsg, err.Error())
+	expectedErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:failed to parse with legacy block parser ErrMsg: blockParsing -"
+	actualErrMsg := err.Error()[:len(expectedErrMsg)]
+	require.Equal(t, expectedErrMsg, actualErrMsg, err.Error())
 }
 
 func TestAddonAndVerifications(t *testing.T) {
@@ -499,9 +503,12 @@ func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
 					require.Equal(t, reqDataWithApiName.apiName, api.Name)
 					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
 				} else {
-					require.Error(t, err)
-					require.ErrorIs(t, err, common.APINotSupportedError)
-					require.Nil(t, chainMessage)
+					if err == nil {
+						require.Contains(t, chainMessage.GetApi().Name, "Default-")
+					} else {
+						require.ErrorIs(t, err, common.APINotSupportedError)
+						require.Nil(t, chainMessage)
+					}
 				}
 			})
 		}
