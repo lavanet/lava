@@ -98,7 +98,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd, encodingConfig, tempApplication.ModuleBasics)
 	addLogFlagsToSubCommands(rootCmd)
 
 	if err := autoCliOpts(initClientCtx, tempApplication).EnhanceRootCommand(rootCmd); err != nil {
@@ -151,7 +151,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 
 	tempApplication := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, app.DefaultNodeHome, 5, encodingConfig, sims.EmptyAppOptions{})
 
-	initLavaProtocolRootCmd(rootCmd)
+	initLavaProtocolRootCmd(rootCmd, tempApplication.ModuleBasics)
 	addLogFlagsToSubCommands(rootCmd)
 
 	if err := autoCliOpts(initClientCtx, tempApplication).EnhanceRootCommand(rootCmd); err != nil {
@@ -184,14 +184,15 @@ func autoCliOpts(initClientCtx client.Context, tempApp *app.LavaApp) autocli.App
 
 func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
+	moduleBasics module.BasicManager,
 ) {
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 	)
 
 	rootCmd.AddCommand(
-		queryCommand(),
-		txCommand(),
+		queryCommand(moduleBasics),
+		txCommand(moduleBasics),
 		keys.Commands(),
 	)
 
@@ -232,6 +233,7 @@ func initTendermintConfig() *tmcfg.Config {
 func initRootCmd(
 	rootCmd *cobra.Command,
 	encodingConfig appparams.EncodingConfig,
+	moduleBasics module.BasicManager,
 ) {
 	gentxModule, ok := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	if !ok {
@@ -273,8 +275,8 @@ func initRootCmd(
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		queryCommand(),
-		txCommand(),
+		queryCommand(moduleBasics),
+		txCommand(moduleBasics),
 		keys.Commands(),
 	)
 }
@@ -299,7 +301,7 @@ func setLogLevelFieldNameFromFlag(cmd *cobra.Command) error {
 }
 
 // queryCommand returns the sub-command to send queries to the app
-func queryCommand() *cobra.Command {
+func queryCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "query",
 		Aliases:                    []string{"q"},
@@ -317,13 +319,14 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
+	moduleBasics.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }
 
 // txCommand returns the sub-command to send transactions to the app
-func txCommand() *cobra.Command {
+func txCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -343,6 +346,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
+	moduleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
