@@ -131,6 +131,15 @@ func Contains[T comparable](slice []T, elem T) bool {
 	return false
 }
 
+func ContainsPredicate[T comparable](slice []T, predicate func(elem T) bool) bool {
+	for _, e := range slice {
+		if predicate(e) {
+			return true
+		}
+	}
+	return false
+}
+
 // Remove removes the first instance (if exists) of elem from the slice, and
 // returns the new slice and indication if removal took place.
 func Remove[T comparable](slice []T, elem T) ([]T, bool) {
@@ -235,6 +244,28 @@ func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
 	}
 
 	return res
+}
+
+func Difference[T comparable](slice1, slice2 []T) []T {
+	// This function returns the difference between two slices
+	// (i.e., the elements that are in slice1 but not in slice2)
+
+	// Create a map to store elements of the second slice for quick lookup
+	elementMap := make(map[T]bool)
+	for _, elem := range slice2 {
+		elementMap[elem] = true
+	}
+
+	// Create a slice to hold the difference
+	diff := make([]T, 0)
+	for _, elem := range slice1 {
+		// If the element in slice1 is not in slice2, add it to the result
+		if !elementMap[elem] {
+			diff = append(diff, elem)
+		}
+	}
+
+	return diff
 }
 
 func Map[T, V any](slice []T, filter func(T) V) []V {

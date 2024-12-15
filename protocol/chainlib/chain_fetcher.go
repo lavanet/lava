@@ -49,7 +49,7 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
-		verifications, err := cf.chainParser.GetVerifications(addons)
+		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
@@ -121,6 +121,26 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 	}
 }
 
+func getExtensionsForVerification(verification VerificationContainer, chainParser ChainParser) []string {
+	extensions := []string{verification.Extension}
+
+	collectionKey := CollectionKey{
+		InternalPath:   verification.InternalPath,
+		Addon:          verification.Addon,
+		ConnectionType: verification.ConnectionType,
+	}
+
+	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+		if verification.Extension == "" {
+			extensions = []string{WebSocketExtension}
+		} else {
+			extensions = append(extensions, WebSocketExtension)
+		}
+	}
+
+	return extensions
+}
+
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
 
@@ -167,17 +187,27 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 	}
 
-	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionType}, cf.ChainFetcherMetadata())
+	craftData := &CraftData{Path: path, Data: data, ConnectionType: collectionType, InternalPath: verification.InternalPath}
+	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, craftData, cf.ChainFetcherMetadata())
 	if err != nil {
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+	extensions := getExtensionsForVerification(verification, cf.chainParser)
+
+	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, extensions)
 	if err != nil {
-		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err,
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+			utils.LogAttr("APIInterface", cf.endpoint.ApiInterface),
+			utils.LogAttr("extensions", extensions),
+		)
 	}
 	if reply == nil || reply.RelayReply == nil {
-		return utils.LavaFormatWarning("[-] verify failed sending chainMessage, reply or reply.RelayReply are nil", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatWarning("[-] verify failed sending chainMessage, reply or reply.RelayReply are nil", nil,
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+			utils.LogAttr("APIInterface", cf.endpoint.ApiInterface),
+		)
 	}
 
 	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
@@ -190,7 +220,18 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	parsedInput := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing, parsing.Parsers)
 	if parsedInput.GetRawParsedData() == "" {
-		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
+		return utils.LavaFormatWarning("[-] verify failed to parse result", nil,
+			utils.LogAttr("chainId", chainId),
+			utils.LogAttr("nodeUrl", proxyUrl.Url),
+			utils.LogAttr("Method", parsing.GetApiName()),
+			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+		)
+	}
+
+	parserError := parsedInput.GetParserError()
+	if parserError != "" {
+		return utils.LavaFormatWarning("[-] parser returned an error", nil,
+			utils.LogAttr("error", parserError),
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
@@ -200,7 +241,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		parsedResultAsNumber := parsedInput.GetBlock()
 		if parsedResultAsNumber == spectypes.NOT_APPLICABLE {
-			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err,
+			return utils.LavaFormatWarning("[-] verify failed to parse result as number", nil,
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
@@ -210,7 +251,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 		uint64ParsedResultAsNumber := uint64(parsedResultAsNumber)
 		if uint64ParsedResultAsNumber > latestBlock {
-			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", err,
+			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", nil,
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
@@ -219,7 +260,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			)
 		}
 		if latestBlock-uint64ParsedResultAsNumber < verification.LatestDistance {
-			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err,
+			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", nil,
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
@@ -233,7 +274,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		rawData := parsedInput.GetRawParsedData()
 		if rawData != verification.Value {
-			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err,
+			return utils.LavaFormatWarning("[-] verify failed expected and received are different", nil,
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("rawParsedBlock", rawData),
@@ -245,6 +286,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			)
 		}
 	}
+
 	utils.LavaFormatInfo("[+] verified successfully",
 		utils.LogAttr("chainId", chainId),
 		utils.LogAttr("nodeUrl", proxyUrl.Url),
@@ -253,6 +295,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		utils.LogAttr("rawData", parsedInput.GetRawParsedData()),
 		utils.LogAttr("verificationKey", verification.VerificationKey),
 		utils.LogAttr("apiInterface", cf.endpoint.ApiInterface),
+		utils.LogAttr("internalPath", proxyUrl.InternalPath),
 	)
 	return nil
 }
@@ -455,7 +498,7 @@ type DummyChainFetcher struct {
 func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
-		verifications, err := cf.chainParser.GetVerifications(addons)
+		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}

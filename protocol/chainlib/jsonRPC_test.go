@@ -115,8 +115,12 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test, "")
-	assert.Error(t, err)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test, "")
+	if err == nil {
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &JsonRPCChainParser{
@@ -187,9 +191,9 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	actualErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:blockParsing - parse failed {error:invalid parser input format,"
-	expectedErrMsg := err.Error()[:len(actualErrMsg)]
-	require.Equal(t, actualErrMsg, expectedErrMsg, err.Error())
+	expectedErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:failed to parse with legacy block parser ErrMsg: blockParsing -"
+	actualErrMsg := err.Error()[:len(expectedErrMsg)]
+	require.Equal(t, expectedErrMsg, actualErrMsg, err.Error())
 }
 
 func TestAddonAndVerifications(t *testing.T) {
@@ -214,7 +218,7 @@ func TestAddonAndVerifications(t *testing.T) {
 	require.NotNil(t, chainRouter)
 	require.NotNil(t, chainFetcher)
 
-	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	verifications, err := chainParser.GetVerifications([]string{"debug"}, "", "jsonrpc")
 	require.NoError(t, err)
 	require.NotEmpty(t, verifications)
 	for _, verification := range verifications {
@@ -499,11 +503,174 @@ func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
 					require.Equal(t, reqDataWithApiName.apiName, api.Name)
 					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
 				} else {
-					require.Error(t, err)
-					require.ErrorIs(t, err, common.APINotSupportedError)
-					require.Nil(t, chainMessage)
+					if err == nil {
+						require.Contains(t, chainMessage.GetApi().Name, "Default-")
+					} else {
+						require.ErrorIs(t, err, common.APINotSupportedError)
+						require.Nil(t, chainMessage)
+					}
 				}
 			})
 		}
 	}
+}
+
+func TestJsonRPC_SpecUpdateWithAddons(t *testing.T) {
+	// create a new instance of RestChainParser
+	apip, err := NewJrpcChainParser()
+	if err != nil {
+		t.Errorf("Error creating RestChainParser: %v", err)
+	}
+
+	// set the spec
+	spec := spectypes.Spec{
+		Enabled:                       true,
+		ReliabilityThreshold:          10,
+		AllowedBlockLagForQosSync:     11,
+		AverageBlockTime:              12000,
+		BlockDistanceForFinalizedData: 13,
+		BlocksInFinalizationProof:     14,
+		ApiCollections: []*spectypes.ApiCollection{
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: "jsonrpc",
+					InternalPath: "",
+					Type:         "POST",
+					AddOn:        "debug",
+				},
+				Apis: []*spectypes.Api{
+					{
+						Enabled: true,
+						Name:    "foo",
+					},
+				},
+			},
+		},
+	}
+
+	// Set the spec for the first time
+	apip.SetSpec(spec)
+
+	// At first, addon should be disabled
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Setting the spec again, for sanity check
+	apip.SetSpec(spec)
+
+	// Sanity check that addon still disabled
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Allow the addon
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{
+		"debug": {},
+	})
+
+	// Sanity check
+	require.True(t, apip.allowedAddons["debug"])
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.True(t, apip.allowedAddons["debug"])
+
+	// Disallow the addon
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{})
+
+	// Sanity check
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.False(t, apip.allowedAddons["debug"])
+}
+
+func TestJsonRPC_SpecUpdateWithExtensions(t *testing.T) {
+	// create a new instance of RestChainParser
+	apip, err := NewJrpcChainParser()
+	if err != nil {
+		t.Errorf("Error creating RestChainParser: %v", err)
+	}
+
+	// set the spec
+	spec := spectypes.Spec{
+		Enabled:                       true,
+		ReliabilityThreshold:          10,
+		AllowedBlockLagForQosSync:     11,
+		AverageBlockTime:              12000,
+		BlockDistanceForFinalizedData: 13,
+		BlocksInFinalizationProof:     14,
+		ApiCollections: []*spectypes.ApiCollection{
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: "jsonrpc",
+					InternalPath: "",
+					Type:         "POST",
+					AddOn:        "",
+				},
+				Extensions: []*spectypes.Extension{
+					{
+						Name: "archive",
+						Rule: &spectypes.Rule{
+							Block: 123,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	extensionKey := extensionslib.ExtensionKey{
+		Extension:      "archive",
+		ConnectionType: "POST",
+		InternalPath:   "",
+		Addon:          "",
+	}
+
+	isExtensionConfigured := func() bool {
+		_, isConfigured := apip.extensionParser.GetConfiguredExtensions()[extensionKey]
+		return isConfigured
+	}
+
+	// Set the spec for the first time
+	apip.SetSpec(spec)
+
+	// At first, extension should not be configured
+	require.False(t, isExtensionConfigured())
+
+	// Setting the spec again, for sanity check
+	apip.SetSpec(spec)
+
+	// Sanity check that extension is still not configured
+	require.False(t, isExtensionConfigured())
+
+	// Allow the extension
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{
+		"archive": {},
+	})
+
+	// Sanity check
+	require.True(t, isExtensionConfigured())
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.True(t, isExtensionConfigured())
+
+	// Disallow the extension
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{})
+
+	// Sanity check
+	require.False(t, isExtensionConfigured())
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.False(t, isExtensionConfigured())
 }

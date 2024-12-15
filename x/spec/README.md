@@ -53,8 +53,8 @@ type Spec struct {
 	BlockLastUpdated              uint64                // the last block this spec was updated on chain
     ReliabilityThreshold          uint32                // this determines the probability of data reliability checks by the consumer
 	DataReliabilityEnabled        bool                  // enables/disables data reliability for the chain
-	BlockDistanceForFinalizedData uint32                              
-	BlocksInFinalizationProof     uint32                              
+	BlockDistanceForFinalizedData uint32                // number of finalized blocks a provider keeps for data reliability             
+	BlocksInFinalizationProof     uint32                // number of blocks for finalization              
 }
 ```
 `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
@@ -157,9 +157,9 @@ This struct defines properties of an api.
 ```go
 type SpecCategory struct {
 	Deterministic bool   // if this api have the same response across nodes
-	Local         bool   // TBD
+	Local         bool   // specific to the local node (like node info query)
 	Subscription  bool   // subscription base api
-	Stateful      uint32 // TBD
+	Stateful      uint32 // true for transaction APIs
 	HangingApi    bool   // marks this api with longer timeout
 }
 ```

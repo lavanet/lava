@@ -67,7 +67,7 @@ screen -d -m -S provider$i bash -c "source ~/.bashrc; lavap rpcprovider \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer$i --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER$i.log" && sleep 0.25
 
 screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/ethereum_example.yml\
-$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 echo "--- setting up screens done ---"
 screen -ls
 

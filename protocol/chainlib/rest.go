@@ -47,7 +47,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 		var data []byte = nil
 		urlPath := string(craftData.Data)
 		if craftData.ConnectionType == http.MethodPost {
-			// on post we need to send the data provided in the templace with the api as method
+			// on post we need to send the data provided in the template with the api as method
 			data = craftData.Data
 			urlPath = craftData.Path
 		}
@@ -69,12 +69,13 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	api := apiCont.api
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, nil, restMessage, apiCollection), nil
+	parsedInput := parser.NewParsedInput()
+	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+	return apip.newChainMessage(apiCont.api, parsedInput, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -126,26 +127,28 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
 			)
 			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
-	parsedBlock := parsedInput.GetBlock()
-	blockHashes, _ := parsedInput.GetBlockHashes()
-
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, requestedHashes []string, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	requestedBlock := parsedInput.GetBlock()
+	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
-		api:                      serviceApi,
-		apiCollection:            apiCollection,
+		api:                      api,
 		msg:                      restMessage,
-		latestRequestedBlock:     requestBlock,
+		latestRequestedBlock:     requestedBlock,
 		requestedBlockHashes:     requestedHashes,
+		apiCollection:            apiCollection,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
-		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		parseDirective:           GetParseDirective(api, apiCollection),
+		usedDefaultValue:         parsedInput.UsedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -173,6 +176,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
+		if AllowMissingApisByDefault {
+			apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
+			return apip.defaultApiContainer(apiKey)
+		}
 		utils.LavaFormatDebug("rest api not supported",
 			utils.LogAttr("name", name),
 			utils.LogAttr("connectionType", connectionType),

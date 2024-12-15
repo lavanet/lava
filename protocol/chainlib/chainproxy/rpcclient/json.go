@@ -33,11 +33,12 @@ import (
 )
 
 const (
-	Vsn                      = "2.0"
-	serviceMethodSeparator   = "_"
-	subscribeMethodSuffix    = "_subscribe"
-	unsubscribeMethodSuffix  = "_unsubscribe"
-	notificationMethodSuffix = "_subscription"
+	Vsn                              = "2.0"
+	serviceMethodSeparator           = "_"
+	subscribeMethodSuffix            = "_subscribe"
+	unsubscribeMethodSuffix          = "_unsubscribe"
+	ethereumNotificationMethodSuffix = "_subscription"
+	solanaNotificationMethodSuffix   = "Notification"
 
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
@@ -46,6 +47,11 @@ var null = json.RawMessage("null")
 
 type ethereumSubscriptionResult struct {
 	ID     string          `json:"subscription"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type integerIdSubscriptionResult struct {
+	ID     int             `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
@@ -68,8 +74,12 @@ type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
 
+func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
+	return msg.ID == nil && msg.Method != "" && msg.Result != nil
+}
+
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
-	return msg.ID == nil && msg.Method != ""
+	return msg.ID == nil && msg.Method != "" && msg.Params != nil
 }
 
 func (msg *JsonrpcMessage) isTendermintNotification() bool {
@@ -163,6 +173,20 @@ func (err *JsonError) ErrorCode() int {
 
 func (err *JsonError) ErrorData() interface{} {
 	return err.Data
+}
+
+func (err *JsonError) ToMap() map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"code":    err.Code,
+		"message": err.Message,
+		"data":    err.Data,
+		"name":    err.Name,
+		"cause":   err.Cause,
+	}
 }
 
 // Conn is a subset of the methods of net.Conn which are sufficient for ServerCodec.

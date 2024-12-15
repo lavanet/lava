@@ -10,10 +10,8 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/lavanet/lava/v4/x/pairing/types"
 	projecttypes "github.com/lavanet/lava/v4/x/projects/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
 	"github.com/spf13/cobra"
 )
@@ -55,16 +53,11 @@ func CmdAccountInfo() *cobra.Command {
 					return err
 				}
 			}
-			specQuerier := spectypes.NewQueryClient(clientCtx)
 			ctx := context.Background()
-			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
-			if err != nil {
-				return utils.LavaFormatError("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
-			}
+
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)
 			projectQuerier := projecttypes.NewQueryClient(clientCtx)
-			epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 			dualstakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
 			stakingQuerier := stakingtypes.NewQueryClient(clientCtx)
 			resultStatus, err := clientCtx.Client.Status(ctx)
@@ -77,45 +70,26 @@ func CmdAccountInfo() *cobra.Command {
 			var info types.QueryAccountInfoResponse
 
 			// fill the objects
-			for _, chainStructInfo := range allChains.ChainInfoList {
-				chainID := chainStructInfo.ChainID
-				response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
-					ChainID:    chainID,
-					ShowFrozen: true,
-				})
-				if err == nil && len(response.StakeEntry) > 0 {
-					for _, provider := range response.StakeEntry {
-						if provider.IsAddressVaultOrProvider(address) {
-							if provider.StakeAppliedBlock > uint64(currentBlock) {
-								info.Frozen = append(info.Frozen, provider)
-							} else {
-								info.Provider = append(info.Provider, provider)
-							}
-							break
-						}
-					}
-				}
-			}
 
-			unstakeEntriesAllChains, err := epochStorageQuerier.StakeStorage(ctx, &epochstoragetypes.QueryGetStakeStorageRequest{
-				Index: epochstoragetypes.StakeStorageKeyUnstakeConst,
+			response, err := pairingQuerier.Provider(ctx, &types.QueryProviderRequest{
+				Address: address,
 			})
 			if err == nil {
-				if len(unstakeEntriesAllChains.StakeStorage.StakeEntries) > 0 {
-					for _, unstakingProvider := range unstakeEntriesAllChains.StakeStorage.StakeEntries {
-						if unstakingProvider.IsAddressVaultOrProvider(address) {
-							info.Unstaked = append(info.Unstaked, unstakingProvider)
-						}
+				for _, provider := range response.StakeEntries {
+					if provider.StakeAppliedBlock > uint64(currentBlock) {
+						info.Frozen = append(info.Frozen, provider)
+					} else {
+						info.Provider = append(info.Provider, provider)
 					}
 				}
 			}
 
-			response, err := subscriptionQuerier.Current(cmd.Context(), &subscriptiontypes.QueryCurrentRequest{
+			subresponse, err := subscriptionQuerier.Current(cmd.Context(), &subscriptiontypes.QueryCurrentRequest{
 				Consumer: address,
 			})
 
 			if err == nil {
-				info.Subscription = response.Sub
+				info.Subscription = subresponse.Sub
 			}
 
 			developer, err := projectQuerier.Developer(cmd.Context(), &projecttypes.QueryDeveloperRequest{Developer: address})
@@ -140,7 +114,6 @@ func CmdAccountInfo() *cobra.Command {
 			}
 
 			// we finished gathering information, now print it
-
 			return clientCtx.PrintProto(&info)
 		},
 	}
