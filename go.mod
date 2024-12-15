@@ -1,6 +1,6 @@
 module github.com/lavanet/lava/v4
 
-go 1.20
+go 1.23
 
 require (
 	github.com/99designs/keyring v1.2.1 // indirect

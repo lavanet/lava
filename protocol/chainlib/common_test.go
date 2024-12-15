@@ -93,8 +93,6 @@ func TestMatchSpecApiByName(t *testing.T) {
 		},
 	}
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -125,8 +123,6 @@ func TestConvertToJsonError(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -158,8 +154,6 @@ func TestAddAttributeToError(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			result := addAttributeToError(testCase.key, testCase.value, testCase.errorMessage)
@@ -210,8 +204,6 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 	}()
 	time.Sleep(time.Millisecond * 20) // let the server go up
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			url := "ws://127.0.0.1:3000" + testCase.route
 			dialer := &websocket2.Dialer{}
