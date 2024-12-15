@@ -20,8 +20,10 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
-var SkipPolicyVerification = false
-var AllowMissingApisByDefault = true
+var (
+	SkipPolicyVerification    = false
+	AllowMissingApisByDefault = true
+)
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
