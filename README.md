@@ -21,7 +21,7 @@ Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) whic
 
 [Documentation](x/README.md)
 
-**Note**: Requires [Go 1.20.5](https://golang.org/dl/)
+**Note**: Requires [Go 1.23](https://golang.org/dl/)
 
 ## Quick Start
 
