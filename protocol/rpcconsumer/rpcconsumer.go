@@ -423,6 +423,9 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	if lavasession.PeriodicProbeProviders {
+		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
+	}
 	// Register For Updates
 	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList, options.backupProvidersList)
 

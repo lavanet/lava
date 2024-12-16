@@ -657,6 +657,19 @@ func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 	}
 }
 
+func (pme *ConsumerMetricsManager) SetProviderLiveness(chainId string, providerAddress string, providerEndpoint string, isAlive bool) {
+	if pme == nil {
+		return
+	}
+
+	var value float64 = 0
+	if isAlive {
+		value = 1
+	}
+
+	pme.providerLivenessMetric.WithLabelValues(chainId, providerAddress, providerEndpoint).Set(value)
+}
+
 func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

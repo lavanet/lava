@@ -29,8 +29,10 @@ const (
 )
 
 var (
-	retrySecondChanceAfter = time.Minute * 3
-	DebugProbes            = false
+	retrySecondChanceAfter         = time.Minute * 3
+	DebugProbes                    = false
+	PeriodicProbeProviders         = false
+	PeriodicProbeProvidersInterval = 5 * time.Second
 )
 
 // created with NewConsumerSessionManager
@@ -217,6 +219,21 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	}
 }
 
+func (csm *ConsumerSessionManager) PeriodicProbeProviders(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+
+	for {
+		select {
+		case <-ticker.C:
+			if csm.rawPairing != nil {
+				csm.probeProviders(ctx, csm.rawPairing, csm.atomicReadCurrentEpoch())
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingList map[uint64]*ConsumerSessionsWithProvider, epoch uint64) error {
 	guid := utils.GenerateUniqueIdentifier()
 	ctx = utils.AppendUniqueIdentifier(ctx, guid)
@@ -233,6 +250,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 			defer wg.Done()
 			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch, false)
 			success := err == nil // if failure then regard it in availability
+			csm.consumerMetricsManager.SetProviderLiveness(csm.rpcEndpoint.ChainID, providerAddress, consumerSessionWithProvider.Endpoints[0].NetworkAddress, success)
 			csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
 		}(consumerSessionWithProvider)
 	}
