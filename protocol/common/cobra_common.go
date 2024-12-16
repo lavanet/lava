@@ -48,6 +48,9 @@ const (
 	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
+	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
+	// specification default flags
+	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
 )
 
 const (
