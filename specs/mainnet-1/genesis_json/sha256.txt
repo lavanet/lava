@@ -1,0 +1,2 @@
+sha256sum genesis.json  
+5ba7dc9ac4ee0ea1776c8f13dc45be84ffc2ef3ffbe8271e30b573134ecd61ea  genesis.json
