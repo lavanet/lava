@@ -58,8 +58,8 @@ func TestGenesis_Validate(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			err := tc.Genesis.Validate()
 			if tc.ExpError == "" {
 				require.NoError(t, err)

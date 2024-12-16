@@ -36,8 +36,6 @@ func TestGRPCParseBlock(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -81,9 +79,8 @@ func TestReflectionSupport(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			result := ReflectionSupport(testCase.err)
 
 			if testCase.err == nil {
@@ -132,9 +129,8 @@ func TestParseSymbol(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			s, m := ParseSymbol(testCase.input)
 			if s != testCase.expectedS {
 				t.Errorf("expected %q, but got %q", testCase.expectedS, s)
