@@ -131,8 +131,7 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	lowFactor := params.LowFactor
 	bonded, err := k.stakingKeeper.BondedRatio(ctx)
 	if err != nil {
-		// TODO: handle error YAROM
-		return cosmosMath.LegacyDec{}
+		return cosmosMath.LegacyOneDec()
 	}
 
 	if bonded.GT(maxBonded) {

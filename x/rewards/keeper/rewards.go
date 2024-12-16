@@ -84,8 +84,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
-		// TODO yarom
-		return
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
 	}
 	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 	valDistPoolBalance := coins.AmountOf(bondDenom).Int64()

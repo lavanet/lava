@@ -36,6 +36,7 @@ package keeper
 // - For the remaining half of the month, her credit is calculated on 150 tokens.
 
 import (
+	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -58,9 +59,8 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	creditAmount := delegation.Credit
 
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	// TODO yarom: handle error
 	if err != nil {
-		return sdk.NewCoin(bondDenom, math.ZeroInt()), 0
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
 	}
 	// handle uninitialized amounts
 	if creditAmount.IsNil() {
@@ -124,9 +124,8 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 func (k Keeper) CalculateMonthlyCredit(ctx sdk.Context, delegation types.Delegation) (credit sdk.Coin) {
 	credit, creditTimeEpoch := k.CalculateCredit(ctx, delegation)
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	// TODO yarom: handle error
 	if err != nil {
-		return sdk.NewCoin(bondDenom, math.ZeroInt())
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
 	}
 	if credit.IsNil() || credit.IsZero() || creditTimeEpoch <= 0 {
 		return sdk.NewCoin(bondDenom, math.ZeroInt())
