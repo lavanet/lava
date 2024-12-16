@@ -23,6 +23,7 @@ import (
 var (
 	SkipPolicyVerification    = false
 	AllowMissingApisByDefault = true
+	SkipWebsocketVerification = false
 )
 
 type PolicyInf interface {

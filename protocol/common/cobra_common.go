@@ -51,6 +51,7 @@ const (
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
+	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
 	// specification default flags
 	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
 )
