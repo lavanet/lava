@@ -12,8 +12,8 @@ import os
 ## CSV file expected structure:
 Selector,Method name,Value,Multi10,spec,
 Ethereum,eth_accounts,6,60,"ETH1 (ethereum mainnet), GTH1 (ethereum testnet goerli)",
-Polygon,debug_getbadblocks,5,50,"POLYGON1 (polygon mainnet), POLYGON1T (polygon testnet)",
-Arbitrum,eth_accounts,1,10,ARB1 (arbitrum mainnet),
+Polygon,debug_getbadblocks,5,50,"POLYGON (polygon mainnet), POLYGONT (polygon testnet)",
+Arbitrum,eth_accounts,1,10,ARBITRUM (arbitrum mainnet),
 
 ## Script Assumptions (or in what way you should feed it data so it'll work):
  - spec file must be named with "spec_add" prefix
