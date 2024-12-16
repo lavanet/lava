@@ -52,6 +52,7 @@ type ConsumerMetricsManager struct {
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *prometheus.GaugeVec
 	qosExcellenceMetric                         *prometheus.GaugeVec
+	providerLivenessMetric                      *prometheus.GaugeVec
 	LatestBlockMetric                           *prometheus.GaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
 	virtualEpochMetric                          *prometheus.GaugeVec
@@ -160,6 +161,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The QOS metrics per provider excellence",
 	}, []string{"spec", "provider_address", "qos_metric"})
 
+	providerLivenessMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_liveness",
+		Help: "The liveness of connected provider based on probe",
+	}, []string{"spec", "provider_address", "provider_endpoint"})
+
 	latestBlockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_block",
 		Help: "The latest block reported by provider",
@@ -234,6 +240,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(latencyMetric)
 	prometheus.MustRegister(qosMetric)
 	prometheus.MustRegister(qosExcellenceMetric)
+	prometheus.MustRegister(providerLivenessMetric)
 	prometheus.MustRegister(latestBlockMetric)
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
@@ -269,6 +276,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
 		qosExcellenceMetric:                         qosExcellenceMetric,
+		providerLivenessMetric:                      providerLivenessMetric,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
 		providerRelays:                              map[string]uint64{},
@@ -590,6 +598,19 @@ func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 	} else {
 		pme.totalLoLErrorsMetric.Inc()
 	}
+}
+
+func (pme *ConsumerMetricsManager) SetProviderLiveness(chainId string, providerAddress string, providerEndpoint string, isAlive bool) {
+	if pme == nil {
+		return
+	}
+
+	var value float64 = 0
+	if isAlive {
+		value = 1
+	}
+
+	pme.providerLivenessMetric.WithLabelValues(chainId, providerAddress, providerEndpoint).Set(value)
 }
 
 func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
