@@ -88,6 +88,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 
+	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
+			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("block", nextEpoch),
+		)
+	}
+
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, creator)
 	if entryExists {
 		// modify the entry (check who's modifying - vault/provider)
@@ -179,6 +187,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 					details...,
 				)
 			}
+
+			// automatically unfreeze the provider if it was frozen due to stake below min spec stake
+			minSpecStake := k.specKeeper.GetMinStake(ctx, chainID)
+			if beforeAmount.IsLT(minSpecStake) && existingEntry.IsFrozen() && !existingEntry.IsJailed(ctx.BlockTime().UTC().Unix()) && amount.IsGTE(minSpecStake) {
+				existingEntry.UnFreeze(nextEpoch)
+				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
+			}
 		} else if decrease {
 			// unbond the difference
 			diffAmount := beforeAmount.Sub(amount)
@@ -232,15 +247,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	// if there are registered delegations to the provider, count them in the delegateTotal
 	delegateTotal := math.ZeroInt()
-	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
-	if err != nil {
-		return utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
-			utils.LogAttr("provider", senderAddr.String()),
-			utils.LogAttr("block", nextEpoch),
-		)
-	}
-
 	stakeAmount := amount
+
 	// creating a new provider, fetch old delegation
 	if len(metadata.Chains) == 1 {
 		delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
