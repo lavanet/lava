@@ -145,7 +145,7 @@ validate_env() {
 # Array of variables to check
 required_vars=(
   ETH_RPC_WS SEP_RPC_WS HOL_RPC_WS FTM_RPC_HTTP CELO_HTTP
-  CELO_ALFAJORES_HTTP ARB1_HTTP APTOS_REST STARKNET_RPC POLYGON_MAINNET_RPC
+  CELO_ALFAJORES_HTTP ARBITRUM_HTTP APTOS_REST STARKNET_RPC POLYGON_MAINNET_RPC
   OPTIMISM_RPC BASE_RPC BSC_RPC SOLANA_RPC SUI_RPC OSMO_REST OSMO_RPC OSMO_GRPC
   LAVA_REST LAVA_RPC LAVA_RPC_WS LAVA_GRPC GAIA_REST GAIA_RPC GAIA_GRPC JUNO_REST
   JUNO_RPC JUNO_GRPC EVMOS_RPC EVMOS_TENDERMINTRPC EVMOS_REST EVMOS_GRPC CANTO_RPC
@@ -171,17 +171,7 @@ echo "---------------------------------------------"
 }
 
 get_base_specs() {
-    local priority_specs=(
-        "./specs/mainnet-1/specs/ibc.json"
-        "./specs/mainnet-1/specs/cosmoswasm.json"
-        "./specs/mainnet-1/specs/tendermint.json"
-        "./specs/mainnet-1/specs/cosmossdk.json"
-        "./specs/mainnet-1/specs/cosmossdkv45.json"
-        "./specs/mainnet-1/specs/cosmossdkv50.json"
-        "./specs/mainnet-1/specs/ethermint.json"
-        "./specs/mainnet-1/specs/ethereum.json"
-        "./specs/mainnet-1/specs/solana.json"
-    )
+    local priority_specs=()
 
     (IFS=,; echo "${priority_specs[*]}")
 }
@@ -210,3 +200,9 @@ get_all_specs() {
     
     (IFS=,; echo "${priority_specs[*]},${other_specs[*]}")
 }
+
+get_all_spec_files() {
+    # Find all json files and join them with commas
+    find "$(pwd)/specs/mainnet-1/specs" "$(pwd)/specs/testnet-2/specs" -name "*.json" 2>/dev/null | paste -sd "," -
+}
+

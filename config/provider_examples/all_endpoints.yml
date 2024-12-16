@@ -30,7 +30,7 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: jsonrpc
-      chain-id: ARB1
+      chain-id: ARBITRUM
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
@@ -48,7 +48,7 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: jsonrpc
-      chain-id: POLYGON1
+      chain-id: POLYGON
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
