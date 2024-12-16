@@ -319,3 +319,21 @@ func (ts *tester) newRelaySession(
 	}
 	return relaySession
 }
+
+func (ts *tester) isProviderFrozen(provider string, chain string) bool {
+	res, err := ts.QueryPairingProvider(provider, chain)
+	require.NoError(ts.T, err)
+	foundChain := false
+	var isFrozen bool
+	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Address == provider && stakeEntry.Chain == chain {
+			foundChain = true
+			isFrozen = stakeEntry.IsFrozen()
+			break
+		}
+	}
+	if !foundChain {
+		require.Fail(ts.T, "provider not staked in chain", "provider: %s, chain: %s", provider, chain)
+	}
+	return isFrozen
+}

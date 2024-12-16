@@ -86,7 +86,7 @@ The specs directory was initially set up as a git subtree using these commands:
 git remote add lava-config git@github.com:lavanet/lava-config.git  # This creates a named reference to the remote repository
 
 # Add the subtree by pulling from the remote
-git subtree add --prefix specs lava-config main --squash
+git subtree add --prefix=specs https://github.com/lavanet/lava-config.git main --squash
 ```
 
 #### Pulling Updates from lava-config
@@ -94,7 +94,7 @@ git subtree add --prefix specs lava-config main --squash
 To get the latest changes from the lava-config repository:
 
 ```bash
-git subtree pull --prefix specs lava-config main --squash
+git subtree pull --prefix=specs https://github.com/lavanet/lava-config.git main --squash
 ```
 
 #### Contributing Changes
