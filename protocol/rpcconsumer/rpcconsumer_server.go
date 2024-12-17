@@ -28,6 +28,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
 	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v4/protocol/parser"
 	"github.com/lavanet/lava/v4/protocol/performance"
 	"github.com/lavanet/lava/v4/protocol/upgrade"
 	"github.com/lavanet/lava/v4/utils"
@@ -61,7 +62,7 @@ type CancelableContextHolder struct {
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
 	consumerProcessGuid            string
-	chainParser                    chainlib.ChainParser
+	ChainParser                    chainlib.ChainParser
 	consumerSessionManager         *lavasession.ConsumerSessionManager
 	listenEndpoint                 *lavasession.RPCEndpoint
 	rpcConsumerLogs                *metrics.RPCConsumerLogs
@@ -122,7 +123,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.lavaChainID = lavaChainID
 	rpccs.rpcConsumerLogs = rpcConsumerLogs
 	rpccs.privKey = privKey
-	rpccs.chainParser = chainParser
+	rpccs.ChainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
@@ -213,7 +214,7 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 }
 
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
-	parsing, apiCollection, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsing, apiCollection, ok := rpccs.ChainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
 		return false, nil, nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
@@ -224,7 +225,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
-	chainMessage, err = rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	chainMessage, err = rpccs.ChainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	if err != nil {
 		return false, nil, nil, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
@@ -309,7 +310,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
-		enabled, _ := rpccs.chainParser.DataReliabilityParams()
+		enabled, _ := rpccs.ChainParser.DataReliabilityParams()
 		// if DR is disabled it's okay to not have GET_BLOCKNUM
 		if !enabled {
 			return true, nil
@@ -321,7 +322,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	latestKnownBlock, numProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
+	latestKnownBlock, numProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.ChainParser)
 	if numProviders > 0 && latestKnownBlock > 0 {
 		return uint64(latestKnownBlock)
 	}
@@ -362,7 +363,7 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+	chainMessage, err := rpccs.ChainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +402,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
+	enabled, dataReliabilityThreshold := rpccs.ChainParser.DataReliabilityParams()
 	// check if data reliability is enabled and relay processor allows us to perform data reliability
 	if enabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
@@ -856,7 +857,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// get here only if performed a regular relay successfully
-			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
+			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.ChainParser)
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			if expectedBH-latestBlock > 1000 {
@@ -886,7 +887,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			localRelayResult.IsNodeError = isNodeError
 			if isNodeError {
 				// if it's a node error we might be able to extract a block number from the error message
-				blockError, blockNumber := rpccs.chainParser.IdentifyBlockNodeError(errorMessage)
+				blockError, blockNumber := rpccs.ChainParser.IdentifyNodeError(errorMessage)
 				if blockError {
 					// we identified a block number in the error message, meaning we requested a specific block
 					// we can't modify the chain message here, only on the creation of a new state so store this in the state for the transition to use
@@ -942,7 +943,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
-						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+						_, averageBlockTime, _, _ := rpccs.ChainParser.ChainBlockStats()
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 							RequestHash:           hashKey,
 							ChainId:               chainId,
@@ -1110,10 +1111,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.ChainParser.ChainBlockStats()
 	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
 
-	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	filteredHeaders, _, ignoredHeaders := rpccs.ChainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
 
 	// check the signature on the reply
@@ -1127,7 +1128,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
+	enabled, _ := rpccs.ChainParser.DataReliabilityParams()
 	if enabled && !singleConsumerSession.StaticProvider {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
@@ -1345,7 +1346,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	for i := 0; i < len(results)-1; i++ {
 		relayResult := results[i]
 		relayResultDataReliability := results[i+1]
-		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpccs.chainParser)
+		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpccs.ChainParser)
 		if conflict != nil {
 			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
 			if len(protocolMessage.GetExtensions()) == 0 {
@@ -1366,7 +1367,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 }
 
 func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
-	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+	_, averageBlockTime, _, _ := rpccs.ChainParser.ChainBlockStats()
 	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))
 	return processingTimeout, relayTimeout
@@ -1390,7 +1391,7 @@ func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(directiveHeade
 	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
 	if ok {
 		extensions := strings.Split(extensionsStr, ",")
-		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		_, extensions, _ = rpccs.ChainParser.SeparateAddonsExtensions(extensions)
 		if len(extensions) == 1 && extensions[0] == "none" {
 			// none eliminates existing extensions
 			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), ExtensionOverride: []string{}}
@@ -1586,7 +1587,7 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	defer cancel()
 	guid := utils.GenerateUniqueIdentifier()
 	ctx = utils.WithUniqueIdentifier(ctx, guid)
-	url, data, connectionType, metadata, err := rpccs.chainParser.ExtractDataFromRequest(req)
+	url, data, connectionType, metadata, err := rpccs.ChainParser.ExtractDataFromRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1594,7 +1595,7 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
-	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
+	resp, err := rpccs.ChainParser.SetResponseFromRelayResult(relayResult)
 	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
 	return resp, err
 }
@@ -1624,7 +1625,7 @@ func (rpccs *RPCConsumerServer) UpdateProtocolMessageIfNeededWithNewData(
 			}
 			if dataKind == chainlib.EARLIEST {
 				addon := chainlib.GetAddon(protocolMessage)
-				extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.chainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
+				extensionAdded := newProtocolMessage.UpdateEarliestAndValidateExtensionRules(rpccs.ChainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
 				if extensionAdded && relayState.CheckIsArchive(newProtocolMessage.RelayPrivateData()) {
 					relayState.SetIsArchive(true)
 				}
@@ -1648,11 +1649,14 @@ func (rpccs *RPCConsumerServer) SendNodeMsg(ctx context.Context, ch chan interfa
 	collectionData := chainMessage.GetApiCollection().CollectionData
 	metadata := chainMessage.GetRPCMessage().GetHeaders()
 	relayResult, err := rpccs.SendRelay(ctx, url, string(data), collectionData.Type, userData.DappId, userData.ConsumerIp, nil, metadata)
+	if relayResult == nil {
+		return nil, "", nil, proxyUrl, chainId, err
+	}
 	return &chainlib.RelayReplyWrapper{StatusCode: relayResult.StatusCode, RelayReply: relayResult.Reply}, "", nil, proxyUrl, chainId, err
 }
 
 func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensions []string) bool {
-	configuredExtensions := rpccs.chainParser.ExtensionsParser().GetConfiguredExtensions()
+	configuredExtensions := rpccs.ChainParser.ExtensionsParser().GetConfiguredExtensions()
 	configured := map[string]struct{}{}
 	for _, extension := range configuredExtensions {
 		configured[extension.Name] = struct{}{}
@@ -1666,17 +1670,19 @@ func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensi
 }
 
 const (
-	RetryInterval   = 10 * time.Minute // X time for retrying on failure
-	RefreshInterval = 24 * time.Hour   // Y time for refreshing on success
+	RetryInterval   = 10 * time.Minute   // time for retrying on failure
+	RefreshInterval = 3 * 24 * time.Hour // time for refreshing on success, so if somehting changes lava adapts
 )
 
 func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) {
+	successTooNew := false
 	for {
 		// identify the pattern for node errors with node too new
-		successTooNew := rpccs.ExtractNodeData(ctx, chainlib.LATEST)
-		successTooOld := rpccs.ExtractNodeData(ctx, chainlib.EARLIEST)
+		successTooNew = rpccs.ExtractNodeData(ctx, chainlib.LATEST)
+		// successTooOld := rpccs.ExtractNodeData(ctx, chainlib.EARLIEST) // TODO: add support for earliest
 		var timer *time.Timer
-		if successTooNew && successTooOld {
+		// if successTooNew && successTooOld { // TODO: when earliest is supported, consider separate timers
+		if successTooNew {
 			timer = time.NewTimer(RefreshInterval)
 		} else {
 			timer = time.NewTimer(RetryInterval)
@@ -1697,7 +1703,7 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context, kind chainl
 	}}}
 	chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
 		ChainRouter: rpccs,
-		ChainParser: rpccs.chainParser,
+		ChainParser: rpccs.ChainParser,
 		Endpoint:    endpoint,
 		Cache:       nil,
 	})
@@ -1707,33 +1713,51 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context, kind chainl
 		fetchBlock = math.MaxInt64
 	} else if kind == chainlib.EARLIEST {
 		// TODO: make it earliest and make sure it fails
+		// add a directive not to add archive
+		// add a directive not to do retry
+		// should fetch block 2
+		return false
 	}
+
+	// blockError contains static error data, dynamic data and the requested block replaced
+	// this shouldn't happen if the block exists in the response
+	blockError, success := fetchFormattedBlock(ctx, chainFetcher, fetchBlock)
+	if !success {
+		return false
+	}
+	fetchBlock = fetchBlock - 1
+	blockError2, success := fetchFormattedBlock(ctx, chainFetcher, fetchBlock)
+	if !success {
+		return false
+	}
+	// now we need the common part between blockError and blockError2
+	blockErrorFormat, lettersDiff := parser.LongestCommonSubsequenceWithFormat(parser.CapStringLen(blockError), parser.CapStringLen(blockError2))
+	if lettersDiff < parser.MinLettersForPattern {
+		return false
+	}
+	utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
+	rpccs.ChainParser.SetBlockErrorPattern(blockErrorFormat, kind)
+	return true
+}
+
+func fetchFormattedBlock(ctx context.Context, chainFetcher *chainlib.ChainFetcher, fetchBlock int64) (blockError string, success bool) {
 	_, responseErrorMessage, format, err := chainFetcher.FetchBlock(ctx, fetchBlock)
 	if err != nil {
 		utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors", err)
-		return false
+		return "", false
 	}
-	if responseErrorMessage != "" {
-		blockError := ""
-		formatted := fmt.Sprintf(format, fetchBlock)
-		re := regexp.MustCompile(formatted)
-		blockError = re.ReplaceAllString(responseErrorMessage, format)
-		if blockError == responseErrorMessage {
-			// this shouldn't happen if the block exists in the response
-			return false
-		}
-		fetchBlock = fetchBlock - 1
-		_, responseErrorMessage, _, err = chainFetcher.FetchBlock(ctx, fetchBlock)
-		if err != nil {
-			utils.LavaFormatError("[-] failed sending a fault block fetch to parse errors maxInt-1", err)
-			return false
-		}
-		formatted = fmt.Sprintf(blockError, math.MaxInt64)
-		if formatted == responseErrorMessage {
-			utils.LavaFormatInfo("[+] identified pattern for node errors, setting in chain parser", utils.LogAttr("pattern", blockError))
-			rpccs.chainParser.SetBlockErrorPattern(blockError, chainlib.LATEST)
-			return true
-		}
+	if responseErrorMessage == "" {
+		return "", false
 	}
-	return false
+	responseErrorMessage = parser.CapStringLen(responseErrorMessage)
+	formatted := fmt.Sprintf(format, fetchBlock)
+	// make sure we capture only the right thing
+	re := regexp.MustCompile(fmt.Sprintf(`(^|\W)(%s)(\W|$)`, regexp.QuoteMeta(formatted)))
+	// re := regexp.MustCompile(fmt.Sprintf(`%s`, regexp.QuoteMeta(formatted)))
+	blockError = re.ReplaceAllString(responseErrorMessage, "$1"+format+"$3")
+	if blockError == responseErrorMessage {
+
+		return "", false
+	}
+	return blockError, true
 }

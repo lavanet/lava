@@ -2201,17 +2201,18 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 		{
 			name:                "tendermint",
 			apiInterface:        spectypes.APIInterfaceTendermintRPC,
-			errorFormat:         `{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"height %d must be less than or equal to the current blockchain height 1837105"}}`,
+			errorFormat:         `{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error","data":"height %d must be less than or equal to the current blockchain height %d"}}`,
 			managedToParseBlock: true,
 			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
 		},
 		{
 			name:                "tendermint",
-			apiInterface:        spectypes.APIInterfaceJsonRPC,
-			errorFormat:         `{"jsonrpc":"2.0","id":-1,"result":null}}`,
+			apiInterface:        spectypes.APIInterfaceTendermintRPC,
+			errorFormat:         `{"jsonrpc":"2.0","id":1,"result":null}}`,
 			managedToParseBlock: false,
 			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
 		},
+		// {"code":2,"message":"height 1 is not available, lowest height is 340778","details":[]}
 	}
 	for _, play := range playbook {
 		t.Run("unconfiguredApiWithArchiveRequest", func(t *testing.T) {
@@ -2264,11 +2265,11 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 				}
 				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
-					if bytes.Equal(req, []byte(`{"jsonrpc":"2.0","method":"block","params":[9223372036854775807],"id":1}`)) {
-						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775807)), 500
+					if bytes.Equal(req, []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"9223372036854775807\"]}")) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775807, 1000)), 500
 					}
-					if bytes.Equal(req, []byte(`{"jsonrpc":"2.0","method":"block","params":[9223372036854775806],"id":1}`)) {
-						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775806)), 500
+					if bytes.Equal(req, []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"9223372036854775806\"]}")) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775806, 1001)), 500
 					}
 					for key, val := range header {
 						if key == "Addon" {
@@ -2277,7 +2278,7 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 							}
 						}
 					}
-					return []byte(`{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"height 1 must be less than or equal to the current blockchain height 1837105"}}`), 500
+					return []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error","data":"height 1 must be less than or equal to the current blockchain height 1002"}}`), 500
 				}
 			}
 
@@ -2317,8 +2318,19 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 			}
 			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-			success := rpcConsumerOut.rpcConsumerServer.ExtractNodeData(ctx)
+			success := rpcConsumerOut.rpcConsumerServer.ExtractNodeData(ctx, chainlib.LATEST)
 			require.Equal(t, play.managedToParseBlock, success)
+			if success {
+				isError, height := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
+				require.True(t, isError)
+				require.Equal(t, int64(777), height)
+				isError, height = rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 778 must be less than or equal to the current blockchain height 5555555555551001", chainlib.LATEST)
+				require.True(t, isError)
+				require.Equal(t, int64(778), height)
+			} else {
+				isError, _ := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
+				require.False(t, isError)
+			}
 
 		})
 	}

@@ -59,6 +59,11 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 	if result.Error == nil { // no error
 		return false, ""
 	}
+	if result.Error.Data != nil {
+		if result.Error.Data.(string) != "" {
+			return true, result.Error.Message + ",data: " + result.Error.Data.(string)
+		}
+	}
 	return result.Error.Message != "", result.Error.Message
 }
 

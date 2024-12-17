@@ -148,6 +148,24 @@ func CreateChainLibMocks(
 		Geolocation:    1,
 		NodeUrls:       []common.NodeUrl{},
 	}
+	policy := &plantypes.Policy{
+		ChainPolicies: []plantypes.ChainPolicy{
+			{
+				ChainId: spec.Index,
+				Apis:    []string{},
+				Requirements: []plantypes.ChainRequirement{
+					{
+						Collection: spectypes.CollectionData{
+							ApiInterface: apiInterface,
+						},
+						Extensions: services,
+						Mixed:      true,
+					},
+				},
+			},
+		},
+	}
+	chainParser.SetPolicy(policy, spec.Index, apiInterface)
 	addons, extensions, err := chainParser.SeparateAddonsExtensions(services)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
