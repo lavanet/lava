@@ -3,6 +3,7 @@ package types
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/utils/decoder"
@@ -56,7 +57,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 		Index:                    "to_delete_plan",
 		Description:              "This plan has no restrictions",
 		Type:                     "rpc",
-		Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+		Price:                    types.NewCoin(commontypes.TokenDenom, math.NewIntFromUint64(100000)),
 		AnnualDiscountPercentage: 20,
 		AllowOveruse:             true,
 		OveruseRate:              2,
@@ -133,7 +134,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				Index:                    "to_delete_plan",
 				Description:              "This plan has no restrictions",
 				Type:                     "rpc",
-				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+				Price:                    types.NewCoin(commontypes.TokenDenom, math.NewIntFromUint64(100000)),
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,
@@ -155,7 +156,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				Index:                    "to_delete_plan_2",
 				Description:              "This plan has no restrictions",
 				Type:                     "rpc",
-				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+				Price:                    types.NewCoin(commontypes.TokenDenom, math.NewIntFromUint64(100000)),
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,

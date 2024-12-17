@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -22,8 +23,8 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return valErr
 	}
 
-	validatorType, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
+	validatorType, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
 		return stakingtypes.ErrNoValidatorFound
 	}
 
@@ -36,12 +37,16 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, amount, false); err != nil {
 		return err
 	}
 
 	delegation, found := k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
-	amountBefore := sdk.ZeroInt()
+	amountBefore := math.ZeroInt()
 	if found {
 		amountBefore = delegation.Amount.Amount
 	}

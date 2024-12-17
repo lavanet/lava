@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/sample"
@@ -33,7 +34,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 
 	// parse the delegator/delegation optional argument (delegate if needed)
 	delegator := req.AmountDelegator
-	trackedCuFactor := sdk.ZeroDec()
+	trackedCuFactor := math.LegacyZeroDec()
 	if req.AmountDelegator != "" {
 		details = append(details, utils.LogAttr("delegator_amount", req.AmountDelegator))
 		delegation, err := sdk.ParseCoinNormalized(req.AmountDelegator)
@@ -51,7 +52,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get delegator", err, details...)
 			}
 
-			totalDelegations := sdk.ZeroInt()
+			totalDelegations := math.ZeroInt()
 			md, err := k.epochstorageKeeper.GetMetadata(ctx, req.Provider)
 			if err != nil {
 				return nil, utils.LavaFormatWarning("cannot estimate rewards for delegator/delegation, cannot get provider metadata", err, details...)
@@ -124,7 +125,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	// get detailed info for providers only
 	if req.AmountDelegator == "" {
 		info, total := k.getRewardsInfoFromEvents(ctx, req.Provider)
-		if !total.IsEqual(res.Total) {
+		if !total.Equal(res.Total) {
 			// total amount sanity check
 			return nil, utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
 				fmt.Errorf("total rewards from info is different than total claimable rewards difference"),
@@ -156,7 +157,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 // helper function that returns a map of provider->rewards
 func (k Keeper) getClaimableRewards(ctx sdk.Context, provider string, delegator string) (rewards sdk.Coins, err error) {
 	var qRes *dualstakingtypes.QueryDelegatorRewardsResponse
-	goCtx := sdk.WrapSDKContext(ctx)
+	goCtx := ctx
 
 	// get delegator rewards
 	if delegator == "" {

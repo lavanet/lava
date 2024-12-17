@@ -33,15 +33,19 @@ import (
 // given chain. It updates the fixation stores for both delegations and delegators,
 // and updates the (epochstorage) stake-entry.
 func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider string, amount sdk.Coin, stake bool) error {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	// get, update the delegation entry
 	delegation, found := k.GetDelegation(ctx, provider, delegator)
 	if !found {
 		// new delegation (i.e. not increase of existing one)
-		delegation = types.NewDelegation(delegator, provider, ctx.BlockTime(), k.stakingKeeper.BondDenom(ctx))
+		delegation = types.NewDelegation(delegator, provider, ctx.BlockTime(), bondDenom)
 	}
 
 	delegation.AddAmount(amount)
-	err := k.SetDelegation(ctx, delegation)
+	err = k.SetDelegation(ctx, delegation)
 	if err != nil {
 		return err
 	}
@@ -92,6 +96,10 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider string, 
 // this method is called after a delegation is called and redistributes the delegations among the stake entries of the provider.
 // 'stake' arg needs to be true if the code reached here from pairing stake/unstake tx (this means the 'stake' field is already set)
 func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase, stake bool) (err error) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	// get all entries
 	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
@@ -104,7 +112,7 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	}
 
 	// get all entries
-	TotalSelfDelegation := sdk.ZeroInt()
+	TotalSelfDelegation := math.ZeroInt()
 	entries := []*epochstoragetypes.StakeEntry{}
 	for _, chain := range metadata.Chains {
 		entry, found := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chain, provider)
@@ -159,7 +167,7 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 
 	for _, entry := range entries {
 		details[entry.Chain] = entry.Chain
-		entry.DelegateTotal = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+		entry.DelegateTotal = sdk.NewCoin(bondDenom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
 		if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
 			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
 			details["stake"] = entry.TotalStake().String()
@@ -190,7 +198,11 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider string, amount sdk
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to delegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
@@ -235,14 +247,18 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to string, amount s
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to redelegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: to},
 		)
 	}
 
-	err := k.increaseDelegation(ctx, delegator, to, amount, stake)
+	err = k.increaseDelegation(ctx, delegator, to, amount, stake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to increase delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -286,14 +302,18 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider string, amount sdk.C
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to unbond: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
 
-	err := k.decreaseDelegation(ctx, delegator, provider, amount, stake)
+	err = k.decreaseDelegation(ctx, delegator, provider, amount, stake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -414,8 +434,11 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		}
 	}
 
-	slices.SortFunc(delegations, func(i, j types.Delegation) bool {
-		return i.Amount.IsLT(j.Amount)
+	slices.SortFunc(delegations, func(i, j types.Delegation) int {
+		if i.Amount.IsLTE(j.Amount) {
+			return -1
+		}
+		return 1
 	})
 
 	unbondAmount := map[string]sdk.Coin{}
@@ -425,7 +448,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		if delegations[i].Amount.Amount.LT(amountToDeduct) {
 			unbondAmount[delegations[i].Provider] = delegations[i].Amount
 			amount = amount.Sub(delegations[i].Amount)
-			delegations[i].Amount.Amount = sdk.ZeroInt()
+			delegations[i].Amount.Amount = math.ZeroInt()
 		} else {
 			coinToDeduct := sdk.NewCoin(delegations[i].Amount.Denom, amountToDeduct)
 			unbondAmount[delegations[i].Provider] = coinToDeduct
@@ -468,7 +491,7 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 		return math.ZeroInt(), 0, err
 	}
 
-	sumProviderDelegations := sdk.ZeroInt()
+	sumProviderDelegations := math.ZeroInt()
 	for _, p := range providers {
 		d, found := k.GetDelegation(ctx, p, delAddr.String())
 		if found {
@@ -476,11 +499,18 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 		}
 	}
 
-	sumValidatorDelegations := sdk.ZeroInt()
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	sumValidatorDelegations := math.ZeroInt()
+	delegations, err := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	if err != nil {
+		return math.ZeroInt(), 0, err
+	}
 	for _, d := range delegations {
-		v, found := k.stakingKeeper.GetValidator(ctx, d.GetValidatorAddr())
-		if found {
+		valaddr, err := sdk.ValAddressFromBech32(d.GetValidatorAddr())
+		if err != nil {
+			continue
+		}
+		v, err := k.stakingKeeper.GetValidator(ctx, valaddr)
+		if err == nil {
 			sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromSharesRoundUp(d.Shares).Ceil().TruncateInt())
 		}
 	}

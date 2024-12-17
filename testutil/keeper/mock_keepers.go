@@ -1,9 +1,11 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,16 +14,18 @@ import (
 )
 
 // account keeper mock
-type mockAccountKeeper struct{}
-
-func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) (stop bool)) {
+type mockAccountKeeper struct {
+	ac address.Codec
 }
 
-func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (k mockAccountKeeper) IterateAccounts(ctx context.Context, process func(sdk.AccountI) (stop bool)) {
+}
+
+func (k mockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	return nil
 }
 
-func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) authtypes.ModuleAccountI {
+func (k mockAccountKeeper) GetModuleAccount(ctx context.Context, module string) sdk.ModuleAccountI {
 	moduleAddress := authtypes.NewModuleAddress(module).String()
 	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
 	baseAccount.Address = moduleAddress
@@ -32,7 +36,11 @@ func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return GetModuleAddress(moduleName)
 }
 
-func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccountI) {
+func (k mockAccountKeeper) SetModuleAccount(context.Context, sdk.ModuleAccountI) {
+}
+
+func (k mockAccountKeeper) AddressCodec() address.Codec {
+	return k.ac
 }
 
 // mock bank keeper
@@ -40,56 +48,56 @@ var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockStakingKeeperEmpty struct{}
 
-func (k mockStakingKeeperEmpty) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
-	return nil
-}
-
-func (k mockStakingKeeperEmpty) UnbondingTime(ctx sdk.Context) time.Duration {
-	return time.Duration(0)
-}
-
-func (k mockStakingKeeperEmpty) GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation {
-	return nil
-}
-
-func (k mockStakingKeeperEmpty) GetDelegatorValidator(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
+func (k mockStakingKeeperEmpty) ValidatorByConsAddr(context.Context, sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
 	return stakingtypes.Validator{}, nil
 }
 
-func (k mockStakingKeeperEmpty) GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool) {
-	return stakingtypes.Delegation{}, false
+func (k mockStakingKeeperEmpty) UnbondingTime(ctx context.Context) (time.Duration, error) {
+	return time.Duration(0), nil
 }
 
-func (k mockStakingKeeperEmpty) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool) {
-	return stakingtypes.Validator{}, false
+func (k mockStakingKeeperEmpty) GetAllDelegatorDelegations(ctx context.Context, delegator sdk.AccAddress) ([]stakingtypes.Delegation, error) {
+	return nil, nil
 }
 
-func (k mockStakingKeeperEmpty) GetValidatorDelegations(ctx sdk.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation) {
-	return []stakingtypes.Delegation{}
+func (k mockStakingKeeperEmpty) GetDelegatorValidator(ctx context.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
+	return stakingtypes.Validator{}, nil
 }
 
-func (k mockStakingKeeperEmpty) BondDenom(ctx sdk.Context) string {
-	return "ulava"
+func (k mockStakingKeeperEmpty) GetDelegation(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.Delegation, error) {
+	return stakingtypes.Delegation{}, nil
 }
 
-func (k mockStakingKeeperEmpty) ValidateUnbondAmount(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares sdk.Dec, err error) {
-	return sdk.Dec{}, nil
+func (k mockStakingKeeperEmpty) GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error) {
+	return stakingtypes.Validator{}, nil
 }
 
-func (k mockStakingKeeperEmpty) Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error) {
-	return time.Time{}, nil
+func (k mockStakingKeeperEmpty) GetValidatorDelegations(context context.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation, err error) {
+	return []stakingtypes.Delegation{}, nil
 }
 
-func (k mockStakingKeeperEmpty) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares sdk.Dec, err error) {
-	return sdk.Dec{}, nil
+func (k mockStakingKeeperEmpty) BondDenom(context context.Context) (string, error) {
+	return "ulava", nil
 }
 
-func (k mockStakingKeeperEmpty) GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator {
-	return []stakingtypes.Validator{}
+func (k mockStakingKeeperEmpty) ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares math.LegacyDec, err error) {
+	return math.LegacyDec{}, nil
 }
 
-func (k mockStakingKeeperEmpty) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
-	return []stakingtypes.Validator{}
+func (k mockStakingKeeperEmpty) Undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec) (time.Time, math.Int, error) {
+	return time.Time{}, math.Int{}, nil
+}
+
+func (k mockStakingKeeperEmpty) Delegate(ctx context.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares math.LegacyDec, err error) {
+	return math.LegacyDec{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetAllValidators(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
 }
 
 type mockBankKeeper struct{}
@@ -98,12 +106,12 @@ func init_balance() {
 	balance = make(map[string]sdk.Coins)
 }
 
-func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
 }
 
-func (k mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
-	total := sdk.NewCoin(denom, sdk.ZeroInt())
+func (k mockBankKeeper) GetSupply(ctx context.Context, denom string) sdk.Coin {
+	total := sdk.NewCoin(denom, math.ZeroInt())
 	for _, coins := range balance {
 		for _, coin := range coins {
 			if coin.Denom == denom {
@@ -114,25 +122,25 @@ func (k mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
 	return total
 }
 
-func (k mockBankKeeper) LockedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) LockedCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.GetAllBalances(ctx, addr)
 }
 
-func (k mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (k mockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	coins := balance[addr.String()]
 	for i := 0; i < coins.Len(); i++ {
 		if coins.GetDenomByIndex(i) == denom {
 			return coins[i]
 		}
 	}
-	return sdk.NewCoin(denom, sdk.ZeroInt())
+	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
-func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (k mockBankKeeper) GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return balance[addr.String()]
 }
 
-func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	moduleAcc := GetModuleAddress(recipientModule)
 	accountCoins := k.GetAllBalances(ctx, senderAddr)
 	if !accountCoins.IsAllGTE(amt) {
@@ -144,11 +152,11 @@ func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr
 	return nil
 }
 
-func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return k.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
 
-func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	moduleAcc := GetModuleAddress(senderModule)
 	accountCoins := k.GetAllBalances(ctx, moduleAcc)
 	if !accountCoins.IsAllGTE(amt) {
@@ -160,29 +168,29 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 	return nil
 }
 
-func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx context.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
 	senderModuleAcc := GetModuleAddress(senderModule)
 	return k.SendCoinsFromAccountToModule(ctx, senderModuleAcc, recipientModule, amt)
 }
 
-func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
 	return k.SendCoinsFromAccountToModule(ctx, senderAddr, recipientModule, amt)
 }
 
-func (k mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k mockBankKeeper) MintCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	acc := GetModuleAddress(moduleName)
 	k.AddToBalance(acc, amounts)
 	return nil
 }
 
-func (k mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k mockBankKeeper) BurnCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	acc := GetModuleAddress(moduleName)
 	k.SubFromBalance(acc, amounts)
 	return nil
 }
 
-func (k mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
+func (k mockBankKeeper) SetBalance(ctx context.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
 	balance[addr.String()] = amounts
 	return nil
 }

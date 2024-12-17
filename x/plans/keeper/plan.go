@@ -98,7 +98,11 @@ func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 }
 
 func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error {
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), planToAdd.Price, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, planToAdd.Price, false); err != nil {
 		return utils.LavaFormatError("plan price is invalid", err)
 	}
 

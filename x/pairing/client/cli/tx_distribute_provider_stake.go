@@ -80,7 +80,7 @@ func CmdDistributeProviderStake() *cobra.Command {
 type data struct {
 	chain    string
 	original math.Int
-	percent  sdk.Dec
+	percent  math.LegacyDec
 	target   math.Int
 	diff     math.Int
 }
@@ -95,13 +95,13 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 		return nil, fmt.Errorf("args must: chain,percent,chain,percent")
 	}
 
-	totalStake := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
-	totalP := sdk.ZeroDec()
+	totalStake := sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt())
+	totalP := math.LegacyZeroDec()
 	distributions := []data{}
 	// First decode the args into chain->percent map
-	chainToPercent := make(map[string]sdk.Dec)
+	chainToPercent := make(map[string]math.LegacyDec)
 	for i := 0; i < len(splitedArgs); i += 2 {
-		p, err := sdk.NewDecFromStr(splitedArgs[i+1])
+		p, err := math.LegacyNewDecFromStr(splitedArgs[i+1])
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +130,7 @@ func CalculateDistbiruitions(provider string, entries []epochstoragetypes.StakeE
 		return nil, fmt.Errorf("chains mismatch - specified chains: %v, staked chains: %v", specifiedChains, stakedChains)
 	}
 
-	if !totalP.Equal(sdk.NewDec(100)) {
+	if !totalP.Equal(math.LegacyNewDec(100)) {
 		return nil, fmt.Errorf("total percentages must be 100, total input: %s", totalP.String())
 	}
 

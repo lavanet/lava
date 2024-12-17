@@ -29,10 +29,10 @@ const (
 
 var (
 	ibcDenom     string    = "uibc"
-	minIprpcCost sdk.Coin  = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(100))
+	minIprpcCost sdk.Coin  = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(100))
 	iprpcFunds   sdk.Coins = sdk.NewCoins(
-		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
-		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
+		sdk.NewCoin(commontypes.TokenDenom, math.NewInt(1100)),
+		sdk.NewCoin(ibcDenom, math.NewInt(500)),
 	)
 	mockSpec2 string = "mockspec2"
 )
@@ -125,17 +125,17 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 	// reset time to the start of the month
 	startOfMonth := time.Date(ts.Ctx.BlockTime().Year(), ts.Ctx.BlockTime().Month(), 1, 0, 0, 0, 0, ts.Ctx.BlockTime().Location())
 	ts.Ctx = ts.Ctx.WithBlockTime(startOfMonth)
-	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
+	ts.GoCtx = ts.Ctx
 
 	if fundIprpcPool {
 		duration := uint64(1)
-		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(sdk.NewIntFromUint64(duration)))
+		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewIntFromUint64(duration)))
 		require.NoError(ts.T, err)
 		balanceBeforeFund := ts.GetBalances(consumerAcc.Addr)
 		_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 		require.NoError(ts.T, err)
 		expectedBalanceAfterFund := balanceBeforeFund.Sub(iprpcFunds.MulInt(math.NewIntFromUint64(duration))...)
-		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).IsEqual(expectedBalanceAfterFund))
+		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).Equal(expectedBalanceAfterFund))
 		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
 	}
 }
@@ -192,8 +192,9 @@ func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Acco
 //  1. validators was created using addValidators(1) and TxCreateValidator
 //  2. TxCreateValidator was used with init funds of 30000000000000/3
 func (ts *tester) makeBondedRatioNonZero() {
-	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	if bondedRatio.Equal(sdk.NewDecWithPrec(25, 2)) {
+	bondedRatio, err := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.NoError(ts.T, err)
+	if bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2)) {
 		return
 	}
 
@@ -203,11 +204,12 @@ func (ts *tester) makeBondedRatioNonZero() {
 	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
 	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
 	require.False(ts.T, bondedPoolBalance.IsZero())
-	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
+	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
 	require.Nil(ts.T, err)
 	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
 	require.False(ts.T, stakingBondedPoolBalance.IsZero())
 
-	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+	bondedRatio, err = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.NoError(ts.T, err)
+	require.True(ts.T, bondedRatio.Equal(math.LegacyNewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 }

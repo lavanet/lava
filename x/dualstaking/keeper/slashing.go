@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
@@ -23,9 +23,17 @@ func (k Keeper) BalanceValidatorsDelegators(ctx sdk.Context, validator string) {
 		return
 	}
 
-	delegators := k.stakingKeeper.GetValidatorDelegations(ctx, valAcc)
+	delegators, err := k.stakingKeeper.GetValidatorDelegations(ctx, valAcc)
+	if err != nil {
+		utils.LavaFormatError("failed to get validator delegators", err, utils.LogAttr("validator", validator))
+		return
+	}
 	for _, delegator := range delegators {
-		delAddr := delegator.GetDelegatorAddr()
+		delAddr, err := sdk.AccAddressFromBech32(delegator.GetDelegatorAddr())
+		if err != nil {
+			utils.LavaFormatError("failed to get delegator address", err, utils.LogAttr("delegator", delegator.GetDelegatorAddr()))
+			continue
+		}
 		k.BalanceDelegator(ctx, delAddr)
 	}
 }

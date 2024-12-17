@@ -7,7 +7,7 @@ import "lavanet/lava/epochstorage/endpoint.proto";
 import "lavanet/lava/pairing/relay.proto";
 import "cosmos/staking/v1beta1/staking.proto";
 import "amino/amino.proto";
-
+import "cosmos/msg/v1/msg.proto";
 option go_package = "github.com/lavanet/lava/v4/x/pairing/types";
 
 // Msg defines the Msg service.
@@ -23,6 +23,7 @@ service Msg {
 
 message MsgStakeProvider {
   option (amino.name) = "pairing/StakeProvider";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
@@ -41,6 +42,7 @@ message MsgStakeProviderResponse {
 
 message MsgUnstakeProvider {
   option (amino.name) = "pairing/UnstakeProvider";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string chainID = 2;
   string validator = 3;
@@ -51,6 +53,7 @@ message MsgUnstakeProviderResponse {
 
 message MsgRelayPayment {
   option (amino.name) = "pairing/RelayPayment";
+  option (cosmos.msg.v1.signer) = "creator";
   reserved 3;
   string creator = 1;
   repeated RelaySession relays = 2;
@@ -69,6 +72,7 @@ message MsgRelayPaymentResponse {
 
 message MsgFreezeProvider {
   option (amino.name) = "pairing/Freeze";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   repeated string chainIds = 2;
   string reason = 3;
@@ -79,6 +83,7 @@ message MsgFreezeProviderResponse {
 
 message MsgUnfreezeProvider {
   option (amino.name) = "pairing/Unfreeze";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   repeated string chainIds = 2;
 }
@@ -89,6 +94,7 @@ message MsgUnfreezeProviderResponse {
 
 message MsgMoveProviderStake {
   option (amino.name) = "pairing/MoveProviderStake";
+  option (cosmos.msg.v1.signer) = "creator";
   string creator = 1;
   string src_chain =2;
   string dst_chain =3;

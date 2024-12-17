@@ -16,10 +16,44 @@ func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
+// Migrate3to4 implements store migration from v3 to v4:
+// -- trigger fixation migration (v4->v5), initialize IsLatest field
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	// This migration used to call a deprecated fixationstore function called MigrateVersionAndPrefix
+
+	return nil
+}
+
+// Migrate5to6 implements store migration from v5 to v6:
+// -- find old subscriptions and trigger advance month to make them expire
+func (m Migrator) Migrate5to6(ctx sdk.Context) error {
+	indices := m.keeper.GetAllSubscriptionsIndices(ctx)
+	currentTime := ctx.BlockTime().UTC().Unix()
+	for _, ind := range indices {
+		sub, found := m.keeper.GetSubscription(ctx, ind)
+		if !found {
+			utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
+				utils.Attribute{Key: "sub", Value: sub},
+			)
+		}
+
+		if sub.MonthExpiryTime < uint64(currentTime) {
+			m.keeper.advanceMonth(ctx, []byte(ind))
+		}
+	}
+
+	return nil
+}
+
 // Migrate7to8 implements store migration from v7 to v8:
 // init new credit field
 func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate 7->8: subscriptions")
+
+	bondDenom, err := m.keeper.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 
 	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
 		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
@@ -39,7 +73,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				continue
 			}
 			creditAmount := plan.Price.Amount.MulRaw(int64(s8.DurationLeft))
-			credit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), creditAmount)
+			credit := sdk.NewCoin(bondDenom, creditAmount)
 
 			// calculate future sub's credit
 			if s8.FutureSubscription != nil {
@@ -55,7 +89,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				}
 
 				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
-				futureCredit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), futureCreditAmount)
+				futureCredit := sdk.NewCoin(bondDenom, futureCreditAmount)
 				s8.FutureSubscription.Credit = futureCredit
 			}
 

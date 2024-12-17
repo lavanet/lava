@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/testutil/common"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -27,18 +27,18 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	// Create badQos: to see the effect of changing QosWeight, the provider need to
 	// provide bad service (here, his score is 0%)
 	badQoS := &pairingtypes.QualityOfServiceReport{
-		Latency:      sdk.ZeroDec(),
-		Availability: sdk.ZeroDec(),
-		Sync:         sdk.ZeroDec(),
+		Latency:      math.LegacyZeroDec(),
+		Availability: math.LegacyZeroDec(),
+		Sync:         math.LegacyZeroDec(),
 	}
 	goodQoS := &pairingtypes.QualityOfServiceReport{
-		Latency:      sdk.OneDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.OneDec(),
+		Latency:      math.LegacyOneDec(),
+		Availability: math.LegacyOneDec(),
+		Sync:         math.LegacyOneDec(),
 	}
 
 	// Simulate QosWeight to be 0.5 - the default value at the time of this writing
-	initQos := sdk.NewDecWithPrec(5, 1)
+	initQos := math.LegacyNewDecWithPrec(5, 1)
 	initQosBytes, _ := initQos.MarshalJSON()
 	initQosStr := string(initQosBytes)
 
@@ -53,7 +53,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	epochQosWeightFiftyPercent := ts.EpochStart()
 
 	// Create new QosWeight value (=0.7) for SimulateParamChange() for testing
-	newQos := sdk.NewDecWithPrec(7, 1)
+	newQos := math.LegacyNewDecWithPrec(7, 1)
 	newQosBytes, _ := newQos.MarshalJSON()
 	newQosStr := string(newQosBytes)
 

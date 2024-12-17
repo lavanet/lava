@@ -1,9 +1,9 @@
 package app
 
 import (
+	txsigning "cosmossdk.io/x/tx/signing"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	dualstakingante "github.com/lavanet/lava/v4/x/dualstaking/ante"
 	dualstakingkeeper "github.com/lavanet/lava/v4/x/dualstaking/keeper"
@@ -11,7 +11,7 @@ import (
 	"github.com/lavanet/lava/v4/x/spec/keeper"
 )
 
-func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, dualstakingKeeper dualstakingkeeper.Keeper, signModeHandler signing.SignModeHandler, feegrantKeeper ante.FeegrantKeeper, specKeeper keeper.Keeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {
+func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, dualstakingKeeper dualstakingkeeper.Keeper, signModeHandler *txsigning.HandlerMap, feegrantKeeper ante.FeegrantKeeper, specKeeper keeper.Keeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewExtensionOptionsDecorator(nil),

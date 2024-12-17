@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 
+	cosmosmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -102,6 +104,10 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
@@ -118,11 +124,23 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			utils.LogAttr("vault", existingEntry.Vault),
 		)
 	}
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
+	delegations, err := k.stakingKeeper.GetAllDelegatorDelegations(ctx, vaultAcc)
+	if err != nil {
+		return utils.LavaFormatError("can't unstake entry, failed to get delegations", err,
+			utils.LogAttr("delegator", vaultAcc.String()),
+		)
+	}
 
 	for _, delegation := range delegations {
-		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
-		if !found {
+		validatorAddr, err := sdk.ValAddressFromBech32(delegation.GetValidatorAddr())
+		if err != nil {
+			return utils.LavaFormatError("can't unstake entry, invalid validator address", err,
+				utils.LogAttr("delegator", vaultAcc.String()),
+				utils.LogAttr("validator", delegation.GetValidatorAddr()),
+			)
+		}
+		validator, err := k.stakingKeeper.GetValidator(ctx, validatorAddr)
+		if err != nil {
 			continue
 		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
@@ -130,7 +148,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, sdk.NewCoin(bondDenom, amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation", err,
 				utils.LogAttr("provider", existingEntry.Address),
@@ -166,10 +184,13 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 
 	// this method goes over all unbondings and tries to slash them
 	slashUnbonding := func() {
-		unbondings := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
+		unbondings, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
+		if err != nil {
+			return
+		}
 
 		for _, unbonding := range unbondings {
-			totalBalance := sdk.ZeroInt()
+			totalBalance := cosmosmath.ZeroInt()
 			for _, entry := range unbonding.Entries {
 				totalBalance = totalBalance.Add(entry.Balance)
 			}
@@ -178,9 +199,12 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			}
 
 			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
-			slashingFactor = sdk.MinDec(sdk.OneDec(), slashingFactor)
-			slashedAmount := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
-			slashedAmount = sdk.MinInt(total, slashedAmount)
+			slashingFactor = cosmosmath.LegacyMinDec(cosmosmath.LegacyOneDec(), slashingFactor)
+			slashedAmount, err := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
+			if err != nil {
+				continue
+			}
+			slashedAmount = cosmosmath.MinInt(total, slashedAmount)
 			total = total.Sub(slashedAmount)
 
 			if !total.IsPositive() {
@@ -196,15 +220,22 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 	}
 
 	// we need to unbond from the delegator by force the amount left
-	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	delegations, err := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	if err != nil {
+		return err
+	}
 	tokensToUnbond := total
 	for _, delegation := range delegations {
-		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
-		if !found {
+		validatorAddr, err := sdk.ValAddressFromBech32(delegation.GetValidatorAddr())
+		if err != nil {
+			continue
+		}
+		validator, err := k.stakingKeeper.GetValidator(ctx, validatorAddr)
+		if err != nil {
 			continue
 		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
-		amount = sdk.MinInt(tokensToUnbond, amount)
+		amount = cosmosmath.MinInt(tokensToUnbond, amount)
 		shares, err := validator.SharesFromTokensTruncated(amount)
 		if err != nil {
 			return utils.LavaFormatWarning("failed to get delegators shares", err,
@@ -213,7 +244,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			)
 		}
 
-		_, err = k.stakingKeeper.Undelegate(ctx, delAddr, validator.GetOperator(), shares)
+		_, _, err = k.stakingKeeper.Undelegate(ctx, delAddr, validatorAddr, shares)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation for slashing", err,
 				utils.Attribute{Key: "address", Value: delAddr},

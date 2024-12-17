@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
 	"github.com/lavanet/lava/v4/x/subscription/types"
@@ -24,18 +25,18 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		return nil, err
 	}
 
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-	if !found {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if err != nil {
 		return nil, fmt.Errorf("validator not found")
 	}
 
-	var delegatorPart sdk.Dec
+	var delegatorPart math.LegacyDec
 	delAddress := sdk.AccAddress(valAddress)
-	totalStakedTokens := sdk.ZeroInt()
+	totalStakedTokens := math.ZeroInt()
 	// self delegation
 	if req.AmountDelegator == "" {
-		del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
-		if !found {
+		del, err := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
+		if err != nil {
 			return nil, fmt.Errorf("self delegation not found")
 		}
 		delegatorPart = del.Shares.Add(val.DelegatorShares.Sub(del.Shares).Mul(val.Commission.Rate)).Quo(val.DelegatorShares)
@@ -43,11 +44,11 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		delAddress, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		// existing delegator
 		if err == nil {
-			del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
-			if !found {
+			del, err := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
+			if err != nil {
 				return nil, fmt.Errorf("delegation not found")
 			}
-			delegatorPart = del.Shares.Quo(val.DelegatorShares).Mul(sdk.OneDec().Sub(val.Commission.Rate))
+			delegatorPart = del.Shares.Quo(val.DelegatorShares).Mul(math.LegacyOneDec().Sub(val.Commission.Rate))
 		} else { // potential delegator
 			coins, err := sdk.ParseCoinsNormalized(req.AmountDelegator)
 			if err != nil {
@@ -55,13 +56,16 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 			}
 
 			totalStakedTokens = coins[0].Amount
-			var shares sdk.Dec
+			var shares math.LegacyDec
 			val, shares = val.AddTokensFromDel(coins[0].Amount)
-			delegatorPart = shares.Quo(val.DelegatorShares).Mul(sdk.OneDec().Sub(val.Commission.Rate))
+			delegatorPart = shares.Quo(val.DelegatorShares).Mul(math.LegacyOneDec().Sub(val.Commission.Rate))
 		}
 	}
 
-	validators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	validators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bonded validators by power, err: %w", err)
+	}
 
 	for _, v := range validators {
 		totalStakedTokens = totalStakedTokens.Add(v.Tokens)
@@ -73,7 +77,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 	for _, subIndex := range subsIndices {
 		sub, found := k.GetSubscription(ctx, subIndex)
 		if found {
-			sub.Credit.Amount = sub.Credit.Amount.Quo(sdk.NewIntFromUint64(sub.DurationLeft))
+			sub.Credit.Amount = sub.Credit.Amount.Quo(math.NewIntFromUint64(sub.DurationLeft))
 			totalSubsRewards = totalSubsRewards.Add(sub.Credit)
 		}
 	}
@@ -85,9 +89,12 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 
 	monthsLeft := k.rewardsKeeper.AllocationPoolMonthsLeft(ctx)
 	allocationPool := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ValidatorsRewardsAllocationPoolName)
-	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(sdk.NewDec(monthsLeft))
-	communityTax := k.rewardsKeeper.GetCommunityTax(ctx)
-	blockRewards = blockRewards.MulDec(sdk.OneDec().Sub(communityTax))
+	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(math.LegacyNewDec(monthsLeft))
+	communityTax, err := k.rewardsKeeper.GetCommunityTax(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get community tax")
+	}
+	blockRewards = blockRewards.MulDec(math.LegacyOneDec().Sub(communityTax))
 
 	iprpcReward, found := k.rewardsKeeper.GetIprpcReward(ctx, k.rewardsKeeper.GetIprpcRewardsCurrentId(ctx))
 	if found {

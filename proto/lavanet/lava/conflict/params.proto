@@ -11,7 +11,7 @@ message Params {
   
   string majorityPercent = 1[
     (gogoproto.moretags) = "yaml:\"majority_percent\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
   uint64 voteStartSpan = 2;
@@ -22,17 +22,17 @@ message Params {
 message Rewards {
   string winnerRewardPercent = 1[
     (gogoproto.moretags) = "yaml:\"winner_reward_percent\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
   string clientRewardPercent = 2[
     (gogoproto.moretags) = "yaml:\"client_reward_percent\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
   string votersRewardPercent = 3[
     (gogoproto.moretags) = "yaml:\"voters_reward_percent\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
 

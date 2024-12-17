@@ -1,9 +1,12 @@
 package types
 
 import (
+	"context"
+
 	"cosmossdk.io/math"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distribution "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -19,11 +22,11 @@ type AccountKeeper interface {
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
-	BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error
-	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
-	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
-	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	BurnCoins(ctx context.Context, name string, amt sdk.Coins) error
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	SendCoinsFromModuleToModule(ctx context.Context, senderPool, recipientPool string, amt sdk.Coins) error
+	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	// Methods imported from bank should be defined here
 }
 
@@ -48,8 +51,8 @@ type DowntimeKeeper interface {
 }
 
 type StakingKeeper interface {
-	BondedRatio(ctx sdk.Context) math.LegacyDec
-	BondDenom(ctx sdk.Context) string
+	BondedRatio(ctx context.Context) (math.LegacyDec, error)
+	BondDenom(ctx context.Context) (string, error)
 	// Methods imported from bank should be defined here
 }
 
@@ -59,8 +62,24 @@ type DualStakingKeeper interface {
 }
 
 type DistributionKeeper interface {
-	GetParams(ctx sdk.Context) (params distributiontypes.Params)
-	GetFeePool(ctx sdk.Context) (feePool distributiontypes.FeePool)
-	SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool)
+	GetParams(ctx sdk.Context) (distributiontypes.Params, error)
+	GetFeePool(ctx sdk.Context) (distributiontypes.FeePool, error)
+	SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool) error
 	// Methods imported from bank should be defined here
+}
+
+type DistributionKeeperWrapper struct {
+	Keeper *distribution.Keeper
+}
+
+func (dkw *DistributionKeeperWrapper) GetParams(ctx sdk.Context) (distributiontypes.Params, error) {
+	return dkw.Keeper.Params.Get(ctx)
+}
+
+func (dkw *DistributionKeeperWrapper) GetFeePool(ctx sdk.Context) (distributiontypes.FeePool, error) {
+	return dkw.Keeper.FeePool.Get(ctx)
+}
+
+func (dkw *DistributionKeeperWrapper) SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool) error {
+	return dkw.Keeper.FeePool.Set(ctx, feePool)
 }

@@ -41,7 +41,7 @@ Policy:
             api_interface: "jsonrpc"
             type: "POST"
             add_on: "debug"
-    - chain_id: POLYGON1
+    - chain_id: POLYGON
       requirements:
         - collection:
             api_interface: "jsonrpc"

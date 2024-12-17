@@ -16,7 +16,7 @@ const (
 	MajorityDiv  = 2 // 50% - Can't be 0!
 )
 
-var SlashStakePercent = sdk.NewDecWithPrec(5, 2) // 0.05
+var SlashStakePercent = math.LegacyNewDecWithPrec(5, 2) // 0.05
 
 func (k Keeper) AllocateNewConflictVote(ctx sdk.Context, key string) bool {
 	_, found := k.GetConflictVote(ctx, key)
@@ -52,12 +52,16 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	// if strong majority punish wrong providers - jail from start of memory to end + slash 100%stake
 	// reward pool is the slashed amount from all punished providers
 	// reward to stake - client 50%, the original provider 10%, 20% the voters
-	totalVotes := sdk.ZeroInt()
-	firstProviderVotes := sdk.ZeroInt()
-	secondProviderVotes := sdk.ZeroInt()
-	noneProviderVotes := sdk.ZeroInt()
+	totalVotes := math.ZeroInt()
+	firstProviderVotes := math.ZeroInt()
+	secondProviderVotes := math.ZeroInt()
+	noneProviderVotes := math.ZeroInt()
 	var providersWithoutVote []string
-	rewardPool := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return
+	}
+	rewardPool := sdk.NewCoin(bondDenom, math.ZeroInt())
 	rewardCount := math.ZeroInt()
 	votersStake := map[string]math.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
@@ -113,8 +117,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			// punish providers that didnt vote
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
-			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
+			bail.Quo(math.NewIntFromUint64(BailStakeDiv))
+			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(bondDenom, bail))
 			if err != nil {
 				utils.LavaFormatWarning("jailing failed at vote conflict", err)
 				// not skipping to continue to slash
@@ -134,7 +138,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	eventData = append(eventData, utils.Attribute{Key: "SecondProviderVotes", Value: secondProviderVotes})
 	eventData = append(eventData, utils.Attribute{Key: "NoneProviderVotes", Value: noneProviderVotes})
 
-	halfTotalVotes := totalVotes.Quo(sdk.NewIntFromUint64(MajorityDiv))
+	halfTotalVotes := totalVotes.Quo(math.NewIntFromUint64(MajorityDiv))
 	majorityMet = firstProviderVotes.GT(halfTotalVotes) || secondProviderVotes.GT(halfTotalVotes) || noneProviderVotes.GT(halfTotalVotes)
 	if majorityMet {
 		eventName = types.ConflictVoteResolvedEventName
@@ -162,14 +166,14 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			return
 		}
 		eventData = append(eventData, utils.Attribute{Key: "winner", Value: winnersAddr})
-		eventData = append(eventData, utils.Attribute{Key: "winnerVotes%", Value: sdk.NewDecFromInt(winnerVotersStake).QuoInt(totalVotes)})
+		eventData = append(eventData, utils.Attribute{Key: "winnerVotes%", Value: math.LegacyNewDecFromInt(winnerVotersStake).QuoInt(totalVotes)})
 
 		// punish the frauds(the provider that was found lying and all the voters that voted for him) and fill the reward pool
 		// we need to finish the punishment before rewarding to fill up the reward pool
-		if ConsensusVote && sdk.NewDecFromInt(winnerVotersStake).QuoInt(totalVotes).GTE(k.MajorityPercent(ctx)) {
+		if ConsensusVote && math.LegacyNewDecFromInt(winnerVotersStake).QuoInt(totalVotes).GTE(k.MajorityPercent(ctx)) {
 			for _, vote := range conflictVote.Votes {
 				if vote.Result != winner && !slices.Contains(providersWithoutVote, vote.Address) { // punish those who voted wrong, voters that didnt vote already got punished
-					slashed, err := k.pairingKeeper.SlashEntry(ctx, vote.Address, conflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
+					slashed, err := k.pairingKeeper.SlashEntry(ctx, vote.Address, conflictVote.ChainID, math.LegacyNewDecWithPrec(1, 0))
 					rewardPool = rewardPool.Add(slashed)
 					if err != nil {
 						utils.LavaFormatWarning("slashing failed at vote conflict", err)
@@ -218,7 +222,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					utils.Attribute{Key: "voteAddress", Value: winnersAddr},
 				)
 			} else {
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), winnerReward.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(bondDenom, winnerReward.TruncateInt()))
 				if !ok {
 					utils.LavaFormatWarning("failed to credit client", err)
 				}
@@ -254,7 +258,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					)
 					continue
 				}
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardVoter.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(bondDenom, rewardVoter.TruncateInt()))
 				if !ok {
 					details := map[string]string{}
 					if err != nil {

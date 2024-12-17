@@ -3,13 +3,16 @@ package keeper
 import (
 	"testing"
 
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -29,11 +32,11 @@ import (
 )
 
 func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())
@@ -62,14 +65,14 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
-	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
+	downtimeKey := storetypes.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
-	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
-	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	stakingStoreKey := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
+	stakingKeeper := *stakingkeeper.NewKeeper(cdc, runtime.NewKVStoreService(stakingStoreKey), mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String(), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()))
 
-	distributionStoreKey := sdk.NewKVStoreKey(distributiontypes.StoreKey)
-	distributionKeeper := distributionkeeper.NewKeeper(cdc, distributionStoreKey, mockAccountKeeper{}, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	distributionStoreKey := storetypes.NewKVStoreKey(distributiontypes.StoreKey)
+	distributionKeeper := distributionkeeper.NewKeeper(cdc, runtime.NewKVStoreService(distributionStoreKey), mockAccountKeeper{}, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, stakingKeeper)
 	downtimeKeeper := downtimekeeper.NewKeeper(cdc, downtimeKey, paramsSubspaceDowntime, epochstorageKeeper)
@@ -78,6 +81,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 
 	downtimeKeeper.SetParams(ctx, v1.DefaultParams())
 
+	distributionKeeperWrapper := types.DistributionKeeperWrapper{Keeper: &distributionKeeper}
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
@@ -90,7 +94,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		downtimeKeeper,
 		stakingKeeper,
 		nil,
-		distributionKeeper,
+		&distributionKeeperWrapper,
 		authtypes.FeeCollectorName,
 		timerstorekeeper.NewKeeper(cdc),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),

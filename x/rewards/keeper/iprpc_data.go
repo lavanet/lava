@@ -3,17 +3,22 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/rewards/types"
 )
 
 func (k Keeper) SetIprpcData(ctx sdk.Context, cost sdk.Coin, subs []string) error {
-	if cost.Denom != k.stakingKeeper.BondDenom(ctx) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if cost.Denom != bondDenom {
 		return utils.LavaFormatWarning("min iprpc cost must be in acceptable denom", fmt.Errorf("invalid cost"),
 			utils.LogAttr("cost", cost.String()),
-			utils.LogAttr("acceptable_denom", k.stakingKeeper.BondDenom(ctx)),
+			utils.LogAttr("acceptable_denom", bondDenom),
 		)
 	}
 	k.SetMinIprpcCost(ctx, cost)
@@ -67,7 +72,7 @@ func (k Keeper) RemoveIprpcSubscription(ctx sdk.Context, address string) {
 // GetAllIprpcSubscription returns all subscription from the IprpcSubscription store
 func (k Keeper) GetAllIprpcSubscription(ctx sdk.Context) []string {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcSubscriptionPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 

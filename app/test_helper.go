@@ -1,17 +1,16 @@
 package app
 
 import (
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Setup a new App for testing purposes
 func TestSetup() (*LavaApp, sdk.Context) {
-	db := tmdb.NewMemDB()
+	db := dbm.NewMemDB()
 	encoding := MakeEncodingConfig()
 	app := New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, 5, encoding, sims.EmptyAppOptions{})
-	return app, app.NewContext(true, tmproto.Header{})
+	return app, app.NewContext(true)
 }

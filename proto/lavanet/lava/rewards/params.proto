@@ -11,25 +11,25 @@ message Params {
   
   string min_bonded_target = 1 [
     (gogoproto.moretags) = "yaml:\"min_bonded_target\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 
   string max_bonded_target = 2 [
     (gogoproto.moretags) = "yaml:\"max_bonded_target\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 
   string low_factor = 3 [
     (gogoproto.moretags) = "yaml:\"low_factor\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 
   string leftover_burn_rate = 4 [
     (gogoproto.moretags) = "yaml:\"leftover_burn_rate\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 
@@ -37,7 +37,7 @@ message Params {
 
   string validators_subscription_participation = 6 [
     (gogoproto.moretags) = "yaml:\"validators_subscription_participation\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 }

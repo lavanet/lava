@@ -13,7 +13,7 @@ message Params {
   uint64 epochBlocksOverlap = 8 [(gogoproto.moretags) = "yaml:\"epoch_blocks_overlap\""];
   string QoSWeight   = 13 [
       (gogoproto.moretags) = "yaml:\"data_reliability_reward\"",
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+      (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
       (gogoproto.nullable)   = false
       ];
   uint64 recommendedEpochNumToCollectPayment = 14 [(gogoproto.moretags) = "yaml:\"recommended_epoch_num_to_collect_payment\""];

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/pairing/types"
@@ -57,8 +58,8 @@ func (k Keeper) SubscriptionMonthlyPayout(goCtx context.Context, req *types.Quer
 			)
 		}
 
-		if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU)) {
-			totalTokenAmount = sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU * totalCuTracked)
+		if plan.Price.Amount.Quo(math.NewIntFromUint64(totalCuTracked)).GT(math.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU)) {
+			totalTokenAmount = math.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU * totalCuTracked)
 		}
 
 		totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, totalCuTracked)
