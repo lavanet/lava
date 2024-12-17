@@ -2206,7 +2206,7 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
 		},
 		{
-			name:                "tendermint",
+			name:                "tendermint_empty",
 			apiInterface:        spectypes.APIInterfaceTendermintRPC,
 			errorFormat:         `{"jsonrpc":"2.0","id":1,"result":null}}`,
 			managedToParseBlock: false,
@@ -2321,12 +2321,17 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 			success := rpcConsumerOut.rpcConsumerServer.ExtractNodeData(ctx, chainlib.LATEST)
 			require.Equal(t, play.managedToParseBlock, success)
 			if success {
+				start := time.Now()
 				isError, height := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
+				elapsed := time.Since(start)
+				require.LessOrEqual(t, elapsed.Microseconds(), int64(5000), "IdentifyNodeError took too long", elapsed)
 				require.True(t, isError)
 				require.Equal(t, int64(777), height)
 				isError, height = rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 778 must be less than or equal to the current blockchain height 5555555555551001", chainlib.LATEST)
 				require.True(t, isError)
 				require.Equal(t, int64(778), height)
+				isError, _ = rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 778 must be less than Banana or equal to the current blockchain height 5555555555551002", chainlib.LATEST)
+				require.False(t, isError)
 			} else {
 				isError, _ := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
 				require.False(t, isError)

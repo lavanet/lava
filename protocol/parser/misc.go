@@ -25,6 +25,18 @@ func isDigitOrLetter(r rune) bool {
 }
 
 func ParseNumberFromPattern(pattern string, input string) (fitsPattern bool, parsedHeight int64) {
+	if len(pattern) > 0 {
+		percentIndex := strings.Index(pattern, "%")
+		if percentIndex == -1 {
+			return false, 0
+		}
+		if pattern[:percentIndex] != input[:percentIndex] {
+			return false, 0
+		}
+	} else {
+		// too short to be a pattern
+		return false, 0
+	}
 	dmp := diffmatchpatch.New()
 	nextOneFormat := ""
 	diffs := dmp.DiffMain(pattern, CapStringLen(input), false)
