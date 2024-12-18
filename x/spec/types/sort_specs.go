@@ -8,15 +8,6 @@ import (
 // Returns a sorted list of specs where specs with no imports come first,
 // followed by specs that import from already processed specs
 func SortSpecsByHierarchy(specs []Spec) ([]Spec, error) {
-	// Create a map of spec index to its imports
-	importMap := make(map[string][]string)
-	specMap := make(map[string]Spec)
-
-	for _, spec := range specs {
-		importMap[spec.Index] = spec.Imports
-		specMap[spec.Index] = spec
-	}
-
 	// Create a list to store sorted specs
 	sorted := make([]Spec, 0, len(specs))
 
