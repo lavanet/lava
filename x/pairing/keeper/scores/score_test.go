@@ -42,7 +42,7 @@ func TestTotalScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			totalScore, sloitIndexScores, err := CalculateTotalScoresForGroup(tt.scores, tt.groupIndexes)
 			require.NoError(t, err)
-			calculatedScore := math.ZeroUint()
+			calculatedScore := math.LegacyZeroDec()
 			for _, slotIndexScore := range sloitIndexScores {
 				calculatedScore = calculatedScore.Add(slotIndexScore)
 			}
@@ -59,8 +59,8 @@ func generateScores(count int, slotFilterIndex int) []*PairingScore {
 	for i := 0; i < count; i++ {
 		pairingScore := &PairingScore{
 			Provider:        nil,
-			Score:           math.ZeroUint().AddUint64(100),
-			ScoreComponents: map[string]math.Uint{},
+			Score:           math.LegacyNewDec(100),
+			ScoreComponents: map[string]math.LegacyDec{},
 		}
 		if slotFilterIndex >= 0 {
 			pairingScore.SlotFiltering = map[int]struct{}{slotFilterIndex: {}}
@@ -75,8 +75,8 @@ func generateScoresWithRandomFilter(count int) []*PairingScore {
 	for i := 0; i < count; i++ {
 		pairingScore := &PairingScore{
 			Provider:        nil,
-			Score:           math.ZeroUint().AddUint64(100),
-			ScoreComponents: map[string]math.Uint{},
+			Score:           math.LegacyNewDec(100),
+			ScoreComponents: map[string]math.LegacyDec{},
 		}
 		pairingScore.SlotFiltering = map[int]struct{}{rand.Int(): {}}
 		ret = append(ret, pairingScore)

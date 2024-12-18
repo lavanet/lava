@@ -47,10 +47,9 @@ NODE="${NODE:-tcp://lava-node:26657}"
 
 lavad config node $NODE
 (
-cd /lava/cookbook/specs/
-lavad tx gov submit-legacy-proposal spec-add \
-  ./ibc.json,./tendermint.json,./cosmoswasm.json,./cosmossdk.json,./cosmossdk_45.json,./cosmossdk_full.json,./ethermint.json,./ethereum.json,./cosmoshub.json,./lava.json \
-  --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+cd /lava/specs/mainnet-1/specs/
+specs=$(get_base_specs)
+lavad tx gov submit-legacy-proposal spec-add $specs,./cosmoshub.json,./lava.json --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 )
 vote_yes_on_all_pending_proposals
 

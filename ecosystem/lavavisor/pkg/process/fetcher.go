@@ -315,7 +315,7 @@ func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, 
 	}
 
 	stringGoVersion := string(goVersion)
-	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.20.5 linux/amd64
+	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.23 linux/amd64
 	if len(splitGoVersion) < 3 {
 		return "", utils.LavaFormatError("[Lavavisor] Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
 	}
@@ -410,7 +410,7 @@ func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string,
 func (pbf *ProtocolBinaryFetcher) VerifyGoInstallation() (string, error) {
 	goCommand := "go"
 	emptyGoCommand := ""
-	expectedGeVersion := "1.20.5"
+	expectedGeVersion := "1.23"
 	homePath, err := GetHomePath()
 	if err != nil {
 		return emptyGoCommand, err

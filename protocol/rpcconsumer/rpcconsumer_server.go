@@ -30,6 +30,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/protocol/parser"
 	"github.com/lavanet/lava/v4/protocol/performance"
+	"github.com/lavanet/lava/v4/protocol/statetracker"
 	"github.com/lavanet/lava/v4/protocol/upgrade"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/protocopy"
@@ -990,6 +991,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		utils.LavaFormatTrace("Sending relay to provider",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
+			utils.LogAttr("providerAddress", providerPublicAddress),
+			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
+			utils.LogAttr("seenBlock", relayResult.Request.RelayData.SeenBlock),
+			utils.LogAttr("extensions", relayResult.Request.RelayData.Extensions),
 		)
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
@@ -1267,6 +1272,9 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	if statetracker.DisableDR {
+		return nil
+	}
 	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(protocolMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
 	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
