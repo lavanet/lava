@@ -3,7 +3,8 @@ name: Spec Tests
 on:
   pull_request:
     paths:
-      - 'mainnet-1/specs/*.json'  
+      - "mainnet-1/specs/*.json"
+      - "testnet-2/specs/*.json"
   # Optionally allow manual triggers
   workflow_dispatch:
 
@@ -17,19 +18,22 @@ jobs:
       - name: Checkout Lava Repository
         uses: actions/checkout@v4
         with:
-          repository: lavanet/lava 
+          repository: lavanet/lava
           path: lava
-          
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
       - name: Copy specs to lava
         run: |
-          rm -rf lava/cookbook/specs
-          cp -r $GITHUB_WORKSPACE/mainnet-1/specs lava/cookbook/specs
+          rm -rf lava/specs
+          mkdir -p lava/specs/mainnet-1
+          mkdir -p lava/specs/testnet-2
+          cp -r $GITHUB_WORKSPACE/mainnet-1/specs lava/specs/mainnet-1/specs
+          cp -r $GITHUB_WORKSPACE/testnet-2/specs lava/specs/testnet-2/specs
 
       - name: Run Tests
         working-directory: lava/x/spec/keeper
-        run: go test -v -run TestCookbookSpecs
+        run: go test -v -run TestSpecs

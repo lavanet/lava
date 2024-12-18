@@ -1,35 +1,35 @@
 {
     "proposal": {
-        "title": "Add Specs: Solana",
-        "description": "Adding new specification support for relaying Solana data on Lava",
+        "title": "Add Specs: BEACON",
+        "description": "Adding new specification support for relaying Beacon Chain data on Lava",
         "specs": [
             {
-                "index": "SOLANA",
-                "name": "solana main net",
+                "index": "ETHBEACON",
+                "name": "ethereum beacon mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 400,
-                "allowed_block_lag_for_qos_sync": 25,
+                "average_block_time": 6000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "jsonrpc",
+                            "api_interface": "rest",
                             "internal_path": "",
-                            "type": "POST",
+                            "type": "GET",
                             "add_on": ""
                         },
                         "apis": [
                             {
-                                "name": "getAccountInfo",
+                                "name": "/eth/v1/beacon/genesis",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -47,7 +47,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getBalance",
+                                "name": "/eth/v1/beacon/states/{state_id}/root",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -65,25 +65,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getBlock",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 30,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getBlockHeight",
+                                "name": "/eth/v1/beacon/states/{state_id}/fork",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -101,7 +83,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getBlockProduction",
+                                "name": "/eth/v1/beacon/states/{state_id}/finality_checkpoints",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -119,43 +101,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getBlockCommitment",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getBlocks",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getBlocksWithLimit",
+                                "name": "/eth/v1/beacon/states/{state_id}/validators",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -173,25 +119,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getBlockTime",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getClusterNodes",
+                                "name": "/eth/v1/beacon/states/{state_id}/validators/{validator_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -209,7 +137,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getEpochInfo",
+                                "name": "/eth/v1/beacon/states/{state_id}/validator_balances",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -227,7 +155,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getEpochSchedule",
+                                "name": "/eth/v1/beacon/states/{state_id}/committees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -245,7 +173,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getFeeForMessage",
+                                "name": "/eth/v1/beacon/states/{state_id}/sync_committees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -263,7 +191,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getFirstAvailableBlock",
+                                "name": "/eth/v1/beacon/states/{state_id}/rando",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -281,7 +209,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getGenesisHash",
+                                "name": "/eth/v1/beacon/headers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -299,7 +227,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getHealth",
+                                "name": "/eth/v1/beacon/headers/{block_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -317,7 +245,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getHighestSnapshotSlot",
+                                "name": "/eth/v2/beacon/blocks/{block_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -335,7 +263,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getIdentity",
+                                "name": "/eth/v1/beacon/blocks/{block_id}/root",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -353,7 +281,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getInflationGovernor",
+                                "name": "/eth/v1/beacon/blocks/{block_id}/attestations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -371,7 +299,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getInflationRate",
+                                "name": "/eth/v1/beacon/blob_sidecars/{block_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -389,7 +317,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getInflationReward",
+                                "name": "/eth/v1/beacon/deposit_snapshot",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -407,7 +335,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getLargestAccounts",
+                                "name": "/eth/v1/beacon/rewards/blocks/{block_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -425,7 +353,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getLatestBlockhash",
+                                "name": "/eth/v1/beacon/blinded_blocks/{block_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -443,7 +371,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getLeaderSchedule",
+                                "name": "/eth/v1/beacon/light_client/bootstrap/{block_root}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -461,7 +389,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getMaxRetransmitSlot",
+                                "name": "/eth/v1/beacon/light_client/updates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -479,7 +407,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getMaxShredInsertSlot",
+                                "name": "/eth/v1/beacon/light_client/finality_update",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -497,7 +425,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getMinimumBalanceForRentExemption",
+                                "name": "/eth/v1/beacon/light_client/optimistic_update",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -515,421 +443,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getMultipleAccounts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getProgramAccounts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getRecentPerformanceSamples",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getRecentPrioritizationFees",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSignaturesForAddress",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSignatureStatuses",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSlot",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSlotLeader",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSlotLeaders",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getStakeMinimumDelegation",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getSupply",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTokenAccountBalance",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTokenAccountsByDelegate",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTokenAccountsByOwner",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTokenLargestAccounts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTokenSupply",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTransaction",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getTransactionCount",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getVersion",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "getVoteAccounts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "isBlockhashValid",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "minimumLedgerSlot",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "requestAirdrop",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "sendTransaction",
+                                "name": "/eth/v1/beacon/pool/attestations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -942,13 +456,84 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 1,
-                                    "hanging_api": true
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "simulateTransaction",
+                                "name": "/eth/v1/beacon/pool/attester_slashings",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/beacon/pool/proposer_slashings",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/beacon/pool/voluntary_exits",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/beacon/pool/bls_to_execution_changes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/builder/states/{state_id}/expected_withdrawals",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -964,411 +549,699 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/config/fork_schedule",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/config/spec",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/config/deposit_contract",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/events",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/validator/duties/proposer/{epoch}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v3/validator/blocks/{slot}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/validator/attestation_data",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/validator/aggregate_attestation",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/validator/sync_committee_contribution",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/identity",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/peers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/peers/{peer_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/peer_count",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/version",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/syncing",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/eth/v1/node/health",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getLatestBlockhash\",\"params\":[{\"commitment\":\"finalized\"}],\"id\":1}",
+                                "function_template": "/eth/v1/beacon/headers/head",
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "context",
-                                        "slot"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                  "parser_arg": [
+                                    "0",
+                                    "data",
+                                    "header",
+                                    "message",
+                                    "slot"
+                                  ],
+                                  "parser_func": "PARSE_CANONICAL"
                                 },
-                                "api_name": "getLatestBlockhash"
-                            },
-                            {
+                                "api_name": "/eth/v1/beacon/headers/head"
+                                },
+                                {
+                                "function_template": "/eth/v1/beacon/headers/%d",
                                 "function_tag": "GET_BLOCK_BY_NUM",
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
                                 "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "blockhash"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "encoding": "base64"
+                                  "parser_arg": [
+                                    "0",
+                                    "data",
+                                    "header",
+                                    "message",
+                                    "slot"
+                                  ],
+                                  "parser_func": "PARSE_CANONICAL"
                                 },
-                                "api_name": "getBlock"
-                            }
+                                "api_name": "/eth/v1/beacon/headers/{block_id}"
+                                }
+
                         ],
                         "verifications": [
                             {
-                                "name": "version",
+                                "name": "genesis",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getVersion\",\"params\":[],\"id\":1}",
+                                    "function_template": "/eth/v1/beacon/genesis",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "solana-core"
+                                            "data",
+                                            "genesis_fork_version"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "getVersion"
+                                    "api_name": "/eth/v1/beacon/genesis"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "0x00000000"
                                     }
                                 ]
                             },
                             {
-                                "name": "tokens-owner-indexed",
-                                "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenAccountsByOwner\",\"params\":[\"4Qkev8aNZcqFNSRhQzwyLMFSsi94jHqE8WNVTJzTP99F\",{\"programId\":\"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA\"},{\"encoding\":\"jsonParsed\"}]}",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "value"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "getTokenAccountsByOwner"
-                                },
-                                "values": [
-                                    {
-                                        "expected_value": "*",
-                                        "severity": "Warning"
+                                "name": "pruning",
+                                "parse_directive": { 
+                                    "function_tag": "GET_BLOCK_BY_NUM"
                                     }
-                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 7140
+                                }
                             }
                         ]
                     },
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws",
+                            "api_interface": "rest",
+                            "internal_path": "",
                             "type": "POST",
                             "add_on": ""
                         },
                         "apis": [
                             {
-                                "name": "accountSubscribe",
+                                "name": "/eth/v1/beacon/blocks",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "accountUnsubscribe",
+                                "name": "/eth/v1/beacon/blinded_blocks",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "blockSubscribe",
+                                "name": "/eth/v1/beacon/pool/attestations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "blockUnsubscribe",
+                                "name": "/eth/v1/beacon/pool/attester_slashings",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "logsSubscribe",
+                                "name": "/eth/v1/beacon/pool/proposer_slashings",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "logsUnsubscribe",
+                                "name": "/eth/v1/beacon/pool/sync_committees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "programSubscribe",
+                                "name": "/eth/v1/beacon/pool/voluntary_exits",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "programUnsubscribe",
+                                "name": "/eth/v1/validator/duties/attester/{epoch}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "rootSubscribe",
+                                "name": "/eth/v1/validator/duties/sync/{epoch}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "rootUnsubscribe",
+                                "name": "/eth/v1/validator/aggregate_and_proofs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "signatureSubscribe",
+                                "name": "/eth/v1/validator/beacon_committee_subscriptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "signatureUnsubscribe",
+                                "name": "/eth/v1/validator/sync_committee_subscriptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "slotSubscribe",
+                                "name": "/eth/v1/validator/beacon_committee_selections",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "slotUnsubscribe",
+                                "name": "/eth/v1/validator/sync_committee_selections",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "slotsUpdatesSubscribe",
+                                "name": "/eth/v1/validator/contribution_and_proofs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "slotsUpdatesUnsubscribe",
+                                "name": "/eth/v1/validator/prepare_beacon_proposer",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "voteSubscribe",
+                                "name": "/eth/v1/validator/register_validator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "voteUnsubscribe",
+                                "name": "/eth/v1/validator/liveness/{epoch}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 1000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -1376,124 +1249,116 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [],
+                        "extensions": [
                             {
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_func": "DEFAULT"
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 7140
                                 }
-                            },
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": "debug"
+                        },
+                        "apis": [
                             {
-                                "function_template": "%d",
-                                "function_tag": "GET_BLOCK_BY_NUM",
-                                "result_parsing": {
+                                "name": "/eth/v2/debug/beacon/states/{state_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
                                     "parser_func": "DEFAULT"
-                                }
+                                },
+                                "compute_units": 200,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "accountSubscribe"
+                                "name": "/eth/v2/debug/beacon/heads",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 200,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"accountUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "accountUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "blockSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"blockUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "blockUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "logsSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"logsUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "logsUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "programSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"programUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "programUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "rootSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"rootUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "rootUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "signatureSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"signatureUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "signatureUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "slotSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "slotUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "slotsUpdatesSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"slotsUpdatesUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "slotsUpdatesUnsubscribe"
-                            },
-                            {
-                                "function_tag": "SUBSCRIBE",
-                                "api_name": "voteSubscribe"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"voteUnsubscribe\",\"params\":[%d],\"id\":1}",
-                                "function_tag": "UNSUBSCRIBE",
-                                "api_name": "voteUnsubscribe"
+                                "name": "/eth/v1/debug/fork_choice",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 200,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
-                        "verifications": []
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "parse_directive": {
+                                    "function_template": "/eth/v2/debug/beacon/states/genesis",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "data",
+                                            "slot"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/eth/v2/debug/beacon/states/{state_id}"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "0"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 7140
+                                }
+                            }
+                        ]
                     }
                 ]
-            },
-            {
-                "index": "SOLANAT",
-                "name": "solana test net",
-                "enabled": true,
-                "imports": [
-                    "SOLANA"
-                ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 31,
-                "blocks_in_finalization_proof": 10,
-                "average_block_time": 600,
-                "allowed_block_lag_for_qos_sync": 17,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
-                }
             }
         ]
     },

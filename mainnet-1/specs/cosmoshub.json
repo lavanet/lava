@@ -119,7 +119,217 @@
               },
               {
                 "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_chain_id",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/opted_in_validators/{chain_id}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_chain_start_proposals",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_chain_stop_proposals",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_chains",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_genesis/{chain_id}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_validators/{chain_id}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
                 "name": "/interchain_security/ccv/provider/params",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/proposed_consumer_chains",
                 "compute_units": 10,
                 "extra_compute_units": 0,
                 "category": {
@@ -162,6 +372,69 @@
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/throttle_state",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/validator_consumer_addr",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "/interchain_security/ccv/provider/validator_provider_addr",
                 "compute_units": 10,
                 "extra_compute_units": 0,
                 "category": {
@@ -288,258 +561,6 @@
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits/{channel_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/address_pairs/{consumer_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/blocks_until_next_epoch",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_chain/{consumer_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/opted_in_validators/{consumer_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_chains/{phase}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_genesis/{consumer_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_id/{client_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_validators/{consumer_id}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/validator_consumer_addr/{consumer_id}/{provider_address}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "/interchain_security/ccv/provider/validator_provider_addr/{consumer_id}/{consumer_address}",
                 "compute_units": 10,
                 "extra_compute_units": 0,
                 "category": {
@@ -685,7 +706,70 @@
               },
               {
                 "enabled": true,
+                "name": "interchain_security.ccv.provider.v1.Query/QueryAllPairsValConAddrByConsumerChainID",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStarts",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStops",
                 "compute_units": 10,
                 "extra_compute_units": 0,
                 "category": {
@@ -790,7 +874,49 @@
               },
               {
                 "enabled": true,
+                "name": "interchain_security.ccv.provider.v1.Query/QueryOldestUnconfirmedVsc",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryParams",
+                "compute_units": 10,
+                "extra_compute_units": 0,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0,
+                  "hanging_api": false
+                },
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT",
+                  "default_value": "",
+                  "encoding": ""
+                }
+              },
+              {
+                "enabled": true,
+                "name": "interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs",
                 "compute_units": 10,
                 "extra_compute_units": 0,
                 "category": {
@@ -1039,90 +1165,6 @@
                   "default_value": "",
                   "encoding": ""
                 }
-              },
-              {
-                "enabled": true,
-                "name": "interchain_security.ccv.provider.v1.Query/QueryAllPairsValConsAddrByConsumer",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChain",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
-              },
-              {
-                "enabled": true,
-                "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId",
-                "compute_units": 10,
-                "extra_compute_units": 0,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0,
-                  "hanging_api": false
-                },
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT",
-                  "default_value": "",
-                  "encoding": ""
-                }
               }
             ],
             "headers": [],
@@ -1241,7 +1283,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "provider"
+                    "expected_value": "theta-testnet-001"
                   }
                 ]
               }
@@ -1263,7 +1305,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "provider"
+                    "expected_value": "theta-testnet-001"
                   }
                 ]
               }
@@ -1283,7 +1325,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "provider"
+                    "expected_value": "theta-testnet-001"
                   }
                 ]
               }
