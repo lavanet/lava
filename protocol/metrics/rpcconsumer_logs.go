@@ -43,7 +43,11 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}, nil // newRelicApplication is nil safe to use
+		return &RPCConsumerLogs{
+			consumerMetricsManager:     consumerMetricsManager,
+			consumerRelayServerClient:  consumerRelayServerClient,
+			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
+		}, nil // newRelicApplication is nil safe to use
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
