@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -66,7 +67,7 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 
 	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
+		return nil, fmt.Errorf("Failed to create the first connection: %w, url: %s", err, nodeUrl.UrlStr())
 	}
 
 	connector.addClient(rpcClient)

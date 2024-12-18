@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -563,6 +564,17 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
 	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
 	if err != nil {
+		isWs, parseErr := IsUrlWebSocket(nodeUrl.Url)
+		if parseErr == nil && isWs {
+			newUrl := strings.TrimSuffix(nodeUrl.Url, "/") + "/ws"
+			utils.LavaFormatWarning("Failed creating connector for ws, trying to create with /ws path", err, utils.LogAttr("url", nodeUrl.UrlStr()), utils.LogAttr("newUrl", newUrl))
+			nodeUrl.Url = newUrl
+			conn, newConnErr := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+			if newConnErr == nil {
+				cp.conn = conn
+				return nil
+			}
+		}
 		return err
 	}
 
