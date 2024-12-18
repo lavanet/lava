@@ -13,11 +13,16 @@ func SortSpecsByHierarchy(specs []Spec) ([]Spec, error) {
 
 	// Create a set to track processed specs
 	processed := make(map[string]bool)
+	// Create a set to track all specs
+	specsExists := make(map[string]bool)
+	for _, spec := range specs {
+		specsExists[spec.Index] = true
+	}
 
 	// Helper function to check if all imports are processed
 	canProcess := func(imports []string) bool {
 		for _, imp := range imports {
-			if !processed[imp] {
+			if !processed[imp] && specsExists[imp] {
 				return false
 			}
 		}
