@@ -67,7 +67,7 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 
 	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create the first connection: %w, url: %s", err, nodeUrl.UrlStr())
+		return nil, fmt.Errorf("failed to create the first connection: %w, url: %s", err, nodeUrl.UrlStr())
 	}
 
 	connector.addClient(rpcClient)
