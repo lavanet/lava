@@ -61,7 +61,11 @@ func findFreePort() (int, error) {
 	}
 	defer l.Close()
 
-	return l.Addr().(*net.TCPAddr).Port, nil
+	addr, ok := l.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, fmt.Errorf("failed to get TCP address")
+	}
+	return addr.Port, nil
 }
 
 // DefaultConfig will initialize config for the network with custom application,
