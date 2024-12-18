@@ -172,41 +172,62 @@ echo "---------------------------------------------"
 
 get_base_specs() {
     local priority_specs=(
-        "./specs/mainnet-1/specs/ibc.json"
-        "./specs/mainnet-1/specs/cosmoswasm.json"
-        "./specs/mainnet-1/specs/tendermint.json"
-        "./specs/mainnet-1/specs/cosmossdk.json"
-        "./specs/mainnet-1/specs/cosmossdkv45.json"
-        "./specs/mainnet-1/specs/cosmossdkv50.json"
-        "./specs/mainnet-1/specs/ethermint.json"
-        "./specs/mainnet-1/specs/ethereum.json"
-        "./specs/mainnet-1/specs/solana.json"
+        "specs/mainnet-1/specs/ibc.json"
+        "specs/mainnet-1/specs/cosmoswasm.json"
+        "specs/mainnet-1/specs/tendermint.json"
+        "specs/mainnet-1/specs/cosmossdk.json"
+        "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/mainnet-1/specs/cosmossdkv50.json"
+        "specs/mainnet-1/specs/ethermint.json"
+        "specs/mainnet-1/specs/ethereum.json"
+        "specs/mainnet-1/specs/solana.json"
+        "specs/mainnet-1/specs/aptos.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")
 }
 
 get_all_specs() {
-    local priority_specs=($(get_base_specs)) # Ensure it's an array
+    # Ensure get_base_specs outputs elements correctly split into an array
+    IFS=',' read -r -a priority_specs <<< "$(get_base_specs)" 
+
     local other_specs=()
-    
+
+    # Find all JSON spec files and store them in a temporary file
     find specs/{mainnet-1,testnet-2}/specs -name "*.json" > /tmp/specs_list.txt
-    
+
+    # Process each file from the find command
     while IFS= read -r file; do
         local is_priority=false
+        local is_in_other_specs=false
+
+        # Check if the file is in priority_specs
         for pspec in "${priority_specs[@]}"; do
-            if [[ "./$file" == "$pspec" ]]; then
+            if [[ "$file" == "$pspec" ]]; then
                 is_priority=true
                 break
             fi
         done
-        
+
+        # Check if the file is already in other_specs
         if [[ "$is_priority" == "false" ]]; then
+            for ospec in "${other_specs[@]}"; do
+                if [[ "$file" == "$ospec" ]]; then
+                    is_in_other_specs=true
+                    break
+                fi
+            done
+        fi
+
+        # Add the file to other_specs if it's not already there
+        if [[ "$is_priority" == "false" && "$is_in_other_specs" == "false" ]]; then
             other_specs+=("$file")
         fi
     done < /tmp/specs_list.txt
-    
+
+    # Cleanup temporary file
     rm /tmp/specs_list.txt
-    
+
+    # Combine arrays and output as a comma-separated string
     (IFS=,; echo "${priority_specs[*]},${other_specs[*]}")
 }
