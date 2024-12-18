@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
@@ -47,11 +48,38 @@ func New(t *testing.T, configs ...network.Config) *network.Network {
 	return net
 }
 
+// findFreePort returns an available port number
+func findFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
 // DefaultConfig will initialize config for the network with custom application,
 // genesis and single validator. All other parameters are inherited from cosmos-sdk/testutil/network.DefaultConfig
 func DefaultConfig() network.Config {
 	encoding := app.MakeEncodingConfig()
 	chainID := "chain-" + tmrand.NewRand().Str(6)
+
+	// Find available ports for API and gRPC
+	apiPort, err := findFreePort()
+	if err != nil {
+		panic(err)
+	}
+	grpcPort, err := findFreePort()
+	if err != nil {
+		panic(err)
+	}
+
 	return network.Config{
 		Codec:             encoding.Marshaler,
 		TxConfig:          encoding.TxConfig,
@@ -81,5 +109,7 @@ func DefaultConfig() network.Config {
 		CleanupDir:      true,
 		SigningAlgo:     string(hd.Secp256k1Type),
 		KeyringOptions:  []keyring.Option{},
+		APIAddress:      fmt.Sprintf("tcp://0.0.0.0:%d", apiPort),
+		GRPCAddress:     fmt.Sprintf("0.0.0.0:%d", grpcPort),
 	}
 }
