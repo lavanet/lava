@@ -1671,7 +1671,7 @@ func (rpccs *RPCConsumerServer) ExtensionsSupported(internalPath string, extensi
 
 const (
 	RetryInterval   = 10 * time.Minute   // time for retrying on failure
-	RefreshInterval = 3 * 24 * time.Hour // time for refreshing on success, so if somehting changes lava adapts
+	RefreshInterval = 3 * 24 * time.Hour // time for refreshing on success, so if something changes lava adapts
 )
 
 func (rpccs *RPCConsumerServer) tryExtractNodeData(ctx context.Context) {
@@ -1756,7 +1756,6 @@ func fetchFormattedBlock(ctx context.Context, chainFetcher *chainlib.ChainFetche
 	// re := regexp.MustCompile(fmt.Sprintf(`%s`, regexp.QuoteMeta(formatted)))
 	blockError = re.ReplaceAllString(responseErrorMessage, "$1"+format+"$3")
 	if blockError == responseErrorMessage {
-
 		return "", false
 	}
 	return blockError, true

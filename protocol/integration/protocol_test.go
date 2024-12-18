@@ -2336,7 +2336,6 @@ func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
 				isError, _ := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
 				require.False(t, isError)
 			}
-
 		})
 	}
 }

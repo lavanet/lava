@@ -94,5 +94,4 @@ func TestLongestCommonSubsequenceWithFormat(t *testing.T) {
 			require.Equal(t, play.len, len)
 		})
 	}
-
 }

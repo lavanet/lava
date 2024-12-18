@@ -79,8 +79,8 @@ func (jm TendermintrpcMessage) CheckResponseError(data []byte, httpStatusCode in
 		return false, ""
 	}
 	if result.Error.Data != nil {
-		if result.Error.Data.(string) != "" {
-			return true, result.Error.Message + ",data: " + result.Error.Data.(string)
+		if st, ok := result.Error.Data.(string); ok && st != "" {
+			return true, result.Error.Message + ",data: " + st
 		}
 	}
 	return result.Error.Message != "", result.Error.Message
