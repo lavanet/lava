@@ -171,7 +171,6 @@ echo "---------------------------------------------"
 }
 
 get_base_specs() {
-<<<<<<< HEAD
     local priority_specs=(
         "specs/mainnet-1/specs/ibc.json"
         "specs/mainnet-1/specs/cosmoswasm.json"
@@ -184,9 +183,6 @@ get_base_specs() {
         "specs/mainnet-1/specs/solana.json"
         "specs/mainnet-1/specs/aptos.json"
     )
-=======
-    local priority_specs=()
->>>>>>> 67c7f0b3b... make sort specs onchain
 
     (IFS=,; echo "${priority_specs[*]}")
 }
