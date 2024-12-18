@@ -1725,7 +1725,7 @@ func (rpccs *RPCConsumerServer) ExtractNodeData(ctx context.Context, kind chainl
 	if !success {
 		return false
 	}
-	fetchBlock = fetchBlock - 1
+	fetchBlock-- // we now ask a different block
 	blockError2, success := fetchFormattedBlock(ctx, chainFetcher, fetchBlock)
 	if !success {
 		return false
