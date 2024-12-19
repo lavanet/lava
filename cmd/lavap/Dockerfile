@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.20"
+ARG GO_VERSION="1.23"
+ARG ALPINE_VERSION="3.21"
 ARG RUNNER_IMAGE="gcr.io/distroless/static-debian12:debug"
 ARG BUILD_TAGS="netgo,ledger,muslc"
 
-FROM golang:${GO_VERSION}-alpine3.18 AS builder
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 RUN apk add --no-cache \
     ca-certificates \
@@ -20,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=bind,source=go.sum,target=go.sum \
     --mount=type=bind,source=go.mod,target=go.mod \
     go mod download -x
-    
+
 COPY . .
 
 ARG GIT_VERSION
@@ -43,7 +44,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     /lava/cmd/lavap/main.go
 
 FROM ${RUNNER_IMAGE}
-    
+
 COPY --from=builder /lava/build/lavap /bin/lavap
 
 ENV HOME=/lava
