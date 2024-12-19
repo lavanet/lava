@@ -14,7 +14,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"

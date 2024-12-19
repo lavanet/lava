@@ -12,7 +12,7 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v4/protocol/parser"
 	"github.com/lavanet/lava/v4/utils"

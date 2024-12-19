@@ -3,7 +3,7 @@ package rpcconsumer
 import (
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	common "github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/utils"
 )

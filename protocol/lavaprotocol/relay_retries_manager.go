@@ -3,7 +3,7 @@ package lavaprotocol
 import (
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/utils"
 )
 
