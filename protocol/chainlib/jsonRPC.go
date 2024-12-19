@@ -567,6 +567,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 		isWs, parseErr := IsUrlWebSocket(nodeUrl.Url)
 		if parseErr == nil && isWs {
 			newUrl := strings.TrimSuffix(nodeUrl.Url, "/") + "/ws"
+			originalUrl := nodeUrl.Url
 			utils.LavaFormatWarning("Failed creating connector for ws, trying to create with /ws path", err, utils.LogAttr("url", nodeUrl.UrlStr()), utils.LogAttr("newUrl", newUrl))
 			nodeUrl.Url = newUrl
 			conn, newConnErr := chainproxy.NewConnector(ctx, nConns, nodeUrl)
@@ -574,6 +575,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 				cp.conn = conn
 				return nil
 			}
+			nodeUrl.Url = originalUrl
 		}
 		return err
 	}
