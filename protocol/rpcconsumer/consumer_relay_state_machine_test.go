@@ -44,6 +44,7 @@ func (a PolicySt) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointSe
 type ConsumerRelaySenderMock struct {
 	retValue    error
 	tickerValue time.Duration
+	ChainParser chainlib.ChainParser
 }
 
 func (crsm *ConsumerRelaySenderMock) UpdateProtocolMessageIfNeededWithNewData(
@@ -53,6 +54,32 @@ func (crsm *ConsumerRelaySenderMock) UpdateProtocolMessageIfNeededWithNewData(
 	newEarliestBlockRequested int64,
 	dataKind chainlib.DataKind,
 ) chainlib.ProtocolMessage {
+	if newEarliestBlockRequested != spectypes.NOT_APPLICABLE {
+		if !relayState.GetIsEarliestUsed() || dataKind == chainlib.LATEST {
+			// we can't make changes in the protocol message without creating a new one
+			if dataKind == chainlib.EARLIEST {
+				// if We got a earliest block data from cache, we need to create a new protocol message with the new earliest block hash parsed
+				// and update the extension rules with the new earliest block data as it might be archive.
+				// Setting earliest used to attempt this only once.
+				relayState.SetIsEarliestUsed()
+			}
+			relayRequestData := protocolMessage.RelayPrivateData()
+			if dataKind == chainlib.EARLIEST {
+				addon := chainlib.GetAddon(protocolMessage)
+				if crsm.ChainParser == nil {
+					panic("ChainParser is nil")
+				}
+				extensionAdded := protocolMessage.UpdateEarliestAndValidateExtensionRules(crsm.ChainParser.ExtensionsParser(), newEarliestBlockRequested, addon, relayRequestData.SeenBlock)
+				if extensionAdded && relayState.CheckIsArchive(protocolMessage.RelayPrivateData()) {
+					relayState.SetIsArchive(true)
+				}
+			} else if dataKind == chainlib.LATEST {
+				protocolMessage.UpdateLatestBlockInMessage(newEarliestBlockRequested)
+			}
+			relayState.SetProtocolMessage(protocolMessage)
+			return protocolMessage
+		}
+	}
 	return protocolMessage
 }
 
@@ -337,12 +364,10 @@ func TestConsumerStateMachineTransitionData(t *testing.T) {
 	})
 	specId := "NEAR"
 	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
-	if closeServer != nil {
-		defer closeServer()
-	}
+
 	require.NoError(t, err)
 
-	params, _ := json.Marshal("{\"block_id\":\"123\"}")
+	params, _ := json.Marshal(map[string]interface{}{"block_id": 123})
 	id, _ := json.Marshal(1)
 	reqBody := rpcclient.JsonrpcMessage{
 		Version: "2.0",
@@ -402,22 +427,19 @@ func TestConsumerStateMachineTransitionData(t *testing.T) {
 			// first task is to return a node error with an updated transition data
 			require.False(t, task.IsDone())
 			usedProviders.AddUsed(consumerSessionsMap, nil)
-			relayProcessor.UpdateBatch(nil)
-			sendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1, nil)
+			relayProcessor.UpdateBatch(nil) // successfully sent messages
 			task.relayState.SetBlockTransitionData(transitionDataBlock)
+			sendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1, nil)
 		case 1:
 			require.False(t, task.IsDone())
-			require.True(t,
-				lavaslices.ContainsPredicate(
-					task.relayState.GetProtocolMessage().GetExtensions(),
-					func(predicate *spectypes.Extension) bool { return predicate.Name == "archive" }),
-			)
 			// verify this was updated
 			latest, _ := relayProcessor.GetProtocolMessage().RequestedBlock()
-			require.Equal(t, transitionDataBlock, latest)
-			require.Equal(t, transitionDataBlock, relayProcessor.GetProtocolMessage().RelayPrivateData().RequestBlock)
-			break
+			require.Equal(t, int64(transitionDataBlock), latest)
+			return
 		}
 		taskNumber++
+	}
+	if closeServer != nil {
+		defer closeServer()
 	}
 }

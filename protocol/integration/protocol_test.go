@@ -300,15 +300,16 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 }
 
 type rpcProviderOptions struct {
-	consumerAddress    string
-	specId             string
-	apiInterface       string
-	listenAddress      string
-	account            sigs.Account
-	lavaChainID        string
-	addons             []string
-	providerUniqueId   string
-	cacheListenAddress string
+	consumerAddress         string
+	specId                  string
+	apiInterface            string
+	listenAddress           string
+	account                 sigs.Account
+	lavaChainID             string
+	addons                  []string
+	providerUniqueId        string
+	cacheListenAddress      string
+	providerSideInterceptor func()
 }
 
 func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {

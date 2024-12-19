@@ -141,7 +141,8 @@ func (bcnc baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.Gener
 
 func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64) (modifiedOnLatestReq bool) {
 	requestedBlock, _ := bcnc.RequestedBlock()
-	if requestedBlock > latestBlock || latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
+	// we disallow setting latest block to 0 or one of the wildcards as an override
+	if requestedBlock > latestBlock || latestBlock <= 0 {
 		return false
 	}
 	bcnc.latestRequestedBlock = latestBlock

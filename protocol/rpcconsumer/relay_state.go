@@ -117,11 +117,12 @@ func NewRelayState(ctx context.Context, protocolMessage chainlib.ProtocolMessage
 		if transitionData.block < earliest {
 			// allows overwriting earliest requested block
 			rs.archiveStatus.isEarliestUsed.Store(false)
-			relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.EARLIEST)
+			protocolMessage = relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.EARLIEST)
 		}
 		if latest > 0 && transitionData.block > latest {
-			relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.LATEST)
+			protocolMessage = relayParser.UpdateProtocolMessageIfNeededWithNewData(ctx, rs, protocolMessage, transitionData.block, chainlib.LATEST)
 		}
+		rs.protocolMessage = protocolMessage
 	}
 	return rs
 }
