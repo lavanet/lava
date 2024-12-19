@@ -23,11 +23,11 @@ type RelayRetriesManagerInf interface {
 // On node errors we try to send a relay again.
 // If this relay failed all retries we ban it from retries to avoid spam and save resources
 type RelayRetriesManager struct {
-	cache *ristretto.Cache
+	cache *ristretto.Cache[string, any]
 }
 
 func NewRelayRetriesManager() *RelayRetriesManager {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for consumer consistency", err)
 	}

@@ -332,13 +332,13 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache := s.CacheServer.finalizedCache
 		if relayCacheSet.IsNodeError {
 			nodeErrorExpiration := lavaslices.Min([]time.Duration{time.Duration(relayCacheSet.AverageBlockTime), s.CacheServer.ExpirationNodeErrors})
-			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), nodeErrorExpiration)
+			cache.SetWithTTL(string(cacheKey), cacheValue, cacheValue.Cost(), nodeErrorExpiration)
 		} else {
-			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
+			cache.SetWithTTL(string(cacheKey), cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
 		}
 	} else {
 		cache := s.CacheServer.tempCache
-		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(time.Duration(relayCacheSet.AverageBlockTime), relayCacheSet.BlockHash))
+		cache.SetWithTTL(string(cacheKey), cacheValue, cacheValue.Cost(), s.getExpirationForChain(time.Duration(relayCacheSet.AverageBlockTime), relayCacheSet.BlockHash))
 	}
 	// Setting the seen block for shared state.
 	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainId, relayCacheSet.SharedStateId, latestKnownBlock)
@@ -417,7 +417,7 @@ func (s *RelayerCacheServer) getExpirationForChain(averageBlockTimeForChain time
 	return s.CacheServer.ExpirationForChain(averageBlockTimeForChain)
 }
 
-func getNonExpiredFromCache(c *ristretto.Cache, key interface{}) (value interface{}, found bool) {
+func getNonExpiredFromCache(c *ristretto.Cache[string, any], key string) (value interface{}, found bool) {
 	value, found = c.Get(key)
 	if found {
 		return value, true
@@ -429,25 +429,25 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey []byte) (r
 	inner := func(finalized bool, cacheKey []byte) (interface{}, string, bool) {
 		if finalized {
 			cache := s.CacheServer.finalizedCache
-			value, found := getNonExpiredFromCache(cache, cacheKey)
+			value, found := getNonExpiredFromCache(cache, string(cacheKey))
 			if found {
 				return value, "finalized_cache", true
 			}
 			// if a key is finalized still doesn't mean it wasn't set when unfinalized
 			cache = s.CacheServer.tempCache
-			value, found = getNonExpiredFromCache(cache, cacheKey)
+			value, found = getNonExpiredFromCache(cache, string(cacheKey))
 			if found {
 				return value, "temp_cache", true
 			}
 		} else {
 			// if something isn't finalized now it was never finalized, but sometimes when we don't have information we try to get a non finalized entry when in fact its finalized
 			cache := s.CacheServer.tempCache
-			value, found := getNonExpiredFromCache(cache, cacheKey)
+			value, found := getNonExpiredFromCache(cache, string(cacheKey))
 			if found {
 				return value, "temp_cache", true
 			}
 			cache = s.CacheServer.finalizedCache
-			value, found = getNonExpiredFromCache(cache, cacheKey)
+			value, found = getNonExpiredFromCache(cache, string(cacheKey))
 			if found {
 				return value, "finalized_cache", true
 			}

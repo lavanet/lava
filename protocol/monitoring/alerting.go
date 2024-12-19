@@ -72,7 +72,7 @@ type Alerting struct {
 	allowedTimeGapVsReference     time.Duration
 	maxProviderLatency            time.Duration
 	sameAlertInterval             time.Duration
-	AlertsCache                   *ristretto.Cache
+	AlertsCache                   *ristretto.Cache[string, any]
 	activeAlerts                  map[AlertEntry]AlertCount // count how many occurrences of an alert
 	healthy                       map[LavaEntity]struct{}
 	unhealthy                     map[LavaEntity]struct{}
@@ -114,7 +114,7 @@ func NewAlerting(options AlertingOptions) *Alerting {
 		} else {
 			al.sameAlertInterval = defaultSameAlertInterval
 		}
-		cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 		if err != nil {
 			utils.LavaFormatFatal("failed setting up cache for queries", err)
 		}
