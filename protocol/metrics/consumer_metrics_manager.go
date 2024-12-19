@@ -169,7 +169,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	latestBlockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_block",
 		Help: "The latest block reported by provider",
-	}, []string{"spec", "provider_address", "apiInterface"})
+	}, []string{"spec", "provider_address", "apiInterface", "provider_endpoint"})
 
 	latestProviderRelay := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_relay_time",
@@ -449,7 +449,7 @@ func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, ap
 	return header + "_" + chainId + "_" + apiInterface
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
 	if pme == nil {
 		return
 	}
@@ -509,7 +509,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	setMetricsForQos(qos, pme.qosMetric, apiInterface)
 	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "") // it's one for all of them
 
-	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface).Set(float64(latestBlock))
+	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface, providerEndpoint).Set(float64(latestBlock))
 }
 
 func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
