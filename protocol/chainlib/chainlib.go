@@ -83,12 +83,14 @@ type ChainParser interface {
 	ExtensionsParser() *extensionslib.ExtensionParser
 	ExtractDataFromRequest(*http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error)
 	SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error)
+	SetBlockErrorPattern(string, DataKind)
+	IdentifyNodeError(message string, kind ...DataKind) (isBlockError bool, blockHeight int64)
 }
 
 type ChainMessage interface {
 	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
 	RequestedBlock() (latest int64, earliest int64)
-	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
+	UpdateLatestBlockInMessage(latestBlock int64) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	GetExtensions() []*spectypes.Extension
 	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
@@ -113,6 +115,7 @@ type ChainMessageForSend interface {
 	GetApiCollection() *spectypes.ApiCollection
 	GetParseDirective() *spectypes.ParseDirective
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+	GetOriginal() (path string, data []byte)
 }
 
 type HealthReporter interface {

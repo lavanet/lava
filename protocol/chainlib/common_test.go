@@ -323,7 +323,7 @@ func (m *mockRPCInput) GetResult() json.RawMessage {
 	return nil
 }
 
-func (m *mockRPCInput) UpdateLatestBlockInMessage(uint64, bool) bool {
+func (m *mockRPCInput) UpdateLatestBlockInMessage(uint64) bool {
 	return false
 }
 

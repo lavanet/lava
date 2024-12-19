@@ -44,6 +44,14 @@ type ConsumerRelaySender interface {
 		consumerIp string,
 		metadata []pairingtypes.Metadata,
 	) (protocolMessage chainlib.ProtocolMessage, err error)
+	GetEndpoint() *lavasession.RPCEndpoint
+	UpdateProtocolMessageIfNeededWithNewData(
+		ctx context.Context,
+		relayState *RelayState,
+		protocolMessage chainlib.ProtocolMessage,
+		newEarliestBlockRequested int64,
+		dataKind chainlib.DataKind,
+	) chainlib.ProtocolMessage
 }
 
 type tickerMetricSetterInf interface {
@@ -133,9 +141,9 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 	batchNumber := crsm.usedProviders.BatchNumber()
 	var nextState *RelayState
 	if relayState == nil { // initial state
-		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{})
+		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{}, TransitionData{})
 	} else {
-		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus.Copy())
+		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus.Copy(), relayState.GetTransitionData())
 		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
 	}
 	crsm.appendRelayState(nextState)
