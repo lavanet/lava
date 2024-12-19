@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v4/app"
 	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v4/ecosystem/cache"
+	"github.com/lavanet/lava/v4/ecosystem/cache_populator"
 	"github.com/lavanet/lava/v4/protocol/badgegenerator"
 	"github.com/lavanet/lava/v4/protocol/badgeserver"
 	"github.com/lavanet/lava/v4/protocol/loadtest"
@@ -77,6 +78,7 @@ func main() {
 	testCmd.AddCommand(loadtest.CreateTestLoadCobraCommand())
 
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
+	rootCmd.AddCommand(cache_populator.CreateCachePopulatorCommand())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
 		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
