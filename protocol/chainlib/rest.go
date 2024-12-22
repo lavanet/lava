@@ -578,10 +578,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		},
 	}
 
-	// checking if rest reply data is in json format
-	err = rcp.HandleJSONFormatError(reply.RelayReply.Data)
-	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.RelayReply.Data)})
+	if strings.Split(nodeMessage.Path, "?")[0] != "/" {
+		// // checking if rest reply data is in json format
+		err = rcp.HandleJSONFormatError(reply.RelayReply.Data)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.RelayReply.Data)})
+		}
 	}
 
 	return reply, "", nil, nil
