@@ -309,7 +309,7 @@ type rpcProviderOptions struct {
 	addons                  []string
 	providerUniqueId        string
 	cacheListenAddress      string
-	providerSideInterceptor func()
+	providerSideInterceptor func(input interface{}) // this function will be called on each relay request
 }
 
 func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
@@ -404,8 +404,14 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, numberOfRetriesOnNodeErrorsProviderSide)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
-	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
-	require.NoError(t, err)
+	if rpcProviderOptions.providerSideInterceptor != nil {
+		relayReceiverInterceptor := rpcprovider.NewRelayReceiverInterceptor(rpcProviderServer, rpcProviderOptions.providerSideInterceptor)
+		err = listener.RegisterReceiver(relayReceiverInterceptor, rpcProviderEndpoint)
+		require.NoError(t, err)
+	} else {
+		err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+		require.NoError(t, err)
+	}
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
