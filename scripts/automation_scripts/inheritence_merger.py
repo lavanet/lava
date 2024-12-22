@@ -4,7 +4,7 @@ import os
 ## Checks if a spec inherits another spec (recursively) and creates an array that includes all supported rest api calls.
 
 ## Constants (Do not edit)
-specs_dir = os.getcwd() + "/cookbook/specs/"
+specs_dir = os.getcwd() + "/specs/mainnet-1/specs/"
 rest_api_list = []
 
 def get_inherited_rest_apis(importName):

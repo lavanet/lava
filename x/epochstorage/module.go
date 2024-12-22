@@ -130,18 +130,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	migrator := keeper.NewMigrator(am.keeper)
 
-	// register v5 -> v6 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.Migrate5to6); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v6: %w", types.ModuleName, err))
-	}
-
-	// register v6 -> v7 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.Migrate6to7); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v7: %w", types.ModuleName, err))
-	}
-
 	// register v7 -> v8 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 7, migrator.Migrate7to8); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow

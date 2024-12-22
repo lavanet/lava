@@ -8,7 +8,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
@@ -46,8 +46,8 @@ type ConcurrentBlockStore struct {
 }
 
 type cacheInf interface {
-	Get(key interface{}) (interface{}, bool)
-	Set(key, value interface{}, cost int64) bool
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, cost int64) bool
 }
 
 type consumerOptimizerQoSClientInf interface {
@@ -57,7 +57,7 @@ type consumerOptimizerQoSClientInf interface {
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                cacheInf
-	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
+	providerRelayStats              *ristretto.Cache[string, any] // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
@@ -537,11 +537,11 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 }
 
 func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	relayCache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}

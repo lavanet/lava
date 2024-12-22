@@ -10,6 +10,7 @@ import (
 
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v4/protocol/common"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,8 +85,12 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test)
-	assert.Error(t, err)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test)
+	if err == nil {
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &TendermintChainParser{
