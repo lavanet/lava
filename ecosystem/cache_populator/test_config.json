@@ -1,0 +1,22 @@
+[
+    {
+      "server_address": "http://localhost:3360",
+      "interval": "700ms",
+      "context_timeout": "5s",
+      "requests": [
+        {
+          "type": "GET",
+          "body": "",
+          "path": "/status"
+        },
+        {
+          "type": "POST",
+          "body": "{\"jsonrpc\":\"2.0\", \"id\": 1, \"method\":\"status\",\"params\": {}}",
+          "path": "",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        }
+    ]
+  }
+]
