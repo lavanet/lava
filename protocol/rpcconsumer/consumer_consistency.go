@@ -3,7 +3,7 @@ package rpcconsumer
 import (
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	common "github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/utils"
 )
@@ -16,7 +16,7 @@ const (
 )
 
 type ConsumerConsistency struct {
-	cache  *ristretto.Cache
+	cache  *ristretto.Cache[string, any]
 	specId string
 }
 
@@ -72,7 +72,7 @@ func (cc *ConsumerConsistency) GetSeenBlock(userData common.UserData) (int64, bo
 }
 
 func NewConsumerConsistency(specId string) *ConsumerConsistency {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for consumer consistency", err)
 	}
