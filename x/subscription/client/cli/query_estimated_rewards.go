@@ -132,8 +132,9 @@ func CmdPoolRewards() *cobra.Command {
 					}
 				}
 				delegations := resDel.GetDelegations()
+				delLen := len(delegations)
 				for idx2, del := range delegations {
-					fmt.Printf("\rProgress: %d/%d %d/%d", idx+1, len(addresses), idx2+1, len(delegations))
+					fmt.Printf("\rProgress: %d/%d %d/%d", idx+1, len(addresses), idx2+1, delLen)
 					delegatorName := del.Delegator
 					req := types.QueryEstimatedProviderRewardsRequest{Provider: provider, AmountDelegator: delegatorName}
 					res, err := runEstimateWithRetries(req)
