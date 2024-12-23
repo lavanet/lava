@@ -270,6 +270,10 @@ func (ss *ScoreStore) GetConfig() Config {
 }
 
 func ConvertToDec(val float64) sdk.Dec {
+	if val > 0 && val < math.Pow(10, -float64(DecPrecision)) {
+		// If value is positive but would round to zero, return smallest possible value
+		return sdk.NewDecWithPrec(1, DecPrecision)
+	}
 	intScore := int64(math.Round(val * math.Pow(10, float64(DecPrecision))))
 	return sdk.NewDecWithPrec(intScore, DecPrecision)
 }
@@ -301,9 +305,9 @@ const (
 	AvailabilityScoreType = "availability"
 
 	// Worst score results for each QoS excellence metric for truncation
-	WorstLatencyScore      float64 = 30        // seconds
-	WorstSyncScore         float64 = 20 * 60   // seconds
-	WorstAvailabilityScore float64 = 0.0000001 // very small value to avoid score = 0
+	WorstLatencyScore      float64 = 30      // seconds
+	WorstSyncScore         float64 = 20 * 60 // seconds
+	WorstAvailabilityScore float64 = 0.00001 // very small value to avoid score = 0
 )
 
 /* ########## Latency ScoreStore ############ */
