@@ -1630,8 +1630,6 @@ func runProtocolE2E(timeout time.Duration) {
 	}()
 
 	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
-	//2024-12-24T15:57:12.2698879Z testutil/e2e/protocolLogs/05_LavaProvider_05.log:+++++++++++ EMERGENCY MODE START ++++++++++
-	//2024-12-24T15:57:09.7978125Z testutil/e2e/protocolLogs/05_LavaProvider_05.log:Dec 24 15:50:55 ERR got called with unhandled relay receiver error="provider does not handle requested api interface and spec" handled_receivers= requested_receiver=LAV1tendermintrpc
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
