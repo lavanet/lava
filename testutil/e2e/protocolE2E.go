@@ -1499,18 +1499,23 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
-	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	lt.startJSONRPCProvider(ctx)
-	lt.startJSONRPCConsumer(ctx)
+	// checks proxy.
+	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK")
 
+	// Start json provider
+	lt.startJSONRPCProvider(ctx)
+	// Start Lava provider
+	lt.startLavaProviders(ctx)
+	// Wait for providers to finish adding all chain routers.
+	time.Sleep(time.Second * 7)
+
+	lt.startJSONRPCConsumer(ctx)
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:333%d", n)
 		msg := fmt.Sprintf("JSONRPCConsumer%d OK", n)
 		lt.checkJSONRPCConsumer(url, time.Minute*2, msg)
 	})
 
-	// Lava Flow
-	lt.startLavaProviders(ctx)
 	lt.startLavaConsumer(ctx)
 
 	runChecksAndTests := func() {
@@ -1625,6 +1630,8 @@ func runProtocolE2E(timeout time.Duration) {
 	}()
 
 	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+	//2024-12-24T15:57:12.2698879Z testutil/e2e/protocolLogs/05_LavaProvider_05.log:+++++++++++ EMERGENCY MODE START ++++++++++
+	//2024-12-24T15:57:09.7978125Z testutil/e2e/protocolLogs/05_LavaProvider_05.log:Dec 24 15:50:55 ERR got called with unhandled relay receiver error="provider does not handle requested api interface and spec" handled_receivers= requested_receiver=LAV1tendermintrpc
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
