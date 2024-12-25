@@ -217,31 +217,8 @@ func (k Keeper) SetLastRewardsBlock(ctx sdk.Context) error {
 	return k.lastRewardsBlock.Set(ctx, uint64(ctx.BlockHeight()))
 }
 
-// GetLastRewardsBlock returns the last block in which the IPRPC rewards
-// were distributed and the block height of 24 hours later.
+// GetLastRewardsBlock returns the last block in which the IPRPC rewards were distributed.
 // This is used by the subscription module's estimate-rewards query
-func (k Keeper) GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, after24HoursBlock uint64, err error) {
-	// get the number of blocks in an epoch
-	epochBlocks, err := k.epochstorage.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
-	if err != nil || epochBlocks == uint64(0) {
-		return 0, 0, utils.LavaFormatError("GetLastRewardsBlock: invalid EpochBlocks", err,
-			utils.LogAttr("epoch_blocks", epochBlocks),
-			utils.LogAttr("block", ctx.BlockHeight()),
-		)
-	}
-
-	// calculate 24 hours in blocks
-	blockTime := k.downtimeKeeper.GetParams(ctx).EpochDuration.Seconds() / float64(epochBlocks)
-	blocksIn24Hours := uint64(24 * 60 * 60 / blockTime)
-
-	// get the rewards distribution block
-	rewardsDistributionBlock, err = k.lastRewardsBlock.Get(ctx)
-	if err != nil {
-		return 0, 0, utils.LavaFormatError("GetLastRewardsBlock: cannot get last rewards block", err,
-			utils.LogAttr("epoch_blocks", epochBlocks),
-			utils.LogAttr("block", ctx.BlockHeight()),
-		)
-	}
-
-	return rewardsDistributionBlock, rewardsDistributionBlock + blocksIn24Hours, nil
+func (k Keeper) GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, err error) {
+	return k.lastRewardsBlock.Get(ctx)
 }

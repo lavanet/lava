@@ -138,17 +138,11 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	}
 
 	// get the last IPRPC rewards distribution block
-	// note: on error we simply leave RecommendedBlock to be zero since until the
-	// upcoming IPRPC rewards will be distributed (from the time this query is merged in main)
-	// there will be no LastRewardsBlock set
-	rewardsDistributionBlock, after24HoursBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
-	if err == nil {
-		// if the query was sent within the first 24 hours of the month,
-		// make the recommended block be the rewards distribution block - 1
-		if uint64(ctx.BlockHeight()) <= after24HoursBlock {
-			res.RecommendedBlock = rewardsDistributionBlock - 1
-		}
+	rewardsDistributionBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to get last rewards block for provider rewards estimation", err)
 	}
+	res.RecommendedBlock = rewardsDistributionBlock
 
 	return &res, nil
 }
