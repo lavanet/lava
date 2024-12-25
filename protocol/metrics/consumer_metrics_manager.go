@@ -156,25 +156,15 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The latency of requests requested by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
 
-	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
-	if ShowProviderEndpointInMetrics {
-		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
-	}
-	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_qos_metrics",
-		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
-		Labels: qosMetricLabels,
-	})
+	qosMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_qos_metrics",
+		Help: "The QOS metrics per provider for current epoch for the session with the most relays.",
+	}, []string{"spec", "apiInterface", "provider_address", "provider_endpoint", "qos_metric"})
 
-	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
-	if ShowProviderEndpointInMetrics {
-		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
-	}
-	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_provider_reputation_metrics",
-		Help:   "The provider reputation metrics per provider",
-		Labels: providerReputationMetricLabels,
-	})
+	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_qos_excellence_metrics",
+		Help: "The QOS metrics per provider excellence",
+	}, []string{"spec", "provider_address", "provider_endpoint", "qos_metric"})
 
 	providerLivenessMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_provider_liveness",
@@ -513,37 +503,40 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	pme.LatestProviderRelay.WithLabelValues(chainId, providerAddress, apiInterface).SetToCurrentTime()
 	// update existing relays
 	pme.providerRelays[providerRelaysKey] = relays
-	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *MappedLabelsGaugeVec, apiInterfaceArg string, providerEndpoint string) {
+	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string, providerEndpoint string) {
 		if qosArg == nil {
 			return
 		}
 		availability, err := qosArg.Availability.Float64()
 		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": AvailabilityLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, providerEndpoint, AvailabilityLabel).Set(availability)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, providerEndpoint, AvailabilityLabel).Set(availability)
 			}
 			metric.WithLabelValues(labels).Set(availability)
 		}
 		sync, err := qosArg.Sync.Float64()
 		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": SyncLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, providerEndpoint, SyncLabel).Set(sync)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, providerEndpoint, SyncLabel).Set(sync)
 			}
 			metric.WithLabelValues(labels).Set(sync)
 		}
 		latency, err := qosArg.Latency.Float64()
 		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": LatencyLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, providerEndpoint, LatencyLabel).Set(latency)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, providerEndpoint, LatencyLabel).Set(latency)
 			}
 			metric.WithLabelValues(labels).Set(latency)
 		}
 	}
 	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(reputation, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
+	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "", providerEndpoint) // it's one api interface for all of them
 
 	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface, providerEndpoint).Set(float64(latestBlock))
 }
