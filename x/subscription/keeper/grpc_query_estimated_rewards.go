@@ -142,7 +142,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to get last rewards block for provider rewards estimation", err)
 	}
-	res.RecommendedBlock = rewardsDistributionBlock
+	res.RecommendedBlock = rewardsDistributionBlock - 1
 
 	return &res, nil
 }
