@@ -174,9 +174,9 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
+			providerAndDelegatorsIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
 
-			UsedRewardTemp := UsedReward.Add(providerIprpcReward...)
+			UsedRewardTemp := UsedReward.Add(providerAndDelegatorsIprpcReward...)
 			if UsedReward.IsAnyGT(specFund.Fund) {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", fmt.Errorf("tried to send more rewards than funded"), utils.LogAttr("provider", providerCU))
 				break
@@ -184,12 +184,17 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerAndDelegatorsIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
 				// failed sending the rewards, add the claimable rewards to the leftovers that will be transferred to the community pool
-				utils.LavaFormatPanic("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
+				utils.LavaFormatError("failed to send iprpc rewards to provider", err,
+					utils.LogAttr("provider", providerCU.Provider),
+					utils.LogAttr("chain_id", specFund.Spec),
+					utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsIprpcReward.String()),
+					utils.LogAttr("provider_reward", providerReward.String()),
+				)
 			}
-			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerOnlyReward.String())
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerAndDelegatorsIprpcReward.String())
 		}
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
 		details["total_reward"] = specFund.Fund.String()

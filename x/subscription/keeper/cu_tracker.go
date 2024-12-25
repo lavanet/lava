@@ -219,30 +219,36 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		creditToSub, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, creditToSub, types.ModuleName)
 		if err != nil {
 			utils.LavaFormatError("could not contribute to validators and community pool", err,
-				utils.Attribute{Key: "total_monthly_reward", Value: creditToSub.String()})
+				utils.LogAttr("total_monthly_reward", creditToSub.String()),
+			)
 		}
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
 
-		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, provider, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
+		providerAndDelegatorsReward := sdk.NewCoins(creditToSub)
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, provider, chainID, providerAndDelegatorsReward, types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
-			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block", Value: strconv.FormatInt(ctx.BlockHeight(), 10)},
+			utils.LavaFormatWarning("failed to send subscription rewards to unstaked provider", err,
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("block", ctx.BlockHeight()),
+				utils.LogAttr("provider_reward", providerReward.String()),
+				utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsReward.String()),
 			)
 		} else if err != nil {
-			utils.LavaFormatError("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "sub_total_used_cu", Value: totalCuTracked},
-				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+			utils.LavaFormatError("failed to send subscription rewards to provider", err,
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("tracked_cu", trackedCu),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("sub", sub),
+				utils.LogAttr("sub_total_used_cu", totalCuTracked),
+				utils.LogAttr("block", ctx.BlockHeight()),
+				utils.LogAttr("provider_reward", providerReward.String()),
+				utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsReward.String()),
 			)
 		} else {
-			details[provider+" "+chainID] = fmt.Sprintf("cu: %d reward: %s", trackedCu, providerReward.String())
+			details[provider+" "+chainID] = fmt.Sprintf("cu: %d reward: %s", trackedCu, providerAndDelegatorsReward.String())
 		}
 	}
 
