@@ -73,6 +73,10 @@ func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegat
 		return zeroCoins, zeroCoins
 	}
 
+	if commission == 100 {
+		return totalReward, zeroCoins
+	}
+
 	providerReward = totalReward.MulInt(selfDelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
 	if !totalDelegations.IsZero() && commission != 0 {
 		rawDelegatorsReward := totalReward.MulInt(totalDelegations).QuoInt(totalDelegationsWithSelf)
