@@ -59,6 +59,7 @@ type ConsumerMetricsManager struct {
 	apiMethodCalls                              *prometheus.GaugeVec
 	endpointsHealthChecksOkMetric               prometheus.Gauge
 	endpointsHealthChecksOk                     uint64
+	endpointsHealthChecksBreakdownMetric        *prometheus.GaugeVec
 	lock                                        sync.Mutex
 	protocolVersionMetric                       *prometheus.GaugeVec
 	providerRelays                              map[string]uint64
@@ -186,6 +187,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "At least one endpoint is healthy",
 	})
 
+	endpointsHealthChecksBreakdownMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_overall_health_breakdown",
+		Help: "Health check status per chain. At least one endpoint is healthy",
+	}, []string{"spec", "apiInterface"})
+
 	apiSpecificsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_api_specifics",
 		Help: "api usage specifics",
@@ -245,6 +251,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
+	prometheus.MustRegister(endpointsHealthChecksBreakdownMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
 	prometheus.MustRegister(totalWebSocketConnectionsActive)
@@ -284,6 +291,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		virtualEpochMetric:                          virtualEpochMetric,
 		endpointsHealthChecksOkMetric:               endpointsHealthChecksOkMetric,
 		endpointsHealthChecksOk:                     1,
+		endpointsHealthChecksBreakdownMetric:        endpointsHealthChecksBreakdownMetric,
 		protocolVersionMetric:                       protocolVersionMetric,
 		averageLatencyMetric:                        averageLatencyMetric,
 		totalRelaysSentByNewBatchTickerMetric:       totalRelaysSentByNewBatchTickerMetric,
@@ -529,6 +537,18 @@ func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	}
 	pme.endpointsHealthChecksOkMetric.Set(value)
 	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
+}
+
+func (pme *ConsumerMetricsManager) UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool) {
+	if pme == nil {
+		return
+	}
+	var value float64 = 0
+	if status {
+		value = 1
+	}
+
+	pme.endpointsHealthChecksBreakdownMetric.WithLabelValues(chainId, apiInterface).Set(value)
 }
 
 func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {

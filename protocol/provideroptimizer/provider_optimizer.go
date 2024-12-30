@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/utils"
@@ -45,8 +45,8 @@ type ConcurrentBlockStore struct {
 }
 
 type cacheInf interface {
-	Get(key interface{}) (interface{}, bool)
-	Set(key, value interface{}, cost int64) bool
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, cost int64) bool
 }
 
 type consumerOptimizerQoSClientInf interface {
@@ -55,7 +55,7 @@ type consumerOptimizerQoSClientInf interface {
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                cacheInf
-	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
+	providerRelayStats              *ristretto.Cache[string, any] // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
 	wantedNumProvidersInConcurrency uint
@@ -244,16 +244,20 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
+
+	// check if we have enough providers to create the tiers, if not set the number of tiers to the number of providers we currently have
+	numberOfTiersWanted := po.OptimizerNumTiers
 	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		po.OptimizerNumTiers = selectionTier.ScoresCount()
+		numberOfTiersWanted = selectionTier.ScoresCount()
 	}
 	if selectionTier.ScoresCount() >= MinimumEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
+		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
+	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
+	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
+	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
+	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, MinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
@@ -536,11 +540,11 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 }
 
 func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClientInf consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	relayCache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}

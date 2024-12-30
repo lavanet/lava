@@ -215,6 +215,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
 			utils.LogAttr("chain_id", chainId),
 			utils.LogAttr("Api_interface", cf.endpoint.ApiInterface),
+			utils.LogAttr("function_template", parsing.FunctionTemplate),
 		)
 	}
 
