@@ -177,6 +177,7 @@ get_base_specs() {
         "specs/mainnet-1/specs/tendermint.json"
         "specs/mainnet-1/specs/cosmossdk.json"
         "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/testnet-2/specs/cosmossdk_full.json"
         "specs/mainnet-1/specs/cosmossdkv50.json"
         "specs/mainnet-1/specs/ethermint.json"
         "specs/mainnet-1/specs/ethereum.json"

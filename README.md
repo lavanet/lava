@@ -125,8 +125,6 @@ Remember to always test your changes locally before submitting a PR to ensure th
 
 Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)
 
-⚠️ THERE'S NO MAINNET LAVA TOKEN, BE AWARE OF SCAMS.
-
 ## Community
 
 - [Github Discussions](https://github.com/lavanet/lava/discussions)
