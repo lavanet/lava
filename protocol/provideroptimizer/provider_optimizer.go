@@ -244,16 +244,20 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
+
+	// check if we have enough providers to create the tiers, if not set the number of tiers to the number of providers we currently have
+	numberOfTiersWanted := po.OptimizerNumTiers
 	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		po.OptimizerNumTiers = selectionTier.ScoresCount()
+		numberOfTiersWanted = selectionTier.ScoresCount()
 	}
 	if selectionTier.ScoresCount() >= MinimumEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
+		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
+	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
+	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
+	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
+	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, MinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
