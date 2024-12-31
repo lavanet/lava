@@ -194,7 +194,8 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 					utils.LogAttr("provider_reward", providerReward.String()),
 				)
 			}
-			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerAndDelegatorsIprpcReward.String())
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerReward.String())
+			details[providerCU.Provider+"_delegators"] = providerAndDelegatorsIprpcReward.Sub(providerReward...).String()
 		}
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
 		details["total_reward"] = specFund.Fund.String()

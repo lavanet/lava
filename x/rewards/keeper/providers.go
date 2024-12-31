@@ -98,7 +98,8 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 						utils.LogAttr("provider_reward", providerReward.String()),
 					)
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, providerAndDelegatorsReward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, providerReward.String())
+				details[basepay.Provider+"_delegators"] = providerAndDelegatorsReward.Sub(providerReward...).String()
 			}
 
 			// count iprpc cu

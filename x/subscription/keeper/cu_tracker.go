@@ -248,7 +248,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsReward.String()),
 			)
 		} else {
-			details[provider+" "+chainID] = fmt.Sprintf("cu: %d reward: %s", trackedCu, providerAndDelegatorsReward.String())
+			details[provider+" "+chainID] = fmt.Sprintf("cu: %d reward: %s", trackedCu, providerReward.String())
+			details[provider+" "+chainID+"_delegators"] = providerAndDelegatorsReward.Sub(providerReward...).String()
 		}
 	}
 
