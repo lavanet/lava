@@ -68,7 +68,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 			trackedCuFactor = delegation.Amount.ToLegacyDec().QuoInt(totalDelegations)
 
 			// advance ctx by a month and a day to make the delegation count
-			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 1, 1))
+			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 0, 31))
 		}
 	}
 
