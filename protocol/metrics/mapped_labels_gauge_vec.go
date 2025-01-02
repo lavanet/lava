@@ -2,6 +2,8 @@ package metrics
 
 import "github.com/prometheus/client_golang/prometheus"
 
+// MappedLabelsGaugeVec is a wrapper around prometheus.GaugeVec that allows for setting labels dynamically.
+// We use if for the metrics that have a dynamic number of labels, based on flags given upon startup.
 type MappedLabelsGaugeVec struct {
 	*prometheus.GaugeVec
 	labels []string
