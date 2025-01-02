@@ -21,9 +21,7 @@ const (
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
-var (
-	ShowProviderEndpointInMetrics = false
-)
+var ShowProviderEndpointInMetrics = false
 
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
