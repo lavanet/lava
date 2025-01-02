@@ -15,4 +15,4 @@ endpoints:
       - url: https://127.0.0.1:3333
         internal-path: "" # setting an empty internal path will auto complete all other internal paths
       - url: ws://127.0.0.1:3333/C/ws
-        internal-path: "/C/rpc" # c chain like specified in the spec
+        internal-path: "/C/rpc" # c chain as specified in the spec
