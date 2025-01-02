@@ -1,11 +1,15 @@
-# Avalanche provider example with internal paths, 
-# C-chain is the only one supporting websocket therefore its a must to have it
-# This example will work only if you have all base paths on the root URL 
+# Avalanche provider example with internal paths
+
+# ** C-chain is the only one supporting websocket therefore its a must to have it in the configuration **
+
+# This example will work only if all the base paths are on the root URL 
+
 # Example for 127.0.0.1:3333
 # C chain: http://127.0.0.1:3333/C/rpc
 # X chain: http://127.0.0.1:3333/X
 # P chain: http://127.0.0.1:3333/P
-# if your setup is different please use avalanche_provider_with_internal_paths.yml
+
+# If the setup is different please use avalanche_provider_with_internal_paths.yml
 endpoints:
   - api-interface: jsonrpc
     chain-id: AVAX
