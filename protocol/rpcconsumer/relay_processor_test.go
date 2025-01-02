@@ -122,13 +122,13 @@ func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.D
 	relayProcessor.SetResponse(response)
 }
 
-func sendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+func sendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration, data []byte) {
 	time.Sleep(delay)
 	id, _ := json.Marshal(1)
 	res := rpcclient.JsonrpcMessage{
 		Version: "2.0",
 		ID:      id,
-		Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
+		Error:   &rpcclient.JsonError{Code: 1, Message: "test", Data: data},
 	}
 	resBytes, _ := json.Marshal(res)
 

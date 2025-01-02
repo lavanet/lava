@@ -84,11 +84,10 @@ func (rm RestMessage) GetParams() interface{} {
 	return parameters
 }
 
-func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
-	// return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
+	// return rm.SetLatestBlockWithHeader(latestBlock)
 	// removed until behavior inconsistency with the cosmos sdk header is solved
 	return false
-	// if !done else we need a different setter
 }
 
 // GetResult will be deprecated after we remove old client
