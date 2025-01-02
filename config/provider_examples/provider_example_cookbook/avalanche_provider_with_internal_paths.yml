@@ -1,4 +1,5 @@
-# this example show cases how you can setup Avalanche
+# Avalanche provider example with internal paths, 
+# C-chain is the only one supporting websocket therefore its a must to have it
 endpoints:
   - api-interface: jsonrpc
     chain-id: AVAX

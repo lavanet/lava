@@ -1,0 +1,21 @@
+endpoints:
+    - api-interface: jsonrpc
+      chain-id: STRK
+      network-address:
+        address: "127.0.0.1:2220"
+      node-urls:
+        - url: wss://starknet-mainnet.domain.com/ws/XXX/rpc/v0_7
+          internal-path: /ws/rpc/v0_7
+          Addons:
+            - trace
+        - url: wss://starknet-mainnet.domain.com/ws/XXX/rpc/v0_6
+          internal-path: /ws/rpc/v0_6
+          Addons:
+            - trace
+        - url: wss://starknet-mainnet.domain.com/ws/XXX
+          Addons:
+            - trace
+        - url: https://starknet-mainnet.domain.com/XXX
+          Addons:
+            - trace
+
