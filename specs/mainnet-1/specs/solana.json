@@ -1380,7 +1380,6 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
                         "parse_directives": [
                             {
                                 "function_tag": "GET_BLOCKNUM",
