@@ -43,7 +43,7 @@ type ConsumerMetricsManager struct {
 	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
 	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
 	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
-	totalWsSubscriptionDissconnectMetric        *prometheus.CounterVec
+	totalWsSubscriptionDisconnectMetric         *prometheus.CounterVec
 	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
 	totalLoLSuccessMetric                       prometheus.Counter
 	totalLoLErrorsMetric                        prometheus.Counter
@@ -136,7 +136,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of currently active websocket connections with users",
 	}, []string{"spec", "apiInterface"})
 
-	totalWsSubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalWsSubscriptionDisconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_ws_subscription_disconnect",
 		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per dissconnect reason.",
 	}, []string{"spec", "apiInterface", "dissconectReason"})
@@ -259,7 +259,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalFailedWsSubscriptionRequestsMetric)
 	prometheus.MustRegister(totalDuplicatedWsSubscriptionRequestsMetric)
-	prometheus.MustRegister(totalWsSubscriptionDissconnectMetric)
+	prometheus.MustRegister(totalWsSubscriptionDisconnectMetric)
 	prometheus.MustRegister(totalLoLSuccessMetric)
 	prometheus.MustRegister(totalLoLErrorsMetric)
 
@@ -269,7 +269,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		totalWsSubscriptionRequestsMetric:           totalWsSubscriptionRequestsMetric,
 		totalFailedWsSubscriptionRequestsMetric:     totalFailedWsSubscriptionRequestsMetric,
 		totalDuplicatedWsSubscriptionRequestsMetric: totalDuplicatedWsSubscriptionRequestsMetric,
-		totalWsSubscriptionDissconnectMetric:        totalWsSubscriptionDissconnectMetric,
+		totalWsSubscriptionDisconnectMetric:         totalWsSubscriptionDisconnectMetric,
 		totalWebSocketConnectionsActive:             totalWebSocketConnectionsActive,
 		totalErroredMetric:                          totalErroredMetric,
 		blockMetric:                                 blockMetric,
@@ -598,7 +598,7 @@ func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chain
 	if pme == nil {
 		return
 	}
-	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
+	pme.totalWsSubscriptionDisconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
