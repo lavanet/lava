@@ -1,4 +1,4 @@
-# In case you want to configure manually each internal path here is an example on how to do it.
+# An example fo configuring manually each internal path
 # To support trace addon, simply add: 
 #     addons:
 #         - trace 
