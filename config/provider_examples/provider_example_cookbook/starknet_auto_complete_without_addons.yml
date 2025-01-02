@@ -10,5 +10,4 @@ endpoints:
           internal-path: /ws/rpc/v0_6
         - url: wss://starknet-mainnet.domain.com/ws/XXX
         - url: https://starknet-mainnet.domain.com/XXX
-          
 
