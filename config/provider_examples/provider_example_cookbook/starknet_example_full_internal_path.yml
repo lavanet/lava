@@ -1,7 +1,7 @@
 # In case you want to configure manually each internal path here is an example on how to do it.
-# In case you support trace addon just add 
-# Addons:
-#     - trace 
+# To support trace addon, simply add: 
+#     addons:
+#         - trace 
 # to each url group.
 endpoints:
   - api-interface: jsonrpc
