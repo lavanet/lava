@@ -27,6 +27,14 @@
                             "type": "POST",
                             "add_on": ""
                         },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ],
                         "apis": [
                             {
                                 "name": "getAccountInfo",
@@ -967,7 +975,6 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
                         "parse_directives": [
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlockHeight\",\"params\":[],\"id\":1}",
@@ -1039,10 +1046,10 @@
                         ]
                     },
                     {
-                        "enabled": true,
+                        "enabled": false,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws",
+                            "internal_path": "WS-ONLY",
                             "type": "POST",
                             "add_on": ""
                         },
