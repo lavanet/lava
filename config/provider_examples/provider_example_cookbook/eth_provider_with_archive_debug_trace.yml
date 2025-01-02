@@ -2,7 +2,9 @@
 # - archive
 # - debug
 # - trace
-# Replace the urls with your own node urls
+
+# ** Replace the urls with your own node urls **
+
 endpoints:
     - api-interface: jsonrpc
       chain-id: ETH1 # Replace the chain-id for any relevant spec that inherits EVM, I.E. ETH1, FTM250, CELO, ARBITRUM,BASE, BSC, POLYGON, BLAST, FANTOM, SEPOLIA, ETC.
