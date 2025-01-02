@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "SOLANA",
-                "name": "solana main net",
+                "name": "solana mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -1381,19 +1381,6 @@
                         ],
                         "headers": [],
                         "parse_directives": [
-                            {
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_func": "DEFAULT"
-                                }
-                            },
-                            {
-                                "function_template": "%d",
-                                "function_tag": "GET_BLOCK_BY_NUM",
-                                "result_parsing": {
-                                    "parser_func": "DEFAULT"
-                                }
-                            },
                             {
                                 "function_tag": "SUBSCRIBE",
                                 "api_name": "accountSubscribe"
