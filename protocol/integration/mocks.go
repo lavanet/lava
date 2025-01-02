@@ -175,6 +175,10 @@ type MockChainFetcher struct {
 	callBack    func()
 }
 
+func (mcf *MockChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	return nil, utils.LavaFormatError("Not Implemented CustomMessage for MockChainFetcher", nil)
+}
+
 func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return lavasession.RPCProviderEndpoint{}
 }

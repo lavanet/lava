@@ -31,7 +31,7 @@ var (
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type StateTracker struct {
-	chainTracker         *chaintracker.ChainTracker
+	chainTracker         chaintracker.IChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
 	EventTracker         *updaters.EventTracker

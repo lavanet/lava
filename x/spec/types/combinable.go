@@ -25,6 +25,10 @@ func (h *Header) Differeniator() string {
 }
 
 func (parsing *ParseDirective) Differeniator() string {
+	if parsing.FunctionTag == FUNCTION_TAG_SUBSCRIBE || parsing.FunctionTag == FUNCTION_TAG_UNSUBSCRIBE {
+		// handle subscribe and unsubscribe differently because they can be not unique (see solana spec)
+		return parsing.FunctionTag.String() + "_" + parsing.ApiName
+	}
 	return parsing.FunctionTag.String()
 }
 
