@@ -36,7 +36,8 @@ const (
 )
 
 type AlertingOptions struct {
-	Url                           string // where to send the alerts
+	Url string // where to send the alerts
+	TelegramAlertingOptions
 	Logging                       bool   // wether to log alerts to stdout
 	Identifier                    string // a unique identifier added to all alerts
 	SubscriptionCUPercentageAlert float64
@@ -81,6 +82,7 @@ type Alerting struct {
 	suppressedAlerts              uint64 // monitoring
 	payload                       map[string]interface{}
 	colorToggle                   bool
+	TelegramAlerting              TelegramAlertingOptions
 }
 
 func NewAlerting(options AlertingOptions) *Alerting {
@@ -160,6 +162,9 @@ func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 
 	if al.url != "" {
 		go al.AppendUrlAlert(alert, attrs)
+	}
+	if al.TelegramAlerting.TelegramBotToken != "" && al.TelegramAlerting.TelegramChannelID != "" {
+		al.SendTelegramAlert(alert, attrs)
 	}
 	if al.logging {
 		if al.identifier != "" {
