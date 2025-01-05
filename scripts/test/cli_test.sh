@@ -127,7 +127,7 @@ wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing stake-provider ETH1 $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 
-CHAINS="SEP1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARBITRUM,ARBITRUMN,APT1,STRK,JUN1,COSMOSHUB,POLYGON,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
+CHAINS="SEP1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSMOSHUB,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
 (trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 
 sleep_until_next_epoch >/dev/null

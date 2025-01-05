@@ -98,12 +98,6 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 
 	var events []event
 
-	// Sort specs by hierarchy to ensure dependencies are processed first
-	sortedSpecs, err := types.SortSpecsByHierarchy(p.Specs)
-	if err != nil {
-		return utils.LavaFormatWarning("failed to sort specs", err)
-	}
-	p.Specs = sortedSpecs
 	for _, spec := range p.Specs {
 		_, found := k.GetSpec(ctx, spec.Index)
 

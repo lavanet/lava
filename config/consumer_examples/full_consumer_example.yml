@@ -14,7 +14,7 @@ endpoints:
     - chain-id: ALFAJORES
       api-interface: jsonrpc
       network-address: 127.0.0.1:3347
-    - chain-id: ARBITRUM
+    - chain-id: ARB1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3348      
     - chain-id: STRK
@@ -23,7 +23,7 @@ endpoints:
     - chain-id: APT1
       api-interface: rest
       network-address: 127.0.0.1:3350
-    - chain-id: POLYGON
+    - chain-id: POLYGON1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3351
     - chain-id: OPTM
