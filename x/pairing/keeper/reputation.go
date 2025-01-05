@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -138,17 +137,18 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 	}
 
 	// sort keys
-	keys := []string{}
+	keys := []types.ReputationChainClusterKey{}
 	for key := range scores {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].ChainID+" "+keys[i].Cluster < keys[j].ChainID+" "+keys[j].Cluster
+	})
 
 	// iterate over providers QoS scores with the same chain ID and cluster
 	for _, chainCluster := range keys {
 		stakeProvidersScore := scores[chainCluster]
-		split := strings.Split(chainCluster, " ")
-		chainID, cluster := split[0], split[1]
+		chainID, cluster := chainCluster.ChainID, chainCluster.Cluster
 
 		// get benchmark score value. It's used as a percentile score to determine the reputation pairing score
 		// of each provider in a scale of [MinReputationPairingScore, MaxReputationPairingScore] (currently 0.5-2).
@@ -173,11 +173,11 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 // 2. resets the reputation epoch score
 // 3. updates it last update time
 // 4. add it to the scores map
-func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]StakeProviderScores, error) {
+func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[types.ReputationChainClusterKey]StakeProviderScores, error) {
 	halfLifeFactor := k.ReputationHalfLifeFactor(ctx)
 	currentTime := ctx.BlockTime().UTC().Unix()
 
-	scores := map[string]StakeProviderScores{}
+	scores := map[types.ReputationChainClusterKey]StakeProviderScores{}
 
 	// iterate over all reputations
 	iter, err := k.reputations.Iterate(ctx, nil)
@@ -230,7 +230,7 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]Stak
 		k.SetReputation(ctx, chainID, cluster, provider, reputation)
 
 		// add entry to the scores map
-		providerScores, ok := scores[chainID+" "+cluster]
+		providerScores, ok := scores[types.ReputationChainClusterKey{ChainID: chainID, Cluster: cluster}]
 		if !ok {
 			providerScores.ProviderScores = []ProviderQosScore{{Provider: provider, Score: reputation.Score, Stake: reputation.Stake}}
 			providerScores.TotalStake = reputation.Stake
@@ -238,7 +238,7 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]Stak
 			providerScores.ProviderScores = append(providerScores.ProviderScores, ProviderQosScore{Provider: provider, Score: reputation.Score, Stake: reputation.Stake})
 			providerScores.TotalStake = providerScores.TotalStake.Add(reputation.Stake)
 		}
-		scores[chainID+" "+cluster] = providerScores
+		scores[types.ReputationChainClusterKey{ChainID: chainID, Cluster: cluster}] = providerScores
 	}
 
 	// in the provider scoring process, each provider is scored by its QoS score compared to the other providers
@@ -250,10 +250,9 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]Stak
 }
 
 // sortProviderScores sorts the stakeProviderScores map score slices in ascending order
-func sortProviderScores(scores map[string]StakeProviderScores) {
+func sortProviderScores(scores map[types.ReputationChainClusterKey]StakeProviderScores) {
 	for chainCluster, stakeProviderScores := range scores {
-		split := strings.Split(chainCluster, " ")
-		chainID, cluster := split[0], split[1]
+		chainID, cluster := chainCluster.ChainID, chainCluster.Cluster
 
 		sort.Slice(stakeProviderScores.ProviderScores, func(i, j int) bool {
 			iScore, err := stakeProviderScores.ProviderScores[i].Score.Score.Resolve()

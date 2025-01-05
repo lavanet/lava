@@ -1365,8 +1365,8 @@ func TestUpdateReputationScoresSortedMap(t *testing.T) {
 	}
 
 	// create expected map (supposed to be sorted by score)
-	expected := map[string]keeper.StakeProviderScores{
-		"mockspec cluster": {
+	expected := map[types.ReputationChainClusterKey]keeper.StakeProviderScores{
+		{ChainID: "mockspec", Cluster: "cluster"}: {
 			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(3)), // 1+2
 			ProviderScores: []keeper.ProviderQosScore{
 				{
@@ -1382,7 +1382,7 @@ func TestUpdateReputationScoresSortedMap(t *testing.T) {
 			},
 		},
 
-		"mockspec1 cluster": {
+		{ChainID: "mockspec1", Cluster: "cluster"}: {
 			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(12)), // 3+4+5
 			ProviderScores: []keeper.ProviderQosScore{
 				{
