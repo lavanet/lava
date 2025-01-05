@@ -645,6 +645,7 @@ func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig)
 	// TODO: we can do it better by creating a spec fields for custom trackers.
 	// By applying a name SVM for example
 	case "SOLANA", "SOLANAT", "KOII", "KOIIT":
+		utils.LavaFormatInfo("using SVMChainTracker", utils.Attribute{Key: "chainID", Value: config.ChainId})
 		return &SVMChainTracker{
 			ChainTracker: chainTracker,
 			cache:        cache,

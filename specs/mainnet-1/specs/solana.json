@@ -977,13 +977,15 @@
                         "headers": [],
                         "parse_directives": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlockHeight\",\"params\":[],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getLatestBlockhash\",\"params\":[{\"commitment\":\"finalized\"}],\"id\":1}",
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "0",
+                                        "context",
+                                        "slot"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "getLatestBlockhash"
                             },
