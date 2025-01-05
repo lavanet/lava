@@ -2509,3 +2509,47 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	)
 	require.Error(t, err)
 }
+
+// TestStakeNotAffectingFreeze checks the following scenario:
+// 1. a provider is staked and frozen
+// 2. the provider stakes to a new chain
+// 3. the provider's freeze status in the original chain is not affected
+func TestStakeNotAffectingFreeze(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(0, 0, 1) // 0 sub, 0 adm, 1 dev
+
+	var balance int64 = 10000
+	stake := balance / 10
+
+	// Create provider account and stake them to first spec
+	acc, addr := ts.AddAccount(common.PROVIDER, 1, balance)
+	err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// Freeze the provider
+	_, err = ts.TxPairingFreezeProvider(addr, ts.spec.Index)
+	require.NoError(t, err)
+
+	// Verify provider is frozen
+	frozen := ts.isProviderFrozen(addr, ts.spec.Index)
+	require.True(t, frozen)
+
+	// Create a second spec and stake provider to it
+	spec1 := ts.spec
+	spec1Name := "spec1"
+	spec1.Index, spec1.Name = spec1Name, spec1Name
+	ts.AddSpec(spec1Name, spec1)
+	err = ts.StakeProvider(acc.GetVaultAddr(), addr, spec1, stake)
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	// Verify provider is still frozen in original spec
+	frozen = ts.isProviderFrozen(addr, ts.spec.Index)
+	require.True(t, frozen)
+
+	// Verify provider is not frozen in new spec
+	frozen = ts.isProviderFrozen(addr, spec1.Index)
+	require.False(t, frozen)
+}

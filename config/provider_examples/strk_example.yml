@@ -10,7 +10,6 @@ endpoints:
         internal-path: "/ws/rpc/v0_6"
       - url: <wss url here>/ws/rpc/v0_7
         internal-path: "/ws/rpc/v0_7"
-
       - url: <https url here>
         internal-path: ""
       - url: <https url here>/rpc/v0_5

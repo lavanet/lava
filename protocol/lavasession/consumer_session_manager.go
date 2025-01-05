@@ -113,7 +113,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
-	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
+	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
@@ -1072,9 +1072,10 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		lastQosExcellence = &qosEx
 	}
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
+	publicProviderEndpoint := consumerSession.Parent.Endpoints[0].NetworkAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
 }
 
