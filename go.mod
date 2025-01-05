@@ -25,7 +25,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/spf13/cast v1.6.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
@@ -45,6 +45,7 @@ require (
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/dgraph-io/badger/v4 v4.1.0
+	github.com/dgraph-io/ristretto/v2 v2.0.1
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/goccy/go-json v0.10.2
 	github.com/gogo/status v1.1.0
@@ -96,7 +97,6 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
-	github.com/golang/glog v1.2.0 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
@@ -171,7 +171,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
-	github.com/dgraph-io/ristretto v0.1.1
+	github.com/dgraph-io/ristretto v0.2.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -237,7 +237,7 @@ require (
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 	golang.org/x/net v0.28.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.23.0
 	golang.org/x/text v0.17.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

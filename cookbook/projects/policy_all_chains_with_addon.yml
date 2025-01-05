@@ -20,6 +20,10 @@ Policy:
         - collection:
             api_interface: "jsonrpc"
             type: "POST"
+            add_on: "trace"
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
           extensions:
             - "archive"
           mixed: true        

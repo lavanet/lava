@@ -1072,9 +1072,10 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		lastQosExcellence = &qosEx
 	}
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
+	publicProviderEndpoint := consumerSession.Parent.Endpoints[0].NetworkAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
 }
 

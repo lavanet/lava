@@ -7,7 +7,6 @@ endpoints:
     node-urls:
       - url: ws://127.0.0.1:3333/C/ws
         internal-path: "/C/rpc" # c chain like specified in the spec
-
       - url: https://127.0.0.1:3334/C/rpc
         internal-path: "/C/rpc" # c/rpc like specified in the spec
       - url: https://127.0.0.1:3334/C/avax

@@ -50,6 +50,7 @@ func main() {
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 	testCmd.AddCommand(utilscli.NewMultiSendTxCmd())
+	testCmd.AddCommand(utilscli.NewMultiCheckCmd())
 	testCmd.AddCommand(utilscli.NewQueryTotalGasCmd())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{

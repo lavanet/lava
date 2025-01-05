@@ -44,7 +44,7 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() cosmosmath.LegacyD
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
 			return qosComputed
 		}
-		utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport))
+		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero", utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport), utils.LogAttr("error", errComputing))
 	}
 	return cosmosmath.LegacyZeroDec()
 }

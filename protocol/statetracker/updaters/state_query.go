@@ -10,7 +10,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
@@ -58,14 +58,15 @@ type StateQuery struct {
 	epochStorageQueryClient epochstoragetypes.QueryClient
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
-	ResponsesCache          *ristretto.Cache
+	ResponsesCache          *ristretto.Cache[string, any]
+	tendermintRPC
 	client.CometRPC
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
 	sq := &StateQuery{}
 	sq.UpdateAccess(accessInf)
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}

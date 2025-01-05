@@ -178,9 +178,9 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerIprpcReward := specFund.Fund.MulInt(math.NewIntFromUint64(providerCU.CU)).QuoInt(math.NewIntFromUint64(specCu.TotalCu))
+			providerAndDelegatorsIprpcReward := specFund.Fund.MulInt(math.NewIntFromUint64(providerCU.CU)).QuoInt(math.NewIntFromUint64(specCu.TotalCu))
 
-			UsedRewardTemp := UsedReward.Add(providerIprpcReward...)
+			UsedRewardTemp := UsedReward.Add(providerAndDelegatorsIprpcReward...)
 			if UsedReward.IsAnyGT(specFund.Fund) {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", fmt.Errorf("tried to send more rewards than funded"), utils.LogAttr("provider", providerCU))
 				break
@@ -188,12 +188,18 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerAndDelegatorsIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
 				// failed sending the rewards, add the claimable rewards to the leftovers that will be transferred to the community pool
-				utils.LavaFormatPanic("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
+				utils.LavaFormatError("failed to send iprpc rewards to provider", err,
+					utils.LogAttr("provider", providerCU.Provider),
+					utils.LogAttr("chain_id", specFund.Spec),
+					utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsIprpcReward.String()),
+					utils.LogAttr("provider_reward", providerReward.String()),
+				)
 			}
-			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerOnlyReward.String())
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerReward.String())
+			details[providerCU.Provider+"_delegators"] = providerAndDelegatorsIprpcReward.Sub(providerReward...).String()
 		}
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
 		details["total_reward"] = specFund.Fund.String()
@@ -216,31 +222,8 @@ func (k Keeper) SetLastRewardsBlock(ctx sdk.Context) error {
 	return k.lastRewardsBlock.Set(ctx, uint64(ctx.BlockHeight()))
 }
 
-// GetLastRewardsBlock returns the last block in which the IPRPC rewards
-// were distributed and the block height of 24 hours later.
+// GetLastRewardsBlock returns the last block in which the IPRPC rewards were distributed.
 // This is used by the subscription module's estimate-rewards query
-func (k Keeper) GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, after24HoursBlock uint64, err error) {
-	// get the number of blocks in an epoch
-	epochBlocks, err := k.epochstorage.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
-	if err != nil || epochBlocks == uint64(0) {
-		return 0, 0, utils.LavaFormatError("GetLastRewardsBlock: invalid EpochBlocks", err,
-			utils.LogAttr("epoch_blocks", epochBlocks),
-			utils.LogAttr("block", ctx.BlockHeight()),
-		)
-	}
-
-	// calculate 24 hours in blocks
-	blockTime := k.downtimeKeeper.GetParams(ctx).EpochDuration.Seconds() / float64(epochBlocks)
-	blocksIn24Hours := uint64(24 * 60 * 60 / blockTime)
-
-	// get the rewards distribution block
-	rewardsDistributionBlock, err = k.lastRewardsBlock.Get(ctx)
-	if err != nil {
-		return 0, 0, utils.LavaFormatError("GetLastRewardsBlock: cannot get last rewards block", err,
-			utils.LogAttr("epoch_blocks", epochBlocks),
-			utils.LogAttr("block", ctx.BlockHeight()),
-		)
-	}
-
-	return rewardsDistributionBlock, rewardsDistributionBlock + blocksIn24Hours, nil
+func (k Keeper) GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, err error) {
+	return k.lastRewardsBlock.Get(ctx)
 }

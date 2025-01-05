@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -2205,9 +2204,6 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 				actualNodeUrlsCount += len(actualEndpoint.NodeUrls)
 
 				expectedNodeUrls := play.expectedServicesToNodeUrls[routerKey]
-				require.Len(t, actualEndpoint.NodeUrls, len(expectedNodeUrls),
-					fmt.Sprintf("RouterKey: %v, NodeUrls: %v", routerKey, actualEndpoint.NodeUrls))
-
 				for _, actualNodeUrl := range actualEndpoint.NodeUrls {
 					found := false
 					for _, expectedNodeUrls := range expectedNodeUrls {

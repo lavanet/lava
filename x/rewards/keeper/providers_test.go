@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -793,6 +794,7 @@ func TestEstimateRewardsQuery(t *testing.T) {
 				// advance ctx by a month and a day to make the delegation count
 				_, err := ts.TxDualstakingDelegate(consumer, provider, sdk.NewInt64Coin(ts.TokenDenom(), testStake/2))
 				require.NoError(t, err)
+				ts.AdvanceTimeHours(24 * 4 * time.Hour) // avoid troubling months like february
 				ts.AdvanceMonths(1)
 			}
 
