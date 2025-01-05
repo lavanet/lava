@@ -24,7 +24,8 @@ func CmdEffectivePolicy() *cobra.Command {
 			if len(args) > 1 {
 				address, err = utils.ParseCLIAddress(clientCtx, args[1])
 				if err != nil {
-					return err
+					// this should allow project names not only addresses
+					address = args[1]
 				}
 			} else {
 				clientCtxForTx, err := client.GetClientQueryContext(cmd)

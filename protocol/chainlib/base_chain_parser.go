@@ -20,6 +20,8 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
+var AllowMissingApisByDefault = true
+
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
 	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
@@ -323,6 +325,35 @@ func (bcp *BaseChainParser) extensionParsingInner(addon string, parsedMessageArg
 	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)
 }
 
+func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "apiKey", Value: apiKey})
+	apiCont := &ApiContainer{
+		api: &spectypes.Api{
+			Enabled:           true,
+			Name:              "Default-" + apiKey.Name,
+			ComputeUnits:      20, // set 20 compute units by default
+			ExtraComputeUnits: 0,
+			Category:          spectypes.SpecCategory{},
+			BlockParsing: spectypes.BlockParser{
+				ParserFunc: spectypes.PARSER_FUNC_EMPTY,
+			},
+			TimeoutMs: 0,
+			Parsers:   []spectypes.GenericParser{},
+		},
+		collectionKey: CollectionKey{
+			ConnectionType: apiKey.ConnectionType,
+			InternalPath:   apiKey.InternalPath,
+			Addon:          "",
+		},
+	}
+
+	return apiCont, nil
+}
+
 // getSupportedApi fetches service api from spec by name
 func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
@@ -339,6 +370,9 @@ func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, erro
 
 	// Return an error if spec does not exist
 	if !ok {
+		if AllowMissingApisByDefault {
+			return apip.defaultApiContainer(apiKey)
+		}
 		return nil, common.APINotSupportedError
 	}
 

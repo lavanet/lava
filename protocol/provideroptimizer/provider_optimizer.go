@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/utils"
@@ -36,6 +36,7 @@ var (
 	MinimumEntries    = 5
 	ATierChance       = 0.75
 	LastTierChance    = 0.0
+	AutoAdjustTiers   = false
 )
 
 type ConcurrentBlockStore struct {
@@ -45,8 +46,8 @@ type ConcurrentBlockStore struct {
 }
 
 type cacheInf interface {
-	Get(key interface{}) (interface{}, bool)
-	Set(key, value interface{}, cost int64) bool
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, cost int64) bool
 }
 
 type consumerOptimizerQoSClientInf interface {
@@ -55,7 +56,7 @@ type consumerOptimizerQoSClientInf interface {
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                cacheInf
-	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
+	providerRelayStats              *ristretto.Cache[string, any] // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
 	wantedNumProvidersInConcurrency uint
@@ -239,25 +240,44 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	if selectionTier.ScoresCount() == 0 {
+	selectionTierScoresCount := selectionTier.ScoresCount()
+
+	localMinimumEntries := MinimumEntries
+	if AutoAdjustTiers {
+		adjustedProvidersPerTier := int(math.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
+		if MinimumEntries > adjustedProvidersPerTier {
+			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
+				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
+				utils.LogAttr("was_MinimumEntries", MinimumEntries),
+				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
+				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
+			localMinimumEntries = adjustedProvidersPerTier
+		}
+	}
+
+	if selectionTierScoresCount == 0 {
 		// no providers to choose from
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		po.OptimizerNumTiers = selectionTier.ScoresCount()
+
+	// check if we have enough providers to create the tiers, if not set the number of tiers to the number of providers we currently have
+	numberOfTiersWanted := po.OptimizerNumTiers
+	if selectionTierScoresCount < po.OptimizerNumTiers {
+		numberOfTiersWanted = selectionTierScoresCount
 	}
-	if selectionTier.ScoresCount() >= MinimumEntries*2 {
-		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
+	if selectionTierScoresCount >= localMinimumEntries*2 {
+		// if we have more than 2*localMinimumEntries we set the LastTierChance configured
+		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
+	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
+	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
+	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
+	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, localMinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
+	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTierScoresCount) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",
@@ -536,11 +556,11 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 }
 
 func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClientInf consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	relayCache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
