@@ -18,8 +18,8 @@ WORKDIR /lava
 ENV GOCACHE=/root/.cache/go-build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
-    --mount=type=bind,source=go.sum,target=go.sum \
-    --mount=type=bind,source=go.mod,target=go.mod \
+    --mount=type=bind,source=./go.sum,target=/lava/go.sum \
+    --mount=type=bind,source=./go.mod,target=/lava/go.mod \
     go mod download -x
 
 COPY . .
