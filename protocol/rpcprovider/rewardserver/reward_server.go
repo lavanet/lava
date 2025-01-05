@@ -744,11 +744,10 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	appendToAttributeList := func(idx int, key, value string) {
 		var mapContToChange *mapCont
 		for _, mapCont := range attributesList {
-			if mapCont.index != idx {
-				continue
+			if mapCont.index == idx {
+				mapContToChange = mapCont
+				break
 			}
-			mapContToChange = mapCont
-			break
 		}
 		if mapContToChange == nil {
 			mapContToChange = &mapCont{attributes: map[string]string{}, index: idx}
@@ -756,22 +755,31 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		mapContToChange.attributes[key] = value
 	}
+
 	for _, attribute := range event.Attributes {
+		// Skip msg_index without suffix
+		if attribute.Key == "msg_index" {
+			continue
+		}
+
 		splittedAttrs := strings.SplitN(attribute.Key, ".", 2)
 		attrKey := splittedAttrs[0]
-		index := 0
+		index := 1 // Default to index 1 since that's where the payment data is
 		if len(splittedAttrs) > 1 {
 			var err error
 			index, err = strconv.Atoi(splittedAttrs[1])
 			if err != nil {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: attribute.Key})
+				continue
 			}
 			if index < 0 {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
+				continue
 			}
 		}
 		appendToAttributeList(index, attrKey, attribute.Value)
 	}
+
 	payments := []*PaymentRequest{}
 	for idx, mapCont := range attributesList {
 		attributes := mapCont.attributes
