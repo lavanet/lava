@@ -410,7 +410,7 @@ func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string,
 func (pbf *ProtocolBinaryFetcher) VerifyGoInstallation() (string, error) {
 	goCommand := "go"
 	emptyGoCommand := ""
-	expectedGeVersion := "1.23.0"
+	expectedGeVersion := "1.23.3"
 	homePath, err := GetHomePath()
 	if err != nil {
 		return emptyGoCommand, err
