@@ -245,9 +245,9 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 		sdk.ValAddress(ts.Validator.Addr).String(),
 		ts.Validator.PubKey,
 		sdk.NewCoin(ts.BondDenom(), math.NewIntFromUint64(uint64(balance))),
-		stakingtypes.Description{},
+		stakingtypes.Description{Moniker: "test_validator"},
 		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1), math.LegacyNewDecWithPrec(1, 1)),
-		math.ZeroInt(),
+		math.OneInt(),
 	)
 	require.NoError(t, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.Ctx, msg)
