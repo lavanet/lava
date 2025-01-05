@@ -1,10 +1,10 @@
 import json
 
 input_files = [
-    "/home/user/go/src/lava/cookbook/specs/cosmoshub.json",
-    "/home/user/go/src/lava/cookbook/specs/juno.json",
-    "/home/user/go/src/lava/cookbook/specs/lava.json",
-    "/home/user/go/src/lava/cookbook/specs/osmosis.json",
+    "/home/user/go/src/lava/specs/mainnet-1/specs/cosmoshub.json",
+    "/home/user/go/src/lava/specs/mainnet-1/specs/juno.json",
+    "/home/user/go/src/lava/specs/mainnet-1/specs/lava.json",
+    "/home/user/go/src/lava/specs/mainnet-1/specs/osmosis.json",
 ]
 
 for f in input_files:

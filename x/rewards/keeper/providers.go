@@ -88,11 +88,18 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				providerOnlyReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				providerAndDelegatorsReward := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward))
+				providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, providerAndDelegatorsReward, string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
-					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
+					utils.LavaFormatError("failed to send bonus rewards to provider", err,
+						utils.LogAttr("provider", basepay.Provider),
+						utils.LogAttr("chain_id", basepay.ChainId),
+						utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsReward.String()),
+						utils.LogAttr("provider_reward", providerReward.String()),
+					)
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, providerOnlyReward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, providerReward.String())
+				details[basepay.Provider+"_delegators"] = providerAndDelegatorsReward.Sub(providerReward...).String()
 			}
 
 			// count iprpc cu

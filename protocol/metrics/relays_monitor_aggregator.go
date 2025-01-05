@@ -8,6 +8,7 @@ import (
 
 type HealthCheckUpdatable interface {
 	UpdateHealthCheckStatus(status bool)
+	UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool)
 }
 
 type RelaysMonitorAggregator struct {
@@ -50,13 +51,17 @@ func (rma *RelaysMonitorAggregator) runHealthCheck() {
 	rma.lock.RLock()
 	defer rma.lock.RUnlock()
 
+	overallHealth := false
+
 	// If at least one of the relays monitors is healthy, we set the status to TRUE, otherwise we set it to FALSE.
 	for _, relaysMonitor := range rma.relaysMonitors {
 		if relaysMonitor.IsHealthy() {
-			rma.healthCheckUpdatable.UpdateHealthCheckStatus(true)
-			return
+			rma.healthCheckUpdatable.UpdateHealthcheckStatusBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, true)
+			overallHealth = true
+		} else {
+			rma.healthCheckUpdatable.UpdateHealthcheckStatusBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, false)
 		}
 	}
 
-	rma.healthCheckUpdatable.UpdateHealthCheckStatus(false)
+	rma.healthCheckUpdatable.UpdateHealthCheckStatus(overallHealth)
 }

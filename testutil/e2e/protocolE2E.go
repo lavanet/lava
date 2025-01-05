@@ -726,8 +726,14 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("%s", err))
-			} else if strings.Contains(string(reply), "error") {
-				errors = append(errors, string(reply))
+			} else {
+				var jsonReply map[string]interface{}
+				err = json.Unmarshal(reply, &jsonReply)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", err))
+				} else if jsonReply != nil && jsonReply["error"] != nil {
+					errors = append(errors, string(reply))
+				}
 			}
 		}
 	}
@@ -879,6 +885,7 @@ func (lt *lavaTest) saveLogs() {
 			}
 			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
 				isAllowedError := false
+
 				for errorSubstring := range allowedErrors {
 					if strings.Contains(line, errorSubstring) {
 						isAllowedError = true
@@ -1492,18 +1499,23 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
-	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	lt.startJSONRPCProvider(ctx)
-	lt.startJSONRPCConsumer(ctx)
+	// checks proxy.
+	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK")
 
+	// Start json provider
+	lt.startJSONRPCProvider(ctx)
+	// Start Lava provider
+	lt.startLavaProviders(ctx)
+	// Wait for providers to finish adding all chain routers.
+	time.Sleep(time.Second * 7)
+
+	lt.startJSONRPCConsumer(ctx)
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:333%d", n)
 		msg := fmt.Sprintf("JSONRPCConsumer%d OK", n)
 		lt.checkJSONRPCConsumer(url, time.Minute*2, msg)
 	})
 
-	// Lava Flow
-	lt.startLavaProviders(ctx)
 	lt.startLavaConsumer(ctx)
 
 	runChecksAndTests := func() {

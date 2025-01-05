@@ -34,7 +34,7 @@ var (
 
 var (
 	KeyReputationLatencyOverSyncFactor                    = []byte("ReputationLatencyOverSyncFactor")
-	DefaultReputationLatencyOverSyncFactor math.LegacyDec = sdk.NewDecWithPrec(1, 1) // 0.1
+	DefaultReputationLatencyOverSyncFactor math.LegacyDec = sdk.NewDecWithPrec(3, 1) // 0.3
 )
 
 var (

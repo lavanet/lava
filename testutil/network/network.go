@@ -52,6 +52,7 @@ func New(t *testing.T, configs ...network.Config) *network.Network {
 func DefaultConfig() network.Config {
 	encoding := app.MakeEncodingConfig()
 	chainID := "chain-" + tmrand.NewRand().Str(6)
+
 	return network.Config{
 		Codec:             encoding.Marshaler,
 		TxConfig:          encoding.TxConfig,
@@ -81,5 +82,7 @@ func DefaultConfig() network.Config {
 		CleanupDir:      true,
 		SigningAlgo:     string(hd.Secp256k1Type),
 		KeyringOptions:  []keyring.Option{},
+		APIAddress:      fmt.Sprintf("tcp://0.0.0.0:%d", 0),
+		GRPCAddress:     fmt.Sprintf("0.0.0.0:%d", 0),
 	}
 }
