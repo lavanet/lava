@@ -1159,6 +1159,14 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	return ts
 }
 
+func (ts *Tester) AdvanceTimeHours(timeDelta time.Duration) *Tester {
+	endTime := ts.BlockTime().Add(timeDelta)
+	for ts.BlockTime().Before(endTime) {
+		ts.AdvanceBlock(time.Hour)
+	}
+	return ts
+}
+
 func (ts *Tester) BondDenom() string {
 	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
 }
