@@ -7,7 +7,6 @@ import (
 	"time"
 
 	cosmosmath "cosmossdk.io/math"
-	"github.com/dgraph-io/ristretto"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/metrics"

@@ -59,7 +59,6 @@ type StateQuery struct {
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
-	tendermintRPC
 	client.CometRPC
 }
 
