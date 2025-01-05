@@ -1,3 +1,8 @@
+# An example fo configuring manually each internal path
+# To support trace addon, simply add: 
+#     addons:
+#         - trace 
+# to each url group.
 endpoints:
   - api-interface: jsonrpc
     chain-id: STRK

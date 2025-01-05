@@ -6,7 +6,15 @@ endpoints:
     node-urls:
       - url: wss://starknet-mainnet.domain.com/ws/rpc/v0_7
         internal-path: /ws/rpc/v0_7
+        Addons:
+          - trace
       - url: wss://starknet-mainnet.domain.com/ws/rpc/v0_6
         internal-path: /ws/rpc/v0_6
+        Addons:
+          - trace
       - url: wss://starknet-mainnet.domain.com/ws
+        Addons:
+          - trace
       - url: https://starknet-mainnet.domain.com
+        Addons:
+          - trace
