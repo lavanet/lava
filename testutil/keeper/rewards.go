@@ -14,6 +14,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -69,10 +70,11 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
 	stakingStoreKey := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
-	stakingKeeper := *stakingkeeper.NewKeeper(cdc, runtime.NewKVStoreService(stakingStoreKey), mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String(), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()))
+	ak := mockAccountKeeper{ac: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())}
+	stakingKeeper := *stakingkeeper.NewKeeper(cdc, runtime.NewKVStoreService(stakingStoreKey), ak, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String(), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()))
 
 	distributionStoreKey := storetypes.NewKVStoreKey(distributiontypes.StoreKey)
-	distributionKeeper := distributionkeeper.NewKeeper(cdc, runtime.NewKVStoreService(distributionStoreKey), mockAccountKeeper{}, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	distributionKeeper := distributionkeeper.NewKeeper(cdc, runtime.NewKVStoreService(distributionStoreKey), ak, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, stakingKeeper)
 	downtimeKeeper := downtimekeeper.NewKeeper(cdc, downtimeKey, paramsSubspaceDowntime, epochstorageKeeper)
@@ -88,7 +90,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		mockBankKeeper{},
-		mockAccountKeeper{},
+		ak,
 		nil,
 		nil,
 		downtimeKeeper,
