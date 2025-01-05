@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	_ "github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
 	"github.com/lavanet/lava/v4/utils"
 	specutils "github.com/lavanet/lava/v4/utils/keeper"
