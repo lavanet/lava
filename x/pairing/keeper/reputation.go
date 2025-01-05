@@ -134,7 +134,7 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 	// note, the map is already sorted by QoS score in ascending order.
 	scores, err := k.UpdateReputationsForEpochStart(ctx)
 	if err != nil {
-		panic(utils.LavaFormatError("UpdateReputationQosScore: could not update providers QoS scores", err))
+		utils.LavaFormatError("critical: UpdateReputationQosScore: could not update providers QoS scores", err)
 	}
 
 	// sort keys
@@ -153,13 +153,13 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 		// get benchmark score value
 		benchmark, err := k.GetBenchmarkReputationScore(stakeProvidersScore)
 		if err != nil {
-			panic(utils.LavaFormatError("UpdateReputationQosScore: could not get benchmark QoS score", err))
+			utils.LavaFormatError("critical: UpdateReputationQosScore: could not get benchmark QoS score", err)
 		}
 
 		// set reputation pairing score by the benchmark
 		err = k.setReputationPairingScoreByBenchmark(ctx, chainID, cluster, benchmark, stakeProvidersScore.ProviderScores)
 		if err != nil {
-			panic(utils.LavaFormatError("UpdateReputationQosScore: could not set repuatation pairing scores", err))
+			utils.LavaFormatError("critical: UpdateReputationQosScore: could not set repuatation pairing scores", err)
 		}
 	}
 }
