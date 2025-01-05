@@ -319,8 +319,9 @@ func (p *ParsedInput) GetBlockHashes() ([]string, error) {
 func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 	var result any
 	rpcInputResult := rpcInput.GetResult()
+	trimmed := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(string(rpcInputResult), "\n", ""), "\t", ""), " ", "")
 	if rpcInputResult != nil {
-		switch rpcInputResult[0] {
+		switch trimmed[0] {
 		case '{':
 			var resultMap map[string]interface{}
 			json.Unmarshal(rpcInputResult, &resultMap)
