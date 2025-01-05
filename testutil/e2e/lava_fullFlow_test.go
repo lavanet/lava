@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	_ "github.com/lavanet/lava/v4/cmd/lavad/cmd"
 )
 
 func TestLavaProtocol(t *testing.T) {
