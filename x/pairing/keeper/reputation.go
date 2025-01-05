@@ -150,7 +150,11 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 		split := strings.Split(chainCluster, " ")
 		chainID, cluster := split[0], split[1]
 
-		// get benchmark score value
+		// get benchmark score value. It's used as a percentile score to determine the reputation pairing score
+		// of each provider in a scale of [MinReputationPairingScore, MaxReputationPairingScore] (currently 0.5-2).
+		// to clarify, providers score are determined by their QoS score compared to the other providers that share the same chain ID and cluster.
+		// the benchmark score is the score of the provider that has the lowest QoS score within the 90th percentile
+		// of the providers in the chain ID and cluster.
 		benchmark, err := k.GetBenchmarkReputationScore(stakeProvidersScore)
 		if err != nil {
 			utils.LavaFormatError("critical: UpdateReputationQosScore: could not get benchmark QoS score", err)
@@ -200,6 +204,16 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]Stak
 			)
 		}
 
+		if reputation.EpochScore == types.ZeroQosScore {
+			// if the epoch score is zero, we don't need to update the reputation
+			utils.LavaFormatWarning("updateReputationsScores: epoch score is zero, skipping update", nil,
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("cluster", cluster),
+				utils.LogAttr("provider", provider),
+			)
+			continue
+		}
+
 		// apply time decay on current score and add the epoch score (which is reset right after)
 		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(halfLifeFactor, currentTime)
 		if err != nil {
@@ -227,6 +241,10 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]Stak
 		scores[chainID+" "+cluster] = providerScores
 	}
 
+	// in the provider scoring process, each provider is scored by its QoS score compared to the other providers
+	// that share the same chain ID and cluster.
+	// sortProviderScores() sorts the providers by their QoS score in ascending order so that the best score is first
+	// (low is better). This allows us to get the benchmark score more easily.
 	sortProviderScores(scores)
 	return scores, nil
 }
@@ -322,7 +340,7 @@ func (k Keeper) setReputationPairingScoreByBenchmark(ctx sdk.Context, chainID st
 		}
 
 		if score.IsNegative() {
-			utils.LavaFormatError("setReputationPairingScoreByBenchmark: invalid provider score", fmt.Errorf("score is negative"),
+			return utils.LavaFormatError("setReputationPairingScoreByBenchmark: invalid provider score", fmt.Errorf("score is negative"),
 				utils.LogAttr("chain_id", chainID),
 				utils.LogAttr("cluster", cluster),
 				utils.LogAttr("provider", providerScore.Provider),
@@ -332,6 +350,8 @@ func (k Keeper) setReputationPairingScoreByBenchmark(ctx sdk.Context, chainID st
 
 		scaledScore := types.MinReputationPairingScore
 		if score.IsZero() || score.LTE(benchmark) {
+			// since the benchmark is a very high percentile score, we set the scaled score to the max
+			// for providers that have a score lower than the benchmark.
 			scaledScore = types.MaxReputationPairingScore
 		} else if score.GT(benchmark) {
 			scaledScore = types.MinReputationPairingScore.Add((benchmark.Quo(score)).Mul(scale))
