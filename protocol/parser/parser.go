@@ -317,30 +317,26 @@ func (p *ParsedInput) GetBlockHashes() ([]string, error) {
 }
 
 func getMapForParse(rpcInput RPCInput) map[string]interface{} {
-	var result any
-	rpcInputResult := rpcInput.GetResult()
-	trimmed := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(string(rpcInputResult), "\n", ""), "\t", ""), " ", "")
-	if rpcInputResult != nil {
-		switch trimmed[0] {
-		case '{':
-			var resultMap map[string]interface{}
-			json.Unmarshal(rpcInputResult, &resultMap)
-			result = resultMap
-		case '[':
-			var resultArray []interface{}
-			err := json.Unmarshal(rpcInputResult, &resultArray)
-			if err != nil {
-				utils.LavaFormatError("failed to unmarshal result", err, utils.LogAttr("result", rpcInputResult))
-			}
-			result = resultArray
-		default:
-			var resultString string
-			json.Unmarshal(rpcInputResult, &resultString)
-			result = resultString
-		}
+	result := parseRawResult(rpcInput.GetResult())
+	return map[string]interface{}{
+		"params": rpcInput.GetParams(),
+		"result": result,
+		"error":  rpcInput.GetError().ToMap(),
+	}
+}
+
+func parseRawResult(rawResult json.RawMessage) interface{} {
+	if rawResult == nil {
+		return nil
 	}
 
-	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result, "error": rpcInput.GetError().ToMap()}
+	var result interface{}
+	if err := json.Unmarshal(rawResult, &result); err != nil {
+		utils.LavaFormatError("failed to unmarshal result", err, utils.LogAttr("result", rawResult))
+		return nil
+	}
+
+	return result
 }
 
 func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {
