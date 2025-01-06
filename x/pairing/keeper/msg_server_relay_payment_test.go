@@ -1105,14 +1105,14 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(payment, true)
 
-	// get both providers reputation: provider1 should have its epoch score and time last updated changed,
+	// get both providers reputation: provider1 should have its epoch score changed,
 	// provider2 should have nothing change from the default
 	r1, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
 	require.True(t, found)
 	r2, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider2)
 	require.True(t, found)
 
-	require.Greater(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
+	require.Equal(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
 	epochScore1, err := r1.EpochScore.Score.Resolve()
 	require.NoError(t, err)
 	epochScore2, err := r2.EpochScore.Score.Resolve()
