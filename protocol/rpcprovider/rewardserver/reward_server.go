@@ -781,7 +781,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			for _, mapCont := range attributesList {
 				errStringAllAttrs += fmt.Sprintf("%#v,", *mapCont)
 			}
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs}, utils.Attribute{Key: "event", Value: event})
 		}
 		mint, ok := attributes["Mint"]
 		if !ok {
