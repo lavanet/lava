@@ -759,18 +759,17 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(attribute.Key, ".", 2)
 		attrKey := splittedAttrs[0]
-		index := 0
-		if len(splittedAttrs) > 1 {
-			var err error
-			index, err = strconv.Atoi(splittedAttrs[1])
+		if len(splittedAttrs) == 2 {
+			index, err := strconv.Atoi(splittedAttrs[1])
 			if err != nil {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: attribute.Key})
 			}
 			if index < 0 {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
+			appendToAttributeList(index, attrKey, attribute.Value)
 		}
-		appendToAttributeList(index, attrKey, attribute.Value)
+
 	}
 	payments := []*PaymentRequest{}
 	for idx, mapCont := range attributesList {
@@ -781,7 +780,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			for _, mapCont := range attributesList {
 				errStringAllAttrs += fmt.Sprintf("%#v,", *mapCont)
 			}
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs}, utils.Attribute{Key: "event", Value: event})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs})
 		}
 		mint, ok := attributes["Mint"]
 		if !ok {
