@@ -1078,9 +1078,9 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
 	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.ZeroDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.ZeroDec(),
+		Latency:      sdk.OneDec(),
+		Availability: sdk.NewDecWithPrec(1, 1),
+		Sync:         sdk.OneDec(),
 	}
 
 	res, err := ts.QuerySubscriptionCurrent(consumer)
@@ -1121,7 +1121,7 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	require.NoError(t, err)
 	variance2, err := r2.EpochScore.Variance.Resolve()
 	require.NoError(t, err)
-	require.True(t, epochScore1.LT(epochScore2)) // score is lower because QoS is excellent
+	require.True(t, epochScore1.GT(epochScore2)) // score is higher because QoS is bad
 	require.True(t, variance1.GT(variance2))     // variance is higher because the QoS is significantly differnet from DefaultQos
 
 	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)

@@ -61,15 +61,15 @@ func (qs QosScore) Update(score math.LegacyDec, truncate bool, weight int64) Qos
 		score = qs.truncate(score)
 	}
 
-	// updated_score_num = qos_score_num + score * weight
-	// updated_score_denom = qos_score_denom + weight
-	qs.Score.Num = qs.Score.Num.Add(score.MulInt64(weight))
-	qs.Score.Denom = qs.Score.Denom.Add(math.LegacyNewDec(weight))
-
 	// updated_variance_num = qos_variance_num + (qos_score_num - score)^2 * weight
 	// updated_score_denom = qos_score_denom + weight
 	qs.Variance.Num = qs.Variance.Num.Add((qs.Score.Num.Sub(score)).Power(2).MulInt64(weight))
 	qs.Variance.Denom = qs.Variance.Denom.Add(math.LegacyNewDec(weight))
+
+	// updated_score_num = qos_score_num + score * weight
+	// updated_score_denom = qos_score_denom + weight
+	qs.Score.Num = qs.Score.Num.Add(score.MulInt64(weight))
+	qs.Score.Denom = qs.Score.Denom.Add(math.LegacyNewDec(weight))
 
 	return qs
 }
