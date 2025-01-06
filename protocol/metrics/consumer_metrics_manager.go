@@ -547,7 +547,7 @@ func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
 }
 
-func (pme *ConsumerMetricsManager) UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool) {
+func (pme *ConsumerMetricsManager) UpdateHealthcheckStatusBreakdown(chainId, apiInterface string, status bool) {
 	if pme == nil {
 		return
 	}
