@@ -154,7 +154,7 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 
-	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), math.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -183,18 +183,18 @@ func TestTrackedCuWithQos(t *testing.T) {
 	require.NoError(t, err)
 
 	badQoS := &types.QualityOfServiceReport{
-		Latency:      sdk.ZeroDec(),
-		Availability: sdk.ZeroDec(),
-		Sync:         sdk.ZeroDec(),
+		Latency:      math.LegacyZeroDec(),
+		Availability: math.LegacyZeroDec(),
+		Sync:         math.LegacyZeroDec(),
 	}
 	goodQos := &types.QualityOfServiceReport{
-		Latency:      sdk.OneDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.OneDec(),
+		Latency:      math.LegacyOneDec(),
+		Availability: math.LegacyOneDec(),
+		Sync:         math.LegacyOneDec(),
 	}
 
 	// Simulate QosWeight to be 0.5 - the default value at the time of this writing
-	initQos := sdk.NewDecWithPrec(5, 1)
+	initQos := math.LegacyNewDecWithPrec(5, 1)
 	initQosBytes, _ := initQos.MarshalJSON()
 	initQosStr := string(initQosBytes)
 
@@ -493,7 +493,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), math.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
@@ -612,7 +612,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), math.NewInt(testStake/2)))
 	require.NoError(t, err)
 	delegationTime := ts.BlockTime()
 	ts.AdvanceEpoch()

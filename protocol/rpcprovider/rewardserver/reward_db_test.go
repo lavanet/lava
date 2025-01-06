@@ -19,7 +19,7 @@ func TestSave(t *testing.T) {
 	err := rs.AddDB(db)
 	require.NoError(t, err)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
 	cpe := &rewardserver.RewardEntity{
@@ -44,7 +44,7 @@ func TestSaveBatch(t *testing.T) {
 	err := rs.AddDB(db)
 	require.NoError(t, err)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
 	cpes := []*rewardserver.RewardEntity{}
@@ -72,7 +72,7 @@ func TestFindAll(t *testing.T) {
 	err := rs.AddDB(db)
 	require.NoError(t, err)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
 	cpe := &rewardserver.RewardEntity{
@@ -96,7 +96,7 @@ func TestFindOne(t *testing.T) {
 	err := rs.AddDB(db)
 	require.NoError(t, err)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
@@ -122,7 +122,7 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 
 	privKey, addr := sigs.GenerateFloatingKey()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
@@ -157,7 +157,7 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.NoError(t, err)
 
 	privKey, addr := sigs.GenerateFloatingKey()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
@@ -193,7 +193,7 @@ func TestRewardsWithTTL(t *testing.T) {
 	require.NoError(t, err)
 
 	privKey, addr := sigs.GenerateFloatingKey()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 
 	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
 	proof.Epoch = 1

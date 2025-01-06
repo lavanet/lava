@@ -101,7 +101,7 @@ func (et *EventTracker) getLatestVersionEvents(latestBlock int64) (updated bool,
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && attribute.Value == "Version" {
@@ -120,7 +120,7 @@ func (et *EventTracker) getLatestDowntimeParamsUpdateEvents(latestBlock int64) (
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && (attribute.Value == "DowntimeDuration" || attribute.Value == "EpochDuration") {
@@ -143,7 +143,7 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 		utils.EventPrefix + spectypes.SpecModifyEventName,
 		utils.EventPrefix + spectypes.SpecRefreshEventName,
 	}
-	for _, event := range et.blockResults.EndBlockEvents {
+	for _, event := range et.blockResults.FinalizeBlockEvents {
 		if slices.Contains(eventsListToListenTo, event.Type) {
 			utils.LavaFormatInfo("Spec update event identified", utils.LogAttr("Event", event.Type))
 			return true, nil
@@ -173,7 +173,7 @@ func (et *EventTracker) getLatestVoteEvents(latestBlock int64) (votes []*reliabi
 		}
 	}
 
-	beginBlockEvents := et.blockResults.BeginBlockEvents
+	beginBlockEvents := et.blockResults.FinalizeBlockEvents
 	for _, event := range beginBlockEvents {
 		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
 			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
@@ -198,15 +198,4 @@ func (et *EventTracker) getLatestVoteEvents(latestBlock int64) (votes []*reliabi
 	}
 
 	return votes, err
-}
-
-type tendermintRPC interface {
-	BlockResults(
-		ctx context.Context,
-		height *int64,
-	) (*ctypes.ResultBlockResults, error)
-	ConsensusParams(
-		ctx context.Context,
-		height *int64,
-	) (*ctypes.ResultConsensusParams, error)
 }

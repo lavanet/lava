@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -20,7 +19,7 @@ var _ = strconv.IntSize
 
 func TestConflictVoteQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNConflictVote(keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
@@ -71,7 +70,7 @@ func TestConflictVoteQuerySingle(t *testing.T) {
 
 func TestConflictVoteQueryPaginated(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNConflictVote(keeper, ctx, 5)
 
 	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllConflictVoteRequest {

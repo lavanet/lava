@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -11,8 +11,8 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMajorityPercent             = []byte("MajorityPercent")
-	DefaultMajorityPercent sdk.Dec = sdk.NewDecWithPrec(95, 2)
+	KeyMajorityPercent                    = []byte("MajorityPercent")
+	DefaultMajorityPercent math.LegacyDec = math.LegacyNewDecWithPrec(95, 2)
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 
 var (
 	KeyRewards             = []byte("WinnerRewardPercent")
-	DefaultRewards Rewards = Rewards{WinnerRewardPercent: sdk.NewDecWithPrec(15, 2), ClientRewardPercent: sdk.NewDecWithPrec(10, 2), VotersRewardPercent: sdk.NewDecWithPrec(15, 2)}
+	DefaultRewards Rewards = Rewards{WinnerRewardPercent: math.LegacyNewDecWithPrec(15, 2), ClientRewardPercent: math.LegacyNewDecWithPrec(10, 2), VotersRewardPercent: math.LegacyNewDecWithPrec(15, 2)}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -37,7 +37,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent sdk.Dec, voteStartSpan, votePeriod uint64, rewards Rewards,
+	majorityPercent math.LegacyDec, voteStartSpan, votePeriod uint64, rewards Rewards,
 ) Params {
 	return Params{
 		MajorityPercent: majorityPercent,
@@ -96,12 +96,12 @@ func (p Params) String() string {
 
 // validateMajorityPercent validates the majorityPercent param
 func validateMajorityPercent(v interface{}) error {
-	majorityPercent, ok := v.(sdk.Dec)
+	majorityPercent, ok := v.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if majorityPercent.GT(sdk.OneDec()) || majorityPercent.LT(sdk.ZeroDec()) {
+	if majorityPercent.GT(math.LegacyOneDec()) || majorityPercent.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid parameter majorityPercent")
 	}
 
@@ -142,19 +142,19 @@ func validateRewards(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if rewards.ClientRewardPercent.GT(sdk.OneDec()) || rewards.ClientRewardPercent.LT(sdk.ZeroDec()) {
+	if rewards.ClientRewardPercent.GT(math.LegacyOneDec()) || rewards.ClientRewardPercent.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid parameter ClientRewardPercent")
 	}
 
-	if rewards.VotersRewardPercent.GT(sdk.OneDec()) || rewards.VotersRewardPercent.LT(sdk.ZeroDec()) {
+	if rewards.VotersRewardPercent.GT(math.LegacyOneDec()) || rewards.VotersRewardPercent.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid parameter VotersRewardPercent")
 	}
 
-	if rewards.WinnerRewardPercent.GT(sdk.OneDec()) || rewards.WinnerRewardPercent.LT(sdk.ZeroDec()) {
+	if rewards.WinnerRewardPercent.GT(math.LegacyOneDec()) || rewards.WinnerRewardPercent.LT(math.LegacyZeroDec()) {
 		return fmt.Errorf("invalid parameter WinnerRewardPercent")
 	}
 
-	if rewards.ClientRewardPercent.Add(rewards.VotersRewardPercent).Add(rewards.WinnerRewardPercent).GT(sdk.OneDec()) {
+	if rewards.ClientRewardPercent.Add(rewards.VotersRewardPercent).Add(rewards.WinnerRewardPercent).GT(math.LegacyOneDec()) {
 		return fmt.Errorf("sum of all rewards is bigger than 100 percent")
 	}
 

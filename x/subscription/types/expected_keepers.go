@@ -4,9 +4,8 @@ import (
 	context "context"
 
 	"cosmossdk.io/math"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -19,15 +18,15 @@ import (
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
 type AccountKeeper interface {
-	GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	// Methods imported from account should be defined here
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
-	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
-	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
-	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToModule(ctx context.Context, senderPool, recipientPool string, amt sdk.Coins) error
 	// Methods imported from bank should be defined here
 }
 
@@ -79,7 +78,7 @@ type DualStakingKeeper interface {
 }
 
 type RewardsKeeper interface {
-	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int)
+	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment math.LegacyDec, rewards math.Int)
 	MaxRewardBoost(ctx sdk.Context) (res uint64)
 	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward sdk.Coin, senderModule string) (updatedReward sdk.Coin, err error)
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
@@ -88,20 +87,20 @@ type RewardsKeeper interface {
 	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
 	TotalPoolTokens(ctx sdk.Context, pool rewardstypes.Pool) sdk.Coins
 	SpecEmissionParts(ctx sdk.Context) (emissions []rewardstypes.SpecEmissionPart)
-	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
+	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards math.LegacyDec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
 	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64
-	GetCommunityTax(ctx sdk.Context) math.LegacyDec
+	GetCommunityTax(ctx sdk.Context) (math.LegacyDec, error)
 	DistributeMonthlyBonusRewards(ctx sdk.Context)
 	GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, err error)
 }
 
 type StakingKeeper interface {
-	BondDenom(ctx sdk.Context) string
-	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
-	GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool)
-	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
+	BondDenom(ctx context.Context) (string, error)
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+	GetDelegation(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.Delegation, error)
+	GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error)
 }
 
 type SpecKeeper interface {

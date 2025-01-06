@@ -13,8 +13,8 @@ fi
 rm -rf ~/.lava
 chainID="lava"
 lavad init validator --chain-id $chainID
-lavad config broadcast-mode sync
-lavad config keyring-backend test
+lavad config set client broadcast-mode sync
+lavad config set client keyring-backend test
 
 # Specify the file path, field to edit, and new value
 path="$HOME/.lava/config/"
@@ -67,7 +67,6 @@ fi
 echo -n "$data" > "$path$genesis"
 
 echo "using genesis file"
-echo $(cat "$path$genesis")
 
 # Determine OS
 os_name=$(uname)

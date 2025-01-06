@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v4/testutil/common"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -31,9 +32,9 @@ func stubPaymentEvents(num int, specId string, sessionId uint64) (tos []map[stri
 			Provider:    "lava@test0",
 			RelayNum:    5,
 			QosReport: &pairingtypes.QualityOfServiceReport{
-				Latency:      sdk.OneDec(),
-				Availability: sdk.OneDec(),
-				Sync:         sdk.OneDec(),
+				Latency:      math.LegacyOneDec(),
+				Availability: math.LegacyOneDec(),
+				Sync:         math.LegacyOneDec(),
 			},
 			Epoch:                 20,
 			UnresponsiveProviders: nil,
@@ -132,7 +133,7 @@ func TestSendNewProof(t *testing.T) {
 	rewardDB, err := createInMemoryRewardDb([]string{specId, "newSpec"})
 	require.NoError(t, err)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	testCases := []struct {
 		Proofs                   []*pairingtypes.RelaySession
 		ExpectedExistingCu       uint64
@@ -192,7 +193,7 @@ func TestSendNewProof(t *testing.T) {
 
 func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	rand.InitRandomSeed()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	rewardDB, err := createInMemoryRewardDb([]string{"specId"})
 	require.NoError(t, err)
 
@@ -212,7 +213,7 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 
 func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	rand.InitRandomSeed()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	db := NewMemoryDB("specId")
 	rewardStore := NewRewardDB()
 	err := rewardStore.AddDB(db)
@@ -251,7 +252,7 @@ func TestUpdateEpoch(t *testing.T) {
 		rws, stubRewardsTxSender, _ := setupRewardsServer()
 		privKey, acc := sigs.GenerateFloatingKey()
 
-		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+		ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
 			epoch := sessionId%2 + 1
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
@@ -282,7 +283,7 @@ func TestUpdateEpoch(t *testing.T) {
 		rws, stubRewardsTxSender, db := setupRewardsServer()
 		privKey, acc := sigs.GenerateFloatingKey()
 
-		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+		ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 		epoch := uint64(1)
 		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
@@ -322,7 +323,7 @@ func TestSaveRewardsToDB(t *testing.T) {
 
 	epoch := uint64(1)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proofs := []*pairingtypes.RelaySession{}
 	for _, spec := range specs {
 		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, make([]byte, 0), uint64(1), uint64(10), spec, nil))
@@ -352,7 +353,7 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 
 	epoch, sessionId := uint64(1), uint64(1)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proofs := []*pairingtypes.RelaySession{}
 	for _, spec := range specs {
 		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil))
@@ -397,7 +398,7 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 
 	epoch, sessionId := uint64(1), uint64(1)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	proofs := []*pairingtypes.RelaySession{}
 	for _, chainId := range specs {
 		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), chainId, nil))
@@ -440,7 +441,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 
 	epoch, sessionId := uint64(1), uint64(1)
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	privKey, acc := sigs.GenerateFloatingKey()
 	for _, spec := range specs {
 		proof := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil)
@@ -482,7 +483,7 @@ func TestFailedPaymentRequestAttemptsHappyFlow(t *testing.T) {
 		},
 	}
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
 
 	session := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, uint64(1), uint64(42), spec, nil)
@@ -514,7 +515,7 @@ func TestFailedPaymentRequestAttemptsHappyMultipleSessions(t *testing.T) {
 		},
 	}
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 10000, 10000, nil)
 
 	require.Equal(t, 3, MaxPaymentRequestsRetiresForSession,
@@ -562,7 +563,7 @@ func TestFailedPaymentRequestAttemptsHappyMultipleSessions(t *testing.T) {
 
 func BenchmarkSendNewProofInMemory(b *testing.B) {
 	rand.InitRandomSeed()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	specs := []string{"spec", "spec2"}
 	rewardDB, err := createInMemoryRewardDb(specs)
 	require.NoError(b, err)
@@ -578,7 +579,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	rand.InitRandomSeed()
 	os.RemoveAll("badger_test")
 
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
 	db1 := NewLocalDB("badger_test", "provider", "spec", 0)
 	db2 := NewLocalDB("badger_test", "provider", "spec2", 0)
 	rewardStore := NewRewardDB()

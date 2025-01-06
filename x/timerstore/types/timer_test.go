@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -257,14 +258,14 @@ func TestTimerEarlyExpiry(t *testing.T) {
 }
 
 var (
-	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockStoreKey    = storetypes.NewKVStoreKey("storeKey")
 	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )
 
 // Helper function to init a mock keeper and context
 func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -274,7 +275,7 @@ func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	return ctx, cdc
 }

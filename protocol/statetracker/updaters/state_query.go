@@ -40,22 +40,16 @@ type ProtocolVersionResponse struct {
 
 type StateQueryAccessInf interface {
 	grpc1.ClientConn
-	tendermintRPC
-	client.TendermintRPC
+	client.CometRPC
 }
 
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
-	tendermintRPC
-	client.TendermintRPC
+	client.CometRPC
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	tenderRpc, ok := clientCtx.Client.(tendermintRPC)
-	if !ok {
-		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
-	}
-	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client}
 }
 
 type StateQuery struct {
@@ -65,8 +59,7 @@ type StateQuery struct {
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
-	tendermintRPC
-	client.TendermintRPC
+	client.CometRPC
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
@@ -86,8 +79,7 @@ func (sq *StateQuery) UpdateAccess(accessInf StateQueryAccessInf) {
 	sq.epochStorageQueryClient = epochstoragetypes.NewQueryClient(accessInf)
 	sq.protocolClient = protocoltypes.NewQueryClient(accessInf)
 	sq.downtimeClient = downtimev1.NewQueryClient(accessInf)
-	sq.tendermintRPC = accessInf
-	sq.TendermintRPC = accessInf
+	sq.CometRPC = accessInf
 }
 
 func (sq *StateQuery) Provider(ctx context.Context, in *pairingtypes.QueryProviderRequest, opts ...grpc.CallOption) (*pairingtypes.QueryProviderResponse, error) {
@@ -284,7 +276,7 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	brp := psq.StateQuery.tendermintRPC
+	brp := psq.StateQuery.CometRPC
 	blockResults, err := brp.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return nil, err
@@ -304,7 +296,7 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 		}
 	}
 
-	beginBlockEvents := blockResults.BeginBlockEvents
+	beginBlockEvents := blockResults.FinalizeBlockEvents
 	for _, event := range beginBlockEvents {
 		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
 			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)

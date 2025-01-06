@@ -31,7 +31,7 @@ func createNStakeStorage(k *keeper.Keeper, ctx sdk.Context, n int) []types.Stake
 
 func TestStakeStorageQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.EpochstorageKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
+	wctx := ctx
 	msgs := createNStakeStorage(keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string

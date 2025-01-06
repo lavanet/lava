@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -248,7 +249,7 @@ type ConflictHandlerInterface interface {
 
 type ProviderInfo struct {
 	ProviderAddress              string
-	ProviderQoSExcellenceSummery sdk.Dec // the number represents the average qos for this provider session
+	ProviderQoSExcellenceSummery math.LegacyDec // the number represents the average qos for this provider session
 	ProviderStake                sdk.Coin
 }
 

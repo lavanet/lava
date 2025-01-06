@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
@@ -71,8 +72,11 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		if err != nil {
 			return err
 		}
-
-		metadata.TotalDelegations = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		bondDenom, err := m.keeper.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return err
+		}
+		metadata.TotalDelegations = sdk.NewCoin(bondDenom, math.ZeroInt())
 		for _, d := range delegations {
 			if d.Delegator != metadata.Vault {
 				metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
@@ -81,12 +85,12 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 
 		// fix entries with different vaults
 		// count self delegations
-		TotalSelfDelegation := sdk.ZeroInt()
+		TotalSelfDelegation := math.ZeroInt()
 		for _, e := range entries {
 			if e.Vault != metadata.Vault {
 				fmt.Println(address)
-				biggestVault.Stake = biggestVault.Stake.SubAmount(sdk.NewInt(1))
-				e.Stake.Amount = sdk.OneInt()
+				biggestVault.Stake = biggestVault.Stake.SubAmount(math.NewInt(1))
+				e.Stake.Amount = math.OneInt()
 				e.Vault = metadata.Vault
 			} else {
 				TotalSelfDelegation = TotalSelfDelegation.Add(e.Stake.Amount)
@@ -96,7 +100,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// calculate delegate total and update the entry
 		for _, entry := range entries {
 			metadata.Chains = lavaslices.AddUnique(metadata.Chains, entry.Chain)
-			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+			entry.DelegateTotal = sdk.NewCoin(bondDenom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
 			entry.Description = types1.Description{}
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 		}

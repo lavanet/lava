@@ -36,8 +36,10 @@ package keeper
 // - For the remaining half of the month, her credit is calculated on 150 tokens.
 
 import (
+	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/dualstaking/types"
 )
@@ -55,13 +57,18 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	// Calculate the credit for the delegation
 	currentAmount := delegation.Amount
 	creditAmount := delegation.Credit
+
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
+	}
 	// handle uninitialized amounts
 	if creditAmount.IsNil() {
-		creditAmount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		creditAmount = sdk.NewCoin(bondDenom, math.ZeroInt())
 	}
 	if currentAmount.IsNil() {
 		// this should never happen, but we handle it just in case
-		currentAmount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		currentAmount = sdk.NewCoin(bondDenom, math.ZeroInt())
 	}
 	currentTimestamp := ctx.BlockTime().UTC()
 	delegationTimestamp := time.Unix(delegation.Timestamp, 0)
@@ -74,7 +81,7 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 		// and disable the credit for older dates since they are irrelevant
 		delegationTimestamp = monthAgo
 		creditTimestamp = delegationTimestamp
-		creditAmount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		creditAmount = sdk.NewCoin(bondDenom, math.ZeroInt())
 	} else if monthAgo.After(creditTimestamp) {
 		// delegation is less than 30 days, but credit might be older, so truncate it to 30 days
 		creditTimestamp = monthAgo
@@ -98,9 +105,9 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 	// we need to average them and store it in the credit
 	totalDelta := creditDelta + amountDelta
 	if totalDelta == 0 {
-		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), currentTimestamp.Unix()
+		return sdk.NewCoin(bondDenom, math.ZeroInt()), currentTimestamp.Unix()
 	}
-	credit = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), currentAmount.Amount.MulRaw(amountDelta).Add(creditAmount.Amount.MulRaw(creditDelta)).QuoRaw(totalDelta))
+	credit = sdk.NewCoin(bondDenom, currentAmount.Amount.MulRaw(amountDelta).Add(creditAmount.Amount.MulRaw(creditDelta)).QuoRaw(totalDelta))
 	return credit, creditTimestamp.Unix()
 }
 
@@ -116,14 +123,18 @@ func (k Keeper) CalculateCredit(ctx sdk.Context, delegation types.Delegation) (c
 // will be calculated as: (100 * 15 + 200 * 15) / 30 = 150
 func (k Keeper) CalculateMonthlyCredit(ctx sdk.Context, delegation types.Delegation) (credit sdk.Coin) {
 	credit, creditTimeEpoch := k.CalculateCredit(ctx, delegation)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
+	}
 	if credit.IsNil() || credit.IsZero() || creditTimeEpoch <= 0 {
-		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		return sdk.NewCoin(bondDenom, math.ZeroInt())
 	}
 	creditTimestamp := time.Unix(creditTimeEpoch, 0)
 	timeStampDiff := (ctx.BlockTime().UTC().Unix() - creditTimestamp.Unix()) / hourSeconds
 	if timeStampDiff <= 0 {
 		// no positive credit
-		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		return sdk.NewCoin(bondDenom, math.ZeroInt())
 	}
 	// make sure we never increase the credit
 	if timeStampDiff > monthHours {

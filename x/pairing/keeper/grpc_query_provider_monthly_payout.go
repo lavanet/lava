@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/pairing/types"
@@ -60,17 +61,20 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 				)
 			}
 
-			if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU)) {
-				totalTokenAmount = sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU * totalCuTracked)
+			if plan.Price.Amount.Quo(math.NewIntFromUint64(totalCuTracked)).GT(math.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU)) {
+				totalTokenAmount = math.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU * totalCuTracked)
 			}
 
 			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, totalCuTracked)
-			denom := k.stakingKeeper.BondDenom(ctx)
+			denom, err := k.stakingKeeper.BondDenom(ctx)
+			if err != nil {
+				return nil, err
+			}
 			validatorsFee, communityFee, err := k.subscriptionKeeper.CalculateParticipationFees(ctx, sdk.NewCoin(denom, totalMonthlyReward))
 			if err != nil {
 				return nil, err
 			}
-			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
+			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(denom, totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
 
 			// calculate only the provider reward
 			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, providerRewardAfterFees, subsciptiontypes.ModuleName, true, true, true)
@@ -81,9 +85,9 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			details = append(details, &types.SubscriptionPayout{
 				Subscription: sub,
 				ChainId:      chainID,
-				Amount:       providerReward.AmountOf(k.stakingKeeper.BondDenom(ctx)).Uint64(),
+				Amount:       providerReward.AmountOf(denom).Uint64(),
 			})
-			total += providerReward.AmountOf(k.stakingKeeper.BondDenom(ctx)).Uint64()
+			total += providerReward.AmountOf(denom).Uint64()
 		}
 	}
 

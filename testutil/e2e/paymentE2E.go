@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
 	e2esdk "github.com/lavanet/lava/v4/testutil/e2e/sdk"
 	"github.com/lavanet/lava/v4/utils"
@@ -117,7 +117,7 @@ func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards of address %s. err: %s", sdkAddr.String(), err.Error())
 		}
-		total := sdk.NewCoin(commonconsts.TestTokenDenom, sdk.ZeroInt())
+		total := sdk.NewCoin(commonconsts.TestTokenDenom, cosmosmath.ZeroInt())
 		for _, r := range res.Rewards {
 			total = total.AddAmount(r.Amount.AmountOf(commonconsts.TestTokenDenom))
 		}
@@ -166,7 +166,7 @@ func (lt *lavaTest) checkPayment(providers []string, startRewards []sdk.Coin) {
 				utils.Attribute{Key: "provider", Value: providers[i]},
 				utils.Attribute{Key: "start_balance", Value: startRewards[i].String()},
 				utils.Attribute{Key: "expected_payout", Value: expectedPayoutArr[i]},
-				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
+				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(cosmosmath.NewIntFromUint64(expectedPayoutArr[i])).String()},
 				utils.Attribute{Key: "actual_balance", Value: newRewards[i]},
 			))
 		}
@@ -266,7 +266,6 @@ var (
 )
 
 func runPaymentE2E(timeout time.Duration) {
-	cmd.InitSDKConfig()
 	os.RemoveAll(protocolLogsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {

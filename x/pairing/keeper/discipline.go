@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 )
@@ -23,10 +24,14 @@ func (k Keeper) BailEntry(ctx sdk.Context, address string, chainID string, bail 
 	return nil
 }
 
-func (k Keeper) SlashEntry(ctx sdk.Context, address string, chainID string, percentage sdk.Dec) (sdk.Coin, error) {
+func (k Keeper) SlashEntry(ctx sdk.Context, address string, chainID string, percentage math.LegacyDec) (sdk.Coin, error) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return sdk.NewCoin(bondDenom, math.ZeroInt()), err
+	}
 	// TODO: jail user, and count problems
 	if !utils.IsBech32Address(address) {
-		return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), fmt.Errorf("invalid address")
+		return sdk.NewCoin(bondDenom, math.ZeroInt()), fmt.Errorf("invalid address")
 	}
-	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), nil
+	return sdk.NewCoin(bondDenom, math.ZeroInt()), nil
 }

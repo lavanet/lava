@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"cosmossdk.io/x/feegrant"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
@@ -454,11 +454,6 @@ func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowa
 			utils.LogAttr("grantee", grantee),
 			utils.LogAttr("grant", grant.String()),
 		)
-	}
-
-	err = msg.ValidateBasic()
-	if err != nil {
-		return nil, err
 	}
 
 	return msg, nil

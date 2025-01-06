@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -97,6 +96,6 @@ func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, provider, d
 	return k.SetDelegation(ctx, d)
 }
 
-func (k Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.HandleSlashedValidators(ctx)
 }

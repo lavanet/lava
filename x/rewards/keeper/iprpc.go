@@ -19,11 +19,15 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 
 	// check fund consists of minimum amount of ulava (min_iprpc_cost)
 	minIprpcFundCost := k.GetMinIprpcCost(ctx)
-	if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	if fund.AmountOf(bondDenom).LT(minIprpcFundCost.Amount) {
 		return utils.LavaFormatWarning("insufficient ulava tokens in fund. should be at least min iprpc cost * duration", types.ErrFundIprpc,
 			utils.LogAttr("min_iprpc_cost", k.GetMinIprpcCost(ctx).String()),
 			utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
-			utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
+			utils.LogAttr("fund_ulava_amount", fund.AmountOf(bondDenom)),
 		)
 	}
 
@@ -34,7 +38,7 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	}
 
 	// send the minimum cost to the validators allocation pool (and subtract them from the fund)
-	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(sdk.NewIntFromUint64(duration))
+	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(math.NewIntFromUint64(duration))
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.ValidatorsRewardsAllocationPoolName), minIprpcFundCostCoins)
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool", err,
@@ -174,7 +178,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerAndDelegatorsIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
+			providerAndDelegatorsIprpcReward := specFund.Fund.MulInt(math.NewIntFromUint64(providerCU.CU)).QuoInt(math.NewIntFromUint64(specCu.TotalCu))
 
 			UsedRewardTemp := UsedReward.Add(providerAndDelegatorsIprpcReward...)
 			if UsedReward.IsAnyGT(specFund.Fund) {

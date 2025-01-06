@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
@@ -164,17 +164,17 @@ func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport
 		return nil, utils.LavaFormatError("expected 3 values for QoSValuesFlag", nil, utils.Attribute{Key: "QoSValues", Value: qosValues})
 	}
 	// Convert string values to Dec
-	latency, err := sdk.NewDecFromStr(qosValues[0])
+	latency, err := math.LegacyNewDecFromStr(qosValues[0])
 	if err != nil {
 		return nil, utils.LavaFormatError("invalid latency value", err)
 	}
 
-	availability, err := sdk.NewDecFromStr(qosValues[1])
+	availability, err := math.LegacyNewDecFromStr(qosValues[1])
 	if err != nil {
 		return nil, utils.LavaFormatError("invalid availability value", err)
 	}
 
-	syncScore, err := sdk.NewDecFromStr(qosValues[2])
+	syncScore, err := math.LegacyNewDecFromStr(qosValues[2])
 	if err != nil {
 		return nil, utils.LavaFormatError("invalid sync score value", err)
 	}

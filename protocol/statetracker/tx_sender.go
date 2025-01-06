@@ -12,12 +12,13 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/feegrant"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
@@ -50,7 +51,7 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 
 func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasUsed uint64, txFactory tx.Factory) error {
 	txEvents := simResult.GetResult().Events
-	lavaReward := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(0))
+	lavaReward := sdk.NewCoin(commontypes.TokenDenom, math.NewInt(0))
 	for _, txEvent := range txEvents {
 		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {
@@ -86,9 +87,6 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Con
 		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
 	}
 
-	if err := msg.ValidateBasic(); err != nil {
-		return err
-	}
 	clientCtx := ts.clientCtx
 	txfactory, err := ts.prepareFactory(txfactory)
 	if err != nil {

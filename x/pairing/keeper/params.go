@@ -3,6 +3,7 @@ package keeper
 import (
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/pairing/types"
@@ -42,7 +43,7 @@ func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) uint64 {
 	return res
 }
 
-func (k Keeper) QoSWeight(ctx sdk.Context) (res sdk.Dec) {
+func (k Keeper) QoSWeight(ctx sdk.Context) (res math.LegacyDec) {
 	k.paramstore.Get(ctx, types.KeyQoSWeight, &res)
 	return
 }

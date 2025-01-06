@@ -13,9 +13,9 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	"golang.org/x/exp/slices"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v4/utils"
@@ -48,7 +48,7 @@ const (
 	unixPrefix                                       = "unix:"
 )
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
+var AvailabilityPercentage math.LegacyDec = math.LegacyNewDecWithPrec(1, 1) // TODO move to params pairing
 const (
 	PercentileToCalculateLatency = 0.9
 	MinProvidersForSync          = 0.6
@@ -186,10 +186,16 @@ func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geol
 	}
 
 	// sort the endpoints by geolocation relevance:
-	lessFunc := func(a *Endpoint, b *Endpoint) bool {
+	lessFunc := func(a *Endpoint, b *Endpoint) int {
 		latencyA := int(latencyToGeo(a.Geolocation, currentGeo))
 		latencyB := int(latencyToGeo(b.Geolocation, currentGeo))
-		return latencyA < latencyB
+		if latencyA < latencyB {
+			return -1
+		}
+		if latencyA > latencyB {
+			return 1
+		}
+		return 0
 	}
 	slices.SortStableFunc(pairingEndpoints, lessFunc)
 }

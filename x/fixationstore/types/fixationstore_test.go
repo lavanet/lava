@@ -5,13 +5,15 @@ import (
 	"strconv"
 	"testing"
 
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 	"github.com/stretchr/testify/require"
@@ -64,7 +66,7 @@ func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.NewCoin("utest", sdk.NewInt(int64(i+1))))
+		coins = append(coins, sdk.NewCoin("utest", math.NewInt(int64(i+1))))
 	}
 
 	for _, play := range playbook {
@@ -735,8 +737,8 @@ func TestGetAllEntries(t *testing.T) {
 }
 
 func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -746,12 +748,12 @@ func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewTestLogger(t))
 
 	return ctx, cdc
 }
 
 var (
-	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockStoreKey    = storetypes.NewKVStoreKey("storeKey")
 	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )

@@ -2,7 +2,6 @@ package types
 
 import (
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type Pool string
@@ -38,7 +37,7 @@ const (
 // next timer expiry which determine the validators block rewards.
 // since the time/blocks conversion can be errornous, we multiply our calculated number
 // of blocks by this error margin, so we'll won't have a case of having too few blocks
-var BlocksToTimerExpirySlackFactor math.LegacyDec = sdk.NewDecWithPrec(105, 2) // 1.05
+var BlocksToTimerExpirySlackFactor math.LegacyDec = math.LegacyNewDecWithPrec(105, 2) // 1.05
 
 // Refill reward pools time stores constants:
 // This timer store is used to trigger the refill mechanism of the distribution

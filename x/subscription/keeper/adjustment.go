@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/x/subscription/types"
@@ -44,7 +46,7 @@ func (k Keeper) RemoveAdjustment(
 // GetAllAdjustment returns all Adjustment
 func (k Keeper) GetAllAdjustment(ctx sdk.Context) (list []types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -132,7 +134,7 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 func (k Keeper) GetConsumerAdjustments(ctx sdk.Context, consumer string) (list []types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	// set consumer prefix
-	iterator := sdk.KVStorePrefixIterator(store, []byte(consumer))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(consumer))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -147,7 +149,7 @@ func (k Keeper) GetConsumerAdjustments(ctx sdk.Context, consumer string) (list [
 func (k Keeper) RemoveConsumerAdjustments(ctx sdk.Context, consumer string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	// set consumer prefix
-	iterator := sdk.KVStorePrefixIterator(store, []byte(consumer))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(consumer))
 	defer iterator.Close()
 
 	keysToDelete := []string{}
@@ -159,7 +161,7 @@ func (k Keeper) RemoveConsumerAdjustments(ctx sdk.Context, consumer string) {
 	}
 }
 
-func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types.Adjustment) map[string]sdk.Dec {
+func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types.Adjustment) map[string]math.LegacyDec {
 	type usage struct {
 		total    int64
 		adjusted int64
@@ -179,7 +181,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 		providers = append(providers, provider)
 	}
 
-	providerAdjustment := map[string]sdk.Dec{}
+	providerAdjustment := map[string]math.LegacyDec{}
 	// we use providers list to iterate deterministically
 	for _, provider := range providers {
 		if _, ok := providerAdjustment[provider]; !ok {
@@ -189,7 +191,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 			if totalUsage == 0 {
 				continue
 			}
-			providerAdjustment[provider] = sdk.NewDec(totalAdjustedUsage).QuoInt64(totalUsage)
+			providerAdjustment[provider] = math.LegacyNewDec(totalAdjustedUsage).QuoInt64(totalUsage)
 		}
 	}
 	return providerAdjustment

@@ -23,11 +23,11 @@ sleep_until_next_epoch() {
 
 # Function to wait until next block
 wait_next_block() {
-  current=$( lavad q block | jq .block.header.height)
+  current=$(lavad status 2>/dev/null | jq -r '.sync_info.latest_block_height')
   echo "waiting for next block $current"
   while true; do
     display_ticker
-    new=$( lavad q block | jq .block.header.height)
+    new=$(lavad status 2>/dev/null | jq -r '.sync_info.latest_block_height')
     if [ "$current" != "$new" ]; then
       echo "finished waiting at block $new"
       break

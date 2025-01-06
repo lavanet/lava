@@ -9,7 +9,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v4/testutil/common"
 	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
 	"github.com/lavanet/lava/v4/testutil/nullify"
@@ -228,7 +227,6 @@ func TestSpecRemove(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
-	cmd.InitSDKConfig()
 	// Run the actual tests
 	exitCode := m.Run()
 	os.Exit(exitCode)

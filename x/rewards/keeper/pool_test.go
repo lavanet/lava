@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/lavanet/lava/v4/testutil/common"
@@ -96,7 +96,7 @@ func TestBurnRateParam(t *testing.T) {
 
 	// change the burn rate param to be zero
 	paramKey := string(types.KeyLeftoverBurnRate)
-	zeroBurnRate, err := sdk.ZeroDec().MarshalJSON()
+	zeroBurnRate, err := math.LegacyZeroDec().MarshalJSON()
 	require.NoError(t, err)
 	paramVal := string(zeroBurnRate)
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
@@ -189,7 +189,8 @@ func TestValidatorBlockRewards(t *testing.T) {
 	ts := newTester(t, false)
 
 	// create validator
-	stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+	stakingSupply, err := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+	require.NoError(ts.T, err)
 	valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
 	ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -198,16 +199,16 @@ func TestValidatorBlockRewards(t *testing.T) {
 	// by default, BondedRatio staking module param is smaller than MinBonded rewards module param
 	// so bondedTargetFactor = 1. We change MinBonded to zero to change bondedTargetFactor
 	params := types.DefaultParams()
-	params.MinBondedTarget = sdk.ZeroDec()
-	params.MaxBondedTarget = sdk.NewDecWithPrec(8, 1) // 0.8
-	params.LowFactor = sdk.NewDecWithPrec(5, 1)       // 0.5
-	params.LeftoverBurnRate = sdk.OneDec()
+	params.MinBondedTarget = math.LegacyZeroDec()
+	params.MaxBondedTarget = math.LegacyNewDecWithPrec(8, 1) // 0.8
+	params.LowFactor = math.LegacyNewDecWithPrec(5, 1)       // 0.5
+	params.LeftoverBurnRate = math.LegacyOneDec()
 	ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 	// calc the expected BondedTargetFactor with its formula. with the values defined above,
 	// and bondedRatio = 0.25, should be (0.8 - 0.25) / 0.8 + 0.5 * (0.25/0.8) = 0.84375
 	// compare the new block reward to refBlockReward
-	expectedBondedTargetFactor := sdk.NewDecWithPrec(84375, 5).TruncateInt() // 0.84375
+	expectedBondedTargetFactor := math.LegacyNewDecWithPrec(84375, 5).TruncateInt() // 0.84375
 
 	// verify that the current reward amount is as expected by checking the bondedTargetFactor alone
 	res, err := ts.QueryRewardsBlockReward()
@@ -215,7 +216,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	blockReward := res.Reward.Amount
 	distPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	blocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
-	bondedTargetFactor := sdk.OneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
+	bondedTargetFactor := math.LegacyOneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
 	require.True(t, bondedTargetFactor.Equal(expectedBondedTargetFactor))
 
 	// return the params to default values
@@ -322,9 +323,9 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 	for _, tt := range playbook {
 		t.Run(tt.name, func(t *testing.T) {
 			params := types.Params{
-				MinBondedTarget:                     sdk.MustNewDecFromStr(tt.minBonded),
-				MaxBondedTarget:                     sdk.MustNewDecFromStr(tt.maxBonded),
-				LowFactor:                           sdk.MustNewDecFromStr(tt.lowFactor),
+				MinBondedTarget:                     math.LegacyMustNewDecFromStr(tt.minBonded),
+				MaxBondedTarget:                     math.LegacyMustNewDecFromStr(tt.maxBonded),
+				LowFactor:                           math.LegacyMustNewDecFromStr(tt.lowFactor),
 				LeftoverBurnRate:                    types.DefaultLeftOverBurnRate,
 				MaxRewardBoost:                      types.DefaultMaxRewardBoost,
 				ValidatorsSubscriptionParticipation: types.DefaultValidatorsSubscriptionParticipation,
@@ -332,7 +333,8 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 			if tt.unzeroBondedRatio {
-				stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+				stakingSupply, err := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+				require.NoError(ts.T, err)
 				valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
 				ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
 				validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -340,7 +342,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 			}
 
 			bondedTargetFactor := ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx)
-			require.Equal(t, sdk.MustNewDecFromStr(tt.expectedBondedTargetFactor), bondedTargetFactor)
+			require.Equal(t, math.LegacyMustNewDecFromStr(tt.expectedBondedTargetFactor), bondedTargetFactor)
 		})
 	}
 }
@@ -395,7 +397,7 @@ func TestBlockRewardsWith2Tokens(t *testing.T) {
 	startTokens = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 
 	ts.AdvanceBlock()
-	distribution.BeginBlocker(ts.Ctx, abci.RequestBeginBlock{}, ts.Keepers.Distribution)
+	distribution.BeginBlocker(ts.Ctx, ts.Keepers.Distribution)
 
 	currentTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 	require.Equal(t, currentTokens.AmountOf(ibcDenom), currentTokens.AmountOf(ts.BondDenom()))

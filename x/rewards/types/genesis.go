@@ -3,6 +3,7 @@ package types
 import (
 	fmt "fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 	"github.com/lavanet/lava/v4/x/timerstore/types"
@@ -21,7 +22,7 @@ func DefaultGenesis() *GenesisState {
 		RefillRewardsTS:     *types.DefaultGenesis(),
 		BasePays:            []BasePayWithIndex{},
 		IprpcSubscriptions:  []string{},
-		MinIprpcCost:        sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+		MinIprpcCost:        sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
 		IprpcRewards:        []IprpcReward{},
 		IprpcRewardsCurrent: 0,
 	}

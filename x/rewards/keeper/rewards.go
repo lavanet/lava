@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	sdkmath "cosmossdk.io/math"
+	cosmosmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -30,7 +30,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	}
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(sdk.NewDec(blocksToNextTimerExpiry)).TruncateDecimal()
+	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(cosmosmath.LegacyNewDec(blocksToNextTimerExpiry)).TruncateDecimal()
 	if !validatorsRewards.IsZero() {
 		// distribute rewards to validators (same as Cosmos mint module)
 		err := k.addCollectedFees(ctx, validatorsRewards)
@@ -67,7 +67,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
-	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
+	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, cosmosmath.LegacyOneDec())
 	k.MovePoolToPool(ctx, types.ValidatorsRewardsLeftOverPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 1 {
@@ -82,10 +82,14 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC()
 	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth.Unix()), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
 
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get bond denom from staking keeper: %v", err))
+	}
 	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
-	valDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
+	valDistPoolBalance := coins.AmountOf(bondDenom).Int64()
 	coins = k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
-	providerDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
+	providerDistPoolBalance := coins.AmountOf(bondDenom).Int64()
 	nextRefillBlock := k.blocksToNextTimerExpiry(ctx, nextMonth.Unix()-ctx.BlockTime().UTC().Unix()) + ctx.BlockHeight()
 	details := map[string]string{
 		"allocation_pool_remaining_lifetime":   strconv.FormatUint(monthsLeft, 10),
@@ -115,12 +119,17 @@ func (k Keeper) MovePoolToPool(ctx sdk.Context, from types.Pool, to types.Pool) 
 	}
 }
 
-func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
+func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate cosmosmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
 	coins := k.TotalPoolTokens(ctx, distributionPool)
-	distPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		utils.LavaFormatError("failed to get bond denom", err, utils.LogAttr("distribution_pool", string(distributionPool)))
+		return
+	}
+	distPoolBalance := coins.AmountOf(bondDenom)
 	tokensToBurn := burnRate.MulInt(distPoolBalance).TruncateInt()
-	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn, k.stakingKeeper.BondDenom(ctx))
+	err = k.BurnPoolTokens(ctx, distributionPool, tokensToBurn, bondDenom)
 	if err != nil {
 		utils.LavaFormatError("critical - could not burn distribution pool tokens", err,
 			utils.Attribute{Key: "distribution_pool", Value: string(distributionPool)},
@@ -130,9 +139,9 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
 	coins = k.TotalPoolTokens(ctx, allocationPool)
-	allocPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	allocPoolBalance := coins.AmountOf(bondDenom)
 	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
-		monthlyQuota := sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
+		monthlyQuota := sdk.Coin{Denom: bondDenom, Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
 
 		err = k.bankKeeper.SendCoinsFromModuleToModule(
 			ctx,
@@ -160,7 +169,7 @@ func (k Keeper) blocksToNextTimerExpiry(ctx sdk.Context, timeToNextTimerExpiry i
 		return 30
 	}
 
-	effectiveTimeToNextTimerExpiry := sdkmath.LegacyNewDec(timeToNextTimerExpiry)
+	effectiveTimeToNextTimerExpiry := cosmosmath.LegacyNewDec(timeToNextTimerExpiry)
 	if timeToNextTimerExpiry != math.MaxInt64 {
 		effectiveTimeToNextTimerExpiry = types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry)
 	}

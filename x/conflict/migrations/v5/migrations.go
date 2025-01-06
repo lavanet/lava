@@ -3,9 +3,9 @@ package v4 // migrations.go
 import (
 	"log"
 
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/pairing/types"
 )
@@ -18,7 +18,7 @@ func DeleteOpenConflicts(ctx sdk.Context, storeKey storetypes.StoreKey, cdc code
 	store := ctx.KVStore(storeKey)
 	log.Println("@@@ REMOVING OLD STORAGE KEYS @@@")
 	oldStore := prefix.NewStore(store, types.KeyPrefix(ConflictVoteKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(oldStore, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(oldStore, []byte{})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		log.Printf("@@@ Key: %s @@@", string(iterator.Key()))

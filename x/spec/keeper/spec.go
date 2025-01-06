@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -56,7 +57,7 @@ func (k Keeper) RemoveSpec(
 // GetAllSpec returns all Spec
 func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
 
@@ -229,7 +230,11 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 		return details, err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), spec.MinStakeProvider, false); err != nil {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateCoins(ctx, bondDenom, spec.MinStakeProvider, false); err != nil {
 		details := map[string]string{
 			"spec":    spec.Name,
 			"status":  strconv.FormatBool(spec.Enabled),

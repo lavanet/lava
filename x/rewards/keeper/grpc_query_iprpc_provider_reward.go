@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/rewards/types"
 	"google.golang.org/grpc/codes"
@@ -46,11 +47,11 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 		}
 
 		// get the provider's relative reward by CU
-		providerFund, isValid := specFund.Fund.SafeMulInt(sdk.NewIntFromUint64(providerIprpcCu))
+		providerFund, isValid := specFund.Fund.SafeMulInt(math.NewIntFromUint64(providerIprpcCu))
 		if !isValid {
 			continue
 		}
-		providerFund, isValid = providerFund.SafeQuoInt(sdk.NewIntFromUint64(totalIprpcCu))
+		providerFund, isValid = providerFund.SafeQuoInt(math.NewIntFromUint64(totalIprpcCu))
 		if !isValid {
 			continue
 		}

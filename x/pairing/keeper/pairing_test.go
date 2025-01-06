@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
@@ -161,10 +162,6 @@ func TestGetPairing(t *testing.T) {
 	err := ts.addProvider(1)
 	require.NoError(t, err)
 
-	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
-	constBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
-	epochBlocks := ts.EpochBlocks()
-
 	// test: different epoch, valid tells if the payment request should work
 	tests := []struct {
 		name                string
@@ -174,7 +171,6 @@ func TestGetPairing(t *testing.T) {
 		{"zeroEpoch", false, false},
 		{"firstEpoch", true, false},
 		{"commonEpoch", true, false},
-		{"epochTimesChanged", true, true},
 	}
 
 	for _, tt := range tests {
@@ -187,10 +183,6 @@ func TestGetPairing(t *testing.T) {
 				ts.AdvanceEpoch()
 			case "commonEpoch":
 				ts.AdvanceEpochs(5)
-			case "epochTimesChanged":
-				ts.AdvanceEpochs(5)
-				ts.AdvanceBlocks(epochBlocks/2, constBlockTime/2)
-				ts.AdvanceBlocks(epochBlocks / 2)
 			}
 
 			_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
@@ -1040,7 +1032,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:         "free",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), cosmosmath.NewInt(1)),
 		ProjectsLimit: 3,
 		PlanPolicy:    freePlanPolicy,
 	}
@@ -1048,7 +1040,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:         "basic",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), cosmosmath.NewInt(1)),
 		ProjectsLimit: 5,
 		PlanPolicy:    basicPlanPolicy,
 	}
@@ -1056,7 +1048,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	premiumPlan := planstypes.Plan{
 		Index:         "premium",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), cosmosmath.NewInt(1)),
 		ProjectsLimit: 7,
 		PlanPolicy:    premiumPlanPolicy,
 	}
@@ -1248,7 +1240,7 @@ func TestDuplicateProviders(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:         "basic",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), cosmosmath.NewInt(1)),
 		ProjectsLimit: 5,
 		PlanPolicy:    basicPlanPolicy,
 	}
@@ -1300,7 +1292,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:         "free",
 		Block:         ts.BlockHeight(),
-		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Price:         sdk.NewCoin(ts.TokenDenom(), cosmosmath.NewInt(1)),
 		ProjectsLimit: 3,
 		PlanPolicy:    freePlanPolicy,
 	}

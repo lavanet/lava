@@ -3,6 +3,7 @@ package types
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/v4/testutil/sample"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestMsgDelegate_ValidateBasic(t *testing.T) {
-	oneCoin := sdk.NewCoin("utest", sdk.NewInt(1))
+	oneCoin := sdk.NewCoin("utest", math.NewInt(1))
 	validator := sample.ValAddress()
 
 	tests := []struct {
@@ -55,7 +56,7 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 			msg: MsgDelegate{
 				Creator:   sample.AccAddress(),
 				Provider:  sample.AccAddress(),
-				Amount:    sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
+				Amount:    sdk.Coin{Denom: "utest", Amount: math.NewInt(-1)},
 				Validator: validator,
 				ChainID:   "",
 			},

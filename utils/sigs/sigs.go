@@ -61,9 +61,9 @@ func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 		msgData = HashMsg(msgData)
 	}
 
-	sig, err := btcSecp256k1Ecdsa.SignCompact(pkey, msgData, false)
-	if err != nil {
-		return nil, err
+	sig := btcSecp256k1Ecdsa.SignCompact(pkey, msgData, false)
+	if len(sig) == 0 {
+		return nil, errors.New("failed to sign")
 	}
 
 	return sig, nil

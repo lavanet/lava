@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,7 +39,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						&banktypes.MsgSend{},
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -58,7 +59,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						&subsciptiontypes.MsgAutoRenewal{},
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -78,7 +79,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						&banktypes.MsgSend{},
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -103,7 +104,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						&subsciptiontypes.MsgAutoRenewal{},
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -135,7 +136,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						submitProposal,
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -162,7 +163,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 					[]sdk.Msg{
 						submitProposal,
 					},
-					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", math.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",

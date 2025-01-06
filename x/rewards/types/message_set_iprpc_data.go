@@ -27,16 +27,6 @@ func (msg *MsgSetIprpcData) Type() string {
 	return TypeMsgSetIprpcData
 }
 
-func (msg *MsgSetIprpcData) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-func (msg *MsgSetIprpcData) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func (msg *MsgSetIprpcData) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
 		return sdkerrors.Wrap(err, "invalid authority address")

@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/log"
 	cosmosMath "cosmossdk.io/math"
-	"github.com/cometbft/cometbft/libs/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
@@ -129,7 +129,10 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	minBonded := params.MinBondedTarget
 	maxBonded := params.MaxBondedTarget
 	lowFactor := params.LowFactor
-	bonded := k.stakingKeeper.BondedRatio(ctx)
+	bonded, err := k.stakingKeeper.BondedRatio(ctx)
+	if err != nil {
+		return cosmosMath.LegacyOneDec()
+	}
 
 	if bonded.GT(maxBonded) {
 		return lowFactor

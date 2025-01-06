@@ -11,7 +11,7 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
@@ -97,6 +97,12 @@ func SetGlobalLoggingLevel(logLevel string) {
 	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
 	defaultGlobalLogLevel = getLogLevel(logLevel)
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
+}
+
+func SetGlobalLoggingLevelSilent(logLevel string) {
+	// setting global level prevents us from having two different levels for example one for stdout and one for rolling log.
+	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
+	defaultGlobalLogLevel = getLogLevel(logLevel)
 }
 
 func SetLogLevelFieldName(fieldName string) {

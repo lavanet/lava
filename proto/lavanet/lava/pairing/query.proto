@@ -152,7 +152,7 @@ message QueryProviderPairingChanceRequest {
 }
   
 message QueryProviderPairingChanceResponse {
-  string chance = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
+  string chance = 1 [(gogoproto.customtype) = "cosmossdk.io/math.LegacyDec", (gogoproto.nullable) = false];
 }
 
 message QueryUserEntryRequest {
