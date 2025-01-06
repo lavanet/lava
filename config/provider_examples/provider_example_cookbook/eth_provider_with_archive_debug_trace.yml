@@ -1,0 +1,32 @@
+# An example configuration file for an EVM provider with the following addons and extensions:
+# - archive
+# - debug
+# - trace
+
+# ** Replace the urls with your own node urls **
+
+endpoints:
+    - api-interface: jsonrpc
+      chain-id: ETH1 # Replace the chain-id for any relevant spec that inherits EVM (e.g. ETH1, FTM250, CELO, ARBITRUM,BASE, BSC, POLYGON, BLAST, FANTOM, SEPOLIA, etc.)
+      network-address:
+        address: "127.0.0.1:2224"
+      node-urls:
+        - url: http://my-eth-node.com/eth/http/archive
+          addons:
+            - archive
+        - url: ws://my-eth-node.com/eth/archive/ws
+          addons:
+            - archive
+        - url: http://my-eth-node.com/eth/http/archive
+          addons:
+            - debug
+        - url: ws://my-eth-node.com/eth/archive/ws
+          addons:
+            - debug
+        - url: http://my-eth-node.com/eth/http/archive
+          addons:
+            - trace
+        - url: ws://my-eth-node.com/eth/archive/ws
+          addons:
+            - trace
+        

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -184,7 +185,7 @@ func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pair
 
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
-// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// The providerRewardPerc arg is the part of the provider reward after deducting
 // the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
@@ -260,11 +261,25 @@ func (ts *tester) payAndVerifyBalance(
 	require.Nil(ts.T, err)
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
-
-	// advance month + blocksToSave + 1 to trigger the provider monthly payment
-	ts.AdvanceMonths(1)
-	ts.AdvanceEpoch()
-	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	timeToExpiry := time.Unix(int64(sub.Sub.MonthExpiryTime), 0)
+	durLeft := sub.Sub.DurationLeft
+	if timeToExpiry.After(ts.Ctx.BlockTime()) && relayPayment.DescriptionString == exactConst {
+		ts.AdvanceTimeHours(timeToExpiry.Sub(ts.Ctx.BlockTime()))
+		// subs only pays after blocks to save
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+		if durLeft > 0 {
+			sub, err = ts.QuerySubscriptionCurrent(proj.Project.Subscription)
+			require.Nil(ts.T, err)
+			require.NotNil(ts.T, sub.Sub)
+			require.Equal(ts.T, durLeft-1, sub.Sub.DurationLeft, "month expiry time: %s current time: %s", time.Unix(int64(sub.Sub.MonthExpiryTime), 0).UTC(), ts.BlockTime().UTC())
+		}
+	} else {
+		// advance month + blocksToSave + 1 to trigger the provider monthly payment
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
 
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
@@ -279,7 +294,7 @@ func (ts *tester) payAndVerifyBalance(
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
-	require.True(ts.T, want.IsZero())
+	require.True(ts.T, want.IsZero(), want)
 	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
@@ -334,4 +349,22 @@ func (ts *tester) newRelaySession(
 		RelayNum:    relay,
 	}
 	return relaySession
+}
+
+func (ts *tester) isProviderFrozen(provider string, chain string) bool {
+	res, err := ts.QueryPairingProvider(provider, chain)
+	require.NoError(ts.T, err)
+	foundChain := false
+	var isFrozen bool
+	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Address == provider && stakeEntry.Chain == chain {
+			foundChain = true
+			isFrozen = stakeEntry.IsFrozen()
+			break
+		}
+	}
+	if !foundChain {
+		require.Fail(ts.T, "provider not staked in chain", "provider: %s, chain: %s", provider, chain)
+	}
+	return isFrozen
 }

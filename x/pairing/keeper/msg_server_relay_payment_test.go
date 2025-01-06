@@ -1078,9 +1078,9 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
 	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
 	qos := &types.QualityOfServiceReport{
-		Latency:      sdk.ZeroDec(),
-		Availability: sdk.OneDec(),
-		Sync:         sdk.ZeroDec(),
+		Latency:      sdk.OneDec(),
+		Availability: sdk.NewDecWithPrec(1, 1),
+		Sync:         sdk.OneDec(),
 	}
 
 	res, err := ts.QuerySubscriptionCurrent(consumer)
@@ -1105,14 +1105,14 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(payment, true)
 
-	// get both providers reputation: provider1 should have its epoch score and time last updated changed,
+	// get both providers reputation: provider1 should have its epoch score changed,
 	// provider2 should have nothing change from the default
 	r1, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
 	require.True(t, found)
 	r2, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider2)
 	require.True(t, found)
 
-	require.Greater(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
+	require.Equal(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
 	epochScore1, err := r1.EpochScore.Score.Resolve()
 	require.NoError(t, err)
 	epochScore2, err := r2.EpochScore.Score.Resolve()
@@ -1121,7 +1121,7 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	require.NoError(t, err)
 	variance2, err := r2.EpochScore.Variance.Resolve()
 	require.NoError(t, err)
-	require.True(t, epochScore1.LT(epochScore2)) // score is lower because QoS is excellent
+	require.True(t, epochScore1.GT(epochScore2)) // score is higher because QoS is bad
 	require.True(t, variance1.GT(variance2))     // variance is higher because the QoS is significantly differnet from DefaultQos
 
 	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
@@ -1299,6 +1299,12 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
+	// save reputation original time and advance hour
+	r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	originalTime := r.TimeLastUpdated
+	ts.AdvanceTimeHours(1)
+
 	// send relay payment msg from provider1
 	relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 10)
 	relaySession.QosExcellenceReport = qos
@@ -1311,6 +1317,11 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 		Relays:  []*types.RelaySession{relaySession},
 	}
 	ts.relayPaymentWithoutPay(payment, true)
+
+	// check that the time last updated is the same as the original time
+	// (a bug in which the TimeLastUpdated was updated in relay payment was fixed.
+	// The TimeLastUpdated should be updated only when the epoch starts)
+	require.Equal(t, originalTime, r.TimeLastUpdated)
 
 	// advance epoch and check reputation for expected results
 	ts.AdvanceEpoch()
@@ -1365,8 +1376,8 @@ func TestUpdateReputationScoresSortedMap(t *testing.T) {
 	}
 
 	// create expected map (supposed to be sorted by score)
-	expected := map[string]keeper.StakeProviderScores{
-		"mockspec cluster": {
+	expected := map[types.ReputationChainClusterKey]keeper.StakeProviderScores{
+		{ChainID: "mockspec", Cluster: "cluster"}: {
 			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(3)), // 1+2
 			ProviderScores: []keeper.ProviderQosScore{
 				{
@@ -1382,7 +1393,7 @@ func TestUpdateReputationScoresSortedMap(t *testing.T) {
 			},
 		},
 
-		"mockspec1 cluster": {
+		{ChainID: "mockspec1", Cluster: "cluster"}: {
 			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(12)), // 3+4+5
 			ProviderScores: []keeper.ProviderQosScore{
 				{

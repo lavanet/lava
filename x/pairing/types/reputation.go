@@ -114,3 +114,12 @@ func (r Reputation) Validate() bool {
 func ReputationScoreKey(chainID string, cluster string, provider string) string {
 	return chainID + " " + cluster + " " + provider
 }
+
+type ReputationChainClusterKey struct {
+	ChainID string
+	Cluster string
+}
+
+func (rck ReputationChainClusterKey) String() string {
+	return rck.ChainID + " " + rck.Cluster
+}

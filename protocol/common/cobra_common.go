@@ -35,9 +35,12 @@ const (
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 
 	// optimizer flags
-	SetProviderOptimizerBestTierPickChance    = "set-provider-optimizer-best-tier-pick-chance"
-	SetProviderOptimizerWorstTierPickChance   = "set-provider-optimizer-worst-tier-pick-chance"
-	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
+	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
+	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
+	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
+	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
@@ -50,6 +53,8 @@ const (
 	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	// specification default flags
+	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
 )
 
 const (
@@ -63,16 +68,15 @@ const (
 
 // helper struct to propagate flags deeper into the code in an organized manner
 type ConsumerCmdFlags struct {
-	HeadersFlag                 string        // comma separated list of headers, or * for all, default simple cors specification headers
-	CredentialsFlag             string        // access-control-allow-credentials, defaults to "true"
-	OriginFlag                  string        // comma separated list of origins, or * for all, default enabled completely
-	MethodsFlag                 string        // whether to allow access control headers *, most proxies have their own access control so its not required
-	CDNCacheDuration            string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
-	RelaysHealthEnableFlag      bool          // enables relay health check
-	RelaysHealthIntervalFlag    time.Duration // interval for relay health check
-	DebugRelays                 bool          // enables debug mode for relays
-	DisableConflictTransactions bool          // disable conflict transactions
-	StaticSpecPath              string        // path to the spec file, works only when bootstrapping a single chain.
+	HeadersFlag              string        // comma separated list of headers, or * for all, default simple cors specification headers
+	CredentialsFlag          string        // access-control-allow-credentials, defaults to "true"
+	OriginFlag               string        // comma separated list of origins, or * for all, default enabled completely
+	MethodsFlag              string        // whether to allow access control headers *, most proxies have their own access control so its not required
+	CDNCacheDuration         string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
+	RelaysHealthEnableFlag   bool          // enables relay health check
+	RelaysHealthIntervalFlag time.Duration // interval for relay health check
+	DebugRelays              bool          // enables debug mode for relays
+	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

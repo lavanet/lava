@@ -6,7 +6,7 @@
 # Dockerfile for reproducible build of lavad binary and docker image
 ########################################################################
 
-ARG GO_VERSION="1.20.5"
+ARG GO_VERSION="1.23"
 ARG RUNNER_IMAGE="debian:11-slim"
 
 # --------------------------------------------------------
@@ -24,9 +24,9 @@ RUN --mount=type=cache,target=/var/cache/apt \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     apt-get update && \
     apt-get install -yqq --no-install-recommends \
-        build-essential \
-        ca-certificates \
-        curl
+    build-essential \
+    ca-certificates \
+    curl
 
 # --------------------------------------------------------
 # Builder
@@ -64,8 +64,8 @@ COPY . .
 # Git clone the sources if requested
 # NOTE TODO: after reset of chain (lava-testnet-1) prefix 'v' to ${GIT_VERSION}
 RUN if [ "${GIT_CLONE}" = true ]; then \
-      find . -mindepth 1 -delete && \
-      git clone --depth 1 --branch v${GIT_VERSION} https://github.com/lavanet/lava . \
+    find . -mindepth 1 -delete && \
+    git clone --depth 1 --branch v${GIT_VERSION} https://github.com/lavanet/lava . \
     ; fi
 
 # Remove tag v0.4.0 (same v0.4.0-rc2, which was used in the upgrade proposal
@@ -123,7 +123,7 @@ FROM ${RUNNER_IMAGE} as runner-base
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
-        git curl unzip ca-certificates jq \
+    git curl unzip ca-certificates jq \
     && apt-get -y purge \
     && apt-get -y clean \
     && apt-get -y autoremove \

@@ -75,7 +75,6 @@ func TestAppendInterfaceToInterfaceArray(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -126,7 +125,6 @@ func TestParseArrayOfInterfaces(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -585,7 +583,6 @@ func TestParseBlockFromParams(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
@@ -763,7 +760,6 @@ func TestParseBlockFromReply(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			parsedInput := ParseBlockFromReply(test.rpcInput, test.blockParser, test.genericParsers)
@@ -827,9 +823,8 @@ func TestParseBlockFromParamsHash(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			parsedInput := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
 			parsedHashes, err := parsedInput.GetBlockHashes()
 			if test.expectedHash == "" {
