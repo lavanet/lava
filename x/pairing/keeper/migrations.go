@@ -116,22 +116,12 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 	utils.LavaFormatInfo("migrate: pairing to set new parameters")
 
-	epochBlocksOverlap := m.keeper.EpochBlocksOverlap(ctx)
-	qosWeight := m.keeper.QoSWeight(ctx)
-	recommendedEpochNumToCollectPayment := m.keeper.RecommendedEpochNumToCollectPayment(ctx)
-	reputationVarianceStabilizationPeriod := types.DefaultReputationVarianceStabilizationPeriod
-	reputationLatencyOverSyncFactor := types.DefaultReputationLatencyOverSyncFactor
-	reputationHalfLifeFactor := types.DefaultReputationHalfLifeFactor
-	reputationRelayFailureCost := types.DefaultReputationRelayFailureCost
+	params := m.keeper.GetParams(ctx)
+	params.ReputationVarianceStabilizationPeriod = types.DefaultReputationVarianceStabilizationPeriod
+	params.ReputationLatencyOverSyncFactor = types.DefaultReputationLatencyOverSyncFactor
+	params.ReputationHalfLifeFactor = types.DefaultReputationHalfLifeFactor
+	params.ReputationRelayFailureCost = types.DefaultReputationRelayFailureCost
 
-	m.keeper.SetParams(ctx, types.NewParams(
-		epochBlocksOverlap,
-		qosWeight,
-		recommendedEpochNumToCollectPayment,
-		reputationVarianceStabilizationPeriod,
-		reputationLatencyOverSyncFactor,
-		reputationHalfLifeFactor,
-		reputationRelayFailureCost,
-	))
+	m.keeper.SetParams(ctx, params)
 	return nil
 }
