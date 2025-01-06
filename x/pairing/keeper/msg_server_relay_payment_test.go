@@ -1299,6 +1299,12 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
+	// save reputation original time and advance hour
+	r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	originalTime := r.TimeLastUpdated
+	ts.AdvanceTimeHours(1)
+
 	// send relay payment msg from provider1
 	relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 10)
 	relaySession.QosExcellenceReport = qos
@@ -1311,6 +1317,11 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 		Relays:  []*types.RelaySession{relaySession},
 	}
 	ts.relayPaymentWithoutPay(payment, true)
+
+	// check that the time last updated is the same as the original time
+	// (a bug in which the TimeLastUpdated was updated in relay payment was fixed.
+	// The TimeLastUpdated should be updated only when the epoch starts)
+	require.Equal(t, originalTime, r.TimeLastUpdated)
 
 	// advance epoch and check reputation for expected results
 	ts.AdvanceEpoch()
