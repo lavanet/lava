@@ -65,6 +65,30 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "trace"
+                        },
+                        "apis": [],
+                        "verifications": [],
+                        "extensions": []
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "bundler"
+                        },
+                        "apis": [],
+                        "verifications": [],
+                        "extensions": []
                     }
                 ]
             },
