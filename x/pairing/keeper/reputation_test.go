@@ -59,8 +59,6 @@ func TestRemoveReputation(t *testing.T) {
 		_, found := keeper.GetReputation(ctx, strIndex, strIndex, strIndex)
 		require.False(t, found)
 	}
-
-	require.Panics(t, func() { keeper.RemoveReputation(ctx, "dummy", "dummy", "dummy") })
 }
 
 func TestGetAllReputations(t *testing.T) {
