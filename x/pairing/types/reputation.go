@@ -6,9 +6,7 @@ import (
 	commontypes "github.com/lavanet/lava/v4/utils/common/types"
 )
 
-var (
-	ReputationPrefix = collections.NewPrefix([]byte("Reputation/"))
-)
+var ReputationPrefix = collections.NewPrefix([]byte("Reputation/"))
 
 // ReputationKey returns a key to the reputations indexed map
 func ReputationKey(chainID string, cluster string, provider string) collections.Triple[string, string, string] {

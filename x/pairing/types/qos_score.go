@@ -7,13 +7,11 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 )
 
-var (
-	// zero QoS score is: score = 0, var = 0
-	ZeroQosScore = QosScore{
-		Score:    Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
-		Variance: Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
-	}
-)
+// zero QoS score is: score = 0, var = 0
+var ZeroQosScore = QosScore{
+	Score:    Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
+	Variance: Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
+}
 
 func NewFrac(num math.LegacyDec, denom math.LegacyDec) (Frac, error) {
 	if denom.Equal(math.LegacyZeroDec()) {
