@@ -65,7 +65,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	if ShowProviderEndpointInProviderMetrics {
 		totalRelaysServicedLabels = append(totalRelaysServicedLabels, "provider_endpoint")
 	}
-	totalRelaysServicedMetric := NewMappedLabelsCounterVec(MappedLabelsCounterVecOpts{
+	totalRelaysServicedMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
 		Name:   "lava_provider_total_relays_serviced",
 		Help:   "The total number of relays serviced by the provider over time.",
 		Labels: totalRelaysServicedLabels,
@@ -87,7 +87,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		blockMetricLabels = append(blockMetricLabels, "provider_endpoint")
 	}
 
-	blockMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	blockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_latest_block",
 		Help:   "The latest block measured",
 		Labels: blockMetricLabels,

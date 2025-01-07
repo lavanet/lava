@@ -157,7 +157,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
 	}
-	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_qos_metrics",
 		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
 		Labels: qosMetricLabels,
@@ -167,7 +167,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
 	}
-	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_qos_excellence_metrics",
 		Help:   "The QOS metrics per provider excellence",
 		Labels: qosExcellenceMetricLabels,
@@ -177,7 +177,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		latestBlockMetricLabels = append(latestBlockMetricLabels, "provider_endpoint")
 	}
-	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_latest_provider_block",
 		Help:   "The latest block reported by provider",
 		Labels: latestBlockMetricLabels,
