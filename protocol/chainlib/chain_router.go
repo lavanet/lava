@@ -15,6 +15,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+var IgnoreWsEnforcementForTestCommands = false
+
 type chainRouterEntry struct {
 	ChainProxy
 	addonsSupported map[string]struct{}
@@ -313,14 +315,13 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			break
 		}
 	}
-	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported && !SkipWebsocketVerification {
+	if !IgnoreWsEnforcementForTestCommands && hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported && !SkipWebsocketVerification {
 		return nil, utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
 			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
 			utils.LogAttr("supportedMap", supportedMap),
 			utils.LogAttr("required", WebSocketExtension),
 		)
 	}
-
 	utils.LavaFormatDebug("router keys", utils.LogAttr("chainProxyRouter", chainProxyRouter))
 
 	// make sure all chainProxyRouter entries have one without a method routing

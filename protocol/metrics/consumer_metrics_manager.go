@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	WsDisconnectionReasonConsumer         = "consumer-disconnect"
-	WsDisconnectionReasonProvider         = "provider-disconnect"
-	WsDisconnectionReasonUser             = "user-disconnect"
-	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
+	WsDisconnectionReasonConsumer = "consumer-disconnect"
+	WsDisconnectionReasonProvider = "provider-disconnect"
+	WsDisconnectionReasonUser     = "user-disconnect"
 )
 
 var ShowProviderEndpointInMetrics = false
@@ -164,7 +163,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
 	}
-	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_qos_metrics",
 		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
 		Labels: qosMetricLabels,
@@ -174,7 +173,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
 	}
-	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_qos_excellence_metrics",
 		Help:   "The QOS metrics per provider excellence",
 		Labels: qosExcellenceMetricLabels,
@@ -184,7 +183,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		latestBlockMetricLabels = append(latestBlockMetricLabels, "provider_endpoint")
 	}
-	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsGaugeVecOpts{
+	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_latest_provider_block",
 		Help:   "The latest block reported by provider",
 		Labels: latestBlockMetricLabels,
@@ -555,7 +554,7 @@ func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
 }
 
-func (pme *ConsumerMetricsManager) UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool) {
+func (pme *ConsumerMetricsManager) UpdateHealthcheckStatusBreakdown(chainId, apiInterface string, status bool) {
 	if pme == nil {
 		return
 	}

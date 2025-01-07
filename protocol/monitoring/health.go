@@ -349,6 +349,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 		healthResults.updateLatestBlock(specId, providerBlock)
 	}
 	errCh := make(chan error, 1)
+	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
 	queryEndpoint := func(endpoint *HealthRPCEndpoint, isReference bool) error {
 		chainParser, err := chainlib.NewChainParser(endpoint.ApiInterface)
 		if err != nil {

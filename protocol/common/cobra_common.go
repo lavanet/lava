@@ -39,6 +39,8 @@ const (
 	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
 	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
 	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
+	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
+	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
@@ -57,6 +59,8 @@ const (
 	AllowMissingApisByDefaultFlagName      = "allow-missing-apis-by-default"
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
+
+	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
 const (

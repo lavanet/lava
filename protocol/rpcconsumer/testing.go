@@ -31,6 +31,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
 	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
 	for _, rpcProviderEndpoint := range rpcEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
