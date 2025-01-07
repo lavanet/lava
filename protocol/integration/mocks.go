@@ -269,15 +269,47 @@ type uniqueAddressGenerator struct {
 }
 
 func isPortInUse(port int) bool {
-	// Attempt to listen on the port
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		// If there's an error, the port is likely in use
-		return true
+	addresses := []string{
+		fmt.Sprintf(":%d", port),          // all interfaces
+		fmt.Sprintf("localhost:%d", port), // localhost specifically
+		fmt.Sprintf("127.0.0.1:%d", port), // IPv4 localhost
+		fmt.Sprintf("[::1]:%d", port),     // IPv6 localhost
 	}
 
-	// Close the listener immediately if successful
-	ln.Close()
+	for _, addr := range addresses {
+		// Try TCP
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		tcpListener, err := net.ListenTCP("tcp", tcpAddr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		// Close the listener immediately if successful
+		tcpListener.Close()
+
+		// Try UDP (unchanged)
+		udpAddr, err := net.ResolveUDPAddr("udp", addr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		udpConn, err := net.ListenUDP("udp", udpAddr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		// Close the listener immediately if successful
+		udpConn.Close()
+	}
+
 	return false
 }
 

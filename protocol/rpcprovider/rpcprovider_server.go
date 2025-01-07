@@ -270,9 +270,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	} else {
 		// On successful relay
 
-		// static provider doesn't handle sessions
-		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
+		latestRelayCu := uint64(0)
+		if relaySession != nil {
+			latestRelayCu = relaySession.LatestRelayCu
+		}
+		go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport)
 
+		// static provider doesn't handle sessions
 		if !rpcps.StaticProvider {
 			pairingEpoch := relaySession.PairingEpoch
 			sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
