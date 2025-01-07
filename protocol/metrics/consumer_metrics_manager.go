@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	WsDisconnectionReasonConsumer         = "consumer-disconnect"
-	WsDisconnectionReasonProvider         = "provider-disconnect"
-	WsDisconnectionReasonUser             = "user-disconnect"
-	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
+	WsDisconnectionReasonConsumer = "consumer-disconnect"
+	WsDisconnectionReasonProvider = "provider-disconnect"
+	WsDisconnectionReasonUser     = "user-disconnect"
 )
 
 var ShowProviderEndpointInMetrics = false
