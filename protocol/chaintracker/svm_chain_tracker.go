@@ -32,7 +32,7 @@ type SVMChainTracker struct {
 	cache        *ristretto.Cache[int64, int64] // cache for block to slot. (a few slots can point the same block, but we don't really care about that so overwrite is ok)
 }
 
-type LatestBlockResponse struct {
+type SVMLatestBlockResponse struct {
 	Result struct {
 		Context struct {
 			Slot int64 `json:"slot"`
@@ -48,7 +48,7 @@ func (cs *SVMChainTracker) fetchLatestBlockNumInner(ctx context.Context) (int64,
 	if err != nil {
 		return 0, err
 	}
-	var response LatestBlockResponse
+	var response SVMLatestBlockResponse
 	if err := json.Unmarshal(latestBlockResponse, &response); err != nil {
 		return 0, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
