@@ -25,7 +25,7 @@ func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Sub
 	return sub, found
 }
 
-// GetSubscription returns the subscription of a given consumer in a specific block
+// GetSubscriptionForBlock returns the subscription of a given consumer in a specific block
 func (k Keeper) GetSubscriptionForBlock(ctx sdk.Context, consumer string, block uint64) (val types.Subscription, entryBlock uint64, found bool) {
 	var sub types.Subscription
 	entryBlock, _, _, found = k.subsFS.FindEntryDetailed(ctx, consumer, block, &sub)

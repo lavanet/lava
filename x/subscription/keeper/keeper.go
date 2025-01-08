@@ -122,7 +122,7 @@ func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState
 	k.subsFS.Init(ctx, gs)
 }
 
-// InitSubscriptions imports subscriptions timers data (from genesis)
+// InitSubscriptionsTimers imports subscriptions timers data (from genesis)
 func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data timerstoretypes.GenesisState) {
 	k.subsTS.Init(ctx, data)
 }

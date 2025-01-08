@@ -69,7 +69,7 @@ func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string 
 	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub)
 }
 
-// removeCuTracker removes a trackedCu entry
+// resetCuTracker resets a trackedCu entry
 func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info *types.TrackedCuInfo, subBlock uint64) error {
 	key := types.CuTrackerKey(sub, info.Provider, info.ChainID)
 	var trackedCu types.TrackedCu
