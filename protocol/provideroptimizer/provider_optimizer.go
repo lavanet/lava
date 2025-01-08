@@ -36,6 +36,7 @@ var (
 	MinimumEntries    = 5
 	ATierChance       = 0.75
 	LastTierChance    = 0.0
+	AutoAdjustTiers   = false
 )
 
 type ConcurrentBlockStore struct {
@@ -239,7 +240,22 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	if selectionTier.ScoresCount() == 0 {
+	selectionTierScoresCount := selectionTier.ScoresCount()
+
+	localMinimumEntries := MinimumEntries
+	if AutoAdjustTiers {
+		adjustedProvidersPerTier := int(math.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
+		if MinimumEntries > adjustedProvidersPerTier {
+			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
+				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
+				utils.LogAttr("was_MinimumEntries", MinimumEntries),
+				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
+				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
+			localMinimumEntries = adjustedProvidersPerTier
+		}
+	}
+
+	if selectionTierScoresCount == 0 {
 		// no providers to choose from
 		return []string{}, -1
 	}
@@ -247,21 +263,21 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 
 	// check if we have enough providers to create the tiers, if not set the number of tiers to the number of providers we currently have
 	numberOfTiersWanted := po.OptimizerNumTiers
-	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
-		numberOfTiersWanted = selectionTier.ScoresCount()
+	if selectionTierScoresCount < po.OptimizerNumTiers {
+		numberOfTiersWanted = selectionTierScoresCount
 	}
-	if selectionTier.ScoresCount() >= MinimumEntries*2 {
-		// if we have more than 2*MinimumEntries we set the LastTierChance configured
+	if selectionTierScoresCount >= localMinimumEntries*2 {
+		// if we have more than 2*localMinimumEntries we set the LastTierChance configured
 		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
 	}
 	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
 	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
 	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
-	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, MinimumEntries)
+	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, localMinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
+	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTierScoresCount) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",

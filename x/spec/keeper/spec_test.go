@@ -876,8 +876,8 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 			}
 		}
 	}
-	require.Greater(t, 2, subscribeCount)
-	require.Greater(t, 2, unsubscribeCount)
+	require.Greater(t, subscribeCount, 2)
+	require.Greater(t, unsubscribeCount, 2)
 }
 
 func TestSpecs(t *testing.T) {

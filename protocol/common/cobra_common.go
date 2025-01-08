@@ -39,6 +39,8 @@ const (
 	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
 	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
 	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
+	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
+	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
@@ -53,6 +55,8 @@ const (
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	// specification default flags
 	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
+
+	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
 const (
