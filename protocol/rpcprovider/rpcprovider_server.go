@@ -259,7 +259,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	if !rpcps.StaticProvider {
-		err = rpcps.logSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
+		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
 	}
 
 	utils.LavaFormatDebug("Provider returned a relay response",
@@ -273,7 +273,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) logSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, err error) error {
+func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, err error) error {
 	if isRelayError {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
