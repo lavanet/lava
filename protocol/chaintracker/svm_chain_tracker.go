@@ -21,13 +21,13 @@ type IChainFetcherWrapper interface {
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
 
-type ChainTrackerDataFetcher interface {
+type IChainTrackerDataFetcher interface {
 	GetAtomicLatestBlockNum() int64
 	GetServerBlockMemory() uint64
 }
 
 type SVMChainTracker struct {
-	dataFetcher  ChainTrackerDataFetcher
+	dataFetcher  IChainTrackerDataFetcher
 	chainFetcher ChainFetcher
 	cache        *ristretto.Cache[int64, int64] // cache for block to slot. (a few slots can point the same block, but we don't really care about that so overwrite is ok)
 }

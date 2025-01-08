@@ -72,7 +72,7 @@ type blockTimeUpdatable interface {
 
 type DefaultChainTrackerFetcher struct {
 	chainFetcher ChainFetcher
-	dataFetcher  ChainTrackerDataFetcher
+	dataFetcher  IChainTrackerDataFetcher
 }
 
 func (cs *DefaultChainTrackerFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -648,22 +648,23 @@ func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig)
 		serverAddress:           config.ServerAddress,
 		endpoint:                endpoint,
 	}
-	chainTracker.iChainFetcherWrapper = &DefaultChainTrackerFetcher{
-		dataFetcher:  chainTracker,
-		chainFetcher: chainFetcher,
-	}
 
-	cache, err := ristretto.NewCache(&ristretto.Config[int64, int64]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
-	if err != nil {
-		utils.LavaFormatFatal("could not create cache", err)
-	}
 	switch config.ChainId {
 	// TODO: we can do it better by creating a spec fields for custom trackers.
 	// By applying a name SVM for example
 	case "SOLANA", "SOLANAT", "KOII", "KOIIT":
 		utils.LavaFormatInfo("using SVMChainTracker", utils.Attribute{Key: "chainID", Value: config.ChainId})
+		cache, err := ristretto.NewCache(&ristretto.Config[int64, int64]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		if err != nil {
+			utils.LavaFormatFatal("could not create cache", err)
+		}
 		chainTracker.iChainFetcherWrapper = &SVMChainTracker{
 			cache:        cache,
+			dataFetcher:  chainTracker,
+			chainFetcher: chainFetcher,
+		}
+	default:
+		chainTracker.iChainFetcherWrapper = &DefaultChainTrackerFetcher{
 			dataFetcher:  chainTracker,
 			chainFetcher: chainFetcher,
 		}
