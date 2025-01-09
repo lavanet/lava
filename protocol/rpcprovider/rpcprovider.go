@@ -135,7 +135,7 @@ type RPCProvider struct {
 	parallelConnections          uint
 	cache                        *performance.Cache
 	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers                *common.SafeSyncMap[string, *chaintracker.ChainTracker]
+	chainTrackers                *common.SafeSyncMap[string, chaintracker.IChainTracker]
 	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
 	relaysHealthCheckEnabled     bool
 	relaysHealthCheckInterval    time.Duration
@@ -156,7 +156,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		cancel()
 	}()
 	rpcp.providerUniqueId = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
-	rpcp.chainTrackers = &common.SafeSyncMap[string, *chaintracker.ChainTracker]{}
+	rpcp.chainTrackers = &common.SafeSyncMap[string, chaintracker.IChainTracker]{}
 	rpcp.parallelConnections = options.parallelConnections
 	rpcp.cache = options.cache
 	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(options.metricsListenAddress) // start up prometheus metrics
@@ -409,7 +409,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
-	var chainTracker *chaintracker.ChainTracker
+	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
 	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
 		for block := blockFrom + 1; block <= blockTo; block++ {
@@ -461,6 +461,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			NewLatestCallback:   recordMetricsOnNewBlock,
 			ConsistencyCallback: consistencyErrorCallback,
 			Pmetrics:            rpcp.providerMetricsManager,
+			ChainId:             chainID,
 		}
 
 		chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

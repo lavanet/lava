@@ -247,12 +247,34 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		reply, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
 	}
 
-	// static provider doesnt handle sessions, so just return the response
-	if rpcps.StaticProvider {
-		return reply, rpcps.handleRelayErrorStatus(err)
+	isErroredRelay := err != nil || common.ContextOutOfTime(ctx)
+	if !isErroredRelay {
+		latestRelayCu := uint64(0)
+		if relaySession != nil {
+			latestRelayCu = relaySession.LatestRelayCu
+		}
+		go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport)
+	} else {
+		go rpcps.metrics.AddError()
 	}
 
-	if err != nil || common.ContextOutOfTime(ctx) {
+	if !rpcps.StaticProvider {
+		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
+	}
+
+	utils.LavaFormatDebug("Provider returned a relay response",
+		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
+		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
+		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
+		utils.Attribute{Key: "timeTaken", Value: time.Since(startTime)},
+	)
+	return reply, rpcps.handleRelayErrorStatus(err)
+}
+
+func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, err error) error {
+	if isRelayError {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 		if relayFailureError != nil {
@@ -268,41 +290,32 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 		)
-		go rpcps.metrics.AddError()
-	} else {
-		// On successful relay
-		pairingEpoch := relaySession.PairingEpoch
-		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
-		replyBlock := reply.LatestBlock
-		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
-		if relayError != nil {
-			utils.LavaFormatError("OnSession Done failure: ", relayError)
-		} else if sendRewards {
-			// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
-			// Therefore the signature changes, so we need the original copy to extract the address from it.
-			// we want this code to run in parallel so it doesn't stop the flow
-
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
-			utils.LavaFormatDebug("Provider Finished Relay Successfully",
-				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
-				utils.Attribute{Key: "replyBlock", Value: replyBlock},
-				utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
-			)
-		}
+		return err
 	}
-	utils.LavaFormatDebug("Provider returned a relay response",
-		utils.Attribute{Key: "GUID", Value: ctx},
-		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
-		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
-		utils.Attribute{Key: "timeTaken", Value: time.Since(startTime)},
-	)
-	return reply, rpcps.handleRelayErrorStatus(err)
+
+	// On successful relay
+	pairingEpoch := relaySession.PairingEpoch
+	sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
+	replyBlock := reply.LatestBlock
+	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
+	if relayError != nil {
+		utils.LavaFormatError("OnSession Done failure: ", relayError)
+	} else if sendRewards {
+		// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
+		// Therefore the signature changes, so we need the original copy to extract the address from it.
+		// we want this code to run in parallel so it doesn't stop the flow
+
+		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+		utils.LavaFormatDebug("Provider Finished Relay Successfully",
+			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+			utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
+			utils.Attribute{Key: "replyBlock", Value: replyBlock},
+			utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
+		)
+	}
+	return nil
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
