@@ -1288,7 +1288,7 @@ func TestReputationUpdateOnEpochStart(t *testing.T) {
 	// set half life factor to be epoch time
 	resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
 	require.NoError(t, err)
-	resQParams.Params.ReputationHalfLifeFactor = int64(ts.EpochTimeDefault().Seconds())
+	resQParams.Params.ReputationHalfLifeFactor = uint64(ts.EpochTimeDefault().Seconds())
 	ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
 
 	// set default reputation and keep some properties for future comparison

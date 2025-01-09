@@ -213,7 +213,7 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[types.Reput
 		}
 
 		// apply time decay on current score and add the epoch score (which is reset right after)
-		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(halfLifeFactor, currentTime)
+		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(utils.SafeUint64ToInt64Convert(halfLifeFactor), currentTime)
 		if err != nil {
 			return nil, utils.LavaFormatError("updateReputationsScores: apply time decay and update reputation", err,
 				utils.LogAttr("chain_id", chainID),
