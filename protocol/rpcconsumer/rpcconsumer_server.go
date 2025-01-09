@@ -862,16 +862,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
 				)
 			}
-			if rpccs.debugRelays && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.BigInt() != nil &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+
+			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport()
+			if rpccs.debugRelays && lastQoSReport != nil &&
+				lastQoSReport.Sync.BigInt() != nil &&
+				lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
 				utils.LavaFormatDebug("identified QoS mismatch",
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSInfo},
+					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
 				)
 			}
 

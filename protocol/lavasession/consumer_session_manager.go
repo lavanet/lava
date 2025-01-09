@@ -935,7 +935,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		consumerSession.BlockListed = true
 	}
 
-	consumerSession.QoSInfo.TotalRelays++
+	consumerSession.QoSManager.IncTotalRelays()
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
 	// copy consecutive errors for report.
 	errorsForConsumerSession := consumerSession.ConsecutiveErrors
@@ -1046,7 +1046,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.QoSManager.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
@@ -1061,14 +1061,18 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	info := csm.RPCEndpoint()
 	apiInterface := info.ApiInterface
 	chainId := info.ChainID
+
 	var lastQos *pairingtypes.QualityOfServiceReport
-	var lastQosExcellence *pairingtypes.QualityOfServiceReport
-	if consumerSession.QoSInfo.LastQoSReport != nil {
-		qos := *consumerSession.QoSInfo.LastQoSReport
+	lastQoSReport := consumerSession.QoSManager.GetLastQoSReport()
+	if lastQoSReport != nil {
+		qos := *lastQoSReport
 		lastQos = &qos
 	}
-	if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
-		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
+
+	var lastQosExcellence *pairingtypes.QualityOfServiceReport
+	lastExcellenceQoSReport := consumerSession.QoSManager.GetLastExcellenceQoSReportRaw()
+	if lastExcellenceQoSReport != nil {
+		qosEx := *lastExcellenceQoSReport
 		lastQosExcellence = &qosEx
 	}
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress

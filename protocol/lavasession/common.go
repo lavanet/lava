@@ -50,12 +50,10 @@ const (
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
 const (
-	PercentileToCalculateLatency = 0.9
-	MinProvidersForSync          = 0.6
-	OptimizerPerturbation        = 0.10
-	LatencyThresholdStatic       = 1 * time.Second
-	LatencyThresholdSlope        = 1 * time.Millisecond
-	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded
+	OptimizerPerturbation  = 0.10
+	LatencyThresholdStatic = 1 * time.Second
+	LatencyThresholdSlope  = 1 * time.Millisecond
+	StaleEpochDistance     = 3 // relays done 3 epochs back are ready to be rewarded
 
 )
 
