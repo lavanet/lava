@@ -40,7 +40,7 @@ type (
 		stakingKeeper      types.StakingKeeper
 
 		schema            collections.Schema
-		reputations       collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per provider, chain and cluster
+		reputations       collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per chain, cluster, provider
 		pairingQueryCache *map[string][]epochstoragetypes.StakeEntry
 	}
 )

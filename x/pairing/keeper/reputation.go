@@ -105,10 +105,9 @@ func (k Keeper) UpdateReputationEpochQosScore(ctx sdk.Context, chainID string, c
 	}
 
 	// calculate the updated QoS epoch score
-	updatedEpochScore := r.EpochScore.Update(score, truncate, weight)
+	r.EpochScore.Update(score, truncate, weight)
 
-	// update the reputation and set
-	r.EpochScore = updatedEpochScore
+	// update the reputation's stake and set
 	r.Stake = stake
 	k.SetReputation(ctx, chainID, cluster, provider, r)
 }

@@ -1203,46 +1203,50 @@ func TestUpdateReputationEpochQosScoreRelayNumWeight(t *testing.T) {
 	// these will be used to compare the score change with high/low relay numbers
 	scoreUpdates := []sdk.Dec{}
 
-	// we set the stabilization period to 2 epochs time. Advancing one epoch means we won't truncate,
-	// advancing 3 means we will truncate.
-	relayNums := []uint64{100, 1}
+	// we set the number of clients to be 1 and 2 to test different relay amount in
+	// a session
+	clientsAmount := []int{2, 1}
 
-	for i := range relayNums {
+	for i := range clientsAmount {
 		ts := newTester(t)
-		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
-
-		consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+		ts.setupForPayments(1, clientsAmount[i], 0) // 1 provider, clientsAmount[i] clients, default providers-to-pair
 		_, provider1 := ts.GetAccount(common.PROVIDER, 0)
-		qos := &types.QualityOfServiceReport{
-			Latency:      sdk.NewDec(1000),
-			Availability: sdk.OneDec(),
-			Sync:         sdk.NewDec(1000),
+		relays := []*types.RelaySession{}
+		cluster := ""
+		for j := 0; j < clientsAmount[i]; j++ {
+			consumerAcc, consumer := ts.GetAccount(common.CONSUMER, j)
+
+			qos := &types.QualityOfServiceReport{
+				Latency:      sdk.NewDec(1000),
+				Availability: sdk.OneDec(),
+				Sync:         sdk.NewDec(1000),
+			}
+
+			resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+			require.NoError(t, err)
+			cluster = resQCurrent.Sub.Cluster
+
+			// set stabilization period to be 2*epoch time to avoid truncation
+			resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+			require.NoError(t, err)
+			resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
+			ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+			// set default reputation
+			ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+			ts.AdvanceEpoch()
+
+			// send relay payment msg from provider1
+			relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), uint64(j))
+			relaySession.QosExcellenceReport = qos
+			sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+			require.NoError(t, err)
+			relaySession.Sig = sig
+			relays = append(relays, relaySession)
 		}
-
-		resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
-		require.NoError(t, err)
-		cluster := resQCurrent.Sub.Cluster
-
-		// set stabilization period to be 2*epoch time to avoid truncation
-		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
-		require.NoError(t, err)
-		resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
-		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
-
-		// set default reputation
-		ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
-		ts.AdvanceEpoch()
-
-		// send relay payment msg from provider1
-		relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), relayNums[i])
-		relaySession.QosExcellenceReport = qos
-		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
-		require.NoError(t, err)
-		relaySession.Sig = sig
-
 		payment := types.MsgRelayPayment{
 			Creator: provider1,
-			Relays:  []*types.RelaySession{relaySession},
+			Relays:  relays,
 		}
 		ts.relayPaymentWithoutPay(payment, true)
 

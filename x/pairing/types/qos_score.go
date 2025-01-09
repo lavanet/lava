@@ -56,7 +56,7 @@ func (qs QosScore) Validate() bool {
 
 // Update updates a QosScore with a new score from the QoS excellence report. The new score is truncated by the
 // current variance. Then, it's updated using the weight (which is currently the relay num)
-func (qs QosScore) Update(score math.LegacyDec, truncate bool, weight int64) QosScore {
+func (qs *QosScore) Update(score math.LegacyDec, truncate bool, weight int64) {
 	if truncate {
 		score = qs.truncate(score)
 	}
@@ -70,8 +70,6 @@ func (qs QosScore) Update(score math.LegacyDec, truncate bool, weight int64) Qos
 	// updated_score_denom = qos_score_denom + weight
 	qs.Score.Num = qs.Score.Num.Add(score.MulInt64(weight))
 	qs.Score.Denom = qs.Score.Denom.Add(math.LegacyNewDec(weight))
-
-	return qs
 }
 
 // Truncate truncates the QoS excellece report score by the current QoS score variance
