@@ -28,7 +28,7 @@ func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, c
 	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker(nil)
 	txFactory := tx.Factory{}
 	txFactory = txFactory.WithChainID(chainId)
-	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx), clientCtx)
 	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, stateQuery, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err

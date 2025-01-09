@@ -47,10 +47,11 @@ type StateQueryAccessInf interface {
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
 	client.CometRPC
+	clientctx client.Context
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client}
+	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientctx: clientCtx}
 }
 
 type StateQuery struct {
@@ -61,10 +62,11 @@ type StateQuery struct {
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
 	client.CometRPC
+	clientctx client.Context
 }
 
-func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{}
+func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf, clientctx client.Context) *StateQuery {
+	sq := &StateQuery{clientctx: clientctx}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -130,7 +132,7 @@ type ConsumerStateQuery struct {
 }
 
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
-	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx)), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
+	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx), clientCtx), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
 	return csq
 }
 
@@ -243,8 +245,8 @@ type ProviderStateQuery struct {
 	EpochStateQuery
 }
 
-func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf) *ProviderStateQuery {
-	sq := NewStateQuery(ctx, stateQueryAccess)
+func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf, clientctx client.Context) *ProviderStateQuery {
+	sq := NewStateQuery(ctx, stateQueryAccess, clientctx)
 	esq := NewEpochStateQuery(sq)
 	csq := &ProviderStateQuery{StateQuery: sq, EpochStateQuery: *esq}
 	return csq
@@ -395,27 +397,28 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 	return epochSize * recommendedEpochNumToCollectPayment, nil
 }
 
-func (psq *StateQuery) BlockResults(ctx client.Context, height *int64) (*ctypes.ResultBlockResults, error) {
-	client, err := legacyclient.New(ctx.NodeURI, "/websocket")
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
 	if err != nil {
 		return nil, err
 	}
 
-	legacyResults, err := client.BlockResults(context.Background(), height)
+	legacyResults, err := client.BlockResults(ctx, height)
 	if err != nil {
 		return nil, err
 	}
-	results, err := ctx.Client.BlockResults(context.Background(), height)
+	results, err := psq.clientctx.Client.BlockResults(ctx, height)
 	if err != nil {
 		return nil, err
 	}
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	fmt.Println("-------------YAROMStateQuery", len(results.FinalizeBlockEvents))
 	return results, nil
 }
 
-func (psq *StateQueryAccessInst) BlockResults(ctx client.Context, height *int64) (*ctypes.ResultBlockResults, error) {
-	client, err := legacyclient.New(ctx.NodeURI, "/websocket")
+func (psq *StateQueryAccessInst) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -424,11 +427,12 @@ func (psq *StateQueryAccessInst) BlockResults(ctx client.Context, height *int64)
 	if err != nil {
 		return nil, err
 	}
-	results, err := ctx.Client.BlockResults(context.Background(), height)
+	results, err := psq.clientctx.Client.BlockResults(context.Background(), height)
 	if err != nil {
 		return nil, err
 	}
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	fmt.Println("-------------YAROMStateQueryAccessInst", len(results.FinalizeBlockEvents))
 	return results, nil
 }
