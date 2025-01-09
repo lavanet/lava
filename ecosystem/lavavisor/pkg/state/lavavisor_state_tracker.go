@@ -24,7 +24,7 @@ type LavaVisorStateTracker struct {
 
 func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (lvst *LavaVisorStateTracker, err error) {
 	// validate chainId
-	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx), clientCtx)
 	status, err := stateQuery.Status(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("[Lavavisor] failed getting status", err)

@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
-
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/dgraph-io/ristretto/v2"
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	legacyclient "github.com/lavanet/lava/v4/protocol/statetracker/legacyclient"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v4/x/plans/types"
@@ -46,10 +47,11 @@ type StateQueryAccessInf interface {
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
 	client.CometRPC
+	clientctx client.Context
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client}
+	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientctx: clientCtx}
 }
 
 type StateQuery struct {
@@ -60,10 +62,11 @@ type StateQuery struct {
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
 	client.CometRPC
+	clientctx client.Context
 }
 
-func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{}
+func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf, clientctx client.Context) *StateQuery {
+	sq := &StateQuery{clientctx: clientctx}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -129,7 +132,7 @@ type ConsumerStateQuery struct {
 }
 
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
-	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx)), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
+	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx), clientCtx), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
 	return csq
 }
 
@@ -242,8 +245,8 @@ type ProviderStateQuery struct {
 	EpochStateQuery
 }
 
-func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf) *ProviderStateQuery {
-	sq := NewStateQuery(ctx, stateQueryAccess)
+func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf, clientctx client.Context) *ProviderStateQuery {
+	sq := NewStateQuery(ctx, stateQueryAccess, clientctx)
 	esq := NewEpochStateQuery(sq)
 	csq := &ProviderStateQuery{StateQuery: sq, EpochStateQuery: *esq}
 	return csq
@@ -392,4 +395,44 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 		return 0, err
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
+}
+
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	legacyResults, err := client.BlockResults(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	results, err := psq.clientctx.Client.BlockResults(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+
+	return results, nil
+}
+
+func (psq *StateQueryAccessInst) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	legacyResults, err := client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results, err := psq.clientctx.Client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+
+	return results, nil
 }
