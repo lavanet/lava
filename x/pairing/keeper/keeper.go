@@ -133,7 +133,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		// reset pairing query cache every epoch
 		*k.pairingQueryCache = map[string][]epochstoragetypes.StakeEntry{}
 		// update reputations by QoS scores
-		k.UpdateReputationQosScore(ctx)
+		k.UpdateAllReputationQosScore(ctx)
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers

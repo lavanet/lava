@@ -123,8 +123,8 @@ type StakeProviderScores struct {
 	TotalStake     sdk.Coin
 }
 
-// UpdateReputationQosScore updates all the reputations on epoch start with the epoch score aggregated over the epoch
-func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
+// UpdateAllReputationQosScore updates all the reputations on epoch start with the epoch score aggregated over the epoch
+func (k Keeper) UpdateAllReputationQosScore(ctx sdk.Context) {
 	// scores is a map of "chainID cluster" -> stakeProviderScores
 	// it will be used to compare providers QoS scores within the same chain ID and cluster and determine
 	// the providers' reputation pairing score.
