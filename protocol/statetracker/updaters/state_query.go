@@ -413,7 +413,7 @@ func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*ctypes
 	}
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
-	fmt.Println("-------------YAROMStateQuery", len(results.FinalizeBlockEvents))
+
 	return results, nil
 }
 
@@ -433,6 +433,6 @@ func (psq *StateQueryAccessInst) BlockResults(ctx context.Context, height *int64
 	}
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
-	fmt.Println("-------------YAROMStateQueryAccessInst", len(results.FinalizeBlockEvents))
+
 	return results, nil
 }
