@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -199,10 +200,5 @@ func (st *StateTracker) GetEventTracker() *updaters.EventTracker {
 }
 
 func IsLavaNativeSpec(checked string) bool {
-	for _, nativeLavaChain := range LavaSpecOptions {
-		if checked == nativeLavaChain {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(LavaSpecOptions, checked)
 }
