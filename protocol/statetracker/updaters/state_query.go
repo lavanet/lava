@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
-
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/dgraph-io/ristretto/v2"
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	legacyclient "github.com/lavanet/lava/v4/protocol/statetracker/legacyclient"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v4/x/plans/types"
@@ -392,4 +393,42 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 		return 0, err
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
+}
+
+func (psq *StateQuery) BlockResults(ctx client.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(ctx.NodeURI, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	legacyResults, err := client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results, err := ctx.Client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	return results, nil
+}
+
+func (psq *StateQueryAccessInst) BlockResults(ctx client.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+	client, err := legacyclient.New(ctx.NodeURI, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	legacyResults, err := client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results, err := ctx.Client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	return results, nil
 }
