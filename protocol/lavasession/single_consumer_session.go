@@ -37,24 +37,24 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
 func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
-	lastExcellenceQoSReport := cs.QoSManager.GetLastExcellenceQoSReportRaw()
-	if lastExcellenceQoSReport != nil {
-		qosComputed, errComputing := lastExcellenceQoSReport.ComputeQoSExcellence()
+	lastReputationReport := cs.QoSManager.GetLastReputationQoSReportRaw()
+	if lastReputationReport != nil {
+		computedReputation, errComputing := lastReputationReport.ComputeQoSExcellence()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
-			return qosComputed
+			return computedReputation
 		}
-		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero", utils.LogAttr("Report", cs.QoSManager.GetLastExcellenceQoSReportRaw()), utils.LogAttr("error", errComputing))
+		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero", utils.LogAttr("Report", cs.QoSManager.GetLastReputationQoSReportRaw()), utils.LogAttr("error", errComputing))
 	}
 	return sdk.ZeroDec()
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, rawReputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
-		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
-		scs.QoSManager.SetLastExcellenceQoSReportRaw(qoSExcellenceReport)
-		scs.QoSManager.SetLastExcellenceQoSReportRaw(rawQoSExcellenceReport)
+		// we only set reputation for sessions with more than one successful relays, this guarantees data within the epoch exists
+		scs.QoSManager.SetLastReputationQoSReportRaw(reputationReport)
+		scs.QoSManager.SetLastReputationQoSReportRaw(rawReputationReport)
 	}
 	scs.usedProviders = usedProviders
 	scs.routerKey = routerKey

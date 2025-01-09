@@ -13,8 +13,8 @@ import (
 
 type QoSManager struct {
 	lastQoSReport              *pairingtypes.QualityOfServiceReport
-	lastExcellenceQoSReport    *pairingtypes.QualityOfServiceReport
-	lastExcellenceQoSReportRaw *pairingtypes.QualityOfServiceReport
+	lastReputationQoSReport    *pairingtypes.QualityOfServiceReport
+	lastReputationQoSReportRaw *pairingtypes.QualityOfServiceReport
 	latencyScoreList           []sdk.Dec
 	syncScoreSum               int64
 	totalSyncScore             int64
@@ -25,8 +25,8 @@ type QoSManager struct {
 func NewQoSManager() *QoSManager {
 	return &QoSManager{
 		lastQoSReport:              &pairingtypes.QualityOfServiceReport{},
-		lastExcellenceQoSReport:    &pairingtypes.QualityOfServiceReport{},
-		lastExcellenceQoSReportRaw: &pairingtypes.QualityOfServiceReport{},
+		lastReputationQoSReport:    &pairingtypes.QualityOfServiceReport{},
+		lastReputationQoSReportRaw: &pairingtypes.QualityOfServiceReport{},
 		latencyScoreList:           []sdk.Dec{},
 		syncScoreSum:               0,
 		totalSyncScore:             0,
@@ -45,12 +45,12 @@ func (qosReport *QoSManager) GetLastQoSReport() *pairingtypes.QualityOfServiceRe
 	return qosReport.lastQoSReport
 }
 
-func (qosReport *QoSManager) GetLastExcellenceQoSReportRaw() *pairingtypes.QualityOfServiceReport {
-	return qosReport.lastExcellenceQoSReportRaw
+func (qosReport *QoSManager) GetLastReputationQoSReportRaw() *pairingtypes.QualityOfServiceReport {
+	return qosReport.lastReputationQoSReportRaw
 }
 
-func (qosReport *QoSManager) SetLastExcellenceQoSReportRaw(report *pairingtypes.QualityOfServiceReport) {
-	qosReport.lastExcellenceQoSReportRaw = report
+func (qosReport *QoSManager) SetLastReputationQoSReportRaw(report *pairingtypes.QualityOfServiceReport) {
+	qosReport.lastReputationQoSReportRaw = report
 }
 
 func (qosReport *QoSManager) IncTotalRelays() {

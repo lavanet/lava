@@ -476,7 +476,7 @@ func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, syn
 	syncScoreStore, syncRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
 	providerData.Sync = syncScoreStore
 	if !isHangingApi {
-		// use raw qos excellence reports updates for non-hanging API only
+		// use raw reputation reports updates for non-hanging API only
 		providerData.SyncRaw = syncRawScoreStore
 	}
 	return providerData
@@ -502,7 +502,7 @@ func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, 
 	latencyScoreStore, latencyRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
 	providerData.Latency = latencyScoreStore
 	if isHangingApi {
-		// use raw qos excellence reports updates for non-hanging API only
+		// use raw reputation reports updates for non-hanging API only
 		providerData.LatencyRaw = latencyRawScoreStore
 	}
 	return providerData
@@ -603,7 +603,7 @@ func pertrubWithNormalGaussian(orig, percentage float64) float64 {
 	return orig + perturb
 }
 
-func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) (qosReport *pairingtypes.QualityOfServiceReport, rawQosReport *pairingtypes.QualityOfServiceReport) {
+func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress string) (qosReport *pairingtypes.QualityOfServiceReport, rawQosReport *pairingtypes.QualityOfServiceReport) {
 	providerData, found := po.getProviderData(providerAddress)
 	if !found {
 		return nil, nil
@@ -630,7 +630,7 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Sync:         syncScoreRaw,
 	}
 
-	utils.LavaFormatTrace("QoS Excellence for provider",
+	utils.LavaFormatTrace("Reputation for provider",
 		utils.LogAttr("address", providerAddress),
 		utils.LogAttr("Report", ret),
 		utils.LogAttr("raw_report", rawQosReport),

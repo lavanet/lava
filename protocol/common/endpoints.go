@@ -247,9 +247,9 @@ type ConflictHandlerInterface interface {
 }
 
 type ProviderInfo struct {
-	ProviderAddress              string
-	ProviderQoSExcellenceSummery sdk.Dec // the number represents the average qos for this provider session
-	ProviderStake                sdk.Coin
+	ProviderAddress           string
+	ProviderReputationSummery sdk.Dec // the number represents the average qos for this provider session
+	ProviderStake             sdk.Coin
 }
 
 type RelayResult struct {

@@ -735,7 +735,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
 			localRelayResult := &common.RelayResult{
-				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderQoSExcellenceSummery: sessionInfo.QoSSummeryResult},
+				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderReputationSummery: sessionInfo.QoSSummeryResult},
 				Finalized:    false,
 				// setting the single consumer session as the conflict handler.
 				//  to be able to validate if we need to report this provider or not.
@@ -1053,7 +1053,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 				utils.LogAttr("cuSum", relayRequest.RelaySession.CuSum),
 				utils.LogAttr("QosReport", relayRequest.RelaySession.QosReport),
-				utils.LogAttr("QosReportExcellence", relayRequest.RelaySession.QosExcellenceReport),
+				utils.LogAttr("ReputationReport", relayRequest.RelaySession.QosExcellenceReport),
 				utils.LogAttr("relayNum", relayRequest.RelaySession.RelayNum),
 				utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 				utils.LogAttr("latency", relayLatency),

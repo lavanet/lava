@@ -562,7 +562,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
-				qosReport, rawQosReport := csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
+				qosReport, rawQosReport := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)
 				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
 					// rawQosReport is used only when building the relay payment message to be used to update
 					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
@@ -1069,17 +1069,17 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		lastQos = &qos
 	}
 
-	var lastQosExcellence *pairingtypes.QualityOfServiceReport
-	lastExcellenceQoSReport := consumerSession.QoSManager.GetLastExcellenceQoSReportRaw()
-	if lastExcellenceQoSReport != nil {
-		qosEx := *lastExcellenceQoSReport
-		lastQosExcellence = &qosEx
+	var lastReputation *pairingtypes.QualityOfServiceReport
+	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReportRaw()
+	if lastReputationReport != nil {
+		qosRep := *lastReputationReport
+		lastReputation = &qosRep
 	}
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 	publicProviderEndpoint := consumerSession.Parent.Endpoints[0].NetworkAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastReputation, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
 }
 
