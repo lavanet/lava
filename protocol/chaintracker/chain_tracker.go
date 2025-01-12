@@ -654,12 +654,17 @@ func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig)
 	// By applying a name SVM for example
 	case "SOLANA", "SOLANAT", "KOII", "KOIIT":
 		utils.LavaFormatInfo("using SVMChainTracker", utils.Attribute{Key: "chainID", Value: config.ChainId})
-		cache, err := ristretto.NewCache(&ristretto.Config[int64, int64]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		slotCache, err := ristretto.NewCache(&ristretto.Config[int64, int64]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		if err != nil {
+			utils.LavaFormatFatal("could not create cache", err)
+		}
+		hashCache, err := ristretto.NewCache(&ristretto.Config[int64, string]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 		if err != nil {
 			utils.LavaFormatFatal("could not create cache", err)
 		}
 		chainTracker.iChainFetcherWrapper = &SVMChainTracker{
-			cache:        cache,
+			slotCache:    slotCache,
+			hashCache:    hashCache,
 			dataFetcher:  chainTracker,
 			chainFetcher: chainFetcher,
 		}
