@@ -126,8 +126,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
-		// reset pairing query cache every epoch
-		*k.pairingQueryCache = map[string][]epochstoragetypes.StakeEntry{}
 		// update reputations by QoS scores
 		k.UpdateAllReputationQosScore(ctx)
 		// remove old session payments
