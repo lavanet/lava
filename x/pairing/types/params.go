@@ -38,8 +38,8 @@ var (
 )
 
 var (
-	KeyReputationHalfLifeFactor           = []byte("ReputationHalfLifeFactor")
-	DefaultReputationHalfLifeFactor int64 = 12 * 30 * 24 * 60 * 60 // year in seconds
+	KeyReputationHalfLifeFactor            = []byte("ReputationHalfLifeFactor")
+	DefaultReputationHalfLifeFactor uint64 = 12 * 30 * 24 * 60 * 60 // year in seconds
 )
 
 var (
@@ -59,7 +59,7 @@ func NewParams(
 	recommendedEpochNumToCollectPayment uint64,
 	reputationVarianceStabilizationPeriod int64,
 	reputationLatencyOverSyncFactor math.LegacyDec,
-	reputationHalfLifeFactor int64,
+	reputationHalfLifeFactor uint64,
 	reputationRelayFailureCost uint64,
 ) Params {
 	return Params{
