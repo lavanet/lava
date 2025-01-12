@@ -45,9 +45,9 @@ func CmdProviderReputation() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryProviderReputationRequest{
-				Address: address,
-				ChainID: chainID,
-				Cluster: cluster,
+				Provider: address,
+				ChainID:  chainID,
+				Cluster:  cluster,
 			}
 
 			res, err := queryClient.ProviderReputation(cmd.Context(), params)

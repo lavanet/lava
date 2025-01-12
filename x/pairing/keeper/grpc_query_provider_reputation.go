@@ -48,7 +48,7 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 	requestedProviderData := []chainClusterScore{}
 	for _, chainID := range chains {
 		for _, cluster := range clusters {
-			score, found := k.GetReputationScore(ctx, chainID, cluster, req.Address)
+			score, found := k.GetReputationScore(ctx, chainID, cluster, req.Provider)
 			if !found {
 				continue
 			}

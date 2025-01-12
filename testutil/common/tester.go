@@ -925,9 +925,9 @@ func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, c
 // QueryPairingProviderReputation implements 'q pairing provider-reputation'
 func (ts *Tester) QueryPairingProviderReputation(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationResponse, error) {
 	msg := &pairingtypes.QueryProviderReputationRequest{
-		Address: provider,
-		ChainID: chainID,
-		Cluster: cluster,
+		Provider: provider,
+		ChainID:  chainID,
+		Cluster:  cluster,
 	}
 	return ts.Keepers.Pairing.ProviderReputation(ts.GoCtx, msg)
 }

@@ -87,7 +87,7 @@ service Query {
 
 // Queries a for a provider reputation.
 	rpc ProviderReputation(QueryProviderReputationRequest) returns (QueryProviderReputationResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation/{address}/{chainID}/{cluster}";
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation/{provider}/{chainID}/{cluster}";
 	}
 
 // Queries a for a provider reputation's details (mainly for developers).
@@ -252,7 +252,7 @@ message ProviderCuInfo {
 }
 
 message QueryProviderReputationRequest {
-	string address = 1;
+	string provider = 1;
 	string chainID = 2;
 	string cluster = 3;
 }

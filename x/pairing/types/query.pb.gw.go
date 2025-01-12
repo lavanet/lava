@@ -912,15 +912,15 @@ func request_Query_ProviderReputation_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["address"]
+	val, ok = pathParams["provider"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "address")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider")
 	}
 
-	protoReq.Address, err = runtime.String(val)
+	protoReq.Provider, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
 	}
 
 	val, ok = pathParams["chainID"]
@@ -961,15 +961,15 @@ func local_request_Query_ProviderReputation_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["address"]
+	val, ok = pathParams["provider"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "address")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider")
 	}
 
-	protoReq.Address, err = runtime.String(val)
+	protoReq.Provider, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
 	}
 
 	val, ok = pathParams["chainID"]
@@ -1819,7 +1819,7 @@ var (
 
 	pattern_Query_ProvidersEpochCu_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "providers_epoch_cu"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ProviderReputation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "pairing", "provider_reputation", "address", "chainID", "cluster"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_ProviderReputation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "pairing", "provider_reputation", "provider", "chainID", "cluster"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_ProviderReputationDetails_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "pairing", "provider_reputation_details", "address", "chainID", "cluster"}, "", runtime.AssumeColonVerbOpt(false)))
 )
