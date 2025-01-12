@@ -175,3 +175,27 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 	}
 	return *relayReceiver.relayReceiver, nil
 }
+
+type RelayReceiverInterceptor struct {
+	interceptFunction func(input any)
+	originalReceiver  RelayReceiver
+}
+
+func (rs *RelayReceiverInterceptor) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	rs.interceptFunction(request)
+	return rs.originalReceiver.Relay(ctx, request)
+}
+
+func (rs *RelayReceiverInterceptor) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	rs.interceptFunction(probeReq)
+	return rs.originalReceiver.Probe(ctx, probeReq)
+}
+
+func (rs *RelayReceiverInterceptor) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
+	rs.interceptFunction(request)
+	return rs.originalReceiver.RelaySubscribe(request, srv)
+}
+
+func NewRelayReceiverInterceptor(originalReceiver RelayReceiver, interceptFunction func(input any)) RelayReceiver {
+	return &RelayReceiverInterceptor{interceptFunction: interceptFunction, originalReceiver: originalReceiver}
+}

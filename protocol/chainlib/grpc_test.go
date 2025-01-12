@@ -279,7 +279,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			requestedBlock, _ := chainMessage.RequestedBlock()
 			require.Equal(t, test.requestedBlock, requestedBlock)
-			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the request only if it's latest
+			chainMessage.UpdateLatestBlockInMessage(test.block) // will update the request only if it's latest
 			requestedBlock, _ = chainMessage.RequestedBlock()
 			require.Equal(t, test.block, requestedBlock)
 			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
