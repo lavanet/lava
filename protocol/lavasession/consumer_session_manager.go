@@ -935,7 +935,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		consumerSession.BlockListed = true
 	}
 
-	consumerSession.QoSManager.IncTotalRelays()
+	consumerSession.QoSManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
 	// copy consecutive errors for report.
 	errorsForConsumerSession := consumerSession.ConsecutiveErrors
@@ -1046,7 +1046,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
-	consumerSession.QoSManager.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.QoSManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
@@ -1063,14 +1063,14 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	chainId := info.ChainID
 
 	var lastQos *pairingtypes.QualityOfServiceReport
-	lastQoSReport := consumerSession.QoSManager.GetLastQoSReport()
+	lastQoSReport := consumerSession.QoSManager.GetLastQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
 	if lastQoSReport != nil {
 		qos := *lastQoSReport
 		lastQos = &qos
 	}
 
 	var lastReputation *pairingtypes.QualityOfServiceReport
-	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReportRaw()
+	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReportRaw(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
 	if lastReputationReport != nil {
 		qosRep := *lastReputationReport
 		lastReputation = &qosRep

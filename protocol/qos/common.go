@@ -8,8 +8,6 @@ const (
 	MinProvidersForSync          = 0.6
 )
 
-type DegradeAvailabilityReputation interface {
-}
+type DegradeAvailabilityReputation interface{}
 
-type SendQoSUpdate interface {
-}
+type SendQoSUpdate interface{}

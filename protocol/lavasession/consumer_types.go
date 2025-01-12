@@ -429,6 +429,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
+		epoch:              cswp.PairingEpoch,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.

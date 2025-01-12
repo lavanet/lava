@@ -863,7 +863,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				)
 			}
 
-			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport()
+			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 			if rpccs.debugRelays && lastQoSReport != nil &&
 				lastQoSReport.Sync.BigInt() != nil &&
 				lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
