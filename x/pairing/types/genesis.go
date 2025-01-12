@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 
 	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
@@ -17,8 +18,9 @@ func DefaultGenesis() *GenesisState {
 		ProviderEpochCus:         []ProviderEpochCuGenesis{},
 		ProviderConsumerEpochCus: []ProviderConsumerEpochCuGenesis{},
 		BadgeUsedCuList:          []BadgeUsedCu{},
+		Reputations:              []ReputationGenesis{},
 		BadgesTS:                 *timerstoretypes.DefaultGenesis(),
-		ProviderQosFS:            *fixationtypes.DefaultGenesis(),
+		ReputationScores:         *fixationtypes.DefaultGenesis(),
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -71,6 +73,15 @@ func (gs GenesisState) Validate() error {
 	// check the badgeUsedCuIndex map is empty
 	if len(gs.BadgeUsedCuList) > 0 {
 		return fmt.Errorf("badgeUsedCuList is not empty")
+	}
+
+	reputationsIndexMap := map[string]struct{}{}
+	for _, elem := range gs.Reputations {
+		index := strings.Join([]string{elem.ChainId, elem.Cluster, elem.Provider}, " ")
+		if _, ok := reputationsIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for Reputations")
+		}
+		reputationsIndexMap[index] = struct{}{}
 	}
 
 	// this line is used by starport scaffolding # genesis/types/validate

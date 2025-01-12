@@ -6,6 +6,7 @@ import "lavanet/lava/pairing/params.proto";
 import "lavanet/lava/pairing/epoch_cu.proto";
 import "lavanet/lava/fixationstore/fixation.proto";
 import "lavanet/lava/timerstore/timer.proto";
+import "lavanet/lava/pairing/reputation.proto";
 
 // this line is used by starport scaffolding # genesis/proto/import
 
@@ -18,17 +19,16 @@ message BadgeUsedCu {
 
 // GenesisState defines the pairing module's genesis state.
 message GenesisState {
+  reserved 2,3,4,7;
   Params params = 1 [(gogoproto.nullable) = false];
-  reserved 2;
-  reserved 3;
-  reserved 4;
   repeated BadgeUsedCu badgeUsedCuList = 5 [(gogoproto.nullable) = false];
   lavanet.lava.timerstore.GenesisState badgesTS = 6 [(gogoproto.nullable) = false];
-  lavanet.lava.fixationstore.GenesisState providerQosFS = 7 [(gogoproto.nullable) = false];
   repeated UniqueEpochSessionGenesis unique_epoch_sessions = 8 [(gogoproto.nullable) = false];
   repeated ProviderEpochCuGenesis provider_epoch_cus = 9 [(gogoproto.nullable) = false];
   repeated ProviderEpochComplainerCuGenesis provider_epoch_complained_cus = 10 [(gogoproto.nullable) = false];
   repeated ProviderConsumerEpochCuGenesis provider_consumer_epoch_cus = 11 [(gogoproto.nullable) = false];
+  repeated ReputationGenesis reputations = 12 [(gogoproto.nullable) = false];
+  lavanet.lava.fixationstore.GenesisState reputation_scores = 13 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }
 
@@ -60,4 +60,11 @@ message ProviderConsumerEpochCuGenesis {
   string project = 3;
   string chain_id = 4;
   ProviderConsumerEpochCu provider_consumer_epoch_cu = 5 [(gogoproto.nullable) = false];
+}
+
+message ReputationGenesis {
+  string chain_id = 1;
+  string cluster = 2;
+  string provider = 3;
+  Reputation reputation = 4 [(gogoproto.nullable) = false];
 }
