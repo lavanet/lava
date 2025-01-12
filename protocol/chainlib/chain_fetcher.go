@@ -310,7 +310,7 @@ func (cf *ChainFetcher) ChainFetcherMetadata() []pairingtypes.Metadata {
 }
 
 func (cf *ChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
-	utils.LavaFormatDebug("Sending CustomMessage", utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "data", Value: data}, utils.Attribute{Key: "connectionType", Value: connectionType}, utils.Attribute{Key: "apiName", Value: apiName})
+	utils.LavaFormatTrace("Sending CustomMessage", utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "data", Value: data}, utils.Attribute{Key: "connectionType", Value: connectionType}, utils.Attribute{Key: "apiName", Value: apiName})
 	craftData := &CraftData{Path: path, Data: data, ConnectionType: connectionType}
 	parsing := &spectypes.ParseDirective{
 		ApiName:          apiName,
@@ -323,7 +323,7 @@ func (cf *ChainFetcher) CustomMessage(ctx context.Context, path string, data []b
 		return nil, err
 	}
 	reply, _, _, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
-	utils.LavaFormatDebug("CustomMessage", utils.Attribute{Key: "reply", Value: reply})
+	utils.LavaFormatTrace("CustomMessage", utils.Attribute{Key: "reply", Value: reply})
 	if err != nil {
 		return nil, err
 	}
