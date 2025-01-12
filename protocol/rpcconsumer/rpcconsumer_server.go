@@ -580,6 +580,10 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 	return blocksHashesToHeights
 }
 
+func (rpccs *RPCConsumerServer) GetExtensionParser() *extensionslib.ExtensionParser {
+	return rpccs.chainParser.ExtensionsParser()
+}
+
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
 	relayState *RelayState,
@@ -875,8 +879,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				)
 			}
 
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+			reduceAvailability := false
+			if isNodeError && (chainId == "NEAR" || chainId == "NEART") {
+				// validate nodeError is matching our expectations for reducing availability.
+				reduceAvailability = strings.Contains(string(localRelayResult.Reply.Data), "The node does not track the shard ID")
+			}
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions, reduceAvailability) // session done successfully
 			localRelayResult.IsNodeError = isNodeError
 			if rpccs.debugRelays {
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode))
