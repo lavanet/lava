@@ -40,12 +40,26 @@ func (m *MockChainFetcherIf) EXPECT() *MockChainFetcherIfMockRecorder {
 }
 
 // FetchBlockHashByNum mocks base method.
+func (m *MockChainFetcherIf) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomMessage", ctx, path, data, connectionType, apiName)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+// FetchBlockHashByNum mocks base method.
 func (m *MockChainFetcherIf) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchBlockHashByNum", ctx, blockNum)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// FetchBlockHashByNum indicates an expected call of FetchBlockHashByNum.
+func (mr *MockChainFetcherIfMockRecorder) CustomMessage(ctx, path, data, connectionType, apiName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomMessage", reflect.TypeOf((*MockChainFetcherIf)(nil).CustomMessage), ctx, path, data, connectionType, apiName)
 }
 
 // FetchBlockHashByNum indicates an expected call of FetchBlockHashByNum.

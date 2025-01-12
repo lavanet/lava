@@ -7,7 +7,6 @@ import (
 	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -39,9 +38,8 @@ type (
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
 
-		schema            collections.Schema
-		reputations       collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per chain, cluster, provider
-		pairingQueryCache *map[string][]epochstoragetypes.StakeEntry
+		schema      collections.Schema
+		reputations collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per chain, cluster, provider
 	}
 )
 
@@ -80,7 +78,6 @@ func NewKeeper(
 	}
 
 	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
-	emptypairingQueryCache := map[string][]epochstoragetypes.StakeEntry{}
 
 	keeper := &Keeper{
 		cdc:                cdc,
@@ -102,7 +99,6 @@ func NewKeeper(
 			collections.TripleKeyCodec(collections.StringKey, collections.StringKey, collections.StringKey),
 			collcompat.ProtoValue[types.Reputation](cdc),
 		),
-		pairingQueryCache: &emptypairingQueryCache,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
