@@ -157,6 +157,8 @@ trace lavad q pairing static-providers-list LAV1 >/dev/null
 trace lavad q pairing user-entry $(lavad keys show alice -a) ETH1 20 >/dev/null
 trace lavad q pairing verify-pairing STRK $(lavad keys show alice -a) $(lavad keys show alice -a) 60 >/dev/null
 trace lavad q pairing provider-pairing-chance $(lavad keys show servicer1 -a) STRK 1 "" >/dev/null
+trace lavad q pairing provider-reputation $(lavad keys show servicer1 -a) ETH1 free >/dev/null
+trace lavad q pairing provider-reputation-details $(lavad keys show servicer1 -a) ETH1 free >/dev/null
 
 echo "Testing dualstaking tx commands"
 wait_count_blocks 1 >/dev/null
