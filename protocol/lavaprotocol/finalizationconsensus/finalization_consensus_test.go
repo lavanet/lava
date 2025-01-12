@@ -209,10 +209,11 @@ func TestQoS(t *testing.T) {
 	waitForDoneChan := func(doneChan <-chan struct{}) {
 		select {
 		case <-doneChan:
-		case <-time.After(5 * time.Hour):
+		case <-time.After(5 * time.Second):
 			t.Fatal("timeout waiting for qos calculation to finish")
 		}
 	}
+
 	for i := 0; i < 10; i++ {
 		for _, chainID := range chainsToTest {
 			t.Run(chainID, func(t *testing.T) {
