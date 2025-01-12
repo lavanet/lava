@@ -23,9 +23,9 @@ type QoSReport struct {
 type DoneChan <-chan struct{}
 
 type QoSManager struct {
-	qosReports     map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
-	mutatorsQueue  chan Mutator
-	qosReportsLock sync.RWMutex
+	qosReports    map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
+	mutatorsQueue chan Mutator
+	lock          sync.RWMutex
 }
 
 func NewQoSManager() *QoSManager {
@@ -40,13 +40,17 @@ func (qosManager *QoSManager) processMutations() {
 	for mutator := range qosManager.mutatorsQueue {
 		epoch, sessionId := mutator.GetEpochAndSessionId()
 		qosReport := qosManager.fetchOrSetSessionFromMap(epoch, sessionId)
-		mutator.Mutate(qosReport)
+		func() {
+			qosReport.lock.Lock()
+			defer qosReport.lock.Unlock()
+			mutator.Mutate(qosReport)
+		}()
 	}
 }
 
 func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId int64) *QoSReport {
-	qosManager.qosReportsLock.Lock()
-	defer qosManager.qosReportsLock.Unlock()
+	qosManager.lock.Lock()
+	defer qosManager.lock.Unlock()
 	if qosManager.qosReports[epoch] == nil {
 		qosManager.qosReports[epoch] = make(map[int64]*QoSReport)
 	}
@@ -113,8 +117,8 @@ func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessio
 }
 
 func (qosManager *QoSManager) getQoSReport(epoch uint64, sessionId int64) *QoSReport {
-	qosManager.qosReportsLock.RLock()
-	defer qosManager.qosReportsLock.RUnlock()
+	qosManager.lock.RLock()
+	defer qosManager.lock.RUnlock()
 	if qosManager.qosReports[epoch] == nil || qosManager.qosReports[epoch][sessionId] == nil {
 		return nil
 	}

@@ -29,9 +29,7 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) calculateAvailabilityScore
 }
 
 func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) {
-	report.lock.Lock()
 	defer func() {
-		report.lock.Unlock()
 		qoSMutatorRelaySuccess.doneChan <- struct{}{}
 	}()
 
