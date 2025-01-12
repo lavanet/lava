@@ -95,16 +95,23 @@ message RelayReply {
 }
 
 message QualityOfServiceReport{
+    // Latency of provider answers in milliseconds, range 0-inf, lower is better
     string latency = 1 [
         (gogoproto.moretags) = "yaml:\"Latency\"",
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
+
+    // Percentage of times the provider returned a non-error response, range 0-1, higher is better
     string availability  = 2 [
         (gogoproto.moretags) = "yaml:\"availability\"",
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
+
+    // Amount of time the provider is not synced (have the latest block) in milliseconds, range 0-inf, lower is better.
+    // Example: in ETH we have 15sec block time. So sync = 15000 means that the provider is one block
+    // behind the actual latest block.
     string sync = 3 [
         (gogoproto.moretags) = "yaml:\"sync\"",
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
