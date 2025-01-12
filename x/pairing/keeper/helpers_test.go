@@ -170,7 +170,7 @@ func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pair
 		// set half life factor to be epoch time
 		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &pairingtypes.QueryParamsRequest{})
 		require.NoError(ts.T, err)
-		resQParams.Params.ReputationHalfLifeFactor = int64(ts.EpochTimeDefault().Seconds())
+		resQParams.Params.ReputationHalfLifeFactor = uint64(ts.EpochTimeDefault().Seconds())
 		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
 	}
 

@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "SOLANA",
-                "name": "solana main net",
+                "name": "solana mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -27,6 +27,14 @@
                             "type": "POST",
                             "add_on": ""
                         },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ],
                         "apis": [
                             {
                                 "name": "getAccountInfo",
@@ -967,7 +975,6 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
                         "parse_directives": [
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getLatestBlockhash\",\"params\":[{\"commitment\":\"finalized\"}],\"id\":1}",
@@ -1041,10 +1048,10 @@
                         ]
                     },
                     {
-                        "enabled": true,
+                        "enabled": false,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws",
+                            "internal_path": "WS-ONLY",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -1375,21 +1382,7 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
                         "parse_directives": [
-                            {
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_func": "DEFAULT"
-                                }
-                            },
-                            {
-                                "function_template": "%d",
-                                "function_tag": "GET_BLOCK_BY_NUM",
-                                "result_parsing": {
-                                    "parser_func": "DEFAULT"
-                                }
-                            },
                             {
                                 "function_tag": "SUBSCRIBE",
                                 "api_name": "accountSubscribe"

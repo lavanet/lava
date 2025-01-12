@@ -105,10 +105,9 @@ func (k Keeper) UpdateReputationEpochQosScore(ctx sdk.Context, chainID string, c
 	}
 
 	// calculate the updated QoS epoch score
-	updatedEpochScore := r.EpochScore.Update(score, truncate, weight)
+	r.EpochScore.Update(score, truncate, weight)
 
-	// update the reputation and set
-	r.EpochScore = updatedEpochScore
+	// update the reputation's stake and set
 	r.Stake = stake
 	k.SetReputation(ctx, chainID, cluster, provider, r)
 }
@@ -124,8 +123,8 @@ type StakeProviderScores struct {
 	TotalStake     sdk.Coin
 }
 
-// UpdateReputationQosScore updates all the reputations on epoch start with the epoch score aggregated over the epoch
-func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
+// UpdateAllReputationQosScore updates all the reputations on epoch start with the epoch score aggregated over the epoch
+func (k Keeper) UpdateAllReputationQosScore(ctx sdk.Context) {
 	// scores is a map of "chainID cluster" -> stakeProviderScores
 	// it will be used to compare providers QoS scores within the same chain ID and cluster and determine
 	// the providers' reputation pairing score.
@@ -214,7 +213,7 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[types.Reput
 		}
 
 		// apply time decay on current score and add the epoch score (which is reset right after)
-		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(halfLifeFactor, currentTime)
+		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(utils.SafeUint64ToInt64Convert(halfLifeFactor), currentTime)
 		if err != nil {
 			return nil, utils.LavaFormatError("updateReputationsScores: apply time decay and update reputation", err,
 				utils.LogAttr("chain_id", chainID),
