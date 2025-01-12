@@ -31,7 +31,7 @@ type QoSManager struct {
 func NewQoSManager() *QoSManager {
 	qosManager := &QoSManager{}
 	qosManager.qosReports = make(map[uint64]map[int64]*QoSReport)
-	qosManager.mutatorsQueue = make(chan Mutator, 1000)
+	qosManager.mutatorsQueue = make(chan Mutator, 10000000) // Buffer of 10 Million mutators
 	go qosManager.processMutations()
 	return qosManager
 }
@@ -70,7 +70,7 @@ func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId i
 }
 
 func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64) (*QoSMutatorBase, chan struct{}) {
-	doneChan := make(chan struct{}, 1)
+	doneChan := make(chan struct{}, 1) // Must be buffered to avoid freezing the queue
 	qosMutatorBase := &QoSMutatorBase{
 		epoch:     epoch,
 		sessionId: sessionId,
@@ -81,38 +81,32 @@ func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64
 
 func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) DoneChan {
 	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	go func() {
-		qosManager.mutatorsQueue <- &QoSMutatorRelaySuccess{
-			QoSMutatorBase:   *qosMutatorBase,
-			providerAddress:  providerAddress,
-			latency:          latency,
-			expectedLatency:  expectedLatency,
-			blockHeightDiff:  blockHeightDiff,
-			numOfProviders:   numOfProviders,
-			servicersToCount: servicersToCount,
-		}
-	}()
+	qosManager.mutatorsQueue <- &QoSMutatorRelaySuccess{
+		QoSMutatorBase:   *qosMutatorBase,
+		providerAddress:  providerAddress,
+		latency:          latency,
+		expectedLatency:  expectedLatency,
+		blockHeightDiff:  blockHeightDiff,
+		numOfProviders:   numOfProviders,
+		servicersToCount: servicersToCount,
+	}
 	return doneChan
 }
 
 func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) DoneChan {
 	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	go func() {
-		qosManager.mutatorsQueue <- &QoSMutatorRelayFailure{
-			QoSMutatorBase: *qosMutatorBase,
-		}
-	}()
+	qosManager.mutatorsQueue <- &QoSMutatorRelayFailure{
+		QoSMutatorBase: *qosMutatorBase,
+	}
 	return doneChan
 }
 
 func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
 	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	go func() {
-		qosManager.mutatorsQueue <- &QoSMutatorSetReputationRaw{
-			QoSMutatorBase: *qosMutatorBase,
-			report:         report,
-		}
-	}()
+	qosManager.mutatorsQueue <- &QoSMutatorSetReputationRaw{
+		QoSMutatorBase: *qosMutatorBase,
+		report:         report,
+	}
 	return doneChan
 }
 
