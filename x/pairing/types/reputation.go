@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	stdMath "math"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
@@ -69,19 +68,8 @@ func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) mat
 		return math.LegacyZeroDec()
 	}
 
-	exponent := float64(timeSinceLastUpdate / halfLifeFactor)
-	decayFactorFloat := stdMath.Exp(exponent)
-	decayFactorString := fmt.Sprintf("%.18f", decayFactorFloat)
-	decayFactor, err := math.LegacyNewDecFromStr(decayFactorString)
-	if err != nil {
-		utils.LavaFormatError("calcDecayFactor: calculate reputation decay factor failed, invalid decay factor string", err,
-			utils.LogAttr("decay_factor_string", decayFactorString),
-			utils.LogAttr("time_since_last_update", timeSinceLastUpdate),
-			utils.LogAttr("half_life_factor", halfLifeFactor),
-		)
-		return math.LegacyZeroDec()
-	}
-	return decayFactor
+	// Calculate the decay factor using the natural base e: e^(-timeSinceLastUpdate / halfLifeFactor)
+	return utils.NaturalBaseExponentFraction(timeSinceLastUpdate, halfLifeFactor, true)
 }
 
 func (r Reputation) ApplyTimeDecayAndUpdateScore(halfLifeFactor int64, currentTime int64) (Reputation, error) {
