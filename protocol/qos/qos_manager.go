@@ -20,6 +20,8 @@ type QoSReport struct {
 	lock                       sync.RWMutex
 }
 
+type DoneChan <-chan struct{}
+
 type QoSManager struct {
 	qosReports     map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
 	mutatorsQueue  chan Mutator
@@ -63,13 +65,21 @@ func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId i
 	return qosManager.qosReports[epoch][sessionId]
 }
 
-func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64) (*QoSMutatorBase, chan struct{}) {
+	doneChan := make(chan struct{}, 1)
+	qosMutatorBase := &QoSMutatorBase{
+		epoch:     epoch,
+		sessionId: sessionId,
+		doneChan:  doneChan,
+	}
+	return qosMutatorBase, doneChan
+}
+
+func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) DoneChan {
+	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
 	go func() {
-		qosManager.mutatorsQueue <- &QoSUpdateTaskRelaySuccess{
-			QoSUpdateTaskBase: QoSUpdateTaskBase{
-				epoch:     epoch,
-				sessionId: sessionId,
-			},
+		qosManager.mutatorsQueue <- &QoSMutatorRelaySuccess{
+			QoSMutatorBase:   *qosMutatorBase,
 			providerAddress:  providerAddress,
 			latency:          latency,
 			expectedLatency:  expectedLatency,
@@ -78,27 +88,28 @@ func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, provid
 			servicersToCount: servicersToCount,
 		}
 	}()
+	return doneChan
 }
 
-func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) {
+func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) DoneChan {
+	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
 	go func() {
-		qosManager.mutatorsQueue <- &QoSUpdateTaskRelayFailure{
-			QoSUpdateTaskBase: QoSUpdateTaskBase{
-				epoch:     epoch,
-				sessionId: sessionId,
-			},
+		qosManager.mutatorsQueue <- &QoSMutatorRelayFailure{
+			QoSMutatorBase: *qosMutatorBase,
 		}
 	}()
+	return doneChan
 }
 
-func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) {
-	qosManager.mutatorsQueue <- &QoSUpdateTaskSetReputationRaw{
-		QoSUpdateTaskBase: QoSUpdateTaskBase{
-			epoch:     epoch,
-			sessionId: sessionId,
-		},
-		report: report,
-	}
+func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
+	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
+	go func() {
+		qosManager.mutatorsQueue <- &QoSMutatorSetReputationRaw{
+			QoSMutatorBase: *qosMutatorBase,
+			report:         report,
+		}
+	}()
+	return doneChan
 }
 
 func (qosManager *QoSManager) getQoSReport(epoch uint64, sessionId int64) *QoSReport {

@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
@@ -430,6 +431,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
 		epoch:              cswp.PairingEpoch,
+		QoSManager:         qos.NewQoSManager(),
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
