@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -813,6 +814,70 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSolanaSpecAddMultipleSubscribe tests if the solana spec is expanded correctly
+// The Solana spec is special since it has multiple parse directives of subscribe and unsubscribe
+// unlike other specs that have strictly unique parse directives
+func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
+	ts := newTester(t)
+
+	// read solana spec from file
+	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
+	require.NoError(t, err)
+	fileName := ""
+	for _, specFile := range specsFiles {
+		if strings.Contains(specFile, "solana.json") {
+			fileName = specFile
+			break
+		}
+	}
+	contents, err := os.ReadFile(fileName)
+	require.NoError(t, err)
+
+	// Parse contents of solana spec into a proposal
+	var proposal utils.SpecAddProposalJSON
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	err = decoder.Decode(&proposal)
+	require.NoError(t, err, fileName)
+
+	// Find the solana spec in the proposal
+	solanaSpec := types.Spec{}
+	for _, spec := range proposal.Proposal.Specs {
+		for _, apiCol := range spec.ApiCollections {
+			for _, parseDirective := range apiCol.ParseDirectives {
+				if parseDirective.FunctionTag == types.FUNCTION_TAG_SUBSCRIBE {
+					solanaSpec = spec
+					break
+				}
+			}
+		}
+	}
+
+	// Simulate the addspec proposal
+	err = ts.TxProposalAddSpecs(solanaSpec)
+	require.NoError(t, err)
+
+	// Check if the solana spec is added to the keeper
+	specs := ts.Keepers.Spec.GetAllSpec(ts.Ctx)
+	require.Equal(t, 1, len(specs))
+	require.Equal(t, solanaSpec.Index, specs[0].Index)
+
+	// Check if the solana spec is expanded correctly and has multiple parse directives of subscribe and unsubscribe
+	subscribeCount := 0
+	unsubscribeCount := 0
+	for _, apiCol := range specs[0].ApiCollections {
+		for _, parseDirective := range apiCol.ParseDirectives {
+			if parseDirective.FunctionTag == types.FUNCTION_TAG_SUBSCRIBE {
+				subscribeCount++
+			} else if parseDirective.FunctionTag == types.FUNCTION_TAG_UNSUBSCRIBE {
+				unsubscribeCount++
+			}
+		}
+	}
+	require.Greater(t, subscribeCount, 2)
+	require.Greater(t, unsubscribeCount, 2)
 }
 
 func TestSpecs(t *testing.T) {
