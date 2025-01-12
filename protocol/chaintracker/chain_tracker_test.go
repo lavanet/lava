@@ -104,6 +104,10 @@ func (mcf *MockChainFetcher) Fork(fork string) {
 	}
 }
 
+func (mcf *MockChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	return nil, utils.LavaFormatError("Not Implemented CustomMessage for MockChainFetcher", nil)
+}
+
 func (mcf *MockChainFetcher) Shrink(newSize int) {
 	mcf.mutex.Lock()
 	defer mcf.mutex.Unlock()

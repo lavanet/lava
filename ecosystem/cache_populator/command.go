@@ -67,65 +67,62 @@ func executeRequest(config CacheConfig, request Request) {
 	client := &http.Client{}
 	ticker := time.NewTicker(config.Interval)
 	defer ticker.Stop()
+	for range ticker.C {
+		go func() {
+			// Create context with timeout
+			ctx, cancel := context.WithTimeout(context.Background(), config.ContextTimeout)
 
-	for {
-		// Create context with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), config.ContextTimeout)
+			// Generate new GUID for this request cycle
+			guid := utils.GenerateUniqueIdentifier()
 
-		// Generate new GUID for this request cycle
-		guid := utils.GenerateUniqueIdentifier()
+			// Create request based on type
+			var httpReq *http.Request
+			var err error
 
-		// Create request based on type
-		var httpReq *http.Request
-		var err error
+			switch request.Type {
+			case "GET":
+				httpReq, err = http.NewRequestWithContext(ctx, http.MethodGet,
+					config.ServerAddress+request.Path, nil)
+			case "POST":
+				httpReq, err = http.NewRequestWithContext(ctx, http.MethodPost,
+					config.ServerAddress+request.Path, bytes.NewBufferString(request.Body))
+			default:
+				utils.LavaFormatError("unsupported request type", fmt.Errorf("type: %s", request.Type), utils.Attribute{Key: "guid", Value: guid})
+				cancel()
+				return
+			}
 
-		switch request.Type {
-		case "GET":
-			httpReq, err = http.NewRequestWithContext(ctx, http.MethodGet,
-				config.ServerAddress+request.Path, nil)
-		case "POST":
-			httpReq, err = http.NewRequestWithContext(ctx, http.MethodPost,
-				config.ServerAddress+request.Path, bytes.NewBufferString(request.Body))
-		default:
-			utils.LavaFormatError("unsupported request type", fmt.Errorf("type: %s", request.Type), utils.Attribute{Key: "guid", Value: guid})
+			if err != nil {
+				utils.LavaFormatError("failed to create request", err, utils.Attribute{Key: "guid", Value: guid})
+				cancel()
+				return
+			}
+
+			// Add headers to the request
+			for key, value := range request.Headers {
+				httpReq.Header.Set(key, value)
+			}
+
+			// Execute request
+			utils.LavaFormatDebug("request ", utils.Attribute{Key: "path", Value: request.Path}, utils.Attribute{Key: "body", Value: request.Body}, utils.Attribute{Key: "guid", Value: guid})
+
+			resp, err := client.Do(httpReq)
+			if err != nil {
+				utils.LavaFormatError("failed to execute request", err, utils.Attribute{Key: "guid", Value: guid})
+				cancel()
+				// Wait for next tick before retrying
+				return
+			}
+
+			if resp.StatusCode >= 400 {
+				utils.LavaFormatError("request failed",
+					fmt.Errorf("status code: %d, path: %s", resp.StatusCode, request.Path), utils.Attribute{Key: "guid", Value: guid})
+			}
+
+			resp.Body.Close()
+			utils.LavaFormatDebug("response", utils.Attribute{Key: "status_code", Value: resp.StatusCode}, utils.Attribute{Key: "path", Value: request.Path}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "body", Value: request.Body})
 			cancel()
-			continue
-		}
-
-		if err != nil {
-			utils.LavaFormatError("failed to create request", err, utils.Attribute{Key: "guid", Value: guid})
-			cancel()
-			continue
-		}
-
-		// Add headers to the request
-		for key, value := range request.Headers {
-			httpReq.Header.Set(key, value)
-		}
-
-		// Execute request
-		utils.LavaFormatDebug("request ", utils.Attribute{Key: "path", Value: request.Path}, utils.Attribute{Key: "body", Value: request.Body}, utils.Attribute{Key: "guid", Value: guid})
-
-		resp, err := client.Do(httpReq)
-		if err != nil {
-			utils.LavaFormatError("failed to execute request", err, utils.Attribute{Key: "guid", Value: guid})
-			cancel()
-			// Wait for next tick before retrying
-			<-ticker.C
-			continue
-		}
-
-		if resp.StatusCode >= 400 {
-			utils.LavaFormatError("request failed",
-				fmt.Errorf("status code: %d, path: %s", resp.StatusCode, request.Path), utils.Attribute{Key: "guid", Value: guid})
-		}
-
-		resp.Body.Close()
-		utils.LavaFormatDebug("response", utils.Attribute{Key: "status_code", Value: resp.StatusCode}, utils.Attribute{Key: "path", Value: request.Path}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "body", Value: request.Body})
-		cancel()
-
-		// Wait for next tick before making the next request
-		<-ticker.C
+		}()
 	}
 }
 

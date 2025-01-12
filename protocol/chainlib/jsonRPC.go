@@ -723,6 +723,8 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+			utils.Attribute{Key: "reply", Value: replyMsg},
+			utils.Attribute{Key: "request", Value: nodeMessage},
 		)
 	}
 

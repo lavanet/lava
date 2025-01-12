@@ -16,10 +16,11 @@ const (
 type ProviderMetrics struct {
 	specID                    string
 	apiInterface              string
+	endpoint                  string
 	lock                      sync.Mutex
 	totalCUServicedMetric     *prometheus.CounterVec
 	totalCUPaidMetric         *prometheus.CounterVec
-	totalRelaysServicedMetric *prometheus.CounterVec
+	totalRelaysServicedMetric *MappedLabelsCounterVec
 	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
 	loadRateMetric            *prometheus.GaugeVec
@@ -32,7 +33,8 @@ func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pair
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	pm.totalCUServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(float64(cu))
-	pm.totalRelaysServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
+	labels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "provider_endpoint": pm.endpoint}
+	pm.totalRelaysServicedMetric.WithLabelValues(labels).Add(1)
 	if qos == nil {
 		return
 	}
@@ -75,9 +77,9 @@ func (pm *ProviderMetrics) AddError() {
 	pm.totalErroredMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
 }
 
-func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prometheus.CounterVec,
+func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMetric *prometheus.CounterVec,
 	totalCUPaidMetric *prometheus.CounterVec,
-	totalRelaysServicedMetric *prometheus.CounterVec,
+	totalRelaysServicedMetric *MappedLabelsCounterVec,
 	totalErroredMetric *prometheus.CounterVec,
 	consumerQoSMetric *prometheus.GaugeVec,
 	loadRateMetric *prometheus.GaugeVec,
@@ -85,6 +87,7 @@ func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prom
 	pm := &ProviderMetrics{
 		specID:                    specID,
 		apiInterface:              apiInterface,
+		endpoint:                  endpoint,
 		lock:                      sync.Mutex{},
 		totalCUServicedMetric:     totalCUServicedMetric,
 		totalCUPaidMetric:         totalCUPaidMetric,
