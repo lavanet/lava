@@ -23,6 +23,6 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
   ];
-  int64 reputation_half_life_factor = 17 [(gogoproto.moretags) = "yaml:\"reputation_half_life_factor\""];
+  uint64 reputation_half_life_factor = 17 [(gogoproto.moretags) = "yaml:\"reputation_half_life_factor\""];
   uint64 reputation_relay_failure_cost = 18 [(gogoproto.moretags) = "yaml:\"reputation_relay_failure_cost\""];
 }

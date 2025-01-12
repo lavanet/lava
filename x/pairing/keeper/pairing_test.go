@@ -1131,14 +1131,8 @@ func TestGeolocationPairingScores(t *testing.T) {
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
 
-			subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
-			require.NoError(t, err)
-			cluster := subRes.Sub.Cluster
-
 			for i := range stakeEntries {
-				// TODO: require err to be nil once the providerQosFS's update is implemented
-				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
-				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], sdk.OneDec())
 				providerScores = append(providerScores, providerScore)
 			}
 

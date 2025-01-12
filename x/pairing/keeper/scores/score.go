@@ -65,7 +65,7 @@ func GetAllReqs() []ScoreReq {
 	return []ScoreReq{
 		&StakeReq{},
 		&GeoReq{},
-		&QosReq{},
+		// &ReputationReq{}, TODO: uncomment when you want to enable reputation influence on pairing
 	}
 }
 
