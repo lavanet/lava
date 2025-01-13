@@ -55,16 +55,7 @@ func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId i
 		qosManager.qosReports[epoch] = make(map[int64]*QoSReport)
 	}
 	if qosManager.qosReports[epoch][sessionId] == nil {
-		qosManager.qosReports[epoch][sessionId] = &QoSReport{
-			lastQoSReport:              &pairingtypes.QualityOfServiceReport{},
-			lastReputationQoSReport:    &pairingtypes.QualityOfServiceReport{},
-			lastReputationQoSReportRaw: &pairingtypes.QualityOfServiceReport{},
-			latencyScoreList:           []sdk.Dec{},
-			syncScoreSum:               0,
-			totalSyncScore:             0,
-			totalRelays:                0,
-			answeredRelays:             0,
-		}
+		qosManager.qosReports[epoch][sessionId] = &QoSReport{}
 	}
 	return qosManager.qosReports[epoch][sessionId]
 }
