@@ -55,6 +55,8 @@ const (
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	// specification default flags
 	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
+
+	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
 const (

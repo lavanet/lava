@@ -757,6 +757,28 @@ func TestParseBlockFromReply(t *testing.T) {
 			expected:      123,
 			expectedError: "expected 321, received 123",
 		},
+		{
+			name: "generic_parser_parse_from_array_result",
+			rpcInput: &RPCInputTest{
+				Result: []byte(`
+					[
+						{
+							"foo": {
+								"bar": 123
+							}
+						}
+					]
+				`),
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".result.[0].foo.bar",
+					Value:     "123",
+					ParseType: spectypes.PARSER_TYPE_RESULT,
+				},
+			},
+			expected: 123,
+		},
 	}
 
 	for _, test := range tests {

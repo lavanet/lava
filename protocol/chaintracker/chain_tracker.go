@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dgraph-io/ristretto/v2"
 	rand "github.com/lavanet/lava/v4/utils/rand"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -23,6 +24,27 @@ import (
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
 )
+
+// IChainTracker represents the interface for chain tracking functionality
+type IChainTracker interface {
+	// GetLatestBlockData returns block hashes for the specified block range and a specific block
+	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, changeTime time.Time, err error)
+
+	// RegisterForBlockTimeUpdates registers an updatable to receive block time updates
+	RegisterForBlockTimeUpdates(updatable blockTimeUpdatable)
+
+	// GetLatestBlockNum returns the current latest block number and the time it was last changed
+	GetLatestBlockNum() (int64, time.Time)
+
+	// GetAtomicLatestBlockNum returns the current latest block number atomically
+	GetAtomicLatestBlockNum() int64
+
+	// StartAndServe starts the chain tracker and serves gRPC if configured
+	StartAndServe(ctx context.Context) error
+
+	// AddBlockGap adds a new block gap measurement
+	AddBlockGap(newData time.Duration, blocks uint64)
+}
 
 const (
 	initRetriesCount               = 4
@@ -41,10 +63,27 @@ type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
+	CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error)
 }
 
 type blockTimeUpdatable interface {
 	UpdateBlockTime(time.Duration)
+}
+
+type DefaultChainTrackerFetcher struct {
+	chainFetcher ChainFetcher
+	dataFetcher  IChainTrackerDataFetcher
+}
+
+func (cs *DefaultChainTrackerFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	return cs.chainFetcher.FetchLatestBlockNum(ctx)
+}
+
+func (cs *DefaultChainTrackerFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	if blockNum < cs.dataFetcher.GetAtomicLatestBlockNum()-int64(cs.dataFetcher.GetServerBlockMemory()) {
+		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
+	}
+	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
 
 type ChainTracker struct {
@@ -72,6 +111,9 @@ type ChainTracker struct {
 	// initial config
 	averageBlockTime time.Duration
 	serverAddress    string
+
+	// allows us to mock the chain fetcher for different use cases for example: Solana needs slot to block number
+	iChainFetcherWrapper IChainFetcherWrapper
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -149,19 +191,12 @@ func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
 
+func (cs *ChainTracker) GetServerBlockMemory() uint64 {
+	return cs.serverBlockMemory
+}
+
 func (cs *ChainTracker) setLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
-}
-
-func (cs *ChainTracker) fetchLatestBlockNum(ctx context.Context) (int64, error) {
-	return cs.chainFetcher.FetchLatestBlockNum(ctx)
-}
-
-func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	if blockNum < cs.GetAtomicLatestBlockNum()-int64(cs.serverBlockMemory) {
-		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.GetAtomicLatestBlockNum(), cs.serverBlockMemory)
-	}
-	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
 
 // this function fetches all previous blocks from the node starting at the latest provided going backwards blocksToSave blocks
@@ -215,7 +250,7 @@ func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, block
 	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
 		// reading the blocks from the newest to oldest
 		blockNumToFetch := latestBlock - idx
-		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
+		newHashForBlock, err := cs.iChainFetcherWrapper.FetchBlockHashByNum(ctx, blockNumToFetch)
 		if err != nil {
 			return 0, 0, 0, utils.LavaFormatWarning("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
 		}
@@ -269,7 +304,7 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff, newQueueIdx, fetched
 func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
 	if newLatestBlock == cs.GetAtomicLatestBlockNum() {
 		// no new block arrived, compare the last hash
-		hash, err := cs.fetchBlockHashByNum(ctx, newLatestBlock)
+		hash, err := cs.iChainFetcherWrapper.FetchBlockHashByNum(ctx, newLatestBlock)
 		if err != nil {
 			return false, err
 		}
@@ -282,7 +317,7 @@ func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (
 	cs.blockQueueMu.RLock()
 	latestBlockSaved := cs.getLatestBlockUnsafe()
 	cs.blockQueueMu.RUnlock() // not with defer because we are going to call an external function here
-	prevHash, err := cs.fetchBlockHashByNum(ctx, latestBlockSaved.Block)
+	prevHash, err := cs.iChainFetcherWrapper.FetchBlockHashByNum(ctx, latestBlockSaved.Block)
 	if err != nil {
 		return false, err
 	}
@@ -296,7 +331,7 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 // this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
 // if a new block or fork is not found, check the emergency mode
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
-	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
+	newLatestBlock, err := cs.iChainFetcherWrapper.FetchLatestBlockNum(ctx)
 	if err != nil {
 		type wrappedError interface {
 			Unwrap() error
@@ -434,7 +469,7 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
 	var newLatestBlock int64
 	for idx := 0; idx < initRetriesCount+1; idx++ {
-		newLatestBlock, err = cs.fetchLatestBlockNum(ctx)
+		newLatestBlock, err = cs.iChainFetcherWrapper.FetchLatestBlockNum(ctx)
 		if err == nil {
 			break
 		}
@@ -584,20 +619,17 @@ func (ct *ChainTracker) StartAndServe(ctx context.Context) error {
 	return err
 }
 
-func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
-	if !rand.Initialized() {
-		utils.LavaFormatFatal("can't start chainTracker with nil rand source", nil)
-	}
-	err = config.validate()
-	if err != nil {
-		return nil, err
-	}
+func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig) IChainTracker {
 	pollingTime := MostFrequentPollingMultiplier
 	if config.PollingTimeMultiplier != 0 {
 		pollingTime = config.PollingTimeMultiplier
 	}
+	if chainFetcher == nil {
+		utils.LavaFormatFatal("can't start chainTracker with nil chainFetcher argument", nil)
+	}
+	endpoint := chainFetcher.FetchEndpoint()
 
-	chainTracker = &ChainTracker{
+	chainTracker := &ChainTracker{
 		consistencyCallback:     config.ConsistencyCallback,
 		forkCallback:            config.ForkCallback,
 		newLatestCallback:       config.NewLatestCallback,
@@ -614,11 +646,45 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 		pollingTimeMultiplier:   time.Duration(pollingTime),
 		averageBlockTime:        config.AverageBlockTime,
 		serverAddress:           config.ServerAddress,
+		endpoint:                endpoint,
 	}
-	if chainFetcher == nil {
-		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
-	}
-	chainTracker.endpoint = chainFetcher.FetchEndpoint()
 
+	switch config.ChainId {
+	// TODO: we can do it better by creating a spec fields for custom trackers.
+	// By applying a name SVM for example
+	case "SOLANA", "SOLANAT", "KOII", "KOIIT":
+		utils.LavaFormatInfo("using SVMChainTracker", utils.Attribute{Key: "chainID", Value: config.ChainId})
+		slotCache, err := ristretto.NewCache(&ristretto.Config[int64, int64]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		if err != nil {
+			utils.LavaFormatFatal("could not create cache", err)
+		}
+		hashCache, err := ristretto.NewCache(&ristretto.Config[int64, string]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		if err != nil {
+			utils.LavaFormatFatal("could not create cache", err)
+		}
+		chainTracker.iChainFetcherWrapper = &SVMChainTracker{
+			slotCache:    slotCache,
+			hashCache:    hashCache,
+			dataFetcher:  chainTracker,
+			chainFetcher: chainFetcher,
+		}
+	default:
+		chainTracker.iChainFetcherWrapper = &DefaultChainTrackerFetcher{
+			dataFetcher:  chainTracker,
+			chainFetcher: chainFetcher,
+		}
+	}
+	return chainTracker
+}
+
+func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker IChainTracker, err error) {
+	if !rand.Initialized() {
+		utils.LavaFormatFatal("can't start chainTracker with nil rand source", nil)
+	}
+	err = config.validate()
+	if err != nil {
+		return nil, err
+	}
+	chainTracker = newCustomChainTracker(chainFetcher, config)
 	return chainTracker, err
 }

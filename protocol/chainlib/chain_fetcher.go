@@ -32,6 +32,7 @@ type ChainFetcherIf interface {
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
 	Validate(ctx context.Context) error
+	CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error)
 }
 
 type ChainFetcher struct {
@@ -308,6 +309,27 @@ func (cf *ChainFetcher) ChainFetcherMetadata() []pairingtypes.Metadata {
 	return ret
 }
 
+func (cf *ChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	utils.LavaFormatTrace("Sending CustomMessage", utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "data", Value: data}, utils.Attribute{Key: "connectionType", Value: connectionType}, utils.Attribute{Key: "apiName", Value: apiName})
+	craftData := &CraftData{Path: path, Data: data, ConnectionType: connectionType}
+	parsing := &spectypes.ParseDirective{
+		ApiName:          apiName,
+		FunctionTemplate: "",
+		ResultParsing:    spectypes.BlockParser{},
+		Parsers:          []spectypes.GenericParser{},
+	}
+	chainMessage, err := CraftChainMessage(parsing, connectionType, cf.chainParser, craftData, cf.ChainFetcherMetadata())
+	if err != nil {
+		return nil, err
+	}
+	reply, _, _, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+	utils.LavaFormatTrace("CustomMessage", utils.Attribute{Key: "reply", Value: reply})
+	if err != nil {
+		return nil, err
+	}
+	return reply.RelayReply.Data, nil
+}
+
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	parsing, apiCollection, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCKNUM.String()
@@ -463,6 +485,10 @@ func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 		return "", err
 	}
 	return resultStatus.SyncInfo.LatestBlockHash.String(), nil
+}
+
+func (lcf *LavaChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	return nil, utils.LavaFormatError("Not Implemented CustomMessage for LavaChainFetcher", nil)
 }
 
 func (lcf *LavaChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
