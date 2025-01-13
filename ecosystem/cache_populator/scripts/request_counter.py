@@ -36,9 +36,9 @@ class RequestCounterHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self._handle_request("POST")
 
-def run(server_class=HTTPServer, handler_class=RequestCounterHandler, port=8080):
+def run(port=8080):
     server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
+    httpd = HTTPServer(server_address, RequestCounterHandler)
     print(f'Starting httpd server on port {port}')
     httpd.serve_forever()
 
