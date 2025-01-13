@@ -43,7 +43,12 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 	downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
 	report.lastQoSReport.Availability = scaledAvailabilityScore
 	if sdk.OneDec().GT(report.lastQoSReport.Availability) {
-		utils.LavaFormatDebug("QoS Availability report", utils.Attribute{Key: "Availability", Value: report.lastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
+		utils.LavaFormatDebug("QoS Availability report",
+			utils.LogAttr("availability", report.lastQoSReport.Availability),
+			utils.LogAttr("down_percent", downtimePercentage),
+			utils.LogAttr("session_id", qoSMutatorRelaySuccess.sessionId),
+			utils.LogAttr("provider", qoSMutatorRelaySuccess.providerAddress),
+		)
 	}
 
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.latency)))))
@@ -73,11 +78,11 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		report.lastQoSReport.Sync = sdk.NewDec(report.syncScoreSum).QuoInt64(report.totalSyncScore)
 		if sdk.OneDec().GT(report.lastQoSReport.Sync) {
 			utils.LavaFormatDebug("QoS Sync report",
-				utils.Attribute{Key: "Sync", Value: report.lastQoSReport.Sync},
-				utils.Attribute{Key: "block diff", Value: qoSMutatorRelaySuccess.blockHeightDiff},
-				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(report.syncScoreSum, 10) + "/" + strconv.FormatInt(report.totalSyncScore, 10)},
-				utils.Attribute{Key: "session_id", Value: qoSMutatorRelaySuccess.sessionId},
-				utils.Attribute{Key: "provider", Value: qoSMutatorRelaySuccess.providerAddress},
+				utils.LogAttr("sync", report.lastQoSReport.Sync),
+				utils.LogAttr("block_diff", qoSMutatorRelaySuccess.blockHeightDiff),
+				utils.LogAttr("sync_score", strconv.FormatInt(report.syncScoreSum, 10)+"/"+strconv.FormatInt(report.totalSyncScore, 10)),
+				utils.LogAttr("session_id", qoSMutatorRelaySuccess.sessionId),
+				utils.LogAttr("provider", qoSMutatorRelaySuccess.providerAddress),
 			)
 		}
 	} else {
