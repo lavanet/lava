@@ -298,13 +298,13 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	selectionTierScoresCount := selectionTier.ScoresCount()
 
-	localMinimumEntries := MinimumEntries
+	localMinimumEntries := po.OptimizerMinTierEntries
 	if AutoAdjustTiers {
 		adjustedProvidersPerTier := int(stdMath.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
-		if MinimumEntries > adjustedProvidersPerTier {
+		if localMinimumEntries > adjustedProvidersPerTier {
 			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
 				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
-				utils.LogAttr("was_MinimumEntries", MinimumEntries),
+				utils.LogAttr("was_MinimumEntries", po.OptimizerMinTierEntries),
 				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
 				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
 			localMinimumEntries = adjustedProvidersPerTier
