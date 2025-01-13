@@ -51,6 +51,10 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		)
 	}
 
+	if qoSMutatorRelaySuccess.latency == 0 {
+		qoSMutatorRelaySuccess.latency = 1 * time.Microsecond
+	}
+
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.latency)))))
 
 	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
