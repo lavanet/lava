@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -32,19 +33,63 @@ type ChainFetcherIf interface {
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
 	Validate(ctx context.Context) error
+	GetVerificationsStatus() []*pairingtypes.Verification
 	CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error)
 }
 
 type ChainFetcher struct {
-	endpoint    *lavasession.RPCProviderEndpoint
-	chainRouter ChainRouter
-	chainParser ChainParser
-	cache       *performance.Cache
-	latestBlock int64
+	endpoint            *lavasession.RPCProviderEndpoint
+	chainRouter         ChainRouter
+	chainParser         ChainParser
+	cache               *performance.Cache
+	latestBlock         int64
+	verificationsStatus sync.Map
+	cachedVerifications atomic.Value // holds []*pairingtypes.Verification for faster access
+	cacheValid          atomic.Bool
+}
+
+func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
+	// Try to get from cache first
+	if cacheValid := cf.cacheValid.Load(); cacheValid {
+		value, ok := cf.cachedVerifications.Load().([]*pairingtypes.Verification)
+		if ok {
+			return value
+		}
+	}
+
+	// If not in cache, create new slice
+	verifications := make([]*pairingtypes.Verification, 0)
+	cf.verificationsStatus.Range(func(key, value any) bool {
+		verifications = append(verifications, &pairingtypes.Verification{
+			Name:   key.(string),
+			Passed: value.(bool),
+		})
+		return true
+	})
+
+	// Store in cache
+	cf.cachedVerifications.Store(verifications)
+	return verifications
+}
+
+// Add this method to invalidate cache when verification status changes
+func (cf *ChainFetcher) invalidateVerificationsCache() {
+	cf.cacheValid.Store(false)
 }
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
+}
+
+func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer) string {
+	key := verification.Name
+	if verification.Addon != "" {
+		key += "-" + verification.Addon
+	}
+	if verification.Extension != "" {
+		key += "-" + verification.Extension
+	}
+	return key
 }
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
@@ -67,6 +112,8 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		// invalidating cache as value might change
+		defer cf.invalidateVerificationsCache()
 		for _, verification := range verifications {
 			if slices.Contains(url.SkipVerifications, verification.Name) {
 				utils.LavaFormatDebug("Skipping Verification", utils.LogAttr("verification", verification.Name))
@@ -81,10 +128,12 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 				}
 			}
 			if err != nil {
+				cf.verificationsStatus.Store(cf.getVerificationsKey(verification), false)
 				if verification.Severity == spectypes.ParseValue_Fail {
 					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
 			}
+			cf.verificationsStatus.Store(cf.getVerificationsKey(verification), true)
 		}
 	}
 	return nil

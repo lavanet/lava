@@ -11,7 +11,7 @@ package chainlib
 import (
 	context "context"
 	reflect "reflect"
-
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -39,6 +39,13 @@ func (m *MockChainFetcherIf) EXPECT() *MockChainFetcherIfMockRecorder {
 	return m.recorder
 }
 
+func (m *MockChainFetcherIf) GetVerificationsStatus() []*pairingtypes.Verification {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVerificationsStatus")
+	ret0, _ := ret[0].([]*pairingtypes.Verification)
+	return ret0
+}
+
 // FetchBlockHashByNum mocks base method.
 func (m *MockChainFetcherIf) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
 	m.ctrl.T.Helper()
@@ -60,6 +67,11 @@ func (m *MockChainFetcherIf) FetchBlockHashByNum(ctx context.Context, blockNum i
 func (mr *MockChainFetcherIfMockRecorder) CustomMessage(ctx, path, data, connectionType, apiName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomMessage", reflect.TypeOf((*MockChainFetcherIf)(nil).CustomMessage), ctx, path, data, connectionType, apiName)
+}
+
+func (mr *MockChainFetcherIfMockRecorder) GetVerificationsStatus() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVerificationsStatus", reflect.TypeOf((*MockChainFetcherIf)(nil).GetVerificationsStatus))
 }
 
 // FetchBlockHashByNum indicates an expected call of FetchBlockHashByNum.
