@@ -21,30 +21,31 @@ const (
 )
 
 type ProviderMetricsManager struct {
-	providerMetrics               map[string]*ProviderMetrics
-	lock                          sync.RWMutex
-	totalCUServicedMetric         *prometheus.CounterVec
-	totalCUPaidMetric             *prometheus.CounterVec
-	totalRelaysServicedMetric     *prometheus.CounterVec
-	totalErroredMetric            *prometheus.CounterVec
-	consumerQoSMetric             *prometheus.GaugeVec
-	blockMetric                   *prometheus.GaugeVec
-	lastServicedBlockTimeMetric   *prometheus.GaugeVec
-	disabledChainsMetric          *prometheus.GaugeVec
-	fetchLatestFailedMetric       *prometheus.CounterVec
-	fetchBlockFailedMetric        *prometheus.CounterVec
-	fetchLatestSuccessMetric      *prometheus.CounterVec
-	fetchBlockSuccessMetric       *prometheus.CounterVec
-	protocolVersionMetric         *prometheus.GaugeVec
-	virtualEpochMetric            *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric prometheus.Gauge
-	endpointsHealthChecksOk       uint64
-	relaysMonitors                map[string]*RelaysMonitor
-	relaysMonitorsLock            sync.RWMutex
-	frozenStatusMetric            *prometheus.GaugeVec
-	jailStatusMetric              *prometheus.GaugeVec
-	jailedCountMetric             *prometheus.GaugeVec
-	loadRateMetric                *prometheus.GaugeVec
+	providerMetrics                      map[string]*ProviderMetrics
+	lock                                 sync.RWMutex
+	totalCUServicedMetric                *prometheus.CounterVec
+	totalCUPaidMetric                    *prometheus.CounterVec
+	totalRelaysServicedMetric            *prometheus.CounterVec
+	totalErroredMetric                   *prometheus.CounterVec
+	consumerQoSMetric                    *prometheus.GaugeVec
+	blockMetric                          *prometheus.GaugeVec
+	lastServicedBlockTimeMetric          *prometheus.GaugeVec
+	disabledChainsMetric                 *prometheus.GaugeVec
+	fetchLatestFailedMetric              *prometheus.CounterVec
+	fetchBlockFailedMetric               *prometheus.CounterVec
+	fetchLatestSuccessMetric             *prometheus.CounterVec
+	fetchBlockSuccessMetric              *prometheus.CounterVec
+	protocolVersionMetric                *prometheus.GaugeVec
+	virtualEpochMetric                   *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric        prometheus.Gauge
+	endpointsHealthChecksOk              uint64
+	endpointsHealthChecksBreakdownMetric *prometheus.GaugeVec
+	relaysMonitors                       map[string]*RelaysMonitor
+	relaysMonitorsLock                   sync.RWMutex
+	frozenStatusMetric                   *prometheus.GaugeVec
+	jailStatusMetric                     *prometheus.GaugeVec
+	jailedCountMetric                    *prometheus.GaugeVec
+	loadRateMetric                       *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -132,6 +133,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	})
 	endpointsHealthChecksOkMetric.Set(1)
 
+	endpointsHealthChecksBreakdownMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_overall_health_breakdown",
+		Help: "Health check status per chain",
+	}, []string{"spec", "apiInterface"})
+
 	frozenStatusMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_frozen_status",
 		Help: "Frozen: 1, Not Frozen: 0",
@@ -167,6 +173,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(fetchBlockSuccessMetric)
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
+	prometheus.MustRegister(endpointsHealthChecksBreakdownMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	prometheus.MustRegister(frozenStatusMetric)
 	prometheus.MustRegister(jailStatusMetric)
@@ -174,28 +181,29 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(loadRateMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
-		providerMetrics:               map[string]*ProviderMetrics{},
-		totalCUServicedMetric:         totalCUServicedMetric,
-		totalCUPaidMetric:             totalCUPaidMetric,
-		totalRelaysServicedMetric:     totalRelaysServicedMetric,
-		totalErroredMetric:            totalErroredMetric,
-		consumerQoSMetric:             consumerQoSMetric,
-		blockMetric:                   blockMetric,
-		lastServicedBlockTimeMetric:   lastServicedBlockTimeMetric,
-		disabledChainsMetric:          disabledChainsMetric,
-		fetchLatestFailedMetric:       fetchLatestFailedMetric,
-		fetchBlockFailedMetric:        fetchBlockFailedMetric,
-		fetchLatestSuccessMetric:      fetchLatestSuccessMetric,
-		fetchBlockSuccessMetric:       fetchBlockSuccessMetric,
-		virtualEpochMetric:            virtualEpochMetric,
-		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:       1,
-		protocolVersionMetric:         protocolVersionMetric,
-		relaysMonitors:                map[string]*RelaysMonitor{},
-		frozenStatusMetric:            frozenStatusMetric,
-		jailStatusMetric:              jailStatusMetric,
-		jailedCountMetric:             jailedCountMetric,
-		loadRateMetric:                loadRateMetric,
+		providerMetrics:                      map[string]*ProviderMetrics{},
+		totalCUServicedMetric:                totalCUServicedMetric,
+		totalCUPaidMetric:                    totalCUPaidMetric,
+		totalRelaysServicedMetric:            totalRelaysServicedMetric,
+		totalErroredMetric:                   totalErroredMetric,
+		consumerQoSMetric:                    consumerQoSMetric,
+		blockMetric:                          blockMetric,
+		lastServicedBlockTimeMetric:          lastServicedBlockTimeMetric,
+		disabledChainsMetric:                 disabledChainsMetric,
+		fetchLatestFailedMetric:              fetchLatestFailedMetric,
+		fetchBlockFailedMetric:               fetchBlockFailedMetric,
+		fetchLatestSuccessMetric:             fetchLatestSuccessMetric,
+		fetchBlockSuccessMetric:              fetchBlockSuccessMetric,
+		virtualEpochMetric:                   virtualEpochMetric,
+		endpointsHealthChecksOkMetric:        endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:              1,
+		endpointsHealthChecksBreakdownMetric: endpointsHealthChecksBreakdownMetric,
+		protocolVersionMetric:                protocolVersionMetric,
+		relaysMonitors:                       map[string]*RelaysMonitor{},
+		frozenStatusMetric:                   frozenStatusMetric,
+		jailStatusMetric:                     jailStatusMetric,
+		jailedCountMetric:                    jailedCountMetric,
+		loadRateMetric:                       loadRateMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -311,6 +319,18 @@ func (pme *ProviderMetricsManager) UpdateHealthCheckStatus(status bool) {
 	}
 	pme.endpointsHealthChecksOkMetric.Set(value)
 	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
+}
+
+func (pme *ProviderMetricsManager) UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool) {
+	if pme == nil {
+		return
+	}
+	var value float64 = 0
+	if status {
+		value = 1
+	}
+
+	pme.endpointsHealthChecksBreakdownMetric.WithLabelValues(chainId, apiInterface).Set(value)
 }
 
 func (pme *ProviderMetricsManager) SetBlock(latestLavaBlock int64) {
