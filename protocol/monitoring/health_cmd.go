@@ -52,8 +52,8 @@ const (
 	AllProvidersMarker                   = "all"
 	ConsumerGrpcTLSFlagName              = "consumer-grpc-tls"
 	allowInsecureConsumerDialingFlagName = "allow-insecure-consumer-dialing"
-	telegramBotTokenFlagName             = "telegram-bot-token"
-	telegramChannelIDFlagName            = "telegram-channel-id"
+	telegramBotTokenFlagName             = "telegram-alert-bot-token"
+	telegramChannelIDFlagName            = "telegram-alert-channel-id"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*HealthRPCEndpoint, err error) {
@@ -167,6 +167,10 @@ reference_endpoints:
 				SameAlertInterval:             viper.GetDuration(alertSuppressionIntervalFlagName),
 				DisableAlertSuppression:       viper.GetBool(disableAlertSuppressionFlagName),
 				SuppressionCounterThreshold:   viper.GetUint64(SuppressionCountThresholdFlagName),
+				TelegramAlertingOptions: TelegramAlertingOptions{
+					TelegramBotToken:  viper.GetString(telegramBotTokenFlagName),
+					TelegramChannelID: viper.GetString(telegramChannelIDFlagName),
+				},
 			}
 			resultsPostAddress := viper.GetString(resultsPostAddressFlagName)
 

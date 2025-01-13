@@ -24,7 +24,9 @@ func NewTelegramAlerting(options TelegramAlertingOptions) *TelegramAlertingOptio
 }
 
 func (al *Alerting) SendTelegramAlert(alert string, attrs []utils.Attribute) error {
-	if al.TelegramAlerting.TelegramBotToken == "" || al.TelegramAlerting.TelegramChannelID == "" {
+	if al.TelegramAlerting.TelegramBotToken == "" && al.TelegramAlerting.TelegramChannelID == "" {
+		return nil
+	} else if al.TelegramAlerting.TelegramBotToken == "" || al.TelegramAlerting.TelegramChannelID == "" {
 		return fmt.Errorf("telegram configuration missing")
 	}
 

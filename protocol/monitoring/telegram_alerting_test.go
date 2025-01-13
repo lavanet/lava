@@ -102,9 +102,9 @@ func TestTelegramAlerting_SendTelegramAlert(t *testing.T) {
 
 			// Check error
 			if tt.expectedError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

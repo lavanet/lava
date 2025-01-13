@@ -163,8 +163,8 @@ func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 	if al.url != "" {
 		go al.AppendUrlAlert(alert, attrs)
 	}
-	if al.TelegramAlerting.TelegramBotToken != "" && al.TelegramAlerting.TelegramChannelID != "" {
-		al.SendTelegramAlert(alert, attrs)
+	if err := al.SendTelegramAlert(alert, attrs); err != nil {
+		utils.LavaFormatError("failed to send telegram alert", err)
 	}
 	if al.logging {
 		if al.identifier != "" {
