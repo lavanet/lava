@@ -47,7 +47,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return nil, err
 	}
 	addressEpochBadgeMap := map[string]BadgeData{}
-	sessionRelaysAmount := map[uint64]int{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
 			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
@@ -67,11 +66,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				}
 				addressEpochBadgeMap[mapKey] = badgeData
 			}
-		}
-		if _, ok := sessionRelaysAmount[relay.SessionId]; !ok {
-			sessionRelaysAmount[relay.SessionId] = 1
-		} else {
-			sessionRelaysAmount[relay.SessionId]++
 		}
 	}
 
@@ -179,7 +173,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// update the reputation's epoch QoS score
 		// the excellece QoS report can be nil when the provider and consumer geolocations are not equal
 		if relay.QosExcellenceReport != nil {
-			err = k.aggregateReputationEpochQosScore(ctx, project.Subscription, relay, sessionRelaysAmount[relay.SessionId])
+			err = k.aggregateReputationEpochQosScore(ctx, project.Subscription, relay)
 			if err != nil {
 				return nil, utils.LavaFormatWarning("RelayPayment: could not update reputation epoch QoS score", err,
 					utils.LogAttr("consumer", project.Subscription),
@@ -496,7 +490,7 @@ func (k Keeper) handleBadgeCu(ctx sdk.Context, badgeData BadgeData, provider str
 	k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
 }
 
-func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription string, relay *types.RelaySession, relaysAmount int) error {
+func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription string, relay *types.RelaySession) error {
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, subscription)
 	if !found {
 		return utils.LavaFormatError("RelayPayment: could not get cluster for reputation score update", fmt.Errorf("relay consumer's subscription not found"),
@@ -528,7 +522,7 @@ func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription s
 	}
 	effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.TotalStake())
 
-	// note the current weight used is by relay num. In the future, it might change
-	k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(uint64(relaysAmount)), effectiveStake)
+	// note the current weight used is by cu. In the future, it might change
+	k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.CuSum), effectiveStake)
 	return nil
 }
