@@ -253,6 +253,9 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			}
 			// add block error probability config if the request block is positive
 			opts = append(opts, pairingtypes.WithBlockErrorProbability(po.CalculateProbabilityOfBlockError(requestedBlock, providerData)))
+		} else if requestedBlock == spectypes.EARLIEST_BLOCK {
+			// if the request block is earliest, we use the latest block as the requested block
+			requestedBlock = spectypes.LATEST_BLOCK
 		} else if requestedBlock != spectypes.LATEST_BLOCK && requestedBlock != spectypes.NOT_APPLICABLE {
 			// if the request block is not positive but not latest/not-applicable - return an error
 			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers",
@@ -262,7 +265,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			)
 			return NewSelectionTier(), Exploration{}, nil
 		}
-		score, err := qos.ComputeQoSExcellence(opts...)
+		score, err := qos.ComputeQoSExcellenceFloat64(opts...)
 		if err != nil {
 			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers", err,
 				utils.LogAttr("provider", providerAddress),
@@ -270,15 +273,16 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			)
 			return NewSelectionTier(), Exploration{}, nil
 		}
+		latency, sync, availability := qos.GetScoresFloat64()
 		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
 			ProviderAddress:   providerAddress,
-			SyncScore:         qos.Sync.MustFloat64(),
-			AvailabilityScore: qos.Availability.MustFloat64(),
-			LatencyScore:      qos.Latency.MustFloat64(),
-			GenericScore:      score.MustFloat64(),
+			SyncScore:         sync,
+			AvailabilityScore: availability,
+			LatencyScore:      latency,
+			GenericScore:      score,
 		}
 
-		selectionTier.AddScore(providerAddress, score.MustFloat64())
+		selectionTier.AddScore(providerAddress, score)
 
 		// check if candidate for exploration
 		if lastUpdateTime.Add(10*time.Second).Before(time.Now()) && lastUpdateTime.Before(explorationCandidate.time) {
@@ -606,6 +610,9 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	}
 	if sync == 0 {
 		// if our sync score is uninitialized due to lack of providers
+		// note, we basically penalize perfect providers, but assigning the sync score to 1
+		// is making it 1ms, which is a very low value that doesn't harm the provider's score
+		// too much
 		sync = 1
 	} else if sync > score.WorstSyncScore {
 		sync = score.WorstSyncScore
