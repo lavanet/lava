@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -202,7 +203,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 
 func TestQoS(t *testing.T) {
 	decToSet, _ := sdk.NewDecFromStr("0.05") // test values fit 0.05 Availability requirements
-	lavasession.AvailabilityPercentage = decToSet
+	qos.AvailabilityPercentage = decToSet
 	rand.InitRandomSeed()
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 

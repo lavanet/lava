@@ -15,7 +15,6 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v4/utils"
@@ -48,7 +47,6 @@ const (
 	unixPrefix                                       = "unix:"
 )
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
 const (
 	OptimizerPerturbation  = 0.10
 	LatencyThresholdStatic = 1 * time.Second
