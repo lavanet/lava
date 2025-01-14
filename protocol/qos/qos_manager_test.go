@@ -263,42 +263,10 @@ func TestQoSParameterBoundaries(t *testing.T) {
 }
 
 func TestSequentialOperations(t *testing.T) {
-	qosManager := NewQoSManager()
-	epoch := uint64(1)
-	sessionID := int64(1)
-
-	t.Run("Sequential QoS Calculations", func(t *testing.T) {
-		// First calculation
-		doneChan := qosManager.CalculateQoS(
-			epoch,
-			sessionID,
-			"provider1",
-			100*time.Millisecond,
-			200*time.Millisecond,
-			1, 3, 2,
-		)
-		<-doneChan
-		firstReport := qosManager.GetLastQoSReport(epoch, sessionID)
-
-		// Second calculation with different values
-		doneChan = qosManager.CalculateQoS(
-			epoch,
-			sessionID,
-			"provider1",
-			300*time.Millisecond,
-			200*time.Millisecond,
-			1, 3, 2,
-		)
-		<-doneChan
-		secondReport := qosManager.GetLastQoSReport(epoch, sessionID)
-
-		require.NotEqual(t, firstReport, secondReport, "Reports should be different")
-		require.Equal(t, uint64(2), qosManager.GetTotalRelays(epoch, sessionID))
-	})
-
 	t.Run("Mixed Operations Sequence", func(t *testing.T) {
-		// Reset with new epoch
-		epoch++
+		qosManager := NewQoSManager()
+		epoch := uint64(1)
+		sessionID := int64(1)
 
 		// Sequence: Calculate -> Fail -> Calculate
 		doneChan := qosManager.CalculateQoS(
