@@ -125,17 +125,15 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	nextBlockForUpdateList := []uint64{}
 	for chainID, consumerSessionManagerList := range pu.consumerSessionManagersMap {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
-		cancel()
+		nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
 		if err != nil {
-			if len(pu.staticProviders) > 0 {
-				return
+			// it's ok that we don't have pairing if there are static providers
+			if len(pu.staticProviders) == 0 {
+				utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
 			}
-			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
-			nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
 			continue
-		} else {
-			nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
 		}
 
 		for _, consumerSessionManager := range consumerSessionManagerList {
@@ -151,14 +149,14 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	// get latest epoch from cache
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
-	if err != nil {
+	_, epoch, nextPairingUpdateBlock, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
+	if err != nil && len(pu.staticProviders) == 0 {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
-		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
-	} else {
-		for _, updatable := range pu.pairingUpdatables {
-			(*updatable).UpdateEpoch(epoch)
-		}
+	}
+
+	nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
+	for _, updatable := range pu.pairingUpdatables {
+		(*updatable).UpdateEpoch(epoch)
 	}
 
 	nextBlockForUpdateMin := uint64(latestBlock) // in case the list is empty
