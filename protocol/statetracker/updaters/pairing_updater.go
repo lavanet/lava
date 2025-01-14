@@ -72,10 +72,8 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	defer cancel()
 	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
 	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)
-	if err != nil {
-		if numberOfRelevantProviders == 0 {
-			return err
-		}
+	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {
+		return err
 	}
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
@@ -97,11 +95,7 @@ func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingU
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
-	if err != nil {
-		if len(pu.staticProviders) > 0 {
-			// skipping errors for get pairing if static providers are set.
-			return nil
-		}
+	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
 		return err
 	}
 
@@ -127,12 +121,10 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 		defer cancel()
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
 		nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
-		if err != nil {
-			// it's ok that we don't have pairing if there are static providers
-			if len(pu.staticProviders) == 0 {
-				utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
-				continue
-			}
+		if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
+			// it's ok that we don't have pairing, only if there are static providers and epoch is not 0
+			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
+			continue
 		}
 		for _, consumerSessionManager := range consumerSessionManagerList {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
@@ -148,13 +140,17 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	_, epoch, nextPairingUpdateBlock, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
-	if err != nil && len(pu.staticProviders) == 0 {
+	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
 	}
 
-	nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
-	for _, updatable := range pu.pairingUpdatables {
-		(*updatable).UpdateEpoch(epoch)
+	if epoch == 0 {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
+	} else {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
+		for _, updatable := range pu.pairingUpdatables {
+			(*updatable).UpdateEpoch(epoch)
+		}
 	}
 
 	nextBlockForUpdateMin := uint64(latestBlock) // in case the list is empty
