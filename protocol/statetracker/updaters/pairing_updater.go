@@ -118,7 +118,6 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
 	ctx := context.Background()
-
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return
 	}
@@ -132,10 +131,9 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 			// it's ok that we don't have pairing if there are static providers
 			if len(pu.staticProviders) == 0 {
 				utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
+				continue
 			}
-			continue
 		}
-
 		for _, consumerSessionManager := range consumerSessionManagerList {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
 			err = pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
