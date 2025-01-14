@@ -45,7 +45,7 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 			return computedReputation
 		}
 		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero",
-			utils.LogAttr("Report", cs.QoSManager.GetLastReputationQoSReportRaw(cs.epoch, cs.SessionId)),
+			utils.LogAttr("Report", lastReputationReport),
 			utils.LogAttr("error", errComputing),
 		)
 	}
