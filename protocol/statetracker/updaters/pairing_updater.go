@@ -132,8 +132,8 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 			// it's ok that we don't have pairing if there are static providers
 			if len(pu.staticProviders) == 0 {
 				utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
+				continue
 			}
-			continue
 		}
 
 		for _, consumerSessionManager := range consumerSessionManagerList {
@@ -150,13 +150,17 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	_, epoch, nextPairingUpdateBlock, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
-	if err != nil && len(pu.staticProviders) == 0 {
+	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
 	}
 
-	nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
-	for _, updatable := range pu.pairingUpdatables {
-		(*updatable).UpdateEpoch(epoch)
+	if epoch == 0 {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
+	} else {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
+		for _, updatable := range pu.pairingUpdatables {
+			(*updatable).UpdateEpoch(epoch)
+		}
 	}
 
 	nextBlockForUpdateMin := uint64(latestBlock) // in case the list is empty
