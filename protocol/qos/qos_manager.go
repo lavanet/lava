@@ -101,6 +101,15 @@ func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessio
 	return doneChan
 }
 
+func (qosManager *QoSManager) SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
+	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
+	qosManager.mutatorsQueue <- &QoSMutatorSetReputation{
+		QoSMutatorBase: *qosMutatorBase,
+		report:         report,
+	}
+	return doneChan
+}
+
 func (qosManager *QoSManager) getQoSReport(epoch uint64, sessionId int64) *QoSReport {
 	qosManager.lock.RLock()
 	defer qosManager.lock.RUnlock()

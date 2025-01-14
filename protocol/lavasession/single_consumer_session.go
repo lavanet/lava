@@ -57,7 +57,7 @@ func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, 
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set reputation for sessions with more than one successful relays, this guarantees data within the epoch exists
-		scs.QoSManager.SetLastReputationQoSReportRaw(scs.epoch, scs.SessionId, reputationReport)
+		scs.QoSManager.SetLastReputationQoSReport(scs.epoch, scs.SessionId, reputationReport)
 		scs.QoSManager.SetLastReputationQoSReportRaw(scs.epoch, scs.SessionId, rawReputationReport)
 	}
 	scs.usedProviders = usedProviders
