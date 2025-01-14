@@ -309,7 +309,7 @@ func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
 	if numProviders > 0 && latestKnownBlock > 0 {
 		return uint64(latestKnownBlock)
 	}
-	utils.LavaFormatWarning("no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
+	utils.LavaFormatDebug("no information on latest block", utils.Attribute{Key: "latest block", Value: 0})
 	return 0
 }
 
