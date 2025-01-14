@@ -76,8 +76,6 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 		if numberOfRelevantProviders == 0 {
 			return err
 		}
-		// else we continue with static providers.
-		epoch += 1
 	}
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
@@ -211,12 +209,10 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 			for _, extension := range url.Addons {
 				extensions[extension] = struct{}{}
 			}
-
-			// TODO: might be problematic adding both addons and extensions with same map
 			endpoint := &lavasession.Endpoint{
 				NetworkAddress: url.Url,
 				Enabled:        true,
-				Addons:         extensions,
+				Addons:         extensions, // TODO: does not support addons, if required need to add the functionality to differentiate the two
 				Extensions:     extensions,
 				Connections:    []*lavasession.EndpointConnection{},
 			}
