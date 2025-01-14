@@ -69,6 +69,7 @@ func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
 
 	// Store in cache
 	cf.cachedVerifications.Store(verifications)
+	cf.cacheValid.Store(true)
 	return verifications
 }
 
@@ -81,8 +82,8 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
 }
 
-func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer) string {
-	key := verification.Name
+func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer, apiInterface string, chainId string) string {
+	key := chainId + "-" + apiInterface + "-" + verification.Name
 	if verification.Addon != "" {
 		key += "-" + verification.Addon
 	}
@@ -128,12 +129,12 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 				}
 			}
 			if err != nil {
-				cf.verificationsStatus.Store(cf.getVerificationsKey(verification), false)
+				cf.verificationsStatus.Store(cf.getVerificationsKey(verification, cf.endpoint.ApiInterface, cf.endpoint.ChainID), false)
 				if verification.Severity == spectypes.ParseValue_Fail {
 					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
 			}
-			cf.verificationsStatus.Store(cf.getVerificationsKey(verification), true)
+			cf.verificationsStatus.Store(cf.getVerificationsKey(verification, cf.endpoint.ApiInterface, cf.endpoint.ChainID), true)
 		}
 	}
 	return nil

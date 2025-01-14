@@ -108,10 +108,18 @@ func validateCORSHeaders(resp *http.Response) error {
 	return nil
 }
 
+func getEmojiForVerificationStatus(passed bool) string {
+	if passed {
+		return "✅"
+	}
+	return "❌"
+}
+
 func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChainId string, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
 	goodChains := []string{}
 	badChains := []string{}
 	portValidation := []string{}
+	verifications := []string{}
 	protocolQuerier := protocoltypes.NewQueryClient(clientCtx)
 	param, err := protocolQuerier.Params(ctx, &protocoltypes.QueryParamsRequest{})
 	if err != nil {
@@ -126,7 +134,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 		)
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface string, addon string) (time.Duration, string, int64, error) {
+			checkOneProvider := func(apiInterface string, addon string) (*pairingtypes.ProbeReply, time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
@@ -139,7 +147,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 					utils.LavaFormatWarning("You are using plain text connection (disabled tls), no consumer can connect to it as all consumers use tls. this should be used for testing purposes only", nil)
 					conn, err = grpc.DialContext(ctx, endpoint.IPPORT, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
 					if err != nil {
-						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
+						return nil, 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
 							utils.LogAttr("apiInterface", apiInterface),
 							utils.LogAttr("addon", addon),
 							utils.LogAttr("chainID", providerEntry.Chain),
@@ -156,7 +164,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 							_, _, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 							lavasession.AllowInsecureConnectionToProviders = false
 							if err == nil {
-								return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err,
+								return nil, 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err,
 									utils.LogAttr("apiInterface", apiInterface),
 									utils.LogAttr("addon", addon),
 									utils.LogAttr("chainID", providerEntry.Chain),
@@ -164,7 +172,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 								)
 							}
 						}
-						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
+						return nil, 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err,
 							utils.LogAttr("apiInterface", apiInterface),
 							utils.LogAttr("addon", addon),
 							utils.LogAttr("chainID", providerEntry.Chain),
@@ -184,17 +192,19 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				var trailer metadata.MD
 				probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
 				if err != nil {
-					return 0, "", 0, utils.LavaFormatError("failed probing provider endpoint", err,
+					return nil, 0, "", 0, utils.LavaFormatError("failed probing provider endpoint", err,
 						utils.LogAttr("apiInterface", apiInterface),
 						utils.LogAttr("addon", addon),
 						utils.LogAttr("chainID", providerEntry.Chain),
 						utils.LogAttr("network address", endpoint.IPPORT),
 					)
 				}
+				utils.LavaFormatInfo("probeResp", utils.LogAttr("probeResp", probeResp.Verifications))
+
 				versions := strings.Join(trailer.Get(common.VersionMetadataKey), ",")
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
-					return 0, versions, 0, utils.LavaFormatError("probe returned invalid value", err,
+					return probeResp, 0, versions, 0, utils.LavaFormatError("probe returned invalid value", err,
 						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
 						utils.LogAttr("guid", guid),
 						utils.LogAttr("apiInterface", apiInterface),
@@ -209,7 +219,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				if len(lavaChainIdFromProbeMD) > 0 {
 					lavaChainIdFromProbe := lavaChainIdFromProbeMD[0]
 					if lavaChainIdFromProbe != lavaNetworkChainId {
-						return 0, versions, 0, utils.LavaFormatError("lava chain id from probe does not match the configured network chain id", nil,
+						return probeResp, 0, versions, 0, utils.LavaFormatError("lava chain id from probe does not match the configured network chain id", nil,
 							utils.LogAttr("returnedGuid", probeResp.GetGuid()),
 							utils.LogAttr("guid", guid),
 							utils.LogAttr("apiInterface", apiInterface),
@@ -222,7 +232,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 
 				// CORS check
 				if err := PerformCORSCheck(endpoint); err != nil {
-					return 0, versions, 0, utils.LavaFormatError("invalid CORS check", err,
+					return probeResp, 0, versions, 0, utils.LavaFormatError("invalid CORS check", err,
 						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
 						utils.LogAttr("guid", guid),
 						utils.LogAttr("apiInterface", apiInterface),
@@ -238,7 +248,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, "", 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil,
+					return probeResp, 0, "", 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil,
 						utils.LogAttr("apiInterface", apiInterface),
 						utils.LogAttr("addon", addon),
 						utils.LogAttr("chainID", providerEntry.Chain),
@@ -247,21 +257,24 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, versions, 0, utils.LavaFormatError("relay returned unexpected error", err,
+					return probeResp, 0, versions, 0, utils.LavaFormatError("relay returned unexpected error", err,
 						utils.LogAttr("apiInterface", apiInterface),
 						utils.LogAttr("addon", addon),
 						utils.LogAttr("chainID", providerEntry.Chain),
 						utils.LogAttr("network address", endpoint.IPPORT),
 					)
 				}
-				return relayLatency, versions, probeResp.GetLatestBlock(), nil
+				return probeResp, relayLatency, versions, probeResp.GetLatestBlock(), nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
 			if len(endpointServices) == 0 {
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.LogAttr("endpoint", endpoint))
 			}
 			for _, endpointService := range endpointServices {
-				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
+				probeResp, probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
+				for _, verification := range probeResp.GetVerifications() {
+					verifications = append(verifications, providerEntry.Chain+" "+endpointService.String()+" "+verification.Name+" passed: "+getEmojiForVerificationStatus(verification.Passed))
+				}
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
 					continue
@@ -293,7 +306,8 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 			"Misconfigured URLs:",
 		}, portValidation...)
 	}
-	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Tests Passed:\n🔹%s\n\n🔵 Tests Failed:\n🔹%s\n\n🔵 Provider Port Validation:\n🔹%s\n\n", strings.Join(goodChains, "\n🔹"), strings.Join(badChains, "\n🔹"), strings.Join(portValidation, "\n🔹"))
+
+	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Tests Passed:\n🔹%s\n\n🔵 Tests Failed:\n🔹%s\n\n🔵 Provider Port Validation:\n🔹%s\n\n🔵 Provider Verifications:\n🔹%s\n", strings.Join(goodChains, "\n🔹"), strings.Join(badChains, "\n🔹"), strings.Join(portValidation, "\n🔹"), strings.Join(verifications, "\n🔹"))
 	return nil
 }
 
