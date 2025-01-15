@@ -1240,8 +1240,10 @@ func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDis
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
 	latestB, _ := rpcps.reliabilityManager.GetLatestBlockNum()
 	verificationsStatus := []*pairingtypes.Verification{}
-	if rpcps.verificationsStatusGetter != nil {
-		verificationsStatus = rpcps.verificationsStatusGetter.GetVerificationsStatus()
+	if probeReq.WithVerifications {
+		if rpcps.verificationsStatusGetter != nil {
+			verificationsStatus = rpcps.verificationsStatusGetter.GetVerificationsStatus()
+		}
 	}
 	probeReply := &pairingtypes.ProbeReply{
 		Guid:                  probeReq.GetGuid(),

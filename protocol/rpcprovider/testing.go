@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -109,6 +110,7 @@ func validateCORSHeaders(resp *http.Response) error {
 }
 
 func getEmojiForVerificationStatus(passed bool) string {
+	utils.LavaFormatInfo("passed", utils.LogAttr("passed", passed))
 	if passed {
 		return "✅"
 	}
@@ -119,7 +121,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 	goodChains := []string{}
 	badChains := []string{}
 	portValidation := []string{}
-	verifications := []string{}
+	verifications := map[string]struct{}{}
 	protocolQuerier := protocoltypes.NewQueryClient(clientCtx)
 	param, err := protocolQuerier.Params(ctx, &protocoltypes.QueryParamsRequest{})
 	if err != nil {
@@ -185,9 +187,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
 				probeReq := &pairingtypes.ProbeRequest{
-					Guid:         guid,
-					SpecId:       providerEntry.Chain,
-					ApiInterface: apiInterface,
+					Guid:              guid,
+					SpecId:            providerEntry.Chain,
+					ApiInterface:      apiInterface,
+					WithVerifications: true,
 				}
 				var trailer metadata.MD
 				probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
@@ -199,7 +202,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 						utils.LogAttr("network address", endpoint.IPPORT),
 					)
 				}
-				utils.LavaFormatInfo("probeResp", utils.LogAttr("probeResp", probeResp.Verifications))
+				utils.LavaFormatDebug("probeResp", utils.LogAttr("probeResp", probeResp.Verifications))
 
 				versions := strings.Join(trailer.Get(common.VersionMetadataKey), ",")
 				relayLatency := time.Since(relaySentTime)
@@ -273,7 +276,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 			for _, endpointService := range endpointServices {
 				probeResp, probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				for _, verification := range probeResp.GetVerifications() {
-					verifications = append(verifications, providerEntry.Chain+" "+endpointService.String()+" "+verification.Name+" passed: "+getEmojiForVerificationStatus(verification.Passed))
+					verifications[verification.Name+" passed: "+getEmojiForVerificationStatus(verification.Passed)] = struct{}{}
 				}
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
@@ -307,7 +310,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 		}, portValidation...)
 	}
 
-	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Tests Passed:\n🔹%s\n\n🔵 Tests Failed:\n🔹%s\n\n🔵 Provider Port Validation:\n🔹%s\n\n🔵 Provider Verifications:\n🔹%s\n", strings.Join(goodChains, "\n🔹"), strings.Join(badChains, "\n🔹"), strings.Join(portValidation, "\n🔹"), strings.Join(verifications, "\n🔹"))
+	verificationsSlice := []string{}
+	for verification := range verifications {
+		verificationsSlice = append(verificationsSlice, verification)
+	}
+	sort.Strings(verificationsSlice)
+	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Tests Passed:\n🔹%s\n\n🔵 Tests Failed:\n🔹%s\n\n🔵 Provider Port Validation:\n🔹%s\n\n🔵 Provider Verifications:\n🔹%s\n", strings.Join(goodChains, "\n🔹"), strings.Join(badChains, "\n🔹"), strings.Join(portValidation, "\n🔹"), strings.Join(verificationsSlice, "\n🔹"))
 	return nil
 }
 

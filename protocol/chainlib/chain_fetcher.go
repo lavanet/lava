@@ -28,7 +28,7 @@ const (
 	ChainFetcherHeaderName = "X-LAVA-Provider"
 )
 
-type ChainFetcherIf interface {
+type IChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
