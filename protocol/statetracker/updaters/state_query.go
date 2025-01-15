@@ -14,7 +14,9 @@ import (
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	epochkeeper "github.com/lavanet/lava/v4/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingkeeper "github.com/lavanet/lava/v4/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v4/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
@@ -183,7 +185,17 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 		Client:  csq.fromAddress,
 	})
 	if err != nil {
-		return nil, 0, 0, utils.LavaFormatError("Failed in get pairing query", err, utils.Attribute{})
+		// if we can't get pairing, try to get epoch details and params
+		epochParamsResp, epochParamsErr := csq.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
+		epochDetailsResp, epochDetailsErr := csq.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+		pairingParamsResp, pairingParamsErr := csq.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+		if epochDetailsErr != nil || epochParamsErr != nil || pairingParamsErr != nil {
+			return nil, 0, 0, err // if we can't get epoch details or params, return the original error
+		}
+
+		nextEpochBlock := epochkeeper.CalculateNextEpochBlock(epochDetailsResp.EpochDetails.StartBlock, epochParamsResp.Params.EpochBlocks)
+		nextPairingBlock := pairingkeeper.CalculateNextPairingUpdateBlock(nextEpochBlock, pairingParamsResp.Params.EpochBlocksOverlap)
+		return nil, epochDetailsResp.EpochDetails.StartBlock, nextPairingBlock, err
 	}
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)
