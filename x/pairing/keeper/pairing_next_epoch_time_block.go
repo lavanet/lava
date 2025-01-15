@@ -16,6 +16,10 @@ const (
 	MIN_SAMPLE_STEP     uint64 = 1 // the minimal sample step when calculating the average block time
 )
 
+func CalculateNextPairingUpdateBlock(nextEpochBlock uint64, epochBlocksOverlap uint64) uint64 {
+	return nextEpochBlock + epochBlocksOverlap
+}
+
 // Function to calculate how much time (in seconds) is left until the next epoch
 func (k Keeper) calculateNextEpochTimeAndBlock(ctx sdk.Context) (uint64, uint64, error) {
 	// Get current epoch
@@ -37,7 +41,7 @@ func (k Keeper) calculateNextEpochTimeAndBlock(ctx sdk.Context) (uint64, uint64,
 	overlapBlocks := k.EpochBlocksOverlap(ctx)
 
 	// calculate the block in which the next pairing will happen (+overlap)
-	nextPairingBlock := nextEpochStart + overlapBlocks
+	nextPairingBlock := CalculateNextPairingUpdateBlock(nextEpochStart, overlapBlocks)
 
 	// Get number of blocks from the current block to the next epoch
 	blocksUntilNewEpoch := nextPairingBlock - uint64(ctx.BlockHeight())
