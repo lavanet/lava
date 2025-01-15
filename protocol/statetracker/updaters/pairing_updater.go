@@ -201,10 +201,12 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 			for _, extension := range url.Addons {
 				extensions[extension] = struct{}{}
 			}
+
+			// TODO might be problematic adding both addons and extensions with same map.
 			endpoint := &lavasession.Endpoint{
 				NetworkAddress: url.Url,
 				Enabled:        true,
-				Addons:         extensions, // TODO: does not support addons, if required need to add the functionality to differentiate the two
+				Addons:         extensions,
 				Extensions:     extensions,
 				Connections:    []*lavasession.EndpointConnection{},
 			}
