@@ -46,7 +46,7 @@ func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *Pairing
 	return &PairingUpdater{consumerSessionManagersMap: map[string][]ConsumerSessionManagerInf{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCProviderEndpoint{}}
 }
 
-func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCProviderEndpoint) {
+func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCProviderEndpoint) int {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	if len(staticProviders) > 0 && len(pu.staticProviders) == 0 {
@@ -56,6 +56,14 @@ func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.R
 			}
 		}
 	}
+	// return length of relevant static providers
+	return len(pu.staticProviders)
+}
+
+func (pu *PairingUpdater) getNumberOfStaticProviders() int {
+	pu.lock.RLock()
+	defer pu.lock.RUnlock()
+	return len(pu.staticProviders)
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint) error {
@@ -63,10 +71,10 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
-	if err != nil {
+	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)
+	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {
 		return err
 	}
-	pu.updateStaticProviders(staticProviders)
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
@@ -87,7 +95,7 @@ func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingU
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
-	if err != nil {
+	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
 		return err
 	}
 
@@ -104,23 +112,20 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
 	ctx := context.Background()
-
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return
 	}
 	nextBlockForUpdateList := []uint64{}
 	for chainID, consumerSessionManagerList := range pu.consumerSessionManagersMap {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
-		cancel()
-		if err != nil {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
+		if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
+			// it's ok that we don't have pairing, only if there are static providers and epoch is not 0
 			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
-			nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
 			continue
-		} else {
-			nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
 		}
-
 		for _, consumerSessionManager := range consumerSessionManagerList {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
 			err = pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
@@ -134,11 +139,15 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	// get latest epoch from cache
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
-	if err != nil {
+	_, epoch, nextPairingUpdateBlock, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
+	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
+	}
+
+	if epoch == 0 {
 		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
 	} else {
+		nextBlockForUpdateList = append(nextBlockForUpdateList, nextPairingUpdateBlock)
 		for _, updatable := range pu.pairingUpdatables {
 			(*updatable).UpdateEpoch(epoch)
 		}
@@ -192,10 +201,12 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 			for _, extension := range url.Addons {
 				extensions[extension] = struct{}{}
 			}
+
+			// TODO might be problematic adding both addons and extensions with same map.
 			endpoint := &lavasession.Endpoint{
 				NetworkAddress: url.Url,
 				Enabled:        true,
-				Addons:         map[string]struct{}{}, // TODO: does not support addons, if required need to add the functionality to differentiate the two
+				Addons:         extensions,
 				Extensions:     extensions,
 				Connections:    []*lavasession.EndpointConnection{},
 			}
@@ -261,7 +272,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			totalStakeIncludingDelegation,
 		)
 	}
-	if len(pairing) == 0 {
+	if len(pairing)+pu.getNumberOfStaticProviders() == 0 {
 		return nil, utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "ChainID", Value: rpcEndpoint.ChainID}, utils.Attribute{Key: "geolocation", Value: rpcEndpoint.Geolocation})
 	}
 	// replace previous pairing with new providers
