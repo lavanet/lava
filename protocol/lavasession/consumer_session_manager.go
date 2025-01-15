@@ -78,6 +78,7 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 }
 
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
+	utils.LavaFormatDebug("UpdateAllProviders", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "pairingListLen", Value: len(pairingList)})
 	pairingListLength := len(pairingList)
 	// TODO: we can block updating until some of the probing is done, this can prevent failed attempts on epoch change when we have no information on the providers,
 	// and all of them are new (less effective on big pairing lists or a process that runs for a few epochs)

@@ -27,6 +27,7 @@ import (
 type MockConsumerStateTrackerInf struct {
 	ctrl     *gomock.Controller
 	recorder *MockConsumerStateTrackerInfMockRecorder
+	isgomock struct{}
 }
 
 // MockConsumerStateTrackerInfMockRecorder is the mock recorder for MockConsumerStateTrackerInf.
@@ -91,27 +92,27 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) GetProtocolVersion(ctx any) *
 }
 
 // RegisterConsumerSessionManagerForPairingUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCProviderEndpoint) {
+func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager)
+	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager, staticProvidersList)
 }
 
 // RegisterConsumerSessionManagerForPairingUpdates indicates an expected call of RegisterConsumerSessionManagerForPairingUpdates.
-func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager any) *gomock.Call {
+func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, staticProvidersList any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList)
 }
 
 // RegisterFinalizationConsensusForUpdates mocks base method.
 func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *finalizationconsensus.FinalizationConsensus, arg2 bool) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterFinalizationConsensusForUpdates", arg0, arg1)
+	m.ctrl.Call(m, "RegisterFinalizationConsensusForUpdates", arg0, arg1, arg2)
 }
 
 // RegisterFinalizationConsensusForUpdates indicates an expected call of RegisterFinalizationConsensusForUpdates.
-func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterFinalizationConsensusForUpdates(arg0, arg1 any) *gomock.Call {
+func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterFinalizationConsensusForUpdates(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterFinalizationConsensusForUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterFinalizationConsensusForUpdates), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterFinalizationConsensusForUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterFinalizationConsensusForUpdates), arg0, arg1, arg2)
 }
 
 // RegisterForDowntimeParamsUpdates mocks base method.
