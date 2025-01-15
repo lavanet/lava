@@ -246,7 +246,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 		)
 
 		opts := []pairingtypes.Option{pairingtypes.WithStrategyFactor(po.strategy.GetStrategyFactor())}
-		if requestedBlock > 0 {
+		if requestedBlock >= 0 {
 			providerData, found := po.getProviderData(providerAddress)
 			if !found {
 				utils.LavaFormatTrace("[Optimizer] could not get provider data, using default", utils.LogAttr("provider", providerAddress))
