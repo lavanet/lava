@@ -49,7 +49,7 @@ type ChainFetcher struct {
 
 func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
 	// Try to get from cache first
-	if cacheValid := cf.cacheValid.Load(); cacheValid {
+	if cf.cacheValid.Load() {
 		value, ok := cf.cachedVerifications.Load().([]*pairingtypes.Verification)
 		if ok {
 			return value
