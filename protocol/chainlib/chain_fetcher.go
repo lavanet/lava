@@ -60,9 +60,14 @@ func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
 	// If not in cache, create new slice
 	verifications := make([]*pairingtypes.Verification, 0)
 	cf.verificationsStatus.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		passed, ok2 := value.(bool)
+		if !ok || !ok2 {
+			return true
+		}
 		verifications = append(verifications, &pairingtypes.Verification{
-			Name:   key.(string),
-			Passed: value.(bool),
+			Name:   name,
+			Passed: passed,
 		})
 		return true
 	})

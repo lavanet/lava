@@ -35,14 +35,6 @@ message Verification {
     bool passed = 2;
 }
 
-message V427ProbeReply {
-    uint64 guid =1;
-    int64 latest_block = 2;
-    bytes finalized_blocks_hashes = 3;
-    uint64 lava_epoch = 4;
-    uint64 lava_latest_block = 5;
-}
-
 message RelaySession {
     string spec_id = 1;
     bytes content_hash = 2;
