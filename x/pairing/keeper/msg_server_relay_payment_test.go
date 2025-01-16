@@ -3,11 +3,13 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v4/x/pairing/keeper"
 	"github.com/lavanet/lava/v4/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
@@ -1061,5 +1063,790 @@ func TestPairingCaching(t *testing.T) {
 		sub, err := ts.QuerySubscriptionCurrent(consumerAcct.Addr.String())
 		require.NoError(t, err)
 		require.Equal(t, totalCU*3, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft)
+	}
+}
+
+// TestUpdateReputationEpochQosScore tests the update of the reputation's epoch qos score
+// Scenarios:
+//  1. provider1 sends relay -> its reputation is updated (epoch score and time last updated),
+//     also, provider2 reputation is not updated
+func TestUpdateReputationEpochQosScore(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 0) // 2 providers, 1 client, default providers-to-pair
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
+	qos := &types.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.NewDecWithPrec(1, 1),
+		Sync:         sdk.OneDec(),
+	}
+
+	res, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := res.Sub.Cluster
+
+	// set default reputations for both providers. Advance epoch to change the current block time
+	ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+	ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider2, types.NewReputation(ts.Ctx))
+	ts.AdvanceEpoch()
+
+	// send relay payment msg from provider1
+	relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 1)
+	relaySession.QosExcellenceReport = qos
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	payment := types.MsgRelayPayment{
+		Creator: provider1,
+		Relays:  []*types.RelaySession{relaySession},
+	}
+	ts.relayPaymentWithoutPay(payment, true)
+
+	// get both providers reputation: provider1 should have its epoch score changed,
+	// provider2 should have nothing change from the default
+	r1, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	r2, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider2)
+	require.True(t, found)
+
+	require.Equal(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
+	epochScore1, err := r1.EpochScore.Score.Resolve()
+	require.NoError(t, err)
+	epochScore2, err := r2.EpochScore.Score.Resolve()
+	require.NoError(t, err)
+	variance1, err := r1.EpochScore.Variance.Resolve()
+	require.NoError(t, err)
+	variance2, err := r2.EpochScore.Variance.Resolve()
+	require.NoError(t, err)
+	require.True(t, epochScore1.GT(epochScore2)) // score is higher because QoS is bad
+	require.True(t, variance1.GT(variance2))     // variance is higher because the QoS is significantly differnet from DefaultQos
+
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
+	require.True(t, found)
+	require.True(t, entry.Stake.IsEqual(r1.Stake))
+}
+
+// TestUpdateReputationEpochQosScoreTruncation tests the following scenarios:
+// 1. stabilization period has not passed -> no truncation
+// 2. stabilization period passed -> with truncation (score update is smaller than the first one)
+// note, this test works since we use a bad QoS report (compared to default) so we know that the score should
+// increase (which is considered worse)
+func TestUpdateReputationEpochQosScoreTruncation(t *testing.T) {
+	// these will be used to compare the score change with/without truncation
+	scoreUpdates := []sdk.Dec{}
+
+	// we set the stabilization period to 2 epochs time. Advancing one epoch means we won't truncate,
+	// advancing 3 means we will truncate.
+	epochsToAdvance := []uint64{1, 3}
+
+	for i := range epochsToAdvance {
+		ts := newTester(t)
+		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+		consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+		_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+		qos := &types.QualityOfServiceReport{
+			Latency:      sdk.NewDec(1000),
+			Availability: sdk.OneDec(),
+			Sync:         sdk.NewDec(1000),
+		}
+
+		resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+		require.NoError(t, err)
+		cluster := resQCurrent.Sub.Cluster
+
+		// set stabilization period to be 2*epoch time
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+		require.NoError(t, err)
+		resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+		// set default reputation
+		ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+
+		// advance epochs
+		ts.AdvanceEpochs(epochsToAdvance[i])
+
+		// send relay payment msg from provider1
+		relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 1)
+		relaySession.QosExcellenceReport = qos
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: provider1,
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+
+		// get update of epoch score
+		r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+		require.True(t, found)
+		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
+		require.NoError(t, err)
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
+		require.NoError(t, err)
+		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
+	}
+
+	// require that the score update that was not truncated is larger than the one that was truncated
+	require.True(t, scoreUpdates[0].GT(scoreUpdates[1]))
+}
+
+// TestUpdateReputationEpochQosScoreTruncation tests the following scenario:
+// 1. relay num is the reputation update weight. More relays = bigger update
+func TestUpdateReputationEpochQosScoreRelayNumWeight(t *testing.T) {
+	// these will be used to compare the score change with high/low relay numbers
+	scoreUpdates := []sdk.Dec{}
+
+	// we set the number of clients to be 1 and 2 to test different relay amount in
+	// a session
+	clientsAmount := []int{2, 1}
+
+	for i := range clientsAmount {
+		ts := newTester(t)
+		ts.setupForPayments(1, clientsAmount[i], 0) // 1 provider, clientsAmount[i] clients, default providers-to-pair
+		_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+		relays := []*types.RelaySession{}
+		cluster := ""
+		for j := 0; j < clientsAmount[i]; j++ {
+			consumerAcc, consumer := ts.GetAccount(common.CONSUMER, j)
+
+			qos := &types.QualityOfServiceReport{
+				Latency:      sdk.NewDec(1000),
+				Availability: sdk.OneDec(),
+				Sync:         sdk.NewDec(1000),
+			}
+
+			resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+			require.NoError(t, err)
+			cluster = resQCurrent.Sub.Cluster
+
+			// set stabilization period to be 2*epoch time to avoid truncation
+			resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+			require.NoError(t, err)
+			resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
+			ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+			// set default reputation
+			ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+			ts.AdvanceEpoch()
+
+			// send relay payment msg from provider1
+			relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), uint64(j))
+			relaySession.QosExcellenceReport = qos
+			sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+			require.NoError(t, err)
+			relaySession.Sig = sig
+			relays = append(relays, relaySession)
+		}
+		payment := types.MsgRelayPayment{
+			Creator: provider1,
+			Relays:  relays,
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+
+		// get update of epoch score
+		r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+		require.True(t, found)
+		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
+		require.NoError(t, err)
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
+		require.NoError(t, err)
+		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
+	}
+
+	// require that the score update that was with 1000 relay num is larger than the one with one relay num
+	require.True(t, scoreUpdates[0].GT(scoreUpdates[1]))
+}
+
+// TestUpdateReputationScores tests that on epoch start: score is modified, epoch score is zeroed time last
+// updated is modified, and reputation stake changed to current stake. We do this with the following scenario:
+// 1. we set half life factor to be one epoch time
+// 2. we set a provider with default QoS score, let him send a relay and advance epoch
+// 3. we check expected result
+func TestReputationUpdateOnEpochStart(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+	qos := &types.QualityOfServiceReport{
+		Latency:      sdk.NewDec(1000),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.NewDec(1000),
+	}
+
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	// set half life factor to be epoch time
+	resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+	require.NoError(t, err)
+	resQParams.Params.ReputationHalfLifeFactor = uint64(ts.EpochTimeDefault().Seconds())
+	ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+	// set default reputation and keep some properties for future comparison
+	ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+	creationTime := ts.BlockTime().UTC().Unix()
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
+	require.True(t, found)
+	stake := sdk.NewCoin(entry.Stake.Denom, entry.TotalStake().AddRaw(1))
+
+	// stake some more coins and advance epoch
+	err = ts.StakeProvider(entry.Vault, entry.Address, ts.spec, entry.TotalStake().Int64())
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	// save reputation original time and advance hour
+	r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	originalTime := r.TimeLastUpdated
+	ts.AdvanceTimeHours(1)
+
+	// send relay payment msg from provider1
+	relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 10)
+	relaySession.QosExcellenceReport = qos
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	payment := types.MsgRelayPayment{
+		Creator: provider1,
+		Relays:  []*types.RelaySession{relaySession},
+	}
+	ts.relayPaymentWithoutPay(payment, true)
+
+	// check that the time last updated is the same as the original time
+	// (a bug in which the TimeLastUpdated was updated in relay payment was fixed.
+	// The TimeLastUpdated should be updated only when the epoch starts)
+	require.Equal(t, originalTime, r.TimeLastUpdated)
+
+	// advance epoch and check reputation for expected results
+	ts.AdvanceEpoch()
+	reputation, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	require.False(t, reputation.Score.Equal(types.ZeroQosScore))
+	require.True(t, reputation.EpochScore.Equal(types.ZeroQosScore))
+	require.Equal(t, ts.BlockTime().UTC().Unix(), reputation.TimeLastUpdated)
+	require.Equal(t, creationTime, reputation.CreationTime)
+	require.NotEqual(t, reputation.CreationTime, reputation.TimeLastUpdated)
+
+	entry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider1)
+	require.True(t, found)
+	stakeAfterUpdate := sdk.NewCoin(entry.Stake.Denom, entry.TotalStake())
+
+	require.False(t, stakeAfterUpdate.IsEqual(stake))
+	require.True(t, reputation.Stake.IsEqual(stakeAfterUpdate))
+}
+
+// TestUpdateReputationScoresMap checks that after calling UpdateReputationsForEpochStart() we get a sorted (by QoS score)
+// map[chain+cluster]stakeProviderScores in ascending order. We do this with the following scenario:
+// 1. have 4 providers: 2 on chain "mockspec", 3 on chain "mockspec1" (one provider is staked on both)
+// 2. let the providers have different reputation scores and different stakes and call updateReputationsScores()
+// 3. expect to see two map keys (for the two chains) and a list of providers in ascending order by QoS score
+func TestUpdateReputationScoresSortedMap(t *testing.T) {
+	ts := newTester(t)
+
+	// create provider addresses
+	_, p1 := ts.AddAccount(common.PROVIDER, 0, testStake)
+	_, p2 := ts.AddAccount(common.PROVIDER, 1, testStake)
+	_, p3 := ts.AddAccount(common.PROVIDER, 2, testStake)
+	_, p4 := ts.AddAccount(common.PROVIDER, 3, testStake)
+
+	// set reputations like described above
+	providers := []string{p1, p2, p1, p3, p4} // p1 will be "staked" on two chains
+	specs := []string{"mockspec", "mockspec", "mockspec1", "mockspec1", "mockspec1"}
+	stakes := []math.Int{sdk.NewInt(1), sdk.NewInt(2), sdk.NewInt(3), sdk.NewInt(4), sdk.NewInt(5)}
+	zeroFrac := types.Frac{Num: sdk.ZeroDec(), Denom: sdk.MaxSortableDec}
+	epochScores := []types.QosScore{
+		{Score: types.Frac{Num: sdk.NewDec(6), Denom: sdk.NewDec(3)}, Variance: zeroFrac},  // score = 2
+		{Score: types.Frac{Num: sdk.NewDec(9), Denom: sdk.NewDec(3)}, Variance: zeroFrac},  // score = 3
+		{Score: types.Frac{Num: sdk.NewDec(3), Denom: sdk.NewDec(3)}, Variance: zeroFrac},  // score = 1
+		{Score: types.Frac{Num: sdk.NewDec(12), Denom: sdk.NewDec(3)}, Variance: zeroFrac}, // score = 4
+		{Score: types.Frac{Num: sdk.NewDec(9), Denom: sdk.NewDec(3)}, Variance: zeroFrac},  // score = 3
+	}
+	for i := range providers {
+		reputation := types.NewReputation(ts.Ctx)
+		reputation.EpochScore = epochScores[i]
+		reputation.Score = types.ZeroQosScore
+		reputation.Stake = sdk.NewCoin(ts.TokenDenom(), stakes[i])
+		ts.Keepers.Pairing.SetReputation(ts.Ctx, specs[i], "cluster", providers[i], reputation)
+	}
+
+	// create expected map (supposed to be sorted by score)
+	expected := map[types.ReputationChainClusterKey]keeper.StakeProviderScores{
+		{ChainID: "mockspec", Cluster: "cluster"}: {
+			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(3)), // 1+2
+			ProviderScores: []keeper.ProviderQosScore{
+				{
+					Provider: p1,
+					Score:    types.QosScore{Score: types.Frac{Num: sdk.NewDec(6), Denom: sdk.NewDec(3)}, Variance: zeroFrac},
+					Stake:    sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+				},
+				{
+					Provider: p2,
+					Score:    types.QosScore{Score: types.Frac{Num: sdk.NewDec(9), Denom: sdk.NewDec(3)}, Variance: zeroFrac},
+					Stake:    sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(2)),
+				},
+			},
+		},
+
+		{ChainID: "mockspec1", Cluster: "cluster"}: {
+			TotalStake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(12)), // 3+4+5
+			ProviderScores: []keeper.ProviderQosScore{
+				{
+					Provider: p1,
+					Score:    types.QosScore{Score: types.Frac{Num: sdk.NewDec(3), Denom: sdk.NewDec(3)}, Variance: zeroFrac},
+					Stake:    sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(3)),
+				},
+				{
+					Provider: p4,
+					Score:    types.QosScore{Score: types.Frac{Num: sdk.NewDec(9), Denom: sdk.NewDec(3)}, Variance: zeroFrac},
+					Stake:    sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(5)),
+				},
+				{
+					Provider: p3,
+					Score:    types.QosScore{Score: types.Frac{Num: sdk.NewDec(12), Denom: sdk.NewDec(3)}, Variance: zeroFrac},
+					Stake:    sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(4)),
+				},
+			},
+		},
+	}
+
+	// call UpdateReputationsForEpochStart() and check the scores map
+	scores, err := ts.Keepers.Pairing.UpdateReputationsForEpochStart(ts.Ctx)
+	require.NoError(t, err)
+
+	for chainCluster, stakeProviderScores := range scores {
+		expectedScores := expected[chainCluster]
+		require.True(t, expectedScores.TotalStake.IsEqual(stakeProviderScores.TotalStake))
+		for i := range stakeProviderScores.ProviderScores {
+			require.Equal(t, expectedScores.ProviderScores[i].Provider, stakeProviderScores.ProviderScores[i].Provider)
+			require.True(t, expectedScores.ProviderScores[i].Stake.IsEqual(stakeProviderScores.ProviderScores[i].Stake))
+
+			expectedScore, err := expectedScores.ProviderScores[i].Score.Score.Resolve()
+			require.NoError(t, err)
+			score, err := stakeProviderScores.ProviderScores[i].Score.Score.Resolve()
+			require.NoError(t, err)
+			require.True(t, expectedScore.RoundInt().Equal(score.RoundInt()))
+		}
+	}
+}
+
+// TestReputationPairingScoreBenchmark tests that the benchmark value after calling getBenchmarkReputationScore()
+// is the score of the last provider we iterate on when aggregating stake to pass ReputationPairingScoreBenchmarkStakeThreshold.
+//
+//	We do this with the following scenario:
+//	1. have 5 providers with varying stakes -> providers with 10% of stake should have max scores, the others should have
+//	   pairing scores that differ by their QoS scores difference
+func TestReputationPairingScoreBenchmark(t *testing.T) {
+	ts := newTester(t)
+	totalStake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1000)) // threshold for benchmark will be 100ulava
+
+	// create provider addresses
+	_, p1 := ts.AddAccount(common.PROVIDER, 0, testStake)
+	_, p2 := ts.AddAccount(common.PROVIDER, 1, testStake)
+	_, p3 := ts.AddAccount(common.PROVIDER, 2, testStake)
+	_, p4 := ts.AddAccount(common.PROVIDER, 3, testStake)
+	_, p5 := ts.AddAccount(common.PROVIDER, 4, testStake)
+
+	qosScores := createQosScoresForBenchmarkTest()
+
+	// create a StakeProviderScores object with ProviderScores list which is descending by score
+	sps := keeper.StakeProviderScores{
+		TotalStake: totalStake,
+		ProviderScores: []keeper.ProviderQosScore{
+			{Provider: p1, Score: qosScores[0], Stake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1))},
+			{Provider: p2, Score: qosScores[1], Stake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(19))},
+			{Provider: p3, Score: qosScores[2], Stake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(40))},
+			{Provider: p4, Score: qosScores[3], Stake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(60))},
+			{Provider: p5, Score: qosScores[4], Stake: sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1000))},
+		},
+	}
+
+	// the benchmark should be equal to qosScores[3] since p4 is the last provider on which the
+	// stake aggregation should complete (1+19+40+60=100)
+	benchmark, err := ts.Keepers.Pairing.GetBenchmarkReputationScore(sps)
+	require.NoError(t, err)
+	expectedBenchmark, err := qosScores[3].Score.Resolve()
+	require.NoError(t, err)
+	require.True(t, benchmark.Equal(expectedBenchmark))
+}
+
+// createQosScoresForBenchmarkTest is a helper function to create an array of QoS scores
+func createQosScoresForBenchmarkTest() []types.QosScore {
+	nums := []math.LegacyDec{sdk.NewDec(1000), sdk.NewDec(100), sdk.NewDec(90), sdk.NewDec(40), sdk.NewDec(10)}
+	zeroFrac := types.Frac{Num: sdk.ZeroDec(), Denom: sdk.MaxSortableDec}
+	qosScores := []types.QosScore{}
+	for _, num := range nums {
+		scoreFrac, err := types.NewFrac(num, sdk.OneDec())
+		if err != nil {
+			panic(err)
+		}
+		qs := types.NewQosScore(scoreFrac, zeroFrac)
+		qosScores = append(qosScores, qs)
+	}
+	return qosScores
+}
+
+// TestReputationPairingScore tests that on epoch start:
+// 1. The reputation pairing score is set.
+// 2. Providers that didn't send relays get the default reputation pairing score.
+// 2. If a provider has a bad QoS report, it yields a bad reputation pairing score.
+// We test it by having 4 providers:
+//
+//	p1: high stake and great QoS (will be used as benchmark),
+//	p2: low stake and good QoS score
+//	p3: same low stake and bad QoS score
+//	p4: high stake that doesn't send relays.
+//
+// We check that all 4 have reputation pairing score: p1 with max score, p2 with better score than p3, p4
+// has no reputation pairing score.
+func TestReputationPairingScore(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	stakes := []int64{minStake * 5, minStake + 10, minStake + 10, minStake * 2}
+	providers := []string{}
+	for i := 0; i < 4; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+	for i := 0; i < 4; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, stakes[i])
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays (except for last one)
+	for i := 0; i < 3; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		relaySession.QosExcellenceReport = &reports[i]
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+
+	// check results
+	pairingScores := []math.LegacyDec{}
+	for i := range providers {
+		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+		if i < 3 {
+			require.True(t, found)
+			pairingScores = append(pairingScores, score)
+		} else {
+			require.False(t, found)
+		}
+	}
+	require.True(t, pairingScores[0].Equal(types.MaxReputationPairingScore))
+	require.True(t, pairingScores[1].GT(pairingScores[2]))
+}
+
+// TestReputationPairingScoreWithinRange tests that the reputation pairing score is always between
+// MinReputationPairingScore and MaxReputationPairingScore.
+// We test it by setting two providers with extreme QoS reports: one very good, and one very bad.
+// We expect that both pairing scores will be in the expected range.
+func TestReputationPairingScoreWithinRange(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
+
+	greatQos := reports[GreatQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		report := greatQos
+		if i == 0 {
+			report = badQos
+		}
+		relaySession.QosExcellenceReport = &report
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+
+	// check results are withing the expected range
+	for i := range providers {
+		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+		require.True(t, found)
+		if score.LT(types.MinReputationPairingScore) || score.GT(types.MaxReputationPairingScore) {
+			require.FailNow(t, "score is not within expected pairing score range")
+		}
+	}
+}
+
+// TestReputationPairingScoreZeroQosScores tests that if all providers have a QoS score of zero,
+// they all get the max reputation pairing score.
+// We test it by having two providers with zero QoS score. We expect that both will have max reputation
+// pairing score.
+func TestReputationPairingScoreZeroQosScores(t *testing.T) {
+	ts := newTester(t)
+	ts, _ = ts.setupForReputation(false)
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		perfectQosReport := types.QualityOfServiceReport{
+			Latency:      sdk.ZeroDec(),
+			Availability: sdk.OneDec(),
+			Sync:         sdk.ZeroDec(),
+		}
+		relaySession.QosExcellenceReport = &perfectQosReport
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+
+	// check results are max pairing score
+	for i := range providers {
+		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+		require.True(t, found)
+		require.True(t, score.Equal(types.MaxReputationPairingScore))
+	}
+}
+
+// TestReputationPairingScoreFixation tests that the reputation pairing score is saved in a fixation store
+// and can be fetched using a block argument.
+// We test this by making two providers, one with high stake and great QoS score and one with low stake and
+// bad QoS score. We get the bad provider pairing score and send another relay with a slightly improved QoS
+// score. We expect that fetching the pairing score from the past will be lower than the current one
+func TestReputationPairingScoreFixation(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
+
+	greatQos := reports[GreatQos]
+	goodQos := reports[GoodQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+
+		if i == 0 {
+			relaySession.QosExcellenceReport = &greatQos
+		} else {
+			relaySession.QosExcellenceReport = &badQos
+		}
+
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+	badQosBlock := ts.BlockHeight()
+
+	// send another relay with provider1 with a better QoS report
+	relaySession := ts.newRelaySession(providers[1], 0, 100, ts.BlockHeight(), 10)
+	relaySession.QosExcellenceReport = &goodQos
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	payment := types.MsgRelayPayment{
+		Creator: providers[1],
+		Relays:  []*types.RelaySession{relaySession},
+	}
+	ts.relayPaymentWithoutPay(payment, true)
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+	goodQosBlock := ts.BlockHeight()
+
+	// fetch pairing score for both badQosBlock and goodQosBlock
+	// verify that the pairing score changes for the better
+	badQosPairingScore, _, found := ts.Keepers.Pairing.GetReputationScoreForBlock(ts.Ctx, ts.spec.Index, cluster, providers[1], badQosBlock)
+	require.True(t, found)
+	goodQosPairingScore, _, found := ts.Keepers.Pairing.GetReputationScoreForBlock(ts.Ctx, ts.spec.Index, cluster, providers[1], goodQosBlock)
+	require.True(t, found)
+	require.True(t, goodQosPairingScore.GT(badQosPairingScore))
+}
+
+// TestReputationPairingScoreStakeAggregation tests that the benchmark is determined by stake. We test the following
+// scenarios:
+//  1. Have 2 providers with equal stake -> pairing scores should differ by their QoS scores difference
+//  2. Have 2 providers one with high score and low stake, the other with low score and high stake -> both should get max
+//     pairing score
+func TestReputationPairingScoreStakeAggregation(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
+
+	greatQos := reports[GreatQos]
+	goodQos := reports[GoodQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+
+	tests := []struct {
+		name            string
+		stakes          []int64
+		reports         []types.QualityOfServiceReport
+		differentScores bool
+	}{
+		{"equal stake, different QoS", []int64{minStake, minStake}, []types.QualityOfServiceReport{goodQos, badQos}, true},
+		{"high score + low stake, low score + high stake", []int64{minStake, minStake * 20}, []types.QualityOfServiceReport{greatQos, badQos}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := 0; i < 2; i++ {
+				// create providers
+				err = ts.StakeProvider(providers[i], providers[i], ts.spec, tt.stakes[i])
+				require.NoError(t, err)
+			}
+			// advance epoch to apply pairing
+			ts.AdvanceEpoch()
+
+			// send relays
+			for i := 0; i < 2; i++ {
+				relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+				relaySession.QosExcellenceReport = &tt.reports[i]
+				sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+				require.NoError(t, err)
+				relaySession.Sig = sig
+
+				payment := types.MsgRelayPayment{
+					Creator: providers[i],
+					Relays:  []*types.RelaySession{relaySession},
+				}
+				ts.relayPaymentWithoutPay(payment, true)
+			}
+
+			// advance epoch to update pairing scores
+			ts.AdvanceEpoch()
+
+			// get pairing scores and check results
+			pairingScores := []math.LegacyDec{}
+			for i := range providers {
+				score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+				require.True(t, found)
+				pairingScores = append(pairingScores, score)
+			}
+
+			if tt.differentScores {
+				require.True(t, pairingScores[0].GT(pairingScores[1]))
+			} else {
+				require.True(t, pairingScores[0].Equal(pairingScores[1]))
+				require.True(t, pairingScores[0].Equal(types.MaxReputationPairingScore))
+			}
+		})
 	}
 }
