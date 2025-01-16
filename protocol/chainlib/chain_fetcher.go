@@ -53,6 +53,8 @@ func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
 		value, ok := cf.cachedVerifications.Load().([]*pairingtypes.Verification)
 		if ok {
 			return value
+		} else {
+			utils.LavaFormatError("invalid usage of cachedVerifications, could not cast result into []*pairingtypes.Verification type", nil, utils.Attribute{Key: "cachedVerifications", Value: cf.cachedVerifications.Load()})
 		}
 	}
 
