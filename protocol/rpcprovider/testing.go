@@ -276,7 +276,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 			for _, endpointService := range endpointServices {
 				probeResp, probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				for _, verification := range probeResp.GetVerifications() {
-					verifications[verification.Name+" passed: "+getEmojiForVerificationStatus(verification.Passed)] = struct{}{}
+					verifications["["+getEmojiForVerificationStatus(verification.Passed)+"] " + verification.Name] = struct{}{}
 				}
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
