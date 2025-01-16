@@ -1175,8 +1175,8 @@ func TestMain(m *testing.M) {
 	listener := createRPCServer()
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		_, err := rpcclient.DialContext(ctx, listenerAddressHttp)
-		_, err2 := rpcclient.DialContext(ctx, listenerAddressWs)
+		_, err := rpcclient.DialContext(ctx, listenerAddressHttp, nil)
+		_, err2 := rpcclient.DialContext(ctx, listenerAddressWs, nil)
 		if err2 != nil {
 			utils.LavaFormatDebug("waiting for grpc server to launch")
 			continue
