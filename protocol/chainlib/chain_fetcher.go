@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -43,7 +42,7 @@ type ChainFetcher struct {
 	chainParser         ChainParser
 	cache               *performance.Cache
 	latestBlock         int64
-	verificationsStatus sync.Map
+	verificationsStatus common.SafeSyncMap[string, bool]
 	cachedVerifications atomic.Value // holds []*pairingtypes.Verification for faster access
 	cacheValid          atomic.Bool
 }
@@ -59,12 +58,7 @@ func (cf *ChainFetcher) GetVerificationsStatus() []*pairingtypes.Verification {
 
 	// If not in cache, create new slice
 	verifications := make([]*pairingtypes.Verification, 0)
-	cf.verificationsStatus.Range(func(key, value any) bool {
-		name, ok := key.(string)
-		passed, ok2 := value.(bool)
-		if !ok || !ok2 {
-			return true
-		}
+	cf.verificationsStatus.Range(func(name string, passed bool) bool {
 		verifications = append(verifications, &pairingtypes.Verification{
 			Name:   name,
 			Passed: passed,
