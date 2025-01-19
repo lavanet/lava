@@ -41,6 +41,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdSubscriptionMonthlyPayout())
 
 	cmd.AddCommand(CmdProvidersEpochCu())
+	cmd.AddCommand(CmdProviderReputation())
+	cmd.AddCommand(CmdProviderReputationDetails())
 
 	cmd.AddCommand(CmdDebugQuery())
 
