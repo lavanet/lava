@@ -94,8 +94,8 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	}
 }
 
-func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
-	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.StateQuery, finalizationConsensus.SpecId)
+func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus, ignoreQueryErrors bool) {
+	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.StateQuery, finalizationConsensus.SpecId, ignoreQueryErrors)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
 	if !ok {
