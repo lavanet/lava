@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	gomock "github.com/golang/mock/gomock"
 	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
@@ -24,7 +23,7 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gomockuber "go.uber.org/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 const (
@@ -449,7 +448,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
 					protocolMsg, ok := x.(ProtocolMessage)
 					require.True(t, ok)
 					require.NotNil(t, protocolMsg)
@@ -480,7 +479,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
 					reqData, ok := x.(string)
 					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage1)
@@ -491,7 +490,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
 					reqData, ok := x.(string)
 					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData1)
@@ -596,7 +595,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			subscribeProtocolMessage2 := NewProtocolMessage(subscribeChainMessage2, nil, nil, dapp2, ts.Consumer.Addr.String())
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
 					reqData, ok := x.(string)
 					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage2)
@@ -607,7 +606,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
 					reqData, ok := x.(string)
 					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData2)
