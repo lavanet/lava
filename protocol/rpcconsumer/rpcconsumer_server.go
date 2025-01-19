@@ -57,6 +57,10 @@ type CancelableContextHolder struct {
 	CancelFunc context.CancelFunc
 }
 
+type LastQoSReportGetter interface {
+	GetLastQoSReport(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport
+}
+
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
 	consumerProcessGuid            string
@@ -81,6 +85,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	lastQoSReportGetter            LastQoSReportGetter
 }
 
 type relayResponse struct {
@@ -112,6 +117,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
 	consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
+	lastQoSReportGetter LastQoSReportGetter,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -128,6 +134,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
+	rpccs.lastQoSReportGetter = lastQoSReportGetter
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
@@ -768,7 +775,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			epoch := sessionInfo.Epoch
 			reportedProviders := sessionInfo.ReportedProviders
 
-			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
+			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders, rpccs.consumerSessionManager)
 			if errResponse != nil {
 				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData))
 				return
@@ -863,7 +870,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				)
 			}
 
-			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+			lastQoSReport := rpccs.lastQoSReportGetter.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 			if rpccs.debugRelays && lastQoSReport != nil &&
 				lastQoSReport.Sync.BigInt() != nil &&
 				lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
@@ -873,7 +880,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
+					utils.Attribute{Key: "lastQoSReport", Value: lastQoSReport},
 				)
 			}
 
