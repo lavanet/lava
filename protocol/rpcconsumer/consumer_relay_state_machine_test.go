@@ -149,17 +149,17 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
+				sendNodeError(relayProcessor, 1, 1, "lava2@test", time.Millisecond*1)
 			case 2:
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
+				sendNodeError(relayProcessor, 1, 1, "lava2@test", time.Millisecond*1)
 			case 3:
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
+				sendSuccessResp(relayProcessor, 1, 1, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
 				results, _ := relayProcessor.HasRequiredNodeResults()
