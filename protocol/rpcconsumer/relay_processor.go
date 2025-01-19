@@ -361,7 +361,12 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			bestQosResult.Quorum = 1
 			return &bestQosResult, nil
 		}
-		return nil, utils.LavaFormatInfo("majority count is less than quorumSize", utils.LogAttr("nilReplies", nilReplies), utils.LogAttr("results", len(results)), utils.LogAttr("maxCount", maxCount), utils.LogAttr("quorumSize", quorumSize))
+		return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
+			utils.LogAttr("nilReplies", nilReplies),
+			utils.LogAttr("results", len(results)),
+			utils.LogAttr("maxCount", maxCount),
+			utils.LogAttr("quorumSize", quorumSize),
+		)
 	}
 	mostCommonResult.Quorum = maxCount
 	return &mostCommonResult, nil
@@ -443,11 +448,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
 
-			returnedResult, processingError = rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
-			deterministic := rp.GetProtocolMessage().GetApi().Category.Deterministic
-			shouldDegradeAvailability = !isDefaultApi && deterministic && !returnedResult.IsNodeError // if the quorum is not a node error, we degrade availability for the errored providers
-
-			return returnedResult, processingError
+			return rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
 		} else if rp.selection == BestResult && successResultsCount > nodeErrorCount {
 			// we have more than half succeeded, and we are success oriented
 			return rp.responsesQuorum(successResults, (rp.requiredSuccesses+1)/2)
