@@ -7,12 +7,13 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCalculateQoS(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 	providerAddr := "provider1"
@@ -42,7 +43,7 @@ func TestCalculateQoS(t *testing.T) {
 }
 
 func TestAddFailedRelay(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 
@@ -57,7 +58,7 @@ func TestAddFailedRelay(t *testing.T) {
 }
 
 func TestSetLastReputationQoSReportRaw(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 
@@ -76,7 +77,7 @@ func TestSetLastReputationQoSReportRaw(t *testing.T) {
 }
 
 func TestMultipleEpochsAndSessions(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 
 	// Test multiple epochs and sessions simultaneously
 	for epoch := uint64(1); epoch <= 3; epoch++ {
@@ -105,7 +106,7 @@ func TestMultipleEpochsAndSessions(t *testing.T) {
 }
 
 func TestEdgeCaseLatencies(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 
@@ -139,7 +140,7 @@ func TestEdgeCaseLatencies(t *testing.T) {
 }
 
 func TestNilReportHandling(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 
@@ -158,7 +159,7 @@ func TestNilReportHandling(t *testing.T) {
 }
 
 func TestHighConcurrencyScenario(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	numGoroutines := 10
 	operationsPerGoroutine := 1000
 
@@ -224,7 +225,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 }
 
 func TestQoSParameterBoundaries(t *testing.T) {
-	qosManager := NewQoSManager()
+	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 	epoch := uint64(1)
 	sessionID := int64(1)
 
@@ -264,7 +265,7 @@ func TestQoSParameterBoundaries(t *testing.T) {
 
 func TestSequentialOperations(t *testing.T) {
 	t.Run("Mixed Operations Sequence", func(t *testing.T) {
-		qosManager := NewQoSManager()
+		qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 		epoch := uint64(1)
 		sessionID := int64(1)
 
@@ -299,7 +300,7 @@ func TestSequentialOperations(t *testing.T) {
 
 // TODO: Enable this test when we register the QoSManager to epoch updater
 // func TestMemoryManagement(t *testing.T) {
-// 	qosManager := NewQoSManager()
+// 	qosManager := NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 
 // 	// Create data for multiple epochs
 // 	for epoch := uint64(1); epoch <= 100; epoch++ {

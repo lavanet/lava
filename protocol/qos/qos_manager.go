@@ -5,6 +5,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
@@ -26,12 +27,17 @@ type QoSManager struct {
 	qosReports    map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
 	mutatorsQueue chan Mutator
 	lock          sync.RWMutex
+
+	*provideroptimizer.ProviderOptimizer
 }
 
-func NewQoSManager() *QoSManager {
-	qosManager := &QoSManager{}
-	qosManager.qosReports = make(map[uint64]map[int64]*QoSReport)
-	qosManager.mutatorsQueue = make(chan Mutator, 10000000) // Buffer of 10 Million mutators
+func NewQoSManager(providerOptimizer *provideroptimizer.ProviderOptimizer) *QoSManager {
+	qosManager := &QoSManager{
+		ProviderOptimizer: providerOptimizer,
+		qosReports:        make(map[uint64]map[int64]*QoSReport),
+		mutatorsQueue:     make(chan Mutator, 10000000), // Buffer of 10 Million mutators
+	}
+
 	go qosManager.processMutations()
 	return qosManager
 }
