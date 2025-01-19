@@ -50,3 +50,23 @@ func (qos QualityOfServiceReport) ComputeQosExcellenceForReputation(syncFactor m
 	}
 	return latency.Add(sync).Add(availability), nil
 }
+
+// ValidateAndFixQoSExcellence is a temporary function to validate the QoS excellence report
+// TODO: remove after the optimizer refactor is merged
+func (qos *QualityOfServiceReport) ValidateAndFixQoSExcellence() error {
+	if qos == nil {
+		return fmt.Errorf("QoS excellence report is nil")
+	}
+
+	if qos.Availability.LT(sdk.ZeroDec()) {
+		qos.Availability = sdk.ZeroDec()
+	}
+	if qos.Latency.LT(sdk.ZeroDec()) {
+		qos.Latency = sdk.ZeroDec()
+	}
+	if qos.Sync.LT(sdk.ZeroDec()) {
+		qos.Sync = sdk.ZeroDec()
+	}
+
+	return nil
+}
