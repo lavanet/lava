@@ -58,7 +58,6 @@ type ConsumerSessionManager struct {
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
-	providerOptimizer                  ProviderOptimizer
 	consumerMetricsManager             *metrics.ConsumerMetricsManager
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
@@ -117,7 +116,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
+	go csm.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
@@ -209,7 +208,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 			defer wg.Done()
 			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch, false)
 			success := err == nil // if failure then regard it in availability
-			csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
+			csm.AppendProbeRelayData(providerAddress, latency, success)
 		}(consumerSessionWithProvider)
 	}
 	done := make(chan struct{})
@@ -565,7 +564,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero(csm)
 				sessions[providerAddress] = sessionInfo
 
-				qosReport, rawQosReport := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)
+				qosReport, rawQosReport := csm.GetReputationReportForProvider(providerAddress)
 				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
 					// rawQosReport is used only when building the relay payment message to be used to update
 					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
@@ -643,10 +642,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		}
 	}
 	var providers []string
-	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
+	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
-		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		providers, _ = csm.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
 	}
 
 	utils.LavaFormatTrace("Choosing providers",
@@ -966,7 +965,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	// latency, isHangingApi, syncScore aren't updated when there is a failure
-	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
+	go csm.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
@@ -1050,7 +1049,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
 	csm.QoSManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+	go csm.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }
@@ -1142,11 +1141,11 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 
 func NewConsumerSessionManager(
 	rpcEndpoint *RPCEndpoint,
-	providerOptimizer ProviderOptimizer,
 	consumerMetricsManager *metrics.ConsumerMetricsManager,
 	reporter metrics.Reporter,
 	consumerPublicAddress string,
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
+	qosManager *qos.QoSManager,
 ) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
@@ -1154,8 +1153,7 @@ func NewConsumerSessionManager(
 		consumerPublicAddress:  consumerPublicAddress,
 	}
 	csm.rpcEndpoint = rpcEndpoint
-	csm.providerOptimizer = providerOptimizer
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
-	csm.QoSManager = qos.NewQoSManager()
+	csm.QoSManager = qosManager
 	return csm
 }

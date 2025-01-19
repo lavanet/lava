@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/lavasession"
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
@@ -55,7 +56,8 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2, nil, "dontcare")
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+	qosManager := qos.NewQoSManager(optimizer)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), qosManager)
 	consumerSessionManager.UpdateAllProviders(epoch, map[uint64]*lavasession.ConsumerSessionsWithProvider{
 		epoch: {
 			PublicLavaAddress: providerPublicAddress,
