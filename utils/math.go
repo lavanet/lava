@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DecayFactorNaturalBaseString = "2.71828182845904523536028747135266249775724709369995957496696763"
+	DecayFactorNaturalBaseString = "2.718281828459045235"
 )
 
 func Min[T constraints.Ordered](x, y T) T {
@@ -37,14 +37,14 @@ func NaturalBaseExponentFraction(numerator, denominator int64, negative bool) ma
 
 	e := sdk.MustNewDecFromStr(DecayFactorNaturalBaseString)
 
-	// Step 1: Calculate e^a
-	eToA := e.Power(numeratorUint64)
-
-	// Step 2: Take the bth root
-	result, err := eToA.ApproxRoot(denominatorUint64)
+	// Step 1: Take the bth root of e
+	eRoot, err := e.ApproxRoot(denominatorUint64)
 	if err != nil {
 		panic(err)
 	}
+
+	// Step 2: Calculate (e^(1/b))^a
+	result := eRoot.Power(numeratorUint64)
 
 	if negative {
 		// Step 3: Take the reciprocal
