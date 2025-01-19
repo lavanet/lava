@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/protocol/statetracker"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
@@ -26,6 +25,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 type mockFilter struct{}
@@ -48,7 +48,6 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -59,7 +58,6 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             nil,
 			RelayNum:           5,
@@ -67,6 +65,20 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 			EndpointConnection: nil,
 			BlockListed:        false, // if session lost sync we blacklist it.
 		}
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := lavaprotocol.NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			GetLastReputationQoSReportRaw(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		qosManagerMock.
+			EXPECT().
+			GetLastQoSReport(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
 		metadataValue := make([]pairingtypes.Metadata, 1)
 		metadataValue[0] = pairingtypes.Metadata{
 			Name:  "banana",
@@ -74,7 +86,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		}
 		relayRequestData := lavaprotocol.NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, "", nil)
 		require.Equal(t, relayRequestData.Metadata, metadataValue)
-		relay, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
+		relay, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}}, qosManagerMock)
 		require.NoError(t, err)
 
 		// provider checks
@@ -108,7 +120,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 
 		// now send this to another provider
 		relayRequestDataDR := lavaprotocol.NewRelayData(ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, 0, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
-		relayDR, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
+		relayDR, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}}, qosManagerMock)
 		require.NoError(t, err)
 
 		// provider checks
@@ -201,7 +213,6 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -213,7 +224,6 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             consumerSessionWithProvider,
 			RelayNum:           5,
@@ -221,6 +231,19 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			EndpointConnection: nil,
 			BlockListed:        false, // if session lost sync we blacklist it.
 		}
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := lavaprotocol.NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			GetLastReputationQoSReportRaw(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		qosManagerMock.
+			EXPECT().
+			GetLastQoSReport(gomock.Any(), gomock.Any()).
+			AnyTimes()
 
 		metadataValue := []pairingtypes.Metadata{{
 			Name:  "banana",
@@ -232,7 +255,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		reqBlock, _ := chainMessage.RequestedBlock()
 		relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, 0, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
 
-		relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
+		relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}}, qosManagerMock)
 		require.NoError(t, err)
 
 		// provider checks
@@ -270,7 +293,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		// now send this to another provider
 		relayRequestDataDR := lavaprotocol.NewRelayData(ts.Ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, 0, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
-		relayDR, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
+		relayDR, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}}, qosManagerMock)
 		require.NoError(t, err)
 
 		// provider checks
