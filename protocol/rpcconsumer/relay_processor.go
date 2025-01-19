@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/utils"
 )
 
@@ -41,6 +42,10 @@ type chainIdAndApiInterfaceGetter interface {
 	GetChainIdAndApiInterface() (string, string)
 }
 
+type QoSManager interface {
+	DegradeAvailability(epoch uint64, sessionId int64) qos.DoneChan
+}
+
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
 	responses                    chan *relayResponse
@@ -55,6 +60,7 @@ type RelayProcessor struct {
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
+	qosManager                   QoSManager
 	ResultsManager
 	RelayStateMachine
 }
@@ -67,6 +73,7 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 	relayStateMachine RelayStateMachine,
+	qosManager QoSManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	if requiredSuccesses <= 0 {
@@ -85,6 +92,7 @@ func NewRelayProcessor(
 		RelayStateMachine:            relayStateMachine,
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
+		qosManager:                   qosManager,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
@@ -372,14 +380,44 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 
 	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().AllUnwantedAddresses()
+	shouldDegradeAvailability := false
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 
+	isDefaultApi := rp.GetProtocolMessage().IsDefaultApi()
+
 	successResults, nodeErrors, protocolErrors := rp.GetResultsData()
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
+
+	defer func() {
+		protocolMessage := rp.GetProtocolMessage()
+		for _, verification := range protocolMessage.GetApiCollection().Verifications {
+			if verification.ParseDirective.ApiName == protocolMessage.GetApi().Name {
+				// TODO: Check that the verification is not disabled in flags
+				shouldDegradeAvailability = true
+				break
+			}
+		}
+
+		if shouldDegradeAvailability {
+			for _, result := range nodeErrors {
+				session := result.Request.RelaySession
+				utils.LavaFormatTrace("Degrading availability for provider",
+					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
+					utils.LogAttr("epoch", session.Epoch),
+					utils.LogAttr("sessionId", session.SessionId),
+				)
+				rp.qosManager.DegradeAvailability(uint64(session.Epoch), int64(session.SessionId))
+			}
+		}
+	}()
+
 	// there are enough successes
 	if successResultsCount >= rp.requiredSuccesses {
+		if len(nodeErrors) > 0 && !isDefaultApi { // if we have node errors and it's not a default api, we should degrade availability
+			shouldDegradeAvailability = true
+		}
 		return rp.responsesQuorum(successResults, rp.requiredSuccesses)
 	}
 
@@ -404,7 +442,12 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
+
+			returnedResult, processingError = rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
+			deterministic := rp.GetProtocolMessage().GetApi().Category.Deterministic
+			shouldDegradeAvailability = !isDefaultApi && deterministic && !returnedResult.IsNodeError // if the quorum is not a node error, we degrade availability for the errored providers
+
+			return returnedResult, processingError
 		} else if rp.selection == BestResult && successResultsCount > nodeErrorCount {
 			// we have more than half succeeded, and we are success oriented
 			return rp.responsesQuorum(successResults, (rp.requiredSuccesses+1)/2)
@@ -435,4 +478,19 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
 	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError)
+}
+
+func (rp *RelayProcessor) degradeAvailabilityIfNeeded(shouldDegradeAvailability bool) {
+	protocolMessage := rp.GetProtocolMessage()
+	for _, verification := range protocolMessage.GetApiCollection().Verifications {
+		if verification.ParseDirective.ApiName == protocolMessage.GetApi().Name {
+			// TODO: Check that the verification is not disabled in flags
+			shouldDegradeAvailability = true // override the value to true if the requested api is in the verifications
+			break
+		}
+	}
+
+	if shouldDegradeAvailability {
+		// TODO: degrade availability
+	}
 }

@@ -17,6 +17,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 type relayProcessorMetricsMock struct{}
@@ -168,7 +169,16 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -224,7 +234,16 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
@@ -267,7 +286,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -293,7 +312,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -319,7 +338,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse = usedProviders.TryLockSelection(ctx)
@@ -370,7 +389,16 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -410,7 +438,16 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -463,7 +500,16 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -508,7 +554,16 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -554,7 +609,16 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -609,7 +673,16 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -655,7 +728,16 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)

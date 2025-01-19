@@ -116,6 +116,14 @@ func (qosManager *QoSManager) SetLastReputationQoSReport(epoch uint64, sessionId
 	return doneChan
 }
 
+func (qosManager *QoSManager) DegradeAvailability(epoch uint64, sessionId int64) DoneChan {
+	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
+	qosManager.mutatorsQueue <- &QoSMutatorDegradeAvailability{
+		QoSMutatorBase: *qosMutatorBase,
+	}
+	return doneChan
+}
+
 func (qosManager *QoSManager) getQoSReport(epoch uint64, sessionId int64) *QoSReport {
 	qosManager.lock.RLock()
 	defer qosManager.lock.RUnlock()

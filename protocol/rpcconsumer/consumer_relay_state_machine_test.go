@@ -21,6 +21,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 type PolicySt struct {
@@ -114,7 +115,16 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			AnyTimes()
+
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -185,7 +195,12 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qosManagerMock)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -253,6 +268,15 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		qosManagerMock := NewMockQoSManager(ctrl)
+		qosManagerMock.
+			EXPECT().
+			DegradeAvailability(gomock.Any(), gomock.Any()).
+			Times(1)
+
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			1,
@@ -268,7 +292,9 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				nil,
 				false,
 				relayProcessorMetrics,
-			))
+			),
+			qosManagerMock,
+		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
