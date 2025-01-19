@@ -286,7 +286,7 @@ func sortProviderScores(scores map[types.ReputationChainClusterKey]StakeProvider
 // GetBenchmarkReputationScore gets the score that will be used as the normalization factor when converting
 // the provider's QoS score to the reputation pairing score.
 // To do that, we go over all the QoS scores of providers that share chain ID and cluster from the lowest
-// score to the heighest (that input stakeProviderScores are sorted). We aggregate the providers stake until
+// score to the highest (that input stakeProviderScores are sorted). We aggregate the providers stake until
 // we pass totalStake * ReputationPairingScoreBenchmarkStakeThreshold (currently equal to 10% of total stake).
 // Then, we return the last provider's score as the benchmark
 func (k Keeper) GetBenchmarkReputationScore(stakeProviderScores StakeProviderScores) (math.LegacyDec, error) {

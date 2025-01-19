@@ -1618,7 +1618,7 @@ func TestReputationPairingScoreWithinRange(t *testing.T) {
 	// advance epoch to update pairing scores
 	ts.AdvanceEpoch()
 
-	// check results are withing the expected range
+	// check results are within the expected range
 	for i := range providers {
 		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
 		require.True(t, found)
