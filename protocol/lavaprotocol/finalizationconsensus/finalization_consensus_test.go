@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/chainlib"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v4/protocol/qos"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
@@ -219,7 +220,7 @@ func TestQoS(t *testing.T) {
 		for _, chainID := range chainsToTest {
 			t.Run(chainID, func(t *testing.T) {
 				ctx := context.Background()
-				qosManager := qos.NewQoSManager()
+				qosManager := qos.NewQoSManager(&provideroptimizer.ProviderOptimizer{})
 				chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 				if closeServer != nil {
 					defer closeServer()

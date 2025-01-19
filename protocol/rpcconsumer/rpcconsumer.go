@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/protocol/performance"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider"
 	"github.com/lavanet/lava/v4/protocol/statetracker"
 	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
@@ -414,7 +415,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage, qos.NewQoSManager(optimizer))
 	// Register For Updates
 	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
 
