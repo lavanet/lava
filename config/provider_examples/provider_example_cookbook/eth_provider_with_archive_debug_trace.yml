@@ -2,6 +2,8 @@
 # - archive
 # - debug
 # - trace
+# - trace + archive
+# - debug + archive
 
 # ** Replace the urls with your own node urls **
 
@@ -29,4 +31,20 @@ endpoints:
         - url: ws://my-eth-node.com/eth/archive/ws
           addons:
             - trace
+        - url: http://my-eth-node.com/eth/http/archive
+          addons:
+            - debug
+            - archive
+        - url: ws://my-eth-node.com/eth/archive/ws
+          addons:
+            - debug
+            - archive
+        - url: http://my-eth-node.com/eth/http/archive
+          addons:
+            - trace
+            - archive
+        - url: ws://my-eth-node.com/eth/archive/ws
+          addons:
+            - trace
+            - archive
         
