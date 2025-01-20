@@ -603,9 +603,9 @@ func (pme *ConsumerMetricsManager) ResetBlockedProvidersMetrics(chainId, apiInte
 	if pme == nil {
 		return
 	}
-
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
 	pme.blockedProviderMetric.Reset()
-
 	for provider, endpoint := range providers {
 		labels := map[string]string{"spec": chainId, "apiInterface": apiInterface, "provider_address": provider, "provider_endpoint": endpoint}
 		pme.blockedProviderMetric.WithLabelValues(labels).Set(0)
@@ -688,13 +688,13 @@ func (pme *ConsumerMetricsManager) SetBlockedProvider(chainId, apiInterface, pro
 	if pme == nil {
 		return
 	}
-
 	var value float64 = 0
 	if isBlocked {
 		value = 1
 	}
-
 	labels := map[string]string{"spec": chainId, "apiInterface": apiInterface, "provider_address": providerAddress, "provider_endpoint": providerEndpoint}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
 	pme.blockedProviderMetric.WithLabelValues(labels).Set(value)
 }
 

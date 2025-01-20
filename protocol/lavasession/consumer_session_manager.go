@@ -140,8 +140,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
-
-	csm.consumerMetricsManager.ResetBlockedProvidersMetrics(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providerAddressToEndpoint)
+	go csm.consumerMetricsManager.ResetBlockedProvidersMetrics(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providerAddressToEndpoint)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
@@ -996,10 +995,6 @@ func (csm *ConsumerSessionManager) sortBlockedProviderListByCuServed() {
 
 // removes a given address from the valid addresses list.
 func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address string) error {
-	info := csm.RPCEndpoint()
-	chainId := info.ChainID
-	apiInterface := info.ApiInterface
-
 	// cs Must be Locked here.
 	for idx, addr := range csm.validAddresses {
 		if addr == address {
@@ -1012,11 +1007,11 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 			csm.sortBlockedProviderListByCuServed()
 			provider, ok := csm.pairing[addr]
 			if ok {
-				go func(networkAddress string) {
-					csm.consumerMetricsManager.SetBlockedProvider(chainId, apiInterface, addr, networkAddress, true)
-				}(provider.Endpoints[0].NetworkAddress)
+				info := csm.RPCEndpoint()
+				go func(networkAddress string, chainId string, apiInterface string, providerAddress string) {
+					csm.consumerMetricsManager.SetBlockedProvider(chainId, apiInterface, providerAddress, networkAddress, true)
+				}(provider.Endpoints[0].NetworkAddress, info.ChainID, info.ApiInterface, addr)
 			}
-
 			return nil
 		}
 	}
@@ -1182,11 +1177,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesList(providerAddress string) {
 	csm.lock.Lock()
 	defer csm.lock.Unlock()
-
-	info := csm.RPCEndpoint()
-	chainId := info.ChainID
-	apiInterface := info.ApiInterface
-
 	for idx, addr := range csm.currentlyBlockedProviderAddresses {
 		if addr == providerAddress {
 			// Remove it from the csm.currentlyBlockedProviderAddresses
@@ -1197,10 +1187,11 @@ func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddres
 			csm.RemoveAddonAddresses("", nil)
 			// Reset redemption status
 			if provider, ok := csm.pairing[providerAddress]; ok {
+				info := csm.RPCEndpoint()
 				provider.atomicWriteBlockedStatus(BlockedProviderSessionUnusedStatus)
-				go func(networkAddress string) {
-					csm.consumerMetricsManager.SetBlockedProvider(chainId, apiInterface, addr, networkAddress, false)
-				}(provider.Endpoints[0].NetworkAddress)
+				go func(networkAddress string, chainId string, apiInterface string, providerAddress string) {
+					csm.consumerMetricsManager.SetBlockedProvider(chainId, apiInterface, providerAddress, networkAddress, false)
+				}(provider.Endpoints[0].NetworkAddress, info.ChainID, info.ApiInterface, providerAddress)
 			}
 			return
 		}
