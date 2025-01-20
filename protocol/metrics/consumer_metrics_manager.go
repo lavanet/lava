@@ -155,6 +155,17 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The latency of requests requested by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
 
+	blockedProviderMetricLabels := []string{"spec", "apiInterface", "provider_address"}
+	if ShowProviderEndpointInMetrics {
+		blockedProviderMetricLabels = append(blockedProviderMetricLabels, "provider_endpoint")
+	}
+
+	blockedProviderMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_provider_blocked",
+		Help:   "Is provider blocked. 1-blocked, 0-not blocked",
+		Labels: blockedProviderMetricLabels,
+	})
+
 	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
@@ -583,6 +594,19 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.qosMetric.Reset()
 	pme.providerReputationMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
+}
+
+func (pme *ConsumerMetricsManager) ResetBlockedProvidersMetrics(chainId, apiInterface string, providers map[string]string) {
+	if pme == nil {
+		return
+	}
+
+	pme.blockedProviderMetric.Reset()
+
+	for provider, endpoint := range providers {
+		labels := map[string]string{"spec": chainId, "apiInterface": apiInterface, "provider_address": provider, "provider_endpoint": endpoint}
+		pme.blockedProviderMetric.WithLabelValues(labels).Set(0)
+	}
 }
 
 func (pme *ConsumerMetricsManager) SetVersion(version string) {
