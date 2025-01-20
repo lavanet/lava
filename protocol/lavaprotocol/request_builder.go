@@ -62,7 +62,12 @@ func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byt
 	return relayData
 }
 
-func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider) *pairingtypes.RelaySession {
+type QoSManager interface {
+	GetLastQoSReport(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport
+	GetLastReputationQoSReportRaw(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport
+}
+
+func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider, qosManager QoSManager) *pairingtypes.RelaySession {
 	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
 		if reportToCopy != nil {
 			QOS := *reportToCopy
@@ -71,11 +76,11 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		return nil
 	}
 
-	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastQoSReport)
-	copiedExcellenceQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastExcellenceQoSReportRaw) // copy raw report for the node
+	copiedQOS := copyQoSServiceReport(qosManager.GetLastQoSReport(uint64(epoch), singleConsumerSession.SessionId))
+	copiedReputation := copyQoSServiceReport(qosManager.GetLastReputationQoSReportRaw(uint64(epoch), singleConsumerSession.SessionId)) // copy raw report for the node
 
 	// validate and fix QoS excellence report before sending it to the node
-	copiedExcellenceQOS.ValidateAndFixQoSExcellence()
+	copiedReputation.ValidateAndFixQoSExcellence()
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
@@ -90,14 +95,14 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
 		Badge:                 nil,
-		QosExcellenceReport:   copiedExcellenceQOS,
+		QosExcellenceReport:   copiedReputation,
 	}
 }
 
-func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider) (*pairingtypes.RelayRequest, error) {
+func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider, qosManager QoSManager) (*pairingtypes.RelayRequest, error) {
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:    relayRequestData,
-		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
+		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders, qosManager),
 	}
 	sig, err := sigs.Sign(privKey, *relayRequest.RelaySession)
 	if err != nil {

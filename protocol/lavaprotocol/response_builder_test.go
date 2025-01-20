@@ -12,6 +12,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func unresponsiveProviderStub() []*pairingtypes.ReportedProvider {
@@ -29,7 +30,6 @@ func TestSignAndExtractResponse(t *testing.T) {
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:              20,
 		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:          123,
 		Parent:             nil,
 		RelayNum:           1,
@@ -37,6 +37,20 @@ func TestSignAndExtractResponse(t *testing.T) {
 		EndpointConnection: nil,
 		BlockListed:        false, // if session lost sync we blacklist it.
 	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	qosManagerMock := NewMockQoSManager(ctrl)
+	qosManagerMock.
+		EXPECT().
+		GetLastReputationQoSReportRaw(gomock.Any(), gomock.Any()).
+		AnyTimes()
+
+	qosManagerMock.
+		EXPECT().
+		GetLastQoSReport(gomock.Any(), gomock.Any()).
+		AnyTimes()
+
 	metadataValue := make([]pairingtypes.Metadata, 1)
 	metadataValue[0] = pairingtypes.Metadata{
 		Name:  "x-cosmos-block-height",
@@ -44,7 +58,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	}
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, 55, "tendermintrpc", metadataValue, "test", nil)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
-	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub())
+	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub(), qosManagerMock)
 	require.NoError(t, err)
 
 	// check signature
@@ -77,7 +91,6 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:              20,
 		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:          123,
 		Parent:             nil,
 		RelayNum:           1,
@@ -85,6 +98,20 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 		EndpointConnection: nil,
 		BlockListed:        false, // if session lost sync we blacklist it.
 	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	qosManagerMock := NewMockQoSManager(ctrl)
+	qosManagerMock.
+		EXPECT().
+		GetLastReputationQoSReportRaw(gomock.Any(), gomock.Any()).
+		AnyTimes()
+
+	qosManagerMock.
+		EXPECT().
+		GetLastQoSReport(gomock.Any(), gomock.Any()).
+		AnyTimes()
+
 	metadataValue := make([]pairingtypes.Metadata, 1)
 	metadataValue[0] = pairingtypes.Metadata{
 		Name:  "banana",
@@ -92,7 +119,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	}
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, "test", nil)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
-	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", testSpecId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub())
+	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", testSpecId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub(), qosManagerMock)
 	require.NoError(t, err)
 
 	// provider checks

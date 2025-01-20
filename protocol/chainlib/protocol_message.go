@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/lavanet/lava/v4/x/spec/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
 type UserData struct {
@@ -94,6 +95,11 @@ func (bpm *BaseProtocolMessage) GetBlockedProviders() []string {
 	return nil
 }
 
+func (bpm *BaseProtocolMessage) IsDefaultApi() bool {
+	api := bpm.GetApi()
+	return AllowMissingApisByDefault && strings.HasPrefix(api.Name, "Default-") && api.BlockParsing.ParserFunc == spectypes.PARSER_FUNC_EMPTY
+}
+
 func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappId, consumerIp string) ProtocolMessage {
 	return &BaseProtocolMessage{
 		ChainMessage:     chainMessage,
@@ -111,4 +117,5 @@ type ProtocolMessage interface {
 	GetBlockedProviders() []string
 	GetUserData() common.UserData
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
+	IsDefaultApi() bool
 }
