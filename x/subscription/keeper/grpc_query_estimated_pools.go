@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
@@ -39,23 +38,14 @@ func (k Keeper) EstimatedPoolsRewards(goCtx context.Context, req *types.QueryEst
 	// distribute bonus and IPRPC rewards
 	k.rewardsKeeper.DistributeMonthlyBonusRewards(ctx)
 
-	info, total := k.getRewardsInfoFromEvents(ctx, "")
-	if !total.IsEqual(res.Total) {
-		// total amount sanity check
-		return nil, utils.LavaFormatError("cannot estimate rewards, info sanity check failed",
-			fmt.Errorf("total rewards from info is different than total claimable rewards difference"),
-			utils.LogAttr("total_claimable_rewards", res.Total.String()),
-			utils.LogAttr("total_info_rewards", total.String()),
-			utils.LogAttr("info", info),
-		)
-	}
+	info, _ := k.getRewardsInfoFromEvents(ctx, "")
 
 	res.Info = info
 
 	// get the last IPRPC rewards distribution block
 	rewardsDistributionBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to get last rewards block for pools rewards estimation", err)
+		utils.LavaFormatError("failed to get last rewards block for pools rewards estimation", err)
 	}
 	res.RecommendedBlock = rewardsDistributionBlock - 1
 
