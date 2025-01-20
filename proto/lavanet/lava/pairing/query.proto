@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/pairing/params.proto";
+import "lavanet/lava/pairing/reputation.proto";
 import "lavanet/lava/spec/spec.proto";
 
 
@@ -80,9 +81,19 @@ service Query {
 	}
 
 // Queries a for the aggregated CU of all ProviderEpochCu objects all the providers.
-rpc ProvidersEpochCu(QueryProvidersEpochCuRequest) returns (QueryProvidersEpochCuResponse) {
-	option (google.api.http).get = "/lavanet/lava/pairing/providers_epoch_cu";
-}
+	rpc ProvidersEpochCu(QueryProvidersEpochCuRequest) returns (QueryProvidersEpochCuResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/providers_epoch_cu";
+	}
+
+// Queries a for a provider reputation.
+	rpc ProviderReputation(QueryProviderReputationRequest) returns (QueryProviderReputationResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation/{provider}/{chainID}/{cluster}";
+	}
+
+// Queries a for a provider reputation's details (mainly for developers).
+	rpc ProviderReputationDetails(QueryProviderReputationDetailsRequest) returns (QueryProviderReputationDetailsResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation_details/{address}/{chainID}/{cluster}";
+	}
 
 	// this line is used by starport scaffolding # 2
 
@@ -238,4 +249,39 @@ message QueryProvidersEpochCuResponse {
 message ProviderCuInfo {
 	string provider = 1;
 	uint64 cu = 2;
+}
+
+message QueryProviderReputationRequest {
+	string provider = 1;
+	string chainID = 2;
+	string cluster = 3;
+}
+
+message ReputationData {
+	uint64 rank = 1; // rank compared to other providers
+	uint64 providers = 2; // amount of providers with the same chainID+cluster
+	string overall_performance = 3; // overall performance metric which can be "good", "bad", or "low variance"
+	string chainID = 4;
+	string cluster = 5;
+}
+
+message QueryProviderReputationResponse {
+	repeated ReputationData data = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryProviderReputationDetailsRequest {
+	string address = 1;
+	string chainID = 2;
+	string cluster = 3;
+}
+
+message ReputationDevData {
+	Reputation reputation = 1 [(gogoproto.nullable) = false];
+	ReputationPairingScore reputation_pairing_score = 2 [(gogoproto.nullable) = false];
+	string chainID = 4;
+	string cluster = 5;
+}
+
+message QueryProviderReputationDetailsResponse {
+	repeated ReputationDevData data = 1 [(gogoproto.nullable) = false];
 }
