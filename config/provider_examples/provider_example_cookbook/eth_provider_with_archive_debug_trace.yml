@@ -29,19 +29,19 @@ endpoints:
         - url: ws://my-eth-node.com/eth/trace/ws
           addons:
             - trace
-        - url: http://my-eth-node.com/eth/http/debug+archive
+        - url: http://my-eth-node.com/eth/http/archive
           addons:
             - debug
             - archive
-        - url: ws://my-eth-node.com/eth/debug+archive/ws
+        - url: ws://my-eth-node.com/eth/archive/ws
           addons:
             - debug
             - archive
-        - url: http://my-eth-node.com/eth/http/trace+archive
+        - url: http://my-eth-node.com/eth/http/archive
           addons:
             - trace
             - archive
-        - url: ws://my-eth-node.com/eth/trace+archive/ws
+        - url: ws://my-eth-node.com/eth/archive/ws
           addons:
             - trace
             - archive
