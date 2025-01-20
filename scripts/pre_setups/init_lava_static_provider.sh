@@ -44,15 +44,18 @@ PROVIDER4_LISTENER="127.0.0.1:2220"
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1"  1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+# lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1"  1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
 screen -d -m -S provider4 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example.yml\
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
 
+screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example2.yml\
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
+
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/lava_consumer_static_peers.yml \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers --use-lava-over-lava-backup=false 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls
