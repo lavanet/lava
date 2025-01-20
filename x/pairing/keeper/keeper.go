@@ -3,6 +3,9 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/collections"
+	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
+
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
 
@@ -30,10 +33,13 @@ type (
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
 		badgeTimerStore    timerstoretypes.TimerStore
-		providerQosFS      fixationtypes.FixationStore
+		reputationsFS      fixationtypes.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
+
+		schema      collections.Schema
+		reputations collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per chain, cluster, provider
 	}
 )
 
@@ -71,6 +77,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:                cdc,
 		storeKey:           storeKey,
@@ -86,6 +94,11 @@ func NewKeeper(
 		downtimeKeeper:     downtimeKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
 		stakingKeeper:      stakingKeeper,
+
+		reputations: collections.NewMap(sb, types.ReputationPrefix, "reputations",
+			collections.TripleKeyCodec(collections.StringKey, collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.Reputation](cdc),
+		),
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
@@ -96,7 +109,13 @@ func NewKeeper(
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
-	keeper.providerQosFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
+	keeper.reputationsFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 
 	return keeper
 }
@@ -107,6 +126,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		// update reputations by QoS scores
+		k.UpdateAllReputationQosScore(ctx)
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers
@@ -121,10 +142,10 @@ func (k Keeper) EndBlock(ctx sdk.Context) {
 	k.ResetPairingRelayCache(ctx)
 }
 
-func (k Keeper) InitProviderQoS(ctx sdk.Context, gs fixationtypes.GenesisState) {
-	k.providerQosFS.Init(ctx, gs)
+func (k Keeper) InitReputations(ctx sdk.Context, gs fixationtypes.GenesisState) {
+	k.reputationsFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportProviderQoS(ctx sdk.Context) fixationtypes.GenesisState {
-	return k.providerQosFS.Export(ctx)
+func (k Keeper) ExportReputations(ctx sdk.Context) fixationtypes.GenesisState {
+	return k.reputationsFS.Export(ctx)
 }

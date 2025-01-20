@@ -60,7 +60,7 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) (activeFil
 	return activeFilters
 }
 
-func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, cluster string, qg pairingscores.QosGetter) ([]*pairingscores.PairingScore, error) {
+func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, cluster string, rg pairingscores.ReputationGetter) ([]*pairingscores.PairingScore, error) {
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool
@@ -108,14 +108,11 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 		}
 
 		if result {
-			// TODO: uncomment this code once the providerQosFS's update is implemented (it's currently always empty)
-			// qos, err := qg.GetQos(ctx, providers[j].Chain, cluster, providers[j].Address)
-			// if err != nil {
-			// 	// only printing error and skipping provider so pairing won't fail
-			// 	utils.LavaFormatError("could not construct provider qos", err)
-			// 	continue
-			// }
-			providerScore := pairingscores.NewPairingScore(&providers[j], types.QualityOfServiceReport{})
+			reputationScore, _, found := rg.GetReputationScoreForBlock(ctx, providers[j].Chain, cluster, providers[j].Address, currentEpoch)
+			if !found {
+				reputationScore = types.DefaultReputationPairingScore
+			}
+			providerScore := pairingscores.NewPairingScore(&providers[j], reputationScore)
 			providerScore.SlotFiltering = slotFiltering
 			providerScores = append(providerScores, providerScore)
 		}
