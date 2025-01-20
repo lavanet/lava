@@ -52,10 +52,10 @@ type ConsumerMetricsManager struct {
 	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
-	qosMetric                                   *prometheus.GaugeVec
-	qosExcellenceMetric                         *prometheus.GaugeVec
-	providerLivenessMetric                      *prometheus.GaugeVec
-	LatestBlockMetric                           *prometheus.GaugeVec
+	qosMetric                                   *MappedLabelsGaugeVec
+	qosExcellenceMetric                         *MappedLabelsGaugeVec
+	blockedProviderMetric                       *MappedLabelsGaugeVec
+	LatestBlockMetric                           *MappedLabelsGaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
 	virtualEpochMetric                          *prometheus.GaugeVec
 	apiMethodCalls                              *prometheus.GaugeVec
@@ -156,10 +156,26 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The latency of requests requested by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
 
-	qosMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_qos_metrics",
-		Help: "The QOS metrics per provider for current epoch for the session with the most relays.",
-	}, []string{"spec", "apiInterface", "provider_address", "provider_endpoint", "qos_metric"})
+	blockedProviderMetricLabels := []string{"spec", "apiInterface", "provider_address"}
+	if ShowProviderEndpointInMetrics {
+		blockedProviderMetricLabels = append(blockedProviderMetricLabels, "provider_endpoint")
+	}
+
+	blockedProviderMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_provider_blocked",
+		Help:   "Is provider blocked. 1-blocked, 0-not blocked",
+		Labels: blockedProviderMetricLabels,
+	})
+
+	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
+	if ShowProviderEndpointInMetrics {
+		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
+	}
+	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_qos_metrics",
+		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
+		Labels: qosMetricLabels,
+	})
 
 	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_qos_excellence_metrics",
@@ -299,7 +315,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
 		qosExcellenceMetric:                         qosExcellenceMetric,
-		providerLivenessMetric:                      providerLivenessMetric,
+		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
 		providerRelays:                              map[string]uint64{},
@@ -583,6 +599,19 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.providerRelays = map[string]uint64{}
 }
 
+func (pme *ConsumerMetricsManager) ResetBlockedProvidersMetrics(chainId, apiInterface string, providers map[string]string) {
+	if pme == nil {
+		return
+	}
+
+	pme.blockedProviderMetric.Reset()
+
+	for provider, endpoint := range providers {
+		labels := map[string]string{"spec": chainId, "apiInterface": apiInterface, "provider_address": provider, "provider_endpoint": endpoint}
+		pme.blockedProviderMetric.WithLabelValues(labels).Set(0)
+	}
+}
+
 func (pme *ConsumerMetricsManager) SetVersion(version string) {
 	if pme == nil {
 		return
@@ -655,17 +684,18 @@ func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 	}
 }
 
-func (pme *ConsumerMetricsManager) SetProviderLiveness(chainId string, providerAddress string, providerEndpoint string, isAlive bool) {
+func (pme *ConsumerMetricsManager) SetBlockedProvider(chainId, apiInterface, providerAddress, providerEndpoint string, isBlocked bool) {
 	if pme == nil {
 		return
 	}
 
 	var value float64 = 0
-	if isAlive {
+	if isBlocked {
 		value = 1
 	}
 
-	pme.providerLivenessMetric.WithLabelValues(chainId, providerAddress, providerEndpoint).Set(value)
+	labels := map[string]string{"spec": chainId, "apiInterface": apiInterface, "provider_address": providerAddress, "provider_endpoint": providerEndpoint}
+	pme.blockedProviderMetric.WithLabelValues(labels).Set(value)
 }
 
 func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
