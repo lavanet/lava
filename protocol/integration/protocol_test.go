@@ -32,6 +32,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/metrics"
 	"github.com/lavanet/lava/v4/protocol/performance"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
@@ -234,7 +235,8 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2, nil, "dontcare")
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+	qosManager := qos.NewQoSManager(optimizer)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), qosManager)
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
 
 	// Just setting the providers available extensions and policy so the consumer is aware of them
@@ -279,7 +281,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil, consumerSessionManager)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization

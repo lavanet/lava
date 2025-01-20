@@ -543,7 +543,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
 }
 
-func TestExcellence(t *testing.T) {
+func TestReputation(t *testing.T) {
 	floatVal := 0.25
 	dec := turnFloatToDec(floatVal, 8)
 	floatNew, err := dec.Float64()
@@ -563,10 +563,10 @@ func TestExcellence(t *testing.T) {
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
-	report, rawReport := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[0])
+	report, rawReport := providerOptimizer.GetReputationReportForProvider(providersGen.providersAddresses[0])
 	require.NotNil(t, report)
 	require.NotNil(t, rawReport)
-	report2, rawReport2 := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[1])
+	report2, rawReport2 := providerOptimizer.GetReputationReportForProvider(providersGen.providersAddresses[1])
 	require.NotNil(t, report2)
 	require.Equal(t, report, report2)
 	require.NotNil(t, rawReport2)
