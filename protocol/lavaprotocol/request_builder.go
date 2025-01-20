@@ -79,6 +79,9 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	copiedQOS := copyQoSServiceReport(qosManager.GetLastQoSReport(uint64(epoch), singleConsumerSession.SessionId))
 	copiedReputation := copyQoSServiceReport(qosManager.GetLastReputationQoSReportRaw(uint64(epoch), singleConsumerSession.SessionId)) // copy raw report for the node
 
+	// validate and fix QoS excellence report before sending it to the node
+	copiedReputation.ValidateAndFixQoSExcellence()
+
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
 		ContentHash:           sigs.HashMsg(relayRequestData.GetContentHashData()),

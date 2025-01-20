@@ -91,6 +91,10 @@ func (nurl *NodeUrl) UrlStr() string {
 	return parsedURL.String()
 }
 
+func (url *NodeUrl) GetAuthHeaders() map[string]string {
+	return url.AuthConfig.AuthHeaders
+}
+
 func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
 	for header, headerValue := range url.AuthConfig.AuthHeaders {
 		headerSetter(header, headerValue)

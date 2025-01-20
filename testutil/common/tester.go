@@ -922,6 +922,26 @@ func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, c
 	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderReputation implements 'q pairing provider-reputation'
+func (ts *Tester) QueryPairingProviderReputation(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationRequest{
+		Provider: provider,
+		ChainID:  chainID,
+		Cluster:  cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputation(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderReputationDetails implements 'q pairing provider-reputation-details'
+func (ts *Tester) QueryPairingProviderReputationDetails(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationDetailsResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationDetailsRequest{
+		Address: provider,
+		ChainID: chainID,
+		Cluster: cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputationDetails(ts.GoCtx, msg)
+}
+
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
 func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
 	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
@@ -1089,6 +1109,15 @@ func (ts *Tester) GetNextEpoch() uint64 {
 
 func (ts *Tester) GetNextMonth(from time.Time) int64 {
 	return utils.NextMonth(from).UTC().Unix()
+}
+
+func (ts *Tester) BlockTimeDefault() time.Duration {
+	return ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
+}
+
+func (ts *Tester) EpochTimeDefault() time.Duration {
+	epochBlocks := ts.Keepers.Epochstorage.GetParams(ts.Ctx).EpochBlocks
+	return ts.BlockTimeDefault() * time.Duration(epochBlocks)
 }
 
 func (ts *Tester) AdvanceToBlock(block uint64) {
