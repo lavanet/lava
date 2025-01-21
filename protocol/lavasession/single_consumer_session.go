@@ -52,13 +52,12 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 	return sdk.ZeroDec()
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, rawReputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set reputation for sessions with more than one successful relays, this guarantees data within the epoch exists
 		scs.QoSManager.SetLastReputationQoSReport(scs.epoch, scs.SessionId, reputationReport)
-		scs.QoSManager.SetLastReputationQoSReportRaw(scs.epoch, scs.SessionId, rawReputationReport)
 	}
 	scs.usedProviders = usedProviders
 	scs.routerKey = routerKey
