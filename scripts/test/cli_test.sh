@@ -58,7 +58,8 @@ trace lavad q downtimequery params >/dev/null
 trace lavad q downtimequery downtime 10 >/dev/null
 
 echo "Proposing specs"
-(trace lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/ibc.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_45.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/cosmoshub.json,./cookbook/specs/lava.json,./cookbook/specs/osmosis.json,./cookbook/specs/fantom.json,./cookbook/specs/celo.json,./cookbook/specs/optimism.json,./cookbook/specs/arbitrum.json,./cookbook/specs/starknet.json,./cookbook/specs/aptos.json,./cookbook/specs/juno.json,./cookbook/specs/polygon.json,./cookbook/specs/evmos.json,./cookbook/specs/base.json,./cookbook/specs/canto.json,./cookbook/specs/sui.json,./cookbook/specs/solana.json,./cookbook/specs/bsc.json,./cookbook/specs/axelar.json,./cookbook/specs/avalanche.json,./cookbook/specs/fvm.json,./cookbook/specs/near.json $txoptions) >/dev/null 
+specs=$(get_all_specs)
+(trace lavad tx gov submit-legacy-proposal spec-add $specs $txoptions) >/dev/null 
 wait_count_blocks 2 >/dev/null
 (lavad tx gov vote $(latest_vote) yes $txoptions) >/dev/null 
 wait_count_blocks 2 >/dev/null 
@@ -156,6 +157,8 @@ trace lavad q pairing static-providers-list LAV1 >/dev/null
 trace lavad q pairing user-entry $(lavad keys show alice -a) ETH1 20 >/dev/null
 trace lavad q pairing verify-pairing STRK $(lavad keys show alice -a) $(lavad keys show alice -a) 60 >/dev/null
 trace lavad q pairing provider-pairing-chance $(lavad keys show servicer1 -a) STRK 1 "" >/dev/null
+trace lavad q pairing provider-reputation $(lavad keys show servicer1 -a) ETH1 free >/dev/null
+trace lavad q pairing provider-reputation-details $(lavad keys show servicer1 -a) ETH1 free >/dev/null
 
 echo "Testing dualstaking tx commands"
 wait_count_blocks 1 >/dev/null

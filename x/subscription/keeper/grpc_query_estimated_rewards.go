@@ -68,7 +68,7 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 			trackedCuFactor = delegation.Amount.ToLegacyDec().QuoInt(totalDelegations)
 
 			// advance ctx by a month and a day to make the delegation count
-			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 1, 1))
+			ctx = ctx.WithBlockTime(ctx.BlockTime().AddDate(0, 0, 31))
 		}
 	}
 
@@ -138,17 +138,11 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	}
 
 	// get the last IPRPC rewards distribution block
-	// note: on error we simply leave RecommendedBlock to be zero since until the
-	// upcoming IPRPC rewards will be distributed (from the time this query is merged in main)
-	// there will be no LastRewardsBlock set
-	rewardsDistributionBlock, after24HoursBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
-	if err == nil {
-		// if the query was sent within the first 24 hours of the month,
-		// make the recommended block be the rewards distribution block - 1
-		if uint64(ctx.BlockHeight()) <= after24HoursBlock {
-			res.RecommendedBlock = rewardsDistributionBlock - 1
-		}
+	rewardsDistributionBlock, err := k.rewardsKeeper.GetLastRewardsBlock(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to get last rewards block for provider rewards estimation", err)
 	}
+	res.RecommendedBlock = rewardsDistributionBlock - 1
 
 	return &res, nil
 }
@@ -262,7 +256,7 @@ func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventR
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
-		if strings.HasPrefix(atr.Key, provider) {
+		if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
 			// extract chain ID
 			parts := strings.Split(atr.Key, " ")
 			if len(parts) != 2 {
@@ -339,7 +333,7 @@ func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, source
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
-		if strings.HasPrefix(atr.Key, provider) {
+		if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
 			// extract provider reward
 			parts := strings.Split(atr.Value, " ")
 			if len(parts) != 4 {

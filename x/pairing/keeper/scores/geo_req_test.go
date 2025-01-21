@@ -3,8 +3,8 @@ package scores
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v4/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func TestCalcGeoCost(t *testing.T) {
 		reqGeo           planstypes.Geolocation
 		providerGeos     []planstypes.Geolocation
 		expectedGeo      planstypes.Geolocation
-		expectedCostUint uint64
+		expectedCostUint int64
 	}{
 		{
 			name:             "happy flow",
@@ -59,7 +59,7 @@ func TestGeoReqScore(t *testing.T) {
 		name            string
 		reqGeo          int32
 		providerGeo     int32
-		expectedLatency uint64
+		expectedLatency int64
 	}{
 		{
 			name:            "happy flow - provider supports geo",
@@ -97,7 +97,7 @@ func TestGeoReqScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			geoReq.Geo = tt.reqGeo
 			stakeEntry.Geolocation = tt.providerGeo
-			pairingScore := NewPairingScore(&stakeEntry, types.QualityOfServiceReport{})
+			pairingScore := NewPairingScore(&stakeEntry, math.LegacyZeroDec())
 			score := geoReq.Score(*pairingScore)
 			require.True(t, score.Equal(calculateCostFromLatency(tt.expectedLatency)))
 		})

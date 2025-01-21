@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -66,7 +67,7 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 
 	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
+		return nil, fmt.Errorf("failed to create the first connection: %w, url: %s", err, nodeUrl.UrlStr())
 	}
 
 	connector.addClient(rpcClient)
@@ -106,6 +107,18 @@ func (connector *Connector) numberOfUsedClients() int {
 	return int(atomic.LoadInt64(&connector.usedClients))
 }
 
+func (connector *Connector) getRpcClient(ctx context.Context, nodeUrl common.NodeUrl) (*rpcclient.Client, error) {
+	authPathNodeUrl := nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url)
+	// origin used for auth header in the websocket case
+	authHeaders := nodeUrl.GetAuthHeaders()
+	rpcClient, err := rpcclient.DialContext(ctx, authPathNodeUrl, authHeaders)
+	if err != nil {
+		return nil, err
+	}
+	nodeUrl.SetAuthHeaders(ctx, rpcClient.SetHeader)
+	return rpcClient, nil
+}
+
 func (connector *Connector) createConnection(ctx context.Context, nodeUrl common.NodeUrl, currentNumberOfConnections int) (*rpcclient.Client, error) {
 	var rpcClient *rpcclient.Client
 	var err error
@@ -123,21 +136,13 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 		}
 		timeout := common.AverageWorldLatency * (1 + time.Duration(numberOfConnectionAttempts))
 		nctx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, timeout)
-		// add auth path
-		authPathNodeUrl := nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url)
-		rpcClient, err = rpcclient.DialContext(nctx, authPathNodeUrl)
+		// get rpcClient
+		rpcClient, err = connector.getRpcClient(nctx, nodeUrl)
 		if err != nil {
-			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{
-				{Key: "Current Number Of Connections", Value: currentNumberOfConnections},
-				{Key: "Network Address", Value: authPathNodeUrl},
-				{Key: "Number Of Attempts", Value: numberOfConnectionAttempts},
-				{Key: "timeout", Value: timeout},
-			}...)
 			cancel()
 			continue
 		}
 		cancel()
-		nodeUrl.SetAuthHeaders(ctx, rpcClient.SetHeader)
 		break
 	}
 
@@ -177,7 +182,8 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
-		rpcClient, err = rpcclient.DialContext(nctx, connector.nodeUrl.Url)
+		// get rpcClient
+		rpcClient, err = connector.getRpcClient(nctx, connector.nodeUrl)
 		if err != nil {
 			utils.LavaFormatDebug(
 				"could no increase number of connections to the node jsonrpc connector, retrying",

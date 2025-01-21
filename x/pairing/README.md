@@ -21,6 +21,8 @@ The pairing module is one of Lava's core modules and is closely connected to the
     * [Filters](#filters)
     * [Scores](#scores)
     * [Quality Of Service](#quality-of-service)
+	  * [Reputation](#reputation)
+	  * [Passable QoS](#passable-qos)
     * [Pairing Verification](#pairing-verification)
     * [Unresponsiveness](#unresponsiveness)
     * [Static Providers](#static-providers)
@@ -197,17 +199,17 @@ Finally, we calculate the score of each provider for a specific slot and select 
 
 #### Quality Of Service
 
-##### Excellence QoS
+##### Reputation
 
-The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system.
+The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS excellence metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system. The provider's performance metric is called "Reputation". Higher reputation indicates higher QoS scores.
 
 To further enhance the integrity of the QoS scores, updates are aggregated across all consumers in a manner that safeguards against false reports. Negative reports are weighted by usage, meaning that a consumer must actively use and pay a provider to diminish their QoS score. This mechanism discourages users from artificially lowering a provider's score.
 
-These QoS excellence metrics only affect pairings and are aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the QoS system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
+The Reputation metric only affect pairings and is aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the reputation system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
 
-##### QoS
+##### Passable QoS
 
-In the Lava Network, alongside the comprehensive Quality of Service of Excellence metrics, there exists an additional metric known as Passable QoS. Unlike Excellence QoS, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
+In the Lava Network, alongside the comprehensive Reputation metric (which is calculated using QoS excellence reports), there exists an additional metric known as Passable QoS. Unlike Reputation, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
 
 The Passable QoS score directly influences the total payout for a specific payment; however, it's important to note that only 50% of the payout is exposed to this metric (can be changed via governance). This allocation ensures a balance between incentivizing excellent service and discouraging poor performance.
 
@@ -322,6 +324,22 @@ EpochBlocksOverlap is the number of blocks a consumer waits before interacting w
 
 RecommendedEpochNumToCollectPayment is the recommended max number of epochs for providers to claim payments. It's also used for determining unresponsiveness.
 
+### ReputationVarianceStabilizationPeriod
+
+ReputationVarianceStabilizationPeriod is the period in which reputation reports are not truncated due to variance.
+
+### ReputationLatencyOverSyncFactor
+
+ReputationLatencyOverSyncFactor is the factor that decreases the reputation's sync report influence when calculating the reputation score.
+
+### ReputationHalfLifeFactor
+
+ReputationHalfLifeFactor is the half life factor that determines the degradation in old reputation samples (when the reputation is updated).
+
+### ReputationRelayFailureCost
+
+ReputationRelayFailureCost is the cost (in seconds) for a failed relay sent from the consumer to the provider. This is part of the reputation report calculation.
+
 ## Queries
 
 The pairing module supports the following queries:
@@ -334,8 +352,13 @@ The pairing module supports the following queries:
 | `list-epoch-payments`     | none  | show all epochPayment objects                  |
 | `list-provider-payment-storage`     | none  | show all providerPaymentStorage objects                 |
 | `list-unique-payment-storage-client-provider`     | none  | show all uniquePaymentStorageClientProvider objects                 |
+| `provider`     | chain-id (string)  | show a provider staked on a specific chain                  |
 | `provider-monthly-payout`     | provider (string)  |  show the current monthly payout for a specific provider                 |
+| `provider-pairing-chance`     | provider (string), chain-id (string)  | show the chance of a provider has to be part of the pairing list for a specific chain                 |
+| `provider-reputation`     | provider (string), chain-id (string), cluster (string)  | show the provider's rank compared to other provider with the same chain-id and cluster by their reputation score                |
+| `provider-reputation-details`     | provider (string), chain-id (string), cluster (string)  | developer query to show the provider's reputation score raw data                |
 | `providers`     | chain-id (string)  | show all the providers staked on a specific chain                  |
+| `providers-epoch-cu`     |   | developer query to list the amount of CU serviced by all the providers every epoch               |
 | `sdk-pairing`     | none  | query used by Lava-SDK to get all the required pairing info                  |
 | `show-epoch-payments`     | index (string)  | show an epochPayment object by index                  |
 | `show-provider-payment-storage`     | index (string)  | show a providerPaymentStorage object by index                  |

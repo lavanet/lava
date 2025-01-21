@@ -180,12 +180,14 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_PARAMS)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
+	utils.LavaFormatTrace("ParseBlockFromParams result", utils.LogAttr("parsedInput", parsedInput))
 	return parsedInput
 }
 
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_RESULT)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
+	utils.LavaFormatTrace("ParseBlockFromReply result", utils.LogAttr("parsedInput", parsedInput))
 	return parsedInput
 }
 
@@ -315,13 +317,26 @@ func (p *ParsedInput) GetBlockHashes() ([]string, error) {
 }
 
 func getMapForParse(rpcInput RPCInput) map[string]interface{} {
-	var result map[string]interface{}
-	rpcInputResult := rpcInput.GetResult()
-	if rpcInputResult != nil {
-		json.Unmarshal(rpcInputResult, &result)
+	result := parseRawResult(rpcInput.GetResult())
+	return map[string]interface{}{
+		"params": rpcInput.GetParams(),
+		"result": result,
+		"error":  rpcInput.GetError().ToMap(),
+	}
+}
+
+func parseRawResult(rawResult json.RawMessage) interface{} {
+	if rawResult == nil {
+		return nil
 	}
 
-	return map[string]interface{}{"params": rpcInput.GetParams(), "result": result, "error": rpcInput.GetError().ToMap()}
+	var result interface{}
+	if err := json.Unmarshal(rawResult, &result); err != nil {
+		utils.LavaFormatError("failed to unmarshal result", err, utils.LogAttr("result", rawResult))
+		return nil
+	}
+
+	return result
 }
 
 func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {

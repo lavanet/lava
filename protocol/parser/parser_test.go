@@ -75,7 +75,6 @@ func TestAppendInterfaceToInterfaceArray(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -126,7 +125,6 @@ func TestParseArrayOfInterfaces(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -585,7 +583,6 @@ func TestParseBlockFromParams(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
@@ -760,10 +757,31 @@ func TestParseBlockFromReply(t *testing.T) {
 			expected:      123,
 			expectedError: "expected 321, received 123",
 		},
+		{
+			name: "generic_parser_parse_from_array_result",
+			rpcInput: &RPCInputTest{
+				Result: []byte(`
+					[
+						{
+							"foo": {
+								"bar": 123
+							}
+						}
+					]
+				`),
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".result.[0].foo.bar",
+					Value:     "123",
+					ParseType: spectypes.PARSER_TYPE_RESULT,
+				},
+			},
+			expected: 123,
+		},
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			parsedInput := ParseBlockFromReply(test.rpcInput, test.blockParser, test.genericParsers)
@@ -827,9 +845,8 @@ func TestParseBlockFromParamsHash(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			parsedInput := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
 			parsedHashes, err := parsedInput.GetBlockHashes()
 			if test.expectedHash == "" {

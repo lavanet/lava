@@ -176,6 +176,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
+		if AllowMissingApisByDefault {
+			apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
+			return apip.defaultApiContainer(apiKey)
+		}
 		utils.LavaFormatDebug("rest api not supported",
 			utils.LogAttr("name", name),
 			utils.LogAttr("connectionType", connectionType),
@@ -574,10 +578,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		},
 	}
 
-	// checking if rest reply data is in json format
-	err = rcp.HandleJSONFormatError(reply.RelayReply.Data)
-	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.RelayReply.Data)})
+	if strings.Split(nodeMessage.Path, "?")[0] != "/" {
+		// checking if rest reply data is in json format
+		err = rcp.HandleJSONFormatError(reply.RelayReply.Data)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.RelayReply.Data)})
+		}
 	}
 
 	return reply, "", nil, nil

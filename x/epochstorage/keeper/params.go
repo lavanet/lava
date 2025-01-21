@@ -105,10 +105,14 @@ func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart
 	return targetEpochStart, blockInTargetEpoch, err
 }
 
+func CalculateNextEpochBlock(epochStart uint64, epochBlocks uint64) uint64 {
+	return epochStart + epochBlocks
+}
+
 func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error) {
 	epochBlocks, err := k.EpochBlocks(ctx, block)
 	epochStart, _, err2 := k.GetEpochStartForBlock(ctx, block)
-	nextEpoch = epochStart + epochBlocks
+	nextEpoch = CalculateNextEpochBlock(epochStart, epochBlocks)
 	if err != nil {
 		erro = err
 	} else if err2 != nil {
@@ -121,7 +125,7 @@ func (k Keeper) GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64) {
 	epochBlocks := k.EpochBlocksRaw(ctx)
 	details, found := k.GetEpochDetails(ctx)
 	if details.EarliestStart == details.StartBlock {
-		nextEpoch = details.StartBlock + epochBlocks
+		nextEpoch = CalculateNextEpochBlock(details.StartBlock, epochBlocks)
 		if !found {
 			utils.LavaFormatPanic("blabla", nil)
 		}

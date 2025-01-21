@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v4/utils/score"
 )
 
 // QoS (quality of service) is a report that consists three metrics that are
@@ -111,6 +113,7 @@ func WithBlockErrorProbability(probability sdk.Dec) Option {
 //
 // Important: when using this function from the node's code, do not configure the block error probability
 // (in default mode, it's unused)
+// TODO: after the reputation feature is merged, use this method to calculate the QoS excellence score
 func (qos *QualityOfServiceReport) ComputeQoSExcellence(opts ...Option) (sdk.Dec, error) {
 	if err := qos.Validate(); err != nil {
 		return sdk.ZeroDec(), err
@@ -135,6 +138,18 @@ func (qos *QualityOfServiceReport) ComputeQoSExcellence(opts ...Option) (sdk.Dec
 	return latency.Add(sync).Add(availability), nil
 }
 
+func (qos *QualityOfServiceReport) ComputeQoSExcellenceFloat64(opts ...Option) (float64, error) {
+	scoreDec, err := qos.ComputeQoSExcellence(opts...)
+	if err != nil {
+		return 0, err
+	}
+	score, err := scoreDec.Float64()
+	if err != nil {
+		return 0, err
+	}
+	return score, nil
+}
+
 func (qos *QualityOfServiceReport) Validate() error {
 	if qos.Latency.IsNegative() {
 		return fmt.Errorf("invalid QoS latency, latency is negative: %s", qos.Latency.String())
@@ -157,4 +172,24 @@ func (qos *QualityOfServiceReport) ComputeQoS() (sdk.Dec, error) {
 	}
 
 	return qos.Availability.Mul(qos.Sync).Mul(qos.Latency).ApproxRoot(3)
+}
+
+func (qos *QualityOfServiceReport) GetScoresFloat64() (float64, float64, float64) {
+	latency, err := qos.Latency.Float64()
+	if err != nil {
+		utils.LavaFormatError("critical: failed to convert latency score to float64", err, utils.LogAttr("latency", qos.Latency.String()))
+		latency = score.WorstLatencyScore
+	}
+	sync, err := qos.Sync.Float64()
+	if err != nil {
+		utils.LavaFormatError("critical: failed to convert sync score to float64", err, utils.LogAttr("sync", qos.Sync.String()))
+		sync = score.WorstSyncScore
+	}
+	availability, err := qos.Availability.Float64()
+	if err != nil {
+		utils.LavaFormatError("critical: failed to convert availability score to float64", err, utils.LogAttr("availability", qos.Availability.String()))
+		availability = score.WorstAvailabilityScore
+	}
+
+	return latency, sync, availability
 }

@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"strings"
-
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/x/spec/types"
@@ -15,15 +13,6 @@ type Migrator struct {
 
 func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
-}
-
-func (m Migrator) Migrate2to3(ctx sdk.Context) error {
-	specs := m.keeper.GetAllSpec(ctx)
-	for _, spec := range specs {
-		spec.Name = strings.ToLower(spec.Name)
-		m.keeper.SetSpec(ctx, spec)
-	}
-	return nil
 }
 
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {

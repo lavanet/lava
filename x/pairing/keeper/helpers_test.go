@@ -2,11 +2,13 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/testutil/common"
 	testutil "github.com/lavanet/lava/v4/testutil/keeper"
+	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v4/x/plans/types"
@@ -151,9 +153,39 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	return ts
 }
 
+const (
+	GreatQos = iota
+	GoodQos
+	BadQos
+)
+
+func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pairingtypes.QualityOfServiceReport) {
+	ts.setupForPayments(0, 1, 5) // 0 providers, 1 client, default providers-to-pair
+
+	greatQos := pairingtypes.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
+	goodQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(3), Availability: sdk.OneDec(), Sync: sdk.NewDec(3)}
+	badQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
+
+	if modifyHalfLifeFactor {
+		// set half life factor to be epoch time
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &pairingtypes.QueryParamsRequest{})
+		require.NoError(ts.T, err)
+		resQParams.Params.ReputationHalfLifeFactor = uint64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+	}
+
+	// set min self delegation to zero
+	resQParams2, err := ts.Keepers.Dualstaking.Params(ts.GoCtx, &dualstakingtypes.QueryParamsRequest{})
+	require.NoError(ts.T, err)
+	resQParams2.Params.MinSelfDelegation = sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())
+	ts.Keepers.Dualstaking.SetParams(ts.Ctx, resQParams2.Params)
+
+	return ts, []pairingtypes.QualityOfServiceReport{greatQos, goodQos, badQos}
+}
+
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
-// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// The providerRewardPerc arg is the part of the provider reward after deducting
 // the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
@@ -229,11 +261,25 @@ func (ts *tester) payAndVerifyBalance(
 	require.Nil(ts.T, err)
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
-
-	// advance month + blocksToSave + 1 to trigger the provider monthly payment
-	ts.AdvanceMonths(1)
-	ts.AdvanceEpoch()
-	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	timeToExpiry := time.Unix(int64(sub.Sub.MonthExpiryTime), 0)
+	durLeft := sub.Sub.DurationLeft
+	if timeToExpiry.After(ts.Ctx.BlockTime()) && relayPayment.DescriptionString == exactConst {
+		ts.AdvanceTimeHours(timeToExpiry.Sub(ts.Ctx.BlockTime()))
+		// subs only pays after blocks to save
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+		if durLeft > 0 {
+			sub, err = ts.QuerySubscriptionCurrent(proj.Project.Subscription)
+			require.Nil(ts.T, err)
+			require.NotNil(ts.T, sub.Sub)
+			require.Equal(ts.T, durLeft-1, sub.Sub.DurationLeft, "month expiry time: %s current time: %s", time.Unix(int64(sub.Sub.MonthExpiryTime), 0).UTC(), ts.BlockTime().UTC())
+		}
+	} else {
+		// advance month + blocksToSave + 1 to trigger the provider monthly payment
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
 
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
@@ -248,7 +294,7 @@ func (ts *tester) payAndVerifyBalance(
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
-	require.True(ts.T, want.IsZero())
+	require.True(ts.T, want.IsZero(), want)
 	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
@@ -303,4 +349,22 @@ func (ts *tester) newRelaySession(
 		RelayNum:    relay,
 	}
 	return relaySession
+}
+
+func (ts *tester) isProviderFrozen(provider string, chain string) bool {
+	res, err := ts.QueryPairingProvider(provider, chain)
+	require.NoError(ts.T, err)
+	foundChain := false
+	var isFrozen bool
+	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Address == provider && stakeEntry.Chain == chain {
+			foundChain = true
+			isFrozen = stakeEntry.IsFrozen()
+			break
+		}
+	}
+	if !foundChain {
+		require.Fail(ts.T, "provider not staked in chain", "provider: %s, chain: %s", provider, chain)
+	}
+	return isFrozen
 }

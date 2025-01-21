@@ -10,11 +10,13 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	epochkeeper "github.com/lavanet/lava/v4/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingkeeper "github.com/lavanet/lava/v4/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v4/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
@@ -64,7 +66,7 @@ type StateQuery struct {
 	epochStorageQueryClient epochstoragetypes.QueryClient
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
-	ResponsesCache          *ristretto.Cache
+	ResponsesCache          *ristretto.Cache[string, any]
 	tendermintRPC
 	client.TendermintRPC
 }
@@ -72,7 +74,7 @@ type StateQuery struct {
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
 	sq := &StateQuery{}
 	sq.UpdateAccess(accessInf)
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
@@ -183,7 +185,17 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 		Client:  csq.fromAddress,
 	})
 	if err != nil {
-		return nil, 0, 0, utils.LavaFormatError("Failed in get pairing query", err, utils.Attribute{})
+		// if we can't get pairing, try to get epoch details and params
+		epochParamsResp, epochParamsErr := csq.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
+		epochDetailsResp, epochDetailsErr := csq.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+		pairingParamsResp, pairingParamsErr := csq.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+		if epochDetailsErr != nil || epochParamsErr != nil || pairingParamsErr != nil {
+			return nil, 0, 0, err // if we can't get epoch details or params, return the original error
+		}
+
+		nextEpochBlock := epochkeeper.CalculateNextEpochBlock(epochDetailsResp.EpochDetails.StartBlock, epochParamsResp.Params.EpochBlocks)
+		nextPairingBlock := pairingkeeper.CalculateNextPairingUpdateBlock(nextEpochBlock, pairingParamsResp.Params.EpochBlocksOverlap)
+		return nil, epochDetailsResp.EpochDetails.StartBlock, nextPairingBlock, err
 	}
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)

@@ -21,3 +21,15 @@ static-providers:
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
+  - api-interface: tendermintrpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2221
+  - api-interface: grpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2221
+  - api-interface: rest
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2221

@@ -1,0 +1,18 @@
+# Avalanche provider example with internal paths, 
+# C-chain is the only one supporting websocket therefore its a must to have it
+endpoints:
+  - api-interface: jsonrpc
+    chain-id: AVAX
+    network-address:
+      address: 127.0.0.1:2221
+    node-urls:
+      - url: ws://127.0.0.1:3333/C/ws
+        internal-path: "/C/rpc" # c chain as specified in the spec
+      - url: https://127.0.0.1:3334/C/rpc
+        internal-path: "/C/rpc" # c/rpc as specified in the spec
+      - url: https://127.0.0.1:3334/C/avax
+        internal-path: "/C/avax" # c/avax as specified in the spec
+      - url: https://127.0.0.1:3335/X
+        internal-path: "/X" # x chain as specified in the spec
+      - url: https://127.0.0.1:3336/P
+        internal-path: "/P" # p chain as specified in the spec
