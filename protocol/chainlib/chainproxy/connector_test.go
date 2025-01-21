@@ -2,6 +2,7 @@ package chainproxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"github.com/lavanet/lava/v4/utils"
 	pb_pkg "github.com/lavanet/lava/v4/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/websocket"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -185,7 +187,7 @@ func TestMain(m *testing.M) {
 	listener := createRPCServer()
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		_, err := rpcclient.DialContext(ctx, listenerAddressTcp)
+		_, err := rpcclient.DialContext(ctx, listenerAddressTcp, nil)
 		if err != nil {
 			utils.LavaFormatDebug("waiting for grpc server to launch")
 			continue
@@ -198,4 +200,90 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	listener.Close()
 	os.Exit(code)
+}
+
+func TestConnectorWebsocket(t *testing.T) {
+	// Set up auth headers we expect
+	expectedAuthHeader := "Bearer test-token"
+
+	// Create WebSocket server with auth check
+	srv := &http.Server{
+		Addr: "localhost:0", // random available port
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Check auth header
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != expectedAuthHeader {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			fmt.Println("connection OK!")
+			// Upgrade to websocket
+			upgrader := websocket.Server{
+				Handler: websocket.Handler(func(ws *websocket.Conn) {
+					defer ws.Close()
+					// Simple echo server
+					for {
+						var msg string
+						err := websocket.Message.Receive(ws, &msg)
+						if err != nil {
+							break
+						}
+						websocket.Message.Send(ws, msg)
+					}
+				}),
+			}
+			upgrader.ServeHTTP(w, r)
+		}),
+	}
+
+	// Start server
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	go srv.Serve(listener)
+	wsURL := "ws://" + listener.Addr().String()
+
+	// Create connector with auth config
+	ctx := context.Background()
+	nodeUrl := common.NodeUrl{
+		Url: wsURL,
+		AuthConfig: common.AuthConfig{
+			AuthHeaders: map[string]string{
+				"Authorization": expectedAuthHeader,
+			},
+		},
+	}
+
+	// Create connector
+	conn, err := NewConnector(ctx, numberOfClients, nodeUrl)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Wait for connections to be established
+	for {
+		if len(conn.freeClients) == numberOfClients {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Get a client and test the connection
+	client, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+
+	// Test sending a message using CallContext
+	params := map[string]interface{}{
+		"test": "value",
+	}
+	id := json.RawMessage(`1`)
+	_, err = client.CallContext(ctx, id, "test_method", params, true, true)
+	require.NoError(t, err)
+
+	// Return the client
+	conn.ReturnRpc(client)
+
+	// Verify connection pool state
+	require.Equal(t, int64(0), conn.usedClients)
+	require.Equal(t, numberOfClients, len(conn.freeClients))
 }
