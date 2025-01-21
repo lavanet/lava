@@ -5,6 +5,7 @@ import sys
 
 payload_ret = "OK"
 
+
 class RequestHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.csv_file_name = kwargs.pop('csv_file_name', 'data.csv')
@@ -50,12 +51,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             print(f"Body:\n{body.decode('utf-8')}")
 
+
 def run_server(port=8000, csv_file_name='data.csv'):
     server_address = ('', port)
-    handler = lambda *args, **kwargs: RequestHandler(*args, csv_file_name=csv_file_name, **kwargs)
+
+    def handler(*args, **kwargs):
+        return RequestHandler(*args, csv_file_name=csv_file_name, **kwargs)
     httpd = HTTPServer(server_address, handler)
     print(f"Server running on port {port}, writing to {csv_file_name}")
     httpd.serve_forever()
+
 
 if __name__ == '__main__':
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
