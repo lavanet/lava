@@ -80,14 +80,6 @@ type ConsumerMetricsManager struct {
 	optimizerProviderAvailability *prometheus.GaugeVec
 	optimizerProviderTier         *prometheus.GaugeVec
 	optimizerTierChance           *prometheus.GaugeVec
-
-	// refactored optimizer metrics
-	optimizerRefactorProviderScore        *prometheus.GaugeVec
-	optimizerRefactorProviderLatency      *prometheus.GaugeVec
-	optimizerRefactorProviderSync         *prometheus.GaugeVec
-	optimizerRefactorProviderAvailability *prometheus.GaugeVec
-	optimizerRefactorProviderTier         *prometheus.GaugeVec
-	optimizerRefactorTierChance           *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -296,38 +288,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "[Optimizer] The chances of a tier being selected by the optimizer",
 	}, []string{"spec", "api_interface", "tier", "epoch"})
 
-	//
-
-	optimizerRefactorProviderScore := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_score",
-		Help: "[Optimizer Refactor] The total score of a provider",
-	}, []string{"spec", "api_interface", "provider_address", "epoch"})
-
-	optimizerRefactorProviderLatency := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_latency",
-		Help: "[Optimizer Refactor] The latency of a provider",
-	}, []string{"spec", "api_interface", "provider_address", "epoch"})
-
-	optimizerRefactorProviderSync := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_sync",
-		Help: "[Optimizer Refactor] The sync of a provider",
-	}, []string{"spec", "api_interface", "provider_address", "epoch"})
-
-	optimizerRefactorProviderAvailability := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_availability",
-		Help: "[Optimizer Refactor] The availability of a provider",
-	}, []string{"spec", "api_interface", "provider_address", "epoch"})
-
-	optimizerRefactorProviderTier := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_tier",
-		Help: "[Optimizer Refactor] The tier of a provider",
-	}, []string{"spec", "api_interface", "provider_address", "epoch"})
-
-	optimizerRefactorTierChance := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_optimizer_provider_tiers_chances",
-		Help: "[Optimizer Refactor] The chances of a tier being selected by the optimizer",
-	}, []string{"spec", "api_interface", "tier", "epoch"})
-
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -403,15 +363,9 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		optimizerProviderTier:         optimizerProviderTier,
 		optimizerTierChance:           optimizerTierChance,
 
-		optimizerRefactorProviderScore:        optimizerRefactorProviderScore,
-		optimizerRefactorProviderLatency:      optimizerRefactorProviderLatency,
-		optimizerRefactorProviderSync:         optimizerRefactorProviderSync,
-		optimizerRefactorProviderAvailability: optimizerRefactorProviderAvailability,
-		optimizerRefactorProviderTier:         optimizerRefactorProviderTier,
-		optimizerRefactorTierChance:           optimizerRefactorTierChance,
-		totalLoLSuccessMetric:                 totalLoLSuccessMetric,
-		totalLoLErrorsMetric:                  totalLoLErrorsMetric,
-		consumerOptimizerQoSClient:            options.ConsumerOptimizerQoSClient,
+		totalLoLSuccessMetric:      totalLoLSuccessMetric,
+		totalLoLErrorsMetric:       totalLoLErrorsMetric,
+		consumerOptimizerQoSClient: options.ConsumerOptimizerQoSClient,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -715,61 +669,37 @@ func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chain
 	pme.totalWsSubscriptionDisconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
 }
 
-func (pme *ConsumerMetricsManager) SetOptimizerProviderScoreMetric(chainId string, apiInterface string, providerAddress string, epoch uint64, scoreType string, refactored bool, score float64) {
+func (pme *ConsumerMetricsManager) SetOptimizerProviderScoreMetric(chainId string, apiInterface string, providerAddress string, epoch uint64, scoreType string, score float64) {
 	if pme == nil {
 		return
 	}
 
 	switch scoreType {
 	case scoreutils.LatencyScoreType:
-		if refactored {
-			pme.optimizerRefactorProviderLatency.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		} else {
-			pme.optimizerProviderLatency.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		}
+		pme.optimizerProviderLatency.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
 	case scoreutils.SyncScoreType:
-		if refactored {
-			pme.optimizerRefactorProviderSync.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		} else {
-			pme.optimizerProviderSync.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		}
+		pme.optimizerProviderSync.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
 	case scoreutils.AvailabilityScoreType:
-		if refactored {
-			pme.optimizerRefactorProviderAvailability.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		} else {
-			pme.optimizerProviderAvailability.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		}
+		pme.optimizerProviderAvailability.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
 	case scoreutils.TotalScoreType:
-		if refactored {
-			pme.optimizerRefactorProviderScore.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		} else {
-			pme.optimizerProviderScore.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
-		}
+		pme.optimizerProviderScore.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(score)
 	default:
 		utils.LavaFormatError("Unknown score type", nil, utils.Attribute{Key: "scoreType", Value: scoreType})
 	}
 }
 
-func (pme *ConsumerMetricsManager) SetOptimizerProviderTierMetric(chainId string, apiInterface string, providerAddress string, epoch uint64, refactored bool, tier int) {
+func (pme *ConsumerMetricsManager) SetOptimizerProviderTierMetric(chainId string, apiInterface string, providerAddress string, epoch uint64, tier int) {
 	if pme == nil {
 		return
 	}
-	if refactored {
-		pme.optimizerRefactorProviderTier.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(float64(tier))
-	} else {
-		pme.optimizerProviderTier.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(float64(tier))
-	}
+	pme.optimizerProviderTier.WithLabelValues(chainId, apiInterface, providerAddress, fmt.Sprintf("%d", epoch)).Set(float64(tier))
 }
 
-func (pme *ConsumerMetricsManager) SetOptimizerTierChanceMetric(chainId string, apiInterface string, tier int, epoch uint64, refactored bool, chance float64) {
+func (pme *ConsumerMetricsManager) SetOptimizerTierChanceMetric(chainId string, apiInterface string, tier int, epoch uint64, chance float64) {
 	if pme == nil {
 		return
 	}
-	if refactored {
-		pme.optimizerRefactorTierChance.WithLabelValues(chainId, apiInterface, fmt.Sprintf("%d", tier), fmt.Sprintf("%d", epoch)).Set(chance)
-	} else {
-		pme.optimizerTierChance.WithLabelValues(chainId, apiInterface, fmt.Sprintf("%d", tier), fmt.Sprintf("%d", epoch)).Set(chance)
-	}
+	pme.optimizerTierChance.WithLabelValues(chainId, apiInterface, fmt.Sprintf("%d", tier), fmt.Sprintf("%d", epoch)).Set(chance)
 }
 func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 	if pme == nil {
