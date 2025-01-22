@@ -256,6 +256,7 @@ func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventR
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
+		// if provider is not specified we return true and an empty map since the event does not include a total reward
 		if provider == "" {
 			return nil, true
 		} else if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
@@ -335,6 +336,7 @@ func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, source
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
+		// if provider is not specified we return the total rewards for the chain ID
 		if provider == "" {
 			if atr.Key == "chainid" {
 				chainID = atr.Value
