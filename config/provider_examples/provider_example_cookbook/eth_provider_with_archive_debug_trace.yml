@@ -11,22 +11,40 @@ endpoints:
       network-address:
         address: "127.0.0.1:2224"
       node-urls:
-        - url: http://my-eth-node.com/eth/http/archive
+        - url: http://8.52.134.76:7781
           addons:
             - archive
-        - url: ws://my-eth-node.com/eth/archive/ws
+        - url: ws://207.121.25.84:336/bsc-archival-ws/
           addons:
             - archive
-        - url: http://my-eth-node.com/eth/http/archive
+        - url: http://8.52.134.76:7781
+          addons:
+            - archive
+            - debug
+        - url: ws://207.121.25.84:336/bsc-archival-ws/
+          addons:
+            - archive
+            - debug
+        - url: http://8.52.134.76:7781
+          addons:
+            - archive
+            - trace
+        - url: ws://207.121.25.84:336/bsc-archival-ws/
+          addons:
+            - archive
+            - trace
+        - url: http://127.0.0.18:8575
           addons:
             - debug
-        - url: ws://my-eth-node.com/eth/archive/ws
+        - url: ws://127.0.0.18:8576
           addons:
             - debug
-        - url: http://my-eth-node.com/eth/http/archive
+        - url: http://8.52.134.76:7781
           addons:
             - trace
-        - url: ws://my-eth-node.com/eth/archive/ws
+        - url: ws://207.121.25.84:336/bsc-archival-ws/
           addons:
             - trace
+        - url: http://127.0.0.18:8575
+        - url: ws://127.0.0.18:8576
         
