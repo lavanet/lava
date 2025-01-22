@@ -232,6 +232,7 @@ func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (info
 // it builds the "source" string that is required for the estimated rewards info. Also it returns the
 // rewards amount of the provider for a specific payment type and a specific chain
 // if it returns ok == false, the event is not relevant and can be skipped
+// if provider is not specified, the event is relevant and the total rewards for the chain ID are returned
 func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
 	subEventName := utils.EventPrefix + types.SubscriptionPayoutEventName
 	boostEventName := utils.EventPrefix + rewardstypes.ProvidersBonusRewardsEventName
@@ -332,6 +333,7 @@ func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsI
 // All keys are prefixed with provider addresses. Since the events are emitted per chain ID,
 // we expect a single reward key for a specific provider. Also, the reward string in the event
 // is of type sdk.Coins.
+// if provider is not specified, the event is relevant and the total rewards for the chain ID are returned
 func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, sourcePrefix string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
 	var rewardStr, chainID string
 	eventRewardsInfo = map[string]sdk.DecCoins{}
