@@ -75,7 +75,8 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	// get claimable rewards before the rewards distribution
 	before, err := k.getClaimableRewards(ctx, req.Provider, delegator)
 	if err != nil {
-		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards before distribution", err, details...)
+		// no rewards before distribution
+		before = sdk.NewCoins()
 	}
 
 	// we use events to get the detailed info about the rewards (for the provider only use-case)
