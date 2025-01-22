@@ -501,7 +501,7 @@ func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription s
 	}
 
 	syncFactor := k.ReputationLatencyOverSyncFactor(ctx)
-	score, err := relay.QosExcellenceReport.ComputeQosExcellenceForReputation(syncFactor)
+	score, err := relay.QosExcellenceReport.ComputeQoSExcellence(types.WithSyncFactor(syncFactor))
 	if err != nil {
 		return utils.LavaFormatWarning("RelayPayment: could not compute qos excellence score", err,
 			utils.LogAttr("consumer", subscription),
