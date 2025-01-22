@@ -11,40 +11,38 @@ endpoints:
       network-address:
         address: "127.0.0.1:2224"
       node-urls:
-        - url: http://8.52.134.76:7781
+        - url: http://my-eth-node.com/eth/http/archive
           addons:
             - archive
-        - url: ws://207.121.25.84:336/bsc-archival-ws/
+        - url: ws://my-eth-node.com/eth/archive/ws
           addons:
             - archive
-        - url: http://8.52.134.76:7781
-          addons:
-            - archive
-            - debug
-        - url: ws://207.121.25.84:336/bsc-archival-ws/
-          addons:
-            - archive
-            - debug
-        - url: http://8.52.134.76:7781
-          addons:
-            - archive
-            - trace
-        - url: ws://207.121.25.84:336/bsc-archival-ws/
-          addons:
-            - archive
-            - trace
-        - url: http://127.0.0.18:8575
+        - url: http://my-eth-node.com/eth/http/deubg
           addons:
             - debug
-        - url: ws://127.0.0.18:8576
+        - url: ws://my-eth-node.com/eth/debug/ws
           addons:
             - debug
-        - url: http://8.52.134.76:7781
+        - url: http://my-eth-node.com/eth/http/trace
           addons:
             - trace
-        - url: ws://207.121.25.84:336/bsc-archival-ws/
+        - url: ws://my-eth-node.com/eth/trace/ws
           addons:
             - trace
-        - url: http://127.0.0.18:8575
-        - url: ws://127.0.0.18:8576
+        - url: http://my-eth-node.com/eth/http/debug+archive
+          addons:
+            - debug
+            - archive
+        - url: ws://my-eth-node.com/eth/debug+archive/ws
+          addons:
+            - debug
+            - archive
+        - url: http://my-eth-node.com/eth/http/trace+archive
+          addons:
+            - trace
+            - archive
+        - url: ws://my-eth-node.com/eth/trace+archive/ws
+          addons:
+            - trace
+            - archive
         
