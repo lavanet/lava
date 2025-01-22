@@ -701,6 +701,7 @@ func (pme *ConsumerMetricsManager) SetOptimizerTierChanceMetric(chainId string, 
 	}
 	pme.optimizerTierChance.WithLabelValues(chainId, apiInterface, fmt.Sprintf("%d", tier), fmt.Sprintf("%d", epoch)).Set(chance)
 }
+
 func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 	if pme == nil {
 		return
