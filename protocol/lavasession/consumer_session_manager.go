@@ -1075,7 +1075,7 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	}
 
 	var lastReputation *pairingtypes.QualityOfServiceReport
-	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReportRaw(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
+	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
 	if lastReputationReport != nil {
 		qosRep := *lastReputationReport
 		lastReputation = &qosRep

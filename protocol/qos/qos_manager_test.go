@@ -56,7 +56,7 @@ func TestAddFailedRelay(t *testing.T) {
 	require.Equal(t, uint64(0), answeredRelays)
 }
 
-func TestSetLastReputationQoSReportRaw(t *testing.T) {
+func TestSetLastReputationQoSReport(t *testing.T) {
 	qosManager := NewQoSManager()
 	epoch := uint64(1)
 	sessionID := int64(1)
@@ -66,10 +66,10 @@ func TestSetLastReputationQoSReportRaw(t *testing.T) {
 		Availability: sdk.NewDec(100),
 	}
 
-	doneChan := qosManager.SetLastReputationQoSReportRaw(epoch, sessionID, testReport)
+	doneChan := qosManager.SetLastReputationQoSReport(epoch, sessionID, testReport)
 	<-doneChan // Wait for processing
 
-	report := qosManager.GetLastReputationQoSReportRaw(epoch, sessionID)
+	report := qosManager.GetLastReputationQoSReport(epoch, sessionID)
 	require.NotNil(t, report)
 	require.Equal(t, testReport.Latency, report.Latency)
 	require.Equal(t, testReport.Availability, report.Availability)
@@ -144,11 +144,11 @@ func TestNilReportHandling(t *testing.T) {
 	sessionID := int64(1)
 
 	// Test setting nil report
-	doneChan := qosManager.SetLastReputationQoSReportRaw(epoch, sessionID, nil)
+	doneChan := qosManager.SetLastReputationQoSReport(epoch, sessionID, nil)
 	<-doneChan
 
 	// Verify nil handling
-	report := qosManager.GetLastReputationQoSReportRaw(epoch, sessionID)
+	report := qosManager.GetLastReputationQoSReport(epoch, sessionID)
 	require.Nil(t, report)
 
 	// Test non-existent epoch/session
@@ -196,7 +196,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 		}(i)
 	}
 
-	// Launch multiple goroutines for SetLastReputationQoSReportRaw
+	// Launch multiple goroutines for SetLastReputationQoSReport
 	for i := 0; i < numGoroutines; i++ {
 		go func(routineID int) {
 			defer wg.Done()
@@ -205,7 +205,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 					Latency:      sdk.NewDec(95),
 					Availability: sdk.NewDec(100),
 				}
-				doneChan := qosManager.SetLastReputationQoSReportRaw(uint64(routineID), int64(j), report)
+				doneChan := qosManager.SetLastReputationQoSReport(uint64(routineID), int64(j), report)
 				<-doneChan
 			}
 		}(i)
@@ -218,7 +218,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 		for j := 0; j < operationsPerGoroutine; j++ {
 			totalRelays := qosManager.GetTotalRelays(uint64(i), int64(j))
 			require.Equal(t, uint64(2), totalRelays) // 1 successful + 1 failed relay
-			require.NotNil(t, qosManager.GetLastReputationQoSReportRaw(uint64(i), int64(j)))
+			require.NotNil(t, qosManager.GetLastReputationQoSReport(uint64(i), int64(j)))
 		}
 	}
 }

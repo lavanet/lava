@@ -9,15 +9,14 @@ import (
 )
 
 type QoSReport struct {
-	lastQoSReport              *pairingtypes.QualityOfServiceReport
-	lastReputationQoSReport    *pairingtypes.QualityOfServiceReport
-	lastReputationQoSReportRaw *pairingtypes.QualityOfServiceReport
-	latencyScoreList           []sdk.Dec
-	syncScoreSum               int64
-	totalSyncScore             int64
-	totalRelays                uint64
-	answeredRelays             uint64
-	lock                       sync.RWMutex
+	lastQoSReport           *pairingtypes.QualityOfServiceReport
+	lastReputationQoSReport *pairingtypes.QualityOfServiceReport
+	latencyScoreList        []sdk.Dec
+	syncScoreSum            int64
+	totalSyncScore          int64
+	totalRelays             uint64
+	answeredRelays          uint64
+	lock                    sync.RWMutex
 }
 
 type DoneChan <-chan struct{}
@@ -92,15 +91,6 @@ func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) Done
 	return doneChan
 }
 
-func (qosManager *QoSManager) SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
-	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	qosManager.mutatorsQueue <- &QoSMutatorSetReputationRaw{
-		QoSMutatorBase: *qosMutatorBase,
-		report:         report,
-	}
-	return doneChan
-}
-
 func (qosManager *QoSManager) SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
 	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
 	qosManager.mutatorsQueue <- &QoSMutatorSetReputation{
@@ -130,7 +120,7 @@ func (qosManager *QoSManager) GetLastQoSReport(epoch uint64, sessionId int64) *p
 	return qosReport.lastQoSReport
 }
 
-func (qosManager *QoSManager) GetLastReputationQoSReportRaw(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport {
+func (qosManager *QoSManager) GetLastReputationQoSReport(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport {
 	qosReport := qosManager.getQoSReport(epoch, sessionId)
 	if qosReport == nil {
 		return nil
@@ -138,7 +128,7 @@ func (qosManager *QoSManager) GetLastReputationQoSReportRaw(epoch uint64, sessio
 
 	qosReport.lock.RLock()
 	defer qosReport.lock.RUnlock()
-	return qosReport.lastReputationQoSReportRaw
+	return qosReport.lastReputationQoSReport
 }
 
 func (qosManager *QoSManager) GetAnsweredRelays(epoch uint64, sessionId int64) uint64 {
