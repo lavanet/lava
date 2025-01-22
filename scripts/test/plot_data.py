@@ -41,6 +41,19 @@ def plot_graphs(data, provider, output_file, is_refactored=False):
 
     avg_node_error_rate = sum(node_error_rates) / len(node_error_rates)
 
+    # Filter out rows with generic_score > 1000
+    faulty_providers = [
+        entry['provider'] for entry in data
+        if float(entry['generic_score']) > 1000
+    ]
+    faulty_count = len(faulty_providers)
+
+    # Filtered DataFrame for plotting
+    plot_data = [
+        entry for entry in data
+        if float(entry['generic_score']) <= 1000
+    ]
+
     plt.figure(figsize=(10, 5))
     plt.plot(timestamps, sync_scores, label='Sync Score')
     plt.plot(timestamps, availability_scores, label='Availability Score')
@@ -58,6 +71,11 @@ def plot_graphs(data, provider, output_file, is_refactored=False):
     plt.tight_layout()
     plt.savefig(output_file)
     print(f"Plot saved as {output_file}")
+
+    # Output results
+    print("Faulty Providers:", faulty_providers)
+    print("Number of Faulty Providers:", faulty_count)
+    print("Plot Data:\n", plot_data)
 
 
 def plot_tier_chances_over_time(data, provider, output_file):

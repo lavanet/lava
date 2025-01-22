@@ -373,7 +373,7 @@ func (as *AvailabilityScoreStore) Resolve() (float64, error) {
 	// if the resolved score is equal to zero, return a very small number
 	// instead of zero since in the QoS Compute() method we divide by
 	// the availability score
-	if score == 0 {
+	if score <= WorstAvailabilityScore {
 		score = WorstAvailabilityScore
 	}
 	return score, nil
