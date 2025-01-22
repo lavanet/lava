@@ -85,14 +85,13 @@ type ignoredProviders struct {
 }
 
 type QoSReport struct {
-	LastQoSReport              *pairingtypes.QualityOfServiceReport
-	LastExcellenceQoSReport    *pairingtypes.QualityOfServiceReport
-	LastExcellenceQoSReportRaw *pairingtypes.QualityOfServiceReport
-	LatencyScoreList           []sdk.Dec
-	SyncScoreSum               int64
-	TotalSyncScore             int64
-	TotalRelays                uint64
-	AnsweredRelays             uint64
+	LastQoSReport           *pairingtypes.QualityOfServiceReport
+	LastExcellenceQoSReport *pairingtypes.QualityOfServiceReport
+	LatencyScoreList        []sdk.Dec
+	SyncScoreSum            int64
+	TotalSyncScore          int64
+	TotalRelays             uint64
+	AnsweredRelays          uint64
 }
 
 type DataReliabilitySession struct {
