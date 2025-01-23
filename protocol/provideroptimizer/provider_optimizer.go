@@ -481,7 +481,7 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 }
 
 func (po *ProviderOptimizer) validateUpdateError(err error, errorMsg string) error {
-	if !score.TimeConflictingScoreStoreError.Is(err) {
+	if !score.TimeConflictingScoresError.Is(err) {
 		utils.LavaFormatError(errorMsg, err)
 	}
 	return err

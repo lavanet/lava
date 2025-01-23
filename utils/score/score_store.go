@@ -194,7 +194,7 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	}
 
 	if ss.Time.After(sampleTime) {
-		return TimeConflictingScoreStoreError
+		return TimeConflictingScoresError
 	}
 
 	timeDiff := sampleTime.Sub(ss.Time).Seconds()
