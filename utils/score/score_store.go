@@ -3,6 +3,7 @@ package score
 import (
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
 	"cosmossdk.io/errors"
@@ -34,6 +35,7 @@ type ScoreStore struct {
 	Denom  float64
 	Time   time.Time
 	Config Config
+	lock   sync.RWMutex
 }
 
 // ScoreStorer defines the interface for all score stores
@@ -122,16 +124,23 @@ func NewScoreStore(scoreType string) ScoreStorer {
 
 // String prints a ScoreStore's fields
 func (ss *ScoreStore) String() string {
+	ss.lock.RLock()
+	defer ss.lock.RUnlock()
 	return fmt.Sprintf("num: %f, denom: %f, last_update_time: %s, config: %s",
 		ss.Num, ss.Denom, ss.Time.String(), ss.Config.String())
 }
 
 // Validate validates the ScoreStore's fields hold valid values
 func (ss *ScoreStore) Validate() error {
+	ss.lock.RLock()
+	defer ss.lock.RUnlock()
+	return ss.validateInner()
+}
+
+func (ss *ScoreStore) validateInner() error {
 	if ss.Num < 0 || ss.Denom <= 0 {
 		return fmt.Errorf("invalid %s ScoreStore: num or denom are non-positives, num: %f, denom: %f", ss.Name, ss.Num, ss.Denom)
 	}
-
 	if err := ss.Config.Validate(); err != nil {
 		return errors.Wrap(err, "invalid "+ss.Name+" ScoreStore")
 	}
@@ -140,7 +149,9 @@ func (ss *ScoreStore) Validate() error {
 
 // Resolve resolves the ScoreStore's frac by dividing the numerator by the denominator
 func (ss *ScoreStore) Resolve() (float64, error) {
-	if err := ss.Validate(); err != nil {
+	ss.lock.RLock()
+	defer ss.lock.RUnlock()
+	if err := ss.validateInner(); err != nil {
 		return 0, errors.Wrap(err, "cannot calculate "+ss.Name+" ScoreStore's score")
 	}
 	return ss.Num / ss.Denom, nil
@@ -148,6 +159,9 @@ func (ss *ScoreStore) Resolve() (float64, error) {
 
 // UpdateConfig updates the configuration of a ScoreStore
 func (ss *ScoreStore) UpdateConfig(opts ...Option) error {
+	ss.lock.Lock()
+	defer ss.lock.Unlock()
+
 	cfg := ss.Config
 	for _, opt := range opts {
 		opt(&cfg)
@@ -172,6 +186,8 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	if ss == nil {
 		return fmt.Errorf("cannot update ScoreStore, ScoreStore is nil")
 	}
+	ss.lock.Lock()
+	defer ss.lock.Unlock()
 
 	if sample < 0 {
 		return fmt.Errorf("cannot update %s ScoreStore, sample is negative: %f", ss.Name, sample)
@@ -192,11 +208,11 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 		return fmt.Errorf("invalid larger than 1 decay factor, factor: %f", decayFactor)
 	}
 
-	newNum, err := ss.CalcNewNum(sample, decayFactor)
+	newNum, err := ss.calcNewNum(sample, decayFactor)
 	if err != nil {
 		return err
 	}
-	newDenom, err := ss.CalcNewDenom(decayFactor)
+	newDenom, err := ss.calcNewDenom(decayFactor)
 	if err != nil {
 		return err
 	}
@@ -205,15 +221,15 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	ss.Denom = newDenom
 	ss.Time = sampleTime
 
-	if err := ss.Validate(); err != nil {
+	if err := ss.validateInner(); err != nil {
 		return errors.Wrap(err, "cannot update "+ss.Name+" ScoreStore's num and denom")
 	}
 
 	return nil
 }
 
-// CalcNewNum calculates the new numerator update and verifies it's not negative or overflowing
-func (ss *ScoreStore) CalcNewNum(sample float64, decayFactor float64) (float64, error) {
+// calcNewNum calculates the new numerator update and verifies it's not negative or overflowing
+func (ss *ScoreStore) calcNewNum(sample float64, decayFactor float64) (float64, error) {
 	if math.IsInf(ss.Num*decayFactor, 0) || math.IsInf(sample*ss.Config.Weight, 0) {
 		return 0, utils.LavaFormatError("cannot ScoreStore update numerator", fmt.Errorf("potential overflow"),
 			utils.LogAttr("score_store_name", ss.Name),
@@ -231,8 +247,8 @@ func (ss *ScoreStore) CalcNewNum(sample float64, decayFactor float64) (float64, 
 	return newNum, nil
 }
 
-// CalcNewDenom calculates the new denominator update and verifies it's strictly positive or not overflowing
-func (ss *ScoreStore) CalcNewDenom(decayFactor float64) (float64, error) {
+// calcNewDenom calculates the new denominator update and verifies it's strictly positive or not overflowing
+func (ss *ScoreStore) calcNewDenom(decayFactor float64) (float64, error) {
 	if math.IsInf(ss.Denom*decayFactor, 0) || math.IsInf(ss.Config.Weight, 0) {
 		return 0, utils.LavaFormatError("cannot ScoreStore update denominator", fmt.Errorf("potential overflow"),
 			utils.LogAttr("score_store_name", ss.Name),
