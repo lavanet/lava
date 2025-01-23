@@ -166,21 +166,32 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 	providerData, _ := po.getProviderData(provider)
 	halfTime := po.calculateHalfTime(provider, sampleTime)
 	weight := score.RelayUpdateWeight
-
+	var updateErr error
 	if success {
 		// on a successful relay, update all the QoS metrics
-		providerData = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 1, weight, halfTime, cu, sampleTime)
-		providerData = po.updateDecayingWeightedAverage(providerData, score.LatencyScoreType, latency.Seconds(), weight, halfTime, cu, sampleTime)
-
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 1, weight, halfTime, cu, sampleTime)
+		if updateErr != nil {
+			return
+		}
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.LatencyScoreType, latency.Seconds(), weight, halfTime, cu, sampleTime)
+		if updateErr != nil {
+			return
+		}
 		if syncBlock > providerData.SyncBlock {
 			// do not allow providers to go back
 			providerData.SyncBlock = syncBlock
 		}
 		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
-		providerData = po.updateDecayingWeightedAverage(providerData, score.SyncScoreType, syncLag.Seconds(), weight, halfTime, cu, sampleTime)
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.SyncScoreType, syncLag.Seconds(), weight, halfTime, cu, sampleTime)
+		if updateErr != nil {
+			return
+		}
 	} else {
 		// on a failed relay, update the availability metric with a failure score
-		providerData = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 0, weight, halfTime, cu, sampleTime)
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 0, weight, halfTime, cu, sampleTime)
+		if updateErr != nil {
+			return
+		}
 	}
 
 	po.providersStorage.Set(provider, providerData, 1)
@@ -202,13 +213,22 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	sampleTime := time.Now()
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	weight := score.ProbeUpdateWeight
-
+	var updateErr error
 	if success {
 		// update latency only on success
-		providerData = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 1, weight, halfTime, 0, sampleTime)
-		providerData = po.updateDecayingWeightedAverage(providerData, score.LatencyScoreType, latency.Seconds(), weight, halfTime, 0, sampleTime)
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 1, weight, halfTime, 0, sampleTime)
+		if updateErr != nil {
+			return
+		}
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.LatencyScoreType, latency.Seconds(), weight, halfTime, 0, sampleTime)
+		if updateErr != nil {
+			return
+		}
 	} else {
-		providerData = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 0, weight, halfTime, 0, sampleTime)
+		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 0, weight, halfTime, 0, sampleTime)
+		if updateErr != nil {
+			return
+		}
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 
@@ -460,8 +480,15 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	return providerData, found
 }
 
+func (po *ProviderOptimizer) validateUpdateError(err error, errorMsg string) error {
+	if !score.TimeConflictingScoreStoreError.Is(err) {
+		utils.LavaFormatError(errorMsg, err)
+	}
+	return err
+}
+
 // updateDecayingWeightedAverage updates a provider's QoS metric ScoreStore with a new sample
-func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData ProviderData, scoreType string, sample float64, weight float64, halfTime time.Duration, cu uint64, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData ProviderData, scoreType string, sample float64, weight float64, halfTime time.Duration, cu uint64, sampleTime time.Time) (ProviderData, error) {
 	switch scoreType {
 	case score.LatencyScoreType:
 		err := providerData.Latency.UpdateConfig(
@@ -470,41 +497,38 @@ func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData Provider
 			score.WithLatencyCuFactor(score.GetLatencyFactor(cu)),
 		)
 		if err != nil {
-			utils.LavaFormatError("did not update provider latency score", err)
-			return providerData
+			utils.LavaFormatError("[UpdateConfig] did not update provider latency score", err)
+			return providerData, err
 		}
 		err = providerData.Latency.Update(sample, sampleTime)
 		if err != nil {
-			utils.LavaFormatError("did not update provider latency score", err)
-			return providerData
+			return providerData, po.validateUpdateError(err, "[Update] did not update provider latency score")
 		}
 
 	case score.SyncScoreType:
 		err := providerData.Sync.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
 		if err != nil {
-			utils.LavaFormatError("did not update provider sync score", err)
-			return providerData
+			utils.LavaFormatError("[UpdateConfig] did not update provider sync score", err)
+			return providerData, err
 		}
 		err = providerData.Sync.Update(sample, sampleTime)
 		if err != nil {
-			utils.LavaFormatError("did not update provider sync score", err)
-			return providerData
+			return providerData, po.validateUpdateError(err, "[Update] did not update provider sync score")
 		}
 
 	case score.AvailabilityScoreType:
 		err := providerData.Availability.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
 		if err != nil {
-			utils.LavaFormatError("did not update provider availability score", err)
-			return providerData
+			utils.LavaFormatError("[UpdateConfig] did not update provider availability score", err)
+			return providerData, err
 		}
 		err = providerData.Availability.Update(sample, sampleTime)
 		if err != nil {
-			utils.LavaFormatError("did not update provider availability score", err)
-			return providerData
+			return providerData, po.validateUpdateError(err, "[Update] did not update provider availability score")
 		}
 	}
 
-	return providerData
+	return providerData, nil
 }
 
 // updateRelayTime adds a relay sample time to a provider's data

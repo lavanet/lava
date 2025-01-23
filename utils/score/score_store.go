@@ -194,7 +194,7 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	}
 
 	if ss.Time.After(sampleTime) {
-		return fmt.Errorf("invalid %s ScoreStore: last update time in the future, last_update_time: %s, sample_time: %s", ss.Name, ss.Time.String(), sampleTime.String())
+		return TimeConflictingScoreStoreError
 	}
 
 	timeDiff := sampleTime.Sub(ss.Time).Seconds()
