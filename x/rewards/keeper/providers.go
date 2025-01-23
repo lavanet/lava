@@ -145,7 +145,11 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 			continue
 		}
 
-		if !spec.Enabled || spec.Shares == 0 {
+		if !spec.Enabled {
+			continue
+		}
+		if spec.Shares == 0 {
+			chainStake[chainID] = sdk.ZeroDec()
 			continue
 		}
 
