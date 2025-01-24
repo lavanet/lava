@@ -4,6 +4,7 @@ endpoints:
     chain-id: AVAX
     network-address:
       address: 127.0.0.1:2221
+           disable-tls: true
     node-urls:
       - url: ws://127.0.0.1:3333/C/ws
         internal-path: "/C/rpc" # c chain like specified in the spec
