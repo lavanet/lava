@@ -194,6 +194,7 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	}
 
 	if ss.Time.After(sampleTime) {
+		utils.LavaFormatTrace("TimeConflictingScoresError", utils.LogAttr("ss.Time", ss.Time), utils.LogAttr("sampleTime", sampleTime))
 		return TimeConflictingScoresError
 	}
 
