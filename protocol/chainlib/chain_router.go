@@ -303,6 +303,13 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {
+		missingKeys := []string{}
+		for key := range requiredMap {
+			if _, ok := supportedMap[key]; !ok {
+				missingKeys = append(missingKeys, key)
+			}
+		}
+		utils.LavaFormatError("missing extensions or addons in definitions", nil, utils.Attribute{Key: "missing setups", Value: missingKeys})
 		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
 	}
 
