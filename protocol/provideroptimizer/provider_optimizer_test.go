@@ -938,7 +938,6 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
-	sampleTime := time.Now()
 	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
 
 	providerOptimizer.OptimizerNumTiers = 2
@@ -978,10 +977,8 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 			p2Availability = false
 		}
 
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, sampleTime)
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, sampleTime)
-
-		sampleTime = sampleTime.Add(5 * time.Millisecond)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, time.Now())
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, time.Now())
 		time.Sleep(5 * time.Millisecond)
 	}
 
