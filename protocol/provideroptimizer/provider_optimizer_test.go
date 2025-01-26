@@ -19,6 +19,7 @@ const (
 )
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
+	LastTierChance = 0.1
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
 }
@@ -933,23 +934,25 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer(1)
-	providersCount := 2
+	providersCount := 3
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
 	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
-
-	providerOptimizer.OptimizerNumTiers = 2
+	providerOptimizer.OptimizerNumTiers = 4
 	providerOptimizer.OptimizerMinTierEntries = 1
 
 	// initial values
 	p1Latency := baseLatency * float64(time.Millisecond)
 	p2Latency := baseLatency * float64(time.Millisecond)
+	p3Latency := baseLatency * float64(time.Millisecond)
 	p1SyncBlock := syncBlock
 	p2SyncBlock := syncBlock
+	p3SyncBlock := syncBlock
 	p1Availability := true
 	p2Availability := true
+	p3Availability := true
 	// append relay data for each provider depending on its index in the providers array
 	// the latency gets worse for increasing index so we assume the best provider is the 1st
 	// address, after it the 2nd and so on
@@ -957,11 +960,13 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 		// randomize latency, provider 0 gets a better latency than provider 1
 		p1Latency += float64(rand.Int63n(21)+10) * float64(time.Millisecond) // Random number between 10-30
 		p2Latency += float64(rand.Int63n(11)+30) * float64(time.Millisecond) // Random number between 30-40
+		p3Latency += float64(rand.Int63n(12)+30) * float64(time.Millisecond) // Random number between 30-40
 
 		// randomize sync, provider 0 gets a better sync than provider 1
 		if rand.Float64() < 0.1 { // 10% chance to increment both
 			p1SyncBlock++
 			p2SyncBlock++
+			p3SyncBlock++
 		}
 		if rand.Float64() < 0.05 { // 5% chance to increment only p1
 			p1SyncBlock++
@@ -971,19 +976,25 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 		if rand.Float64() < 0.1 { // 10% chance to false for p2
 			p2Availability = false
 		}
+		if rand.Float64() < 0.05 { // 5% chance to false for p3
+			p3Availability = false
+		}
 		if rand.Float64() < 0.05 { // 5% chance to false for both
 			p1Availability = false
 			p2Availability = false
+			p3Availability = false
 		}
 
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, time.Now())
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, time.Now())
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, time.Now())
 		time.Sleep(5 * time.Millisecond)
 	}
 
 	// choose many times and check the better provider is chosen more often (provider 0)
 	iterations := 1000
 	res, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
 	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
 }
 
