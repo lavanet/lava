@@ -128,6 +128,12 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 	}
 	chanceForDefaultTiers := st.calcChanceForDefaultTiers(initialTierChances, numTiers)
 
+	// add default tier chances.
+	for i := 0; i < numTiers; i++ {
+		if _, ok := initialTierChances[i]; !ok {
+			initialTierChances[i] = chanceForDefaultTiers
+		}
+	}
 	// shift the chances
 	shiftedTierChances := make(map[int]float64)
 	// shift tier chances based on the difference in the average score of each tier
@@ -152,9 +158,7 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor
 			}
 		} else {
-			if initialTierChances[i] > LastTierChance {
-				shiftedTierChances[i] = initialTierChances[i] + averageChance*offsetFactor
-			}
+			shiftedTierChances[i] = initialTierChances[i] + averageChance*offsetFactor
 		}
 	}
 	// normalize the chances

@@ -19,7 +19,7 @@ const (
 )
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
-	LastTierChance = 0.1
+	// LastTierChance = 0.1
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
 }
@@ -194,8 +194,27 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
 
 	// the bad providers shouldn't have been picked even once
+	// Find the two least picked providers
+	var leastPicked, secondLeastPicked string
+	var leastCount, secondLeastCount int = 0xffffffff, 0xffffffff
+	for addr, count := range results {
+		if count < leastCount {
+			secondLeastCount = leastCount
+			secondLeastPicked = leastPicked
+			leastCount = count
+			leastPicked = addr
+		} else if count < secondLeastCount {
+			secondLeastCount = count
+			secondLeastPicked = addr
+		}
+	}
+	minimumScores := map[string]int{
+		leastPicked:       leastCount,
+		secondLeastPicked: secondLeastCount,
+	}
+
 	for address := range worstTierEntries {
-		require.Zero(t, results[address])
+		require.Contains(t, minimumScores, address)
 	}
 }
 
@@ -988,7 +1007,7 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, time.Now())
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, time.Now())
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, time.Now())
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	// choose many times and check the better provider is chosen more often (provider 0)
@@ -996,6 +1015,7 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	res, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
 	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
+	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]])
 }
 
 // TestProviderOptimizerLatencySyncScore tests that a provider with 100ms latency and x sync block
