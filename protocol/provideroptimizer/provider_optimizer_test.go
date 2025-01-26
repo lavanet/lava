@@ -950,7 +950,6 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	p2SyncBlock := syncBlock
 	p1Availability := true
 	p2Availability := true
-
 	// append relay data for each provider depending on its index in the providers array
 	// the latency gets worse for increasing index so we assume the best provider is the 1st
 	// address, after it the 2nd and so on
