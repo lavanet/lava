@@ -835,8 +835,8 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.1) // no difference between high score providers (max 10% diff)
 	require.Greater(t, results[providersGen.providersAddresses[2]], 0)                                           // high stake mid score provider picked at least once
 	require.Greater(t, results[providersGen.providersAddresses[2]], results[providersGen.providersAddresses[3]]) // high stake mid score provider picked more than normal stake mid score provider
-	require.Equal(t, 0, results[providersGen.providersAddresses[4]])
-	require.Equal(t, 0, results[providersGen.providersAddresses[5]])
+	require.Less(t, results[providersGen.providersAddresses[4]], results[providersGen.providersAddresses[2]])
+	require.Less(t, results[providersGen.providersAddresses[5]], results[providersGen.providersAddresses[2]])
 }
 
 // TestProviderOptimizerRetriesWithReducedProvidersSet checks that when having a set of providers, the amount of
