@@ -169,10 +169,6 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			if stake.IsZero() {
-				continue
-			}
-
 			emissions = append(emissions, types.SpecEmissionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}
