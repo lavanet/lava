@@ -219,7 +219,7 @@ type MockBlockStore struct {
 
 var (
 	fixedTime bool
-	fixedDate = time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)
+	fixedDate = time.Date(2024, time.May, 1, 1, 1, 1, 1, time.UTC)
 )
 
 func (b *MockBlockStore) SetHeight(height int64) {
