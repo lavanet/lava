@@ -1,14 +1,9 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/utils"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
 	"github.com/lavanet/lava/v4/x/subscription/types"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +65,7 @@ func CmdEstimatedProviderRewards() *cobra.Command {
 
 func CmdPoolRewards() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pool-rewards-breakdown",
+		Use:   "estimated-pools-rewards",
 		Short: "Calculates estimated rewards for all pools",
 		Long:  `estimate the total rewards a pool will give to all providers if the month ends now`,
 		Args:  cobra.ExactArgs(0),
@@ -82,102 +77,18 @@ func CmdPoolRewards() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			// get all provider addresses
-			provider := ""
-			epochStorageEueryClient := epochstoragetypes.NewQueryClient(clientCtx)
-			res, err := epochStorageEueryClient.ProviderMetaData(cmd.Context(), &epochstoragetypes.QueryProviderMetaDataRequest{Provider: provider})
+			req := types.QueryEstimatedPoolsRewardsRequest{}
+
+			res, err := queryClient.EstimatedPoolsRewards(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
-			addresses := []string{}
 
-			for _, meta := range res.GetMetaData() {
-				addresses = append(addresses, meta.GetProvider())
-			}
-			runEstimateWithRetries := func(req types.QueryEstimatedProviderRewardsRequest) (*types.QueryEstimatedRewardsResponse, error) {
-				res, err := queryClient.EstimatedProviderRewards(cmd.Context(), &req)
-				if err != nil {
-					res, err = queryClient.EstimatedProviderRewards(cmd.Context(), &req)
-					if err != nil {
-						res, err = queryClient.EstimatedProviderRewards(cmd.Context(), &req)
-						if err != nil {
-							return nil, err
-						}
-					}
-				}
-				return res, err
-			}
-
-			summary := map[string]types.EstimatedRewardInfo{}
-			total := sdk.DecCoins{}
-			for idx, provider := range addresses {
-				fmt.Printf("\rProgress: %d/%d", idx+1, len(addresses))
-				req := types.QueryEstimatedProviderRewardsRequest{Provider: provider}
-				res, err := runEstimateWithRetries(req)
-				if err != nil {
-					utils.LavaFormatError("failed to query provider", err, utils.Attribute{Key: "provider", Value: provider})
-					continue
-				}
-				total = summarizeForRes(res, summary, total)
-				dualStakingQueryClient := dualstakingtypes.NewQueryClient(clientCtx)
-				resDel, err := dualStakingQueryClient.ProviderDelegators(cmd.Context(), &dualstakingtypes.QueryProviderDelegatorsRequest{Provider: provider})
-				if err != nil {
-					resDel, err = dualStakingQueryClient.ProviderDelegators(cmd.Context(), &dualstakingtypes.QueryProviderDelegatorsRequest{Provider: provider})
-					if err != nil {
-						resDel, err = dualStakingQueryClient.ProviderDelegators(cmd.Context(), &dualstakingtypes.QueryProviderDelegatorsRequest{Provider: provider})
-						if err != nil {
-							return err
-						}
-					}
-				}
-				delegations := resDel.GetDelegations()
-				delLen := len(delegations)
-				for idx2, del := range delegations {
-					delegatorName := del.Delegator
-					fmt.Printf("\rProgress: %d/%d %d/%d: %s", idx+1, len(addresses), idx2+1, delLen, delegatorName)
-					req := types.QueryEstimatedProviderRewardsRequest{Provider: provider, AmountDelegator: delegatorName}
-					res, err := runEstimateWithRetries(req)
-					if err != nil {
-						utils.LavaFormatError("failed to query delegator rewards", err, utils.LogAttr("provider", provider), utils.LogAttr("delegator", delegatorName))
-						continue
-					}
-					total = summarizeForRes(res, summary, total)
-				}
-			}
-			fmt.Printf("\n---- results ----\n\n")
-			info := []types.EstimatedRewardInfo{}
-			for _, sumEntry := range summary {
-				info = append(info, sumEntry)
-			}
-			printMe := &types.QueryEstimatedRewardsResponse{
-				Info:  info,
-				Total: total,
-			}
-			return clientCtx.PrintProto(printMe)
+			return clientCtx.PrintProto(res)
 		},
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
-}
-
-func summarizeForRes(res *types.QueryEstimatedRewardsResponse, summary map[string]types.EstimatedRewardInfo, total sdk.DecCoins) sdk.DecCoins {
-	info := res.Info
-	for _, entry := range info {
-		if _, ok := summary[entry.Source]; !ok {
-			summary[entry.Source] = entry
-		} else {
-			entryIn := summary[entry.Source]
-			coinsArr := entry.Amount
-			for _, coin := range coinsArr {
-				entryIn.Amount = entryIn.Amount.Add(coin)
-			}
-			summary[entry.Source] = entryIn
-		}
-	}
-	for _, coin := range res.Total {
-		total = total.Add(coin)
-	}
-	return total
 }
