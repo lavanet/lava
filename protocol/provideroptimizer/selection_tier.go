@@ -25,7 +25,7 @@ type SelectionTier interface {
 	AddScore(entry string, score float64)
 	GetTier(tier int, numTiers int, minimumEntries int) []Entry
 	SelectTierRandomly(numTiers int, tierChances map[int]float64) int
-	ShiftTierChance(numTiers int, initialYierChances map[int]float64) map[int]float64
+	ShiftTierChance(numTiers int, initialTierChances map[int]float64) map[int]float64
 	ScoresCount() int
 	GetRawScores() []Entry
 }
