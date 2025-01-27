@@ -584,6 +584,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 }
 
 func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
