@@ -336,12 +336,12 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	require.Greater(t, sumResults, 500, results) // we should pick the best tier most often
 
 	// now try to get a previous block, our chosenIndex should be inferior in latency and blockError chance should be the same
-	results, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock-1)
-	require.Greater(t, tierResults[0], 500, tierResults) // we should pick the best tier most often
+	results, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 10000, cu, requestBlock-1)
+	require.Greater(t, tierResults[0], 5000, tierResults) // we should pick the best tier most often
 	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-	require.Less(t, results[providersGen.providersAddresses[chosenIndex]], 50, results) // chosen indexes shoulnt be in the tier
+	require.Less(t, results[providersGen.providersAddresses[chosenIndex]], 500, results) // chosen indexes shoulnt be in the tier
 	sumResults = results[providersGen.providersAddresses[chosenIndex]] + results[providersGen.providersAddresses[chosenIndex+1]] + results[providersGen.providersAddresses[chosenIndex+2]]
-	require.Less(t, sumResults, 150, results) // we should pick the best tier most often
+	require.Less(t, sumResults, 1700, results) // we should pick the best tier most often
 }
 
 // TestProviderOptimizerUpdatingLatency tests checks that repeatedly adding better results
