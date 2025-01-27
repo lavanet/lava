@@ -465,6 +465,7 @@ func TestVaultProviderTrackedCu(t *testing.T) {
 // TestProviderMonthlyPayoutQuery tests the monthly-payout query
 // Scenario: the provider provided service on two chains and in one of them he has a delegator
 func TestProviderMonthlyPayoutQuery(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
