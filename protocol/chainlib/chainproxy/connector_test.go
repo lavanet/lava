@@ -93,8 +93,8 @@ func TestConnector(t *testing.T) {
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
-	require.Equal(t, conn.usedClients, int64(0))               // checking we dont have clients used
-	require.Greater(t, len(conn.freeClients), numberOfClients) // checking we cleaned clients
+	require.Equal(t, conn.usedClients, int64(0))                 // checking we dont have clients used
+	require.Greater(t, len(conn.freeClients), numberOfClients+1) // checking we cleaned clients before disconnecting
 }
 
 func TestConnectorGrpc(t *testing.T) {
