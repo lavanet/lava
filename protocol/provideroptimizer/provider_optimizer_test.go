@@ -196,7 +196,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	// the bad providers shouldn't have been picked even once
 	// Find the two least picked providers
 	var leastPicked, secondLeastPicked string
-	var leastCount, secondLeastCount int = 0xffffffff, 0xffffffff
+	leastCount, secondLeastCount := 0xffffffff, 0xffffffff
 	for addr, count := range results {
 		if count < leastCount {
 			secondLeastCount = leastCount
