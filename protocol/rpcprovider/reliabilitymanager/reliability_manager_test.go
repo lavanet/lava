@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/protocol/statetracker"
 	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
@@ -47,7 +48,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -58,7 +59,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             nil,
 			RelayNum:           5,
@@ -200,7 +201,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -212,7 +213,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             consumerSessionWithProvider,
 			RelayNum:           5,

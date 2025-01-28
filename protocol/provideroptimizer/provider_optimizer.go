@@ -23,9 +23,9 @@ import (
 
 // The provider optimizer is a mechanism within the consumer that is responsible for choosing
 // the optimal provider for the consumer.
-// The choice depends on the provider's QoS excellence metrics: latency, sync and availability.
+// The choice depends on the provider's QoS reputation metrics: latency, sync and availability.
 // Providers are picked by selection tiers that take into account their stake amount and QoS
-// excellence score.
+// reputation score.
 
 const (
 	CacheMaxCost             = 20000 // each item cost would be 1
@@ -249,7 +249,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			continue
 		}
 
-		qos, lastUpdateTime := po.GetExcellenceQoSReportForProvider(providerAddress)
+		qos, lastUpdateTime := po.GetReputationReportForProvider(providerAddress)
 		if qos == nil {
 			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers",
 				fmt.Errorf("could not get QoS excellece report for provider"),
@@ -285,7 +285,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			)
 			return NewSelectionTier(), Exploration{}, nil
 		}
-		score, err := qos.ComputeQoSExcellenceFloat64(opts...)
+		score, err := qos.ComputeReputationFloat64(opts...)
 		if err != nil {
 			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers", err,
 				utils.LogAttr("provider", providerAddress),
@@ -612,7 +612,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 	}
 }
 
-func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) (report *pairingtypes.QualityOfServiceReport, lastUpdateTime time.Time) {
+func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress string) (report *pairingtypes.QualityOfServiceReport, lastUpdateTime time.Time) {
 	providerData, found := po.getProviderData(providerAddress)
 	if !found {
 		utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
