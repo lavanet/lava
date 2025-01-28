@@ -59,6 +59,11 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 	if result.Error == nil { // no error
 		return false, ""
 	}
+	if result.Error.Data != nil {
+		if st, ok := result.Error.Data.(string); ok && st != "" {
+			return true, result.Error.Message + ",data: " + st
+		}
+	}
 	return result.Error.Message != "", result.Error.Message
 }
 
@@ -110,7 +115,7 @@ func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage
 	return msg, nil
 }
 
-func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
 	return false
 }
 
@@ -191,7 +196,7 @@ func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
 	return nil, WontCalculateBatchHash
 }
 
-func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64) (success bool) {
 	return false
 }
 
