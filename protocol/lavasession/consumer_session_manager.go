@@ -558,9 +558,9 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					ReportedProviders: reportedProviders,
 				}
 
-				// adding qos summery for error parsing.
+				// adding qos summary for error parsing.
 				// consumer session is locked here so its ok to read the qos report.
-				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
+				sessionInfo.QoSSummaryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
 				qosReport, _ := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)

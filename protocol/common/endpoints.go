@@ -252,7 +252,7 @@ type ConflictHandlerInterface interface {
 
 type ProviderInfo struct {
 	ProviderAddress           string
-	ProviderReputationSummery sdk.Dec // the number represents the average qos for this provider session
+	ProviderReputationSummary sdk.Dec // the number represents the average qos for this provider session
 	ProviderStake             sdk.Coin
 }
 

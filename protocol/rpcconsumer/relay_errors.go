@@ -55,10 +55,10 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	for idx, relayError := range r.relayErrors {
 		errorMessage := r.sanitizeError(relayError.err)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
-		if relayError.ProviderInfo.ProviderReputationSummery.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
+		if relayError.ProviderInfo.ProviderReputationSummary.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
 		}
-		currentResult := relayError.ProviderInfo.ProviderReputationSummery.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
+		currentResult := relayError.ProviderInfo.ProviderReputationSummary.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
 		if currentResult.GTE(bestResult) { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
 			bestResult.Set(currentResult)
 			bestIndex = idx

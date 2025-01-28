@@ -63,7 +63,7 @@ type UsedProvidersInf interface {
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	StakeSize         sdk.Coin
-	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
+	QoSSummaryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
