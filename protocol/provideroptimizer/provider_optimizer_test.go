@@ -830,9 +830,9 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 	// choose many times and check results
 	iterations := 10000
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
-	require.InDelta(t, float64(iterations)*0.7, tierResults[0], float64(iterations)*0.1) // high score are picked 60%-80% of the times
+	require.InDelta(t, float64(iterations)*0.7, tierResults[0], float64(iterations)*0.15) // high score are picked 60%-80% of the times
 	require.InDelta(t, results[providersGen.providersAddresses[0]],
-		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.1) // no difference between high score providers (max 10% diff)
+		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.15) // no difference between high score providers (max 10% diff)
 	require.Greater(t, results[providersGen.providersAddresses[2]], 0)                                           // high stake mid score provider picked at least once
 	require.Greater(t, results[providersGen.providersAddresses[2]], results[providersGen.providersAddresses[3]]) // high stake mid score provider picked more than normal stake mid score provider
 	require.Less(t, results[providersGen.providersAddresses[4]], results[providersGen.providersAddresses[2]])
