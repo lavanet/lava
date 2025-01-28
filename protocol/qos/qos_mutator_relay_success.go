@@ -13,7 +13,7 @@ import (
 
 // Mutator for relay success
 type QoSMutatorRelaySuccess struct {
-	QoSMutatorBase
+	*QoSMutatorBase
 	latency          time.Duration
 	expectedLatency  time.Duration
 	blockHeightDiff  int64
@@ -29,10 +29,6 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) calculateAvailabilityScore
 }
 
 func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) {
-	defer func() {
-		qoSMutatorRelaySuccess.doneChan <- struct{}{}
-	}()
-
 	report.totalRelays++
 	report.answeredRelays++
 

@@ -18,7 +18,7 @@ func TestCalculateQoS(t *testing.T) {
 	providerAddr := "provider1"
 
 	// Test successful relay
-	doneChan := qosManager.CalculateQoS(
+	qosManager.CalculateQoS(
 		epoch,
 		sessionID,
 		providerAddr,
@@ -28,8 +28,6 @@ func TestCalculateQoS(t *testing.T) {
 		3,
 		2,
 	)
-
-	<-doneChan // Wait for processing
 
 	report := qosManager.GetLastQoSReport(epoch, sessionID)
 	require.NotNil(t, report)
@@ -46,9 +44,7 @@ func TestAddFailedRelay(t *testing.T) {
 	epoch := uint64(1)
 	sessionID := int64(1)
 
-	doneChan := qosManager.AddFailedRelay(epoch, sessionID)
-	<-doneChan // Wait for processing
-
+	qosManager.AddFailedRelay(epoch, sessionID)
 	totalRelays := qosManager.GetTotalRelays(epoch, sessionID)
 	require.Equal(t, uint64(1), totalRelays)
 
@@ -66,9 +62,7 @@ func TestSetLastReputationQoSReport(t *testing.T) {
 		Availability: sdk.NewDec(100),
 	}
 
-	doneChan := qosManager.SetLastReputationQoSReport(epoch, sessionID, testReport)
-	<-doneChan // Wait for processing
-
+	qosManager.SetLastReputationQoSReport(epoch, sessionID, testReport)
 	report := qosManager.GetLastReputationQoSReport(epoch, sessionID)
 	require.NotNil(t, report)
 	require.Equal(t, testReport.Latency, report.Latency)
@@ -81,7 +75,7 @@ func TestMultipleEpochsAndSessions(t *testing.T) {
 	// Test multiple epochs and sessions simultaneously
 	for epoch := uint64(1); epoch <= 3; epoch++ {
 		for sessionID := int64(1); sessionID <= 3; sessionID++ {
-			doneChan := qosManager.CalculateQoS(
+			qosManager.CalculateQoS(
 				epoch,
 				sessionID,
 				"provider1",
@@ -91,7 +85,6 @@ func TestMultipleEpochsAndSessions(t *testing.T) {
 				3,
 				2,
 			)
-			<-doneChan
 		}
 	}
 
@@ -122,7 +115,7 @@ func TestEdgeCaseLatencies(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			doneChan := qosManager.CalculateQoS(
+			qosManager.CalculateQoS(
 				epoch,
 				sessionID,
 				"provider1",
@@ -132,7 +125,6 @@ func TestEdgeCaseLatencies(t *testing.T) {
 				3,
 				2,
 			)
-			<-doneChan
 			require.NotNil(t, qosManager.GetLastQoSReport(epoch, sessionID))
 		})
 	}
@@ -142,11 +134,8 @@ func TestNilReportHandling(t *testing.T) {
 	qosManager := NewQoSManager()
 	epoch := uint64(1)
 	sessionID := int64(1)
-
 	// Test setting nil report
-	doneChan := qosManager.SetLastReputationQoSReport(epoch, sessionID, nil)
-	<-doneChan
-
+	qosManager.SetLastReputationQoSReport(epoch, sessionID, nil)
 	// Verify nil handling
 	report := qosManager.GetLastReputationQoSReport(epoch, sessionID)
 	require.Nil(t, report)
@@ -170,7 +159,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 		go func(routineID int) {
 			defer wg.Done()
 			for j := 0; j < operationsPerGoroutine; j++ {
-				doneChan := qosManager.CalculateQoS(
+				qosManager.CalculateQoS(
 					uint64(routineID),
 					int64(j),
 					"provider1",
@@ -180,7 +169,6 @@ func TestHighConcurrencyScenario(t *testing.T) {
 					3,
 					2,
 				)
-				<-doneChan
 			}
 		}(i)
 	}
@@ -190,8 +178,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 		go func(routineID int) {
 			defer wg.Done()
 			for j := 0; j < operationsPerGoroutine; j++ {
-				doneChan := qosManager.AddFailedRelay(uint64(routineID), int64(j))
-				<-doneChan
+				qosManager.AddFailedRelay(uint64(routineID), int64(j))
 			}
 		}(i)
 	}
@@ -205,8 +192,7 @@ func TestHighConcurrencyScenario(t *testing.T) {
 					Latency:      sdk.NewDec(95),
 					Availability: sdk.NewDec(100),
 				}
-				doneChan := qosManager.SetLastReputationQoSReport(uint64(routineID), int64(j), report)
-				<-doneChan
+				qosManager.SetLastReputationQoSReport(uint64(routineID), int64(j), report)
 			}
 		}(i)
 	}
@@ -244,7 +230,7 @@ func TestQoSParameterBoundaries(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			doneChan := qosManager.CalculateQoS(
+			qosManager.CalculateQoS(
 				epoch,
 				sessionID,
 				"provider1",
@@ -254,7 +240,6 @@ func TestQoSParameterBoundaries(t *testing.T) {
 				tc.numOfProviders,
 				tc.servicersToCount,
 			)
-			<-doneChan
 			// Verify that the manager doesn't panic and returns a report
 			report := qosManager.GetLastQoSReport(epoch, sessionID)
 			require.NotNil(t, report)
@@ -269,7 +254,7 @@ func TestSequentialOperations(t *testing.T) {
 		sessionID := int64(1)
 
 		// Sequence: Calculate -> Fail -> Calculate
-		doneChan := qosManager.CalculateQoS(
+		qosManager.CalculateQoS(
 			epoch,
 			sessionID,
 			"provider1",
@@ -277,12 +262,8 @@ func TestSequentialOperations(t *testing.T) {
 			200*time.Millisecond,
 			1, 3, 2,
 		)
-		<-doneChan
-
-		doneChan = qosManager.AddFailedRelay(epoch, sessionID)
-		<-doneChan
-
-		doneChan = qosManager.CalculateQoS(
+		qosManager.AddFailedRelay(epoch, sessionID)
+		qosManager.CalculateQoS(
 			epoch,
 			sessionID,
 			"provider1",
@@ -290,8 +271,6 @@ func TestSequentialOperations(t *testing.T) {
 			200*time.Millisecond,
 			1, 3, 2,
 		)
-		<-doneChan
-
 		require.Equal(t, uint64(3), qosManager.GetTotalRelays(epoch, sessionID))
 		require.Equal(t, uint64(2), qosManager.GetAnsweredRelays(epoch, sessionID))
 	})

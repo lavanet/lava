@@ -4,47 +4,18 @@ import (
 	"sync"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 )
 
-type QoSReport struct {
-	lastQoSReport           *pairingtypes.QualityOfServiceReport
-	lastReputationQoSReport *pairingtypes.QualityOfServiceReport
-	latencyScoreList        []sdk.Dec
-	syncScoreSum            int64
-	totalSyncScore          int64
-	totalRelays             uint64
-	answeredRelays          uint64
-	lock                    sync.RWMutex
-}
-
-type DoneChan <-chan struct{}
-
 type QoSManager struct {
-	qosReports    map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
-	mutatorsQueue chan Mutator
-	lock          sync.RWMutex
+	qosReports map[uint64]map[int64]*QoSReport // first key is the epoch, second key is the session id
+	lock       sync.RWMutex
 }
 
 func NewQoSManager() *QoSManager {
 	qosManager := &QoSManager{}
 	qosManager.qosReports = make(map[uint64]map[int64]*QoSReport)
-	qosManager.mutatorsQueue = make(chan Mutator, 10000000) // Buffer of 10 Million mutators
-	go qosManager.processMutations()
 	return qosManager
-}
-
-func (qosManager *QoSManager) processMutations() {
-	for mutator := range qosManager.mutatorsQueue {
-		epoch, sessionId := mutator.GetEpochAndSessionId()
-		qosReport := qosManager.fetchOrSetSessionFromMap(epoch, sessionId)
-		func() {
-			qosReport.lock.Lock()
-			defer qosReport.lock.Unlock()
-			mutator.Mutate(qosReport)
-		}()
-	}
 }
 
 func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId int64) *QoSReport {
@@ -59,51 +30,48 @@ func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId i
 	return qosManager.qosReports[epoch][sessionId]
 }
 
-func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64) (*QoSMutatorBase, chan struct{}) {
-	doneChan := make(chan struct{}, 1) // Must be buffered to avoid freezing the queue
+func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64) *QoSMutatorBase {
 	qosMutatorBase := &QoSMutatorBase{
 		epoch:     epoch,
 		sessionId: sessionId,
-		doneChan:  doneChan,
 	}
-	return qosMutatorBase, doneChan
+	return qosMutatorBase
 }
 
-func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) DoneChan {
-	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	qosManager.mutatorsQueue <- &QoSMutatorRelaySuccess{
-		QoSMutatorBase:   *qosMutatorBase,
+func (qm *QoSManager) mutate(mutator Mutator) {
+	qosReport := qm.fetchOrSetSessionFromMap(mutator.GetEpochAndSessionId())
+	qosReport.mutate(mutator)
+}
+
+func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+	qosManager.mutate(&QoSMutatorRelaySuccess{
+		QoSMutatorBase:   qosManager.createQoSMutatorBase(epoch, sessionId),
 		providerAddress:  providerAddress,
 		latency:          latency,
 		expectedLatency:  expectedLatency,
 		blockHeightDiff:  blockHeightDiff,
 		numOfProviders:   numOfProviders,
 		servicersToCount: servicersToCount,
-	}
-	return doneChan
+	})
 }
 
-func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) DoneChan {
-	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	qosManager.mutatorsQueue <- &QoSMutatorRelayFailure{
-		QoSMutatorBase: *qosMutatorBase,
-	}
-	return doneChan
+func (qosManager *QoSManager) AddFailedRelay(epoch uint64, sessionId int64) {
+	qosManager.mutate(&QoSMutatorRelayFailure{
+		QoSMutatorBase: qosManager.createQoSMutatorBase(epoch, sessionId),
+	})
 }
 
-func (qosManager *QoSManager) SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) DoneChan {
-	qosMutatorBase, doneChan := qosManager.createQoSMutatorBase(epoch, sessionId)
-	qosManager.mutatorsQueue <- &QoSMutatorSetReputation{
-		QoSMutatorBase: *qosMutatorBase,
+func (qosManager *QoSManager) SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) {
+	qosManager.mutate(&QoSMutatorSetReputation{
+		QoSMutatorBase: qosManager.createQoSMutatorBase(epoch, sessionId),
 		report:         report,
-	}
-	return doneChan
+	})
 }
 
 func (qosManager *QoSManager) getQoSReport(epoch uint64, sessionId int64) *QoSReport {
 	qosManager.lock.RLock()
 	defer qosManager.lock.RUnlock()
-	if qosManager.qosReports[epoch] == nil || qosManager.qosReports[epoch][sessionId] == nil {
+	if qosManager.qosReports[epoch] == nil {
 		return nil
 	}
 	return qosManager.qosReports[epoch][sessionId]
@@ -114,10 +82,7 @@ func (qosManager *QoSManager) GetLastQoSReport(epoch uint64, sessionId int64) *p
 	if qosReport == nil {
 		return nil
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.lastQoSReport
+	return qosReport.getLastQoSReport()
 }
 
 func (qosManager *QoSManager) GetLastReputationQoSReport(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport {
@@ -125,10 +90,7 @@ func (qosManager *QoSManager) GetLastReputationQoSReport(epoch uint64, sessionId
 	if qosReport == nil {
 		return nil
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.lastReputationQoSReport
+	return qosReport.getLastReputationQoSReport()
 }
 
 func (qosManager *QoSManager) GetAnsweredRelays(epoch uint64, sessionId int64) uint64 {
@@ -136,10 +98,7 @@ func (qosManager *QoSManager) GetAnsweredRelays(epoch uint64, sessionId int64) u
 	if qosReport == nil {
 		return 0
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.answeredRelays
+	return qosReport.getAnsweredRelays()
 }
 
 func (qosManager *QoSManager) GetTotalRelays(epoch uint64, sessionId int64) uint64 {
@@ -147,10 +106,7 @@ func (qosManager *QoSManager) GetTotalRelays(epoch uint64, sessionId int64) uint
 	if qosReport == nil {
 		return 0
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.totalRelays
+	return qosReport.getTotalRelays()
 }
 
 func (qosManager *QoSManager) GetSyncScoreSum(epoch uint64, sessionId int64) int64 {
@@ -158,10 +114,7 @@ func (qosManager *QoSManager) GetSyncScoreSum(epoch uint64, sessionId int64) int
 	if qosReport == nil {
 		return 0
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.syncScoreSum
+	return qosReport.getSyncScoreSum()
 }
 
 func (qosManager *QoSManager) GetTotalSyncScore(epoch uint64, sessionId int64) int64 {
@@ -169,8 +122,5 @@ func (qosManager *QoSManager) GetTotalSyncScore(epoch uint64, sessionId int64) i
 	if qosReport == nil {
 		return 0
 	}
-
-	qosReport.lock.RLock()
-	defer qosReport.lock.RUnlock()
-	return qosReport.totalSyncScore
+	return qosReport.getTotalSyncScore()
 }

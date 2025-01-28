@@ -1,5 +1,7 @@
 package qos
 
+import "sync/atomic"
+
 // Base interface for all mutators
 type Mutator interface {
 	Mutate(report *QoSReport)
@@ -9,9 +11,8 @@ type Mutator interface {
 type QoSMutatorBase struct {
 	epoch     uint64
 	sessionId int64
-	doneChan  chan<- struct{}
 }
 
 func (qoSMutatorBase *QoSMutatorBase) GetEpochAndSessionId() (epoch uint64, sessionId int64) {
-	return qoSMutatorBase.epoch, qoSMutatorBase.sessionId
+	return atomic.LoadUint64(&qoSMutatorBase.epoch), atomic.LoadInt64(&qoSMutatorBase.sessionId)
 }

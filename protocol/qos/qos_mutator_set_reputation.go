@@ -6,13 +6,10 @@ import (
 
 // Mutator to set usage for a session
 type QoSMutatorSetReputation struct {
-	QoSMutatorBase
+	*QoSMutatorBase
 	report *pairingtypes.QualityOfServiceReport
 }
 
 func (qoSMutatorSetReputation *QoSMutatorSetReputation) Mutate(report *QoSReport) {
-	defer func() {
-		qoSMutatorSetReputation.doneChan <- struct{}{}
-	}()
 	report.lastReputationQoSReport = qoSMutatorSetReputation.report
 }
