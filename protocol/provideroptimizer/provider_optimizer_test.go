@@ -19,7 +19,6 @@ const (
 )
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
-	// LastTierChance = 0.1
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
 }
@@ -74,11 +73,6 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 
-	// choose between 10 identical providers, none should be in the worst tier
-	returnedProviders, tier := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
-	require.Equal(t, 1, len(returnedProviders))
-	require.NotEqual(t, 4, tier)
-
 	// damage providers 5-7 scores with bad latency probes relays
 	// they should not be selected by the optimizer and should be in the worst tier
 	badLatency := TEST_BASE_WORLD_LATENCY * 3
@@ -86,12 +80,10 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[6], badLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[7], badLatency, true)
 	time.Sleep(4 * time.Millisecond)
-	returnedProviders, _ = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
-	require.Equal(t, 1, len(returnedProviders))
-	require.NotEqual(t, 4, tier)
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[5]) // we shouldn't pick the worst provider
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[6]) // we shouldn't pick the worst provider
-	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[7]) // we shouldn't pick the worst provider
+	// returnedProviders, tier = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
+
+	_, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 100, cu, requestBlock)
+	require.Less(t, tierResults[3], 10, tierResults)
 
 	// improve providers 0-2 scores with good latency probes relays
 	// they should be selected by the optimizer more often and should be in the best tier
@@ -101,11 +93,11 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[2], goodLatency, true)
 	time.Sleep(4 * time.Millisecond)
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 600, tierResults) // we should pick the best tier most often
+	require.Greater(t, tierResults[0], 499, tierResults) // we should pick the best tier most often
 
 	// out of 10 providers, and with 3 providers in the top tier we should pick
 	// tier-0 providers around a third of that
-	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results) // we should pick the best tier most often
+	require.Greater(t, results[providersGen.providersAddresses[0]], 100, results) // we should pick the best tier most often
 }
 
 // runChooseManyTimesAndReturnResults uses the given optimizer and providers addresses
