@@ -8,7 +8,3 @@ const (
 	PercentileToCalculateLatency = 0.9
 	MinProvidersForSync          = 0.6
 )
-
-type DegradeAvailabilityReputation interface{}
-
-type SendQoSUpdate interface{}
