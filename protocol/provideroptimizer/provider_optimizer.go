@@ -239,6 +239,30 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
+func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	reports := []*metrics.OptimizerQoSReport{}
+
+	rawScores := selectionTier.GetRawScores()
+	tierChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, map[int]float64{0: ATierChance})
+	for idx, entry := range rawScores {
+		qosReport := providersScores[entry.Address]
+		qosReport.EntryIndex = idx
+		qosReport.TierChances = PrintTierChances(tierChances)
+		reports = append(reports, qosReport)
+	}
+
+	return reports
+}
+
+func PrintTierChances(tierChances map[int]float64) string {
+	var tierChancesString string
+	for tier, chance := range tierChances {
+		tierChancesString += fmt.Sprintf("%d: %f, ", tier, chance)
+	}
+	return tierChancesString
+}
+
 func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
 	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
@@ -660,18 +684,4 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	)
 
 	return report, providerData.Latency.GetLastUpdateTime()
-}
-
-func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
-	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	reports := []*metrics.OptimizerQoSReport{}
-
-	rawScores := selectionTier.GetRawScores()
-	for idx, entry := range rawScores {
-		qosReport := providersScores[entry.Address]
-		qosReport.EntryIndex = idx
-		reports = append(reports, qosReport)
-	}
-
-	return reports
 }
