@@ -85,6 +85,7 @@ func RunHealth(ctx context.Context,
 		ConsumerBlocks:     map[LavaEntity]int64{},
 		SubscriptionsData:  map[string]SubscriptionData{},
 		FrozenProviders:    map[LavaEntity]struct{}{},
+		JailedProviders:    map[LavaEntity]struct{}{},
 		UnhealthyProviders: map[LavaEntity]string{},
 		UnhealthyConsumers: map[LavaEntity]string{},
 		Specs:              map[string]*spectypes.Spec{},
@@ -281,7 +282,11 @@ func RunHealth(ctx context.Context,
 				mutex.Lock() // Lock before updating stakeEntries
 				if _, ok := healthResults.getProviderData(lookupKey); ok || getAllProviders {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
-						healthResults.FreezeProvider(providerKey)
+						if providerEntry.IsFrozen() {
+							healthResults.JailedProvider(providerKey)
+						} else if providerEntry.Jails > 0 {
+							healthResults.FreezeProvider(providerKey)
+						}
 					} else {
 						stakeEntries[providerKey] = providerEntry
 					}
