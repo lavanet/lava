@@ -71,8 +71,8 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		return nil
 	}
 
-	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastQoSReport)
-	copiedExcellenceQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastExcellenceQoSReport)
+	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSManager.GetLastQoSReport(uint64(epoch), singleConsumerSession.SessionId))
+	copiedReputation := copyQoSServiceReport(singleConsumerSession.QoSManager.GetLastReputationQoSReport(uint64(epoch), singleConsumerSession.SessionId)) // copy reputation report for the node
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
@@ -87,7 +87,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
 		Badge:                 nil,
-		QosExcellenceReport:   copiedExcellenceQOS,
+		QosExcellenceReport:   copiedReputation,
 	}
 }
 

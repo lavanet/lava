@@ -100,7 +100,7 @@ func WithBlockErrorProbability(probability sdk.Dec) Option {
 	}
 }
 
-// ComputeQoSExcellence calculates a score from the QoS excellence report by the following formula:
+// ComputeReputation calculates a score from the QoS excellence report by the following formula:
 // If the requested block is the latest block or "not applicable" (called from the node's code):
 //
 //	score = latency + sync*syncFactor + ((1/availability) - 1) * FailureCost
@@ -114,7 +114,7 @@ func WithBlockErrorProbability(probability sdk.Dec) Option {
 // Important: when using this function from the node's code, do not configure the block error probability
 // (in default mode, it's unused)
 // TODO: after the reputation feature is merged, use this method to calculate the QoS excellence score
-func (qos *QualityOfServiceReport) ComputeQoSExcellence(opts ...Option) (sdk.Dec, error) {
+func (qos *QualityOfServiceReport) ComputeReputation(opts ...Option) (sdk.Dec, error) {
 	if err := qos.Validate(); err != nil {
 		return sdk.ZeroDec(), err
 	}
@@ -138,8 +138,8 @@ func (qos *QualityOfServiceReport) ComputeQoSExcellence(opts ...Option) (sdk.Dec
 	return latency.Add(sync).Add(availability), nil
 }
 
-func (qos *QualityOfServiceReport) ComputeQoSExcellenceFloat64(opts ...Option) (float64, error) {
-	scoreDec, err := qos.ComputeQoSExcellence(opts...)
+func (qos *QualityOfServiceReport) ComputeReputationFloat64(opts ...Option) (float64, error) {
+	scoreDec, err := qos.ComputeReputation(opts...)
 	if err != nil {
 		return 0, err
 	}

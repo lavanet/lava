@@ -314,10 +314,10 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		if result.Reply != nil && result.Reply.Data != nil {
 			countMap[string(result.Reply.Data)]++
 			if !deterministic {
-				if result.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || result.ProviderInfo.ProviderStake.Amount.IsNil() {
+				if result.ProviderInfo.ProviderReputationSummary.IsNil() || result.ProviderInfo.ProviderStake.Amount.IsNil() {
 					continue
 				}
-				currentResult := result.ProviderInfo.ProviderQoSExcellenceSummery.MulInt(result.ProviderInfo.ProviderStake.Amount)
+				currentResult := result.ProviderInfo.ProviderReputationSummary.MulInt(result.ProviderInfo.ProviderStake.Amount)
 				if currentResult.GTE(bestQos) {
 					bestQos.Set(currentResult)
 					bestQosResult = result

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/v4/protocol/lavasession"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func TestSignAndExtract(t *testing.T) {
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:              20,
 		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+		QoSManager:         qos.NewQoSManager(),
 		SessionId:          123,
 		Parent:             nil,
 		RelayNum:           1,
