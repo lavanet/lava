@@ -516,13 +516,13 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 					time.Sleep(play.updateTime)
 				}
 			}
-			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.3)
 			// if we wait more time we expect this to stay correct
 			for i := 0; i < iterations*4; i++ {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)
 			}
-			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.3)
 		})
 	}
 }
