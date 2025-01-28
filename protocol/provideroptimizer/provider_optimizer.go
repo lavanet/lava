@@ -265,7 +265,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			)
 			return NewSelectionTier(), Exploration{}, nil
 		}
-		score, err := qos.ComputeQoSExcellenceFloat64(opts...)
+		score, err := qos.ComputeReputationFloat64(opts...)
 		if err != nil {
 			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers", err,
 				utils.LogAttr("provider", providerAddress),

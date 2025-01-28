@@ -344,7 +344,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		// get current score
 		qos, _ := providerOptimizer.GetReputationReportForProvider(providerAddress)
 		require.NotNil(t, qos)
-		score, err := qos.ComputeQoSExcellence()
+		score, err := qos.ComputeReputation()
 		require.NoError(t, err)
 
 		// add good latency probe
@@ -354,7 +354,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		// check score again and compare to the last score
 		qos, _ = providerOptimizer.GetReputationReportForProvider(providerAddress)
 		require.NotNil(t, qos)
-		newScore, err := qos.ComputeQoSExcellence()
+		newScore, err := qos.ComputeReputation()
 		require.NoError(t, err)
 		require.True(t, newScore.LT(score), "newScore: "+newScore.String()+", score: "+score.String())
 	}
@@ -369,7 +369,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		// get current score
 		qos, _ := providerOptimizer.GetReputationReportForProvider(providerAddress)
 		require.NotNil(t, qos)
-		score, err := qos.ComputeQoSExcellence()
+		score, err := qos.ComputeReputation()
 		require.NoError(t, err)
 
 		// add good latency relay
@@ -379,7 +379,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		// check score again and compare to the last score
 		qos, _ = providerOptimizer.GetReputationReportForProvider(providerAddress)
 		require.NotNil(t, qos)
-		newScore, err := qos.ComputeQoSExcellence()
+		newScore, err := qos.ComputeReputation()
 		require.NoError(t, err)
 		require.True(t, newScore.LT(score), "newScore: "+newScore.String()+", score: "+score.String())
 	}
@@ -1028,7 +1028,7 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	for _, provider := range providersGen.providersAddresses {
 		qos, _ := providerOptimizer.GetReputationReportForProvider(provider)
 		require.NotNil(t, qos)
-		score, err := qos.ComputeQoSExcellence()
+		score, err := qos.ComputeReputation()
 		require.NoError(t, err)
 		scores = append(scores, score)
 	}

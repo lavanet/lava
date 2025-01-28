@@ -40,7 +40,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 	lastReputationReport := cs.QoSManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
 	if lastReputationReport != nil {
-		computedReputation, errComputing := lastReputationReport.ComputeQoSExcellence()
+		computedReputation, errComputing := lastReputationReport.ComputeReputation()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
 			return computedReputation
 		}
