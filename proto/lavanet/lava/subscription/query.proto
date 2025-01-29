@@ -60,6 +60,10 @@ rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (Qu
   option (google.api.http).get = "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}";
 }
 
+rpc EstimatedPoolsRewards(QueryEstimatedPoolsRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_pools_rewards";
+}
+
   // this line is used by starport scaffolding # 2
 }
 
@@ -177,4 +181,8 @@ message QueryEstimatedValidatorRewardsResponse {
     (amino.dont_omitempty)   = true
   ];
 }
+
+message QueryEstimatedPoolsRewardsRequest {
+}
+
 // this line is used by starport scaffolding # 3

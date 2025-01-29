@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v4/protocol/qos"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
@@ -62,7 +63,7 @@ type UsedProvidersInf interface {
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	StakeSize         sdk.Coin
-	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
+	QoSSummaryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
@@ -74,7 +75,7 @@ type ProviderOptimizer interface {
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
-	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
+	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
 }
@@ -82,17 +83,6 @@ type ProviderOptimizer interface {
 type ignoredProviders struct {
 	providers    map[string]struct{}
 	currentEpoch uint64
-}
-
-type QoSReport struct {
-	LastQoSReport              *pairingtypes.QualityOfServiceReport
-	LastExcellenceQoSReport    *pairingtypes.QualityOfServiceReport
-	LastExcellenceQoSReportRaw *pairingtypes.QualityOfServiceReport
-	LatencyScoreList           []sdk.Dec
-	SyncScoreSum               int64
-	TotalSyncScore             int64
-	TotalRelays                uint64
-	AnsweredRelays             uint64
 }
 
 type DataReliabilitySession struct {
@@ -440,6 +430,8 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
+		epoch:              cswp.PairingEpoch,
+		QoSManager:         qos.NewQoSManager(),
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
@@ -591,12 +583,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	}
 
 	return connected, endpointsList, cswp.PublicLavaAddress, nil
-}
-
-func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {
-	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
-	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
-	return downtimePercentage, scaledAvailabilityScore
 }
 
 func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {

@@ -54,7 +54,7 @@ type ConsumerMetricsManager struct {
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *MappedLabelsGaugeVec
-	qosExcellenceMetric                         *MappedLabelsGaugeVec
+	providerReputationMetric                    *MappedLabelsGaugeVec
 	LatestBlockMetric                           *MappedLabelsGaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
 	virtualEpochMetric                          *prometheus.GaugeVec
@@ -172,14 +172,14 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: qosMetricLabels,
 	})
 
-	qosExcellenceMetricLabels := []string{"spec", "provider_address", "qos_metric"}
+	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
-		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
+		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
 	}
-	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_qos_excellence_metrics",
-		Help:   "The QOS metrics per provider excellence",
-		Labels: qosExcellenceMetricLabels,
+	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_provider_reputation_metrics",
+		Help:   "The provider reputation metrics per provider",
+		Labels: providerReputationMetricLabels,
 	})
 
 	latestBlockMetricLabels := []string{"spec", "provider_address", "apiInterface"}
@@ -334,7 +334,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
-		qosExcellenceMetric:                         qosExcellenceMetric,
+		providerReputationMetric:                    providerReputationMetric,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
 		providerRelays:                              map[string]uint64{},
@@ -516,7 +516,7 @@ func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, ap
 	return header + "_" + chainId + "_" + apiInterface
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, reputation *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
 	if pme == nil {
 		return
 	}
@@ -574,7 +574,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		}
 	}
 	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "", providerEndpoint) // it's one api interface for all of them
+	setMetricsForQos(reputation, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
 
 	labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "apiInterface": apiInterface, "provider_endpoint": providerEndpoint}
 	pme.LatestBlockMetric.WithLabelValues(labels).Set(float64(latestBlock))
@@ -618,7 +618,7 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
 	pme.qosMetric.Reset()
-	pme.qosExcellenceMetric.Reset()
+	pme.providerReputationMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
 }
 

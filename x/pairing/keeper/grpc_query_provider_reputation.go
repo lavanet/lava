@@ -97,15 +97,19 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 		// create the reputation data and append
 		chainClusterRes.Rank = uint64(rank)
 		chainClusterRes.Providers = uint64(len(pairingScores))
-		if variance < varianceThreshold {
-			chainClusterRes.OverallPerformance = lowVariance
+
+		if pairingScores[len(pairingScores)-rank] > lavaslices.Percentile(pairingScores, percentileRank) {
+			chainClusterRes.OverallPerformance = goodScore
+			if variance < varianceThreshold {
+				chainClusterRes.OverallPerformance += " (" + lowVariance + ")"
+			}
 		} else {
-			if pairingScores[len(pairingScores)-rank] > lavaslices.Percentile(pairingScores, percentileRank) {
-				chainClusterRes.OverallPerformance = goodScore
-			} else {
-				chainClusterRes.OverallPerformance = badScore
+			chainClusterRes.OverallPerformance = badScore
+			if variance < varianceThreshold {
+				chainClusterRes.OverallPerformance += " (" + lowVariance + ")"
 			}
 		}
+
 		res = append(res, chainClusterRes)
 	}
 
