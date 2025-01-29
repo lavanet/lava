@@ -104,6 +104,7 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 
 	// create a new spec
 	spec2 := common.CreateMockSpec()
+	spec2.Shares = 0
 	spec2.Index = mockSpec2
 	spec2.Name = mockSpec2
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec2, spec2).Spec(mockSpec2))
