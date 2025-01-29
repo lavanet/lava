@@ -310,10 +310,9 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
-
-		totalLoLSuccessMetric:      totalLoLSuccessMetric,
-		totalLoLErrorsMetric:       totalLoLErrorsMetric,
-		consumerOptimizerQoSClient: options.ConsumerOptimizerQoSClient,
+		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
+		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
+		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
