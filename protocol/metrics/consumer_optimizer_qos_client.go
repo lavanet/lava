@@ -60,6 +60,7 @@ type OptimizerQoSReportToSend struct {
 	Epoch             uint64    `json:"epoch"`
 	ProviderStake     int64     `json:"provider_stake"`
 	EntryIndex        int       `json:"entry_index"`
+	Tier              int       `json:"tier"`
 	TierChances       string    `json:"tier_chances"`
 	GeoLocation       uint64    `json:"geo_location"`
 }
@@ -151,6 +152,7 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		Epoch:             epoch,
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
+		Tier:              report.Tier,
 		TierChances:       report.TierChances,
 		GeoLocation:       coqc.geoLocation,
 	}
@@ -180,7 +182,6 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() []OptimizerQo
 			reportsToSend = append(reportsToSend, coqc.appendOptimizerQoSReport(report, chainId, currentEpoch))
 		}
 	}
-
 	return reportsToSend
 }
 
