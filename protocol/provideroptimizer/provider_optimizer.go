@@ -249,6 +249,7 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 		qosReport := providersScores[entry.Address]
 		qosReport.EntryIndex = idx
 		qosReport.TierChances = PrintTierChances(tierChances)
+		qosReport.Tier = po.GetProviderTier(entry.Address, selectionTier)
 		reports = append(reports, qosReport)
 	}
 
@@ -261,6 +262,20 @@ func PrintTierChances(tierChances map[int]float64) string {
 		tierChancesString += fmt.Sprintf("%d: %f, ", tier, chance)
 	}
 	return tierChancesString
+}
+
+func (po *ProviderOptimizer) GetProviderTier(providerAddress string, selectionTier SelectionTier) int {
+	numTiersWanted := po.GetNumTiersWanted(selectionTier)
+	minTierEntries := po.GetMinTierEntries(selectionTier)
+	for tier := 0; tier < numTiersWanted; tier++ {
+		tierProviders := selectionTier.GetTier(tier, numTiersWanted, minTierEntries)
+		for _, provider := range tierProviders {
+			if provider.Address == providerAddress {
+				return tier
+			}
+		}
+	}
+	return -1
 }
 
 func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
@@ -341,19 +356,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	selectionTierScoresCount := selectionTier.ScoresCount()
-
-	localMinimumEntries := po.OptimizerMinTierEntries
-	if AutoAdjustTiers {
-		adjustedProvidersPerTier := int(stdMath.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
-		if localMinimumEntries > adjustedProvidersPerTier {
-			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
-				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
-				utils.LogAttr("was_MinimumEntries", po.OptimizerMinTierEntries),
-				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
-				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
-			localMinimumEntries = adjustedProvidersPerTier
-		}
-	}
+	localMinimumEntries := po.GetMinTierEntries(selectionTier)
 
 	if selectionTierScoresCount == 0 {
 		// no providers to choose from
@@ -361,11 +364,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	}
 	initialChances := map[int]float64{0: ATierChance}
 
-	// check if we have enough providers to create the tiers, if not set the number of tiers to the number of providers we currently have
-	numberOfTiersWanted := po.OptimizerNumTiers
-	if selectionTierScoresCount < po.OptimizerNumTiers {
-		numberOfTiersWanted = selectionTierScoresCount
-	}
+	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier)
 	if selectionTierScoresCount >= localMinimumEntries*2 {
 		// if we have more than 2*localMinimumEntries we set the LastTierChance configured
 		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
@@ -387,6 +386,39 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	)
 
 	return returnedProviders, tier
+}
+
+// GetMinTierEntries gets minimum number of entries in a tier to be considered for selection
+// if AutoAdjustTiers global is true, the number of providers per tier is divided equally
+// between them
+func (po *ProviderOptimizer) GetMinTierEntries(selectionTier SelectionTier) int {
+	selectionTierScoresCount := selectionTier.ScoresCount()
+	localMinimumEntries := po.OptimizerMinTierEntries
+	if AutoAdjustTiers {
+		adjustedProvidersPerTier := int(stdMath.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
+		if localMinimumEntries > adjustedProvidersPerTier {
+			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
+				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
+				utils.LogAttr("was_MinimumEntries", po.OptimizerMinTierEntries),
+				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
+				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
+			localMinimumEntries = adjustedProvidersPerTier
+		}
+	}
+	return localMinimumEntries
+}
+
+// GetNumTiersWanted returns the number of tiers wanted
+// if we have enough providers to create the tiers return the configured number of tiers wanted
+// if not, set the number of tiers to the number of providers we currently have
+func (po *ProviderOptimizer) GetNumTiersWanted(selectionTier SelectionTier) int {
+	selectionTierScoresCount := selectionTier.ScoresCount()
+	numberOfTiersWanted := po.OptimizerNumTiers
+	if selectionTierScoresCount < po.OptimizerNumTiers {
+		numberOfTiersWanted = selectionTierScoresCount
+	}
+
+	return numberOfTiersWanted
 }
 
 // CalculateProbabilityOfBlockError calculates the probability that a provider doesn't a specific requested

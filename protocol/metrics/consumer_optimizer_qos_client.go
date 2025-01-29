@@ -42,6 +42,7 @@ type OptimizerQoSReport struct {
 	LatencyScore      float64
 	GenericScore      float64
 	EntryIndex        int
+	Tier              int
 	TierChances       string
 }
 
