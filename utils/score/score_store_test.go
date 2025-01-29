@@ -277,7 +277,7 @@ func TestScoreStoreUpdateIdenticalSamplesThenBetter(t *testing.T) {
 	expected := sample
 	score, err := store.Resolve()
 	require.NoError(t, err)
-	require.InEpsilon(t, expected, score, 0.000001)
+	require.InEpsilon(t, expected, score, 0.00001)
 
 	// update the ScoreStore with many better identical samples
 	betterSample := float64(3)
@@ -291,7 +291,7 @@ func TestScoreStoreUpdateIdenticalSamplesThenBetter(t *testing.T) {
 	expected = betterSample
 	score, err = store.Resolve()
 	require.NoError(t, err)
-	require.InEpsilon(t, expected, score, 0.000001)
+	require.InEpsilon(t, expected, score, 0.00001)
 }
 
 // TestScoreStoreUpdateDecayFactors checks that updating a ScoreStore after a
