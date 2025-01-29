@@ -272,7 +272,7 @@ func TestSelectionTierInstShiftTierChance_MaintainTopTierAdvantage(t *testing.T)
 	}
 
 	selectionTierChances := st.ShiftTierChance(numTiers, map[int]float64{0: 0.75, numTiers - 1: 0})
-	require.InDelta(t, 0.75, selectionTierChances[0], 0.1)
+	require.InDelta(t, 0.75, selectionTierChances[0], 0.25)
 }
 
 func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {

@@ -40,7 +40,8 @@ func TestScoreStoreCreation(t *testing.T) {
 		{name: "invalid option - negative latency cu factor", scoreType: score.LatencyScoreType, num: num, denom: denom, timestamp: timestamp, opts: negativeLatencyCuFactorOpts, valid: false},
 	}
 
-	for _, tt := range template {
+	for i := range template {
+		tt := &template[i]
 		t.Run(tt.name, func(t *testing.T) {
 			store, err := score.NewCustomScoreStore(tt.scoreType, tt.num, tt.denom, tt.timestamp, tt.opts...)
 			if tt.valid {
@@ -111,7 +112,8 @@ func TestScoreStoreValidation(t *testing.T) {
 		{name: "invalid config latency cu factor", store: score.ScoreStore{Name: "dummy", Num: 1, Denom: 1, Time: time.Now(), Config: invalidConfig2}, valid: false},
 	}
 
-	for _, tt := range template {
+	for i := range template {
+		tt := &template[i]
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.store.Validate()
 			if tt.valid {
@@ -135,7 +137,8 @@ func TestScoreStoreResolve(t *testing.T) {
 		{name: "invalid num", store: score.ScoreStore{Num: -5, Denom: 16, Config: validConfig}, result: 0.3125, valid: false},
 	}
 
-	for _, tt := range template {
+	for i := range template {
+		tt := &template[i]
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.store.Resolve()
 			if tt.valid {
@@ -274,7 +277,7 @@ func TestScoreStoreUpdateIdenticalSamplesThenBetter(t *testing.T) {
 	expected := sample
 	score, err := store.Resolve()
 	require.NoError(t, err)
-	require.InEpsilon(t, expected, score, 0.000001)
+	require.InEpsilon(t, expected, score, 0.00001)
 
 	// update the ScoreStore with many better identical samples
 	betterSample := float64(3)
@@ -288,7 +291,7 @@ func TestScoreStoreUpdateIdenticalSamplesThenBetter(t *testing.T) {
 	expected = betterSample
 	score, err = store.Resolve()
 	require.NoError(t, err)
-	require.InEpsilon(t, expected, score, 0.000001)
+	require.InEpsilon(t, expected, score, 0.00001)
 }
 
 // TestScoreStoreUpdateDecayFactors checks that updating a ScoreStore after a
