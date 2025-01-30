@@ -581,12 +581,12 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		}
 		utils.LavaFormatInfo(errorMessage,
 			utils.Attribute{Key: "Info Type", Value: lavasession.EpochMismatchError},
-			utils.Attribute{Key: "current lava block", Value: latestBlock},
-			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
+			utils.Attribute{Key: "provider lava block", Value: latestBlock},
+			utils.Attribute{Key: "consumer lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
-		return nil, nil, lavasession.EpochMismatchError
+		return nil, nil, lavasession.EpochMismatchError.Wrapf("provider lava block %d, consumer lava block %d, treshold: %d", latestBlock, request.RelaySession.Epoch, rpcps.providerSessionManager.GetBlockedEpochHeight())
 	}
 
 	// Check data
