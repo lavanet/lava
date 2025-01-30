@@ -181,6 +181,12 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
 	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
 
+	// Ensure the bad providers (5-7) are in results map even if they were never picked
+	for i := 5; i <= 7; i++ {
+		if _, exists := results[providersGen.providersAddresses[i]]; !exists {
+			results[providersGen.providersAddresses[i]] = 0
+		}
+	}
 	// the bad providers shouldn't have been picked even once
 	// Find the two least picked providers
 	var leastPicked, secondLeastPicked string
@@ -201,9 +207,9 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 		secondLeastPicked: secondLeastCount,
 	}
 
-	utils.LavaFormatInfo("results", utils.LogAttr("results", results))
+	utils.LavaFormatInfo("results", utils.LogAttr("results", results), utils.LogAttr("minimumScores", minimumScores), utils.LogAttr("worstTierEntries", worstTierEntries))
 	for address := range minimumScores {
-		require.Contains(t, worstTierEntries, address, results, minimumScores, worstTierEntries)
+		require.Contains(t, worstTierEntries, address)
 	}
 }
 
