@@ -586,7 +586,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
-		return nil, nil, lavasession.EpochMismatchError.Wrapf("provider lava block %d, consumer lava block %d, treshold: %d", latestBlock, request.RelaySession.Epoch, rpcps.providerSessionManager.GetBlockedEpochHeight())
+		return nil, nil, lavasession.EpochMismatchError.Wrapf("provider lava block %d, consumer lava block %d, threshold: %d", latestBlock, request.RelaySession.Epoch, rpcps.providerSessionManager.GetBlockedEpochHeight())
 	}
 
 	// Check data
