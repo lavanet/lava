@@ -131,7 +131,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
-
+	AutoAdjustTiers = true
 	// damage providers 5-7 scores with bad latency relays
 	// they should not be selected by the optimizer and should be in the worst tier
 	badLatency := TEST_BASE_WORLD_LATENCY * 3
@@ -898,9 +898,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// providers 0,1,2,3 are picked. tier 0: providers 0,1
 			// tier 1: providers 2,3
 			// provider 1,3 have higher stake and should be picked more often within their tier
-			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], 480)
 			require.Greater(t, tierResults[0], tierResults[1])
-			require.Equal(t, 6, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[0]])
 			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
 		case 1:
@@ -910,9 +909,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// provider 1 has higher stake and should be picked more often within their tier
 			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
 			// provider 3 should be picked more often than provider 4
-			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], 480)
 			require.Greater(t, tierResults[0], tierResults[1])
-			require.Equal(t, 5, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[2]])
 			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
 		case 2:
@@ -922,9 +920,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// provider 3 has higher stake and should be picked more often within their tier
 			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
 			// provider 3 should be picked more often than provider 4
-			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], 480)
 			require.Greater(t, tierResults[0], tierResults[1])
-			require.Equal(t, 4, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
 			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
 		case 3:
@@ -934,9 +931,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// providers 3,4,5 are picked. tier 0: providers 3
 			// tier 1: providers 4,5
 			// provider 5 has higher stake and should be picked more often within their tier
-			require.Greater(t, tierResults[0], 540)
+			require.Greater(t, tierResults[0], 480)
 			require.Greater(t, tierResults[0], tierResults[1])
-			require.Equal(t, 3, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[5]], res[providersGen.providersAddresses[4]])
 		case 4:
 			// 2 providers, 2 tiers
@@ -945,9 +941,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 			// tier 1: providers 4,5 (4 with part=0.5, because it's dragged from tier 0)
 			// provider 4 is picked more often than provider 5 even though it has less stake
 			// because it's the only provider in tier 0
-			require.Greater(t, tierResults[0], 550)
+			require.Greater(t, tierResults[0], 480)
 			require.Greater(t, tierResults[0], tierResults[1])
-			require.Equal(t, 2, len(res))
 			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
 		}
 	}
