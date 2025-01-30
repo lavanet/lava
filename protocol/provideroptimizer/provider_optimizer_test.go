@@ -151,8 +151,11 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	// because of a high minimum entries value, so filter the providers that are only in the worst tier
 	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
 	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
-	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, 1)
-	worstTierEntries := map[string]struct{}{}
+	worstTierEntries := map[string]struct{}{
+		providersGen.providersAddresses[5]: {},
+		providersGen.providersAddresses[6]: {},
+		providersGen.providersAddresses[7]: {},
+	}
 	for _, entry := range tier3Entries {
 		// verify that the worst providers are the ones with the bad latency
 		if entry.Address != providersGen.providersAddresses[5] &&
@@ -160,11 +163,6 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 			entry.Address != providersGen.providersAddresses[7] {
 			t.Fatalf("entry %s is not in the worst tier", entry.Address)
 		}
-		worstTierEntries[entry.Address] = struct{}{}
-	}
-	for _, entry := range tier2Entries {
-		// remove the providers that are also in tier 2
-		delete(worstTierEntries, entry.Address)
 	}
 
 	require.NotEqual(t, tier, 3) // we shouldn't pick the low tier providers
@@ -205,8 +203,9 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 		secondLeastPicked: secondLeastCount,
 	}
 
-	for address := range worstTierEntries {
-		require.Contains(t, minimumScores, address)
+	utils.LavaFormatInfo("results", utils.LogAttr("results", results))
+	for address := range minimumScores {
+		require.Contains(t, worstTierEntries, address, results, minimumScores, worstTierEntries)
 	}
 }
 
