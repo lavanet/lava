@@ -43,6 +43,13 @@ var (
 	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
 )
 
+type DataKind int
+
+const (
+	EARLIEST DataKind = iota
+	LATEST
+)
+
 type RelayReplyWrapper struct {
 	StatusCode int
 	RelayReply *pairingtypes.RelayReply

@@ -148,6 +148,24 @@ func CreateChainLibMocks(
 		Geolocation:    1,
 		NodeUrls:       []common.NodeUrl{},
 	}
+	policy := &plantypes.Policy{
+		ChainPolicies: []plantypes.ChainPolicy{
+			{
+				ChainId: spec.Index,
+				Apis:    []string{},
+				Requirements: []plantypes.ChainRequirement{
+					{
+						Collection: spectypes.CollectionData{
+							ApiInterface: apiInterface,
+						},
+						Extensions: services,
+						Mixed:      true,
+					},
+				},
+			},
+		},
+	}
+	chainParser.SetPolicy(policy, spec.Index, apiInterface)
 	addons, extensions, err := chainParser.SeparateAddonsExtensions(services)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
@@ -171,7 +189,10 @@ func CreateChainLibMocks(
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
 		allCombinations := generateCombinations(extensions)
 		for _, extensionsList := range allCombinations {
-			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
+			nodeUrl := common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)}
+			// this is used to identify this header in the handler
+			nodeUrl.AuthConfig = common.AuthConfig{AuthHeaders: map[string]string{"Addon": strings.Join(extensionsList, ",")}}
+			endpoint.NodeUrls = append(endpoint.NodeUrls, nodeUrl)
 		}
 		go func() {
 			service := myServiceImplementation{serverCallback: httpServerCallback}

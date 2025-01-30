@@ -117,7 +117,7 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	}
 	parsedInput := &parser.ParsedInput{}
 	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
-	return apip.newChainMessage(apiCont.api, parsedInput, grpcMessage, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, parsedInput, grpcMessage, apiCollection, OriginalRaw{Path: grpcMessage.Path, Data: grpcMessage.Msg}), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -172,12 +172,12 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection, OriginalRaw{Data: data, Path: url})
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection, originalRaw OriginalRaw) *baseChainMessageContainer {
 	requestedBlock := parsedInput.GetBlock()
 	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
@@ -189,6 +189,7 @@ func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),
 		usedDefaultValue:         parsedInput.UsedDefaultValue,
+		originalRaw:              originalRaw,
 	}
 	return nodeMsg
 }

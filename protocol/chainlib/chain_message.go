@@ -12,9 +12,14 @@ import (
 	spectypes "github.com/lavanet/lava/v4/x/spec/types"
 )
 
+type OriginalRaw struct {
+	Path string
+	Data []byte
+}
+
 type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
-	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
+	UpdateLatestBlockInMessage(latestBlock uint64) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
 	GetRawRequestHash() ([]byte, error)
@@ -32,11 +37,15 @@ type baseChainMessageContainer struct {
 	forceCacheRefresh      bool
 	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
 	usedDefaultValue       bool
-
-	inputHashCache []byte
+	originalRaw            OriginalRaw
+	inputHashCache         []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (bcmc *baseChainMessageContainer) GetOriginal() (path string, data []byte) {
+	return bcmc.originalRaw.Path, bcmc.originalRaw.Data
 }
 
 func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
@@ -130,17 +139,14 @@ func (bcnc baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.Gener
 	return bcnc.msg
 }
 
-func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
+func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64) (modifiedOnLatestReq bool) {
 	requestedBlock, _ := bcnc.RequestedBlock()
-	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
+	// we disallow setting latest block to 0 or one of the wildcards as an override
+	if requestedBlock > latestBlock || latestBlock <= 0 {
 		return false
 	}
-	success := bcnc.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
-	if success {
-		bcnc.latestRequestedBlock = latestBlock
-		return true
-	}
-	return false
+	bcnc.latestRequestedBlock = latestBlock
+	return true
 }
 
 func (bcnc *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {

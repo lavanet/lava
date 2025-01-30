@@ -12,6 +12,7 @@ import (
 
 	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v4/protocol/parser"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/lavaslices"
 	"github.com/lavanet/lava/v4/utils/maps"
@@ -35,25 +36,74 @@ type InternalPath struct {
 	Addon          string
 }
 
+type ErrorPattern struct {
+	TooNewPattern string
+	TooOldPattern string
+}
+
+func (bep *ErrorPattern) IsEmpty() bool {
+	return bep.TooNewPattern == "" && bep.TooOldPattern == ""
+}
+
 type BaseChainParser struct {
-	internalPaths   map[string]InternalPath
-	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec            spectypes.Spec
-	rwLock          sync.RWMutex
-	serverApis      map[ApiKey]ApiContainer
-	apiCollections  map[CollectionKey]*spectypes.ApiCollection
-	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons   map[string]bool
-	extensionParser extensionslib.ExtensionParser
-	active          bool
+	internalPaths     map[string]InternalPath
+	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec              spectypes.Spec
+	rwLock            sync.RWMutex
+	serverApis        map[ApiKey]ApiContainer
+	apiCollections    map[CollectionKey]*spectypes.ApiCollection
+	headers           map[ApiKey]*spectypes.Header
+	verifications     map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
+	allowedAddons     map[string]bool
+	extensionParser   extensionslib.ExtensionParser
+	active            bool
+	blockErrorPattern ErrorPattern
+}
+
+// allows an optional kind to specify the type of error to identify
+// LATEST is identifying too new error
+// EARLIEST is identifying too old error
+func (bcp *BaseChainParser) IdentifyNodeError(message string, kind ...DataKind) (isBlockError bool, blockHeight int64) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	if bcp.blockErrorPattern.IsEmpty() {
+		return false, 0
+	}
+	if len(kind) == 0 || kind[0] == LATEST {
+		var success bool
+		success, blockHeight := parser.ParseNumberFromPattern(bcp.blockErrorPattern.TooNewPattern, message)
+		if success {
+			return true, blockHeight
+		}
+	}
+	if len(kind) == 0 || kind[0] == EARLIEST {
+		success, blockHeight := parser.ParseNumberFromPattern(bcp.blockErrorPattern.TooOldPattern, message)
+		if success {
+			return true, blockHeight
+		}
+	}
+	return false, 0
+}
+
+func (bcp *BaseChainParser) SetBlockErrorPattern(pattern string, kind DataKind) {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
+	if kind == EARLIEST {
+		bcp.blockErrorPattern.TooOldPattern = pattern
+	} else if kind == LATEST {
+		bcp.blockErrorPattern.TooNewPattern = pattern
+	}
 }
 
 func (bcp *BaseChainParser) Activate() {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
 	bcp.active = true
 }
 
 func (bcp *BaseChainParser) Active() bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
 	return bcp.active
 }
 

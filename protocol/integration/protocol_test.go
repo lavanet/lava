@@ -12,7 +12,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -300,15 +299,16 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 }
 
 type rpcProviderOptions struct {
-	consumerAddress    string
-	specId             string
-	apiInterface       string
-	listenAddress      string
-	account            sigs.Account
-	lavaChainID        string
-	addons             []string
-	providerUniqueId   string
-	cacheListenAddress string
+	consumerAddress         string
+	specId                  string
+	apiInterface            string
+	listenAddress           string
+	account                 sigs.Account
+	lavaChainID             string
+	addons                  []string
+	providerUniqueId        string
+	cacheListenAddress      string
+	providerSideInterceptor func(input interface{}) // this function will be called on each relay request
 }
 
 func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
@@ -403,8 +403,14 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, numberOfRetriesOnNodeErrorsProviderSide)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
-	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
-	require.NoError(t, err)
+	if rpcProviderOptions.providerSideInterceptor != nil {
+		relayReceiverInterceptor := rpcprovider.NewRelayReceiverInterceptor(rpcProviderServer, rpcProviderOptions.providerSideInterceptor)
+		err = listener.RegisterReceiver(relayReceiverInterceptor, rpcProviderEndpoint)
+		require.NoError(t, err)
+	} else {
+		err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+		require.NoError(t, err)
+	}
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
@@ -1408,14 +1414,12 @@ func TestSameProviderConflictReport(t *testing.T) {
 			lavaChainID:           lavaChainID,
 		}
 		rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-
+		conflict := make(chan bool)
 		conflictSent := false
-		wg := sync.WaitGroup{}
-		wg.Add(1)
 		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 			if finalizationConflict == nil {
-				wg.Done()
 				require.FailNow(t, "Finalization conflict should not be nil")
+				conflict <- true
 				return nil
 			}
 			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
@@ -1427,8 +1431,8 @@ func TestSameProviderConflictReport(t *testing.T) {
 			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
 				require.FailNow(t, "Finalization conflict provider address is not the provider address")
 			}
-			wg.Done()
 			conflictSent = true
+			conflict <- false
 			return nil
 		}
 		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
@@ -1458,7 +1462,11 @@ func TestSameProviderConflictReport(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		// conflict calls happen concurrently, therefore we need to wait the call.
-		wg.Wait()
+		select {
+		case <-time.After(3 * time.Minute):
+			require.FailNow(t, "timeout waiting for conflict")
+		case <-conflict:
+		}
 		require.True(t, conflictSent)
 	})
 
@@ -2159,6 +2167,156 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			require.Equal(t, string(bodyBytes), play.expectedResult)
 			require.Equal(t, 1, timesCalledProvidersOnSecondStage) // must go directly to archive as we have it in cache.
 			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
+		})
+	}
+}
+
+func TestUnconfiguredApiWithArchiveRequest(t *testing.T) {
+	playbook := []struct {
+		name                string
+		apiInterface        string
+		errorFormat         string
+		managedToParseBlock bool
+		reqFormat           string
+	}{
+		{
+			name:                "tendermint",
+			apiInterface:        spectypes.APIInterfaceTendermintRPC,
+			errorFormat:         `{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error","data":"height %d must be less than or equal to the current blockchain height %d"}}`,
+			managedToParseBlock: true,
+			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
+		},
+		{
+			name:                "tendermint_empty",
+			apiInterface:        spectypes.APIInterfaceTendermintRPC,
+			errorFormat:         `{"jsonrpc":"2.0","id":1,"result":null}}`,
+			managedToParseBlock: false,
+			reqFormat:           `{"jsonrpc":"2.0","method":"block_undefined","params":[123],"id":1}`,
+		},
+		// {"code":2,"message":"height 1 is not available, lowest height is 340778","details":[]}
+	}
+	for _, play := range playbook {
+		t.Run("unconfiguredApiWithArchiveRequest", func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "LAV1"
+			apiInterface := play.apiInterface
+			epoch := uint64(100)
+			lavaChainID := "lava"
+			numProviders := 2
+
+			consumerListenAddress := addressGen.GetAddress()
+
+			type providerData struct {
+				account                sigs.Account
+				endpoint               *lavasession.RPCProviderEndpoint
+				server                 *rpcprovider.RPCProviderServer
+				replySetter            *ReplySetter
+				mockChainFetcher       *MockChainFetcher
+				mockReliabilityManager *MockReliabilityManager
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			archiveCalled := make(chan bool, 10)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				addons := []string(nil)
+				if i == 0 {
+					// one provider will have archive
+					addons = []string{"archive"}
+				}
+
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           addons,
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+					if bytes.Equal(req, []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"9223372036854775807\"]}")) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775807, 1000)), 500
+					}
+					if bytes.Equal(req, []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"9223372036854775806\"]}")) {
+						return []byte(fmt.Sprintf(play.errorFormat, 9223372036854775806, 1001)), 500
+					}
+					for key, val := range header {
+						if key == "Addon" {
+							if val[0] == "archive" {
+								archiveCalled <- true
+							}
+						}
+					}
+					return []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error","data":"height 1 must be less than or equal to the current blockchain height 1002"}}`), 500
+				}
+			}
+
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			for i := 0; i < numProviders; i++ {
+				extensions := map[string]struct{}{}
+				if i == 0 {
+					extensions = map[string]struct{}{"archive": {}}
+				}
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+							Extensions:     extensions,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
+			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
+			success := rpcConsumerOut.rpcConsumerServer.ExtractNodeData(ctx, chainlib.LATEST)
+			require.Equal(t, play.managedToParseBlock, success)
+			if success {
+				start := time.Now()
+				isError, height := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
+				elapsed := time.Since(start)
+				require.LessOrEqual(t, elapsed.Microseconds(), int64(5000), "IdentifyNodeError took too long", elapsed)
+				require.True(t, isError)
+				require.Equal(t, int64(777), height)
+				isError, height = rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 778 must be less than or equal to the current blockchain height 5555555555551001", chainlib.LATEST)
+				require.True(t, isError)
+				require.Equal(t, int64(778), height)
+				isError, _ = rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 778 must be less than Banana or equal to the current blockchain height 5555555555551002", chainlib.LATEST)
+				require.False(t, isError)
+			} else {
+				isError, _ := rpcConsumerOut.rpcConsumerServer.ChainParser.IdentifyNodeError("Internal error,data: height 777 must be less than or equal to the current blockchain height 1001", chainlib.LATEST)
+				require.False(t, isError)
+			}
 		})
 	}
 }
