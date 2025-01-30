@@ -271,6 +271,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 // TestBlocksAndTimeToNextExpiry tests that the time/blocks to the next timer expiry are as expected
 func TestBlocksAndTimeToNextExpiry(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 
 	// TimeToNextTimerExpiry should be equal to the number of seconds in a month
@@ -349,6 +350,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 // 1. There's a single timer at all times the expires after a month
 // 2. The timer's data contains the months left before the allocation pool's funds are depleted
 func TestRefillPoolsTimerStore(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 

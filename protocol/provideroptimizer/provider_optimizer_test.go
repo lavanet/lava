@@ -950,13 +950,13 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	}
 }
 
-// TestProviderOptimizerChoiceSimulation checks that the overall choice mechanism acts as expected,
+// TestProviderOptimizerChoiceSimulationBasedOnLatency checks that the overall choice mechanism acts as expected,
 // For each of the following metrics: latency, sync, availability and stake we do the following:
-// 0. Assume 2 providers
+// 0. Assume 3 providers
 // 1. Append relay data for both providers with random samples. The "better" provider will have a randomized
 // sample with a better range (for example, the better one gets latency of 10-30ms and the bad one gets 25-40ms)
 // 2. Choose between them and verify the better one is chosen more.
-func TestProviderOptimizerChoiceSimulation(t *testing.T) {
+func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 3
@@ -983,45 +983,85 @@ func TestProviderOptimizerChoiceSimulation(t *testing.T) {
 	// address, after it the 2nd and so on
 	for i := 0; i < 1000; i++ {
 		// randomize latency, provider 0 gets a better latency than provider 1
-		p1Latency += float64(rand.Int63n(21)+10) * float64(time.Millisecond) // Random number between 10-30
-		p2Latency += float64(rand.Int63n(11)+30) * float64(time.Millisecond) // Random number between 30-40
-		p3Latency += float64(rand.Int63n(12)+30) * float64(time.Millisecond) // Random number between 30-40
+		p1Latency += 10 * float64(time.Millisecond)
+		p2Latency += 20 * float64(time.Millisecond)
+		p3Latency += 30 * float64(time.Millisecond)
 
 		// randomize sync, provider 0 gets a better sync than provider 1
-		if rand.Float64() < 0.1 { // 10% chance to increment both
-			p1SyncBlock++
-			p2SyncBlock++
-			p3SyncBlock++
-		}
-		if rand.Float64() < 0.05 { // 5% chance to increment only p1
-			p1SyncBlock++
-		}
+		p1SyncBlock++
+		p2SyncBlock++
+		p3SyncBlock++
 
-		// randomize availability, provider 0 gets a better availability than provider 1
-		if rand.Float64() < 0.1 { // 10% chance to false for p2
-			p2Availability = false
-		}
-		if rand.Float64() < 0.05 { // 5% chance to false for p3
-			p3Availability = false
-		}
-		if rand.Float64() < 0.05 { // 5% chance to false for both
-			p1Availability = false
-			p2Availability = false
-			p3Availability = false
-		}
-
+		time.Sleep(1 * time.Millisecond)
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, time.Now())
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, time.Now())
 		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, time.Now())
-		time.Sleep(10 * time.Millisecond)
 	}
 
 	// choose many times and check the better provider is chosen more often (provider 0)
 	iterations := 1000
-	res, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
-	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
+	res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	utils.LavaFormatInfo("res", utils.LogAttr("res", res), utils.LogAttr("tierResults", tierResults))
 	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
 	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]])
+	require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[2]])
+}
+
+func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
+	rand.InitRandomSeed()
+	providerOptimizer := setupProviderOptimizer(1)
+	providersCount := 3
+	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+	cu := uint64(10)
+	syncBlock := uint64(1000)
+	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
+	providerOptimizer.OptimizerNumTiers = 4
+	providerOptimizer.OptimizerMinTierEntries = 1
+
+	// initial values
+	p1Latency := baseLatency * float64(time.Millisecond)
+	p2Latency := baseLatency * float64(time.Millisecond)
+	p3Latency := baseLatency * float64(time.Millisecond)
+	p1SyncBlock := syncBlock
+	p2SyncBlock := syncBlock
+	p3SyncBlock := syncBlock
+	p1Availability := true
+	p2Availability := true
+	p3Availability := true
+	// append relay data for each provider depending on its index in the providers array
+	// the latency gets worse for increasing index so we assume the best provider is the 1st
+	// address, after it the 2nd and so on
+	sampleTime := time.Now()
+	for i := 0; i < 1000; i++ {
+		// randomize latency, provider 0 gets a better latency than provider 1
+		p1Latency += 10 * float64(time.Millisecond)
+		p2Latency += 10 * float64(time.Millisecond)
+		p3Latency += 10 * float64(time.Millisecond)
+
+		// randomize sync, provider 0 gets a better sync than provider 1
+		p1SyncBlock++
+		if i%100 == 1 {
+			p1SyncBlock++
+		}
+		if i%300 == 1 {
+			p2SyncBlock++
+		}
+		p2SyncBlock++
+		p3SyncBlock++
+
+		time.Sleep(1 * time.Millisecond)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, sampleTime)
+	}
+	// choose many times and check the better provider is chosen more often (provider 0)
+	iterations := 1000
+	res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
+
+	utils.LavaFormatInfo("res", utils.LogAttr("res", res), utils.LogAttr("tierResults", tierResults))
+	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
+	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]])
+	require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[2]])
 }
 
 // TestProviderOptimizerLatencySyncScore tests that a provider with 100ms latency and x sync block
