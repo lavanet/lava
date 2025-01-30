@@ -2236,6 +2236,7 @@ func TestSubscriptionAdvancePurchaseAnnuallyDiscount(t *testing.T) {
 }
 
 func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
+	keepertest.SetFixedTime()
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 	_, consumerAddr := ts.Account("sub1")
