@@ -47,3 +47,4 @@ endpoints:
           addons:
             - trace
             - archive
+        
