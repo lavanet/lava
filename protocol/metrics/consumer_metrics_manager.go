@@ -178,10 +178,15 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: qosMetricLabels,
 	})
 
-	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_qos_excellence_metrics",
-		Help: "The QOS metrics per provider excellence",
-	}, []string{"spec", "provider_address", "provider_endpoint", "qos_metric"})
+	qosExcellenceMetricLabels := []string{"spec", "provider_address", "qos_metric"}
+	if ShowProviderEndpointInMetrics {
+		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
+	}
+	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_qos_excellence_metrics",
+		Help:   "The QOS metrics per provider excellence",
+		Labels: qosExcellenceMetricLabels,
+	})
 
 	providerLivenessMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_provider_liveness",
@@ -315,7 +320,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
-		providerReputationMetric:                    qosExcellenceMetric,
+		providerReputationMetric:                    providerReputationMetric,
 		providerLivenessMetric:                      providerLivenessMetric,
 		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
