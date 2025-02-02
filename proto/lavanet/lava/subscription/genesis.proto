@@ -8,7 +8,7 @@ import "lavanet/lava/fixationstore/fixation.proto";
 import "lavanet/lava/timerstore/timer.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/lavanet/lava/v4/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v5/x/subscription/types";
 
 // GenesisState defines the subscription module's genesis state.
 message GenesisState {

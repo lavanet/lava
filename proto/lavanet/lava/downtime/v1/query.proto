@@ -2,7 +2,7 @@ syntax="proto3";
 
 package lavanet.lava.downtime.v1;
 
-option go_package = "github.com/lavanet/lava/v4/x/downtime/v1";
+option go_package = "github.com/lavanet/lava/v5/x/downtime/v1";
 
 import "google/protobuf/duration.proto";
 import "lavanet/lava/downtime/v1/downtime.proto";

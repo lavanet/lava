@@ -8,7 +8,7 @@ import "lavanet/lava/dualstaking/params.proto";
 import "lavanet/lava/dualstaking/delegate.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v5/x/dualstaking/types";
 
 // Query defines the gRPC querier service.
 service Query {
