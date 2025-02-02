@@ -8,7 +8,7 @@ import "lavanet/lava/pairing/relay.proto";
 import "cosmos/staking/v1beta1/staking.proto";
 import "amino/amino.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v5/x/pairing/types";
 
 // Msg defines the Msg service.
 service Msg {

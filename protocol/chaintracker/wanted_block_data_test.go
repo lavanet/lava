@@ -4,8 +4,8 @@ import (
 	fmt "fmt"
 	"testing"
 
-	chaintracker "github.com/lavanet/lava/v4/protocol/chaintracker"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	chaintracker "github.com/lavanet/lava/v5/protocol/chaintracker"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/testutil/nullify"
-	"github.com/lavanet/lava/v4/x/epochstorage/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 func TestEpochDetailsQuery(t *testing.T) {

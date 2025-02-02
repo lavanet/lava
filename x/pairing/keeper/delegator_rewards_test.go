@@ -6,12 +6,12 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 

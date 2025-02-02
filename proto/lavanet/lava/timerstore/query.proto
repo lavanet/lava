@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.timerstore;
 
-option go_package = "github.com/lavanet/lava/v4/x/timerstore/types";
+option go_package = "github.com/lavanet/lava/v5/x/timerstore/types";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 

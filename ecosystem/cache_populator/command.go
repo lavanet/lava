@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )

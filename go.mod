@@ -1,4 +1,4 @@
-module github.com/lavanet/lava/v4
+module github.com/lavanet/lava/v5
 
 go 1.23.3
 

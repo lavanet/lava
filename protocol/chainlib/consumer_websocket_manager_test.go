@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/assert"
 )
 

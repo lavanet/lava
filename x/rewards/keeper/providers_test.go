@@ -7,10 +7,10 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	"github.com/lavanet/lava/v4/x/rewards/types"
-	subscription "github.com/lavanet/lava/v4/x/subscription/keeper"
+	"github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	"github.com/lavanet/lava/v5/x/rewards/types"
+	subscription "github.com/lavanet/lava/v5/x/subscription/keeper"
 	"github.com/stretchr/testify/require"
 )
 

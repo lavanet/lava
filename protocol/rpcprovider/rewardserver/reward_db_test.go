@@ -7,9 +7,9 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v4/testutil/common"
-	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 

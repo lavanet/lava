@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/v4/testutil/common"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

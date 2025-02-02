@@ -4,7 +4,7 @@ package lavanet.lava.dualstaking;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v5/x/dualstaking/types";
 
 // Params defines the parameters for the module.
 message Params {

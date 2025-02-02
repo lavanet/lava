@@ -6,16 +6,16 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v4/protocol/chaintracker"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v4/utils"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	plantypes "github.com/lavanet/lava/v4/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 var DisableDR = false

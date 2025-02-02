@@ -5,8 +5,8 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
-	"github.com/lavanet/lava/v4/x/timerstore/types"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/timerstore/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -3,7 +3,7 @@ package lavasession
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 // stores all providers that are currently used to stream subscriptions.

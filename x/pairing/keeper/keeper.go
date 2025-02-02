@@ -4,18 +4,18 @@ import (
 	"fmt"
 
 	"cosmossdk.io/collections"
-	collcompat "github.com/lavanet/lava/v4/utils/collcompat"
+	collcompat "github.com/lavanet/lava/v5/utils/collcompat"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type (
