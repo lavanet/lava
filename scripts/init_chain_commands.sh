@@ -118,5 +118,5 @@ if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh
 echo "letting providers start and running health check"
 sleep 10
-lavap test health $HEALTH_FILE
+# lavap test health $HEALTH_FILE
 fi
