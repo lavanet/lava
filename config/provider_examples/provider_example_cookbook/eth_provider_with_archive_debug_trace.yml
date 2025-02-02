@@ -2,8 +2,6 @@
 # - archive
 # - debug
 # - trace
-# - trace + archive
-# - debug + archive
 
 # ** Replace the urls with your own node urls **
 
@@ -47,3 +45,4 @@ endpoints:
           addons:
             - trace
             - archive
+        
