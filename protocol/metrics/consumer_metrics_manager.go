@@ -53,7 +53,7 @@ type ConsumerMetricsManager struct {
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *MappedLabelsGaugeVec
-	qosExcellenceMetric                         *MappedLabelsGaugeVec
+	providerReputationMetric                    *MappedLabelsGaugeVec
 	providerLivenessMetric                      *prometheus.GaugeVec
 	blockedProviderMetric                       *MappedLabelsGaugeVec
 	LatestBlockMetric                           *MappedLabelsGaugeVec
@@ -308,7 +308,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
-		qosExcellenceMetric:                         qosExcellenceMetric,
+		providerReputationMetric:                    qosExcellenceMetric,
 		providerLivenessMetric:                      providerLivenessMetric,
 		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
@@ -542,7 +542,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		}
 	}
 	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "", providerEndpoint) // it's one api interface for all of them
+	setMetricsForQos(qosExcellence, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
 
 	labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "apiInterface": apiInterface, "provider_endpoint": providerEndpoint}
 	pme.LatestBlockMetric.WithLabelValues(labels).Set(float64(latestBlock))
@@ -586,7 +586,7 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
 	pme.qosMetric.Reset()
-	pme.qosExcellenceMetric.Reset()
+	pme.providerReputationMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
 }
 
