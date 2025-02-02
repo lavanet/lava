@@ -178,14 +178,14 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: qosMetricLabels,
 	})
 
-	qosExcellenceMetricLabels := []string{"spec", "provider_address", "qos_metric"}
+	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
-		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
+		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
 	}
 	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_qos_excellence_metrics",
-		Help:   "The QOS metrics per provider excellence",
-		Labels: qosExcellenceMetricLabels,
+		Name:   "lava_consumer_provider_reputation_metrics",
+		Help:   "The provider reputation metrics per provider",
+		Labels: providerReputationMetricLabels,
 	})
 
 	providerLivenessMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -321,8 +321,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
 		providerReputationMetric:                    providerReputationMetric,
-		providerLivenessMetric:                      providerLivenessMetric,
-		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
 		providerRelays:                              map[string]uint64{},
@@ -346,8 +344,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
 		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
 		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
-		requestsPerProviderMetric:                   requestsPerProviderMetric,
-		protocolErrorsPerProviderMetric:             protocolErrorsPerProviderMetric,
+		providerLivenessMetric:                      providerLivenessMetric,
+		blockedProviderMetric:                       blockedProviderMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -498,7 +496,7 @@ func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, ap
 	return header + "_" + chainId + "_" + apiInterface
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, reputation *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
 	if pme == nil {
 		return
 	}
@@ -559,7 +557,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		}
 	}
 	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(qosExcellence, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
+	setMetricsForQos(reputation, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
 
 	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface, providerEndpoint).Set(float64(latestBlock))
 }
