@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"testing"
 
+	"math"
+
 	"github.com/ethereum/go-ethereum/common"
 	gojson "github.com/goccy/go-json"
 )
