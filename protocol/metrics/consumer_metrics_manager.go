@@ -185,7 +185,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	if ShowProviderEndpointInMetrics {
 		qosExcellenceMetricLabels = append(qosExcellenceMetricLabels, "provider_endpoint")
 	}
-	qosExcellenceMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_consumer_qos_excellence_metrics",
 		Help:   "The QOS metrics per provider excellence",
 		Labels: qosExcellenceMetricLabels,
@@ -308,7 +308,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
-		providerReputationMetric:                    qosExcellenceMetric,
+		providerReputationMetric:                    providerReputationMetric,
 		providerLivenessMetric:                      providerLivenessMetric,
 		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
