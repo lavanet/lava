@@ -53,7 +53,8 @@ type ConsumerMetricsManager struct {
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *MappedLabelsGaugeVec
-	qosExcellenceMetric                         *MappedLabelsGaugeVec
+	providerReputationMetric                    *MappedLabelsGaugeVec
+	providerLivenessMetric                      *prometheus.GaugeVec
 	blockedProviderMetric                       *MappedLabelsGaugeVec
 	LatestBlockMetric                           *MappedLabelsGaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
@@ -314,7 +315,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
-		qosExcellenceMetric:                         qosExcellenceMetric,
+		providerReputationMetric:                    qosExcellenceMetric,
+		providerLivenessMetric:                      providerLivenessMetric,
 		blockedProviderMetric:                       blockedProviderMetric,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
@@ -552,7 +554,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		}
 	}
 	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "", providerEndpoint) // it's one api interface for all of them
+	setMetricsForQos(qosExcellence, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
 
 	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface, providerEndpoint).Set(float64(latestBlock))
 }
