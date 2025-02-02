@@ -1351,11 +1351,11 @@
                 ]
             },
             {
-                "index": "HOL1",
-                "name": "ethereum testnet holesky",
+                "index": "BTCT",
+                "name": "Bitcoin testnet",
                 "enabled": true,
                 "imports": [
-                    "ETH1"
+                    "BTC"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -1386,7 +1386,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x4268"
+                                        "expected_value": "0x4cb"
                                     }
                                 ]
                             }
