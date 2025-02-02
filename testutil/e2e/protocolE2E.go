@@ -470,10 +470,13 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 			errors = append(errors, "error eth_getTransactionReceipt")
 		}
 
-		targetTxMsg, _ := targetTx.AsMessage(types.LatestSignerForChainID(targetTx.ChainId()), nil)
+		sender, err := types.Sender(types.LatestSignerForChainID(targetTx.ChainId()), targetTx)
+		if err != nil {
+			errors = append(errors, "error eth_getTransactionReceipt")
+		}
 
 		// eth_getBalance
-		_, err = client.BalanceAt(ctx, targetTxMsg.From(), nil)
+		_, err = client.BalanceAt(ctx, sender, nil)
 		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			errors = append(errors, "error eth_getBalance")
 		}
@@ -493,15 +496,15 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		previousBlock := big.NewInt(int64(latestBlockNumberUint - 1))
 
 		callMsg := ethereum.CallMsg{
-			From:       targetTxMsg.From(),
-			To:         targetTxMsg.To(),
-			Gas:        targetTxMsg.Gas(),
-			GasPrice:   targetTxMsg.GasPrice(),
-			GasFeeCap:  targetTxMsg.GasFeeCap(),
-			GasTipCap:  targetTxMsg.GasTipCap(),
-			Value:      targetTxMsg.Value(),
-			Data:       targetTxMsg.Data(),
-			AccessList: targetTxMsg.AccessList(),
+			From:       sender,
+			To:         targetTx.To(),
+			Gas:        targetTx.Gas(),
+			GasPrice:   targetTx.GasPrice(),
+			GasFeeCap:  targetTx.GasFeeCap(),
+			GasTipCap:  targetTx.GasTipCap(),
+			Value:      targetTx.Value(),
+			Data:       targetTx.Data(),
+			AccessList: targetTx.AccessList(),
 		}
 
 		// eth_call
