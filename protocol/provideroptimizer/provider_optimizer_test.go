@@ -131,7 +131,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
-	AutoAdjustTiers = true
+	// AutoAdjustTiers = true
 	// damage providers 5-7 scores with bad latency relays
 	// they should not be selected by the optimizer and should be in the worst tier
 	badLatency := TEST_BASE_WORLD_LATENCY * 3
@@ -178,7 +178,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 	require.Greater(t, tierResults[0], 400, tierResults) // we should pick the best tier most often
 
-	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
+	// Out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
 	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
 
 	// Ensure the bad providers (5-7) are in results map even if they were never picked
