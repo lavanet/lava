@@ -54,8 +54,6 @@ type ConsumerMetricsManager struct {
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *MappedLabelsGaugeVec
 	providerReputationMetric                    *MappedLabelsGaugeVec
-	providerLivenessMetric                      *prometheus.GaugeVec
-	blockedProviderMetric                       *MappedLabelsGaugeVec
 	LatestBlockMetric                           *MappedLabelsGaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
 	virtualEpochMetric                          *prometheus.GaugeVec
@@ -75,6 +73,8 @@ type ConsumerMetricsManager struct {
 	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
 	averageProcessingLatency                    map[string]*LatencyTracker
 	consumerOptimizerQoSClient                  *ConsumerOptimizerQoSClient
+	providerLivenessMetric                      *prometheus.GaugeVec
+	blockedProviderMetric                       *MappedLabelsGaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
