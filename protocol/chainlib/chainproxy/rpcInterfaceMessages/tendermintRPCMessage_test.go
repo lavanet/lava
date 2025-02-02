@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

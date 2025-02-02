@@ -6,7 +6,7 @@ import "lavanet/lava/projects/params.proto";
 import "lavanet/lava/fixationstore/fixation.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/lavanet/lava/v4/x/projects/types";
+option go_package = "github.com/lavanet/lava/v5/x/projects/types";
 
 // GenesisState defines the projects module's genesis state.
 message GenesisState {

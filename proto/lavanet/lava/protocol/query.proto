@@ -7,7 +7,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/protocol/params.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "github.com/lavanet/lava/v4/x/protocol/types";
+option go_package = "github.com/lavanet/lava/v5/x/protocol/types";
 
 // Query defines the gRPC querier service.
 service Query {

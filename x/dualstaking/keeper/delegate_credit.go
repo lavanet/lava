@@ -39,7 +39,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 const (

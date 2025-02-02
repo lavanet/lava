@@ -3,10 +3,10 @@ package subscription_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/testutil/nullify"
-	"github.com/lavanet/lava/v4/x/subscription"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/subscription"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 

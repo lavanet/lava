@@ -11,13 +11,13 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type genericErrorHandler struct{}

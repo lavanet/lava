@@ -3,7 +3,7 @@ package utils
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
 )
 
 func IsBech32Address(addr string) bool {

@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/lavanet/lava/v4/x/pairing/types"
+	types "github.com/lavanet/lava/v5/x/pairing/types"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

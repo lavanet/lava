@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/lavanet/lava/v4/x/conflict/types"
+	"github.com/lavanet/lava/v5/x/conflict/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

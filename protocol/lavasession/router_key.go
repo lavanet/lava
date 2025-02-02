@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (

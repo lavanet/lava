@@ -7,12 +7,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	projecttypes "github.com/lavanet/lava/v4/x/projects/types"
-	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	projecttypes "github.com/lavanet/lava/v5/x/projects/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/spf13/cobra"
 )
 

@@ -6,7 +6,7 @@ import "lavanet/lava/dualstaking/params.proto";
 import "lavanet/lava/dualstaking/delegator_reward.proto";
 import "lavanet/lava/dualstaking/delegate.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v5/x/dualstaking/types";
 
 // GenesisState defines the dualstaking module's genesis state.
 message GenesisState {

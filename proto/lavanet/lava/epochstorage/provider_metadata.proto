@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.epochstorage;
 
-option go_package = "github.com/lavanet/lava/v4/x/epochstorage/types";
+option go_package = "github.com/lavanet/lava/v5/x/epochstorage/types";
 import "gogoproto/gogo.proto"; 
 import "cosmos/base/v1beta1/coin.proto"; 
 import "amino/amino.proto";

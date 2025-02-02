@@ -5,7 +5,7 @@ package lavanet.lava.subscription;
 import "amino/amino.proto";
 import "lavanet/lava/projects/project.proto";
 import "gogoproto/gogo.proto";  
-option go_package = "github.com/lavanet/lava/v4/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v5/x/subscription/types";
 
 // Msg defines the Msg service.
 service Msg {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v4/utils/score"
+	"github.com/lavanet/lava/v5/utils/score"
 	"github.com/stretchr/testify/require"
 )
 

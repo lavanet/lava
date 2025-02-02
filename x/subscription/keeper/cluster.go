@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 )
 
 func (k Keeper) GetAllClusters(ctx sdk.Context) []string {

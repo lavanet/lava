@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/testutil/nullify"
-	"github.com/lavanet/lava/v4/x/rewards/keeper"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/rewards/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	"github.com/lavanet/lava/v4/testutil/sample"
+	"github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/testutil/sample"
 )
 
 // Prevent strconv unused error

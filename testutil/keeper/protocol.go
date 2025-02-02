@@ -14,8 +14,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v4/x/protocol/keeper"
-	"github.com/lavanet/lava/v4/x/protocol/types"
+	"github.com/lavanet/lava/v5/x/protocol/keeper"
+	"github.com/lavanet/lava/v5/x/protocol/types"
 	"github.com/stretchr/testify/require"
 )
 

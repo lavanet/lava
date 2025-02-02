@@ -3,7 +3,7 @@ package lavasession
 import (
 	"testing"
 
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,10 +6,10 @@ import (
 	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
 
-	"github.com/lavanet/lava/v4/testutil/nullify"
-	specutils "github.com/lavanet/lava/v4/utils/keeper"
-	"github.com/lavanet/lava/v4/x/spec"
-	"github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
+	"github.com/lavanet/lava/v5/x/spec"
+	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	grpc "google.golang.org/grpc"
 )
 
