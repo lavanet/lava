@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.conflict;
 
-option go_package = "github.com/lavanet/lava/v4/x/conflict/types";
+option go_package = "github.com/lavanet/lava/v5/x/conflict/types";
 import "gogoproto/gogo.proto";  
 
 message Provider {

@@ -6,14 +6,14 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	testutil "github.com/lavanet/lava/v4/testutil/keeper"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testutil "github.com/lavanet/lava/v5/testutil/keeper"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

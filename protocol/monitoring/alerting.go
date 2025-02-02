@@ -11,8 +11,8 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/dgraph-io/ristretto/v2"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/sigs"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
 const (

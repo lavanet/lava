@@ -3,7 +3,7 @@ package lavanet.lava.fixationstore;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-option go_package = "github.com/lavanet/lava/v4/x/fixationstore/types";
+option go_package = "github.com/lavanet/lava/v5/x/fixationstore/types";
 
 import "lavanet/lava/fixationstore/fixation.proto";
 

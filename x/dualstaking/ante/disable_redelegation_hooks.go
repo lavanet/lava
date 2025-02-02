@@ -7,8 +7,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
 )
 
 // RedelegationFlager sets the dualstaking redelegation flag when needed.

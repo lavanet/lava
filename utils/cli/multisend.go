@@ -17,7 +17,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 

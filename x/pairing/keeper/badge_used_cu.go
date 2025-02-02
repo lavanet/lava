@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	timertypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	timertypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 // SetBadgeUsedCu set a specific badgeUsedCu in the store from its index

@@ -10,13 +10,13 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	rpcInterfaceMessages "github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	rpcclient "github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	extensionslib "github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/v4/protocol/common"
-	metrics "github.com/lavanet/lava/v4/protocol/metrics"
-	types "github.com/lavanet/lava/v4/x/pairing/types"
-	types0 "github.com/lavanet/lava/v4/x/spec/types"
+	rpcInterfaceMessages "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	rpcclient "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	extensionslib "github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	common "github.com/lavanet/lava/v5/protocol/common"
+	metrics "github.com/lavanet/lava/v5/protocol/metrics"
+	types "github.com/lavanet/lava/v5/x/pairing/types"
+	types0 "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // MockChainParser is a mock of ChainParser interface.

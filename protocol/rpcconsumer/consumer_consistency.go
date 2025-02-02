@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
-	common "github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/utils"
+	common "github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 // this class handles seen block values in requests

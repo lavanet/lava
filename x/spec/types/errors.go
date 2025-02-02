@@ -4,7 +4,7 @@ package types
 
 import (
 	sdkerrors "cosmossdk.io/errors"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
 )
 
 // x/spec module sentinel errors

@@ -9,12 +9,12 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
-	formatter "github.com/lavanet/lava/v4/ecosystem/cache/format"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/rand"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	formatter "github.com/lavanet/lava/v5/ecosystem/cache/format"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/tidwall/gjson"
 )
 

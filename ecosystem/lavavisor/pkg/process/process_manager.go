@@ -7,9 +7,9 @@ import (
 	"os/user"
 	"strings"
 
-	protocolVersion "github.com/lavanet/lava/v4/protocol/upgrade"
-	"github.com/lavanet/lava/v4/utils"
-	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	protocolVersion "github.com/lavanet/lava/v5/protocol/upgrade"
+	"github.com/lavanet/lava/v5/utils"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 func ReloadDaemon() error {

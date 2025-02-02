@@ -7,7 +7,7 @@ import "lavanet/lava/projects/params.proto";
 import "lavanet/lava/projects/project.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "github.com/lavanet/lava/v4/x/projects/types";
+option go_package = "github.com/lavanet/lava/v5/x/projects/types";
 
 // Query defines the gRPC querier service.
 service Query {

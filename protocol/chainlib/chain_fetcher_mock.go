@@ -11,8 +11,9 @@ package chainlib
 import (
 	context "context"
 	reflect "reflect"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
+
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	gomock "go.uber.org/mock/gomock"
 )
 

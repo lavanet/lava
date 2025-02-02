@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
-	timertypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
+	timertypes "github.com/lavanet/lava/v5/x/timerstore/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

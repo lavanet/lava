@@ -6,8 +6,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/v4/x/downtime/types"
-	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
+	"github.com/lavanet/lava/v5/x/downtime/types"
+	v1 "github.com/lavanet/lava/v5/x/downtime/v1"
 	"github.com/spf13/cobra"
 )
 

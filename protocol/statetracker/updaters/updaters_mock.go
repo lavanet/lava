@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	lavasession "github.com/lavanet/lava/v4/protocol/lavasession"
-	types "github.com/lavanet/lava/v4/x/epochstorage/types"
+	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
+	types "github.com/lavanet/lava/v5/x/epochstorage/types"
 	context "golang.org/x/net/context"
 )
 

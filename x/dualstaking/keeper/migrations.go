@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
-	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 type Migrator struct {
@@ -89,7 +89,7 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 func (m Migrator) MigrateVersion6To7(ctx sdk.Context) error {
 	// set all delegations to have a timestamp of 30 days ago
 	allDelegations, err := m.keeper.GetAllDelegations(ctx)
-	if err != nil {
+	if err == nil {
 		for _, delegation := range allDelegations {
 			delegation.Timestamp = ctx.BlockTime().AddDate(0, 0, -30).UTC().Unix()
 			m.keeper.SetDelegation(ctx, delegation)

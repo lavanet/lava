@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
