@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/protocol/types"
+	"github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 // GetParams get all parameters as types.Params

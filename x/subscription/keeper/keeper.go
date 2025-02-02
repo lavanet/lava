@@ -10,9 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 type (

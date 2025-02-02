@@ -5,7 +5,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/sample"
+	"github.com/lavanet/lava/v5/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
 

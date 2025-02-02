@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v4/testutil/common"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 

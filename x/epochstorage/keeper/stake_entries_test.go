@@ -6,9 +6,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/x/epochstorage/keeper"
-	"github.com/lavanet/lava/v4/x/epochstorage/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

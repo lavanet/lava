@@ -10,7 +10,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type ConsumerRelayServerClient struct {

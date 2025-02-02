@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v4/utils/rand"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	gomock "go.uber.org/mock/gomock"
 )
 

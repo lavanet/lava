@@ -8,11 +8,11 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/sample"
-	"github.com/lavanet/lava/v4/utils"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/testutil/sample"
+	"github.com/lavanet/lava/v5/utils"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

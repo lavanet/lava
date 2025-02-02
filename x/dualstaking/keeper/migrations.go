@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
-	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 type Migrator struct {

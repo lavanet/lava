@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 const retryAttemptsForChannelWrite = 10

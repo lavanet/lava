@@ -4,9 +4,9 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 func (k msgServer) Unbond(goCtx context.Context, msg *types.MsgUnbond) (*types.MsgUnbondResponse, error) {

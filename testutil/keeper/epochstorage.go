@@ -12,8 +12,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v4/x/epochstorage/keeper"
-	"github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

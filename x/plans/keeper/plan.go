@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v5/utils"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/plans/types"
 )
 
 // AddPlan adds a new plan to the KVStore

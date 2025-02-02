@@ -4,8 +4,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
-	"github.com/lavanet/lava/v4/x/timerstore/types"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 // this line is used by starport scaffolding # genesis/types/import

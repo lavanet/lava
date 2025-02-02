@@ -6,12 +6,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/utils"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
-	"github.com/lavanet/lava/v4/x/dualstaking/keeper"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 

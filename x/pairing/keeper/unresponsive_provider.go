@@ -8,9 +8,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (

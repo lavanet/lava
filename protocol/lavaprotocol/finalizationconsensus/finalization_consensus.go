@@ -10,11 +10,11 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type ChainBlockStatsGetter interface {

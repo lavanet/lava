@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

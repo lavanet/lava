@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type QoSReport struct {

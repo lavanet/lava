@@ -3,8 +3,8 @@ package provideroptimizer
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
 )
 
 // SelectionWeighter is a utility to select an address based on a weight.
