@@ -313,17 +313,8 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 			}
 			// add block error probability config if the request block is positive
 			opts = append(opts, pairingtypes.WithBlockErrorProbability(po.CalculateProbabilityOfBlockError(requestedBlock, providerData)))
-		} else if requestedBlock == spectypes.EARLIEST_BLOCK {
-			// if the request block is earliest, we use the latest block as the requested block
+		} else { // all negative blocks (latest/earliest/pending/safe/finalized) will be considered as latest
 			requestedBlock = spectypes.LATEST_BLOCK
-		} else if requestedBlock != spectypes.LATEST_BLOCK && requestedBlock != spectypes.NOT_APPLICABLE {
-			// if the request block is not positive but not latest/not-applicable - return an error
-			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers",
-				fmt.Errorf("could not configure block error probability, invalid requested block (must be >0 or -1 or -2)"),
-				utils.LogAttr("provider", providerAddress),
-				utils.LogAttr("requested_block", requestedBlock),
-			)
-			return NewSelectionTier(), Exploration{}, nil
 		}
 		score, err := qos.ComputeReputationFloat64(opts...)
 		if err != nil {
