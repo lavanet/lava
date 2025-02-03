@@ -3,8 +3,8 @@ package monitoring_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v4/protocol/monitoring"
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/protocol/monitoring"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/stretchr/testify/assert"
 )
 
