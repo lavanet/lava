@@ -32,7 +32,6 @@ const (
 )
 
 func main() {
-	// test
 	rootCmd := cmd.NewLavaProtocolRootCmd()
 
 	// version cobra command
