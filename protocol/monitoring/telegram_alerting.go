@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type TelegramAlertingOptions struct {
