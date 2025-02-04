@@ -691,6 +691,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions))
 	usedProviders := relayProcessor.GetUsedProviders()
+	directiveHeaders := protocolMessage.GetDirectiveHeaders()
+
+	// stickines id for future use
+	stickiness := directiveHeaders[common.STICKINESS_HEADER_NAME]
+	_ = stickiness
+
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
