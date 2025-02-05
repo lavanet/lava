@@ -128,6 +128,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Clean up expired sticky sessions
 	for id, session := range csm.stickySessions {
 		if session.Epoch <= previousEpoch {
+			fmt.Println("deleting sticky session", id)
 			delete(csm.stickySessions, id)
 		}
 	}
@@ -639,6 +640,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	// cs.Lock must be Rlocked here.
 	if stickysession, ok := csm.stickySessions[stickiness]; ok {
 		addresses = []string{stickysession.Provider}
+		fmt.Println("returning sticky session", stickysession.Provider)
 		return addresses, nil
 	}
 
@@ -685,6 +687,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	// If stickiness is requested, store the first provider for future use
 	if stickiness != "" {
+		fmt.Println("setting sticky session", providers[0], stickiness)
 		csm.stickySessions[stickiness] = &StickySession{
 			Provider: providers[0],
 			Epoch:    csm.atomicReadCurrentEpoch(),
@@ -1186,5 +1189,6 @@ func NewConsumerSessionManager(
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
+	csm.stickySessions = make(map[string]*StickySession)
 	return csm
 }
