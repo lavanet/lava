@@ -96,7 +96,7 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 		variance := lavaslices.Variance(pairingScores, mean)
 
 		// Calculate the 80th percentile threshold
-		percentileThreshold := lavaslices.Percentile(pairingScores, percentileRank)
+		percentileThreshold := lavaslices.Percentile(pairingScores, percentileRank, true)
 
 		// create the reputation data and append
 		chainClusterRes.Rank = uint64(rank)
