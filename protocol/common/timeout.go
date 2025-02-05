@@ -28,7 +28,7 @@ const (
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
-	return BaseTimePerCU(cu) + AverageWorldLatency // TODO: remove average world latency once our providers run locally, or allow a flag that says local to make it tight, tighter timeouts are better
+	return BaseTimePerCU(cu)
 }
 
 func BaseTimePerCU(cu uint64) time.Duration {
