@@ -87,12 +87,19 @@ func Median[T Number](slice []T) T {
 	}
 }
 
-func Percentile[T Number](slice []T, rank float64) T {
+// Percentile returns the value at the given rank in the slice.
+// If reverse is true, the slice is sorted in descending order.
+// If reverse is false, the slice is sorted in ascending order.
+func Percentile[T Number](slice []T, rank float64, reverse bool) T {
 	data_len := len(slice)
 	if data_len == 0 || rank < 0.0 || rank > 1.0 {
 		return 0
 	}
-	slices.Sort(slice)
+	if reverse {
+		slices.SortFunc(slice, func(i, j T) bool { return i > j })
+	} else {
+		slices.Sort(slice)
+	}
 
 	// Calculate the position based on the rank
 	position := int(float64(data_len-1) * rank)

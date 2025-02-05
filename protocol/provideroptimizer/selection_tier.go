@@ -138,7 +138,7 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 	}
 	medianScore := lavaslices.Median(scores)
 	medianScoreReversed := 1 / (medianScore + 0.0001)
-	percentile25Score := lavaslices.Percentile(scores, 0.25)
+	percentile25Score := lavaslices.Percentile(scores, 0.25, false)
 	percentile25ScoreReversed := 1 / (percentile25Score + 0.0001)
 
 	averageChance := 1 / float64(numTiers)
