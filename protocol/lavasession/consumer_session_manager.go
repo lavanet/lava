@@ -590,7 +590,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessions[providerAddress] = sessionInfo
 
 				qosReport, _ := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)
-				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
+				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) && !consumerSessionsWithProvider.StaticProvider {
 					// rawQosReport is used only when building the relay payment message to be used to update
 					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
 					// (consumer geo: csm.rpcEndpoint.Geolocation, provider geo: endpoint.endpoint.Geolocation)
