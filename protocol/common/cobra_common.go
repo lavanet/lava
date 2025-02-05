@@ -3,7 +3,7 @@ package common
 import (
 	"time"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

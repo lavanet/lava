@@ -11,19 +11,19 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gogo/status"
-	lvutil "github.com/lavanet/lava/v4/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/rand"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
+	lvutil "github.com/lavanet/lava/v5/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -85,6 +85,7 @@ func RunHealth(ctx context.Context,
 		ConsumerBlocks:     map[LavaEntity]int64{},
 		SubscriptionsData:  map[string]SubscriptionData{},
 		FrozenProviders:    map[LavaEntity]struct{}{},
+		JailedProviders:    map[LavaEntity]struct{}{},
 		UnhealthyProviders: map[LavaEntity]string{},
 		UnhealthyConsumers: map[LavaEntity]string{},
 		Specs:              map[string]*spectypes.Spec{},
@@ -281,7 +282,11 @@ func RunHealth(ctx context.Context,
 				mutex.Lock() // Lock before updating stakeEntries
 				if _, ok := healthResults.getProviderData(lookupKey); ok || getAllProviders {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
-						healthResults.FreezeProvider(providerKey)
+						if providerEntry.IsFrozen() {
+							healthResults.JailedProvider(providerKey)
+						} else if providerEntry.Jails > 0 {
+							healthResults.FreezeProvider(providerKey)
+						}
 					} else {
 						stakeEntries[providerKey] = providerEntry
 					}

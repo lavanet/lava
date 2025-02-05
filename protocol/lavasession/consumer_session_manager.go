@@ -10,13 +10,13 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v4/protocol/common"
-	metrics "github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	metrics "github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -584,20 +584,20 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					ReportedProviders: reportedProviders,
 				}
 
-				// adding qos summery for error parsing.
+				// adding qos summary for error parsing.
 				// consumer session is locked here so its ok to read the qos report.
-				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
+				sessionInfo.QoSSummaryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
-				qosReport, rawQosReport := csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
+				qosReport, _ := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)
 				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
 					// rawQosReport is used only when building the relay payment message to be used to update
 					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
 					// (consumer geo: csm.rpcEndpoint.Geolocation, provider geo: endpoint.endpoint.Geolocation)
 					// we don't want to update the reputation by it, so we null the rawQosReport
-					rawQosReport = nil
+					qosReport = nil
 				}
-				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders, routerKey)
+				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, usedProviders, routerKey)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				if len(sessions) == wantedSession {
@@ -667,7 +667,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		}
 	}
 	var providers []string
-	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
+	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
 		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
@@ -969,7 +969,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		consumerSession.BlockListed = true
 	}
 
-	consumerSession.QoSInfo.TotalRelays++
+	consumerSession.QoSManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
 	// copy consecutive errors for report.
 	errorsForConsumerSession := consumerSession.ConsecutiveErrors
@@ -1084,8 +1084,12 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+	consumerSession.QoSManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	if !isHangingApi {
+		// append relay data only for non hanging apis
+		go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, specComputeUnits, uint64(latestServicedBlock))
+	}
+
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }
@@ -1099,21 +1103,25 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	info := csm.RPCEndpoint()
 	apiInterface := info.ApiInterface
 	chainId := info.ChainID
+
 	var lastQos *pairingtypes.QualityOfServiceReport
-	var lastQosExcellence *pairingtypes.QualityOfServiceReport
-	if consumerSession.QoSInfo.LastQoSReport != nil {
-		qos := *consumerSession.QoSInfo.LastQoSReport
+	lastQoSReport := consumerSession.QoSManager.GetLastQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
+	if lastQoSReport != nil {
+		qos := *lastQoSReport
 		lastQos = &qos
 	}
-	if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
-		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
-		lastQosExcellence = &qosEx
+
+	var lastReputation *pairingtypes.QualityOfServiceReport
+	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
+	if lastReputationReport != nil {
+		qosRep := *lastReputationReport
+		lastReputation = &qosRep
 	}
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 	publicProviderEndpoint := consumerSession.Parent.Endpoints[0].NetworkAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastReputation, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
 }
 

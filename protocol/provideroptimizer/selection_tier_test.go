@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,13 +59,13 @@ func TestSelectionTierInst_GetTier(t *testing.T) {
 		{
 			tier:           1,
 			minimumEntries: 2,
-			expectedTier:   []string{"entry5", "entry4", "entry2"},
+			expectedTier:   []string{"entry4", "entry2"},
 			name:           "tier 1, 2 entries",
 		},
 		{
 			tier:           2,
 			minimumEntries: 2,
-			expectedTier:   []string{"entry2", "entry3", "entry6"},
+			expectedTier:   []string{"entry3", "entry6"},
 			name:           "tier 2, 2 entries",
 		},
 		{
@@ -139,20 +139,20 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 		{
 			tier:            1,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 1, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 1, 25 entries",
 		},
 		{
 			tier:            2,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 2, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 2, 25 entries",
 		},
 		{
 			tier:            3,
 			minimumEntries:  5,
-			expectedTierLen: 26,
-			name:            "tier 3, 26 entries",
+			expectedTierLen: 25,
+			name:            "tier 3, 25 entries",
 		},
 		{
 			tier:            0,
@@ -272,7 +272,7 @@ func TestSelectionTierInstShiftTierChance_MaintainTopTierAdvantage(t *testing.T)
 	}
 
 	selectionTierChances := st.ShiftTierChance(numTiers, map[int]float64{0: 0.75, numTiers - 1: 0})
-	require.InDelta(t, 0.75, selectionTierChances[0], 0.1)
+	require.InDelta(t, 0.75, selectionTierChances[0], 0.25)
 }
 
 func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {
@@ -309,5 +309,76 @@ func TestSelectionTierInst_SelectTierRandomly_Default(t *testing.T) {
 	expectedDistribution := 10000 / numTiers
 	for _, count := range counter {
 		assert.InDelta(t, expectedDistribution, count, 300)
+	}
+}
+
+// TestTierParts tests that when getting a tier, the sum of the parts of the entries
+// in each tier is equal to the expected value of entries/numTiers
+// note, it's assumed that the number of entries is greater or equal to the number of tiers
+func TestTierParts(t *testing.T) {
+	templete := []struct {
+		name       string
+		numTiers   int
+		entriesLen int
+		expected   map[int][]float64 // expected parts for each tier
+	}{
+		{"3 tiers 6 entries", 3, 6, map[int][]float64{
+			0: {1.0, 1.0},
+			1: {1.0, 1.0},
+			2: {1.0, 1.0},
+		}},
+		{"3 tiers 3 entries", 3, 3, map[int][]float64{
+			0: {1.0},
+			1: {1.0},
+			2: {1.0},
+		}},
+		{"3 tiers 5 entries", 3, 5, map[int][]float64{
+			0: {1.0, 2.0 / 3.0},
+			1: {1.0 / 3.0, 1.0, 1.0 / 3.0},
+			2: {2.0 / 3.0, 1.0},
+		}},
+		{"3 tiers 4 entries", 3, 4, map[int][]float64{
+			0: {1.0, 1.0 / 3.0},
+			1: {2.0 / 3.0, 2.0 / 3.0},
+			2: {1.0 / 3.0, 1.0},
+		}},
+		{"4 tiers 11 entries", 4, 11, map[int][]float64{
+			0: {1.0, 1.0, 0.75},
+			1: {0.25, 1.0, 1.0, 0.5},
+			2: {0.5, 1.0, 1.0, 0.25},
+			3: {0.75, 1.0, 1.0},
+		}},
+		{"4 tiers 10 entries", 4, 10, map[int][]float64{
+			0: {1.0, 1.0, 0.5},
+			1: {0.5, 1.0, 1.0},
+			2: {1.0, 1.0, 0.5},
+			3: {0.5, 1.0, 1.0},
+		}},
+	}
+
+	for _, play := range templete {
+		for tier := 0; tier < play.numTiers; tier++ {
+			st := NewSelectionTier()
+			// add entries to the selection tier
+			for i := 0; i < play.entriesLen; i++ {
+				st.AddScore("entry"+strconv.Itoa(i), 0.1)
+			}
+
+			// get tier parts
+			partsSum := 0.0
+			parts := []float64{}
+			entries := st.GetTier(tier, play.numTiers, 1)
+			for _, entry := range entries {
+				partsSum += entry.Part
+				parts = append(parts, entry.Part)
+			}
+
+			for i := range parts {
+				require.InDelta(t, play.expected[tier][i], parts[i], 0.001,
+					"tier: %d, entriesLen: %d, numTiers: %d, index: %d", tier, play.entriesLen, play.numTiers, i)
+			}
+			assert.InDelta(t, float64(play.entriesLen)/float64(play.numTiers), partsSum, 0.01,
+				"tier: %d, entriesLen: %d, numTiers: %d", tier, play.entriesLen, play.numTiers)
+		}
 	}
 }

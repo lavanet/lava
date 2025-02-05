@@ -9,7 +9,7 @@ import "lavanet/lava/plans/params.proto";
 
 import "cosmos/base/v1beta1/coin.proto";
 import "lavanet/lava/plans/plan.proto";
-option go_package = "github.com/lavanet/lava/v4/x/plans/types";
+option go_package = "github.com/lavanet/lava/v5/x/plans/types";
 
 // Query defines the gRPC querier service.
 service Query {

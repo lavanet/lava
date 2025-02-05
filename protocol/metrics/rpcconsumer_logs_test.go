@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -11,11 +11,11 @@ import (
 	"github.com/itchyny/gojq"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (

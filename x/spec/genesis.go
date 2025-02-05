@@ -2,8 +2,8 @@ package spec
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/spec/keeper"
-	"github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/x/spec/keeper"
+	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

@@ -4,8 +4,8 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v7 "github.com/lavanet/lava/v4/x/plans/migrations/v7"
-	v8 "github.com/lavanet/lava/v4/x/plans/migrations/v8"
+	v7 "github.com/lavanet/lava/v5/x/plans/migrations/v7"
+	v8 "github.com/lavanet/lava/v5/x/plans/migrations/v8"
 )
 
 type Migrator struct {

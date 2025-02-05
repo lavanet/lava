@@ -6,7 +6,7 @@ import "gogoproto/gogo.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 
-option go_package = "github.com/lavanet/lava/v4/x/rewards/types";
+option go_package = "github.com/lavanet/lava/v5/x/rewards/types";
 
 // Msg defines the Msg service.
 service Msg {

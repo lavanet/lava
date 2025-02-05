@@ -3,7 +3,7 @@ package chaintracker
 import (
 	"time"
 
-	"github.com/lavanet/lava/v4/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/metrics"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
+	v1 "github.com/lavanet/lava/v5/x/downtime/v1"
 )
 
 var _ v1.QueryServer = queryServer{}

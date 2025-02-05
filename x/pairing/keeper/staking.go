@@ -7,12 +7,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (

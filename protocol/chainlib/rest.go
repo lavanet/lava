@@ -11,22 +11,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/parser"
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type RestChainParser struct {

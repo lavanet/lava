@@ -20,7 +20,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/lavanet/lava/v4/app"
+	"github.com/lavanet/lava/v5/app"
 )
 
 type (

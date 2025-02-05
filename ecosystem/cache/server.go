@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"

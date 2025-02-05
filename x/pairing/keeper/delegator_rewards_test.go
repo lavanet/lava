@@ -6,11 +6,12 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -177,6 +178,7 @@ func sendRelay(ts *tester, provider string, clientAcc sigs.Account, chainIDs []s
 }
 
 func TestPartialMonthDelegation(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(0, 1, 1)                   // 1 client, 1 providersToPair
 	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
@@ -489,6 +491,7 @@ func makeProviderCommissionZero(ts *tester, provider string) {
 // TestDelegationTimestamp checks that a new delegation get the UNIX timestamp
 // of current block time (UTC). Also, the timestamp should not change when delegating more
 func TestDelegationTimestamp(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 2)                   // 1 provider, 1 client, 1 providersToPair
 	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1

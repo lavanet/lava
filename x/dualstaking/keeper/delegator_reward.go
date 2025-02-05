@@ -5,9 +5,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/dualstaking/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index

@@ -7,9 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/plans/keeper"
-	"github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/plans/keeper"
+	"github.com/lavanet/lava/v5/x/plans/types"
 )
 
 // NewPlanProposalsHandler creates a new governance Handler for a Plan

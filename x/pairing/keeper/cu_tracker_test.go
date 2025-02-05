@@ -6,12 +6,12 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -465,6 +465,7 @@ func TestVaultProviderTrackedCu(t *testing.T) {
 // TestProviderMonthlyPayoutQuery tests the monthly-payout query
 // Scenario: the provider provided service on two chains and in one of them he has a delegator
 func TestProviderMonthlyPayoutQuery(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
@@ -583,6 +584,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 }
 
 func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 

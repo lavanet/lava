@@ -8,10 +8,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -251,9 +251,9 @@ type ConflictHandlerInterface interface {
 }
 
 type ProviderInfo struct {
-	ProviderAddress              string
-	ProviderQoSExcellenceSummery sdk.Dec // the number represents the average qos for this provider session
-	ProviderStake                sdk.Coin
+	ProviderAddress           string
+	ProviderReputationSummary sdk.Dec // the number represents the average qos for this provider session
+	ProviderStake             sdk.Coin
 }
 
 type RelayResult struct {

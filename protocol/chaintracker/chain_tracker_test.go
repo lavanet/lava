@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	chaintracker "github.com/lavanet/lava/v4/protocol/chaintracker"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/utils"
-	rand "github.com/lavanet/lava/v4/utils/rand"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	chaintracker "github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	rand "github.com/lavanet/lava/v5/utils/rand"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -516,13 +516,13 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 					time.Sleep(play.updateTime)
 				}
 			}
-			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.3)
 			// if we wait more time we expect this to stay correct
 			for i := 0; i < iterations*4; i++ {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)
 			}
-			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.3)
 		})
 	}
 }

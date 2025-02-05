@@ -1,7 +1,7 @@
 package extensionslib
 
 import (
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const ArchiveExtension = "archive"

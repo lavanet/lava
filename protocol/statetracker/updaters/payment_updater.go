@@ -3,8 +3,8 @@ package updaters
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v5/utils"
 	"golang.org/x/net/context"
 )
 

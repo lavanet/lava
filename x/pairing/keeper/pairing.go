@@ -7,14 +7,14 @@ import (
 
 	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingfilters "github.com/lavanet/lava/v4/x/pairing/keeper/filters"
-	pairingscores "github.com/lavanet/lava/v4/x/pairing/keeper/scores"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingfilters "github.com/lavanet/lava/v5/x/pairing/keeper/filters"
+	pairingscores "github.com/lavanet/lava/v5/x/pairing/keeper/scores"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {

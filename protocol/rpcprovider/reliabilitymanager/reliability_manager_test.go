@@ -10,20 +10,21 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v4/protocol/statetracker"
-	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/qos"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +48,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -58,7 +59,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             nil,
 			RelayNum:           5,
@@ -200,7 +201,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -212,7 +213,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+			QoSManager:         qos.NewQoSManager(),
 			SessionId:          456,
 			Parent:             consumerSessionWithProvider,
 			RelayNum:           5,

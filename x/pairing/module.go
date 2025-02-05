@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/v4/x/pairing/client/cli"
-	"github.com/lavanet/lava/v4/x/pairing/keeper"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/x/pairing/client/cli"
+	"github.com/lavanet/lava/v5/x/pairing/keeper"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 var (
@@ -169,7 +169,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 5 }
+func (AppModule) ConsensusVersion() uint64 { return 6 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {

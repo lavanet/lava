@@ -7,18 +7,18 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v4/utils/rand"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -53,8 +53,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	baseLatency := common.AverageWorldLatency / 2
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2, nil, "dontcare")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(epoch, map[uint64]*lavasession.ConsumerSessionsWithProvider{
 		epoch: {

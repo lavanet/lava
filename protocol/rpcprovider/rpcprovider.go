@@ -16,27 +16,28 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/app"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v4/protocol/chaintracker"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/protocol/performance"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v4/protocol/statetracker"
-	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v4/protocol/upgrade"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/utils/rand"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	epochstorage "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/app"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/performance"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/protocol/upgrade"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstorage "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -48,6 +49,11 @@ const (
 	ShardIDFlagName           = "shard-id"
 	StickinessHeaderName      = "sticky-header"
 	DefaultShardID       uint = 0
+
+	CacheMaxCost          = 10 * 1024 // each item cost would be 1
+	CacheNumCounters      = 1000      // expect 2000 items
+	VerificationsTTL      = 30 * time.Second
+	VerificationsCacheKey = "verifications"
 )
 
 var (
@@ -123,7 +129,7 @@ type rpcProviderHealthCheckMetricsOptions struct {
 type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderListeners map[string]*ProviderListener
-	lock                 sync.Mutex
+	lock                 sync.RWMutex
 	// all of the following members need to be concurrency proof
 	providerMetricsManager       *metrics.ProviderMetricsManager
 	rewardServer                 *rewardserver.RewardServer
@@ -145,6 +151,19 @@ type RPCProvider struct {
 	staticSpecPath               string
 	relayLoadLimit               uint64
 	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
+
+	verificationsResponseCache                          *ristretto.Cache[string, []*pairingtypes.Verification]
+	allChainsAndAPIInterfacesVerificationStatusFetchers []IVerificationsStatus
+}
+
+func (rpcp *RPCProvider) AddVerificationStatusFetcher(fetcher IVerificationsStatus) {
+	rpcp.lock.Lock()
+	defer rpcp.lock.Unlock()
+	if rpcp.allChainsAndAPIInterfacesVerificationStatusFetchers == nil {
+		rpcp.allChainsAndAPIInterfacesVerificationStatusFetchers = []IVerificationsStatus{}
+	}
+	rpcp.allChainsAndAPIInterfacesVerificationStatusFetchers = append(rpcp.allChainsAndAPIInterfacesVerificationStatusFetchers, fetcher)
+	rpcp.verificationsResponseCache.Clear()
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -363,6 +382,21 @@ func GetAllNodeUrlsInternalPaths(nodeUrls []common.NodeUrl) []string {
 	return paths
 }
 
+func (rpcp *RPCProvider) GetVerificationsStatus() []*pairingtypes.Verification {
+	verifications, ok := rpcp.verificationsResponseCache.Get(VerificationsCacheKey)
+	if ok {
+		return verifications
+	}
+	rpcp.lock.RLock()
+	defer rpcp.lock.RUnlock()
+	verifications = make([]*pairingtypes.Verification, 0)
+	for _, fetcher := range rpcp.allChainsAndAPIInterfacesVerificationStatusFetchers {
+		verifications = append(verifications, fetcher.GetVerificationsStatus()...)
+	}
+	rpcp.verificationsResponseCache.SetWithTTL(VerificationsCacheKey, verifications, 1, VerificationsTTL)
+	return verifications
+}
+
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
@@ -416,7 +450,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
-	var chainFetcher chainlib.ChainFetcherIf
+	var chainFetcher chainlib.IChainFetcher
 	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
 		chainFetcher = chainlib.NewChainFetcher(
 			ctx,
@@ -431,6 +465,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
 		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	}
+	// so we can fetch failed verifications we need to add the chainFetcher before returning
+	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
 	err = chainFetcher.Validate(ctx)
@@ -500,11 +536,11 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	// Add the chain fetcher to the spec validator
+	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
 	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
 	if err != nil {
 		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 	}
-
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
@@ -527,7 +563,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, numberOfRetriesAllowedOnNodeErrors)
+
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -799,7 +836,17 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				relayLoadLimit,
 			}
 
-			rpcProvider := RPCProvider{}
+			verificationsResponseCache, err := ristretto.NewCache(
+				&ristretto.Config[string, []*pairingtypes.Verification]{
+					NumCounters:        CacheNumCounters,
+					MaxCost:            CacheMaxCost,
+					BufferItems:        64,
+					IgnoreInternalCost: true,
+				})
+			if err != nil {
+				utils.LavaFormatFatal("failed setting up cache for verificationsResponseCache", err)
+			}
+			rpcProvider := RPCProvider{verificationsResponseCache: verificationsResponseCache}
 			err = rpcProvider.Start(&rpcProviderStartOptions)
 			return err
 		},

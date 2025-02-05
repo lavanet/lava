@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -145,7 +145,11 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 			continue
 		}
 
-		if !spec.Enabled || spec.Shares == 0 {
+		if !spec.Enabled {
+			continue
+		}
+		if spec.Shares == 0 {
+			chainStake[chainID] = sdk.ZeroDec()
 			continue
 		}
 
@@ -165,10 +169,6 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			if stake.IsZero() {
-				continue
-			}
-
 			emissions = append(emissions, types.SpecEmissionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}

@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 // Function that calls all the functions that are supposed to run in epoch start

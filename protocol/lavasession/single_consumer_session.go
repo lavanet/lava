@@ -1,20 +1,18 @@
 package lavasession
 
 import (
-	"math"
-	"sort"
-	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/protocol/qos"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type SingleConsumerSession struct {
 	CuSum         uint64
 	LatestRelayCu uint64 // set by GetSessions cuNeededForSession
-	QoSInfo       QoSReport
+	QoSManager    *qos.QoSManager
 	SessionId     int64
 	Parent        *ConsumerSessionsWithProvider
 	lock          utils.LavaMutex
@@ -29,6 +27,7 @@ type SingleConsumerSession struct {
 	providerUniqueId   string
 	StaticProvider     bool
 	routerKey          RouterKey
+	epoch              uint64
 }
 
 // returns the expected latency to a threshold.
@@ -39,78 +38,26 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
 func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
-	if cs.QoSInfo.LastExcellenceQoSReport != nil {
-		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoSExcellence()
+	lastReputationReport := cs.QoSManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
+	if lastReputationReport != nil {
+		computedReputation, errComputing := lastReputationReport.ComputeReputation()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
-			return qosComputed
+			return computedReputation
 		}
-		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero", utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport), utils.LogAttr("error", errComputing))
+		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero",
+			utils.LogAttr("Report", lastReputationReport),
+			utils.LogAttr("error", errComputing),
+		)
 	}
 	return sdk.ZeroDec()
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
-	// Add current Session QoS
-	cs.QoSInfo.TotalRelays++    // increase total relays
-	cs.QoSInfo.AnsweredRelays++ // increase answered relays
-
-	if cs.QoSInfo.LastQoSReport == nil {
-		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
-	}
-
-	downtimePercentage, scaledAvailabilityScore := CalculateAvailabilityScore(&cs.QoSInfo)
-	cs.QoSInfo.LastQoSReport.Availability = scaledAvailabilityScore
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatDebug("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
-	}
-
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
-
-	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
-		index := sort.Search(len(list), func(i int) bool {
-			return list[i].GTE(value)
-		})
-		if len(list) == index { // nil or empty slice or after last element
-			return append(list, value)
-		}
-		list = append(list[:index+1], list[index:]...) // index < len(a)
-		list[index] = value
-		return list
-	}
-	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
-	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
-
-	// checking if we have enough information to calculate the sync score for the providers, if we haven't talked
-	// with enough providers we don't have enough information and we will wait to have more information before setting the sync score
-	shouldCalculateSyncScore := int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync))
-	if shouldCalculateSyncScore { //
-		if blockHeightDiff <= 0 { // if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
-			cs.QoSInfo.SyncScoreSum++
-		}
-		cs.QoSInfo.TotalSyncScore++
-		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
-		if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-			utils.LavaFormatDebug("QoS Sync report",
-				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
-				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
-				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
-				utils.Attribute{Key: "session_id", Value: cs.SessionId},
-				utils.Attribute{Key: "provider", Value: cs.Parent.PublicLavaAddress},
-			)
-		}
-	} else {
-		// we prefer to give them a score of 1 when there is no other data, since otherwise we damage their payments
-		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(1)
-	}
-}
-
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
-		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
-		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
-		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
+		// we only set reputation for sessions with more than one successful relays, this guarantees data within the epoch exists
+		scs.QoSManager.SetLastReputationQoSReport(scs.epoch, scs.SessionId, reputationReport)
 	}
 	scs.usedProviders = usedProviders
 	scs.routerKey = routerKey

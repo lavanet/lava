@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type relayerCacheClientStore struct {

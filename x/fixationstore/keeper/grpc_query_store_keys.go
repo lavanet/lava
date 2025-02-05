@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/lavanet/lava/v4/x/fixationstore/types"
+	"github.com/lavanet/lava/v5/x/fixationstore/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

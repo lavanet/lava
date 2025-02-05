@@ -8,10 +8,10 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v4/utils"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/utils"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 )
 
 const LIMIT_TOKEN_PER_CU = 100

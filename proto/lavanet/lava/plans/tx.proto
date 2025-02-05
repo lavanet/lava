@@ -3,7 +3,7 @@ package lavanet.lava.plans;
 
 // this line is used by starport scaffolding # proto/tx/import
 
-option go_package = "github.com/lavanet/lava/v4/x/plans/types";
+option go_package = "github.com/lavanet/lava/v5/x/plans/types";
 
 // Msg defines the Msg service.
 service Msg {

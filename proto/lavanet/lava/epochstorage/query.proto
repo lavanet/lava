@@ -12,7 +12,7 @@ import "lavanet/lava/epochstorage/provider_metadata.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/epochstorage/types";
+option go_package = "github.com/lavanet/lava/v5/x/epochstorage/types";
 
 // Query defines the gRPC querier service.
 service Query {

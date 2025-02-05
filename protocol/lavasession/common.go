@@ -15,12 +15,11 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/pairing/keeper/scores"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/pairing/keeper/scores"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -48,14 +47,11 @@ const (
 	unixPrefix                                       = "unix:"
 )
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
 const (
-	PercentileToCalculateLatency = 0.9
-	MinProvidersForSync          = 0.6
-	OptimizerPerturbation        = 0.10
-	LatencyThresholdStatic       = 1 * time.Second
-	LatencyThresholdSlope        = 1 * time.Millisecond
-	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded
+	OptimizerPerturbation  = 0.10
+	LatencyThresholdStatic = 1 * time.Second
+	LatencyThresholdSlope  = 1 * time.Millisecond
+	StaleEpochDistance     = 3 // relays done 3 epochs back are ready to be rewarded
 
 )
 

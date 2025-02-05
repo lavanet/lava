@@ -3,10 +3,10 @@ package pairing_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/testutil/nullify"
-	"github.com/lavanet/lava/v4/x/pairing"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/pairing"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

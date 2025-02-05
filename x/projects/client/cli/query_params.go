@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/v4/x/projects/types"
+	"github.com/lavanet/lava/v5/x/projects/types"
 	"github.com/spf13/cobra"
 )
 

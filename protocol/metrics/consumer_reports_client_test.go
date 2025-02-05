@@ -8,12 +8,15 @@ import (
 	"testing"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReportsClientFlows(t *testing.T) {
 	t.Run("one-shot", func(t *testing.T) {
+		serverWaitGroup := utils.NewChanneledWaitGroup()
+		serverWaitGroup.Add(3) // 2 reports + 1 conflict
 		messages := []map[string]interface{}{}
 		reqMap := []map[string]interface{}{}
 		serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +29,9 @@ func TestReportsClientFlows(t *testing.T) {
 			reqMap = []map[string]interface{}{}
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
+			for range messages {
+				serverWaitGroup.Done()
+			}
 		})
 
 		mockServer := httptest.NewServer(serverHandle)
@@ -45,7 +51,14 @@ func TestReportsClientFlows(t *testing.T) {
 			SigBlocks:             []byte{},
 			Metadata:              []pairingtypes.Metadata{},
 		}, &pairingtypes.RelayRequest{}, &pairingtypes.RelayReply{}))
-		time.Sleep(110 * time.Millisecond)
+
+		select {
+		case <-serverWaitGroup.Wait():
+			// all done
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timeout reached before reports were received")
+		}
+
 		require.Len(t, messages, 3)
 		reports := 0
 		conflicts := 0

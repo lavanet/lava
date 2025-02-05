@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 /*
@@ -28,7 +28,7 @@ func (k Keeper) GetReputation(ctx sdk.Context, chainID string, cluster string, p
 	key := types.ReputationKey(chainID, cluster, provider)
 	r, err := k.reputations.Get(ctx, key)
 	if err != nil {
-		utils.LavaFormatWarning("GetReputation: reputation not found", err,
+		utils.LavaFormatDebug("GetReputation: reputation not found",
 			utils.LogAttr("chain_id", chainID),
 			utils.LogAttr("cluster", cluster),
 			utils.LogAttr("provider", provider),
@@ -204,7 +204,7 @@ func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[types.Reput
 
 		if reputation.EpochScore == types.ZeroQosScore {
 			// if the epoch score is zero, we don't need to update the reputation
-			utils.LavaFormatWarning("updateReputationsScores: epoch score is zero, skipping update", nil,
+			utils.LavaFormatDebug("updateReputationsScores: epoch score is zero, skipping update",
 				utils.LogAttr("chain_id", chainID),
 				utils.LogAttr("cluster", cluster),
 				utils.LogAttr("provider", provider),

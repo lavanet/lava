@@ -9,7 +9,7 @@ import "lavanet/lava/rewards/params.proto";
 import "lavanet/lava/timerstore/timer.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/lavanet/lava/v4/x/rewards/types";
+option go_package = "github.com/lavanet/lava/v5/x/rewards/types";
 
 // GenesisState defines the rewards module's genesis state.
 message GenesisState {

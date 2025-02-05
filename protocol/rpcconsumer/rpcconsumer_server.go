@@ -16,26 +16,26 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/protocol/performance"
-	"github.com/lavanet/lava/v4/protocol/statetracker"
-	"github.com/lavanet/lava/v4/protocol/upgrade"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/protocopy"
-	"github.com/lavanet/lava/v4/utils/rand"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v4/x/plans/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/performance"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	"github.com/lavanet/lava/v5/protocol/upgrade"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/protocopy"
+	"github.com/lavanet/lava/v5/utils/rand"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -735,7 +735,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
 			localRelayResult := &common.RelayResult{
-				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderQoSExcellenceSummery: sessionInfo.QoSSummeryResult},
+				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderReputationSummary: sessionInfo.QoSSummaryResult},
 				Finalized:    false,
 				// setting the single consumer session as the conflict handler.
 				//  to be able to validate if we need to report this provider or not.
@@ -862,17 +862,20 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
 				)
 			}
-			if rpccs.debugRelays && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.BigInt() != nil &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
-				utils.LavaFormatDebug("identified QoS mismatch",
-					utils.Attribute{Key: "expectedBH", Value: expectedBH},
-					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
-					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
-					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
-					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSInfo},
-				)
+
+			if rpccs.debugRelays {
+				lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
+					lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+					utils.LavaFormatDebug("identified QoS mismatch",
+						utils.Attribute{Key: "expectedBH", Value: expectedBH},
+						utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
+						utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
+						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
+						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
+					)
+				}
 			}
 
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
@@ -1051,7 +1054,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 				utils.LogAttr("cuSum", relayRequest.RelaySession.CuSum),
 				utils.LogAttr("QosReport", relayRequest.RelaySession.QosReport),
-				utils.LogAttr("QosReportExcellence", relayRequest.RelaySession.QosExcellenceReport),
+				utils.LogAttr("ReputationReport", relayRequest.RelaySession.QosExcellenceReport),
 				utils.LogAttr("relayNum", relayRequest.RelaySession.RelayNum),
 				utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 				utils.LogAttr("latency", relayLatency),

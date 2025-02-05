@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 
-option go_package = "github.com/lavanet/lava/v4/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v5/x/pairing/types";
 
 // UniqueEpochSession is used to detect double spend attacks
 // It's kept in a epoch-prefixed store with a unique index: provider, project ID, chain ID and session ID

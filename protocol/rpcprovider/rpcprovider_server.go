@@ -15,24 +15,24 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/v4/protocol/chainlib"
-	"github.com/lavanet/lava/v4/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v4/protocol/chaintracker"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v4/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/protocol/performance"
-	"github.com/lavanet/lava/v4/protocol/provideroptimizer"
-	rewardserver "github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v4/protocol/upgrade"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/utils/protocopy"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/performance"
+	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	rewardserver "github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v5/protocol/upgrade"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/protocopy"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -72,6 +72,7 @@ type RPCProviderServer struct {
 	StaticProvider                  bool
 	providerStateMachine            *ProviderStateMachine
 	providerLoadManager             *ProviderLoadManager
+	verificationsStatusGetter       IVerificationsStatus
 }
 
 type ReliabilityManagerInf interface {
@@ -90,6 +91,10 @@ type StateTrackerInf interface {
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
 	GetVirtualEpoch(epoch uint64) uint64
+}
+
+type IVerificationsStatus interface {
+	GetVerificationsStatus() (status []*pairingtypes.Verification)
 }
 
 func (rpcps *RPCProviderServer) SetProviderUniqueId(uniqueId string) {
@@ -114,6 +119,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 	staticProvider bool,
 	providerLoadManager *ProviderLoadManager,
+	verificationsStatusGetter IVerificationsStatus,
 	numberOfRetries int,
 ) {
 	rpcps.cache = cache
@@ -138,6 +144,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
 	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
 	rpcps.providerLoadManager = providerLoadManager
+	rpcps.verificationsStatusGetter = verificationsStatusGetter
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -581,12 +588,12 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		}
 		utils.LavaFormatInfo(errorMessage,
 			utils.Attribute{Key: "Info Type", Value: lavasession.EpochMismatchError},
-			utils.Attribute{Key: "current lava block", Value: latestBlock},
-			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
+			utils.Attribute{Key: "provider lava block", Value: latestBlock},
+			utils.Attribute{Key: "consumer lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
-		return nil, nil, lavasession.EpochMismatchError
+		return nil, nil, lavasession.EpochMismatchError.Wrapf("provider lava block %d, consumer lava block %d, threshold: %d", latestBlock, request.RelaySession.Epoch, rpcps.providerSessionManager.GetBlockedEpochHeight())
 	}
 
 	// Check data
@@ -1232,12 +1239,19 @@ func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDis
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
 	latestB, _ := rpcps.reliabilityManager.GetLatestBlockNum()
+	verificationsStatus := []*pairingtypes.Verification{}
+	if probeReq.WithVerifications {
+		if rpcps.verificationsStatusGetter != nil {
+			verificationsStatus = rpcps.verificationsStatusGetter.GetVerificationsStatus()
+		}
+	}
 	probeReply := &pairingtypes.ProbeReply{
 		Guid:                  probeReq.GetGuid(),
 		LatestBlock:           latestB,
 		FinalizedBlocksHashes: []byte{},
 		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
+		Verifications:         verificationsStatus,
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)

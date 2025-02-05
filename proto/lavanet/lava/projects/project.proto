@@ -4,7 +4,7 @@ package lavanet.lava.projects;
 import "gogoproto/gogo.proto";
 import "lavanet/lava/plans/policy.proto";
 option (gogoproto.equal_all) = true;
-option go_package = "github.com/lavanet/lava/v4/x/projects/types";
+option go_package = "github.com/lavanet/lava/v5/x/projects/types";
 
 message Project {
     string index = 1; // unique id that will be the combination of subscription address and project name, cannot be changed once created

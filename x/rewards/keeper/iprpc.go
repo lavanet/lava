@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/rewards/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/rewards/types"
 )
 
 func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund sdk.Coins, spec string) error {
@@ -198,7 +198,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			details[providerCU.Provider+"_delegators"] = providerAndDelegatorsIprpcReward.Sub(providerReward...).String()
 		}
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
-		details["total_reward"] = specFund.Fund.String()
+		details["total_rewards"] = specFund.Fund.String()
 		details["chainid"] = specFund.GetSpec()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 
