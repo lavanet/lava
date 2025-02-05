@@ -504,7 +504,7 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 	if blockGapsLen > PollingUpdateLength { // check we have enough samples
 		// smaller times give more resolution to indentify changes, and also make block arrival predictions more optimistic
 		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
-		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33)
+		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33, false)
 		stability := lavaslices.Stability(ct.blockEventsGap, percentileTime)
 		utils.LavaFormatTrace("block gaps",
 			utils.LogAttr("block gaps", ct.blockEventsGap),
