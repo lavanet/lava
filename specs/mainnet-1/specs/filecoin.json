@@ -28,6 +28,14 @@
                             "type": "POST",
                             "add_on": ""
                         },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ],
                         "apis": [
                             {
                                 "name": "Filecoin.AuthVerify",
@@ -2802,7 +2810,6 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
                             {
