@@ -10,11 +10,13 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"github.com/goccy/go-json"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -174,6 +176,34 @@ func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackTo
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
+}
+
+func checkBTCResponseAndFixReply(chainID string, replyData []byte) string {
+	response := string(replyData)
+	if chainID == "BTC" || chainID == "BTCT" {
+		var jsonMsg *rpcclient.JsonrpcMessage
+		if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
+			btcResponse := &rpcclient.BTCResponse{
+				Version: jsonMsg.Version,
+				ID:      jsonMsg.ID,
+				Method:  jsonMsg.Method,
+				Error:   jsonMsg.Error,
+				Result:  jsonMsg.Result,
+			}
+			if marshaledRes, err := json.Marshal(btcResponse); err == nil {
+				response = string(marshaledRes)
+			}
+		}
+	}
+	return response
+}
+
+func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	return c.SendString(data)
 }
 
 func convertToJsonError(errorMsg string) string {
