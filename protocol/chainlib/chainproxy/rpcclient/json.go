@@ -70,6 +70,16 @@ type JsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+// BTCResponse represents a unified Bitcoin RPC response structure
+type BTCResponse struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   interface{}     `json:"error"`  // Can be *JsonError or string
+	Result  interface{}     `json:"result"` // Can be json.RawMessage or string
+}
+
 type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
