@@ -11,7 +11,6 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/goccy/go-json"
-	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -207,7 +206,7 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 }
 
 func convertToJsonError(errorMsg string) string {
-	jsonResponse, err := gojson.Marshal(fiber.Map{
+	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
 	})
 	if err != nil {
@@ -359,8 +358,8 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
 	app := fiber.New(fiber.Config{
-		JSONEncoder: gojson.Marshal,
-		JSONDecoder: gojson.Unmarshal,
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
 	})
 	app.Use(favicon.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
