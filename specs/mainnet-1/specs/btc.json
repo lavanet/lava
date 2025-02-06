@@ -1,11 +1,11 @@
 {
     "proposal": {
-        "title": "Add Specs: Bitcoin",
+        "title": "Add Specs: bitcoin",
         "description": "Adding new specification support for relaying Bitcoin data on Lava",
         "specs": [
             {
                 "index": "BTC",
-                "name": "Bitcoin",
+                "name": "bitcoin",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
