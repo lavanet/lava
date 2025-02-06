@@ -323,7 +323,7 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
+	return extraRelayTimeout + relayTimeAddition
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
