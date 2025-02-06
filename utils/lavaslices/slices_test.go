@@ -219,7 +219,7 @@ func TestPercentile(t *testing.T) {
 		{"even length identical", []int{4, 4, 4, 4}, 4},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			percentile := Percentile(tt.slice, 0.5)
+			percentile := Percentile(tt.slice, 0.5, false)
 			median := Median(tt.slice)
 			require.Equal(t, tt.median, median)
 			require.Equal(t, tt.median, percentile)
@@ -245,7 +245,7 @@ func TestPercentile(t *testing.T) {
 		{"rank even length identical", []time.Duration{4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond}, 4 * time.Millisecond, 0.33},
 	} {
 		t.Run(tt2.name, func(t *testing.T) {
-			percentile := Percentile(tt2.slice, tt2.rank)
+			percentile := Percentile(tt2.slice, tt2.rank, false)
 			require.Equal(t, tt2.percentile, percentile)
 		})
 	}
