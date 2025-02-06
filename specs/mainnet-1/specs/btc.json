@@ -634,7 +634,7 @@
             },
             {
                 "index": "BTCT",
-                "name": "Bitcoin testnet",
+                "name": "bitcoin testnet",
                 "enabled": true,
                 "imports": [
                     "BTC"
