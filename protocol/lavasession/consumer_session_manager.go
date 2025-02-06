@@ -638,16 +638,30 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
-	if stickysession, ok := csm.stickySessions[stickiness]; ok {
-		addresses = []string{stickysession.Provider}
-		fmt.Println("returning sticky session", stickysession.Provider)
-		return addresses, nil
-	}
-
 	ignoredProvidersListLength := len(ignoredProvidersList)
 	validAddresses := csm.getValidAddresses(addon, extensions)
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
+
+	if stickysession, ok := csm.stickySessions[stickiness]; ok {
+		// Check if sticky session provider is still valid
+		providerValid := false
+		for _, addr := range validAddresses {
+			if addr == stickysession.Provider {
+				providerValid = true
+				break
+			}
+		}
+		if !providerValid {
+			delete(csm.stickySessions, stickiness)
+			// Continue normal provider selection
+		} else {
+			addresses = []string{stickysession.Provider}
+			fmt.Println("returning sticky session", stickysession.Provider)
+			return addresses, nil
+		}
+	}
+
 	if totalValidLength <= 0 {
 		// check all ignored are actually valid addresses
 		ignoredProvidersListLength = 0
@@ -687,12 +701,13 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	// If stickiness is requested, store the first provider for future use
 	if stickiness != "" {
-		fmt.Println("setting sticky session", providers[0], stickiness)
+		provider := providers[rand.Intn(len(providers))]
+		fmt.Println("setting sticky session", provider, stickiness)
 		csm.stickySessions[stickiness] = &StickySession{
-			Provider: providers[0],
+			Provider: provider,
 			Epoch:    csm.atomicReadCurrentEpoch(),
 		}
-		return []string{providers[0]}, nil
+		return []string{provider}, nil
 	}
 	return providers, nil
 }
