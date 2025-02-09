@@ -18,7 +18,7 @@ import (
 =======
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
+	hybrid_client "github.com/lavanet/lava/v4/protocol/statetracker/hybridclient"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
@@ -35,7 +35,7 @@ var TimeOutForFetchingLavaBlocks = time.Second * 5
 type EventTracker struct {
 	lock sync.RWMutex
 	*StateQuery
-	blockResults       *v50client.ResultBlockResults
+	blockResults       *hybrid_client.ResultBlockResults
 	latestUpdatedBlock int64
 }
 
@@ -58,7 +58,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
 
-	var blockResults *v50client.ResultBlockResults
+	var blockResults *hybrid_client.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
 		timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
 		blockResults, err = et.StateQuery.BlockResults(timeoutCtx, &latestBlock)

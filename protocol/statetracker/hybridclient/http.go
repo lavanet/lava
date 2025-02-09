@@ -1,4 +1,4 @@
-package v50client
+package hybrid_client
 
 import (
 	"context"
