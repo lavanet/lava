@@ -69,3 +69,9 @@ var Upgrade_5_0_0 = Upgrade{
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
+
+var Upgrade_5_1_0 = Upgrade{
+	UpgradeName:          "v5.1.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
