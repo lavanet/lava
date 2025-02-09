@@ -1,4 +1,4 @@
-package legacyclient
+package hybrid_client
 
 import (
 	"context"
@@ -227,7 +227,8 @@ func (c *baseRPCClient) ABCIQueryWithOptions(
 	ctx context.Context,
 	path string,
 	data bytes.HexBytes,
-	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
+	opts rpcclient.ABCIQueryOptions,
+) (*ctypes.ResultABCIQuery, error) {
 	result := new(ctypes.ResultABCIQuery)
 	_, err := c.caller.Call(ctx, "abci_query",
 		map[string]interface{}{"path": path, "data": data, "height": opts.Height, "prove": opts.Prove},
@@ -497,7 +498,6 @@ func (c *baseRPCClient) TxSearch(
 	perPage *int,
 	orderBy string,
 ) (*ctypes.ResultTxSearch, error) {
-
 	result := new(ctypes.ResultTxSearch)
 	params := map[string]interface{}{
 		"query":    query,
@@ -526,7 +526,6 @@ func (c *baseRPCClient) BlockSearch(
 	page, perPage *int,
 	orderBy string,
 ) (*ctypes.ResultBlockSearch, error) {
-
 	result := new(ctypes.ResultBlockSearch)
 	params := map[string]interface{}{
 		"query":    query,
@@ -646,9 +645,9 @@ func (w *WSEvents) OnStop() {
 // Channel is never closed to prevent clients from seeing an erroneous event.
 //
 // It returns an error if WSEvents is not running.
-func (w *WSEvents) Subscribe(ctx context.Context, subscriber, query string,
-	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
-
+func (w *WSEvents) Subscribe(ctx context.Context, _, query string,
+	outCapacity ...int,
+) (out <-chan ctypes.ResultEvent, err error) {
 	if !w.IsRunning() {
 		return nil, errNotRunning
 	}
@@ -676,7 +675,7 @@ func (w *WSEvents) Subscribe(ctx context.Context, subscriber, query string,
 // subscriber from query.
 //
 // It returns an error if WSEvents is not running.
-func (w *WSEvents) Unsubscribe(ctx context.Context, subscriber, query string) error {
+func (w *WSEvents) Unsubscribe(ctx context.Context, _, query string) error {
 	if !w.IsRunning() {
 		return errNotRunning
 	}
@@ -699,7 +698,7 @@ func (w *WSEvents) Unsubscribe(ctx context.Context, subscriber, query string) er
 // given subscriber from all the queries.
 //
 // It returns an error if WSEvents is not running.
-func (w *WSEvents) UnsubscribeAll(ctx context.Context, subscriber string) error {
+func (w *WSEvents) UnsubscribeAll(ctx context.Context, _ string) error {
 	if !w.IsRunning() {
 		return errNotRunning
 	}

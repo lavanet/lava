@@ -1,4 +1,4 @@
-package legacyclient
+package hybrid_client
 
 import (
 	"encoding/json"
@@ -53,12 +53,13 @@ type ResultCommit struct {
 // ABCI results from a block
 type ResultBlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*ResponseDeliverTx      `json:"txs_results"`
+	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
-	BeginBlockEvents      []abci.Event              `json:"begin_block_events"`
 	EndBlockEvents        []abci.Event              `json:"end_block_events"`
+	BeginBlockEvents      []abci.Event              `json:"begin_block_events"`
 	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
+	AppHash               []byte                    `json:"app_hash"`
 }
 
 // NewResultCommit is a helper to initialize the ResultCommit with
@@ -182,12 +183,12 @@ type ResultBroadcastTx struct {
 	Hash bytes.HexBytes `json:"hash"`
 }
 
-// CheckTx and DeliverTx results
+// CheckTx and ExecTx results
 type ResultBroadcastTxCommit struct {
-	CheckTx   abci.ResponseCheckTx `json:"check_tx"`
-	DeliverTx ResponseDeliverTx    `json:"deliver_tx"`
-	Hash      bytes.HexBytes       `json:"hash"`
-	Height    int64                `json:"height"`
+	CheckTx  abci.ResponseCheckTx `json:"check_tx"`
+	TxResult abci.ExecTxResult    `json:"tx_result"`
+	Hash     bytes.HexBytes       `json:"hash"`
+	Height   int64                `json:"height"`
 }
 
 // ResultCheckTx wraps abci.ResponseCheckTx.
@@ -200,7 +201,7 @@ type ResultTx struct {
 	Hash     bytes.HexBytes    `json:"hash"`
 	Height   int64             `json:"height"`
 	Index    uint32            `json:"index"`
-	TxResult ResponseDeliverTx `json:"tx_result"`
+	TxResult abci.ExecTxResult `json:"tx_result"`
 	Tx       types.Tx          `json:"tx"`
 	Proof    types.TxProof     `json:"proof,omitempty"`
 }

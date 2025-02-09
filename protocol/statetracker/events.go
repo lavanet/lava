@@ -25,8 +25,8 @@ import (
 	"github.com/lavanet/lava/v4/protocol/chaintracker"
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
+	hybrid_client "github.com/lavanet/lava/v4/protocol/statetracker/hybridclient"
 	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -273,7 +273,7 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 		}
 		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
 		queryInst := updaters.NewStateQueryAccessInst(clientCtx)
-		var blockResults *v50client.ResultBlockResults
+		var blockResults *hybrid_client.ResultBlockResults
 		for retry := 0; retry < 3; retry++ {
 			ctxWithTimeout, cancelContextWithTimeout := context.WithTimeout(ctx, time.Second*30)
 			blockResults, err = queryInst.GetBlockResults(ctxWithTimeout, &block)
