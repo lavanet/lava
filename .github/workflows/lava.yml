@@ -433,7 +433,7 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-runner
     strategy:
       matrix:
         binary: [lavap, lavad]
@@ -443,8 +443,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log into registry ${{ env.REGISTRY }}
@@ -478,7 +476,7 @@ jobs:
   build_and_package:
     name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
     needs: [test-consensus, test-protocol]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-runner
     strategy:
       matrix:
         arch: [amd64, arm64]
