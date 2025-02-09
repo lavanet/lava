@@ -124,10 +124,19 @@ get_block_height() {
     lavad status 2>/dev/null | jq -r '.SyncInfo.latest_block_height'
 }
 
+get_block_height_v50() {
+    lavad status 2>/dev/null | jq -r '.sync_info.latest_block_height'
+}
+
 wait_for_lava_node_to_start() {
     # Monitor changes in block height
     while true; do
         current_height=$(get_block_height)
+        if [[ "$current_height" =~ ^[0-9]+$ && "$current_height" -gt 5 ]]; then
+            echo "Block height is now $current_height which is larger than 5"
+            break
+        fi
+        current_height=$(get_block_height_v50)
         if [[ "$current_height" =~ ^[0-9]+$ && "$current_height" -gt 5 ]]; then
             echo "Block height is now $current_height which is larger than 5"
             break

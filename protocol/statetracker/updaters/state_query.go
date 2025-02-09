@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/dgraph-io/ristretto/v2"
 	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
 	legacyclient "github.com/lavanet/lava/v4/protocol/statetracker/legacyclient"
+	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
 	"github.com/lavanet/lava/v4/utils"
 	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
 	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
@@ -42,16 +42,65 @@ type ProtocolVersionResponse struct {
 type StateQueryAccessInf interface {
 	grpc1.ClientConn
 	client.CometRPC
+	GetBlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error)
 }
 
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
 	client.CometRPC
-	clientctx client.Context
+	clientCtx    client.Context
+	legacyClient *legacyclient.HTTP
+	v50Client    *v50client.HTTP
+}
+
+func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error) {
+	// results, err := psq.clientCtx.Client.BlockResults(context.Background(), height)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	results, err := psq.v50Client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.FinalizeBlockEvents", Value: len(results.FinalizeBlockEvents)})
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.BeginBlockEvents", Value: len(results.BeginBlockEvents)})
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.EndBlockEvents", Value: len(results.EndBlockEvents)})
+
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.EndBlockEvents...)
+	// if psq.legacyClient != nil {
+	// 	legacyResults, err := psq.legacyClient.BlockResults(context.Background(), height)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	legacyResults.FinalizeBlockEvents = append(legacyResults.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	// 	legacyResults.FinalizeBlockEvents = append(legacyResults.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	// }
+	return results, nil
+}
+
+func (sq *StateQueryAccessInst) TryConnectingClients() {
+	// connect v50
+	v50client, err := v50client.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to v50 client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.v50Client = v50client
+
+	// connect legacy
+	legacyClient, err := legacyclient.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to legacy client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.legacyClient = legacyClient
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	return &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientctx: clientCtx}
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientCtx: clientCtx}
+	sq.TryConnectingClients()
+	return sq
 }
 
 type StateQuery struct {
@@ -62,11 +111,11 @@ type StateQuery struct {
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
 	client.CometRPC
-	clientctx client.Context
+	accessInf StateQueryAccessInf
 }
 
-func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf, clientctx client.Context) *StateQuery {
-	sq := &StateQuery{clientctx: clientctx}
+func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
+	sq := &StateQuery{accessInf: accessInf}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -132,7 +181,7 @@ type ConsumerStateQuery struct {
 }
 
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
-	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx), clientCtx), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
+	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx)), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
 	return csq
 }
 
@@ -245,8 +294,8 @@ type ProviderStateQuery struct {
 	EpochStateQuery
 }
 
-func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf, clientctx client.Context) *ProviderStateQuery {
-	sq := NewStateQuery(ctx, stateQueryAccess, clientctx)
+func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf) *ProviderStateQuery {
+	sq := NewStateQuery(ctx, stateQueryAccess)
 	esq := NewEpochStateQuery(sq)
 	csq := &ProviderStateQuery{StateQuery: sq, EpochStateQuery: *esq}
 	return csq
@@ -397,42 +446,6 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 	return epochSize * recommendedEpochNumToCollectPayment, nil
 }
 
-func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
-	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
-	if err != nil {
-		return nil, err
-	}
-
-	legacyResults, err := client.BlockResults(ctx, height)
-	if err != nil {
-		return nil, err
-	}
-	results, err := psq.clientctx.Client.BlockResults(ctx, height)
-	if err != nil {
-		return nil, err
-	}
-	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
-	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
-
-	return results, nil
-}
-
-func (psq *StateQueryAccessInst) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
-	client, err := legacyclient.New(psq.clientctx.NodeURI, "/websocket")
-	if err != nil {
-		return nil, err
-	}
-
-	legacyResults, err := client.BlockResults(context.Background(), height)
-	if err != nil {
-		return nil, err
-	}
-	results, err := psq.clientctx.Client.BlockResults(context.Background(), height)
-	if err != nil {
-		return nil, err
-	}
-	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
-	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
-
-	return results, nil
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error) {
+	return psq.accessInf.GetBlockResults(ctx, height)
 }

@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/goccy/go-json"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -27,6 +26,7 @@ import (
 	"github.com/lavanet/lava/v4/protocol/common"
 	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
 	updaters "github.com/lavanet/lava/v4/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
 	"github.com/lavanet/lava/v4/utils"
 	"github.com/lavanet/lava/v4/utils/rand"
 	"github.com/lavanet/lava/v4/utils/sigs"
@@ -273,10 +273,10 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 		}
 		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
 		queryInst := updaters.NewStateQueryAccessInst(clientCtx)
-		var blockResults *coretypes.ResultBlockResults
+		var blockResults *v50client.ResultBlockResults
 		for retry := 0; retry < 3; retry++ {
 			ctxWithTimeout, cancelContextWithTimeout := context.WithTimeout(ctx, time.Second*30)
-			blockResults, err = queryInst.BlockResults(ctxWithTimeout, &block)
+			blockResults, err = queryInst.GetBlockResults(ctxWithTimeout, &block)
 			cancelContextWithTimeout()
 			if err != nil {
 				utils.LavaFormatWarning("@@@@ failed fetching block results will retry", err, utils.LogAttr("block_number", block))
