@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+<<<<<<< HEAD
 	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -21,6 +22,22 @@ import (
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+=======
+	"github.com/cosmos/cosmos-sdk/client"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	"github.com/dgraph-io/ristretto/v2"
+	reliabilitymanager "github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	legacyclient "github.com/lavanet/lava/v4/protocol/statetracker/legacyclient"
+	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
+	"github.com/lavanet/lava/v4/utils"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	downtimev1 "github.com/lavanet/lava/v4/x/downtime/v1"
+	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v4/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -42,12 +59,18 @@ type ProtocolVersionResponse struct {
 
 type StateQueryAccessInf interface {
 	grpc1.ClientConn
+<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
+=======
+	client.CometRPC
+	GetBlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error)
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 }
 
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
+<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
 }
@@ -58,6 +81,62 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
 	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+=======
+	client.CometRPC
+	clientCtx    client.Context
+	legacyClient *legacyclient.HTTP
+	v50Client    *v50client.HTTP
+}
+
+func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error) {
+	// results, err := psq.clientCtx.Client.BlockResults(context.Background(), height)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	results, err := psq.v50Client.BlockResults(context.Background(), height)
+	if err != nil {
+		return nil, err
+	}
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.FinalizeBlockEvents", Value: len(results.FinalizeBlockEvents)})
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.BeginBlockEvents", Value: len(results.BeginBlockEvents)})
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.EndBlockEvents", Value: len(results.EndBlockEvents)})
+
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.EndBlockEvents...)
+	// if psq.legacyClient != nil {
+	// 	legacyResults, err := psq.legacyClient.BlockResults(context.Background(), height)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	legacyResults.FinalizeBlockEvents = append(legacyResults.FinalizeBlockEvents, legacyResults.BeginBlockEvents...)
+	// 	legacyResults.FinalizeBlockEvents = append(legacyResults.FinalizeBlockEvents, legacyResults.EndBlockEvents...)
+	// }
+	return results, nil
+}
+
+func (sq *StateQueryAccessInst) TryConnectingClients() {
+	// connect v50
+	v50client, err := v50client.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to v50 client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.v50Client = v50client
+
+	// connect legacy
+	legacyClient, err := legacyclient.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to legacy client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.legacyClient = legacyClient
+}
+
+func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientCtx: clientCtx}
+	sq.TryConnectingClients()
+	return sq
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 }
 
 type StateQuery struct {
@@ -67,12 +146,21 @@ type StateQuery struct {
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
+<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
 	sq := &StateQuery{}
+=======
+	client.CometRPC
+	accessInf StateQueryAccessInf
+}
+
+func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
+	sq := &StateQuery{accessInf: accessInf}
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -413,3 +501,10 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
 }
+<<<<<<< HEAD
+=======
+
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error) {
+	return psq.accessInf.GetBlockResults(ctx, height)
+}
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50

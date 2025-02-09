@@ -8,12 +8,22 @@ import (
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+<<<<<<< HEAD
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/utils"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+=======
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v4/protocol/statetracker/v50client"
+	"github.com/lavanet/lava/v4/utils"
+	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+>>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 )
 
 const (
@@ -25,7 +35,7 @@ var TimeOutForFetchingLavaBlocks = time.Second * 5
 type EventTracker struct {
 	lock sync.RWMutex
 	*StateQuery
-	blockResults       *ctypes.ResultBlockResults
+	blockResults       *v50client.ResultBlockResults
 	latestUpdatedBlock int64
 }
 
@@ -48,7 +58,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
 
-	var blockResults *ctypes.ResultBlockResults
+	var blockResults *v50client.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
 		timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
 		blockResults, err = et.StateQuery.BlockResults(timeoutCtx, &latestBlock)
