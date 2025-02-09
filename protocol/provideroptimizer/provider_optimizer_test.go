@@ -217,14 +217,22 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 }
 
 func TestProviderOptimizerBasicRelayDataAutoAdjustTiers(t *testing.T) {
+	// Save original value and defer restore
+	originalAutoAdjustTiers := AutoAdjustTiers
+	defer func() {
+		AutoAdjustTiers = originalAutoAdjustTiers
+	}()
+
+	// Set test value
+	AutoAdjustTiers = true
+
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
 	weights := make(map[string]int64)
 	rand.InitRandomSeed()
 	cu := uint64(1)
 	requestBlock := int64(1000)
-	syncBlock := uint64(requestBlock)
-	AutoAdjustTiers = true
+	syncBlock := uint64(1000)
 	for _, address := range providersGen.providersAddresses {
 		weights[address] = 1000
 	}
