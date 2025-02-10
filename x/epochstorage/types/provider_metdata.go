@@ -8,9 +8,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
-var (
-	MetadataVaultIndexesPrefix = collections.NewPrefix([]byte("MetadataVaultIndexes/"))
-)
+var MetadataVaultIndexesPrefix = collections.NewPrefix([]byte("MetadataVaultIndexes/"))
 
 // ChainIdVaultIndexes defines a secondary unique index for the keeper's stakeEntriesCurrent indexed map
 // Normally, a current stake entry can be accessed with the primary key: [chainID, address]
