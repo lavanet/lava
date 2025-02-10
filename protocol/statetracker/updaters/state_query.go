@@ -52,8 +52,8 @@ type StateQueryAccessInst struct {
 	grpc1.ClientConn
 	tendermintRPC
 	client.TendermintRPC
-	clientCtx     client.Context
-	hybrid_client *hybrid_client.HTTP
+	clientCtx    client.Context
+	hybridClient *hybrid_client.HTTP
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
@@ -61,14 +61,15 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 	if !ok {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
-	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client, clientCtx: clientCtx}
 	sq.TryConnectingClients()
 	return sq
 }
 
 func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
-	results, err := psq.hybrid_client.BlockResults(context.Background(), height)
+	results, err := psq.hybridClient.BlockResults(ctx, height)
 	if err != nil {
+		utils.LavaFormatError("failed to get block results", err, utils.Attribute{Key: "height", Value: height})
 		return nil, err
 	}
 	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.FinalizeBlockEvents", Value: len(results.FinalizeBlockEvents)})
@@ -87,7 +88,7 @@ func (sq *StateQueryAccessInst) TryConnectingClients() {
 		utils.LavaFormatError("failed to connect to v50 client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
 		return
 	}
-	sq.hybrid_client = hybrid_client
+	sq.hybridClient = hybrid_client
 }
 
 type StateQuery struct {
