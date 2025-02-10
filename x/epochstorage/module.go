@@ -135,6 +135,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v8: %w", types.ModuleName, err))
 	}
+
+	// register v8 -> v9 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 8, migrator.MigrateVersion8To9); err != nil {
+		panic(fmt.Errorf("%s: failed to register migration to v9: %w", types.ModuleName, err))
+	}
 }
 
 // RegisterInvariants registers the capability module's invariants.

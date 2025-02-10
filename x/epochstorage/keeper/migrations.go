@@ -124,3 +124,25 @@ func (m Migrator) SetEpochHashForMigrator(ctx sdk.Context, epoch uint64, hash []
 		panic(err)
 	}
 }
+
+// fix provider metadata to be consistent with the stake entries
+func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
+	allMetadata, err := m.keeper.GetAllMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, metadata := range allMetadata {
+		chains := []string{}
+		for _, chainID := range metadata.Chains {
+			stakeEntry, found := m.keeper.GetStakeEntryCurrent(ctx, chainID, metadata.Provider)
+			if found {
+				chains = append(chains, stakeEntry.Chain)
+			}
+		}
+		metadata.Chains = chains
+		m.keeper.SetMetadata(ctx, metadata)
+	}
+
+	return nil
+}
