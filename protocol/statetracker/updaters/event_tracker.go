@@ -8,22 +8,13 @@ import (
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-<<<<<<< HEAD
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
 	"github.com/lavanet/lava/v5/utils"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-=======
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v4/protocol/rpcprovider/rewardserver"
-	hybrid_client "github.com/lavanet/lava/v4/protocol/statetracker/hybridclient"
-	"github.com/lavanet/lava/v4/utils"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
->>>>>>> a6ff26112... working new hybrid client with both v47 and v50
 )
 
 const (

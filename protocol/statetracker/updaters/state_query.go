@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
 	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
-	hybrid_client "github.com/lavanet/lava/v4/protocol/statetracker/hybridclient"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -43,24 +43,17 @@ type ProtocolVersionResponse struct {
 
 type StateQueryAccessInf interface {
 	grpc1.ClientConn
-<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
-=======
-	client.CometRPC
-<<<<<<< HEAD
-	GetBlockResults(ctx context.Context, height *int64) (*v50client.ResultBlockResults, error)
->>>>>>> a6ff26112... working new hybrid client with both v47 and v50
-=======
 	GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error)
->>>>>>> d844d09c0... rename v50client to hybrid client.
 }
 
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
-<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
+	clientCtx     client.Context
+	hybrid_client *hybrid_client.HTTP
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
@@ -69,10 +62,6 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
 	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
-=======
-	client.CometRPC
-	clientCtx     client.Context
-	hybrid_client *hybrid_client.HTTP
 }
 
 func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
@@ -99,13 +88,6 @@ func (sq *StateQueryAccessInst) TryConnectingClients() {
 	sq.hybrid_client = hybrid_client
 }
 
-func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
-	sq := &StateQueryAccessInst{ClientConn: clientCtx, CometRPC: clientCtx.Client, clientCtx: clientCtx}
-	sq.TryConnectingClients()
-	return sq
->>>>>>> a6ff26112... working new hybrid client with both v47 and v50
-}
-
 type StateQuery struct {
 	specQueryClient         spectypes.QueryClient
 	pairingQueryClient      pairingtypes.QueryClient
@@ -113,21 +95,13 @@ type StateQuery struct {
 	protocolClient          protocoltypes.QueryClient
 	downtimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache[string, any]
-<<<<<<< HEAD
 	tendermintRPC
 	client.TendermintRPC
-}
-
-func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{}
-=======
-	client.CometRPC
 	accessInf StateQueryAccessInf
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{accessInf: accessInf}
->>>>>>> a6ff26112... working new hybrid client with both v47 and v50
+	sq := &StateQuery{}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -468,10 +442,7 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
 }
-<<<<<<< HEAD
-=======
 
 func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
 	return psq.accessInf.GetBlockResults(ctx, height)
 }
->>>>>>> a6ff26112... working new hybrid client with both v47 and v50
