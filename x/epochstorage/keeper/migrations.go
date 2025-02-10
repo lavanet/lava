@@ -138,6 +138,8 @@ func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
 			stakeEntry, found := m.keeper.GetStakeEntryCurrent(ctx, chainID, metadata.Provider)
 			if found {
 				chains = append(chains, stakeEntry.Chain)
+			} else {
+				fmt.Println("stake entry not found for provider: ", metadata.Provider, " and chain: ", chainID)
 			}
 		}
 		metadata.Chains = chains
