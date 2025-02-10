@@ -53,7 +53,7 @@ type ResultCommit struct {
 // ABCI results from a block
 type ResultBlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	TxsResults            []*abci.ResponseDeliverTx `json:"txs_results"`
 	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
 	EndBlockEvents        []abci.Event              `json:"end_block_events"`
 	BeginBlockEvents      []abci.Event              `json:"begin_block_events"`
@@ -185,10 +185,10 @@ type ResultBroadcastTx struct {
 
 // CheckTx and ExecTx results
 type ResultBroadcastTxCommit struct {
-	CheckTx  abci.ResponseCheckTx `json:"check_tx"`
-	TxResult abci.ExecTxResult    `json:"tx_result"`
-	Hash     bytes.HexBytes       `json:"hash"`
-	Height   int64                `json:"height"`
+	CheckTx  abci.ResponseCheckTx   `json:"check_tx"`
+	TxResult abci.ResponseDeliverTx `json:"tx_result"`
+	Hash     bytes.HexBytes         `json:"hash"`
+	Height   int64                  `json:"height"`
 }
 
 // ResultCheckTx wraps abci.ResponseCheckTx.
@@ -198,12 +198,12 @@ type ResultCheckTx struct {
 
 // Result of querying for a tx
 type ResultTx struct {
-	Hash     bytes.HexBytes    `json:"hash"`
-	Height   int64             `json:"height"`
-	Index    uint32            `json:"index"`
-	TxResult abci.ExecTxResult `json:"tx_result"`
-	Tx       types.Tx          `json:"tx"`
-	Proof    types.TxProof     `json:"proof,omitempty"`
+	Hash     bytes.HexBytes         `json:"hash"`
+	Height   int64                  `json:"height"`
+	Index    uint32                 `json:"index"`
+	TxResult abci.ResponseDeliverTx `json:"tx_result"`
+	Tx       types.Tx               `json:"tx"`
+	Proof    types.TxProof          `json:"proof,omitempty"`
 }
 
 // Result of searching for txs
