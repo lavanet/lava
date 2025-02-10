@@ -103,7 +103,7 @@ type StateQuery struct {
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{}
+	sq := &StateQuery{accessInf: accessInf}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
