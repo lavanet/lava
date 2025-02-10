@@ -61,7 +61,9 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 	if !ok {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
-	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+	sq.TryConnectingClients()
+	return sq
 }
 
 func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
@@ -72,7 +74,7 @@ func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *in
 	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.FinalizeBlockEvents", Value: len(results.FinalizeBlockEvents)})
 	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.BeginBlockEvents", Value: len(results.BeginBlockEvents)})
 	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.EndBlockEvents", Value: len(results.EndBlockEvents)})
-
+	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.TxsResults", Value: len(results.TxsResults)})
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.BeginBlockEvents...)
 	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.EndBlockEvents...)
 	return results, nil
