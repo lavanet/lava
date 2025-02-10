@@ -64,9 +64,7 @@ type ResultBlockResults struct {
 
 // NewResultCommit is a helper to initialize the ResultCommit with
 // the embedded struct
-func NewResultCommit(header *types.Header, commit *types.Commit,
-	canonical bool) *ResultCommit {
-
+func NewResultCommit(header *types.Header, commit *types.Commit, canonical bool) *ResultCommit {
 	return &ResultCommit{
 		SignedHeader: types.SignedHeader{
 			Header: header,
