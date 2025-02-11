@@ -170,6 +170,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 		parsedBlock := parsedInput.GetBlock()
 
+		if msg.Method == "eth_call" && uint64(parsedBlock) < extensionInfo.LatestBlock-126 {
+			// change to archive
+			extensionInfo.AdditionalExtensions = append(extensionInfo.AdditionalExtensions, extensionslib.ArchiveExtension)
+			utils.LavaFormatInfo("changing to archive", utils.LogAttr("latestBlock", extensionInfo.LatestBlock), utils.LogAttr("parsedBlock", parsedBlock), utils.LogAttr("extensionInfo.AdditionalExtensions ", extensionInfo.AdditionalExtensions))
+		}
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
