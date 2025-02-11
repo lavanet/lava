@@ -136,7 +136,11 @@ func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
 		if metadata.Provider != metadata.Vault {
 			_, err := m.keeper.GetMetadata(ctx, metadata.Vault)
 			if err == nil {
-				fmt.Println("exists for vault with different provider: ", metadata.Vault, " and provider: ", metadata.Provider)
+				fmt.Println("exists for vault with different provider: ", metadata.Vault, " and provider: ", metadata.Provider, "removing metadata")
+				err := m.keeper.RemoveMetadata(ctx, metadata.Vault)
+				if err != nil {
+					return err
+				}
 				continue
 			}
 		}
