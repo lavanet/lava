@@ -152,7 +152,6 @@ func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
 		}
 		metadata.Chains = chains
 		m.keeper.SetMetadata(ctx, metadata)
-
 	}
 
 	return nil
