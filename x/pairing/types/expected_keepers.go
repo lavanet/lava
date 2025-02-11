@@ -55,6 +55,7 @@ type EpochstorageKeeper interface {
 	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
 	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
 	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
+	GetProviderMetadataByVault(ctx sdk.Context, vault string) (epochstoragetypes.ProviderMetadata, bool)
 }
 
 type AccountKeeper interface {

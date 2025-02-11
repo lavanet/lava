@@ -37,6 +37,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 	}
 
+	vaultMetadata, found := k.epochStorageKeeper.GetProviderMetadataByVault(ctx, creator)
+	if found {
+		if vaultMetadata.Provider != provider || vaultMetadata.Vault != creator {
+			return utils.LavaFormatWarning("provider metadata mismatch", fmt.Errorf("provider metadata mismatch"),
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("vault", creator),
+			)
+		}
+	}
+
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
 		return utils.LavaFormatWarning("spec not found or not active", err,
