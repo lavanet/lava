@@ -69,7 +69,7 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
 	results, err := psq.hybridClient.BlockResults(ctx, height)
 	if err != nil {
-		utils.LavaFormatError("failed to get block results", err, utils.Attribute{Key: "height", Value: height})
+		utils.LavaFormatInfo("failed to get block results", utils.Attribute{Key: "height", Value: height}, utils.Attribute{Key: "error", Value: err})
 		return nil, err
 	}
 	utils.LavaFormatInfo("BlockResults", utils.Attribute{Key: "results.FinalizeBlockEvents", Value: len(results.FinalizeBlockEvents)})
