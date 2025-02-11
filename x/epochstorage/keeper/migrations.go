@@ -133,6 +133,14 @@ func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
 	}
 
 	for _, metadata := range allMetadata {
+		if metadata.Provider != metadata.Vault {
+			_, err := m.keeper.GetMetadata(ctx, metadata.Vault)
+			if err == nil {
+				fmt.Println("exists for vault with different provider: ", metadata.Vault, " and provider: ", metadata.Provider)
+				continue
+			}
+		}
+
 		chains := []string{}
 		for _, chainID := range metadata.Chains {
 			stakeEntry, found := m.keeper.GetStakeEntryCurrent(ctx, chainID, metadata.Provider)
@@ -144,6 +152,7 @@ func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
 		}
 		metadata.Chains = chains
 		m.keeper.SetMetadata(ctx, metadata)
+
 	}
 
 	return nil
