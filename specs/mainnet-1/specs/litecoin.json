@@ -37,18 +37,6 @@
                         "verifications": [
                             {
                                 "name": "chain-id",
-                                "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getblockchaininfo\",\"params\":[],\"id\":1}",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "chain",
-                                            "="
-                                        ],
-                                        "parser_func": "PARSE_DICTIONARY"
-                                    },
-                                    "api_name": "ltc_chainId"
-                                },
                                 "values": [
                                     {
                                         "expected_value": "main"

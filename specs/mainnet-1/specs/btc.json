@@ -619,7 +619,7 @@
                                         ],
                                         "parser_func": "PARSE_DICTIONARY"
                                     },
-                                    "api_name": "eth_chainId"
+                                    "api_name": "getblockchaininfo"
                                 },
                                 "values": [
                                     {
