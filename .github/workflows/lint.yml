@@ -26,6 +26,7 @@ jobs:
         continue-on-error: true
         id: lint_first_try
         with:
+          version: v1.62.0
           args: --print-issued-lines --config .golangci.yml -v
           skip-cache: true
           skip-pkg-cache: true
@@ -37,6 +38,7 @@ jobs:
         continue-on-error: true
         id: lint_retry_1
         with:
+          version: v1.62.0
           args: --print-issued-lines --config .golangci.yml -v
           skip-cache: true
           skip-pkg-cache: true
@@ -47,6 +49,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         id: lint_retry_2
         with:
+          version: v1.62.0
           args: --print-issued-lines --config .golangci.yml -v
           skip-cache: true
           skip-pkg-cache: true
