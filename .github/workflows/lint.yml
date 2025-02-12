@@ -27,6 +27,9 @@ jobs:
         id: lint_first_try
         with:
           args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       - name: Lint Retry 1
         if: steps.lint_first_try.outcome == 'failure'
@@ -35,6 +38,9 @@ jobs:
         id: lint_retry_1
         with:
           args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       - name: Lint Retry 2
         if: steps.lint_retry_1.outcome == 'failure'
@@ -42,3 +48,6 @@ jobs:
         id: lint_retry_2
         with:
           args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
