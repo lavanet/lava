@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
 	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -44,12 +45,15 @@ type StateQueryAccessInf interface {
 	grpc1.ClientConn
 	tendermintRPC
 	client.TendermintRPC
+	GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error)
 }
 
 type StateQueryAccessInst struct {
 	grpc1.ClientConn
 	tendermintRPC
 	client.TendermintRPC
+	clientCtx    client.Context
+	hybridClient *hybrid_client.HTTP
 }
 
 func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
@@ -57,7 +61,29 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 	if !ok {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
-	return &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client}
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client, clientCtx: clientCtx}
+	sq.TryConnectingClients()
+	return sq
+}
+
+func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
+	results, err := psq.hybridClient.BlockResults(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.EndBlockEvents...)
+	return results, nil
+}
+
+func (sq *StateQueryAccessInst) TryConnectingClients() {
+	// connect v50
+	hybrid_client, err := hybrid_client.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to v50 client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.hybridClient = hybrid_client
 }
 
 type StateQuery struct {
@@ -69,10 +95,11 @@ type StateQuery struct {
 	ResponsesCache          *ristretto.Cache[string, any]
 	tendermintRPC
 	client.TendermintRPC
+	accessInf StateQueryAccessInf
 }
 
 func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
-	sq := &StateQuery{}
+	sq := &StateQuery{accessInf: accessInf}
 	sq.UpdateAccess(accessInf)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -412,4 +439,8 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 		return 0, err
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
+}
+
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
+	return psq.accessInf.GetBlockResults(ctx, height)
 }

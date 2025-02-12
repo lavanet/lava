@@ -179,7 +179,7 @@ func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackTo
 
 func checkBTCResponseAndFixReply(chainID string, replyData []byte) string {
 	response := string(replyData)
-	if chainID == "BTC" || chainID == "BTCT" {
+	if chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" {
 		var jsonMsg *rpcclient.JsonrpcMessage
 		if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
 			btcResponse := &rpcclient.BTCResponse{
