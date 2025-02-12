@@ -23,5 +23,22 @@ jobs:
 
       - name: Lint
         uses: golangci/golangci-lint-action@v4
+        continue-on-error: true
+        id: lint_first_try
+        with:
+          args: --print-issued-lines --config .golangci.yml -v
+
+      - name: Lint Retry 1
+        if: steps.lint_first_try.outcome == 'failure'
+        uses: golangci/golangci-lint-action@v4
+        continue-on-error: true
+        id: lint_retry_1
+        with:
+          args: --print-issued-lines --config .golangci.yml -v
+
+      - name: Lint Retry 2
+        if: steps.lint_retry_1.outcome == 'failure'
+        uses: golangci/golangci-lint-action@v4
+        id: lint_retry_2
         with:
           args: --print-issued-lines --config .golangci.yml -v
