@@ -9,7 +9,6 @@ import (
 )
 
 type QoSManager interface {
-	GetLastReputationQoSReportRaw(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport
 	SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport)
 	SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport)
 }
@@ -42,7 +41,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
 func (cs *SingleConsumerSession) getQosComputedResultOrZero(qosManager QoSManager) sdk.Dec {
-	lastReputationReport := qosManager.GetLastReputationQoSReportRaw(cs.epoch, cs.SessionId)
+	lastReputationReport := qosManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
 	if lastReputationReport != nil {
 		computedReputation, errComputing := lastReputationReport.ComputeReputation()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it

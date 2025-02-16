@@ -233,10 +233,9 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerStateTracker := &mockConsumerStateTracker{}
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	baseLatency := common.AverageWorldLatency / 2
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, baseLatency, 2, nil, "dontcare")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
 	qosManager := qos.NewQoSManager(optimizer)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), qosManager)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), qosManager)
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
 
 	// Just setting the providers available extensions and policy so the consumer is aware of them

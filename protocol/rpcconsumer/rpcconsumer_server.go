@@ -880,7 +880,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
+						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: lastQoSReport},
 					)
 				}
 			}
