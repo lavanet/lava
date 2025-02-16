@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	v8 "github.com/lavanet/lava/v4/x/subscription/migrations/v8"
+	"github.com/lavanet/lava/v5/utils"
+	v8 "github.com/lavanet/lava/v5/x/subscription/migrations/v8"
 )
 
 type Migrator struct {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

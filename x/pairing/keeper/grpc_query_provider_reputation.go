@@ -7,9 +7,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -77,15 +77,16 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 			}
 			pairingScores = append(pairingScores, score.Score.MustFloat64())
 		}
+		// Sort in descending order (highest scores first)
 		sort.Slice(pairingScores, func(i, j int) bool {
-			return pairingScores[i] < pairingScores[j]
+			return pairingScores[i] > pairingScores[j]
 		})
 
-		// find the provider's rank
-		rank := len(pairingScores)
+		// find the provider's rank (1 is best)
+		rank := 1
 		for i, score := range pairingScores {
-			if data.score.MustFloat64() <= score {
-				rank -= i
+			if data.score.MustFloat64() >= score {
+				rank = i + 1
 				break
 			}
 		}
@@ -94,18 +95,26 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 		mean := lavaslices.Average(pairingScores)
 		variance := lavaslices.Variance(pairingScores, mean)
 
+		// Calculate the 80th percentile threshold
+		percentileThreshold := lavaslices.Percentile(pairingScores, percentileRank, true)
+
 		// create the reputation data and append
 		chainClusterRes.Rank = uint64(rank)
 		chainClusterRes.Providers = uint64(len(pairingScores))
-		if variance < varianceThreshold {
-			chainClusterRes.OverallPerformance = lowVariance
+
+		// Compare the provider's score against the threshold
+		if data.score.MustFloat64() >= percentileThreshold {
+			chainClusterRes.OverallPerformance = goodScore
+			if variance < varianceThreshold {
+				chainClusterRes.OverallPerformance += " (" + lowVariance + ")"
+			}
 		} else {
-			if pairingScores[len(pairingScores)-rank] > lavaslices.Percentile(pairingScores, percentileRank) {
-				chainClusterRes.OverallPerformance = goodScore
-			} else {
-				chainClusterRes.OverallPerformance = badScore
+			chainClusterRes.OverallPerformance = badScore
+			if variance < varianceThreshold {
+				chainClusterRes.OverallPerformance += " (" + lowVariance + ")"
 			}
 		}
+
 		res = append(res, chainClusterRes)
 	}
 

@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 const TypeMsgStakeProvider = "stake_provider"

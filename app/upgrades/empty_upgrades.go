@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/lavanet/lava/v4/app/keepers"
+	"github.com/lavanet/lava/v5/app/keepers"
 )
 
 func defaultUpgradeHandler(
@@ -61,5 +61,23 @@ var Upgrade_4_1_0 = Upgrade{
 var Upgrade_4_2_0 = Upgrade{
 	UpgradeName:          "v4.2.0",
 	CreateUpgradeHandler: v_4_2_0,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_5_0_0 = Upgrade{
+	UpgradeName:          "v5.0.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_5_1_0 = Upgrade{
+	UpgradeName:          "v5.1.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_5_2_0 = Upgrade{
+	UpgradeName:          "v5.2.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }

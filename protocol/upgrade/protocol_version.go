@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lavanet/lava/v4/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v4/utils"
-	protocoltypes "github.com/lavanet/lava/v4/x/protocol/types"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 type ProtocolVersion struct {

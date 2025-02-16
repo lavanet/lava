@@ -8,11 +8,11 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/sample"
-	"github.com/lavanet/lava/v4/utils"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/testutil/sample"
+	"github.com/lavanet/lava/v5/utils"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -75,7 +75,8 @@ func (k Keeper) EstimatedProviderRewards(goCtx context.Context, req *types.Query
 	// get claimable rewards before the rewards distribution
 	before, err := k.getClaimableRewards(ctx, req.Provider, delegator)
 	if err != nil {
-		return nil, utils.LavaFormatWarning("cannot estimate rewards, cannot get claimable rewards before distribution", err, details...)
+		// no rewards before distribution
+		before = sdk.NewCoins()
 	}
 
 	// we use events to get the detailed info about the rewards (for the provider only use-case)
@@ -231,6 +232,7 @@ func (k Keeper) getRewardsInfoFromEvents(ctx sdk.Context, provider string) (info
 // it builds the "source" string that is required for the estimated rewards info. Also it returns the
 // rewards amount of the provider for a specific payment type and a specific chain
 // if it returns ok == false, the event is not relevant and can be skipped
+// if provider is not specified, the event is relevant and the total rewards for the chain ID are returned
 func (k Keeper) parseEvent(event abci.Event, provider string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
 	subEventName := utils.EventPrefix + types.SubscriptionPayoutEventName
 	boostEventName := utils.EventPrefix + rewardstypes.ProvidersBonusRewardsEventName
@@ -256,7 +258,10 @@ func extractInfoFromSubscriptionEvent(event abci.Event, provider string) (eventR
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
-		if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
+		// if provider is not specified we return true and an empty map since the event does not include a total reward
+		if provider == "" {
+			return nil, true
+		} else if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
 			// extract chain ID
 			parts := strings.Split(atr.Key, " ")
 			if len(parts) != 2 {
@@ -328,12 +333,21 @@ func extractInfoFromIprpcEvent(event abci.Event, provider string) (eventRewardsI
 // All keys are prefixed with provider addresses. Since the events are emitted per chain ID,
 // we expect a single reward key for a specific provider. Also, the reward string in the event
 // is of type sdk.Coins.
+// if provider is not specified, the event is relevant and the total rewards for the chain ID are returned
 func extractInfoFromIprpcAndBoostEvent(event abci.Event, provider string, sourcePrefix string) (eventRewardsInfo map[string]sdk.DecCoins, ok bool) {
 	var rewardStr, chainID string
 	eventRewardsInfo = map[string]sdk.DecCoins{}
 
 	for _, atr := range event.Attributes {
-		if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
+		// if provider is not specified we return the total rewards for the chain ID
+		if provider == "" {
+			if atr.Key == "chainid" {
+				chainID = atr.Value
+			}
+			if atr.Key == "total_rewards" {
+				rewardStr = atr.Value
+			}
+		} else if strings.HasPrefix(atr.Key, provider) && !strings.Contains(atr.Key, "delegators") {
 			// extract provider reward
 			parts := strings.Split(atr.Value, " ")
 			if len(parts) != 4 {

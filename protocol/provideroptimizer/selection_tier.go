@@ -3,9 +3,9 @@ package provideroptimizer
 import (
 	"math"
 
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/utils/rand"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/rand"
 )
 
 type Entry struct {
@@ -14,12 +14,18 @@ type Entry struct {
 	Part    float64
 }
 
-// selectionTier is a utility to get a tier of addresses based on their scores
+// selectionTier is a utility to categorize provider addresses based on their
+// relative stakes. This mechanism ensures that providers with similar stakes
+// compete for relays based on their service quality. For example, if there are
+// multiple providers with low stakes but good service, they will compete more
+// directly with each other than with a provider with a high stake but poor service.
+// This helps prevent providers with large stakes from monopolizing relay
+// services.
 type SelectionTier interface {
 	AddScore(entry string, score float64)
 	GetTier(tier int, numTiers int, minimumEntries int) []Entry
 	SelectTierRandomly(numTiers int, tierChances map[int]float64) int
-	ShiftTierChance(numTiers int, initialYierChances map[int]float64) map[int]float64
+	ShiftTierChance(numTiers int, initialTierChances map[int]float64) map[int]float64
 	ScoresCount() int
 	GetRawScores() []Entry
 }
@@ -132,7 +138,7 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 	}
 	medianScore := lavaslices.Median(scores)
 	medianScoreReversed := 1 / (medianScore + 0.0001)
-	percentile25Score := lavaslices.Percentile(scores, 0.25)
+	percentile25Score := lavaslices.Percentile(scores, 0.25, false)
 	percentile25ScoreReversed := 1 / (percentile25Score + 0.0001)
 
 	averageChance := 1 / float64(numTiers)
@@ -146,9 +152,7 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor
 			}
 		} else {
-			if initialTierChances[i] > 0 {
-				shiftedTierChances[i] = initialTierChances[i] + averageChance*offsetFactor
-			}
+			shiftedTierChances[i] = initialTierChances[i] + averageChance*offsetFactor
 		}
 	}
 	// normalize the chances
@@ -165,6 +169,10 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int) []Entry {
 	// get the tier of scores for the given tier and number of tiers
 	entriesLen := len(st.scores)
+	if entriesLen < numTiers {
+		utils.LavaFormatError("Number of tiers is greater than the number of scores", nil, utils.LogAttr("entriesLen", entriesLen), utils.LogAttr("numTiers", numTiers))
+		return st.scores
+	}
 	if entriesLen < minimumEntries || numTiers == 0 || tier >= numTiers {
 		return st.scores
 	}
@@ -176,9 +184,18 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	}
 	ret := st.scores[start:end]
 	if len(ret) >= minimumEntries {
-		// apply the relative parts to the first and last entries
-		ret[0].Part = 1 - fracStart
-		ret[len(ret)-1].Part = fracEnd
+		// First entry
+		ret[0].Part = fracStart
+
+		// Middle entries
+		for i := 1; i < len(ret)-1; i++ {
+			ret[i].Part = 1.0
+		}
+
+		// Last entry
+		if len(ret) > 1 {
+			ret[len(ret)-1].Part = fracEnd
+		}
 		return ret
 	}
 	// bring in entries from better tiers if insufficient, give them a handicap to weight
@@ -195,15 +212,34 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 	return ret
 }
 
+// getPositionsForTier calculates the start and end positions for a given tier,
+// along with fractional adjustments for boundary entries
+// outputs: first entry index for this tier, last entry index for this tier (exclusive), fractional part
+// for first entry, fractional part for last entry
+// Note: this function assumes that numTiers is not greater than the number of entries
 func getPositionsForTier(tier int, numTiers int, entriesLen int) (start int, end int, fracStart float64, fracEnd float64) {
-	rankStart := float64(tier) / float64(numTiers)
-	rankEnd := float64(tier+1) / float64(numTiers)
-	// Calculate the position based on the rank
-	startPositionF := (float64(entriesLen-1) * rankStart)
-	endPositionF := (float64(entriesLen-1) * rankEnd)
+	if numTiers <= 0 || entriesLen <= 0 {
+		return 0, entriesLen, 0, 0
+	}
 
-	positionStart := int(startPositionF)
-	positionEnd := int(endPositionF) + 1
+	// calculate the part of the first and last entries in the tier
+	tierSize := float64(entriesLen) / float64(numTiers)
+	fracStart = math.Ceil(tierSize*float64(tier)) - tierSize*float64(tier)
 
-	return positionStart, positionEnd, startPositionF - float64(positionStart), float64(positionEnd) - endPositionF
+	leftover := tierSize - fracStart
+	// the fractional part of the leftover is fracEnd
+	fracEnd = leftover - math.Floor(leftover)
+
+	if math.Abs(fracStart) < 1e-10 {
+		fracStart = 1.0
+	}
+
+	if math.Abs(fracEnd) < 1e-10 {
+		fracEnd = 1.0
+	}
+
+	// calculate the start and end positions
+	start = int(math.Floor(tierSize * float64(tier)))
+	end = int(math.Ceil(tierSize * float64(tier+1)))
+	return start, end, fracStart, fracEnd
 }

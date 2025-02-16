@@ -5,14 +5,14 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/testutil/common"
-	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	"github.com/lavanet/lava/v4/x/pairing/keeper"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	"github.com/lavanet/lava/v5/x/pairing/keeper"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

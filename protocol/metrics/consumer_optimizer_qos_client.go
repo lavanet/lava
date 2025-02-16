@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/rand"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"golang.org/x/exp/maps"
 )
 
@@ -42,6 +42,8 @@ type OptimizerQoSReport struct {
 	LatencyScore      float64
 	GenericScore      float64
 	EntryIndex        int
+	Tier              int
+	TierChances       string
 }
 
 type OptimizerQoSReportToSend struct {
@@ -58,6 +60,8 @@ type OptimizerQoSReportToSend struct {
 	Epoch             uint64    `json:"epoch"`
 	ProviderStake     int64     `json:"provider_stake"`
 	EntryIndex        int       `json:"entry_index"`
+	Tier              int       `json:"tier"`
+	TierChances       string    `json:"tier_chances"`
 	GeoLocation       uint64    `json:"geo_location"`
 }
 
@@ -148,6 +152,8 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		Epoch:             epoch,
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
+		Tier:              report.Tier,
+		TierChances:       report.TierChances,
 		GeoLocation:       coqc.geoLocation,
 	}
 

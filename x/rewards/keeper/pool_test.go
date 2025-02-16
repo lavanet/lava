@@ -7,11 +7,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/lavanet/lava/v4/testutil/common"
-	testkeeper "github.com/lavanet/lava/v4/testutil/keeper"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -271,6 +271,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 // TestBlocksAndTimeToNextExpiry tests that the time/blocks to the next timer expiry are as expected
 func TestBlocksAndTimeToNextExpiry(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 
 	// TimeToNextTimerExpiry should be equal to the number of seconds in a month
@@ -349,6 +350,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 // 1. There's a single timer at all times the expires after a month
 // 2. The timer's data contains the months left before the allocation pool's funds are depleted
 func TestRefillPoolsTimerStore(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 

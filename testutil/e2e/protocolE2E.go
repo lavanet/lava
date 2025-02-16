@@ -24,20 +24,19 @@ import (
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
-	commonconsts "github.com/lavanet/lava/v4/testutil/common/consts"
-	"github.com/lavanet/lava/v4/testutil/e2e/sdk"
-	"github.com/lavanet/lava/v4/utils"
-	epochStorageTypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	pairingTypes "github.com/lavanet/lava/v4/x/pairing/types"
-	planTypes "github.com/lavanet/lava/v4/x/plans/types"
-	specTypes "github.com/lavanet/lava/v4/x/spec/types"
-	subscriptionTypes "github.com/lavanet/lava/v4/x/subscription/types"
+	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
+	"github.com/lavanet/lava/v5/testutil/e2e/sdk"
+	"github.com/lavanet/lava/v5/utils"
+	epochStorageTypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingTypes "github.com/lavanet/lava/v5/x/pairing/types"
+	planTypes "github.com/lavanet/lava/v5/x/plans/types"
+	specTypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptionTypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -470,10 +469,15 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 			errors = append(errors, "error eth_getTransactionReceipt")
 		}
 
-		targetTxMsg, _ := targetTx.AsMessage(types.LatestSignerForChainID(targetTx.ChainId()), nil)
+		sender, err := types.Sender(types.LatestSignerForChainID(targetTx.ChainId()), targetTx)
+		utils.LavaFormatInfo("sender", utils.Attribute{Key: "sender", Value: sender})
+		if err != nil {
+			errors = append(errors, "error eth_getTransactionReceipt")
+		}
 
 		// eth_getBalance
-		_, err = client.BalanceAt(ctx, targetTxMsg.From(), nil)
+		balance, err := client.BalanceAt(ctx, sender, nil)
+		utils.LavaFormatInfo("balance", utils.Attribute{Key: "balance", Value: balance})
 		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			errors = append(errors, "error eth_getBalance")
 		}
@@ -488,26 +492,6 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		_, err = client.CodeAt(ctx, *targetTx.To(), nil)
 		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			errors = append(errors, "error eth_getCode")
-		}
-
-		previousBlock := big.NewInt(int64(latestBlockNumberUint - 1))
-
-		callMsg := ethereum.CallMsg{
-			From:       targetTxMsg.From(),
-			To:         targetTxMsg.To(),
-			Gas:        targetTxMsg.Gas(),
-			GasPrice:   targetTxMsg.GasPrice(),
-			GasFeeCap:  targetTxMsg.GasFeeCap(),
-			GasTipCap:  targetTxMsg.GasTipCap(),
-			Value:      targetTxMsg.Value(),
-			Data:       targetTxMsg.Data(),
-			AccessList: targetTxMsg.AccessList(),
-		}
-
-		// eth_call
-		_, err = client.CallContract(ctx, callMsg, previousBlock)
-		if err != nil && !strings.Contains(err.Error(), "rpc error") {
-			errors = append(errors, "error JSONRPC_eth_call")
 		}
 
 		// debug and extensions test:

@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
-	rand "github.com/lavanet/lava/v4/utils/rand"
+	rand "github.com/lavanet/lava/v5/utils/rand"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/protocol/metrics"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -504,7 +504,7 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 	if blockGapsLen > PollingUpdateLength { // check we have enough samples
 		// smaller times give more resolution to indentify changes, and also make block arrival predictions more optimistic
 		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
-		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33)
+		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33, false)
 		stability := lavaslices.Stability(ct.blockEventsGap, percentileTime)
 		utils.LavaFormatTrace("block gaps",
 			utils.LogAttr("block gaps", ct.blockEventsGap),

@@ -6,14 +6,14 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v4/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/v4/x/conflict/types/construct"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/v5/x/conflict/types/construct"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type HeaderFilterer interface {
@@ -77,8 +77,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	}
 
 	copiedQOS := copyQoSServiceReport(qosManager.GetLastQoSReport(uint64(epoch), singleConsumerSession.SessionId))
-	copiedReputation := copyQoSServiceReport(qosManager.GetLastReputationQoSReportRaw(uint64(epoch), singleConsumerSession.SessionId)) // copy raw report for the node
-
+	copiedReputation := copyQoSServiceReport(qosManager.GetLastReputationQoSReport(uint64(epoch), singleConsumerSession.SessionId)) // copy reputation report for the node
 	// validate and fix QoS excellence report before sending it to the node
 	copiedReputation.ValidateAndFixQoSExcellence()
 

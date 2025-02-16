@@ -7,12 +7,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (
@@ -35,6 +35,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 	} else {
 		metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
+	}
+
+	vaultMetadata, found := k.epochStorageKeeper.GetProviderMetadataByVault(ctx, creator)
+	if found {
+		if vaultMetadata.Provider != provider || vaultMetadata.Vault != creator {
+			return utils.LavaFormatWarning("provider metadata mismatch", fmt.Errorf("provider metadata mismatch"),
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("vault", creator),
+			)
+		}
 	}
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)

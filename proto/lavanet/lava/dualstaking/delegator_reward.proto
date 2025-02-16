@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.dualstaking;
 
-option go_package = "github.com/lavanet/lava/v4/x/dualstaking/types";
+option go_package = "github.com/lavanet/lava/v5/x/dualstaking/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";

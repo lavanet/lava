@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	testcommon "github.com/lavanet/lava/v4/testutil/common"
-	"github.com/lavanet/lava/v4/x/spec/types"
+	testcommon "github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

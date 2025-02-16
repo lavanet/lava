@@ -7,13 +7,13 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 // Mutator for relay success
 type QoSMutatorRelaySuccess struct {
-	QoSMutatorBase
+	*QoSMutatorBase
 	latency          time.Duration
 	expectedLatency  time.Duration
 	blockHeightDiff  int64
@@ -29,10 +29,6 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) calculateAvailabilityScore
 }
 
 func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) {
-	defer func() {
-		qoSMutatorRelaySuccess.doneChan <- struct{}{}
-	}()
-
 	report.totalRelays++
 	report.answeredRelays++
 

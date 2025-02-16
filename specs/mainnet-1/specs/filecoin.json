@@ -28,6 +28,7 @@
                             "type": "POST",
                             "add_on": ""
                         },
+                        "inheritance_apis": [],
                         "apis": [
                             {
                                 "name": "Filecoin.AuthVerify",
@@ -342,24 +343,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "Filecoin.ChainNotify",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -2817,11 +2800,41 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "Filecoin.ChainNotify",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 1000,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
+                        "parse_directives": [
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "Filecoin.EthSubscribe"
+                            },
+                            {
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "Filecoin.EthUnsubscribe"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "Filecoin.ChainNotify"
+                            }
+                        ],
                         "verifications": [
                             {
                                 "name": "chain-id",
@@ -2856,7 +2869,7 @@
                                 }
                             }
                         ]
-                    }
+                    }                    
                 ],
                 "contributor": [
                     "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"

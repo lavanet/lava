@@ -18,12 +18,12 @@ package rpcclient
 
 import (
 	"encoding/json"
+	"math"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
 	gojson "github.com/goccy/go-json"
 )
 

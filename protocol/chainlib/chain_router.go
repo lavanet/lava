@@ -5,11 +5,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/protocol/lavasession"
-	"github.com/lavanet/lava/v4/utils"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -303,6 +303,13 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {
+		missingKeys := []string{}
+		for key := range requiredMap {
+			if _, ok := supportedMap[key]; !ok {
+				missingKeys = append(missingKeys, key)
+			}
+		}
+		utils.LavaFormatError("missing extensions or addons in definitions", nil, utils.Attribute{Key: "missing setups", Value: missingKeys})
 		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
 	}
 

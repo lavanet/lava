@@ -4,15 +4,14 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/protocol/qos"
-	"github.com/lavanet/lava/v4/utils"
-	pairingtypes "github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type QoSManager interface {
 	GetLastReputationQoSReportRaw(epoch uint64, sessionId int64) *pairingtypes.QualityOfServiceReport
-	SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) qos.DoneChan
-	SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport) qos.DoneChan
+	SetLastReputationQoSReport(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport)
+	SetLastReputationQoSReportRaw(epoch uint64, sessionId int64, report *pairingtypes.QualityOfServiceReport)
 }
 
 type SingleConsumerSession struct {
@@ -45,7 +44,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 func (cs *SingleConsumerSession) getQosComputedResultOrZero(qosManager QoSManager) sdk.Dec {
 	lastReputationReport := qosManager.GetLastReputationQoSReportRaw(cs.epoch, cs.SessionId)
 	if lastReputationReport != nil {
-		computedReputation, errComputing := lastReputationReport.ComputeQoSExcellence()
+		computedReputation, errComputing := lastReputationReport.ComputeReputation()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
 			return computedReputation
 		}
@@ -57,13 +56,12 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero(qosManager QoSManage
 	return sdk.ZeroDec()
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, rawReputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey, qosManager QoSManager) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey, qosManager QoSManager) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set reputation for sessions with more than one successful relays, this guarantees data within the epoch exists
 		qosManager.SetLastReputationQoSReport(scs.epoch, scs.SessionId, reputationReport)
-		qosManager.SetLastReputationQoSReportRaw(scs.epoch, scs.SessionId, rawReputationReport)
 	}
 	scs.usedProviders = usedProviders
 	scs.routerKey = routerKey

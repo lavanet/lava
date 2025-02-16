@@ -3,7 +3,7 @@ package common
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v4/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type SafeSyncMap[K, V any] struct {
@@ -21,7 +21,7 @@ func (ssm *SafeSyncMap[K, V]) Load(key K) (ret V, ok bool, err error) {
 	}
 	ret, ok = value.(V)
 	if !ok {
-		return ret, false, utils.LavaFormatError("invalid usage of syncmap, could not cast result into a PolicyUpdater", nil)
+		return ret, false, utils.LavaFormatError("invalid usage of sync map, could not cast result into V type", nil)
 	}
 	return ret, true, nil
 }
@@ -37,7 +37,7 @@ func (ssm *SafeSyncMap[K, V]) LoadOrStore(key K, value V) (ret V, loaded bool, e
 		var ok bool
 		ret, ok = actual.(V)
 		if !ok {
-			return ret, false, utils.LavaFormatError("invalid usage of sync map, could not cast result into a PolicyUpdater", nil)
+			return ret, false, utils.LavaFormatError("invalid usage of sync map, could not cast result into V type", nil)
 		}
 		return ret, true, nil
 	}

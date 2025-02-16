@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/lavanet/lava/v4/app/keepers"
+	"github.com/lavanet/lava/v5/app/keepers"
 )
 
 func v_4_2_0(

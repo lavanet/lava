@@ -33,5 +33,5 @@ done
 cd ..
 
 # move proto files to the right places
-cp -r github.com/lavanet/lava/v4/* ./
+cp -r github.com/lavanet/lava/v5/* ./
 rm -rf github.com

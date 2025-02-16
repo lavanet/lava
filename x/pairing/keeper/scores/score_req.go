@@ -2,7 +2,7 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 )
 
 // ScoreReq is an interface for pairing requirement scoring

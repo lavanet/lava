@@ -8,15 +8,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	v1 "github.com/lavanet/lava/v4/x/downtime/v1"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
-	spectypes "github.com/lavanet/lava/v4/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/v4/x/subscription/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	v1 "github.com/lavanet/lava/v5/x/downtime/v1"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 type SpecKeeper interface {
@@ -55,6 +55,7 @@ type EpochstorageKeeper interface {
 	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
 	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
 	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
+	GetProviderMetadataByVault(ctx sdk.Context, vault string) (epochstoragetypes.ProviderMetadata, bool)
 }
 
 type AccountKeeper interface {

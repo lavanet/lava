@@ -6,8 +6,8 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v4/x/spec/keeper"
-	"github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/x/spec/keeper"
+	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // NewHandler ...

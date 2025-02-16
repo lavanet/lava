@@ -4,7 +4,7 @@ import "gogoproto/gogo.proto";
 import "lavanet/lava/pairing/relay.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "github.com/lavanet/lava/v4/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v5/x/pairing/types";
 
 service RelayerCache {
     rpc GetRelay (RelayCacheGet) returns (CacheRelayReply) {}

@@ -8,13 +8,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	dualstakingtypes "github.com/lavanet/lava/v4/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/v4/x/fixationstore/types"
-	planstypes "github.com/lavanet/lava/v4/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/v4/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v4/x/timerstore/types"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

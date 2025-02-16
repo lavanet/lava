@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v4/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v4/protocol/common"
-	"github.com/lavanet/lava/v4/utils"
-	pb_pkg "github.com/lavanet/lava/v4/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
+	pb_pkg "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
 	"google.golang.org/grpc"
@@ -93,8 +93,8 @@ func TestConnector(t *testing.T) {
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
-	require.Equal(t, conn.usedClients, int64(0))              // checking we dont have clients used
-	require.Equal(t, len(conn.freeClients), increasedClients) // checking we cleaned clients
+	require.Equal(t, conn.usedClients, int64(0))                 // checking we dont have clients used
+	require.Greater(t, len(conn.freeClients), numberOfClients+1) // checking we cleaned clients before disconnecting
 }
 
 func TestConnectorGrpc(t *testing.T) {

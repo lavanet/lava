@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/utils"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 )
 
 func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (*types.MsgAddProjectResponse, error) {

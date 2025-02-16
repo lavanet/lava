@@ -8,12 +8,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	commontypes "github.com/lavanet/lava/v4/utils/common/types"
-	"github.com/lavanet/lava/v4/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	"github.com/lavanet/lava/v4/x/pairing/types"
-	projectstypes "github.com/lavanet/lava/v4/x/projects/types"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
 )
 
 type BadgeData struct {
@@ -501,7 +501,7 @@ func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription s
 	}
 
 	syncFactor := k.ReputationLatencyOverSyncFactor(ctx)
-	score, err := relay.QosExcellenceReport.ComputeQosExcellenceForReputation(syncFactor)
+	score, err := relay.QosExcellenceReport.ComputeReputation(types.WithSyncFactor(syncFactor))
 	if err != nil {
 		return utils.LavaFormatWarning("RelayPayment: could not compute qos excellence score", err,
 			utils.LogAttr("consumer", subscription),

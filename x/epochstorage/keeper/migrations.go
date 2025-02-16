@@ -9,9 +9,9 @@ import (
 	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/x/epochstorage/types"
-	v3 "github.com/lavanet/lava/v4/x/epochstorage/types/migrations/v3"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
+	v3 "github.com/lavanet/lava/v5/x/epochstorage/types/migrations/v3"
 )
 
 type Migrator struct {
@@ -123,4 +123,40 @@ func (m Migrator) SetEpochHashForMigrator(ctx sdk.Context, epoch uint64, hash []
 	if err != nil {
 		panic(err)
 	}
+}
+
+// fix provider metadata to be consistent with the stake entries
+func (m Migrator) MigrateVersion8To9(ctx sdk.Context) error {
+	allMetadata, err := m.keeper.GetAllMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, metadata := range allMetadata {
+		if metadata.Provider != metadata.Vault {
+			_, err := m.keeper.GetMetadata(ctx, metadata.Vault)
+			if err == nil {
+				fmt.Println("exists for vault with different provider: ", metadata.Vault, " and provider: ", metadata.Provider, "removing metadata")
+				err := m.keeper.RemoveMetadata(ctx, metadata.Vault)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
+		chains := []string{}
+		for _, chainID := range metadata.Chains {
+			stakeEntry, found := m.keeper.GetStakeEntryCurrent(ctx, chainID, metadata.Provider)
+			if found {
+				chains = append(chains, stakeEntry.Chain)
+			} else {
+				fmt.Println("stake entry not found for provider: ", metadata.Provider, " and chain: ", chainID)
+			}
+		}
+		metadata.Chains = chains
+		m.keeper.SetMetadata(ctx, metadata)
+	}
+
+	return nil
 }

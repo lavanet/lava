@@ -5,11 +5,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v4/utils"
-	"github.com/lavanet/lava/v4/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v4/x/epochstorage/types"
-	v2 "github.com/lavanet/lava/v4/x/pairing/migrations/v2"
-	"github.com/lavanet/lava/v4/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	v2 "github.com/lavanet/lava/v5/x/pairing/migrations/v2"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type Migrator struct {
@@ -116,7 +116,11 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 	utils.LavaFormatInfo("migrate: pairing to set new parameters")
 
-	params := m.keeper.GetParams(ctx)
+	params := types.Params{}
+	params.EpochBlocksOverlap = m.keeper.EpochBlocksOverlap(ctx)
+	params.QoSWeight = m.keeper.QoSWeight(ctx)
+	params.RecommendedEpochNumToCollectPayment = m.keeper.RecommendedEpochNumToCollectPayment(ctx)
+
 	params.ReputationVarianceStabilizationPeriod = types.DefaultReputationVarianceStabilizationPeriod
 	params.ReputationLatencyOverSyncFactor = types.DefaultReputationLatencyOverSyncFactor
 	params.ReputationHalfLifeFactor = types.DefaultReputationHalfLifeFactor

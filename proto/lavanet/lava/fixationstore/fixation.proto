@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.fixationstore;
 
-option go_package = "github.com/lavanet/lava/v4/x/fixationstore/types";
+option go_package = "github.com/lavanet/lava/v5/x/fixationstore/types";
 import "gogoproto/gogo.proto"; 
 
 import "lavanet/lava/timerstore/timer.proto";

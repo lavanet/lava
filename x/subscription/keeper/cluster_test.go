@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v4/x/subscription/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
