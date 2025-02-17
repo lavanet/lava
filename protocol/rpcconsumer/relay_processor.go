@@ -31,6 +31,10 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
+type QoSAvailabilityDegrader interface {
+	DegradeAvailability(epoch uint64, sessionId int64)
+}
+
 type MetricsInterface interface {
 	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
 	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
@@ -57,6 +61,7 @@ type RelayProcessor struct {
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
+	availabilityDegrader QoSAvailabilityDegrader
 }
 
 func NewRelayProcessor(
@@ -67,6 +72,7 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 	relayStateMachine RelayStateMachine,
+	availabilityDegrader QoSAvailabilityDegrader,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	if requiredSuccesses <= 0 {
@@ -372,14 +378,33 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 
 	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().AllUnwantedAddresses()
+	shouldDegradeAvailability := false
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 
+	isSpecialApi := rp.GetProtocolMessage().IsDefaultApi() || rp.GetProtocolMessage().GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS
 	successResults, nodeErrors, protocolErrors := rp.GetResultsData()
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
+
+	defer func() {
+		if shouldDegradeAvailability {
+			for _, result := range nodeErrors {
+				session := result.Request.RelaySession
+				utils.LavaFormatTrace("Degrading availability for provider",
+					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
+					utils.LogAttr("epoch", session.Epoch),
+					utils.LogAttr("sessionId", session.SessionId),
+				)
+				rp.availabilityDegrader.DegradeAvailability(uint64(session.Epoch), int64(session.SessionId))
+			}
+		}
+	}()
 	// there are enough successes
 	if successResultsCount >= rp.requiredSuccesses {
+		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+			shouldDegradeAvailability = true
+		}
 		return rp.responsesQuorum(successResults, rp.requiredSuccesses)
 	}
 
