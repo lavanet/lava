@@ -43,6 +43,12 @@ func (qm *QoSManager) mutate(mutator Mutator) {
 	qosReport.mutate(mutator)
 }
 
+func (qm *QoSManager) DegradeAvailability(epoch uint64, sessionId int64) {
+	qm.mutate(&QoSMutatorDegradeAvailability{
+		QoSMutatorBase: qm.createQoSMutatorBase(epoch, sessionId),
+	})
+}
+
 func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	qosManager.mutate(&QoSMutatorRelaySuccess{
 		QoSMutatorBase:   qosManager.createQoSMutatorBase(epoch, sessionId),
