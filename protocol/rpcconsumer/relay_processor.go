@@ -91,6 +91,7 @@ func NewRelayProcessor(
 		RelayStateMachine:            relayStateMachine,
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
+		availabilityDegrader:         availabilityDegrader,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
@@ -388,10 +389,14 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
 
 	defer func() {
-		if shouldDegradeAvailability && rp.availabilityDegrader != nil {
+		if shouldDegradeAvailability {
+			if rp.availabilityDegrader == nil {
+				utils.LavaFormatWarning("Availability degrader is nil, skipping availability degradation", nil)
+				return
+			}
 			for _, result := range nodeErrors {
 				session := result.Request.RelaySession
-				utils.LavaFormatTrace("Degrading availability for provider",
+				utils.LavaFormatDebug("Degrading availability for provider",
 					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
 					utils.LogAttr("epoch", session.Epoch),
 					utils.LogAttr("sessionId", session.SessionId),
