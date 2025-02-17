@@ -65,14 +65,15 @@ func (al *Alerting) SendTelegramAlert(alert string, attrs []utils.Attribute) err
 	const maxMessageLength = 4096
 	message := fmt.Sprintf("%s\n", alert)
 	for _, attr := range attrs {
-		message += fmt.Sprintf("%s: %v\n", attr.Key, attr.Value)
-		if len(message) > maxMessageLength {
+		currentLine := fmt.Sprintf("%s: %v\n", attr.Key, attr.Value)
+		if len(message)+len(currentLine) > maxMessageLength {
 			err := send(message)
 			if err != nil {
 				fmt.Println("Error sending telegram alert:", err)
 			}
 			message = ""
 		}
+		message += currentLine
 	}
 
 	return nil
