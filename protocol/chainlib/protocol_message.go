@@ -7,7 +7,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	"github.com/lavanet/lava/v5/x/spec/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
@@ -45,7 +44,7 @@ func (bpm *BaseProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([
 }
 
 // addMissingExtensions adds any extensions from updatedProtocolExtensions that are not in currentPrivateDataExtensions
-func (bpm *BaseProtocolMessage) addMissingExtensions(updatedProtocolExtensions []*types.Extension, currentPrivateDataExtensions []string) []string {
+func (bpm *BaseProtocolMessage) addMissingExtensions(updatedProtocolExtensions []*spectypes.Extension, currentPrivateDataExtensions []string) []string {
 	// Create a map for O(1) lookups
 	existingExtensions := make(map[string]struct{}, len(currentPrivateDataExtensions))
 	for _, ext := range currentPrivateDataExtensions {
