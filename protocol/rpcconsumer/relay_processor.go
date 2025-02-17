@@ -388,7 +388,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
 
 	defer func() {
-		if shouldDegradeAvailability {
+		if shouldDegradeAvailability && rp.availabilityDegrader != nil {
 			for _, result := range nodeErrors {
 				session := result.Request.RelaySession
 				utils.LavaFormatTrace("Degrading availability for provider",
