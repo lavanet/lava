@@ -30,30 +30,41 @@ func (al *Alerting) SendTelegramAlert(alert string, attrs []utils.Attribute) err
 		return fmt.Errorf("telegram configuration missing")
 	}
 
+	send := func(message string) error {
+		payload := map[string]string{
+			"chat_id": al.TelegramAlerting.TelegramChannelID,
+			"text":    message,
+		}
+
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payload: %v", err)
+		}
+
+		url := fmt.Sprintf("%s/bot%s/sendMessage", TELEGRAM_URL, al.TelegramAlerting.TelegramBotToken)
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("failed to send telegram alert: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("telegram API returned non-200 status: %d", resp.StatusCode)
+		}
+		return nil
+	}
+
+	const maxMessageLength = 4096
 	message := fmt.Sprintf("%s\n", alert)
 	for _, attr := range attrs {
 		message += fmt.Sprintf("%s: %v\n", attr.Key, attr.Value)
-	}
-
-	payload := map[string]string{
-		"chat_id": al.TelegramAlerting.TelegramChannelID,
-		"text":    message,
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %v", err)
-	}
-
-	url := fmt.Sprintf("%s/bot%s/sendMessage", TELEGRAM_URL, al.TelegramAlerting.TelegramBotToken)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to send telegram alert: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("telegram API returned non-200 status: %d", resp.StatusCode)
+		if len(message) > maxMessageLength {
+			err := send(message)
+			if err != nil {
+				return err
+			}
+			message = ""
+		}
 	}
 
 	return nil
