@@ -88,11 +88,12 @@ type Alerting struct {
 
 func NewAlerting(options AlertingOptions) *Alerting {
 	al := &Alerting{
-		activeAlerts:  map[AlertEntry]AlertCount{},
-		healthy:       map[LavaEntity]struct{}{},
-		unhealthy:     map[LavaEntity]struct{}{},
-		currentAlerts: map[AlertEntry]struct{}{},
-		payload:       map[string]interface{}{},
+		activeAlerts:     map[AlertEntry]AlertCount{},
+		healthy:          map[LavaEntity]struct{}{},
+		unhealthy:        map[LavaEntity]struct{}{},
+		currentAlerts:    map[AlertEntry]struct{}{},
+		payload:          map[string]interface{}{},
+		TelegramAlerting: options.TelegramAlertingOptions,
 	}
 	if options.Url != "" {
 		al.url = options.Url
