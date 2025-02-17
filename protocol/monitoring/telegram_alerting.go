@@ -49,7 +49,15 @@ func (al *Alerting) SendTelegramAlert(alert string, attrs []utils.Attribute) err
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("telegram API returned non-200 status: %d", resp.StatusCode)
+			var respBody struct {
+				Ok          bool   `json:"ok"`
+				ErrorCode   int    `json:"error_code,omitempty"`
+				Description string `json:"description,omitempty"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+				return fmt.Errorf("telegram API returned non-200 status: %d, failed to decode response: %v", resp.StatusCode, err)
+			}
+			return fmt.Errorf("telegram API returned non-200 status: %d, error code: %d, description: %s", resp.StatusCode, respBody.ErrorCode, respBody.Description)
 		}
 		return nil
 	}
@@ -61,7 +69,7 @@ func (al *Alerting) SendTelegramAlert(alert string, attrs []utils.Attribute) err
 		if len(message) > maxMessageLength {
 			err := send(message)
 			if err != nil {
-				return err
+				fmt.Println("Error sending telegram alert:", err)
 			}
 			message = ""
 		}
