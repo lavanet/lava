@@ -9,7 +9,7 @@ screen -wipe
 GASPRICE="0.00002ulava"
 
 echo; echo "#### Sending proposal for specs ####"
-specs=$(get_all_specs)
+specs=$(get_all_spec_files)
 lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 echo; echo "#### Waiting 2 blocks ####"
 wait_count_blocks 2
