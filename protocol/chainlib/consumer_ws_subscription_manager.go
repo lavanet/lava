@@ -293,7 +293,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			// Failed the subscription attempt, will retry using current relay.
 			utils.LavaFormatDebug("Failed the subscription attempt, retrying with the incoming message", utils.LogAttr("hash", hashedParams))
 		} else {
-			utils.LavaFormatDebug("No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
+			utils.LavaFormatDebug("ConsumerWSSubscriptionManager: No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
 			break
 		}
 	}

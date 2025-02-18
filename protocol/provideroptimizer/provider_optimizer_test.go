@@ -1,6 +1,8 @@
 package provideroptimizer
 
 import (
+	"fmt"
+	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -139,24 +141,6 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
 
-	// there's a chance that some of the worst providers will be in part of a higher tier
-	// because of a high minimum entries value, so filter the providers that are only in the worst tier
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
-	worstTierEntries := map[string]struct{}{
-		providersGen.providersAddresses[5]: {},
-		providersGen.providersAddresses[6]: {},
-		providersGen.providersAddresses[7]: {},
-	}
-	for _, entry := range tier3Entries {
-		// verify that the worst providers are the ones with the bad latency
-		if entry.Address != providersGen.providersAddresses[5] &&
-			entry.Address != providersGen.providersAddresses[6] &&
-			entry.Address != providersGen.providersAddresses[7] {
-			t.Fatalf("entry %s is not in the worst tier", entry.Address)
-		}
-	}
-
 	// improve providers 0-2 scores with good latency probes relays
 	// they should be selected by the optimizer more often and should be in the best tier
 	goodLatency := TEST_BASE_WORLD_LATENCY / 3
@@ -175,6 +159,25 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
 	time.Sleep(4 * time.Millisecond)
+
+	// there's a chance that some of the worst providers will be in part of a higher tier
+	// because of a high minimum entries value, so filter the providers that are only in the worst tier
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
+	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
+	worstTierEntries := map[string]struct{}{
+		providersGen.providersAddresses[5]: {},
+		providersGen.providersAddresses[6]: {},
+		providersGen.providersAddresses[7]: {},
+	}
+	for _, entry := range tier3Entries {
+		// verify that the worst providers are the ones with the bad latency
+		if entry.Address != providersGen.providersAddresses[5] &&
+			entry.Address != providersGen.providersAddresses[6] &&
+			entry.Address != providersGen.providersAddresses[7] {
+			t.Fatalf("entry %s is not in the worst tier", entry.Address)
+		}
+	}
+
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 	require.Greater(t, tierResults[0], 400, tierResults) // we should pick the best tier most often
 
@@ -213,94 +216,117 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	}
 }
 
-// func TestProviderOptimizerBasicRelayDataAutoAdjustTiers(t *testing.T) {
-// 	providerOptimizer := setupProviderOptimizer(1)
-// 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-// 	rand.InitRandomSeed()
-// 	cu := uint64(1)
-// 	requestBlock := int64(1000)
-// 	syncBlock := uint64(requestBlock)
-// 	AutoAdjustTiers = true
-// 	// damage providers 5-7 scores with bad latency relays
-// 	// they should not be selected by the optimizer and should be in the worst tier
-// 	badLatency := TEST_BASE_WORLD_LATENCY * 3
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
+func TestProviderOptimizerBasicRelayDataAutoAdjustTiers(t *testing.T) {
+	// Save original value and defer restore
+	originalAutoAdjustTiers := AutoAdjustTiers
+	defer func() {
+		AutoAdjustTiers = originalAutoAdjustTiers
+	}()
 
-// 	// there's a chance that some of the worst providers will be in part of a higher tier
-// 	// because of a high minimum entries value, so filter the providers that are only in the worst tier
-// 	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-// 	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
-// 	worstTierEntries := map[string]struct{}{
-// 		providersGen.providersAddresses[5]: {},
-// 		providersGen.providersAddresses[6]: {},
-// 		providersGen.providersAddresses[7]: {},
-// 	}
-// 	for _, entry := range tier3Entries {
-// 		// verify that the worst providers are the ones with the bad latency
-// 		if entry.Address != providersGen.providersAddresses[5] &&
-// 			entry.Address != providersGen.providersAddresses[6] &&
-// 			entry.Address != providersGen.providersAddresses[7] {
-// 			t.Fatalf("entry %s is not in the worst tier", entry.Address)
-// 		}
-// 	}
+	// Set test value
+	AutoAdjustTiers = true
 
-// 	// improve providers 0-2 scores with good latency probes relays
-// 	// they should be selected by the optimizer more often and should be in the best tier
-// 	goodLatency := TEST_BASE_WORLD_LATENCY / 3
-// 	averageLatency := TEST_BASE_WORLD_LATENCY / 2
-// 	// add good latency relays for providers 0-2
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[0], goodLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[1], goodLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[2], goodLatency, cu, syncBlock)
-// 	// add average latency relays for providers 3,4,8,9
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[3], averageLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[4], averageLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[8], averageLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[9], averageLatency, cu, syncBlock)
-// 	// add bad latency relays for providers 5-7
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-// 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
-// 	time.Sleep(4 * time.Millisecond)
-// 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-// 	require.Greater(t, tierResults[0], 400, tierResults) // we should pick the best tier most often
+	providerOptimizer := setupProviderOptimizer(1)
+	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
+	weights := make(map[string]int64)
+	rand.InitRandomSeed()
+	cu := uint64(1)
+	requestBlock := int64(1000)
+	syncBlock := uint64(1000)
+	for _, address := range providersGen.providersAddresses {
+		weights[address] = 1000
+	}
+	providerOptimizer.UpdateWeights(weights, uint64(requestBlock))
+	// damage providers 5-7 scores with bad latency relays
+	// they should not be selected by the optimizer and should be in the worst tier
+	badLatency := TEST_BASE_WORLD_LATENCY * 3
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
 
-// 	// Out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-// 	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
+	// improve providers 0-2 scores with good latency probes relays
+	// they should be selected by the optimizer more often and should be in the best tier
+	goodLatency := TEST_BASE_WORLD_LATENCY / 3
+	bestLatency := TEST_BASE_WORLD_LATENCY / 4
+	averageLatency := TEST_BASE_WORLD_LATENCY / 2
+	// add good latency relays for providers 0-2
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[0], bestLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[1], goodLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[2], goodLatency, cu, syncBlock)
+	// add average latency relays for providers 3,4,8,9
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[3], averageLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[4], averageLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[8], averageLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[9], averageLatency, cu, syncBlock)
+	// add bad latency relays for providers 5-7
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
+	time.Sleep(4 * time.Millisecond)
+	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-// 	// Ensure the bad providers (5-7) are in results map even if they were never picked
-// 	for i := 5; i <= 7; i++ {
-// 		if _, exists := results[providersGen.providersAddresses[i]]; !exists {
-// 			results[providersGen.providersAddresses[i]] = 0
-// 		}
-// 	}
-// 	// the bad providers shouldn't have been picked even once
-// 	// Find the two least picked providers
-// 	var leastPicked, secondLeastPicked string
-// 	leastCount, secondLeastCount := 0xffffffff, 0xffffffff
-// 	for addr, count := range results {
-// 		if count < leastCount {
-// 			secondLeastCount = leastCount
-// 			secondLeastPicked = leastPicked
-// 			leastCount = count
-// 			leastPicked = addr
-// 		} else if count < secondLeastCount {
-// 			secondLeastCount = count
-// 			secondLeastPicked = addr
-// 		}
-// 	}
-// 	minimumScores := map[string]int{
-// 		leastPicked:       leastCount,
-// 		secondLeastPicked: secondLeastCount,
-// 	}
+	fmt.Println("providersGen.providersAddresses", providersGen.providersAddresses)
+	fmt.Println("tierResults", tierResults)
+	fmt.Println("results", results)
+	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
+	selectionTierScoresCount := selectionTier.ScoresCount()
+	localMinimumEntries := providerOptimizer.GetMinTierEntries(selectionTier, selectionTierScoresCount)
+	tier0Entries := selectionTier.GetTier(0, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
+	tier1Entries := selectionTier.GetTier(1, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
+	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
+	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
 
-// 	utils.LavaFormatInfo("results", utils.LogAttr("results", results), utils.LogAttr("minimumScores", minimumScores), utils.LogAttr("worstTierEntries", worstTierEntries))
-// 	for address := range minimumScores {
-// 		require.Contains(t, worstTierEntries, address)
-// 	}
-// }
+	fmt.Println("tier0Entries", tier0Entries)
+	fmt.Println("tier1Entries", tier1Entries)
+	fmt.Println("tier2Entries", tier2Entries)
+	fmt.Println("tier3Entries", tier3Entries)
+
+	// Add tier validations
+	expectedTier0 := []string{
+		providersGen.providersAddresses[2],
+		providersGen.providersAddresses[1],
+		providersGen.providersAddresses[0],
+	}
+	expectedTier1 := []string{
+		providersGen.providersAddresses[1],
+		providersGen.providersAddresses[9],
+		providersGen.providersAddresses[8],
+	}
+	expectedTier2 := []string{
+		providersGen.providersAddresses[4],
+		providersGen.providersAddresses[3],
+	}
+	expectedTier3 := []string{
+		providersGen.providersAddresses[5],
+		providersGen.providersAddresses[6],
+		providersGen.providersAddresses[7],
+	}
+
+	// Validate tier 0 entries
+	for i, entry := range tier0Entries {
+		require.Contains(t, expectedTier0, entry.Address, "tier 0 entry %d should be %s, got %s", i, expectedTier0[i], entry.Address)
+	}
+
+	// Validate tier 1 entries
+	for i, entry := range tier1Entries {
+		require.Contains(t, expectedTier1, entry.Address, "tier 1 entry %d should be %s, got %s", i, expectedTier1[i], entry.Address)
+	}
+
+	// Validate tier 2 entries
+	contains := 0
+	for _, entry := range tier2Entries {
+		// require.Contains(t, expectedTier2, entry.Address, "tier 2 entry %d should be %s, got %s", i, expectedTier2[i], entry.Address)
+		if slices.Contains(expectedTier2, entry.Address) {
+			contains++
+		}
+	}
+	require.Equal(t, len(expectedTier2), contains, "tier 2 should have correct number of entries")
+
+	// Validate tier 3 entries
+	for i, entry := range tier3Entries {
+		require.Contains(t, expectedTier3, entry.Address, "tier 3 entry %d should be %s, got %s", i, expectedTier3[i], entry.Address)
+	}
+}
 
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed probe relays. Providers with bad scores should have

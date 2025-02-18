@@ -12,7 +12,7 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 const (
-	TARGET_VERSION = "4.2.8"
+	TARGET_VERSION = "5.2.0"
 	MIN_VERSION    = "4.2.1"
 )
 

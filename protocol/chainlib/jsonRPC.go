@@ -170,6 +170,11 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 		parsedBlock := parsedInput.GetBlock()
 
+		if msg.Method == "eth_call" && uint64(parsedBlock) < extensionInfo.LatestBlock-126 {
+			// change to archive
+			extensionInfo.AdditionalExtensions = append(extensionInfo.AdditionalExtensions, extensionslib.ArchiveExtension)
+		}
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
@@ -483,7 +488,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
-		response := string(reply.Data)
+
+		response := checkBTCResponseAndFixReply(chainID, reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
