@@ -127,7 +127,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 	// Clean up expired sticky sessions
 	for id, session := range csm.stickySessions {
-		if session.Epoch <= previousEpoch {
+		if session.Epoch < previousEpoch {
 			utils.LavaFormatTrace("deleting sticky session", utils.LogAttr("id", id))
 			delete(csm.stickySessions, id)
 		}
