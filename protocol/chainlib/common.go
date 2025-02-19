@@ -10,11 +10,12 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	gojson "github.com/goccy/go-json"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -176,8 +177,36 @@ func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackTo
 	return handler
 }
 
+func checkBTCResponseAndFixReply(chainID string, replyData []byte) string {
+	response := string(replyData)
+	if chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" {
+		var jsonMsg *rpcclient.JsonrpcMessage
+		if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
+			btcResponse := &rpcclient.BTCResponse{
+				Version: jsonMsg.Version,
+				ID:      jsonMsg.ID,
+				Method:  jsonMsg.Method,
+				Error:   jsonMsg.Error,
+				Result:  jsonMsg.Result,
+			}
+			if marshaledRes, err := json.Marshal(btcResponse); err == nil {
+				response = string(marshaledRes)
+			}
+		}
+	}
+	return response
+}
+
+func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	return c.SendString(data)
+}
+
 func convertToJsonError(errorMsg string) string {
-	jsonResponse, err := gojson.Marshal(fiber.Map{
+	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
 	})
 	if err != nil {
@@ -323,14 +352,14 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
+	return extraRelayTimeout + relayTimeAddition
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
 	app := fiber.New(fiber.Config{
-		JSONEncoder: gojson.Marshal,
-		JSONDecoder: gojson.Unmarshal,
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
 	})
 	app.Use(favicon.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))

@@ -1245,3 +1245,20 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 		})
 	}
 }
+
+// TestStakeProviderWithSameVault tests that a vault address cannot be used to stake for multiple providers.
+// It verifies that:
+// 1. A vault can stake for itself as a provider
+// 2. The same vault cannot stake for a different provider address
+func TestStakeProviderWithSameVault(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 0, 3, 0)
+
+	provider, _ := ts.AddAccount(common.PROVIDER, 1, 100*testBalance)
+
+	err := ts.StakeProvider(provider.GetVaultAddr(), provider.GetVaultAddr(), ts.Spec(SpecName(0)), 100)
+	require.NoError(t, err)
+
+	err = ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.Spec(SpecName(0)), 100)
+	require.Error(t, err)
+}

@@ -249,7 +249,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 					utils.LavaFormatWarning("Failed the subscription attempt, retrying with the incoming message", nil, utils.LogAttr("hash", hashedParams))
 				}
 			} else {
-				utils.LavaFormatDebug("No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
+				utils.LavaFormatDebug("AddConsumer: No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
 				break
 			}
 		}

@@ -23,5 +23,34 @@ jobs:
 
       - name: Lint
         uses: golangci/golangci-lint-action@v4
+        continue-on-error: true
+        id: lint_first_try
         with:
+          version: v1.62.0
           args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Lint Retry 1
+        if: steps.lint_first_try.outcome == 'failure'
+        uses: golangci/golangci-lint-action@v4
+        continue-on-error: true
+        id: lint_retry_1
+        with:
+          version: v1.62.0
+          args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Lint Retry 2
+        if: steps.lint_retry_1.outcome == 'failure'
+        uses: golangci/golangci-lint-action@v4
+        id: lint_retry_2
+        with:
+          version: v1.62.0
+          args: --print-issued-lines --config .golangci.yml -v
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true

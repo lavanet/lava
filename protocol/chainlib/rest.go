@@ -456,14 +456,6 @@ func (apil *RestChainListener) GetListeningAddress() string {
 	return apil.listeningAddress
 }
 
-func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
-	for _, value := range metaData {
-		c.Set(value.Name, value.Value)
-	}
-
-	return c.SendString(data)
-}
-
 type RestChainProxy struct {
 	BaseChainProxy
 	httpClient *http.Client
