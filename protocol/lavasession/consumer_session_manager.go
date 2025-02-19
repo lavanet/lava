@@ -128,7 +128,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Clean up expired sticky sessions
 	for id, session := range csm.stickySessions {
 		if session.Epoch <= previousEpoch {
-			fmt.Println("deleting sticky session", id)
+			utils.LavaFormatTrace("deleting sticky session", utils.LogAttr("id", id))
 			delete(csm.stickySessions, id)
 		}
 	}
@@ -657,7 +657,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 			// Continue normal provider selection
 		} else {
 			addresses = []string{stickysession.Provider}
-			fmt.Println("returning sticky session", stickysession.Provider)
+			utils.LavaFormatTrace("returning sticky session", utils.LogAttr("provider", stickysession.Provider), utils.LogAttr("id", stickiness))
 			return addresses, nil
 		}
 	}
@@ -702,7 +702,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	// If stickiness is requested, store the first provider for future use
 	if stickiness != "" {
 		provider := providers[rand.Intn(len(providers))]
-		fmt.Println("setting sticky session", provider, stickiness)
+		utils.LavaFormatTrace("setting sticky session", utils.LogAttr("provider", provider), utils.LogAttr("id", stickiness))
 		csm.stickySessions[stickiness] = &StickySession{
 			Provider: provider,
 			Epoch:    csm.atomicReadCurrentEpoch(),

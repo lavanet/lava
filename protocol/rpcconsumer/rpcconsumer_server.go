@@ -696,7 +696,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// stickines id for future use
 	stickiness, ok := directiveHeaders[common.STICKINESS_HEADER_NAME]
 	if ok {
-		fmt.Println("stickiness", stickiness)
+		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness))
 	}
 
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
