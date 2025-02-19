@@ -679,6 +679,8 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
+	} else if stickiness != "" {
+		providers = csm.providerOptimizer.ChooseProviderFromTopTier(validAddresses, ignoredProvidersList, cu, requestedBlock)
 	} else {
 		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
 	}
@@ -701,13 +703,12 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	// If stickiness is requested, store the first provider for future use
 	if stickiness != "" {
-		provider := providers[rand.Intn(len(providers))]
-		utils.LavaFormatTrace("setting sticky session", utils.LogAttr("provider", provider), utils.LogAttr("id", stickiness))
+		utils.LavaFormatTrace("setting sticky session", utils.LogAttr("provider", providers[0]), utils.LogAttr("id", stickiness))
 		csm.stickySessions[stickiness] = &StickySession{
-			Provider: provider,
+			Provider: providers[0],
 			Epoch:    csm.atomicReadCurrentEpoch(),
 		}
-		return []string{provider}, nil
+		return []string{providers[0]}, nil
 	}
 	return providers, nil
 }
