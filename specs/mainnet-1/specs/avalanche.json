@@ -143,6 +143,11 @@
                                 "name": "debug_storageRangeAt",
                                 "compute_units": 1,
                                 "enabled": false
+                            },
+                            {
+                                "name": "debug_traceBlock",
+                                "compute_units": 1,
+                                "enabled": false
                             }
                         ],
                         "headers": [],
