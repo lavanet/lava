@@ -3,6 +3,7 @@ package lavasession
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -645,17 +646,8 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	if stickysession, ok := csm.stickySessions[stickiness]; ok {
 		// Check if sticky session provider is still valid
-		providerValid := false
-		for _, addr := range validAddresses {
-			if addr == stickysession.Provider {
-				providerValid = true
-				break
-			}
-		}
-		if !providerValid {
-			delete(csm.stickySessions, stickiness)
-			// Continue normal provider selection
-		} else {
+		providerValid := slices.Contains(validAddresses, stickysession.Provider)
+		if providerValid {
 			addresses = []string{stickysession.Provider}
 			utils.LavaFormatTrace("returning sticky session", utils.LogAttr("provider", stickysession.Provider), utils.LogAttr("id", stickiness))
 			return addresses, nil
