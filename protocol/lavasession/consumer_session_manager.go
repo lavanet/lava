@@ -641,6 +641,9 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 			addresses = []string{stickysession.Provider}
 			utils.LavaFormatTrace("returning sticky session", utils.LogAttr("provider", stickysession.Provider), utils.LogAttr("id", stickiness))
 			return addresses, nil
+		} else {
+			utils.LavaFormatTrace("sticky session provider is no longer valid, deleting", utils.LogAttr("provider", stickysession.Provider), utils.LogAttr("id", stickiness))
+			csm.stickySessions.Delete(stickiness)
 		}
 	}
 
