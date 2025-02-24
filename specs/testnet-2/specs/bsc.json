@@ -47,7 +47,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 28800
+                                        "latest_distance": 128
                                     },
                                     {
                                         "extension": "archive",
@@ -61,7 +61,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 28400
+                                    "block": 128
                                 }
                             }
                         ]
