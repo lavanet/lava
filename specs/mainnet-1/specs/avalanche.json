@@ -160,7 +160,17 @@
                             }
                         ],
                         "parse_directives": [],
-                        "verifications": [],
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
+                            }
+                        ],
                         "extensions": [
                             {
                                 "name": "archive",
