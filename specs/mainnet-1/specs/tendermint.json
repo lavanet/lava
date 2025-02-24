@@ -280,6 +280,10 @@
                                     {
                                         "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.hash",
+                                        "parse_type": "BLOCK_HASH"
                                     }
                                 ]
                             },
@@ -489,6 +493,10 @@
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    },
+                                    {
+                                        "parse_path": ".params.hash",
                                         "parse_type": "BLOCK_HASH"
                                     }
                                 ]
