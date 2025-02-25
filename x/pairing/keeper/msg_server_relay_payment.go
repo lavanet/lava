@@ -384,10 +384,9 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 		k.SetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
 
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0).UTC()
-		format := "2006-01-02 15:04:05"
 		details := map[string]string{
 			"provider":                   unresponsiveProvider.Address,
-			"timestamp":                  timestamp.Format(format),
+			"timestamp":                  timestamp.Format(time.RFC3339),
 			"disconnections":             strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10),
 			"errors":                     strconv.FormatUint(unresponsiveProvider.GetErrors(), 10),
 			"project":                    project,
