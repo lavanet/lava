@@ -165,6 +165,7 @@ func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (s
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
+	retryConnecting      bool
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider // key is the provider address
@@ -481,6 +482,9 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
 			if !retryDisabledEndpoints && !endpoint.Enabled {
 				continue
+			}
+			if retryDisabledEndpoints {
+				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress))
 			}
 
 			// check endpoint supports the requested addons
