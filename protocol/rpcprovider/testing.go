@@ -110,7 +110,6 @@ func validateCORSHeaders(resp *http.Response) error {
 }
 
 func getEmojiForVerificationStatus(passed bool) string {
-	utils.LavaFormatInfo("passed", utils.LogAttr("passed", passed))
 	if passed {
 		return "✅"
 	}
