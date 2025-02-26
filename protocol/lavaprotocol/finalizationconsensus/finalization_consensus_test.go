@@ -206,7 +206,7 @@ func TestQoS(t *testing.T) {
 	qos.AvailabilityPercentage = decToSet
 	rand.InitRandomSeed()
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
-
+	qosManager := qos.NewQoSManager()
 	for i := 0; i < 10; i++ {
 		for _, chainID := range chainsToTest {
 			t.Run(chainID, func(t *testing.T) {
@@ -228,7 +228,7 @@ func TestQoS(t *testing.T) {
 					PairingEpoch:      epoch,
 				}
 
-				singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.EndpointConnection{}, 1)
+				singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.EndpointConnection{}, 1, qosManager)
 
 				require.NoError(t, err)
 				require.NotNil(t, singleConsumerSession)
@@ -284,49 +284,49 @@ func TestQoS(t *testing.T) {
 				currentLatency := time.Millisecond
 				expectedLatency := time.Millisecond
 				latestServicedBlock := expectedBH
-				singleConsumerSession.QoSManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
-				require.Equal(t, uint64(1), singleConsumerSession.QoSManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, uint64(1), singleConsumerSession.QoSManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(1), singleConsumerSession.QoSManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(1), singleConsumerSession.QoSManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
+				qosManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				require.Equal(t, uint64(1), qosManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, uint64(1), qosManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(1), qosManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(1), qosManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
 
-				lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				lastQoSReport := qosManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Availability)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)
 
 				latestServicedBlock = expectedBH + 1
-				singleConsumerSession.QoSManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
-				require.Equal(t, uint64(2), singleConsumerSession.QoSManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, uint64(2), singleConsumerSession.QoSManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(2), singleConsumerSession.QoSManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(2), singleConsumerSession.QoSManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
+				qosManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				require.Equal(t, uint64(2), qosManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, uint64(2), qosManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(2), qosManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(2), qosManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
 
-				lastQoSReport = singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				lastQoSReport = qosManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Availability)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)
 
-				singleConsumerSession.QoSManager.AddFailedRelay(epoch, singleConsumerSession.SessionId) // this is how we add a failure
-				singleConsumerSession.QoSManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
-				require.Equal(t, uint64(3), singleConsumerSession.QoSManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, uint64(4), singleConsumerSession.QoSManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(3), singleConsumerSession.QoSManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(3), singleConsumerSession.QoSManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
+				qosManager.AddFailedRelay(epoch, singleConsumerSession.SessionId) // this is how we add a failure
+				qosManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				require.Equal(t, uint64(3), qosManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, uint64(4), qosManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(3), qosManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(3), qosManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
 
-				lastQoSReport = singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				lastQoSReport = qosManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 				require.Equal(t, sdk.ZeroDec(), lastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)
 
 				latestServicedBlock = expectedBH - 1 // is one block below threshold
-				singleConsumerSession.QoSManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
-				require.Equal(t, uint64(4), singleConsumerSession.QoSManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, uint64(5), singleConsumerSession.QoSManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(3), singleConsumerSession.QoSManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
-				require.Equal(t, int64(4), singleConsumerSession.QoSManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
+				qosManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
+				require.Equal(t, uint64(4), qosManager.GetAnsweredRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, uint64(5), qosManager.GetTotalRelays(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(3), qosManager.GetSyncScoreSum(epoch, singleConsumerSession.SessionId))
+				require.Equal(t, int64(4), qosManager.GetTotalSyncScore(epoch, singleConsumerSession.SessionId))
 
-				lastQoSReport = singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				lastQoSReport = qosManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 				require.Equal(t, sdk.ZeroDec(), lastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.MustNewDecFromStr("0.75"), lastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)
@@ -334,10 +334,10 @@ func TestQoS(t *testing.T) {
 				latestServicedBlock = expectedBH + 1
 				// add in a loop so availability goes above 95%
 				for i := 5; i < 100; i++ {
-					singleConsumerSession.QoSManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
+					qosManager.CalculateQoS(epoch, singleConsumerSession.SessionId, "", currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
 				}
 
-				lastQoSReport = singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+				lastQoSReport = qosManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
 				require.Equal(t, sdk.MustNewDecFromStr("0.8"), lastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.MustNewDecFromStr("0.989898989898989898"), lastQoSReport.Sync)
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)

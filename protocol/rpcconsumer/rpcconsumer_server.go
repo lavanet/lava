@@ -243,6 +243,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		rpccs,
 		rpccs.relayRetriesManager,
 		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		rpccs.consumerSessionManager.GetQoSManager(),
 	)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
@@ -442,6 +443,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		rpccs,
 		rpccs.relayRetriesManager,
 		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		rpccs.consumerSessionManager.GetQoSManager(),
 	)
 
 	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
@@ -1312,6 +1314,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			rpccs,
 			rpccs.relayRetriesManager,
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+			rpccs.consumerSessionManager.GetQoSManager(),
 		)
 		err := rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {

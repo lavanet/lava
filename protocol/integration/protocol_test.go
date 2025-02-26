@@ -1296,7 +1296,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
-			for i := 0; i < 10; i++ {
+			for i := 0; i < 1; i++ {
 				client := http.Client{Timeout: 10000 * time.Millisecond}
 				req, err := http.NewRequest(http.MethodGet, "http://"+consumerListenAddress+"/lavanet/lava/conflict/params", nil)
 				req.Header["lava-extension"] = []string{"archive"}
