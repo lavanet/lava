@@ -183,6 +183,7 @@ get_base_specs() {
         "specs/mainnet-1/specs/ethereum.json"
         "specs/mainnet-1/specs/solana.json"
         "specs/mainnet-1/specs/aptos.json"
+        "specs/mainnet-1/specs/btc.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")
