@@ -96,8 +96,10 @@ type EndpointConnection struct {
 	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
-	blockListed                         atomic.Bool
-	lbUniqueId                          string
+	// blockListed - currently unused, use it carefully as it will block this provider's endpoint until next epoch without forgiveness.
+	// Can be used in cases of data reliability, self provider conflict etc..
+	blockListed atomic.Bool
+	lbUniqueId  string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
@@ -500,6 +502,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
 						// Check if the endpoint is not blocked
 						if endpointConnection.blockListed.Load() {
+							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress))
 							continue
 						}
 						connectionState := endpointConnection.connection.GetState()

@@ -925,17 +925,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		blockProvider = true
 	}
 
-	if sdkerrors.IsOf(errorReceived, BlockEndpointError) {
-		utils.LavaFormatTrace("Got BlockEndpointError, blocking endpoint and session",
-			utils.LogAttr("error", errorReceived),
-			utils.LogAttr("sessionID", consumerSession.SessionId),
-		)
-
-		// Block the endpoint and the consumer session from future usages
-		consumerSession.EndpointConnection.blockListed.Store(true)
-		consumerSession.BlockListed = true
-	}
-
 	consumerSession.QoSManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
 	// copy consecutive errors for report.
