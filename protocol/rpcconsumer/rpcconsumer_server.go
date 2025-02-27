@@ -1014,7 +1014,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 				if !singleConsumerSession.VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId[0]) {
 					return reply, 0, utils.LavaFormatError("provider unique id mismatch",
-						errors.Join(lavasession.SessionOutOfSyncError, lavasession.BlockEndpointError),
+						lavasession.SessionOutOfSyncError,
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
