@@ -858,7 +858,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	usedProviders := NewUsedProviders(nil)
 	cs, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
-	for key, _ := range cs {
+	for key := range cs {
 		require.Contains(t, csm.currentlyBlockedProviderAddresses, key)
 	}
 }
