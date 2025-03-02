@@ -339,34 +339,7 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
-                            {
-                                "function_tag": "GET_BLOCK_BY_NUM",
-                                "function_template": "{\"num\":%d}",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "blockID"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "api_name": "/wallet/getblockbynum"
-                            },
-                            {
-                                "function_template": "/wallet/getnowblock",
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "block_header",
-                                        "raw_data",
-                                        "number"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "api_name": "/wallet/getnowblock"
-                            }
-                        ],
+                        "parse_directives": [],
                         "verifications": [
                             {
                                 "name": "chain-id",
