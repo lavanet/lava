@@ -13,13 +13,36 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 3000,
                 "allowed_block_lag_for_qos_sync": 5,
-                "imports": [],
+                "imports": ["ETH1"],
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000"
                 },
                 "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x2b6653dc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
                     {
                         "enabled": true,
                         "collection_data": {
@@ -84,7 +107,23 @@
                                 "extra_compute_units": 0
                             }
                         ],
-                        "verifications": []
+                        "verifications": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "/wallet/getnowblock",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "block_header",
+                                        "raw_data",
+                                        "number"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "/wallet/getnowblock"
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -186,24 +225,6 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/wallet/getnowblock",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "/wallet/gettransactioninfobyblocknum",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -256,20 +277,6 @@
                                     "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/wallet/getblockbynum"
-                            },
-                            {
-                                "function_template": "/wallet/getnowblock",
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "block_header",
-                                        "raw_data",
-                                        "number"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "api_name": "/wallet/getnowblock"
                             }
                         ],
                         "verifications": [
