@@ -9,10 +9,10 @@
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 2,
-                "blocks_in_finalization_proof": 3,
-                "average_block_time": 4500,
-                "allowed_block_lag_for_qos_sync": 3,
+                "block_distance_for_finalized_data": 1,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 5000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -29,7 +29,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/api/v3/masterchainInfo",
+                                "name": "/getMasterchainInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -47,13 +47,12 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/blocks",
+                                "name": "/getConsensusBlock",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "seqno"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -63,22 +62,93 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getAddressBalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getAddressState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getTokenData",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/lookupBlock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.seqno",
                                         "parse_type": "BLOCK_LATEST"
                                     }
-                                ]
+                                ],
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/masterchainBlockShardState",
+                                "name": "/getBlockHeader",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "seqno"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -88,16 +158,16 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.seqno",
                                         "parse_type": "BLOCK_LATEST"
                                     }
-                                ]
+                                ],
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/addressBook",
+                                "name": "/getBlockTransactions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -112,41 +182,21 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/api/v3/masterchainBlockShards",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "seqno"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.seqno",
                                         "parse_type": "BLOCK_LATEST"
                                     }
-                                ]
+                                ],
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/transactions",
+                                "name": "/getShardBlockProof",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "seqno"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -156,22 +206,21 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.seqno",
                                         "parse_type": "BLOCK_LATEST"
                                     }
-                                ]
+                                ],
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/transactionsByMasterchainBlock",
+                                "name": "/detectAddress",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "seqno"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -181,16 +230,52 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getAddressInformation",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getBlockTransactionsExt",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.seqno",
                                         "parse_type": "BLOCK_LATEST"
                                     }
-                                ]
+                                ],
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/transactionsByMessage",
+                                "name": "/getConfigParam",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -208,7 +293,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/adjacentTransactions",
+                                "name": "/getExtendedAddressInformation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -226,7 +311,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/messages",
+                                "name": "/getMasterchainBlockSignatures",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -244,7 +329,31 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/nft/collections",
+                                "name": "/getTransactions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.address",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ],
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/getWalletInformation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -262,7 +371,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/nft/items",
+                                "name": "/packAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -280,7 +389,31 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/nft/transfers",
+                                "name": "/shards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.seqno",
+                                        "parse_type": "BLOCK_LATEST"
+                                    }
+                                ],
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/tryLocateResultTx",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -298,7 +431,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/jetton/masters",
+                                "name": "/tryLocateSourceTx",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -316,7 +449,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/jetton/wallets",
+                                "name": "/tryLocateTx",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -334,61 +467,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/jetton/transfers",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/api/v3/jetton/burns",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/api/v3/account",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/api/v3/wallet",
+                                "name": "/unpackAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -410,50 +489,53 @@
                         "inheritance_apis": [],
                         "parse_directives": [
                             {
-                                "function_template": "/api/v3/masterchainInfo",
                                 "function_tag": "GET_BLOCKNUM",
+                                "function_template": "/getMasterchainInfo",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
+                                        "result",
                                         "last",
                                         "seqno"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "api_name": "/api/v3/masterchainInfo"
+                                "api_name": "/getMasterchainInfo"
                             },
                             {
-                                "function_template": "/api/v3/blocks?workchain=-1&shard=8000000000000000&seqno=%d",
                                 "function_tag": "GET_BLOCK_BY_NUM",
+                                "function_template": "/lookupBlock?workchain=-1&shard=-9223372036854775808&seqno=%d",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
-                                        "blocks",
-                                        "0",
-                                        "seqno"
+                                        "result",
+                                        "root_hash"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "api_name": "/api/v3/blocks"
+                                "api_name": "/lookupBlock"
                             }
                         ],
                         "verifications": [
                             {
                                 "name": "chain-id",
                                 "parse_directive": {
-                                    "function_template": "/api/v3/masterchainInfo",
+                                    "function_template": "/getMasterchainInfo",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
-                                            "0"
+                                            "0",
+                                            "result",
+                                            "init",
+                                            "root_hash"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "/api/v3/masterchainInfo"
+                                    "api_name": "/getMasterchainInfo"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "F6OpKZKqvqeFp6CQmFomXNMfMj2EnaUSOXN+Mh+wVWk="
                                     }
                                 ]
                             }
@@ -470,7 +552,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/api/v3/message",
+                                "name": "/runGetMethod",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -480,7 +562,31 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.seqno",
+                                        "parse_type": "BLOCK_LATEST"
+                                    }
+                                ],
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/estimateFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1
@@ -488,7 +594,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/runGetMethod",
+                                "name": "/jsonRPC",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -498,15 +604,15 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/api/v3/estimateFee",
+                                "name": "/sendBoc",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -516,10 +622,46 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/sendBocReturnHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/sendQuery",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             }
@@ -528,6 +670,61 @@
                         "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [],
+                        "extensions": []
+                    }
+                ]
+            },
+            {
+                "index": "TONT",
+                "name": "ton testnet",
+                "enabled": true,
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 1,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 5000,
+                "allowed_block_lag_for_qos_sync": 2,
+                "imports": [
+                    "TON"
+                ],
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "47500000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "zerostate:82e784584872d92aa1fa953129833fe3a07a32449ecdad28559809e5dc83e7e7"
+                                    }
+                                ]
+                            }
+                        ],
                         "extensions": []
                     }
                 ]
