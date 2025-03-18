@@ -124,3 +124,14 @@ func (qosManager *QoSManager) GetTotalSyncScore(epoch uint64, sessionId int64) i
 	}
 	return qosReport.getTotalSyncScore()
 }
+
+func (qosManager *QoSManager) CleanupOldEpochs(thresholdEpoch uint64) {
+	qosManager.lock.Lock()
+	defer qosManager.lock.Unlock()
+
+	for epoch := range qosManager.qosReports {
+		if epoch < thresholdEpoch {
+			delete(qosManager.qosReports, epoch)
+		}
+	}
+}

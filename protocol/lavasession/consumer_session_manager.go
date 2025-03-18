@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	metrics "github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -106,12 +107,37 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
 	csm.closePurgedUnusedPairingsConnections() // this must be before updating csm.pairingPurge as we want to close the connections of older sessions (prev 2 epochs)
+
 	csm.pairingPurge = csm.pairing
+
+	// Find minimum epoch across all sessions and a QoSManager to use
+	var qosManager *qos.QoSManager
+	minEpoch := epoch // Start with current epoch as the default
+	for _, provider := range csm.pairingPurge {
+		for _, session := range provider.Sessions {
+			// Update minimum epoch if this session has an earlier one
+			if session.epoch < minEpoch {
+				minEpoch = session.epoch
+			}
+			// this is a global per rpc consumer server (per spec, per interface)
+			if qosManager == nil && session.QoSManager != nil {
+				qosManager = session.QoSManager
+			}
+		}
+	}
+
+	// Clean up QoS data for epochs older than the minimum active epoch
+	// This ensures we don't interfere with possible availability calculations
+	if qosManager != nil {
+		qosManager.CleanupOldEpochs(minEpoch - 1)
+	}
+
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
 		csm.pairingAddresses[idx] = provider.PublicLavaAddress
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
+
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
