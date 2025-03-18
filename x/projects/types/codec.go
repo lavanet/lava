@@ -7,6 +7,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
+	authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
+	govcodec "github.com/cosmos/cosmos-sdk/x/gov/codec"
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
@@ -45,4 +48,10 @@ func init() {
 	RegisterCodec(Amino)
 	cryptocodec.RegisterCrypto(Amino)
 	Amino.Seal()
+
+	// allow authz and gov Amino encoding support
+	// this can be used to properly serialize MsgGrant, MsgExec
+	// and MsgSubmitProposal instances
+	sdk.RegisterLegacyAminoCodec(authzcodec.Amino)
+	sdk.RegisterLegacyAminoCodec(govcodec.Amino)
 }
