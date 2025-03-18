@@ -46,12 +46,13 @@ var (
 
 func init() {
 	RegisterCodec(Amino)
-	cryptocodec.RegisterCrypto(Amino)
-	Amino.Seal()
 
 	// allow authz and gov Amino encoding support
 	// this can be used to properly serialize MsgGrant, MsgExec
 	// and MsgSubmitProposal instances
-	sdk.RegisterLegacyAminoCodec(authzcodec.Amino)
-	sdk.RegisterLegacyAminoCodec(govcodec.Amino)
+	RegisterCodec(authzcodec.Amino)
+	RegisterCodec(govcodec.Amino)
+
+	cryptocodec.RegisterCrypto(Amino)
+	Amino.Seal()
 }
