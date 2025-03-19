@@ -18,6 +18,17 @@ func NewQoSManager() *QoSManager {
 	return qosManager
 }
 
+// Getting previous epoch and cleaning anything below that.
+func (qosManager *QoSManager) CleanPurgedEpochs(previousEpoch uint64) {
+	qosManager.lock.Lock()
+	defer qosManager.lock.Unlock()
+	for epoch := range qosManager.qosReports {
+		if epoch < previousEpoch {
+			delete(qosManager.qosReports, epoch)
+		}
+	}
+}
+
 func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId int64) *QoSReport {
 	qosManager.lock.Lock()
 	defer qosManager.lock.Unlock()

@@ -92,6 +92,10 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		ctx := context.Background()
 		go csm.probeProviders(ctx, pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
 	}()
+	previousEpoch := csm.atomicReadCurrentEpoch()
+	// clean qos manager purged epochs.
+	csm.qosManager.CleanPurgedEpochs(previousEpoch)
+
 	csm.lock.Lock()         // start by locking the class lock.
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
