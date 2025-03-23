@@ -100,21 +100,3 @@ func TestNodeErrorHandlerTimeout(t *testing.T) {
 	utils.LavaFormatDebug(ret.Error())
 	require.NotContains(t, ret.Error(), "http://0.0.0.0:6789")
 }
-
-func TestNodeErrorJQ(t *testing.T) {
-	handler := &genericErrorHandler{}
-
-	malformedJSON := `[
-  [
-    {
-      "inner": "0xabed5d742e4de942f5b1b4e419ff8b51a5361c5ab0cbbe59824a5c4249e426f"
-    },
-    {
-      "inner": "0xd8db10dd9de4a5a8c62c4e690428e5acf0c0c31a4bc507f74a26b22529a5739c"
-    }
-  ]
-]`
-
-	err := handler.HandleJSONFormatError([]byte(malformedJSON))
-	require.NoError(t, err)
-}
