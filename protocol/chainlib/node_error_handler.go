@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/itchyny/gojq"
 	"github.com/lavanet/lava/v5/utils"
 )
 
@@ -111,15 +112,9 @@ func (geh *genericErrorHandler) HandleStatusError(statusCode int, strict bool) e
 }
 
 func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
-	var jsonData map[string]interface{}
-	err := json.Unmarshal(replyData, &jsonData)
+	_, err := gojq.Parse(string(replyData))
 	if err != nil {
-		// if failed to parse might be an array of jsons
-		var jsonArrayData []map[string]interface{}
-		parsingErr := json.Unmarshal(replyData, &jsonArrayData)
-		if parsingErr != nil {
-			return utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(replyData)})
-		}
+		return utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(replyData)})
 	}
 	return nil
 }

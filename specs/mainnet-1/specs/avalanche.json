@@ -85,25 +85,9 @@
                                         "expected_value": "0xa86a"
                                     }
                                 ]
-                            },
-                            {
-                                "name": "pruning",
-                                "values": [
-                                    {
-                                        "latest_distance": 43200
-                                    }
-                                ]
                             }
                         ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 42600
-                                }
-                            }
-                        ]
+                        "extensions": []
                     },
                     {
                         "enabled": true,
@@ -113,7 +97,43 @@
                             "type": "POST",
                             "add_on": "debug"
                         },
-                        "apis": [],
+                        "apis": [
+                            {
+                                "name": "debug_getBadBlocks",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawBlock",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawHeader",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawReceipts",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawTransaction",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_storageRangeAt",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_traceBlock",
+                                "compute_units": 1,
+                                "enabled": false
+                            }
+                        ],
                         "headers": [],
                         "inheritance_apis": [
                             {
@@ -124,7 +144,17 @@
                             }
                         ],
                         "parse_directives": [],
-                        "verifications": [],
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
+                            }
+                        ],
                         "extensions": [
                             {
                                 "name": "archive",
