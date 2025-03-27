@@ -380,6 +380,26 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	return returnedProviders, tier
 }
 
+// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
+func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	selectionTier, _, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
+	selectionTierScoresCount := selectionTier.ScoresCount()
+	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
+	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
+
+	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
+	tierProviders := selectionTier.GetTier(0, numberOfTiersWanted, localMinimumEntries)
+	// TODO: add penalty if a provider is chosen too much
+	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
+	returnedProviders := []string{selectedProvider}
+
+	utils.LavaFormatTrace("[Optimizer] returned top tier provider",
+		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
+	)
+
+	return returnedProviders
+}
+
 // GetMinTierEntries gets minimum number of entries in a tier to be considered for selection
 // if AutoAdjustTiers global is true, the number of providers per tier is divided equally
 // between them

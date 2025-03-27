@@ -110,7 +110,6 @@ func validateCORSHeaders(resp *http.Response) error {
 }
 
 func getEmojiForVerificationStatus(passed bool) string {
-	utils.LavaFormatInfo("passed", utils.LogAttr("passed", passed))
 	if passed {
 		return "✅"
 	}
@@ -283,9 +282,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 					continue
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
-				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+				if lvutil.IsVersionLessThan(parsedVer, targetVersion) {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String()+" Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
+				}
+				if lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+					utils.LavaFormatWarning("provider endpoint version is greater than the target version, this is ok but can lead to unexpected behavior", nil, utils.LogAttr("version", version), utils.LogAttr("targetVersion", lavaVersion.ProviderTarget))
 				}
 				utils.LavaFormatInfo("successfully verified provider endpoint", utils.LogAttr("version", version),
 					utils.LogAttr("enspointService", endpointService),

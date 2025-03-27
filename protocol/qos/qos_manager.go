@@ -18,6 +18,17 @@ func NewQoSManager() *QoSManager {
 	return qosManager
 }
 
+// Getting previous epoch and cleaning anything below that.
+func (qosManager *QoSManager) CleanPurgedEpochs(previousEpoch uint64) {
+	qosManager.lock.Lock()
+	defer qosManager.lock.Unlock()
+	for epoch := range qosManager.qosReports {
+		if epoch < previousEpoch {
+			delete(qosManager.qosReports, epoch)
+		}
+	}
+}
+
 func (qosManager *QoSManager) fetchOrSetSessionFromMap(epoch uint64, sessionId int64) *QoSReport {
 	qosManager.lock.Lock()
 	defer qosManager.lock.Unlock()
@@ -41,6 +52,12 @@ func (qosManager *QoSManager) createQoSMutatorBase(epoch uint64, sessionId int64
 func (qm *QoSManager) mutate(mutator Mutator) {
 	qosReport := qm.fetchOrSetSessionFromMap(mutator.GetEpochAndSessionId())
 	qosReport.mutate(mutator)
+}
+
+func (qm *QoSManager) DegradeAvailability(epoch uint64, sessionId int64) {
+	qm.mutate(&QoSMutatorDegradeAvailability{
+		QoSMutatorBase: qm.createQoSMutatorBase(epoch, sessionId),
+	})
 }
 
 func (qosManager *QoSManager) CalculateQoS(epoch uint64, sessionId int64, providerAddress string, latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
