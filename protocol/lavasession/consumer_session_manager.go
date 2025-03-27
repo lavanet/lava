@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	metrics "github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -61,6 +62,12 @@ type ConsumerSessionManager struct {
 	consumerMetricsManager             *metrics.ConsumerMetricsManager
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
+
+	qosManager *qos.QoSManager
+}
+
+func (csm *ConsumerSessionManager) GetQoSManager() *qos.QoSManager {
+	return csm.qosManager
 }
 
 func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
@@ -85,6 +92,10 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		ctx := context.Background()
 		go csm.probeProviders(ctx, pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
 	}()
+	previousEpoch := csm.atomicReadCurrentEpoch()
+	// clean qos manager purged epochs.
+	csm.qosManager.CleanPurgedEpochs(previousEpoch)
+
 	csm.lock.Lock()         // start by locking the class lock.
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
@@ -492,7 +503,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
-			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets)
+			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager)
 			if err != nil {
 				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint",
 					utils.LogAttr("providerAddress", providerAddress),
@@ -925,7 +936,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		blockProvider = true
 	}
 
-	consumerSession.QoSManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)
+	csm.qosManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
 	// copy consecutive errors for report.
 	errorsForConsumerSession := consumerSession.ConsecutiveErrors
@@ -1036,7 +1047,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
-	consumerSession.QoSManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	csm.qosManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	if !isHangingApi {
 		// append relay data only for non hanging apis
 		go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, specComputeUnits, uint64(latestServicedBlock))
@@ -1057,14 +1068,14 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	chainId := info.ChainID
 
 	var lastQos *pairingtypes.QualityOfServiceReport
-	lastQoSReport := consumerSession.QoSManager.GetLastQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
+	lastQoSReport := csm.qosManager.GetLastQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
 	if lastQoSReport != nil {
 		qos := *lastQoSReport
 		lastQos = &qos
 	}
 
 	var lastReputation *pairingtypes.QualityOfServiceReport
-	lastReputationReport := consumerSession.QoSManager.GetLastReputationQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
+	lastReputationReport := csm.qosManager.GetLastReputationQoSReport(csm.atomicReadCurrentEpoch(), consumerSession.SessionId)
 	if lastReputationReport != nil {
 		qosRep := *lastReputationReport
 		lastReputation = &qosRep
@@ -1143,6 +1154,7 @@ func NewConsumerSessionManager(
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,
 		consumerPublicAddress:  consumerPublicAddress,
+		qosManager:             qos.NewQoSManager(),
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
