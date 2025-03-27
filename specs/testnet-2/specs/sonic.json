@@ -818,29 +818,9 @@
                                         "expected_value": "0x92"
                                     }
                                 ]
-                            },
-                            {
-                                "name": "pruning",
-                                "values": [
-                                    {
-                                        "latest_distance": 246857
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "0x0"
-                                    }
-                                ]
                             }
                         ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 243428
-                                }
-                            }
-                        ]
+                        "extensions": []
                     },
                     {
                         "enabled": true,

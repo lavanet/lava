@@ -604,9 +604,12 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 					continue
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
-				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+				if lvutil.IsVersionLessThan(parsedVer, targetVersion) {
 					healthResults.SetUnhealthyProvider(providerKey, "Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
+				}
+				if lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+					utils.LavaFormatWarning("provider endpoint version is greater than the target version, this is ok but can lead to unexpected behavior", nil, utils.LogAttr("version", version), utils.LogAttr("targetVersion", lavaVersion.ProviderTarget))
 				}
 				latestData := ReplyData{
 					Block:   latestBlockFromProbe,
