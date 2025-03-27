@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/qos"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -168,7 +169,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -224,7 +225,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
@@ -267,7 +268,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -293,7 +294,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -319,7 +320,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage = chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders = lavasession.NewUsedProviders(nil)
-		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor = NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse = usedProviders.TryLockSelection(ctx)
@@ -370,7 +371,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -410,7 +411,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -463,7 +464,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -508,7 +509,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -554,7 +555,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -609,7 +610,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -655,7 +656,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics))
+		relayProcessor := NewRelayProcessor(ctx, 1, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)

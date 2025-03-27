@@ -7,7 +7,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type UserData struct {
@@ -20,6 +20,11 @@ type BaseProtocolMessage struct {
 	directiveHeaders map[string]string
 	relayRequestData *pairingtypes.RelayPrivateData
 	userData         common.UserData
+}
+
+func (bpm *BaseProtocolMessage) IsDefaultApi() bool {
+	api := bpm.GetApi()
+	return AllowMissingApisByDefault && strings.HasPrefix(api.Name, DefaultApiName) && api.BlockParsing.ParserFunc == spectypes.PARSER_FUNC_EMPTY
 }
 
 func (bpm *BaseProtocolMessage) GetUserData() common.UserData {
@@ -39,7 +44,7 @@ func (bpm *BaseProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([
 }
 
 // addMissingExtensions adds any extensions from updatedProtocolExtensions that are not in currentPrivateDataExtensions
-func (bpm *BaseProtocolMessage) addMissingExtensions(updatedProtocolExtensions []*types.Extension, currentPrivateDataExtensions []string) []string {
+func (bpm *BaseProtocolMessage) addMissingExtensions(updatedProtocolExtensions []*spectypes.Extension, currentPrivateDataExtensions []string) []string {
 	// Create a map for O(1) lookups
 	existingExtensions := make(map[string]struct{}, len(currentPrivateDataExtensions))
 	for _, ext := range currentPrivateDataExtensions {
@@ -110,5 +115,6 @@ type ProtocolMessage interface {
 	HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error)
 	GetBlockedProviders() []string
 	GetUserData() common.UserData
+	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
 }

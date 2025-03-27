@@ -75,6 +75,7 @@ type ProviderOptimizer interface {
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
+	ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
@@ -386,7 +387,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	return c, conn, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64, qosManager *qos.QoSManager) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
@@ -434,7 +435,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
 		epoch:              cswp.PairingEpoch,
-		QoSManager:         qos.NewQoSManager(),
+		QoSManager:         qosManager,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
