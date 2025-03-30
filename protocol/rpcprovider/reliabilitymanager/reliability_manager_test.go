@@ -45,10 +45,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		providerDR_sk, providerDR_address := sigs.GenerateFloatingKey()
 		specId := "LAV1"
 		epoch := int64(100)
+		qosManager := qos.NewQoSManager()
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
+			QoSManager:         qosManager,
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -59,7 +60,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
+			QoSManager:         qosManager,
 			SessionId:          456,
 			Parent:             nil,
 			RelayNum:           5,
@@ -197,11 +198,12 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NotNil(t, chainProxy)
 		require.NotNil(t, chainFetcher)
 
+		qosManager := qos.NewQoSManager()
 		consumerSessionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:              20,
 			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
+			QoSManager:         qosManager,
 			SessionId:          123,
 			Parent:             nil,
 			RelayNum:           1,
@@ -213,7 +215,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:              200,
 			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
-			QoSManager:         qos.NewQoSManager(),
+			QoSManager:         qosManager,
 			SessionId:          456,
 			Parent:             consumerSessionWithProvider,
 			RelayNum:           5,

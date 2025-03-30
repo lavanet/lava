@@ -24,6 +24,7 @@ var (
 	SkipPolicyVerification    = false
 	AllowMissingApisByDefault = true
 	SkipWebsocketVerification = false
+	DefaultApiName            = "Default-"
 )
 
 type PolicyInf interface {
@@ -341,8 +342,8 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 	apiCont := &ApiContainer{
 		api: &spectypes.Api{
 			Enabled:           true,
-			Name:              "Default-" + apiKey.Name,
-			ComputeUnits:      20, // set 20 compute units by default
+			Name:              DefaultApiName + apiKey.Name, // do not change this name
+			ComputeUnits:      20,                           // set 20 compute units by default
 			ExtraComputeUnits: 0,
 			Category:          spectypes.SpecCategory{},
 			BlockParsing: spectypes.BlockParser{
