@@ -275,11 +275,7 @@ func (bcp *BaseChainParser) ParseDirectiveEnabled() bool {
 		return false
 	}
 	_, _, ok = bcp.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
-	if !ok {
-		return false
-	}
-
-	return true
+	return ok
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool) {
@@ -398,12 +394,12 @@ func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, erro
 }
 
 func (apip *BaseChainParser) isValidInternalPath(path string) bool {
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
 	if apip == nil || len(apip.internalPaths) == 0 {
 		return false
 	}
+
+	apip.rwLock.RLock()
+	defer apip.rwLock.RUnlock()
 	_, ok := apip.internalPaths[path]
 	return ok
 }

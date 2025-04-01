@@ -16,9 +16,7 @@ func (dct *DummyChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlo
 }
 
 // RegisterForBlockTimeUpdates registers an updatable to receive block time updates
-func (dct *DummyChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {
-	return
-}
+func (dct *DummyChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {}
 
 // GetLatestBlockNum returns the current latest block number and the time it was last changed
 func (dct *DummyChainTracker) GetLatestBlockNum() (int64, time.Time) {
@@ -36,9 +34,7 @@ func (dct *DummyChainTracker) StartAndServe(ctx context.Context) error {
 }
 
 // AddBlockGap adds a new block gap measurement
-func (dct *DummyChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
-	return
-}
+func (dct *DummyChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {}
 
 func (dct *DummyChainTracker) IsDummy() bool {
 	return true
