@@ -1,56 +1,102 @@
 {
     "proposal": {
-        "title": "Add Specs: Polygon",
-        "description": "Adding new specification support for relaying Polygon data on Lava",
+        "title": "Add Specs: tron",
+        "description": "Adding new specification support for relaying tron data on Lava",
         "specs": [
             {
-                "index": "POLYGON",
-                "name": "polygon mainnet",
+                "index": "TRX",
+                "name": "tron mainnet",
                 "enabled": true,
-                "imports": [
-                    "ETH1"
-                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 1,
+                "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 2000,
+                "average_block_time": 3000,
                 "allowed_block_lag_for_qos_sync": 5,
+                "imports": [],
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "50000000"
                 },
                 "api_collections": [
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "jsonrpc",
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "/wallet/getnowblock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getenergyprices",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getnodeinfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "verifications": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
                             "internal_path": "",
                             "type": "POST",
                             "add_on": ""
                         },
                         "apis": [
                             {
-                                "name": "bor_getAuthor",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "bor_getCurrentProposer",
+                                "name": "/wallet/getaccount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -68,43 +114,25 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "bor_getCurrentValidators",
+                                "name": "/wallet/triggerconstantcontract",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "bor_getRootHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "bor_getSignersAtHash",
+                                "name": "/wallet/gettransactioninfobyid",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -122,12 +150,12 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "qn_getBlockWithReceipts",
+                                "name": "/wallet/getaccountresource",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -140,12 +168,30 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "qn_getReceipts",
+                                "name": "/wallet/broadcasthex",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getnowblock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -158,17 +204,18 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "txpool_content",
+                                "name": "/wallet/gettransactioninfobyblocknum",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "num"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": 5000,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
+                                    "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -176,143 +223,18 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "txpool_inspect",
+                                "name": "/wallet/getblockbynum",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "num"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "txpool_status",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_blockNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_forks",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_getBlockByTimestamp",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_getBlockReceiptsByBlockHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_getHeaderByHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "erigon_getHeaderByNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
+                                    "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -322,44 +244,94 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [],
+                        "parse_directives": [
+                            {
+                                "function_tag": "GET_BLOCK_BY_NUM",
+                                "function_template": "{\"num\":%d}",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "blockID"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "/wallet/getblockbynum"
+                            },
+                            {
+                                "function_template": "/wallet/getnowblock",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "block_header",
+                                        "raw_data",
+                                        "number"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "/wallet/getnowblock"
+                            }
+                        ],
                         "verifications": [
                             {
                                 "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"num\":0}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "blockID"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/wallet/getblockbynum"
+                                },
                                 "values": [
                                     {
-                                        "expected_value": "0x89"
+                                        "expected_value": "00000000000000001ebf88508a03865c71d452e25f4d51194196a1d22b6653dc"
                                     }
                                 ]
                             }
+
                         ],
                         "extensions": []
                     }
                 ]
             },
             {
-                "index": "POLYGONA",
-                "name": "polygon amoy testnet",
+                "index": "TRXT",
+                "name": "tron shasta testnet",
                 "enabled": true,
-                "imports": [
-                    "POLYGON"
-                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 1,
+                "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 2000,
+                "average_block_time": 3000,
                 "allowed_block_lag_for_qos_sync": 5,
+                "imports": [
+                    "TRX"
+                ],
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "5000000000"
+                    "amount": "50000000"
                 },
                 "api_collections": [
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "jsonrpc",
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
                             "internal_path": "",
                             "type": "POST",
                             "add_on": ""
@@ -373,11 +345,12 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x13882"
+                                        "expected_value": "0000000000000000de1aa88295e1fcf982742f773e0419c5a9c134c994a9059e"
                                     }
                                 ]
                             }
-                        ]
+                        ],
+                        "extensions": []
                     }
                 ]
             }

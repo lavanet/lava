@@ -75,6 +75,7 @@ type ProviderOptimizer interface {
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
+	ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
@@ -96,8 +97,10 @@ type EndpointConnection struct {
 	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
-	blockListed                         atomic.Bool
-	lbUniqueId                          string
+	// blockListed - currently unused, use it carefully as it will block this provider's endpoint until next epoch without forgiveness.
+	// Can be used in cases of data reliability, self provider conflict etc..
+	blockListed atomic.Bool
+	lbUniqueId  string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
@@ -165,6 +168,7 @@ func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (s
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
+	retryConnecting      bool
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider // key is the provider address
@@ -383,7 +387,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	return c, conn, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64, qosManager *qos.QoSManager) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
@@ -431,7 +435,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
 		epoch:              cswp.PairingEpoch,
-		QoSManager:         qos.NewQoSManager(),
+		QoSManager:         qosManager,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
@@ -482,6 +486,9 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !retryDisabledEndpoints && !endpoint.Enabled {
 				continue
 			}
+			if retryDisabledEndpoints {
+				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress))
+			}
 
 			// check endpoint supports the requested addons
 			supported := endpoint.CheckSupportForServices(addon, extensionNames)
@@ -496,6 +503,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
 						// Check if the endpoint is not blocked
 						if endpointConnection.blockListed.Load() {
+							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress))
 							continue
 						}
 						connectionState := endpointConnection.connection.GetState()

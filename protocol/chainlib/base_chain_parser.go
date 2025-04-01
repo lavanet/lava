@@ -20,7 +20,10 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var AllowMissingApisByDefault = true
+var (
+	AllowMissingApisByDefault = true
+	DefaultApiName            = "Default-"
+)
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
@@ -343,8 +346,8 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 	apiCont := &ApiContainer{
 		api: &spectypes.Api{
 			Enabled:           true,
-			Name:              "Default-" + apiKey.Name,
-			ComputeUnits:      20, // set 20 compute units by default
+			Name:              DefaultApiName + apiKey.Name, // do not change this name
+			ComputeUnits:      20,                           // set 20 compute units by default
 			ExtraComputeUnits: 0,
 			Category:          spectypes.SpecCategory{},
 			BlockParsing: spectypes.BlockParser{
