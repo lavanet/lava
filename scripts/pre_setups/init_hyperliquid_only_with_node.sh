@@ -9,6 +9,8 @@ rm $LOGS_DIR/*.log
 
 killall screen
 screen -wipe
+killall lavad
+killall lavap
 
 echo "[Test Setup] installing all binaries"
 make install-all 
@@ -43,14 +45,15 @@ PROVIDER1_LISTENER="127.0.0.1:2220"
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-lavad tx pairing stake-provider "HYPERLIQUID" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider HYPERLIQUID $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER1_LISTENER HYPERLIQUID jsonrpc '$HYPERLIQUID_RPC,$HYPERLIQUID_WS' \
-$PROVIDER1_LISTENER HYPERLIQUID rest '$HYPERLIQUID_REST' \
+./config/provider_examples/hyperliquid_example.yml \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+
+sleep 3
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 HYPERLIQUID jsonrpc \
