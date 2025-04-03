@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 )
@@ -58,6 +59,9 @@ func (cc *ConsumerConsistency) SetSeenBlockFromKey(blockSeen int64, key string) 
 
 func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
 	if cc == nil {
+		return
+	}
+	if blockSeen == chaintracker.DummyChainTrackerLatestBlock {
 		return
 	}
 	key := cc.Key(userData)

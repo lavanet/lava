@@ -24,6 +24,7 @@ type ChainTrackerConfig struct {
 	Pmetrics                 *metrics.ProviderMetricsManager
 	PollingTimeMultiplier    int
 	ChainId                  string
+	ParseDirectiveEnabled    bool
 }
 
 func (cnf *ChainTrackerConfig) validate() error {
