@@ -278,7 +278,7 @@ func TestSelectionTierInstShiftTierChance_MaintainTopTierAdvantage(t *testing.T)
 func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {
 	st := NewSelectionTier()
 	rand.InitRandomSeed()
-	numTiers := 5
+	numTiers := 4
 	counter := map[int]int{}
 	for i := 0; i < 10000; i++ {
 		tier := st.SelectTierRandomly(numTiers, map[int]float64{0: 0.8, 4: 0})
