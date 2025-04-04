@@ -36,12 +36,12 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		report.lastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 
-	//nolint:staticcheck // SA4006: ignore the unused here - I make as little changes as possible
-	downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
+	// UndoForConnectionChange TEST PR: ignore the unused here - I make as little changes as possible
+	// downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
+	_, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
 	report.lastQoSReport.Availability = scaledAvailabilityScore
 	if sdk.OneDec().GT(report.lastQoSReport.Availability) {
 		// UndoForConnectionChange TEST PR:
-		_ = downtimePercentage
 		// this is a very spammy log
 		// utils.LavaFormatDebug("QoS Availability report",
 		// 	utils.LogAttr("availability", report.lastQoSReport.Availability),

@@ -681,12 +681,12 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 
 func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress string) (report *pairingtypes.QualityOfServiceReport, lastUpdateTime time.Time) {
 	// UndoForConnectionChange TEST PR:
-	//lint:ignore SA4006 reason: ignore the unused here - i make as little changes as possible
-	providerData, found := po.getProviderData(providerAddress)
-	if !found {
-		// this happens in the tests and is very spammy in the logs
-		// utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
-	}
+	providerData, _ := po.getProviderData(providerAddress)
+	// providerData, found := po.getProviderData(providerAddress)
+	// this happens in the tests and is very spammy in the logs
+	// if !found {
+	// 	// utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
+	// }
 
 	latency, err := providerData.Latency.Resolve()
 	if err != nil {
