@@ -852,15 +852,26 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	// this creates a pairing list with all provider's endpoints disabled
 	pairingList := createPairingList("", false)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 	usedProviders := NewUsedProviders(nil)
 	cs, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
-	require.NoError(t, err)
-	for key := range cs {
-		require.Contains(t, csm.currentlyBlockedProviderAddresses, key)
-	}
+
+	// UndoForConnectionChange PR:
+	// // this returns no sessions - which makes sense since all providers endpoints are disabled
+	// // currentlyBlockedProviderAddresses is an array that has all the provider addresses in it
+	// // and we get the No pairings available. which means we can not find a provider to pair with
+	// require.NoError(t, err)
+	// for key := range cs {
+	// 	require.Contains(t, csm.currentlyBlockedProviderAddresses, key)
+	// }
+
+	// This was the previous code for this test:
+	// https://github.com/lavanet/lava/commit/7ea75649201ff5176300ac533617cdd927e0fe46#diff-db3d9fd09c75fa2ea43b6da5a462433b5e1d3f5e53256ee13e70b779f9691822
+	require.Nil(t, cs)
+	require.Error(t, err)
 }
 
 func TestUpdateAllProviders(t *testing.T) {
@@ -1046,8 +1057,8 @@ func TestNoPairingsError(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	time.Sleep(5 * time.Millisecond) // let probes finish
-	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
+	time.Sleep(5 * time.Millisecond)                                                                            // let probes finish
+	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "") // Added empty string for stickiness
 	require.Error(t, err)
 	require.True(t, PairingListEmptyError.Is(err))
 }
