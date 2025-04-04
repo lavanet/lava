@@ -631,11 +631,12 @@ func (po *ProviderOptimizer) getRelayStatsTimeDiff(providerAddress string, sampl
 	if medianTime.Before(sampleTime) {
 		return sampleTime.Sub(medianTime)
 	}
-	utils.LavaFormatWarning("did not use sample time in optimizer calculation", nil,
-		utils.LogAttr("median", medianTime.UTC().Unix()),
-		utils.LogAttr("sample", sampleTime.UTC().Unix()),
-		utils.LogAttr("diff", sampleTime.UTC().Unix()-medianTime.UTC().Unix()),
-	)
+	// UndoForConnectionChange TEST PR: This is a very spammy log
+	// utils.LavaFormatWarning("did not use sample time in optimizer calculation", nil,
+	// 	utils.LogAttr("median", medianTime.UTC().Unix()),
+	// 	utils.LogAttr("sample", sampleTime.UTC().Unix()),
+	// 	utils.LogAttr("diff", sampleTime.UTC().Unix()-medianTime.UTC().Unix()),
+	// )
 	return time.Since(medianTime)
 }
 
@@ -679,9 +680,12 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 }
 
 func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress string) (report *pairingtypes.QualityOfServiceReport, lastUpdateTime time.Time) {
+	// UndoForConnectionChange TEST PR:
+	//lint:ignore SA4006 reason: ignore the unused here - i make as little changes as possible
 	providerData, found := po.getProviderData(providerAddress)
 	if !found {
-		utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
+		// this happens in the tests and is very spammy in the logs
+		// utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
 	}
 
 	latency, err := providerData.Latency.Resolve()
