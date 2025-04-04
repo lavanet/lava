@@ -479,6 +479,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			sessionEpoch := sessionWithProvider.CurrentEpoch
 
 			// Get a valid Endpoint from the provider chosen
+			// UndoForConnectionChange PR:
 			connected, endpoints, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, false, false, addon, extensionNames)
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
