@@ -36,16 +36,20 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		report.lastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 
-	downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
+	// UndoForConnectionChange TEST PR: ignore the unused here - I make as little changes as possible
+	// downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
+	_, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
 	report.lastQoSReport.Availability = scaledAvailabilityScore
-	if sdk.OneDec().GT(report.lastQoSReport.Availability) {
-		utils.LavaFormatDebug("QoS Availability report",
-			utils.LogAttr("availability", report.lastQoSReport.Availability),
-			utils.LogAttr("down_percent", downtimePercentage),
-			utils.LogAttr("session_id", qoSMutatorRelaySuccess.sessionId),
-			utils.LogAttr("provider", qoSMutatorRelaySuccess.providerAddress),
-		)
-	}
+	// if sdk.OneDec().GT(report.lastQoSReport.Availability) {
+	// UndoForConnectionChange TEST PR:
+	// this is a very spammy log
+	// utils.LavaFormatDebug("QoS Availability report",
+	// 	utils.LogAttr("availability", report.lastQoSReport.Availability),
+	// 	utils.LogAttr("down_percent", downtimePercentage),
+	// 	utils.LogAttr("session_id", qoSMutatorRelaySuccess.sessionId),
+	// 	utils.LogAttr("provider", qoSMutatorRelaySuccess.providerAddress),
+	// )
+	// }
 
 	if qoSMutatorRelaySuccess.latency == 0 {
 		qoSMutatorRelaySuccess.latency = 1 * time.Microsecond

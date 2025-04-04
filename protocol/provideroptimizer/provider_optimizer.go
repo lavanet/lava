@@ -631,11 +631,12 @@ func (po *ProviderOptimizer) getRelayStatsTimeDiff(providerAddress string, sampl
 	if medianTime.Before(sampleTime) {
 		return sampleTime.Sub(medianTime)
 	}
-	utils.LavaFormatWarning("did not use sample time in optimizer calculation", nil,
-		utils.LogAttr("median", medianTime.UTC().Unix()),
-		utils.LogAttr("sample", sampleTime.UTC().Unix()),
-		utils.LogAttr("diff", sampleTime.UTC().Unix()-medianTime.UTC().Unix()),
-	)
+	// UndoForConnectionChange TEST PR: This is a very spammy log
+	// utils.LavaFormatWarning("did not use sample time in optimizer calculation", nil,
+	// 	utils.LogAttr("median", medianTime.UTC().Unix()),
+	// 	utils.LogAttr("sample", sampleTime.UTC().Unix()),
+	// 	utils.LogAttr("diff", sampleTime.UTC().Unix()-medianTime.UTC().Unix()),
+	// )
 	return time.Since(medianTime)
 }
 
@@ -679,10 +680,13 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 }
 
 func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress string) (report *pairingtypes.QualityOfServiceReport, lastUpdateTime time.Time) {
-	providerData, found := po.getProviderData(providerAddress)
-	if !found {
-		utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
-	}
+	// UndoForConnectionChange TEST PR:
+	providerData, _ := po.getProviderData(providerAddress)
+	// providerData, found := po.getProviderData(providerAddress)
+	// this happens in the tests and is very spammy in the logs
+	// if !found {
+	// 	// utils.LavaFormatWarning("provider data not found, using default", nil, utils.LogAttr("address", providerAddress))
+	// }
 
 	latency, err := providerData.Latency.Resolve()
 	if err != nil {

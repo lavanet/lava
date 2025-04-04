@@ -97,3 +97,5 @@ config/health_examples/health_template_gen.yml
 .yarn/
 
 **/dist/
+protocol/rpcprovider/cert.pem
+protocol/rpcprovider/key.pem
