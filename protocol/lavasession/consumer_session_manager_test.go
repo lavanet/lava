@@ -855,7 +855,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList("", false)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	cs, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	cs, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
