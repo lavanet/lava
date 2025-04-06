@@ -198,10 +198,6 @@ get_hyperliquid_specs() {
         "specs/testnet-2/specs/cosmossdkv45.json"
         "specs/testnet-2/specs/cosmossdk_full.json"
         "specs/mainnet-1/specs/cosmossdkv50.json"
-        "specs/mainnet-1/specs/ethermint.json"
-        "specs/mainnet-1/specs/ethereum.json"
-        "specs/mainnet-1/specs/solana.json"
-        "specs/mainnet-1/specs/aptos.json"
         "specs/testnet-2/specs/lava.json"
         "specs/mainnet-1/specs/hyperliquid.json"
     )

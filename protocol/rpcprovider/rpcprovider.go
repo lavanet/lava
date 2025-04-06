@@ -469,13 +469,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
-	if chainParser.ParseDirectiveEnabled() {
-		err = chainFetcher.Validate(ctx)
-		if err != nil {
-			return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
-				utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
-				utils.Attribute{Key: "apiInterface", Value: apiInterface})
-		}
+
+	err = chainFetcher.Validate(ctx)
+	if err != nil {
+		return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
+			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here

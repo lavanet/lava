@@ -627,6 +627,10 @@ func (ct *ChainTracker) StartAndServe(ctx context.Context) error {
 }
 
 func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig) IChainTracker {
+	if !config.ParseDirectiveEnabled {
+		return &DummyChainTracker{}
+	}
+
 	pollingTime := MostFrequentPollingMultiplier
 	if config.PollingTimeMultiplier != 0 {
 		pollingTime = config.PollingTimeMultiplier
@@ -654,10 +658,6 @@ func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig)
 		averageBlockTime:        config.AverageBlockTime,
 		serverAddress:           config.ServerAddress,
 		endpoint:                endpoint,
-	}
-
-	if !config.ParseDirectiveEnabled {
-		return &DummyChainTracker{}
 	}
 
 	switch config.ChainId {
