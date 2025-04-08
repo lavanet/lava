@@ -112,10 +112,11 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	utils.LavaFormatInfo("Reading blocks Forward", utils.Attribute{Key: "current", Value: latestBlock})
 	blocksToSaveChainTracker := uint64(10) // to avoid reading the same thing twice
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
-		BlocksToSave:      blocksToSaveChainTracker,
-		AverageBlockTime:  10 * time.Second,
-		ServerBlockMemory: 100 + blocksToSaveChainTracker,
-		NewLatestCallback: readEventsFromBlock,
+		BlocksToSave:          blocksToSaveChainTracker,
+		AverageBlockTime:      10 * time.Second,
+		ServerBlockMemory:     100 + blocksToSaveChainTracker,
+		NewLatestCallback:     readEventsFromBlock,
+		ParseDirectiveEnabled: true,
 	}
 	chainTracker, err := chaintracker.NewChainTracker(ctx, lavaChainFetcher, chainTrackerConfig)
 	if err != nil {
