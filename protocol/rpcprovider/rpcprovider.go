@@ -508,7 +508,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		}
 
 		if !chainTracker.IsDummy() {
-			var loaded bool
 			chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
 			if err != nil {
 				utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID))
