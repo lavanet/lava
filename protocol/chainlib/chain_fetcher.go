@@ -104,15 +104,24 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
+
 		var latestBlock int64
-		for attempts := 0; attempts < 3; attempts++ {
-			latestBlock, err = cf.FetchLatestBlockNum(ctx)
-			if err == nil {
-				break
+		needToFetchLatestBlock := false
+		for _, v := range verifications {
+			if v.Value == "" && v.LatestDistance != 0 {
+				needToFetchLatestBlock = true
 			}
 		}
-		if err != nil {
-			return err
+		if needToFetchLatestBlock {
+			for attempts := 0; attempts < 3; attempts++ {
+				latestBlock, err = cf.FetchLatestBlockNum(ctx)
+				if err == nil {
+					break
+				}
+			}
+			if err != nil {
+				return err
+			}
 		}
 		// invalidating cache as value might change
 		defer cf.invalidateVerificationsCache()

@@ -128,6 +128,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, stateQuery *upda
 		AverageBlockTime:      time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
 		ServerBlockMemory:     25 + BlocksToSaveLavaChainTracker,
 		PollingTimeMultiplier: chaintracker.LavaPollingMultiplierFrequency,
+		ParseDirectiveEnabled: true,
 	}
 	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

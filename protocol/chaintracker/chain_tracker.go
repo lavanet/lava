@@ -44,6 +44,9 @@ type IChainTracker interface {
 
 	// AddBlockGap adds a new block gap measurement
 	AddBlockGap(newData time.Duration, blocks uint64)
+
+	// IsDummy gets the chain tracker weight - a way to differntiate between trackers (dummy tracker with weight 0)
+	IsDummy() bool
 }
 
 const (
@@ -114,6 +117,10 @@ type ChainTracker struct {
 
 	// allows us to mock the chain fetcher for different use cases for example: Solana needs slot to block number
 	iChainFetcherWrapper IChainFetcherWrapper
+}
+
+func (cs *ChainTracker) IsDummy() bool {
+	return false
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -620,6 +627,10 @@ func (ct *ChainTracker) StartAndServe(ctx context.Context) error {
 }
 
 func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig) IChainTracker {
+	if !config.ParseDirectiveEnabled {
+		return &DummyChainTracker{}
+	}
+
 	pollingTime := MostFrequentPollingMultiplier
 	if config.PollingTimeMultiplier != 0 {
 		pollingTime = config.PollingTimeMultiplier

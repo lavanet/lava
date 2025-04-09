@@ -163,7 +163,7 @@ func TestChainTracker(t *testing.T) {
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks), ParseDirectiveEnabled: true}
 			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 			chainTracker.StartAndServe(context.Background())
 			require.NoError(t, err)
@@ -221,7 +221,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks), ParseDirectiveEnabled: true}
 			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 			chainTracker.StartAndServe(context.Background())
 			require.NoError(t, err)
@@ -305,7 +305,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			callbackCalledTimes++
 		}
 	}
-	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback, ParseDirectiveEnabled: true}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(context.Background())
@@ -372,7 +372,7 @@ func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
 		}
 		mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, callback)
 		mockChainFetcher.AdvanceBlock()
-		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ParseDirectiveEnabled: true}
 		tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 		require.NoError(t, err)
 		tracker.StartAndServe(context.Background())
@@ -497,7 +497,7 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 			mockTimeUpdater := MockTimeUpdater{callBack: updateCallback}
 			mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, callback)
 			mockChainFetcher.AdvanceBlock()
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: play.localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: play.localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ParseDirectiveEnabled: true}
 			tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 			tracker.StartAndServe(context.Background())
 			tracker.RegisterForBlockTimeUpdates(&mockTimeUpdater)
@@ -561,7 +561,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 		utils.LavaFormatDebug("fork callback called")
 		callbackCalledFork = true
 	}
-	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, ParseDirectiveEnabled: true}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(context.Background())
@@ -614,7 +614,7 @@ func TestFindRequestedBlockHash(t *testing.T) {
 	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, nil)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
-	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ParseDirectiveEnabled: true}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(context.Background())

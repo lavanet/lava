@@ -479,7 +479,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			sessionEpoch := sessionWithProvider.CurrentEpoch
 
 			// Get a valid Endpoint from the provider chosen
-			connected, endpoints, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionWithProvider.retryConnecting, false, addon, extensionNames)
+			connected, endpoints, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, false, false, addon, extensionNames)
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
@@ -965,6 +965,17 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		reportProvider = true
 	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
 		blockProvider = true
+	}
+
+	if sdkerrors.IsOf(errorReceived, BlockEndpointError) {
+		utils.LavaFormatTrace("Got BlockEndpointError, blocking endpoint and session",
+			utils.LogAttr("error", errorReceived),
+			utils.LogAttr("sessionID", consumerSession.SessionId),
+		)
+
+		// Block the endpoint and the consumer session from future usages
+		consumerSession.EndpointConnection.blockListed.Store(true)
+		consumerSession.BlockListed = true
 	}
 
 	csm.qosManager.AddFailedRelay(consumerSession.epoch, consumerSession.SessionId)

@@ -74,11 +74,11 @@ check_go_version() {
 # Function to find the latest vote
 latest_vote() {
   # Check if jq is not installed
-  if ! command_exists yq; then
-      echo "yq not found. Please install yq using the init_install.sh script or manually."
+  if ! command_exists jq; then
+      echo "jq not found. Please install jq using the init_install.sh script or manually."
       exit 1
   fi
-  lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
+  lavad q gov proposals --output=json 2> /dev/null | jq '.proposals[].id' | wc -l
 }
 
 create_health_config() {
@@ -184,6 +184,22 @@ get_base_specs() {
         "specs/mainnet-1/specs/solana.json"
         "specs/mainnet-1/specs/aptos.json"
         "specs/mainnet-1/specs/btc.json"
+    )
+
+    (IFS=,; echo "${priority_specs[*]}")
+}
+
+get_hyperliquid_specs() {
+    local priority_specs=(
+        "specs/mainnet-1/specs/ibc.json"
+        "specs/mainnet-1/specs/cosmoswasm.json"
+        "specs/mainnet-1/specs/tendermint.json"
+        "specs/mainnet-1/specs/cosmossdk.json"
+        "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/testnet-2/specs/cosmossdk_full.json"
+        "specs/mainnet-1/specs/cosmossdkv50.json"
+        "specs/testnet-2/specs/lava.json"
+        "specs/mainnet-1/specs/hyperliquid.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")
