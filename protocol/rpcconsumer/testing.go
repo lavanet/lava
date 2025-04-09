@@ -69,11 +69,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:        blocksToSaveChainTracker,
-				AverageBlockTime:    averageBlockTime,
-				ServerBlockMemory:   rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback:   printOnNewLatestCallback,
-				ConsistencyCallback: consistencyErrorCallback,
+				BlocksToSave:          blocksToSaveChainTracker,
+				AverageBlockTime:      averageBlockTime,
+				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:     printOnNewLatestCallback,
+				ConsistencyCallback:   consistencyErrorCallback,
+				ParseDirectiveEnabled: true,
 			}
 			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: rpcProviderEndpoint, Cache: nil})
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

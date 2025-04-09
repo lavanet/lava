@@ -189,6 +189,22 @@ get_base_specs() {
     (IFS=,; echo "${priority_specs[*]}")
 }
 
+get_hyperliquid_specs() {
+    local priority_specs=(
+        "specs/mainnet-1/specs/ibc.json"
+        "specs/mainnet-1/specs/cosmoswasm.json"
+        "specs/mainnet-1/specs/tendermint.json"
+        "specs/mainnet-1/specs/cosmossdk.json"
+        "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/testnet-2/specs/cosmossdk_full.json"
+        "specs/mainnet-1/specs/cosmossdkv50.json"
+        "specs/testnet-2/specs/lava.json"
+        "specs/mainnet-1/specs/hyperliquid.json"
+    )
+
+    (IFS=,; echo "${priority_specs[*]}")
+}
+
 get_all_specs() {
     # Ensure get_base_specs outputs elements correctly split into an array
     IFS=',' read -r -a priority_specs <<< "$(get_base_specs)" 

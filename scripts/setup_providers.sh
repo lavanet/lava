@@ -26,7 +26,7 @@ screen -d -m -S cache-consumer bash -c "source ~/.bashrc; lavap cache 127.0.0.1:
 
 echo; echo "#### Starting provider 1 ####"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
+$PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_HTTP,$ETH_RPC_WS' \
 $PROVIDER1_LISTENER SEP1 jsonrpc '$SEP_RPC_WS' \
 $PROVIDER1_LISTENER HOL1 jsonrpc '$HOL_RPC_WS' \
 $PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -83,7 +83,7 @@ $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation "$GEOLOCATI
 
 echo; echo "#### Starting provider 2 ####"
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
+$PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_HTTP,$ETH_RPC_WS' \
 $PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER2_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
 $PROVIDER2_LISTENER LAV1 grpc '$LAVA_GRPC' \
@@ -92,7 +92,7 @@ $EXTRA_PROVIDER_FLAGS --geolocation "$GEOLOCATION" --log_level debug --from serv
 
 echo; echo "#### Starting provider 3 ####"
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
+$PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_HTTP,$ETH_RPC_WS' \
 $PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
 $PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
