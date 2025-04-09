@@ -81,9 +81,8 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
-    tags:
-      - netgo
-      - ledger
+      - -tags=netgo,ledger
+
     mod_timestamp: "{{ .CommitTimestamp }}"
     env:
       - CC_darwin_amd64=o64-clang
@@ -121,6 +120,8 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+      - -tags=netgo,ledger
+      
     mod_timestamp: "{{ .CommitTimestamp }}"
     env:
       - CC_darwin_amd64=o64-clang
