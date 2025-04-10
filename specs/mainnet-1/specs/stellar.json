@@ -48,24 +48,6 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/transactions",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "/accounts/{account}",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -130,7 +112,7 @@
                                         "sequence"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
-                                },  
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -148,7 +130,7 @@
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
-                                },  
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -170,7 +152,7 @@
                                         "sequence"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
-                                },  
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -183,7 +165,7 @@
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",
-                                        "parse_type": "BLOCK_LATEST"    
+                                        "parse_type": "BLOCK_LATEST"
                                     }
                                 ]
                             },
@@ -194,7 +176,7 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
-                                },  
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -207,10 +189,9 @@
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",
-                                        "parse_type": "BLOCK_LATEST"    
+                                        "parse_type": "BLOCK_LATEST"
                                     }
                                 ]
-
                             },
                             {
                                 "name": "/",
@@ -219,7 +200,7 @@
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
-                                },  
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -257,7 +238,6 @@
                                         "parse_type": "RESULT"
                                     }
                                 ]
-
                             }
                         ],
                         "verifications": [
@@ -283,6 +263,35 @@
                             }
                         ],
                         "extensions": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "/transactions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ]
                     }
                 ]
             },
