@@ -857,6 +857,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					}
 				}
 				go failRelaySession(errResponse, backoff)
+				go rpccs.rpcConsumerLogs.SetProtocolError(chainId, providerPublicAddress)
 				return
 			}
 
