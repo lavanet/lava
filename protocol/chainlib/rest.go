@@ -514,7 +514,11 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			req.Header.Set(metadata.Name, metadata.Value)
+			if metadata.Value == "" {
+				req.Header.Del(metadata.Name)
+			} else {
+				req.Header.Set(metadata.Name, metadata.Value)
+			}
 		}
 	}
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
