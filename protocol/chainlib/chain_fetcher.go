@@ -192,7 +192,7 @@ func getExtensionsForVerification(verification VerificationContainer, chainParse
 		ConnectionType: verification.ConnectionType,
 	}
 
-	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) && !SkipWebsocketVerification {
 		if verification.Extension == "" {
 			extensions = []string{WebSocketExtension}
 		} else {
