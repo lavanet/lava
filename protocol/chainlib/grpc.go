@@ -443,7 +443,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	metadataMap := make(map[string]string, 0)
 	for _, metaData := range nodeMessage.GetHeaders() {
-		metadataMap[metaData.Name] = metaData.Value
+		if metaData.Value != "" {
+			metadataMap[metaData.Name] = metaData.Value
+		}
 	}
 
 	if len(metadataMap) > 0 {
