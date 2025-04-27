@@ -421,13 +421,24 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// warn if not all internal paths are configured
 	configuredInternalPaths := GetAllNodeUrlsInternalPaths(rpcProviderEndpoint.NodeUrls)
 	chainInternalPaths := chainParser.GetAllInternalPaths()
-	overConfiguredInternalPaths := lavaslices.Difference(configuredInternalPaths, chainInternalPaths)
+	overConfiguredInternalPaths := lavaslices.MissingElements(configuredInternalPaths, chainInternalPaths)
 	if len(overConfiguredInternalPaths) > 0 {
 		utils.LavaFormatWarning("Some configured internal paths are not in the chain's spec", nil,
 			utils.LogAttr("chainID", chainID),
 			utils.LogAttr("apiInterface", apiInterface),
 			utils.LogAttr("internalPaths", strings.Join(overConfiguredInternalPaths, ",")),
 		)
+	}
+
+	underConfiguredInternalPaths := lavaslices.MissingElements(chainInternalPaths, configuredInternalPaths)
+	if len(underConfiguredInternalPaths) > 0 {
+		utils.LavaFormatWarning("Some internal paths from the spec are not configured for this provider", nil,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("internalPaths", strings.Join(underConfiguredInternalPaths, ",")),
+		)
+
+		addMissingInternalPaths(rpcProviderEndpoint, chainParser, chainID, apiInterface, underConfiguredInternalPaths)
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
@@ -890,4 +901,56 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
+}
+
+func addMissingInternalPaths(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser chainlib.ChainParser, chainID, apiInterface string, underConfiguredInternalPaths []string) {
+	// Find root URLs (those with empty internal paths)
+	var httpRootUrl, wssRootUrl *common.NodeUrl
+	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
+		if nodeUrl.InternalPath == "" {
+			if strings.HasPrefix(strings.ToLower(nodeUrl.Url), "wss://") || strings.HasPrefix(strings.ToLower(nodeUrl.Url), "ws://") {
+				wssRootUrl = &nodeUrl
+			} else {
+				httpRootUrl = &nodeUrl
+			}
+		}
+	}
+
+	// Add missing paths using the appropriate root URL as template
+	for _, missingPath := range underConfiguredInternalPaths {
+		isWS := false
+		for _, connectionType := range []string{"POST", ""} {
+			// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
+			collectionKey := chainlib.CollectionKey{
+				InternalPath:   missingPath,
+				Addon:          "",
+				ConnectionType: connectionType,
+			}
+
+			if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+				isWS = true
+			}
+		}
+
+		if isWS {
+			if wssRootUrl != nil {
+				newUrl := *wssRootUrl // Create copy of root URL
+				newUrl.InternalPath = missingPath
+				newUrl.Url += missingPath
+				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
+			}
+		} else {
+			if httpRootUrl != nil {
+				newUrl := *httpRootUrl // Create copy of root URL
+				newUrl.InternalPath = missingPath
+				newUrl.Url += missingPath
+				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
+			}
+		}
+	}
+
+	utils.LavaFormatDebug("Added missing internal paths to NodeUrls",
+		utils.LogAttr("chainID", chainID),
+		utils.LogAttr("apiInterface", apiInterface),
+		utils.LogAttr("addedPaths", strings.Join(underConfiguredInternalPaths, ",")))
 }
