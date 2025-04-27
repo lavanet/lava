@@ -24,29 +24,6 @@ func GetCurrentVersion() ProtocolVersion {
 }
 
 func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *updaters.ProtocolVersionResponse) error {
-	// check min version
-	if HasVersionMismatch(incoming.Version.ConsumerMin, lavaProtocolVersion.ConsumerVersion) || HasVersionMismatch(incoming.Version.ProviderMin, lavaProtocolVersion.ProviderVersion) {
-		return utils.LavaFormatError("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
-			nil,
-			utils.Attribute{Key: "required (on-chain) consumer minimum version:", Value: incoming.Version.ConsumerMin},
-			utils.Attribute{Key: "required (on-chain) provider minimum version", Value: incoming.Version.ProviderMin},
-			utils.Attribute{Key: "binary consumer version: ", Value: lavaProtocolVersion.ConsumerVersion},
-			utils.Attribute{Key: "binary provider version: ", Value: lavaProtocolVersion.ProviderVersion},
-			utils.Attribute{Key: "block number: ", Value: incoming.BlockNumber},
-		)
-	}
-
-	// check target version
-	if HasVersionMismatch(incoming.Version.ConsumerTarget, lavaProtocolVersion.ConsumerVersion) || HasVersionMismatch(incoming.Version.ProviderTarget, lavaProtocolVersion.ProviderVersion) {
-		return utils.LavaFormatError("target protocol version mismatch, there is a newer version available. We highly recommend to upgrade.",
-			nil,
-			utils.Attribute{Key: "required (on-chain) consumer target version:", Value: incoming.Version.ConsumerTarget},
-			utils.Attribute{Key: "required (on-chain) provider target version", Value: incoming.Version.ProviderTarget},
-			utils.Attribute{Key: "binary consumer version: ", Value: lavaProtocolVersion.ConsumerVersion},
-			utils.Attribute{Key: "binary provider version: ", Value: lavaProtocolVersion.ProviderVersion},
-			utils.Attribute{Key: "block number: ", Value: incoming.BlockNumber},
-		)
-	}
 	// version is ok.
 	return nil
 }
