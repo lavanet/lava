@@ -349,9 +349,12 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 			Name:              DefaultApiName + apiKey.Name, // do not change this name
 			ComputeUnits:      20,                           // set 20 compute units by default
 			ExtraComputeUnits: 0,
-			Category:          spectypes.SpecCategory{},
+			Category: spectypes.SpecCategory{
+				Deterministic: true,
+			},
 			BlockParsing: spectypes.BlockParser{
-				ParserFunc: spectypes.PARSER_FUNC_EMPTY,
+				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+				ParserArg:  []string{"latest"},
 			},
 			TimeoutMs: 0,
 			Parsers:   []spectypes.GenericParser{},
