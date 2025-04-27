@@ -678,7 +678,6 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 				// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
 				defer rpc.SetHeader(metadata.Name, "")
 			}
-
 		}
 	}
 	var nodeErr error
