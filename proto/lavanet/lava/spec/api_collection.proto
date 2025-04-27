@@ -61,7 +61,7 @@ message Header {
     pass_reply = 1;
     pass_both = 2;
     pass_ignore = 3; // allows it to pass around but is not signed
-    pass_nullify = 4; // removes a header from being sent
+    pass_nullify = 4; // removes a header from being sent to the node (for example, content-type)
   }
 
   HeaderType kind = 2;

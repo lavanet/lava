@@ -671,9 +671,14 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	// support setting headers
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			rpc.SetHeader(metadata.Name, metadata.Value)
-			// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
-			defer rpc.SetHeader(metadata.Name, "")
+			if metadata.Value == "" {
+				rpc.DelHeader(metadata.Name)
+			} else {
+				rpc.SetHeader(metadata.Name, metadata.Value)
+				// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
+				defer rpc.SetHeader(metadata.Name, "")
+			}
+
 		}
 	}
 	var nodeErr error
