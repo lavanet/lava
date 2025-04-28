@@ -295,8 +295,7 @@
                         "headers": [
                             {
                                 "name": "content-type",
-                                "kind": "pass_override",
-                                "value": "application/x-www-form-urlencoded"
+                                "kind": "pass_ignore"
                             }
                         ]
                     }
