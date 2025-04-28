@@ -20,9 +20,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var (
-	DefaultApiName = "Default-"
-)
+var DefaultApiName = "Default-"
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
