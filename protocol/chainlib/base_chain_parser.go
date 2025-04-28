@@ -85,15 +85,13 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 				// this header sets the latest requested block
 				overwriteRequestedBlock = header.Value
 			}
-		} else if headerDirective.Kind == spectypes.Header_pass_ignore {
-			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
 
 	// iterate over the headers defined in spec file to handle any nullified headers
 	for _, bcpHeader := range bcp.headers {
 		// handle nullified headers
-		if bcpHeader.Kind == spectypes.Header_pass_nullify {
+		if bcpHeader.Kind == spectypes.Header_pass_ignore {
 			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
 		}
 
