@@ -94,6 +94,15 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
+
+	// iterate over the headers defined in spec file to handle any nullified headers
+	for _, bcpHeader := range bcp.headers {
+		// handle nullified headers
+		if bcpHeader.Kind == spectypes.Header_pass_nullify {
+			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
+		}
+	}
+
 	return retMetadata, overwriteRequestedBlock, ignoredMetadata
 }
 
@@ -277,6 +286,15 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 	bcp.extensionParser = extensionslib.NewExtensionParser(allowedExtensions, bcp.extensionParser.GetConfiguredExtensions())
 }
 
+func (bcp *BaseChainParser) ParseDirectiveEnabled() bool {
+	_, _, ok := bcp.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	if !ok {
+		return false
+	}
+	_, _, ok = bcp.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	return ok
+}
+
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
@@ -396,6 +414,9 @@ func (apip *BaseChainParser) isValidInternalPath(path string) bool {
 	if apip == nil || len(apip.internalPaths) == 0 {
 		return false
 	}
+
+	apip.rwLock.RLock()
+	defer apip.rwLock.RUnlock()
 	_, ok := apip.internalPaths[path]
 	return ok
 }

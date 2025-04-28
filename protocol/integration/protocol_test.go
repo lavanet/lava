@@ -379,12 +379,13 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 
 	blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
-		BlocksToSave:        blocksToSaveChainTracker,
-		AverageBlockTime:    averageBlockTime,
-		ServerBlockMemory:   rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-		NewLatestCallback:   nil,
-		ConsistencyCallback: nil,
-		Pmetrics:            nil,
+		BlocksToSave:          blocksToSaveChainTracker,
+		AverageBlockTime:      averageBlockTime,
+		ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+		NewLatestCallback:     nil,
+		ConsistencyCallback:   nil,
+		Pmetrics:              nil,
+		ParseDirectiveEnabled: true,
 	}
 
 	var cache *performance.Cache = nil

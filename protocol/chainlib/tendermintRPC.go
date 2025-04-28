@@ -704,7 +704,11 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			req.Header.Set(metadata.Name, metadata.Value)
+			if metadata.Value == "" {
+				req.Header.Del(metadata.Name)
+			} else {
+				req.Header.Set(metadata.Name, metadata.Value)
+			}
 		}
 	}
 

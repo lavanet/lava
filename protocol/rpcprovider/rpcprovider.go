@@ -421,13 +421,24 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// warn if not all internal paths are configured
 	configuredInternalPaths := GetAllNodeUrlsInternalPaths(rpcProviderEndpoint.NodeUrls)
 	chainInternalPaths := chainParser.GetAllInternalPaths()
-	overConfiguredInternalPaths := lavaslices.Difference(configuredInternalPaths, chainInternalPaths)
+	overConfiguredInternalPaths := lavaslices.MissingElements(configuredInternalPaths, chainInternalPaths)
 	if len(overConfiguredInternalPaths) > 0 {
 		utils.LavaFormatWarning("Some configured internal paths are not in the chain's spec", nil,
 			utils.LogAttr("chainID", chainID),
 			utils.LogAttr("apiInterface", apiInterface),
 			utils.LogAttr("internalPaths", strings.Join(overConfiguredInternalPaths, ",")),
 		)
+	}
+
+	underConfiguredInternalPaths := lavaslices.MissingElements(chainInternalPaths, configuredInternalPaths)
+	if len(underConfiguredInternalPaths) > 0 {
+		utils.LavaFormatWarning("Some internal paths from the spec are not configured for this provider", nil,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("internalPaths", strings.Join(underConfiguredInternalPaths, ",")),
+		)
+
+		addMissingInternalPaths(rpcProviderEndpoint, chainParser, chainID, apiInterface, underConfiguredInternalPaths)
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
@@ -475,12 +486,13 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
+
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	var loadManager *ProviderLoadManager
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
 		defer rpcp.chainMutexes[chainID].Unlock()
-		var loaded bool
+
 		consistencyErrorCallback := func(oldBlock, newBlock int64) {
 			utils.LavaFormatError("Consistency issue detected", nil,
 				utils.Attribute{Key: "oldBlock", Value: oldBlock},
@@ -491,13 +503,14 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		}
 		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{
-			BlocksToSave:        blocksToSaveChainTracker,
-			AverageBlockTime:    averageBlockTime,
-			ServerBlockMemory:   ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-			NewLatestCallback:   recordMetricsOnNewBlock,
-			ConsistencyCallback: consistencyErrorCallback,
-			Pmetrics:            rpcp.providerMetricsManager,
-			ChainId:             chainID,
+			BlocksToSave:          blocksToSaveChainTracker,
+			AverageBlockTime:      averageBlockTime,
+			ServerBlockMemory:     ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+			NewLatestCallback:     recordMetricsOnNewBlock,
+			ConsistencyCallback:   consistencyErrorCallback,
+			Pmetrics:              rpcp.providerMetricsManager,
+			ChainId:               chainID,
+			ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
 		}
 
 		chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
@@ -505,22 +518,24 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 		}
 
-		chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
-		if err != nil {
-			utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID))
-		}
-
-		if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
-			chainTracker.StartAndServe(ctx)
-			utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
-			// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
-			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
+		if !chainTracker.IsDummy() {
+			chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
 			if err != nil {
-				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+				utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID))
 			}
-		} else { // loaded an existing chain tracker. use the same one instead
-			chainTracker = chainTrackerLoaded
-			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+
+			if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
+				chainTracker.StartAndServe(ctx)
+				utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
+				// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
+				err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
+				if err != nil {
+					return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+				}
+			} else { // loaded an existing chain tracker. use the same one instead
+				chainTracker = chainTrackerLoaded
+				utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+			}
 		}
 
 		// create provider load manager per chain ID
@@ -537,9 +552,11 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 	// Add the chain fetcher to the spec validator
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
-	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
-	if err != nil {
-		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+	if chainParser.ParseDirectiveEnabled() {
+		err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+		if err != nil {
+			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+		}
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
@@ -885,4 +902,56 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
+}
+
+func addMissingInternalPaths(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser chainlib.ChainParser, chainID, apiInterface string, underConfiguredInternalPaths []string) {
+	// Find root URLs (those with empty internal paths)
+	var httpRootUrl, wssRootUrl *common.NodeUrl
+	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
+		if nodeUrl.InternalPath == "" {
+			if strings.HasPrefix(strings.ToLower(nodeUrl.Url), "wss://") || strings.HasPrefix(strings.ToLower(nodeUrl.Url), "ws://") {
+				wssRootUrl = &nodeUrl
+			} else {
+				httpRootUrl = &nodeUrl
+			}
+		}
+	}
+
+	// Add missing paths using the appropriate root URL as template
+	for _, missingPath := range underConfiguredInternalPaths {
+		isWS := false
+		for _, connectionType := range []string{"POST", ""} {
+			// check subscription exists, we only care for subscription API's because otherwise we use http anyway.
+			collectionKey := chainlib.CollectionKey{
+				InternalPath:   missingPath,
+				Addon:          "",
+				ConnectionType: connectionType,
+			}
+
+			if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+				isWS = true
+			}
+		}
+
+		if isWS {
+			if wssRootUrl != nil {
+				newUrl := *wssRootUrl // Create copy of root URL
+				newUrl.InternalPath = missingPath
+				newUrl.Url += missingPath
+				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
+			}
+		} else {
+			if httpRootUrl != nil {
+				newUrl := *httpRootUrl // Create copy of root URL
+				newUrl.InternalPath = missingPath
+				newUrl.Url += missingPath
+				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
+			}
+		}
+	}
+
+	utils.LavaFormatDebug("Added missing internal paths to NodeUrls",
+		utils.LogAttr("chainID", chainID),
+		utils.LogAttr("apiInterface", apiInterface),
+		utils.LogAttr("addedPaths", strings.Join(underConfiguredInternalPaths, ",")))
 }
