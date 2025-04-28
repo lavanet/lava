@@ -10,6 +10,7 @@ const (
 	APIInterfaceTendermintRPC = "tendermintrpc"
 	APIInterfaceRest          = "rest"
 	APIInterfaceGrpc          = "grpc"
+	ParserArgLatest           = "latest"
 )
 
 const (

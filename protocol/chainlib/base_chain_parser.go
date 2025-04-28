@@ -353,7 +353,7 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 			},
 			BlockParsing: spectypes.BlockParser{
 				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
-				ParserArg:  []string{"latest"},
+				ParserArg:  []string{spectypes.ParserArgLatest},
 			},
 			TimeoutMs: 0,
 			Parsers:   []spectypes.GenericParser{},
