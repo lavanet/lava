@@ -295,7 +295,7 @@
                         "headers": [
                             {
                                 "name": "content-type",
-                                "kind": "pass_nullify"
+                                "kind": "pass_ignore"
                             }
                         ]
                     }
