@@ -21,8 +21,7 @@ import (
 )
 
 var (
-	AllowMissingApisByDefault = true
-	DefaultApiName            = "Default-"
+	DefaultApiName = "Default-"
 )
 
 type PolicyInf interface {
@@ -383,12 +382,9 @@ func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, erro
 	// Fetch server api by name
 	apiCont, ok := apip.serverApis[apiKey]
 
-	// Return an error if spec does not exist
+	// Return an api container does not exist, return a default one
 	if !ok {
-		if AllowMissingApisByDefault {
-			return apip.defaultApiContainer(apiKey)
-		}
-		return nil, common.APINotSupportedError
+		return apip.defaultApiContainer(apiKey)
 	}
 
 	// Return an error if api is disabled
