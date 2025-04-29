@@ -1,0 +1,172 @@
+swagger: '2.0'
+info:
+  title: Lava Network Public API
+  description: API for interacting with the Lava Network, including health checks, providers, and blockchain data.
+  version: 1.0.0
+host: jsinfo.mainnet.lavanet.xyz
+basePath: /
+schemes:
+  - https
+paths:
+  /health:
+    get:
+      summary: Basic health check
+      description: Returns the health status of the API.
+      responses:
+        200:
+          description: Health check response
+          schema:
+            type: object
+            properties:
+              health:
+                type: string
+                example: "ok"
+
+  /latest:
+    get:
+      summary: Latest block height and datetime
+      description: Used for monitoring blockchain sync status.
+      responses:
+        200:
+          description: Latest block details
+          schema:
+            type: object
+            properties:
+              height:
+                type: integer
+                example: 2200221
+              datetime:
+                type: integer
+                example: 1710371763
+
+  /islatest:
+    get:
+      summary: Check if block data is up-to-date
+      description: Returns block height, datetime, and freshness status.
+      responses:
+        200:
+          description: Block data freshness status
+          schema:
+            type: object
+            properties:
+              height:
+                type: integer
+                example: 2200221
+              datetime:
+                type: integer
+                example: 1710371763
+              status:
+                type: string
+                example: "fresh"
+
+  /listProviders:
+    get:
+      summary: List all Lava Network providers
+      description: Returns comprehensive details about all providers, including staking and commission information.
+      responses:
+        200:
+          description: List of providers
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                address:
+                  type: string
+                  example: "lava@valoper1qtjgjmc7w9tfem4dn8epzehfp4axk927gphyze"
+                moniker:
+                  type: string
+                  example: "P-ops Team"
+                commission:
+                  type: object
+                  properties:
+                    rate:
+                      type: string
+                      example: "0.1"
+                    max_rate:
+                      type: string
+                      example: "0.2"
+                    max_change_rate:
+                      type: string
+                      example: "0.1"
+
+  /providers:
+    get:
+      summary: List all providers
+      description: Returns addresses of all Lava Network providers.
+      responses:
+        200:
+          description: List of provider addresses
+          schema:
+            type: array
+            items:
+              type: string
+              example: "lava@valoper1qtjgjmc7w9tfem4dn8epzehfp4axk927gphyze"
+
+  /supply/circulating:
+    get:
+      summary: Get circulating supply of LAVA tokens
+      description: Returns the current circulating supply of LAVA tokens.
+      responses:
+        200:
+          description: Circulating supply of LAVA
+          schema:
+            type: string
+            example: "1000000000"
+
+  /supply/total:
+    get:
+      summary: Get total supply of LAVA tokens
+      description: Returns the total supply of LAVA tokens.
+      responses:
+        200:
+          description: Total supply of LAVA
+          schema:
+            type: string
+            example: "2000000000"
+
+  /stakers_and_restakers:
+    get:
+      summary: Stakers and restakers statistics
+      description: Returns comprehensive statistics about stakers and restakers across the Lava Network.
+      responses:
+        200:
+          description: Staker and restaker statistics
+          schema:
+            type: object
+            properties:
+              lastUpdated:
+                type: string
+                example: "2025-03-05T15:19:44.512Z"
+              lavaUsdRate:
+                type: number
+                format: float
+                example: 0.075727
+              activeProviders:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                      example: "lava@1pew9nxdepfnap3mkkcmvkemls4c5uets9rqq2h"
+                  data:
+                    type: object
+                    properties:
+                      allTime:
+                        type: object
+                        properties:
+                          stakers:
+                            type: object
+                            properties:
+                              count:
+                                type: integer
+                                example: 5897
+                              totalUSD:
+                                type: number
+                                format: float
+                                example: 51682345.263304494
+                              totalLava:
+                                type: number
+                                format: float
+                                example: 682482407.375236
