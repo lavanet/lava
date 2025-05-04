@@ -253,7 +253,8 @@ func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
 	return res
 }
 
-func Difference[T comparable](slice1, slice2 []T) []T {
+// returns the missing elements from slice2 that are not in slice1
+func MissingElements[T comparable](slice1, slice2 []T) []T {
 	// This function returns the difference between two slices
 	// (i.e., the elements that are in slice1 but not in slice2)
 

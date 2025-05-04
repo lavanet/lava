@@ -559,7 +559,7 @@ func TestDifference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Difference(tt.slice1, tt.slice2)
+			result := MissingElements(tt.slice1, tt.slice2)
 			require.True(t, reflect.DeepEqual(result, tt.expected))
 		})
 	}

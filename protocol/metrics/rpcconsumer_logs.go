@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"google.golang.org/grpc/metadata"
 )
@@ -110,6 +110,7 @@ func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiIn
 func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chainId, apiInterface string) {
 	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
 	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
+	rpccl.consumerMetricsManager.SetRequestPerProvider(chainId, providerAddress)
 }
 
 func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
@@ -132,6 +133,10 @@ func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInter
 
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
+}
+
+func (rpccl *RPCConsumerLogs) SetProtocolError(chainId string, providerAddress string) {
+	rpccl.consumerMetricsManager.SetProtocolError(chainId, providerAddress)
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
