@@ -231,7 +231,10 @@ func (bpm DirectiveHeaders) GetBlockedProviders() []string {
 	}
 	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
 	if ok {
-		return strings.Split(blockedProviders, ",")
+		blockProviders := strings.Split(blockedProviders, ",")
+		if len(blockProviders) <= 2 {
+			return blockProviders
+		}
 	}
 	return nil
 }

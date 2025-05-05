@@ -284,6 +284,22 @@ func (c *Client) SetHeader(key, value string) {
 	conn.mu.Unlock()
 }
 
+// SetHeader deletes a HTTP header to the client's requests.
+// This method only works for clients using HTTP, it doesn't have
+// any effect for clients using another transport.
+func (c *Client) DelHeader(key string) {
+	if !c.isHTTP {
+		return
+	}
+	conn, ok := c.writeConn.(*httpConn)
+	if !ok {
+		panic("DelHeader - c.writeConn.(*httpConn) - type assertion failed")
+	}
+	conn.mu.Lock()
+	conn.headers.Del(key)
+	conn.mu.Unlock()
+}
+
 // CallContext performs a JSON-RPC call with the given arguments. If the context is
 // canceled before the call has successfully returned, CallContext returns immediately.
 //

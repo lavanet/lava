@@ -55,8 +55,8 @@ func (ep *ExtensionParser) GetConfiguredExtensions() map[ExtensionKey]*spectypes
 	return ep.configuredExtensions
 }
 
-func (ep *ExtensionParser) AllowedExtension(extension string) bool {
-	if extension == "" {
+func (ep *ExtensionParser) AllowedExtension(extension string, skip bool) bool {
+	if extension == "" || skip {
 		return true
 	}
 	_, ok := ep.allowedExtensions[extension]

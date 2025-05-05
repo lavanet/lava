@@ -21,7 +21,9 @@ import (
 )
 
 var (
+	SkipPolicyVerification    = false
 	AllowMissingApisByDefault = true
+	SkipWebsocketVerification = false
 	DefaultApiName            = "Default-"
 )
 
@@ -92,6 +94,15 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
+
+	// iterate over the headers defined in spec file to handle any nullified headers
+	for _, bcpHeader := range bcp.headers {
+		// handle nullified headers
+		if bcpHeader.Kind == spectypes.Header_pass_nullify {
+			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
+		}
+	}
+
 	return retMetadata, overwriteRequestedBlock, ignoredMetadata
 }
 
@@ -101,12 +112,15 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension)
+	return bcp.extensionParser.AllowedExtension(extension, SkipPolicyVerification)
 }
 
 // use while bcp locked.
 func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
 	var addon string
+	if SkipPolicyVerification {
+		return nil
+	}
 	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
 		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
 			return utils.LavaFormatError("consumer policy does not allow addon", nil,
