@@ -63,6 +63,8 @@ type ConsumerMetricsManager struct {
 	endpointsHealthChecksBreakdownMetric        *prometheus.GaugeVec
 	lock                                        sync.Mutex
 	protocolVersionMetric                       *prometheus.GaugeVec
+	requestsPerProviderMetric                   *prometheus.CounterVec
+	protocolErrorsPerProviderMetric             *prometheus.CounterVec
 	providerRelays                              map[string]uint64
 	addMethodsApiGauge                          bool
 	averageLatencyPerChain                      map[string]*LatencyTracker // key == chain Id + api interface
@@ -249,6 +251,16 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 
+	requestsPerProviderMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_requests_per_provider",
+		Help: "The number of requests per provider and spec",
+	}, []string{"spec", "provider_address"})
+
+	protocolErrorsPerProviderMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_protocol_errors_per_provider",
+		Help: "The number of protocol errors per provider and spec",
+	}, []string{"spec", "provider_address"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -276,6 +288,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalWsSubscriptionDisconnectMetric)
 	prometheus.MustRegister(totalLoLSuccessMetric)
 	prometheus.MustRegister(totalLoLErrorsMetric)
+	prometheus.MustRegister(requestsPerProviderMetric)
+	prometheus.MustRegister(protocolErrorsPerProviderMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -313,6 +327,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
 		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
 		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
+		requestsPerProviderMetric:                   requestsPerProviderMetric,
+		protocolErrorsPerProviderMetric:             protocolErrorsPerProviderMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -586,6 +602,20 @@ func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string)
 	}
 	combined := major*1000000 + minor*1000 + patch
 	protocolVersionMetric.WithLabelValues("version").Set(float64(combined))
+}
+
+func (pme *ConsumerMetricsManager) SetProtocolError(chainId string, providerAddress string) {
+	if pme == nil {
+		return
+	}
+	pme.protocolErrorsPerProviderMetric.WithLabelValues(chainId, providerAddress).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetRequestPerProvider(chainId string, providerAddress string) {
+	if pme == nil {
+		return
+	}
+	pme.requestsPerProviderMetric.WithLabelValues(chainId, providerAddress).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetWsSubscriptionRequestMetric(chainId string, apiInterface string) {
