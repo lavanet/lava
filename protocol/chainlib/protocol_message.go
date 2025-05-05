@@ -24,7 +24,7 @@ type BaseProtocolMessage struct {
 
 func (bpm *BaseProtocolMessage) IsDefaultApi() bool {
 	api := bpm.GetApi()
-	return AllowMissingApisByDefault && strings.HasPrefix(api.Name, DefaultApiName) && api.BlockParsing.ParserFunc == spectypes.PARSER_FUNC_EMPTY
+	return strings.HasPrefix(api.Name, DefaultApiName) && api.BlockParsing.ParserFunc == spectypes.PARSER_FUNC_DEFAULT
 }
 
 func (bpm *BaseProtocolMessage) GetUserData() common.UserData {
