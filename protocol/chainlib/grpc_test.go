@@ -32,16 +32,12 @@ func TestGRPCChainParser_Spec(t *testing.T) {
 	// set the spec
 	spec := spectypes.Spec{
 		Enabled:                       true,
-		ReliabilityThreshold:          10,
 		AllowedBlockLagForQosSync:     11,
 		AverageBlockTime:              12000,
 		BlockDistanceForFinalizedData: 13,
 		BlocksInFinalizationProof:     14,
 	}
 	apip.SetSpec(spec)
-
-	// fetch data reliability params
-	enabled, dataReliabilityThreshold := apip.DataReliabilityParams()
 
 	// fetch chain block stats
 	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, blocksInFinalizationProof := apip.ChainBlockStats()
@@ -50,8 +46,6 @@ func TestGRPCChainParser_Spec(t *testing.T) {
 	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// check that the spec was set correctly
-	assert.Equal(t, apip.spec.DataReliabilityEnabled, enabled)
-	assert.Equal(t, apip.spec.GetReliabilityThreshold(), dataReliabilityThreshold)
 	assert.Equal(t, apip.spec.AllowedBlockLagForQosSync, allowedBlockLagForQosSync)
 	assert.Equal(t, apip.spec.BlockDistanceForFinalizedData, blockDistanceForFinalizedData)
 	assert.Equal(t, apip.spec.BlocksInFinalizationProof, blocksInFinalizationProof)
@@ -68,7 +62,6 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 	}()
 
 	apip.SetSpec(spectypes.Spec{})
-	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
 	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})

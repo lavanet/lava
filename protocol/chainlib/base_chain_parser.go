@@ -23,6 +23,8 @@ import (
 var (
 	AllowMissingApisByDefault = true
 	DefaultApiName            = "Default-"
+	DataReliabilityChance     = 0.0625 // default data reliability chance is 1/16, this means that every 16th request will be a data reliability request
+	DataReliabilityEnabled    = true   // default data reliability is enabled
 )
 
 type PolicyInf interface {

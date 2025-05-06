@@ -785,11 +785,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	finalized := false
 	updatedChainMessage := false
 
-	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
 	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
-	if dataReliabilityEnabled {
+	if chainlib.DataReliabilityEnabled {
 		var err error
 		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
@@ -825,7 +824,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	if dataReliabilityEnabled {
+	if chainlib.DataReliabilityEnabled {
 		err := rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return nil, err
@@ -833,7 +832,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	}
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
-	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, chainlib.DataReliabilityEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -963,8 +962,7 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 		Data: dataToSend,
 	}
 
-	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
-	if dataReliabilityEnabled {
+	if chainlib.DataReliabilityEnabled {
 		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 		relayTimeout := chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
@@ -980,7 +978,7 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply, chainlib.DataReliabilityEnabled)
 	if err != nil {
 		return nil, err
 	}

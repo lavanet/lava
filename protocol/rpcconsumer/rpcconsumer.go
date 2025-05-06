@@ -565,6 +565,15 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 			utils.SetGlobalLoggingLevel(logLevel)
 
+			// check that the data relibility chance is not zero
+			dataReliabilityChance, err := cmd.Flags().GetFloat64(common.DataReliabilityChanceFlag)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read data reliability chance flag", err)
+			}
+			if dataReliabilityChance <= 0 {
+				utils.LavaFormatFatal("data reliability chance must be greater than zero", nil)
+			}
+
 			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read test_mode flag", err)
@@ -786,6 +795,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Bool(LavaOverLavaBackupFlagName, true, "enable lava over lava backup to regular rpc calls")
 	// allow missing apis by default
 	cmdRPCConsumer.Flags().BoolVar(&chainlib.AllowMissingApisByDefault, common.AllowMissingApisByDefaultFlagName, true, "allows missing apis to be proxied to the provider by default, set flase to block missing apis in the spec")
+	// Data reliability flags
+	cmdRPCConsumer.Flags().Float64Var(&chainlib.DataReliabilityChance, common.DataReliabilityChanceFlag, chainlib.DataReliabilityChance, "set the data reliability chance, default is 0.0625 (=1/16)")
+	cmdRPCConsumer.Flags().BoolVar(&chainlib.DataReliabilityEnabled, common.DataReliabilityEnabledFlag, true, "enable/disable data reliability, default is true")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

@@ -305,9 +305,8 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
-		enabled, _ := rpccs.chainParser.DataReliabilityParams()
 		// if DR is disabled it's okay to not have GET_BLOCKNUM
-		if !enabled {
+		if !chainlib.DataReliabilityEnabled {
 			return true, nil
 		}
 		return false, err
@@ -397,9 +396,8 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.getSkipDataReliability() {
+	if chainlib.DataReliabilityEnabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -407,7 +405,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		if found {
 			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
 		}
-		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
+		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, relayProcessor) // runs asynchronously
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
@@ -1137,8 +1135,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
+	if chainlib.DataReliabilityEnabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
 		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
@@ -1275,7 +1272,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor) error {
 	if statetracker.DisableDR {
 		return nil
 	}
@@ -1292,7 +1289,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 
-	if rand.Uint32() > dataReliabilityThreshold {
+	if rand.Float64() > chainlib.DataReliabilityChance {
 		// decided not to do data reliability
 		return nil
 	}
