@@ -8,8 +8,6 @@
                 "name": "hyperliquid mainnet",
                 "enabled": true,
                 "imports": [],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,
@@ -1092,8 +1090,6 @@
                 "imports": [
                     "HYPERLIQUID"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,

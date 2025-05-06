@@ -7,8 +7,6 @@
                 "index": "AVAX",
                 "name": "avalanche mainnet",
                 "enabled": true,
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
@@ -848,8 +846,6 @@
                 "imports": [
                     "AVAX"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
