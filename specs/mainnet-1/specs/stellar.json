@@ -295,7 +295,8 @@
                         "headers": [
                             {
                                 "name": "content-type",
-                                "kind": "pass_nullify"
+                                "kind": "pass_override",
+                                "value": "application/x-www-form-urlencoded"
                             }
                         ]
                     }
