@@ -7,7 +7,6 @@
                 "index": "STRK",
                 "name": "starknet mainnet",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
@@ -1006,11 +1005,10 @@
                 "index": "STRKS",
                 "name": "starknet sepolia testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "STRK"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 32000,

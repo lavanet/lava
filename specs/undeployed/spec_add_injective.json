@@ -7,11 +7,10 @@
                 "index": "INJECTIVE",
                 "name": "injective mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 600,
@@ -4438,11 +4437,10 @@
                 "index": "INJECTIVET",
                 "name": "injective testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "INJECTIVE"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 600,

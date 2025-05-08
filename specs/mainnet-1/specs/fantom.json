@@ -7,11 +7,10 @@
                 "index": "FTM250",
                 "name": "fantom mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 1500,
@@ -915,11 +914,10 @@
                 "index": "FTM4002",
                 "name": "fantom testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "FTM250"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 1500,

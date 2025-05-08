@@ -7,11 +7,10 @@
                 "index": "FUSE",
                 "name": "fuse mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 34,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
@@ -56,11 +55,10 @@
                 "index": "SPARK",
                 "name": "fuse testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "FUSE"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 34,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,

@@ -7,11 +7,10 @@
                 "index": "CELESTIA",
                 "name": "celestia mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 12000,
@@ -1469,11 +1468,10 @@
                 "index": "CELESTIATM",
                 "name": "celestia mocha testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5100,
@@ -1601,11 +1599,10 @@
                 "index": "CELESTIATA",
                 "name": "celestia arabica testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,

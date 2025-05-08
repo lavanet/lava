@@ -7,11 +7,10 @@
                 "index": "DOGE",
                 "name": "dogecoin mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BTC"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 90000,
@@ -60,11 +59,10 @@
                 "index": "DOGET",
                 "name": "dogecoin testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "DOGE"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,

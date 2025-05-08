@@ -8,12 +8,11 @@
                 "identity": "327af7338affeb1f0d0e2ec3b95d802571fbff4d",
                 "name": "lava testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDK"
                 ],
                 "providers_types": 1,
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 15000,

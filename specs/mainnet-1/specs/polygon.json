@@ -7,11 +7,10 @@
                 "index": "POLYGON",
                 "name": "polygon mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
@@ -341,11 +340,10 @@
                 "index": "POLYGONA",
                 "name": "polygon amoy testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "POLYGON"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,

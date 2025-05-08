@@ -7,12 +7,11 @@
                 "index": "AXELAR",
                 "name": "axelar mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDK",
                     "COSMOSWASM"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5800,
@@ -2550,11 +2549,10 @@
                 "index": "AXELART",
                 "name": "axelar testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "AXELAR"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5600,

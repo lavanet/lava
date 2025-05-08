@@ -7,11 +7,10 @@
                 "index": "OSMOSIS",
                 "name": "osmosis mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
@@ -2692,11 +2691,10 @@
                 "index": "OSMOSIST",
                 "name": "osmosis testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "OSMOSIS"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
