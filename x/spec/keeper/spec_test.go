@@ -1161,7 +1161,6 @@ func TestSpecParsing(t *testing.T) {
 						"index": "test",
 						"name": "test",
 						"enabled": true,
-						"reliability_threshold": 16777215,
 						"data_reliability_enabled": false,
 						"block_distance_for_finalized_data": 0,
 						"blocks_in_finalization_proof": 1,

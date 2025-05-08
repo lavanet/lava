@@ -7,6 +7,7 @@
                 "index": "BCH",
                 "name": "bitcoin cash mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BTC"
                 ],
@@ -58,6 +59,7 @@
                 "index": "BCHT",
                 "name": "bitcoin cash testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BCH"
                 ],

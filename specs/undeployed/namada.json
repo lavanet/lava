@@ -8,10 +8,10 @@
         "index": "NAMTSE",
         "name": "namada se testnet",
         "enabled": true,
+        "data_reliability_enabled": false,
         "imports": [
           "TENDERMINT"
         ],
-        "data_reliability_enabled": false,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
         "average_block_time": 10000,

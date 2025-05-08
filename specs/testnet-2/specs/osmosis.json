@@ -7,6 +7,7 @@
                 "index": "OSMOSIS",
                 "name": "osmosis mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
@@ -2690,6 +2691,7 @@
                 "index": "OSMOSIST",
                 "name": "osmosis testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "OSMOSIS"
                 ],

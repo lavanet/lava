@@ -306,7 +306,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
 		// if DR is disabled it's okay to not have GET_BLOCKNUM
-		if !chainlib.DataReliabilityEnabled {
+		if !rpccs.chainParser.IsDataReliabilitySupported() {
 			return true, nil
 		}
 		return false, err
@@ -397,7 +397,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 
 	// Handle Data Reliability
 	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if chainlib.DataReliabilityEnabled && !relayProcessor.getSkipDataReliability() {
+	if rpccs.chainParser.IsDataReliabilitySupported() && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -1135,7 +1135,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
-	if chainlib.DataReliabilityEnabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
+	if rpccs.chainParser.IsDataReliabilitySupported() && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
 		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))

@@ -449,7 +449,7 @@ func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, repl
 	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
 	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
-	if DataReliabilityEnabled {
+	if pnsm.chainParser.IsDataReliabilitySupported() {
 		var err error
 		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
@@ -464,7 +464,7 @@ func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, repl
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, DataReliabilityEnabled)
+	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, pnsm.chainParser.IsDataReliabilitySupported())
 	if err != nil {
 		return err
 	}

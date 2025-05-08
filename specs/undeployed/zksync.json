@@ -7,7 +7,10 @@
         "index": "ZKSYNC",
         "name": "zksync era mainnet",
         "enabled": true,
-        "imports": ["ETH1"],
+        "data_reliability_enabled": true,
+        "imports": [
+          "ETH1"
+        ],
         "block_distance_for_finalized_data": 1,
         "blocks_in_finalization_proof": 3,
         "average_block_time": 1200,
@@ -48,7 +51,10 @@
         "index": "ZKSYNCSP",
         "name": "zksync era sepolia testnet",
         "enabled": true,
-        "imports": ["ZKSYNC"],
+        "data_reliability_enabled": true,
+        "imports": [
+          "ZKSYNC"
+        ],
         "block_distance_for_finalized_data": 1,
         "blocks_in_finalization_proof": 2,
         "average_block_time": 1200,

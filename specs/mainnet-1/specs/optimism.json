@@ -7,6 +7,7 @@
                 "index": "OPTM",
                 "name": "optimism mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -141,6 +142,7 @@
                 "index": "OPTMS",
                 "name": "optimism sepolia testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "OPTM"
                 ],
