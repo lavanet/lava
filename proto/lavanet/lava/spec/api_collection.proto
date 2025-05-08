@@ -61,10 +61,13 @@ message Header {
     pass_reply = 1;
     pass_both = 2;
     pass_ignore = 3; // allows it to pass around but is not signed
+    pass_nullify = 4; // removes a header from being sent to the node (for example, content-type)
+    pass_override = 5; // overrides a header value if header is present, adds the header if it’s missing.
   }
 
   HeaderType kind = 2;
   FUNCTION_TAG function_tag = 3;
+  string value = 4;
 }
 
 message Api {
