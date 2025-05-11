@@ -494,14 +494,14 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	parentSpec := types.Spec{
-		Index:                         "parent",
-		Name:                          "parent spec",
-		Enabled:                       true,
-		BlockDistanceForFinalizedData: 64,
-		BlocksInFinalizationProof:     3,
-		AverageBlockTime:              13000,
-		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              common.NewCoin(ts.TokenDenom(), 5000),
+		Index:                     "parent",
+		Name:                      "parent spec",
+		Enabled:                   true,
+		FinalizationDistance:      64,
+		BlocksInFinalizationProof: 3,
+		AverageBlockTime:          13000,
+		AllowedBlockLagForQosSync: 2,
+		MinStakeProvider:          common.NewCoin(ts.TokenDenom(), 5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -512,15 +512,15 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	childSpec := types.Spec{
-		Index:                         "child",
-		Name:                          "child spec",
-		Enabled:                       true,
-		BlockDistanceForFinalizedData: 64,
-		BlocksInFinalizationProof:     3,
-		AverageBlockTime:              13000,
-		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              common.NewCoin(ts.TokenDenom(), 5000),
-		Imports:                       []string{"parent"},
+		Index:                     "child",
+		Name:                      "child spec",
+		Enabled:                   true,
+		FinalizationDistance:      64,
+		BlocksInFinalizationProof: 3,
+		AverageBlockTime:          13000,
+		AllowedBlockLagForQosSync: 2,
+		MinStakeProvider:          common.NewCoin(ts.TokenDenom(), 5000),
+		Imports:                   []string{"parent"},
 	}
 
 	// add a parent spec and a child spec
@@ -1120,14 +1120,14 @@ func TestParsers(t *testing.T) {
 				apisCollections: []*types.ApiCollection{apiCollection},
 			}
 			sp := types.Spec{
-				Index:                         tt.name,
-				Name:                          tt.name,
-				Enabled:                       true,
-				BlockDistanceForFinalizedData: 0,
-				BlocksInFinalizationProof:     1,
-				AverageBlockTime:              10,
-				AllowedBlockLagForQosSync:     1,
-				BlockLastUpdated:              0,
+				Index:                     tt.name,
+				Name:                      tt.name,
+				Enabled:                   true,
+				FinalizationDistance:      0,
+				BlocksInFinalizationProof: 1,
+				AverageBlockTime:          10,
+				AllowedBlockLagForQosSync: 1,
+				BlockLastUpdated:          0,
 				MinStakeProvider: sdk.Coin{
 					Denom:  "ulava",
 					Amount: math.NewInt(5000000),

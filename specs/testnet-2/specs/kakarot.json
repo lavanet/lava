@@ -9,7 +9,7 @@
           "enabled": true,
           "data_reliability_supported": true,
           "imports": ["ETH1"],
-          "block_distance_for_finalized_data": 1,
+          "finalization_distance": 1,
           "blocks_in_finalization_proof": 3,
           "average_block_time": 10200,
           "allowed_block_lag_for_qos_sync": 5,

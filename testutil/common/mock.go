@@ -13,10 +13,9 @@ func CreateMockSpec() spectypes.Spec {
 	spec.Name = specName
 	spec.Index = specName
 	spec.Enabled = true
-	spec.BlockDistanceForFinalizedData = 0
+	spec.FinalizationDistance = 0
 	spec.MinStakeProvider = sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000))
 	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
-	spec.BlockDistanceForFinalizedData = 0
 	spec.Shares = 1
 	return spec
 }

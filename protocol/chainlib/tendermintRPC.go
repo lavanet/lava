@@ -330,8 +330,8 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	// Convert average block time from int64 -> time.Duration
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
-	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
+	// Return allowedBlockLagForQosSync, averageBlockTime, finalizationDistance, blocksInFinalizationProof from spec
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.FinalizationDistance, apip.spec.BlocksInFinalizationProof
 }
 
 type TendermintRpcChainListener struct {

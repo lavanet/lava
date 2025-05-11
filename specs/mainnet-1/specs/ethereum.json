@@ -8,7 +8,7 @@
                 "name": "ethereum mainnet",
                 "enabled": true,
                 "data_reliability_supported": true,
-                "block_distance_for_finalized_data": 8,
+                "finalization_distance": 8,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
@@ -1739,7 +1739,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                "block_distance_for_finalized_data": 7,
+                "finalization_distance": 7,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
@@ -1782,7 +1782,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                "block_distance_for_finalized_data": 7,
+                "finalization_distance": 7,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,

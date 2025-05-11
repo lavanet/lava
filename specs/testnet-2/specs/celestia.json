@@ -11,7 +11,7 @@
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
-                "block_distance_for_finalized_data": 0,
+                "finalization_distance": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 12000,
                 "allowed_block_lag_for_qos_sync": 2,
@@ -1472,7 +1472,7 @@
                 "imports": [
                     "CELESTIA"
                 ],
-                "block_distance_for_finalized_data": 0,
+                "finalization_distance": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5100,
                 "allowed_block_lag_for_qos_sync": 2,
@@ -1603,7 +1603,7 @@
                 "imports": [
                     "CELESTIA"
                 ],
-                "block_distance_for_finalized_data": 0,
+                "finalization_distance": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
                 "allowed_block_lag_for_qos_sync": 2,

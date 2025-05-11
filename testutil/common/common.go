@@ -193,7 +193,7 @@ func createAndSignReply(provider sigs.Account, request *pairingtypes.RelayReques
 	reply := &pairingtypes.RelayReply{
 		Data:        []byte("DUMMYREPLY"),
 		Sig:         request.RelaySession.Sig,
-		LatestBlock: request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
+		LatestBlock: request.RelayData.RequestBlock + int64(spec.FinalizationDistance),
 	}
 
 	if addDiffData {

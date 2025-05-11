@@ -11,7 +11,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                "block_distance_for_finalized_data": 0,
+                "finalization_distance": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 3000,
                 "allowed_block_lag_for_qos_sync": 4,
@@ -55,7 +55,7 @@
                 "imports": [
                     "BSC"
                 ],
-                "block_distance_for_finalized_data": 0,
+                "finalization_distance": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 3000,
                 "allowed_block_lag_for_qos_sync": 4,

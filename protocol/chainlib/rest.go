@@ -232,7 +232,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.FinalizationDistance, apip.spec.BlocksInFinalizationProof
 }
 
 type RestChainListener struct {
