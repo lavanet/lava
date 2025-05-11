@@ -357,7 +357,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	}
 	staticProvidersActive := len(relevantStaticProviderList) > 0
 
-	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	_, averageBlockTime, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var consumerConsistency *ConsumerConsistency
 	var finalizationConsensus *finalizationconsensus.FinalizationConsensus

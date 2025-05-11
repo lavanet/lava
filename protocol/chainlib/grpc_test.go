@@ -35,12 +35,11 @@ func TestGRPCChainParser_Spec(t *testing.T) {
 		AllowedBlockLagForQosSync: 11,
 		AverageBlockTime:          12000,
 		FinalizationDistance:      13,
-		BlocksInFinalizationProof: 14,
 	}
 	apip.SetSpec(spec)
 
 	// fetch chain block stats
-	allowedBlockLagForQosSync, averageBlockTime, finalizationDistance, blocksInFinalizationProof := apip.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime, finalizationDistance := apip.ChainBlockStats()
 
 	// convert block time
 	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
@@ -48,7 +47,6 @@ func TestGRPCChainParser_Spec(t *testing.T) {
 	// check that the spec was set correctly
 	assert.Equal(t, apip.spec.AllowedBlockLagForQosSync, allowedBlockLagForQosSync)
 	assert.Equal(t, apip.spec.FinalizationDistance, finalizationDistance)
-	assert.Equal(t, apip.spec.BlocksInFinalizationProof, blocksInFinalizationProof)
 	assert.Equal(t, AverageBlockTime, averageBlockTime)
 }
 

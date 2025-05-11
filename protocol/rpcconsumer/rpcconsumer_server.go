@@ -943,7 +943,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
-						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+						_, averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 							RequestHash:           hashKey,
 							ChainId:               chainId,
@@ -975,6 +975,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
+	_, averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 	relayRequest := relayResult.Request
 	if rpccs.debugRelays {
 		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
@@ -1115,7 +1116,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, finalizationDistance, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
+	_, _, finalizationDistance := rpccs.chainParser.ChainBlockStats()
 	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(finalizationDistance))
 	if !rpccs.chainParser.ParseDirectiveEnabled() {
 		isFinalized = false
@@ -1138,7 +1139,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	if rpccs.chainParser.IsDataReliabilitySupported() && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(finalizationDistance), int64(blocksInFinalizationProof))
+		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(finalizationDistance), averageBlockTime)
 		if err != nil {
 			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
 				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
@@ -1377,7 +1378,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 }
 
 func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
-	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+	_, averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))
 	return processingTimeout, relayTimeout

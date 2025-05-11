@@ -106,69 +106,70 @@ func TestConsensusHashesInsertion(t *testing.T) {
 		require.NotNil(t, chainParser)
 		epoch := uint64(200)
 
-		_, _, finalizationDistance, blocksInFinalizationProof := chainParser.ChainBlockStats()
-		require.Greater(t, blocksInFinalizationProof, uint32(0))
+		_, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+		finalizedBlocksForDataReliability := spectypes.FinalizedBlocksForDataReliability(averageBlockTime)
+		require.Greater(t, finalizedBlocksForDataReliability, uint32(0))
 
-		shouldSucceedOnOneBeforeOrAfter := blocksInFinalizationProof <= 1
+		shouldSucceedOnOneBeforeOrAfter := finalizedBlocksForDataReliability <= 1
 
 		playbook := []testPlays{
 			{
 				name:                 "happy-flow",
-				consensusHashesCount: int(blocksInFinalizationProof + 2),
-				consensusBlocksCount: int(blocksInFinalizationProof + 2),
+				consensusHashesCount: int(finalizedBlocksForDataReliability + 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability + 2),
 				finalizationInsertions: append(append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 101, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance)...),
-					finalizationInsertionForProviders(chainID, epoch, 102, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 101, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 102, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "happy-flow-with-gap",
-				consensusHashesCount: int(blocksInFinalizationProof * 2),
-				consensusBlocksCount: int(blocksInFinalizationProof * 2),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability * 2),
 				finalizationInsertions: append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 100+uint64(blocksInFinalizationProof), 0, 3, true, "", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 100+uint64(finalizedBlocksForDataReliability), 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "mismatch-with-self",
-				consensusHashesCount: int(blocksInFinalizationProof * 2),
-				consensusBlocksCount: int(blocksInFinalizationProof),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability),
 				finalizationInsertions: append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, false, "A", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, false, "A", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "mismatch-with-others",
-				consensusHashesCount: int(blocksInFinalizationProof * 2),
-				consensusBlocksCount: int(blocksInFinalizationProof),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability),
 				finalizationInsertions: append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, false, "A", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, false, "A", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "mismatch-with-others-one-after",
-				consensusHashesCount: int(blocksInFinalizationProof * 2),
-				consensusBlocksCount: int(blocksInFinalizationProof + 1),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability + 1),
 				finalizationInsertions: append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 101, 0, 1, shouldSucceedOnOneBeforeOrAfter, "A", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 101, 0, 1, shouldSucceedOnOneBeforeOrAfter, "A", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "mismatch-with-others-one-before",
-				consensusHashesCount: int(blocksInFinalizationProof * 2),
-				consensusBlocksCount: int(blocksInFinalizationProof + 1),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 2),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability + 1),
 				finalizationInsertions: append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 99, 0, 1, shouldSucceedOnOneBeforeOrAfter, "A", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 1, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 99, 0, 1, shouldSucceedOnOneBeforeOrAfter, "A", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 			{
 				name:                 "mismatch-three-groups",
-				consensusHashesCount: int(blocksInFinalizationProof * 3),
-				consensusBlocksCount: int(blocksInFinalizationProof),
+				consensusHashesCount: int(finalizedBlocksForDataReliability * 3),
+				consensusBlocksCount: int(finalizedBlocksForDataReliability),
 				finalizationInsertions: append(append(
-					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 100, 1, 1, false, "A", blocksInFinalizationProof, finalizationDistance)...),
-					finalizationInsertionForProviders(chainID, epoch, 100, 2, 1, false, "B", blocksInFinalizationProof, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 0, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 100, 1, 1, false, "A", finalizedBlocksForDataReliability, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 100, 2, 1, false, "B", finalizedBlocksForDataReliability, finalizationDistance)...),
 			},
 		}
 		for _, play := range playbook {
@@ -233,19 +234,20 @@ func TestQoS(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, singleConsumerSession)
 
-				allowedBlockLagForQosSync, _, finalizationDistance, blocksInFinalizationProof := chainParser.ChainBlockStats()
-				require.Greater(t, blocksInFinalizationProof, uint32(0))
+				allowedBlockLagForQosSync, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+				finalizedBlocksForDataReliability := spectypes.FinalizedBlocksForDataReliability(averageBlockTime)
+				require.Greater(t, finalizedBlocksForDataReliability, uint32(0))
 
 				finalizationInsertions := append(append(
-					finalizationInsertionForProviders(chainID, epoch, 200, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 201, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance)...),
-					finalizationInsertionForProviders(chainID, epoch, 202, 0, 3, true, "", blocksInFinalizationProof, finalizationDistance)...)
+					finalizationInsertionForProviders(chainID, epoch, 200, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 201, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 202, 0, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...)
 
 				newEpoch := epoch + 20
 				finalizationInsertionsAfterEpoch := append(append(
-					finalizationInsertionForProviders(chainID, newEpoch, 203, 2, 3, true, "", blocksInFinalizationProof, finalizationDistance),
-					finalizationInsertionForProviders(chainID, epoch, 204, 2, 3, true, "", blocksInFinalizationProof, finalizationDistance)...),
-					finalizationInsertionForProviders(chainID, epoch, 205, 2, 3, true, "", blocksInFinalizationProof, finalizationDistance)...)
+					finalizationInsertionForProviders(chainID, newEpoch, 203, 2, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance),
+					finalizationInsertionForProviders(chainID, epoch, 204, 2, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...),
+					finalizationInsertionForProviders(chainID, epoch, 205, 2, 3, true, "", finalizedBlocksForDataReliability, finalizationDistance)...)
 
 				finalizationConsensus := NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
@@ -254,12 +256,12 @@ func TestQoS(t *testing.T) {
 					require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 				}
 
-				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
+				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(finalizedBlocksForDataReliability+2))
 				blockHashes := 0
 				for _, hashes := range finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders {
 					blockHashes += len(hashes)
 				}
-				require.Equal(t, int(blocksInFinalizationProof+2), blockHashes)
+				require.Equal(t, int(finalizedBlocksForDataReliability+2), blockHashes)
 
 				plannedExpectedBH := int64(202) // this is the most advanced in all finalizations
 				expectedBH, numOfProviders := finalizationConsensus.GetExpectedBlockHeight(chainParser)
@@ -343,11 +345,11 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, sdk.OneDec(), lastQoSReport.Latency)
 
 				finalizationInsertionsSpreadBlocks := []finalizationTestInsertion{
-					finalizationInsertionForProviders(chainID, epoch, 200, 0, 1, true, "", blocksInFinalizationProof, finalizationDistance)[0],
-					finalizationInsertionForProviders(chainID, epoch, 200, 3, 1, true, "", blocksInFinalizationProof, finalizationDistance)[0],
-					finalizationInsertionForProviders(chainID, epoch, 201, 1, 1, true, "", blocksInFinalizationProof, finalizationDistance)[0],
-					finalizationInsertionForProviders(chainID, epoch, 201, 4, 1, true, "", blocksInFinalizationProof, finalizationDistance)[0],
-					finalizationInsertionForProviders(chainID, epoch, 202, 2, 1, true, "", blocksInFinalizationProof, finalizationDistance)[0],
+					finalizationInsertionForProviders(chainID, epoch, 200, 0, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance)[0],
+					finalizationInsertionForProviders(chainID, epoch, 200, 3, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance)[0],
+					finalizationInsertionForProviders(chainID, epoch, 201, 1, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance)[0],
+					finalizationInsertionForProviders(chainID, epoch, 201, 4, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance)[0],
+					finalizationInsertionForProviders(chainID, epoch, 202, 2, 1, true, "", finalizedBlocksForDataReliability, finalizationDistance)[0],
 				}
 
 				finalizationConsensus = NewFinalizationConsensus(chainID)
@@ -358,7 +360,7 @@ func TestQoS(t *testing.T) {
 				}
 
 				plannedExpectedBH = int64(201) // this is the most advanced in all finalizations
-				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
+				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(finalizedBlocksForDataReliability+2))
 				expectedBH, numOfProviders = finalizationConsensus.GetExpectedBlockHeight(chainParser)
 				require.Equal(t, 5, numOfProviders)
 				require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH)
@@ -389,7 +391,7 @@ func BenchmarkFinalizationConsensusGetExpectedBlockHeight(b *testing.B) {
 	require.NotNil(b, chainFetcher)
 
 	finalizationConsensus := NewFinalizationConsensus("LAV1")
-	_, _, finalizationDistance, _ := chainParser.ChainBlockStats()
+	_, _, finalizationDistance := chainParser.ChainBlockStats()
 	relaySession := &pairingtypes.RelaySession{
 		SpecId:                specId,
 		ContentHash:           []byte{},
@@ -464,7 +466,7 @@ func BenchmarkFinalizationConsensusUpdateFinalizedHashes(b *testing.B) {
 
 	providerAddr := "provider1"
 
-	_, _, finalizationDistance, _ := chainParser.ChainBlockStats()
+	_, _, finalizationDistance := chainParser.ChainBlockStats()
 	relaySession := &pairingtypes.RelaySession{
 		SpecId:                specId,
 		ContentHash:           []byte{},

@@ -18,7 +18,7 @@ import (
 )
 
 type ChainBlockStatsGetter interface {
-	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance, blocksInFinalizationProof uint32)
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance uint32)
 }
 
 type (
@@ -321,7 +321,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 	fc.lock.RLock()
 	defer fc.lock.RUnlock()
 
-	allowedBlockLagForQosSync, averageBlockTime_ms, finalizationDistance, _ := chainParser.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime_ms, finalizationDistance := chainParser.ChainBlockStats()
 	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(averageBlockTime_ms)
 	median := func(dataMap map[string]int64) int64 {
 		data := make([]int64, len(dataMap))

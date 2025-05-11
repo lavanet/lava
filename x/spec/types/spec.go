@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	minCU                        = 1
-	ContributorPrecision         = 100000 // Can't be 0!
-	maxContributorsPercentageStr = "0.8"
-	maxParsersPerApi             = 100
+	minCU                                         = 1
+	ContributorPrecision                          = 100000 // Can't be 0!
+	maxContributorsPercentageStr                  = "0.8"
+	maxParsersPerApi                              = 100
+	FinalizedBlocksTimeDurationForDataReliability = 60 // 60 seconds
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
@@ -62,10 +63,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 
 	if spec.ContributorPercentage != nil && (spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64))))) {
 		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64)).String(), maxContributorsPercentageStr)
-	}
-
-	if spec.BlocksInFinalizationProof == 0 {
-		return details, fmt.Errorf("BlocksInFinalizationProof can't be zero")
 	}
 
 	if spec.AverageBlockTime <= 0 {

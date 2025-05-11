@@ -69,14 +69,13 @@ func (mr *MockChainParserMockRecorder) Active() *gomock.Call {
 }
 
 // ChainBlockStats mocks base method.
-func (m *MockChainParser) ChainBlockStats() (int64, time.Duration, uint32, uint32) {
+func (m *MockChainParser) ChainBlockStats() (int64, time.Duration, uint32) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChainBlockStats")
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(time.Duration)
 	ret2, _ := ret[2].(uint32)
-	ret3, _ := ret[3].(uint32)
-	return ret0, ret1, ret2, ret3
+	return ret0, ret1, ret2
 }
 
 // ChainBlockStats indicates an expected call of ChainBlockStats.

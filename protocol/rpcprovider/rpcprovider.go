@@ -453,7 +453,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return utils.LavaFormatError("[PANIC] panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 	}
 
-	_, averageBlockTime, finalizationDistance, blocksInFinalizationData := chainParser.ChainBlockStats()
+	_, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
 	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
@@ -501,7 +501,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				utils.Attribute{Key: "apiInterface", Value: apiInterface},
 			)
 		}
-		blocksToSaveChainTracker := uint64(finalizationDistance + blocksInFinalizationData)
+		blocksToSaveChainTracker := uint64(finalizationDistance + spectypes.FinalizedBlocksForDataReliability(averageBlockTime))
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{
 			BlocksToSave:          blocksToSaveChainTracker,
 			AverageBlockTime:      averageBlockTime,

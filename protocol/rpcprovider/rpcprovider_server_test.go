@@ -240,7 +240,7 @@ func TestHandleConsistency(t *testing.T) {
 			}
 			seenBlock := play.seenBlock
 			requestBlock := play.requestBlock
-			blockLagForQosSync, averageBlockTime, finalizationDistance, blocksInFinalizationData := chainParser.ChainBlockStats()
+			blockLagForQosSync, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
 			go func() {
 				// advance mockChainTracker
 				if len(play.chainTrackerBlocks) > 1 {
@@ -251,7 +251,7 @@ func TestHandleConsistency(t *testing.T) {
 				}
 			}()
 			ctx, cancel := context.WithTimeout(context.Background(), play.timeout)
-			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, play.timeout, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, finalizationDistance)
+			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, play.timeout, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, finalizationDistance)
 			cancel()
 			if play.err != nil {
 				require.Error(t, err, strconv.Itoa(calls))

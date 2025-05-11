@@ -19,6 +19,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -66,8 +67,8 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
 				)
 			}
-			_, averageBlockTime, finalizationDistance, blocksInFinalizationData := chainParser.ChainBlockStats()
-			blocksToSaveChainTracker := uint64(finalizationDistance + blocksInFinalizationData)
+			_, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+			blocksToSaveChainTracker := uint64(finalizationDistance + spectypes.FinalizedBlocksForDataReliability(averageBlockTime))
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
 				BlocksToSave:          blocksToSaveChainTracker,
 				AverageBlockTime:      averageBlockTime,
