@@ -9,7 +9,6 @@
                 "enabled": true,
                 "data_reliability_supported": true,
                 "finalization_distance": 3,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 1200,
                 "allowed_block_lag_for_qos_sync": 8,
                 "shares": 1,
@@ -563,7 +562,6 @@
                     "NEAR"
                 ],
                 "finalization_distance": 3,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 1200,
                 "allowed_block_lag_for_qos_sync": 8,
                 "shares": 1,

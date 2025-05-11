@@ -12,7 +12,6 @@
                     "COSMOSSDKFULL"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 12000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
@@ -1473,7 +1472,6 @@
                     "CELESTIA"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 5100,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
@@ -1604,7 +1602,6 @@
                     "CELESTIA"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,

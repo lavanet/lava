@@ -9,7 +9,6 @@
                 "enabled": true,
                 "data_reliability_supported": true,
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 5,
                 "average_block_time": 200,
                 "allowed_block_lag_for_qos_sync": 50,
                 "shares": 1,

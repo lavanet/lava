@@ -12,7 +12,6 @@
                     "ETH1"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,
@@ -345,7 +344,6 @@
                     "POLYGON"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,

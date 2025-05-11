@@ -12,7 +12,6 @@
                     "ETH1"
                 ],
                 "finalization_distance": 34,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
@@ -60,7 +59,6 @@
                     "FUSE"
                 ],
                 "finalization_distance": 34,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,

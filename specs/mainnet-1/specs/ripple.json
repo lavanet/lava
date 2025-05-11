@@ -9,7 +9,6 @@
                 "enabled": true,
                 "data_reliability_supported": true,
                 "finalization_distance": 4,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 4000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "imports": [],
@@ -259,7 +258,6 @@
                 "enabled": true,
                 "data_reliability_supported": true,
                 "finalization_distance": 4,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 4000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "imports": [

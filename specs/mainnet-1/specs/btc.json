@@ -9,7 +9,6 @@
                 "enabled": true,
                 "data_reliability_supported": true,
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 600000,
                 "allowed_block_lag_for_qos_sync": 1,
                 "shares": 1,
@@ -640,7 +639,6 @@
                     "BTC"
                 ],
                 "finalization_distance": 7,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,

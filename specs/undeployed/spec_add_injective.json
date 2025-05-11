@@ -12,7 +12,6 @@
                     "COSMOSSDKFULL"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 600,
                 "allowed_block_lag_for_qos_sync": 16,
                 "shares": 1,
@@ -4442,7 +4441,6 @@
                     "INJECTIVE"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 600,
                 "allowed_block_lag_for_qos_sync": 16,
                 "shares": 1,

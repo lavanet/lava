@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "imports": [],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,
@@ -1093,7 +1092,6 @@
                     "HYPERLIQUID"
                 ],
                 "finalization_distance": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,

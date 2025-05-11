@@ -12,7 +12,6 @@
                     "BTC"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 90000,
                 "allowed_block_lag_for_qos_sync": 1,
                 "shares": 1,
@@ -64,7 +63,6 @@
                     "DOGE"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,

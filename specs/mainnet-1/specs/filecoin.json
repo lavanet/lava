@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "imports": ["ETH1"],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 30000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
@@ -2884,7 +2883,6 @@
                     "FVM"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 30000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,

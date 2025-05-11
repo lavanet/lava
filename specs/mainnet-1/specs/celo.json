@@ -12,7 +12,6 @@
                     "ETH1"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
@@ -80,7 +79,6 @@
                     "CELO"
                 ],
                 "finalization_distance": 1,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 1000,
                 "allowed_block_lag_for_qos_sync": 10,
                 "shares": 1,
