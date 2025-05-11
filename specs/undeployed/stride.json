@@ -7,7 +7,7 @@
           "index": "STRIDE",
           "name": "stride mainnet",
           "enabled": true,
-          "data_reliability_enabled": true,
+          "data_reliability_supported": true,
           "imports": [
             "COSMOSSDK"
           ],
@@ -1763,7 +1763,7 @@
           "index": "STRIDET",
           "name": "stride testnet",
           "enabled": true,
-          "data_reliability_enabled": true,
+          "data_reliability_supported": true,
           "imports": [
             "STRIDE"
           ],

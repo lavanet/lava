@@ -312,7 +312,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 }
 
 func (apip *TendermintChainParser) IsDataReliabilitySupported() bool {
-	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
+	return apip.spec.DataReliabilitySupported && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec

@@ -7,7 +7,7 @@
                 "index": "BSC",
                 "name": "bsc mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -51,7 +51,7 @@
                 "index": "BSCT",
                 "name": "bsc testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "BSC"
                 ],

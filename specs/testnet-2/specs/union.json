@@ -7,7 +7,7 @@
                 "index": "UNIONT",
                 "name": "union testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "COSMOSSDK"
                 ],

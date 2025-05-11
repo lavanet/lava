@@ -7,7 +7,7 @@
                 "index": "EVMOS",
                 "name": "evmos mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "COSMOSSDK50",
                     "ETHERMINT",
@@ -1002,7 +1002,7 @@
                 "index": "EVMOST",
                 "name": "evmos testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "EVMOS"
                 ],

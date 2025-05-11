@@ -213,7 +213,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 }
 
 func (apip *RestChainParser) IsDataReliabilitySupported() bool {
-	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
+	return apip.spec.DataReliabilitySupported && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec

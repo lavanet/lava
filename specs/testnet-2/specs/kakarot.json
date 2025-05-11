@@ -7,7 +7,7 @@
           "index": "KAKAROTT",
           "name": "kakarot sepolia testnet",
           "enabled": true,
-          "data_reliability_enabled": true,
+          "data_reliability_supported": true,
           "imports": ["ETH1"],
           "block_distance_for_finalized_data": 1,
           "blocks_in_finalization_proof": 3,

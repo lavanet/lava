@@ -7,7 +7,7 @@
                 "index": "SQDSUBGRAPH",
                 "name": "subsquid powered subgraph",
                 "enabled": true,
-                "data_reliability_enabled": false,
+                "data_reliability_supported": false,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,

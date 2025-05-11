@@ -210,7 +210,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 }
 
 func (apip *GrpcChainParser) IsDataReliabilitySupported() bool {
-	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
+	return apip.spec.DataReliabilitySupported && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec

@@ -7,7 +7,7 @@
                 "index": "BERA",
                 "name": "berachain artio mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -67,7 +67,7 @@
                 "index": "BERAT",
                 "name": "berachain artio testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -126,7 +126,7 @@
                 "index": "BERAT2",
                 "name": "berachain bartio testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "ETH1"
                 ],

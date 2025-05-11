@@ -8,7 +8,7 @@
         "index": "NAMTSE",
         "name": "namada se testnet",
         "enabled": true,
-        "data_reliability_enabled": false,
+        "data_reliability_supported": false,
         "imports": [
           "TENDERMINT"
         ],

@@ -7,7 +7,7 @@
                 "index": "FTM250",
                 "name": "fantom mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -914,7 +914,7 @@
                 "index": "FTM4002",
                 "name": "fantom testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "FTM250"
                 ],

@@ -7,7 +7,7 @@
                 "index": "KOII",
                 "name": "koii main net",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "SOLANA"
                 ],
@@ -25,7 +25,7 @@
                 "index": "KOIIT",
                 "name": "koii test net",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "KOII"
                 ],

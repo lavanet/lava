@@ -290,7 +290,7 @@ func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
 }
 
 func (apip *JsonRPCChainParser) IsDataReliabilitySupported() bool {
-	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
+	return apip.spec.DataReliabilitySupported && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec

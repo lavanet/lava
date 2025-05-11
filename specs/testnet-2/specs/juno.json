@@ -7,7 +7,7 @@
                 "index": "JUN1",
                 "name": "juno mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
@@ -206,7 +206,7 @@
                 "index": "JUNT1",
                 "name": "juno testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "JUN1"
                 ],

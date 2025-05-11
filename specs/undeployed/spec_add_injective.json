@@ -7,7 +7,7 @@
                 "index": "INJECTIVE",
                 "name": "injective mainnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
@@ -4437,7 +4437,7 @@
                 "index": "INJECTIVET",
                 "name": "injective testnet",
                 "enabled": true,
-                "data_reliability_enabled": true,
+                "data_reliability_supported": true,
                 "imports": [
                     "INJECTIVE"
                 ],
