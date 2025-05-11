@@ -99,6 +99,10 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 		if bcpHeader.Kind == spectypes.Header_pass_ignore {
 			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
 		}
+
+		if bcpHeader.Kind == spectypes.Header_pass_override {
+			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: bcpHeader.Value})
+		}
 	}
 
 	return retMetadata, overwriteRequestedBlock, ignoredMetadata

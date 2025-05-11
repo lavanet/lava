@@ -284,7 +284,7 @@ func (c *Client) SetHeader(key, value string) {
 	conn.mu.Unlock()
 }
 
-// SetHeader deletes a HTTP header to the client's requests.
+// DelHeader deletes a HTTP header to the client's requests.
 // This method only works for clients using HTTP, it doesn't have
 // any effect for clients using another transport.
 func (c *Client) DelHeader(key string) {
