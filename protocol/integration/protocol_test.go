@@ -367,7 +367,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	}
 	rewardDB, err := createInMemoryRewardDb([]string{rpcProviderOptions.specId})
 	require.NoError(t, err)
-	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+	_, averageBlockTime, finalizationDistance, blocksInFinalizationData := chainParser.ChainBlockStats()
 	mockProviderStateTracker := mockProviderStateTracker{consumerAddressForPairing: rpcProviderOptions.consumerAddress, averageBlockTime: averageBlockTime}
 	rws := rewardserver.NewRewardServer(&mockProviderStateTracker, nil, rewardDB, "badger_test", 1, 10, nil)
 
@@ -377,7 +377,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	providerPolicy := rpcprovider.GetAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls)
 	chainParser.SetPolicy(providerPolicy, rpcProviderOptions.specId, rpcProviderOptions.apiInterface)
 
-	blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+	blocksToSaveChainTracker := uint64(finalizationDistance + blocksInFinalizationData)
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		BlocksToSave:          blocksToSaveChainTracker,
 		AverageBlockTime:      averageBlockTime,

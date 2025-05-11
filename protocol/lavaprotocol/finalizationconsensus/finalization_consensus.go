@@ -18,14 +18,14 @@ import (
 )
 
 type ChainBlockStatsGetter interface {
-	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance, blocksInFinalizationProof uint32)
 }
 
 type (
 	BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
 	FinalizationConsensusInf         interface {
 		UpdateFinalizedHashes(
-			blockDistanceForFinalizedData int64,
+			finalizationDistance int64,
 			consumerAddress sdk.AccAddress,
 			providerAddress string,
 			finalizedBlocks map[int64]string,
@@ -74,20 +74,20 @@ func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	}
 }
 
-func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) int64 {
-	finalization_criteria := blockDistanceForFinalizedData
+func GetLatestFinalizedBlock(latestBlock, finalizationDistance int64) int64 {
+	finalization_criteria := finalizationDistance
 	return latestBlock - finalization_criteria
 }
 
-func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
+func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, finalizationDistance int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
 	latestBlockTime := time.Now()
 	newProviderDataContainer := providerDataContainer{
-		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
+		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, finalizationDistance),
 		LatestBlockTime:               latestBlockTime,
 		FinalizedBlocksHashes:         finalizedBlocks,
 		SigBlocks:                     reply.SigBlocks,
 		LatestBlock:                   latestBlock,
-		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
+		BlockDistanceFromFinalization: finalizationDistance,
 		RelaySession:                  *req,
 	}
 
@@ -134,10 +134,10 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 // create new consensus group if no consensus matched
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
-func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+func (fc *FinalizationConsensus) UpdateFinalizedHashes(finalizationDistance int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	fc.lock.Lock()
 	defer func() {
-		fc.insertProviderToConsensus(reply.LatestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, relaySession, providerAddress)
+		fc.insertProviderToConsensus(reply.LatestBlock, finalizationDistance, finalizedBlocks, reply, relaySession, providerAddress)
 		fc.lock.Unlock()
 	}()
 
@@ -321,7 +321,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 	fc.lock.RLock()
 	defer fc.lock.RUnlock()
 
-	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime_ms, finalizationDistance, _ := chainParser.ChainBlockStats()
 	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(averageBlockTime_ms)
 	median := func(dataMap map[string]int64) int64 {
 		data := make([]int64, len(dataMap))
@@ -334,7 +334,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 	}
 
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
-	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
+	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(finalizationDistance)
 
 	utils.LavaFormatTrace("finalization information",
 		utils.LogAttr("specId", fc.SpecId),
@@ -356,7 +356,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 	}
 
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
-	// then we move forward blockDistanceForFinalizedData to get the expected latest block
+	// then we move forward finalizationDistance to get the expected latest block
 	return providersMedianOfLatestBlock - allowedBlockLagForQosSync, len(mapExpectedBlockHeights)
 }
 

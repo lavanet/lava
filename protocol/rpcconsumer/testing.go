@@ -66,8 +66,8 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
 				)
 			}
-			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
-			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+			_, averageBlockTime, finalizationDistance, blocksInFinalizationData := chainParser.ChainBlockStats()
+			blocksToSaveChainTracker := uint64(finalizationDistance + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
 				BlocksToSave:          blocksToSaveChainTracker,
 				AverageBlockTime:      averageBlockTime,

@@ -31,7 +31,7 @@ type relayFinalizationBlocksHandler interface {
 		relayTimeout time.Duration,
 		blockLagForQosSync int64,
 		averageBlockTime time.Duration,
-		blockDistanceToFinalization,
+		finalizationDistance,
 		blocksInFinalizationData uint32,
 	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
 
@@ -44,7 +44,7 @@ type relayFinalizationBlocksHandler interface {
 		updatedChainMessage bool,
 		relayTimeout time.Duration,
 		averageBlockTime time.Duration,
-		blockDistanceToFinalization uint32,
+		finalizationDistance uint32,
 		blocksInFinalizationData uint32,
 		modifiedReqBlock int64,
 	) (err error)
@@ -446,17 +446,17 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
+	blockLagForQosSync, averageBlockTime, finalizationDistance, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
 	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
 	if pnsm.chainParser.IsDataReliabilitySupported() {
 		var err error
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, finalizationDistance, blocksInFinalizationData)
 		if err != nil {
 			return err
 		}
 
-		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, finalizationDistance, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return err
 		}

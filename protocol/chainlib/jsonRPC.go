@@ -294,8 +294,8 @@ func (apip *JsonRPCChainParser) IsDataReliabilitySupported() bool {
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
+// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance)
+func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0

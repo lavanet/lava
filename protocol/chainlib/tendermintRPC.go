@@ -316,8 +316,8 @@ func (apip *TendermintChainParser) IsDataReliabilitySupported() bool {
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData, spec.BlocksInFinalizationProof)
-func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
+// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance, spec.BlocksInFinalizationProof)
+func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0

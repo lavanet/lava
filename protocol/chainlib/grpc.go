@@ -214,8 +214,8 @@ func (apip *GrpcChainParser) IsDataReliabilitySupported() bool {
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
+// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance)
+func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance, blocksInFinalizationProof uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0

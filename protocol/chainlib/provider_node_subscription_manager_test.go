@@ -28,7 +28,7 @@ func (rf *RelayFinalizationBlocksHandlerMock) GetParametersForRelayDataReliabili
 	relayTimeout time.Duration,
 	blockLagForQosSync int64,
 	averageBlockTime time.Duration,
-	blockDistanceToFinalization,
+	finalizationDistance,
 	blocksInFinalizationData uint32,
 ) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
 	return 0, []byte{}, []*chaintracker.BlockStore{}, 0, true, true, nil
@@ -43,7 +43,7 @@ func (rf *RelayFinalizationBlocksHandlerMock) BuildRelayFinalizedBlockHashes(
 	updatedChainMessage bool,
 	relayTimeout time.Duration,
 	averageBlockTime time.Duration,
-	blockDistanceToFinalization uint32,
+	finalizationDistance uint32,
 	blocksInFinalizationData uint32,
 	modifiedReqBlock int64,
 ) (err error) {

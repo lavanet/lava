@@ -325,11 +325,11 @@ func (k Keeper) validateFinalizedBlock(relayFinalization *types.RelayFinalizatio
 		return fmt.Errorf("validateFinalizedBlock: spec is nil")
 	}
 	latestBlock := relayFinalization.GetLatestBlock()
-	blockDistanceToFinalization := int64(spec.FinalizationDistance)
+	finalizationDistance := int64(spec.FinalizationDistance)
 
 	// Validate that finalization distance is right
-	if latestFinalizedBlock != latestBlock-blockDistanceToFinalization {
-		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-blockDistanceToFinalization[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, blockDistanceToFinalization, latestBlock-blockDistanceToFinalization)
+	if latestFinalizedBlock != latestBlock-finalizationDistance {
+		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-finalizationDistance[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, finalizationDistance, latestBlock-finalizationDistance)
 	}
 
 	if spectypes.IsFinalizedBlock(latestFinalizedBlock+1, latestBlock, int64(spec.FinalizationDistance)) {
