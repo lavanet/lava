@@ -1059,7 +1059,6 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
-                        "verifications": [],
                         "extensions": []
                     }
                 ]
@@ -1091,7 +1090,17 @@
                             "type": "GET",
                             "add_on": ""
                         },
-                        "apis": []
+                        "apis": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "zerostate:82e784584872d92aa1fa953129833fe3a07a32449ecdad28559809e5dc83e7e7"
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -1105,16 +1114,6 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "zerostate:82e784584872d92aa1fa953129833fe3a07a32449ecdad28559809e5dc83e7e7"
-                                    }
-                                ]
-                            }
-                        ],
                         "extensions": []
                     }
                 ]
