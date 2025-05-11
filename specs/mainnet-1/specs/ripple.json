@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 4,
                 "average_block_time": 4000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "imports": [],
                 "shares": 1,
                 "min_stake_provider": {
@@ -259,7 +258,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 4,
                 "average_block_time": 4000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "imports": [
                     "XRP"
                 ],

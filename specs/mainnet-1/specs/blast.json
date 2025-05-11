@@ -11,7 +11,6 @@
         "imports": ["ETH1"],
         "finalization_distance": 6,
         "average_block_time": 2000,
-        "allowed_block_lag_for_qos_sync": 15,
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",
@@ -52,7 +51,6 @@
         "imports": ["BLAST"],
         "finalization_distance": 6,
         "average_block_time": 2000,
-        "allowed_block_lag_for_qos_sync": 15,
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",

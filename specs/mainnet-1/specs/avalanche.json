@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 4,
                 "average_block_time": 2000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "imports": [
                     "ETH1"
                 ],
@@ -849,7 +848,6 @@
                 ],
                 "finalization_distance": 4,
                 "average_block_time": 2000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",

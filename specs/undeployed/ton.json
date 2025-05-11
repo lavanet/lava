@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 2,
                 "average_block_time": 4500,
-                "allowed_block_lag_for_qos_sync": 3,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",

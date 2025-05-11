@@ -13,7 +13,6 @@
                 ],
                 "finalization_distance": 7,
                 "average_block_time": 350,
-                "allowed_block_lag_for_qos_sync": 29,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -919,7 +918,6 @@
                 ],
                 "finalization_distance": 7,
                 "average_block_time": 350,
-                "allowed_block_lag_for_qos_sync": 29,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
