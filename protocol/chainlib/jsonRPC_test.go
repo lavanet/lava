@@ -55,21 +55,19 @@ func TestJSONChainParser_Spec(t *testing.T) {
 
 	// set the spec
 	spec := spectypes.Spec{
-		Enabled:                   true,
-		AllowedBlockLagForQosSync: 11,
-		AverageBlockTime:          12000,
-		FinalizationDistance:      13,
+		Enabled:              true,
+		AverageBlockTime:     12000,
+		FinalizationDistance: 13,
 	}
 	apip.SetSpec(spec)
 
 	// fetch chain block stats
-	allowedBlockLagForQosSync, averageBlockTime, finalizationDistance := apip.ChainBlockStats()
+	averageBlockTime, finalizationDistance := apip.ChainBlockStats()
 
 	// convert block time
 	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// check that the spec was set correctly
-	assert.Equal(t, apip.spec.AllowedBlockLagForQosSync, allowedBlockLagForQosSync)
 	assert.Equal(t, apip.spec.FinalizationDistance, finalizationDistance)
 	assert.Equal(t, AverageBlockTime, averageBlockTime)
 }
@@ -515,10 +513,9 @@ func TestJsonRPC_SpecUpdateWithAddons(t *testing.T) {
 
 	// set the spec
 	spec := spectypes.Spec{
-		Enabled:                   true,
-		AllowedBlockLagForQosSync: 11,
-		AverageBlockTime:          12000,
-		FinalizationDistance:      13,
+		Enabled:              true,
+		AverageBlockTime:     12000,
+		FinalizationDistance: 13,
 		ApiCollections: []*spectypes.ApiCollection{
 			{
 				Enabled: true,
@@ -586,10 +583,9 @@ func TestJsonRPC_SpecUpdateWithExtensions(t *testing.T) {
 
 	// set the spec
 	spec := spectypes.Spec{
-		Enabled:                   true,
-		AllowedBlockLagForQosSync: 11,
-		AverageBlockTime:          12000,
-		FinalizationDistance:      13,
+		Enabled:              true,
+		AverageBlockTime:     12000,
+		FinalizationDistance: 13,
 		ApiCollections: []*spectypes.ApiCollection{
 			{
 				Enabled: true,

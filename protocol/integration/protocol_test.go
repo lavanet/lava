@@ -231,7 +231,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
-	_, averageBlockTime, _ := chainParser.ChainBlockStats()
+	averageBlockTime, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
@@ -367,7 +367,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	}
 	rewardDB, err := createInMemoryRewardDb([]string{rpcProviderOptions.specId})
 	require.NoError(t, err)
-	_, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+	averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
 	mockProviderStateTracker := mockProviderStateTracker{consumerAddressForPairing: rpcProviderOptions.consumerAddress, averageBlockTime: averageBlockTime}
 	rws := rewardserver.NewRewardServer(&mockProviderStateTracker, nil, rewardDB, "badger_test", 1, 10, nil)
 

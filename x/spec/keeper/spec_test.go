@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v5/testutil/common"
@@ -494,13 +493,12 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	parentSpec := types.Spec{
-		Index:                     "parent",
-		Name:                      "parent spec",
-		Enabled:                   true,
-		FinalizationDistance:      64,
-		AverageBlockTime:          13000,
-		AllowedBlockLagForQosSync: 2,
-		MinStakeProvider:          common.NewCoin(ts.TokenDenom(), 5000),
+		Index:                "parent",
+		Name:                 "parent spec",
+		Enabled:              true,
+		FinalizationDistance: 64,
+		AverageBlockTime:     13000,
+		MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -511,14 +509,13 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	childSpec := types.Spec{
-		Index:                     "child",
-		Name:                      "child spec",
-		Enabled:                   true,
-		FinalizationDistance:      64,
-		AverageBlockTime:          13000,
-		AllowedBlockLagForQosSync: 2,
-		MinStakeProvider:          common.NewCoin(ts.TokenDenom(), 5000),
-		Imports:                   []string{"parent"},
+		Index:                "child",
+		Name:                 "child spec",
+		Enabled:              true,
+		FinalizationDistance: 64,
+		AverageBlockTime:     13000,
+		MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000),
+		Imports:              []string{"parent"},
 	}
 
 	// add a parent spec and a child spec
@@ -1118,20 +1115,16 @@ func TestParsers(t *testing.T) {
 				apisCollections: []*types.ApiCollection{apiCollection},
 			}
 			sp := types.Spec{
-				Index:                     tt.name,
-				Name:                      tt.name,
-				Enabled:                   true,
-				FinalizationDistance:      0,
-				AverageBlockTime:          10,
-				AllowedBlockLagForQosSync: 1,
-				BlockLastUpdated:          0,
-				MinStakeProvider: sdk.Coin{
-					Denom:  "ulava",
-					Amount: math.NewInt(5000000),
-				},
-				ApiCollections: tt.apisCollections,
-				Shares:         1,
-				Identity:       "",
+				Index:                tt.name,
+				Name:                 tt.name,
+				Enabled:              true,
+				FinalizationDistance: 0,
+				AverageBlockTime:     10,
+				BlockLastUpdated:     0,
+				MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000000),
+				ApiCollections:       tt.apisCollections,
+				Shares:               1,
+				Identity:             "",
 			}
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
@@ -1161,7 +1154,6 @@ func TestSpecParsing(t *testing.T) {
 						"data_reliability_enabled": false,
 						"finalization_distance": 0,
 						"average_block_time": 10,
-						"allowed_block_lag_for_qos_sync": 1,
 						"block_last_updated": 0,
 						"min_stake_provider": {
 							"denom": "ulava",

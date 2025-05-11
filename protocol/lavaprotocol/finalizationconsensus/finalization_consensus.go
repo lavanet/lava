@@ -15,10 +15,12 @@ import (
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type ChainBlockStatsGetter interface {
-	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance uint32)
+	// Returns averageBlockTime in ms and finalizationDistance in blocks
+	ChainBlockStats() (averageBlockTime time.Duration, finalizationDistance uint32)
 }
 
 type (
@@ -321,8 +323,8 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 	fc.lock.RLock()
 	defer fc.lock.RUnlock()
 
-	allowedBlockLagForQosSync, averageBlockTime_ms, finalizationDistance := chainParser.ChainBlockStats()
-	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(averageBlockTime_ms)
+	averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(averageBlockTime)
 	median := func(dataMap map[string]int64) int64 {
 		data := make([]int64, len(dataMap))
 		i := 0
@@ -357,7 +359,8 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
 	// then we move forward finalizationDistance to get the expected latest block
-	return providersMedianOfLatestBlock - allowedBlockLagForQosSync, len(mapExpectedBlockHeights)
+	allowedBlockLag := spectypes.AllowedBlockLag(averageBlockTime)
+	return providersMedianOfLatestBlock - allowedBlockLag, len(mapExpectedBlockHeights)
 }
 
 func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {

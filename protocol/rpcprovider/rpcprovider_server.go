@@ -785,12 +785,12 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	finalized := false
 	updatedChainMessage := false
 
-	blockLagForQosSync, averageBlockTime, finalizationDistance := rpcps.chainParser.ChainBlockStats()
+	averageBlockTime, finalizationDistance := rpcps.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
 	if rpcps.chainParser.IsDataReliabilitySupported() {
 		var err error
-		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, finalizationDistance)
+		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, averageBlockTime, finalizationDistance)
 		if err != nil {
 			return nil, err
 		}
@@ -963,9 +963,9 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	}
 
 	if rpcps.chainParser.IsDataReliabilitySupported() {
-		blockLagForQosSync, averageBlockTime, finalizationDistance := rpcps.chainParser.ChainBlockStats()
+		averageBlockTime, finalizationDistance := rpcps.chainParser.ChainBlockStats()
 		relayTimeout := chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, finalizationDistance)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, averageBlockTime, finalizationDistance)
 		if err != nil {
 			return nil, err
 		}
@@ -992,7 +992,6 @@ func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
 	request *pairingtypes.RelayRequest,
 	chainMsg chainlib.ChainMessage,
 	relayTimeout time.Duration,
-	blockLagForQosSync int64,
 	averageBlockTime time.Duration,
 	finalizationDistance uint32,
 ) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
@@ -1005,7 +1004,7 @@ func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
 
 	// handle consistency, if the consumer requested information we do not have in the state tracker
 
-	latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, relayTimeout, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, finalizationDistance)
+	latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, relayTimeout, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, finalizationDistance)
 	if err != nil {
 		return 0, nil, nil, 0, false, false, err
 	}
@@ -1112,7 +1111,7 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 	return proofBlock, requestedHashes, err
 }
 
-func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, finalizationDistance uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
+func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, finalizationDistance uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
 	latestBlock, requestedHashes, changeTime, err := rpcps.GetLatestBlockData(ctx, averageBlockTime, finalizationDistance)
 	if err != nil {
 		return 0, nil, 0, err
@@ -1156,7 +1155,8 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 		}
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
-	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
+	allowedBlockLag := spectypes.AllowedBlockLag(averageBlockTime)
+	if (blockGap > allowedBlockLag*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
 		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 

@@ -214,11 +214,11 @@ func (apip *GrpcChainParser) IsDataReliabilitySupported() bool {
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance uint32) {
+// (spec.AverageBlockTime, spec.FinalizationDistance)
+func (apip *GrpcChainParser) ChainBlockStats() (averageBlockTime time.Duration, finalizationDistance uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0
 	}
 
 	// Acquire read lock
@@ -228,8 +228,8 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	// Convert average block time from int64 -> time.Duration
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
-	// Return allowedBlockLagForQosSync, averageBlockTime, finalizationDistance from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.FinalizationDistance
+	// Return averageBlockTime, finalizationDistance from spec
+	return averageBlockTime, apip.spec.FinalizationDistance
 }
 
 type GrpcChainListener struct {
@@ -373,7 +373,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
-	_, averageBlockTime, _ := parser.ChainBlockStats()
+	averageBlockTime, _ := parser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(nodeUrl.Url, "/") // remove suffix if exists
 	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)

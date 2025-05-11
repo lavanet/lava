@@ -217,11 +217,11 @@ func (apip *RestChainParser) IsDataReliabilitySupported() bool {
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance)
-func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, finalizationDistance uint32) {
+// (spec.AverageBlockTime, spec.FinalizationDistance)
+func (apip *RestChainParser) ChainBlockStats() (averageBlockTime time.Duration, finalizationDistance uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0
 	}
 
 	// Acquire read lock
@@ -232,7 +232,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.FinalizationDistance
+	return averageBlockTime, apip.spec.FinalizationDistance
 }
 
 type RestChainListener struct {
@@ -457,7 +457,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 
 	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceRest)
 
-	_, averageBlockTime, _ := chainParser.ChainBlockStats()
+	averageBlockTime, _ := chainParser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{

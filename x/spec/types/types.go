@@ -163,3 +163,11 @@ func FinalizedBlocksForDataReliability(averageBlockTime time.Duration) uint32 {
 	}
 	return uint32(finalizedBlocks)
 }
+
+func AllowedBlockLag(averageBlockTime time.Duration) int64 {
+	lag := AllowedBlockLagTimeDuration / averageBlockTime.Seconds()
+	if lag < MinAllowedBlockLag {
+		return MinAllowedBlockLag
+	}
+	return int64(lag)
+}

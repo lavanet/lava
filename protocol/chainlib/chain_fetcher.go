@@ -164,7 +164,7 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 			return
 		}
 
-		_, averageBlockTime, _ := cf.chainParser.ChainBlockStats()
+		averageBlockTime, _ := cf.chainParser.ChainBlockStats()
 		err = cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 			RequestHash:      hash,
 			BlockHash:        requestedBlockHash,
@@ -496,7 +496,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "Response", Value: string(reply.RelayReply.Data)},
 		}...)
 	}
-	_, _, finalizationDistance := cf.chainParser.ChainBlockStats()
+	_, finalizationDistance := cf.chainParser.ChainBlockStats()
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, int64(finalizationDistance))

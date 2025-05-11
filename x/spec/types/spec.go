@@ -21,6 +21,8 @@ const (
 	maxParsersPerApi                              = 100
 	FinalizedBlocksTimeDurationForDataReliability = 60 // 60 seconds
 	MinBlocksForDataReliability                   = 3
+	AllowedBlockLagTimeDuration                   = 10 // 10 seconds
+	MinAllowedBlockLag                            = 2  // 2 blocks
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
@@ -68,10 +70,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 
 	if spec.AverageBlockTime <= 0 {
 		return details, fmt.Errorf("AverageBlockTime can't be zero")
-	}
-
-	if spec.AllowedBlockLagForQosSync <= 0 {
-		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
 	}
 
 	if !spec.MinStakeProvider.IsValid() || !spec.MinStakeProvider.IsPositive() {

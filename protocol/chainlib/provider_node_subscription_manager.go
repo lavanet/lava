@@ -29,7 +29,6 @@ type relayFinalizationBlocksHandler interface {
 		request *pairingtypes.RelayRequest,
 		chainMsg ChainMessage,
 		relayTimeout time.Duration,
-		blockLagForQosSync int64,
 		averageBlockTime time.Duration,
 		finalizationDistance uint32,
 	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
@@ -444,12 +443,12 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	blockLagForQosSync, averageBlockTime, finalizationDistance := pnsm.chainParser.ChainBlockStats()
+	averageBlockTime, finalizationDistance := pnsm.chainParser.ChainBlockStats()
 	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
 	if pnsm.chainParser.IsDataReliabilitySupported() {
 		var err error
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, finalizationDistance)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, averageBlockTime, finalizationDistance)
 		if err != nil {
 			return err
 		}

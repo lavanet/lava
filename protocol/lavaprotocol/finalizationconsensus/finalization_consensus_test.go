@@ -106,7 +106,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 		require.NotNil(t, chainParser)
 		epoch := uint64(200)
 
-		_, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+		averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
 		finalizedBlocksForDataReliability := spectypes.FinalizedBlocksForDataReliability(averageBlockTime)
 		require.Greater(t, finalizedBlocksForDataReliability, uint32(0))
 
@@ -234,7 +234,7 @@ func TestQoS(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, singleConsumerSession)
 
-				allowedBlockLagForQosSync, averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
+				averageBlockTime, finalizationDistance := chainParser.ChainBlockStats()
 				finalizedBlocksForDataReliability := spectypes.FinalizedBlocksForDataReliability(averageBlockTime)
 				require.Greater(t, finalizedBlocksForDataReliability, uint32(0))
 
@@ -265,10 +265,11 @@ func TestQoS(t *testing.T) {
 
 				plannedExpectedBH := int64(202) // this is the most advanced in all finalizations
 				expectedBH, numOfProviders := finalizationConsensus.GetExpectedBlockHeight(chainParser)
-				latestBH := uint64(expectedBH + allowedBlockLagForQosSync)
+				allowedBlockLag := spectypes.AllowedBlockLag(averageBlockTime)
+				latestBH := uint64(expectedBH + allowedBlockLag)
 				require.Equal(t, uint64(plannedExpectedBH), latestBH)
 				require.Equal(t, 3, numOfProviders)
-				require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH)
+				require.Equal(t, plannedExpectedBH-allowedBlockLag, expectedBH)
 
 				// now advance an epoch to make it interesting
 				finalizationConsensus.NewEpoch(newEpoch)
@@ -278,10 +279,10 @@ func TestQoS(t *testing.T) {
 				}
 				plannedExpectedBH = 205 // this is the most advanced in all finalizations after epoch change
 				expectedBH, numOfProviders = finalizationConsensus.GetExpectedBlockHeight(chainParser)
-				latestBH = uint64(expectedBH + allowedBlockLagForQosSync)
+				latestBH = uint64(expectedBH + allowedBlockLag)
 				require.Equal(t, uint64(plannedExpectedBH), latestBH)
 				require.Equal(t, 5, numOfProviders)
-				require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH, chainID)
+				require.Equal(t, plannedExpectedBH-allowedBlockLag, expectedBH, chainID)
 
 				currentLatency := time.Millisecond
 				expectedLatency := time.Millisecond
@@ -363,7 +364,7 @@ func TestQoS(t *testing.T) {
 				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(finalizedBlocksForDataReliability+2))
 				expectedBH, numOfProviders = finalizationConsensus.GetExpectedBlockHeight(chainParser)
 				require.Equal(t, 5, numOfProviders)
-				require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH)
+				require.Equal(t, plannedExpectedBH-allowedBlockLag, expectedBH)
 
 				now := time.Now()
 				interpolation := InterpolateBlocks(now, now.Add(-2*time.Millisecond), time.Millisecond)
@@ -391,7 +392,7 @@ func BenchmarkFinalizationConsensusGetExpectedBlockHeight(b *testing.B) {
 	require.NotNil(b, chainFetcher)
 
 	finalizationConsensus := NewFinalizationConsensus("LAV1")
-	_, _, finalizationDistance := chainParser.ChainBlockStats()
+	_, finalizationDistance := chainParser.ChainBlockStats()
 	relaySession := &pairingtypes.RelaySession{
 		SpecId:                specId,
 		ContentHash:           []byte{},
@@ -466,7 +467,7 @@ func BenchmarkFinalizationConsensusUpdateFinalizedHashes(b *testing.B) {
 
 	providerAddr := "provider1"
 
-	_, _, finalizationDistance := chainParser.ChainBlockStats()
+	_, finalizationDistance := chainParser.ChainBlockStats()
 	relaySession := &pairingtypes.RelaySession{
 		SpecId:                specId,
 		ContentHash:           []byte{},
