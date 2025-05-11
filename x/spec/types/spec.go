@@ -20,6 +20,7 @@ const (
 	maxContributorsPercentageStr                  = "0.8"
 	maxParsersPerApi                              = 100
 	FinalizedBlocksTimeDurationForDataReliability = 60 // 60 seconds
+	MinBlocksForDataReliability                   = 3
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {

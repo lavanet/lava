@@ -158,8 +158,8 @@ func IsFinalizedBlock(requestedBlock, latestBlock, finalizationCriteria int64) b
 // must keep from its serviced chain for data reliability
 func FinalizedBlocksForDataReliability(averageBlockTime time.Duration) uint32 {
 	finalizedBlocks := FinalizedBlocksTimeDurationForDataReliability / averageBlockTime.Seconds()
-	if finalizedBlocks < 1 {
-		return 1
+	if finalizedBlocks < MinBlocksForDataReliability {
+		return MinBlocksForDataReliability
 	}
 	return uint32(finalizedBlocks)
 }
