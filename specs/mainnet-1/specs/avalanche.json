@@ -13,7 +13,6 @@
                 "imports": [
                     "ETH1"
                 ],
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000"
@@ -848,7 +847,6 @@
                 ],
                 "finalization_distance": 4,
                 "average_block_time": 2000,
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000"

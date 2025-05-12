@@ -13,7 +13,6 @@
                 ],
                 "finalization_distance": 0,
                 "average_block_time": 12000,
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"
@@ -1472,7 +1471,6 @@
                 ],
                 "finalization_distance": 0,
                 "average_block_time": 5100,
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"
@@ -1601,7 +1599,6 @@
                 ],
                 "finalization_distance": 0,
                 "average_block_time": 6500,
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"

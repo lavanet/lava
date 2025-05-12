@@ -10,7 +10,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 6,
                 "average_block_time": 30000,
-                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "5000000000"

@@ -15,7 +15,6 @@
           "denom": "ulava",
           "amount": "47500000000"
         },
-        "shares": 1,
         "providers_types": 0,
         "imports": [
           "COSMOSSDK"

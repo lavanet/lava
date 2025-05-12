@@ -1123,7 +1123,6 @@ func TestParsers(t *testing.T) {
 				BlockLastUpdated:     0,
 				MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000000),
 				ApiCollections:       tt.apisCollections,
-				Shares:               1,
 			}
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)

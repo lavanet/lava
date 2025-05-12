@@ -148,10 +148,6 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 		if !spec.Enabled {
 			continue
 		}
-		if spec.Shares == 0 {
-			chainStake[chainID] = sdk.ZeroDec()
-			continue
-		}
 
 		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = sdk.ZeroDec()
@@ -159,7 +155,6 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.TotalStake()))
 		}
 
-		chainStake[chainID] = chainStake[chainID].MulInt64(int64(spec.Shares))
 		totalStake = totalStake.Add(chainStake[chainID])
 	}
 
