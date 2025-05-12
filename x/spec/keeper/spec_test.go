@@ -1124,7 +1124,6 @@ func TestParsers(t *testing.T) {
 				MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000000),
 				ApiCollections:       tt.apisCollections,
 				Shares:               1,
-				Identity:             "",
 			}
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
@@ -1176,8 +1175,7 @@ func TestSpecParsing(t *testing.T) {
 								]
 							}
 						],
-						"shares": 1,
-						"identity": ""
+						"shares": 1
 					}
 				]
 			}

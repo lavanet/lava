@@ -9,7 +9,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
 )
@@ -43,10 +42,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	ok := commontypes.ValidateString(spec.Index, commontypes.INDEX_RESTRICTIONS, nil)
 	if !ok {
 		return details, fmt.Errorf("spec index can be letters and numbers only %s", spec.Index)
-	}
-
-	if len(spec.Identity) > stakingtypes.MaxIdentityLength {
-		return details, fmt.Errorf("spec identity should not be longer than %d. Identity: %s", stakingtypes.MaxIdentityLength, spec.Index)
 	}
 
 	for _, char := range spec.Name {
