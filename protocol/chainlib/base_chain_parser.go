@@ -95,7 +95,7 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	// iterate over the headers defined in spec file to handle any nullified headers
 	for _, bcpHeader := range bcp.headers {
 		// handle nullified headers
-		if bcpHeader.Kind == spectypes.Header_pass_ignore {
+		if bcpHeader.Kind == spectypes.Header_pass_nullify {
 			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
 		}
 
