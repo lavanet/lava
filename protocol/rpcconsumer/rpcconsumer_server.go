@@ -1118,6 +1118,13 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		return 0, err, backoff
 	}
 
+	utils.LavaFormatTrace("Relay succeeded",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+		utils.LogAttr("latestBlock", reply.LatestBlock),
+		utils.LogAttr("latency", relayLatency),
+		utils.LogAttr("method", chainMessage.GetApi().Name),
+	)
 	relayResult.Reply = reply
 
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
