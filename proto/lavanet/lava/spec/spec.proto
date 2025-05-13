@@ -21,8 +21,7 @@ message Spec {
   int64 average_block_time =9;
   reserved 10;
   uint64 block_last_updated = 11;
-  cosmos.base.v1beta1.Coin min_stake_provider = 12[(gogoproto.nullable) = false];
-  reserved 13;
+  reserved 12,13;
   
   enum ProvidersTypes {
     dynamic = 0;

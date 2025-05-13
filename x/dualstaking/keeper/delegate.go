@@ -160,8 +160,8 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	for _, entry := range entries {
 		details[entry.Chain] = entry.Chain
 		entry.DelegateTotal = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
-		if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
-			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
+		if entry.TotalStake().LT(k.specKeeper.ProviderMinStake(ctx).Amount) {
+			details["min_spec_stake"] = k.specKeeper.ProviderMinStake(ctx).String()
 			details["stake"] = entry.TotalStake().String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 			entry.Freeze()

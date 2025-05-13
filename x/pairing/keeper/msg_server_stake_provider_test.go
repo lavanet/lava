@@ -207,7 +207,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription(), 100)
+				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.GetProviderMinStake(), endpoints, geo, common.MockDescription(), 100)
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -695,8 +695,9 @@ func TestStakeProviderLimits(t *testing.T) {
 	// set MinSelfDelegation = 100, MinStakeProvider = 200
 	ts := newTester(t)
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
-	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
-	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	specParams := ts.Keepers.Spec.GetParams(ts.Ctx)
+	specParams.ProviderMinStake = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetParams(ts.Ctx, specParams)
 	ts.AdvanceEpoch()
 
 	type testCase struct {
@@ -708,7 +709,7 @@ func TestStakeProviderLimits(t *testing.T) {
 	testCases := []testCase{
 		{"below min self delegation", minSelfDelegation.Amount.Int64() - 1, false, false},
 		{"above min self delegation and below min provider stake", minSelfDelegation.Amount.Int64() + 1, true, true},
-		{"above min provider stake", ts.spec.MinStakeProvider.Amount.Int64() + 1, true, false},
+		{"above min provider stake", specParams.ProviderMinStake.Amount.Int64() + 1, true, false},
 	}
 
 	for it, tt := range testCases {
@@ -735,8 +736,9 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// set MinSelfDelegation = 100, MinStakeProvider = 200
 	ts := newTester(t)
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
-	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
-	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	specParams := ts.Keepers.Spec.GetParams(ts.Ctx)
+	specParams.ProviderMinStake = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetParams(ts.Ctx, specParams)
 	ts.AdvanceEpoch()
 
 	// stake minSelfDelegation+1 -> provider staked but frozen
@@ -761,13 +763,13 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
 	// provider should still be frozen
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, specParams.ProviderMinStake)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
-	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.TotalStake())
+	require.Equal(t, specParams.ProviderMinStake.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.TotalStake())
 
 	// try to unfreeze -> should succeed
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
@@ -784,47 +786,48 @@ func TestCommisionChange(t *testing.T) {
 	// set MinSelfDelegation = 100, MinStakeProvider = 200
 	ts := newTester(t)
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
-	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
-	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	specParams := ts.Keepers.Spec.GetParams(ts.Ctx)
+	specParams.ProviderMinStake = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetParams(ts.Ctx, specParams)
 	ts.AdvanceEpoch()
 
-	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
-	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, "", "", "", "", "")
+	_, provider := ts.AddAccount(common.PROVIDER, 1, specParams.ProviderMinStake.Amount.Int64())
+	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 50, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// there are no delegations, can change as much as we want
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 55, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 60, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// add delegator and delegate to provider
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, specParams.ProviderMinStake)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()               // apply delegation
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// same values, should pass
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 62, "", "", "", "", "")
 	require.Error(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 62, "", "", "", "", "")
 	require.NoError(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, specParams.ProviderMinStake, nil, 0, 68, "", "", "", "", "")
 	require.Error(t, err)
 }
 

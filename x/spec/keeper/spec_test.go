@@ -498,7 +498,6 @@ func TestSpecUpdateInherit(t *testing.T) {
 		Enabled:              true,
 		FinalizationDistance: 64,
 		AverageBlockTime:     13000,
-		MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -514,7 +513,6 @@ func TestSpecUpdateInherit(t *testing.T) {
 		Enabled:              true,
 		FinalizationDistance: 64,
 		AverageBlockTime:     13000,
-		MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000),
 		Imports:              []string{"parent"},
 	}
 
@@ -1121,7 +1119,6 @@ func TestParsers(t *testing.T) {
 				FinalizationDistance: 0,
 				AverageBlockTime:     10,
 				BlockLastUpdated:     0,
-				MinStakeProvider:     common.NewCoin(ts.TokenDenom(), 5000000),
 				ApiCollections:       tt.apisCollections,
 			}
 			fullspec, err := ts.expandSpec(sp)

@@ -67,10 +67,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("AverageBlockTime can't be zero")
 	}
 
-	if !spec.MinStakeProvider.IsValid() || !spec.MinStakeProvider.IsPositive() {
-		return details, fmt.Errorf("MinStakeProvider can't be zero")
-	}
-
 	for _, apiCollection := range spec.ApiCollections {
 		functionTags := map[FUNCTION_TAG]bool{}
 		if len(apiCollection.Apis) == 0 {

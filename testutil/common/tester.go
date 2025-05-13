@@ -1214,6 +1214,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	ts.AddSpec(spec.Index, spec)
 	ts.Keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.Ctx), spec)
 	start = len(ts.Accounts(CONSUMER))
+
 	for i := 0; i < subscriptions; i++ {
 		// setup consumer
 		consumerAcc, consumerAddress := ts.AddAccount(CONSUMER, start+i, balance)
@@ -1252,7 +1253,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 		website := d.Website + strconv.Itoa(start+i)
 		securityContact := d.SecurityContact + strconv.Itoa(start+i)
 		details := d.Details + strconv.Itoa(start+i)
-		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, moniker, identity, website, securityContact, details)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, ts.GetProviderMinStake().Amount.Int64(), nil, 1, moniker, identity, website, securityContact, details)
 		if err != nil {
 			return err
 		}
@@ -1291,6 +1292,11 @@ func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []
 	}
 
 	return pairingtypes.MsgRelayPayment{Creator: provider, Relays: relays}
+}
+
+func (ts *Tester) GetProviderMinStake() sdk.Coin {
+	specParams := ts.Keepers.Spec.GetParams(sdk.UnwrapSDKContext(ts.Ctx))
+	return specParams.ProviderMinStake
 }
 
 // DisableParticipationFees zeros validators and community participation fees

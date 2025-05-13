@@ -229,7 +229,7 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 		return details, err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), spec.MinStakeProvider, false); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), k.ProviderMinStake(ctx), false); err != nil {
 		details := map[string]string{
 			"spec":    spec.Name,
 			"status":  strconv.FormatBool(spec.Enabled),
@@ -352,16 +352,4 @@ func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contribut
 		contributors = append(contributors, contributorAddr)
 	}
 	return contributors, *spec.ContributorPercentage
-}
-
-func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
-	spec, found := k.GetSpec(ctx, chainID)
-	if !found {
-		utils.LavaFormatError("critical: failed to get spec for chainID",
-			fmt.Errorf("unknown chainID"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
-	}
-
-	return spec.MinStakeProvider
 }
