@@ -11,10 +11,6 @@
         "finalization_distance": 0,
         "average_block_time": 6500,
         "block_last_updated": 910837,
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "47500000000"
-        },
         "providers_types": 0,
         "api_collections": [
           {

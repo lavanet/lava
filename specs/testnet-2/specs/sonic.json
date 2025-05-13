@@ -13,10 +13,6 @@
                 ],
                 "finalization_distance": 7,
                 "average_block_time": 350,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "47500000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -917,10 +913,6 @@
                 ],
                 "finalization_distance": 7,
                 "average_block_time": 350,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "47500000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

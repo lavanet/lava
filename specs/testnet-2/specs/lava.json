@@ -14,10 +14,6 @@
                 "providers_types": 1,
                 "finalization_distance": 0,
                 "average_block_time": 15000,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "47500000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

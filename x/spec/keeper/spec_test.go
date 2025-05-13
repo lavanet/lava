@@ -1146,14 +1146,10 @@ func TestSpecParsing(t *testing.T) {
 						"index": "test",
 						"name": "test",
 						"enabled": true,
-						"data_reliability_enabled": false,
+						"data_reliability_supported": false,
 						"finalization_distance": 0,
 						"average_block_time": 10,
 						"block_last_updated": 0,
-						"min_stake_provider": {
-							"denom": "ulava",
-							"amount": "5000000"
-						},
 						"api_collections": [
 							{
 								"apis": [

@@ -11,10 +11,6 @@
           "imports": ["ETH1"],
           "finalization_distance": 1,
           "average_block_time": 10200,
-          "min_stake_provider": {
-            "denom": "ulava",
-            "amount": "47500000000"
-          },
           "api_collections": [
             {
               "enabled": true,

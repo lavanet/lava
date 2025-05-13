@@ -10,10 +10,6 @@
                 "data_reliability_supported": true,
                 "finalization_distance": 0,
                 "average_block_time": 6000,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "47500000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

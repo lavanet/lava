@@ -11,10 +11,6 @@
                 "finalization_distance": 4,
                 "average_block_time": 4000,
                 "imports": [],
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -260,10 +256,6 @@
                 "imports": [
                     "XRP"
                 ],
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

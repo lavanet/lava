@@ -11,10 +11,6 @@
                 "finalization_distance": 4,
                 "average_block_time": 3000,
                 "imports": [],
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -305,10 +301,6 @@
                 "imports": [
                     "TRX"
                 ],
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
