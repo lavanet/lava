@@ -1044,7 +1044,7 @@ func TestNoPairingsError(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // let probes finish
-	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
+	_, err = csm.getValidProviderAddresses(context.Background(), map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
 	require.Error(t, err)
 	require.True(t, PairingListEmptyError.Is(err))
 }
