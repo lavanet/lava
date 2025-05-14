@@ -172,18 +172,18 @@ echo "---------------------------------------------"
 
 get_base_specs() {
     local priority_specs=(
-        "specs/mainnet-1/specs/ibc.json"
-        "specs/mainnet-1/specs/cosmoswasm.json"
-        "specs/mainnet-1/specs/tendermint.json"
-        "specs/mainnet-1/specs/cosmossdk.json"
-        "specs/testnet-2/specs/cosmossdkv45.json"
-        "specs/testnet-2/specs/cosmossdk_full.json"
-        "specs/mainnet-1/specs/cosmossdkv50.json"
-        "specs/mainnet-1/specs/ethermint.json"
-        "specs/mainnet-1/specs/ethereum.json"
-        "specs/mainnet-1/specs/solana.json"
-        "specs/mainnet-1/specs/aptos.json"
-        "specs/mainnet-1/specs/btc.json"
+        "cookbook/specs/ibc.json"
+        "cookbook/specs/cosmoswasm.json"
+        "cookbook/specs/tendermint.json"
+        "cookbook/specs/cosmossdk.json"
+        "cookbook/specs/cosmossdkv45.json"
+        "cookbook/specs/cosmossdk_full.json"
+        "cookbook/specs/cosmossdkv50.json"
+        "cookbook/specs/ethermint.json"
+        "cookbook/specs/ethereum.json"
+        "cookbook/specs/solana.json"
+        "cookbook/specs/aptos.json"
+        "cookbook/specs/btc.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")
@@ -191,15 +191,15 @@ get_base_specs() {
 
 get_hyperliquid_specs() {
     local priority_specs=(
-        "specs/mainnet-1/specs/ibc.json"
-        "specs/mainnet-1/specs/cosmoswasm.json"
-        "specs/mainnet-1/specs/tendermint.json"
-        "specs/mainnet-1/specs/cosmossdk.json"
-        "specs/testnet-2/specs/cosmossdkv45.json"
-        "specs/testnet-2/specs/cosmossdk_full.json"
-        "specs/mainnet-1/specs/cosmossdkv50.json"
-        "specs/testnet-2/specs/lava.json"
-        "specs/mainnet-1/specs/hyperliquid.json"
+        "cookbook/specs/ibc.json"
+        "cookbook/specs/cosmoswasm.json"
+        "cookbook/specs/tendermint.json"
+        "cookbook/specs/cosmossdk.json"
+        "cookbook/specs/cosmossdkv45.json"
+        "cookbook/specs/cosmossdk_full.json"
+        "cookbook/specs/cosmossdkv50.json"
+        "cookbook/specs/lava.json"
+        "cookbook/specs/hyperliquid.json"
     )
 
     (IFS=,; echo "${priority_specs[*]}")

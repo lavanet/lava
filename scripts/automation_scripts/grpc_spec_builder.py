@@ -18,11 +18,11 @@ TEMPLATE = """
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
-# spec_current_file_path = "/home/user/go/src/lava/specs/mainnet-1/specs/osmosis.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/osmosis.json" 
 
 # Cosmos
 # grpc_server = "gaia-node-1.lavapro.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/specs/mainnet-1/specs/cosmoshub.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/cosmoshub.json" 
 
 # Juno
 # grpc_server = "juno-node-1.lavapro.xyz:9090"
@@ -57,7 +57,7 @@ chainId = "AXELAR"
 
 
 ## 
-spec_current_file_path = os.getcwd() + "/specs/mainnet-1/specs/" + spec_file_name
+spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
 
 special_cases_descriptors_with_no_rest_api = []
 

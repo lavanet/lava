@@ -2,7 +2,7 @@
 # call this bash with this format:
 # test_spec_full [SPEC_file_path] {[api_interface] [service-url] ...} [--install]
 # example:
-# test_spec_full specs/mainnet-1/specs/lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
+# test_spec_full cookbook/specs/lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh

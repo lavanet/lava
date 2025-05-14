@@ -77,7 +77,7 @@ Lava has many specs and participants can add and modify specs using governance p
 lavad tx gov submit-legacy-proposal spec-add "{JSON_FILE_PATH}" -y --from "{ACCOUNT_NAME}" --gas-adjustment "1.5" --gas "auto" --node "{LAVA_RPC_NODE}"
 ```
 
-To ensure collaborative efforts and proper versioning, kindly submit a pull request (PR) to add the Specification (Spec) to this specs/mainnet-1 before any further updates.
+To ensure collaborative efforts and proper versioning, kindly submit a pull request (PR) to add the Specification (Spec) to this cookbook before any further updates.
 
 #### Param description (and examples)
 

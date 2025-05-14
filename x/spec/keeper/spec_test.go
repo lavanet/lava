@@ -823,7 +823,7 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 	ts := newTester(t)
 
 	// read solana spec from file
-	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+	getToTopMostPath := "../../.././cookbook/specs/"
 	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
 	fileName := ""
@@ -883,12 +883,12 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 func TestSpecs(t *testing.T) {
 	ts := newTester(t)
 
-	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+	getToTopMostPath := "../../.././cookbook/specs/"
 
 	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
 
-	getToTopMostPath = "../../.././specs/testnet-2/specs/"
+	getToTopMostPath = "../../.././cookbook/specs/"
 
 	specsFilesTestnet, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
