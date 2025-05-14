@@ -20,10 +20,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var (
-	AllowMissingApisByDefault = true
-	DefaultApiName            = "Default-"
-)
+var DefaultApiName = "Default-"
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
@@ -349,9 +346,12 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 			Name:              DefaultApiName + apiKey.Name, // do not change this name
 			ComputeUnits:      20,                           // set 20 compute units by default
 			ExtraComputeUnits: 0,
-			Category:          spectypes.SpecCategory{},
+			Category: spectypes.SpecCategory{
+				Deterministic: true,
+			},
 			BlockParsing: spectypes.BlockParser{
-				ParserFunc: spectypes.PARSER_FUNC_EMPTY,
+				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+				ParserArg:  []string{spectypes.ParserArgLatest},
 			},
 			TimeoutMs: 0,
 			Parsers:   []spectypes.GenericParser{},
@@ -380,12 +380,9 @@ func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, erro
 	// Fetch server api by name
 	apiCont, ok := apip.serverApis[apiKey]
 
-	// Return an error if spec does not exist
+	// Return an api container does not exist, return a default one
 	if !ok {
-		if AllowMissingApisByDefault {
-			return apip.defaultApiContainer(apiKey)
-		}
-		return nil, common.APINotSupportedError
+		return apip.defaultApiContainer(apiKey)
 	}
 
 	// Return an error if api is disabled
