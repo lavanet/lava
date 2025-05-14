@@ -141,8 +141,7 @@ enum PARSER_FUNC{
 
 message SpecCategory{
   bool deterministic = 1;
-  reserved 2;
-  bool subscription = 3;
+  reserved 2, 3;
   uint32 stateful = 4;
   bool hanging_api = 5;
 }
