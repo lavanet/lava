@@ -33,7 +33,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -49,7 +48,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -65,7 +63,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }
@@ -93,7 +90,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -109,7 +105,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 1
                                 }
                             },
@@ -125,7 +120,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -141,7 +135,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -157,7 +150,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 1
                                 }
                             },
@@ -173,7 +165,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -190,7 +181,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -207,7 +197,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }

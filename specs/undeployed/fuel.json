@@ -32,7 +32,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }

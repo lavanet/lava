@@ -36,7 +36,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -52,7 +51,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -68,7 +66,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -84,7 +81,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -100,7 +96,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -116,7 +111,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -132,7 +126,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -148,7 +141,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -164,7 +156,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -180,7 +171,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -196,7 +186,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -212,7 +201,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -228,7 +216,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -244,7 +231,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -260,7 +246,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -276,7 +261,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -292,7 +276,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               }
@@ -353,7 +336,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -369,7 +351,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -385,7 +366,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -401,7 +381,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -417,7 +396,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -433,7 +411,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -449,7 +426,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -465,7 +441,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -481,7 +456,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -497,7 +471,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -513,7 +486,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               },
@@ -529,7 +501,6 @@
                 "enabled": true,
                 "category": {
                   "deterministic": true,
-                  "subscription": false,
                   "stateful": 0
                 }
               }

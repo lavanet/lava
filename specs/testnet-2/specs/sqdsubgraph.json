@@ -32,7 +32,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             },
@@ -48,7 +47,6 @@
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }
@@ -99,7 +97,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }
@@ -128,7 +125,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 }
                             }
