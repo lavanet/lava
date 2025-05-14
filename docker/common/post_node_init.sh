@@ -47,7 +47,7 @@ NODE="${NODE:-tcp://lava-node:26657}"
 
 lavad config node $NODE
 (
-cd /lava/specs/mainnet-1/specs/
+cd /lava/cookbook/specs/
 specs=$(get_base_specs)
 lavad tx gov submit-legacy-proposal spec-add $specs,./cosmoshub.json,./lava.json --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 )

@@ -3,7 +3,7 @@ import json
 import os 
 import shutil
 
-all_specs = glob.glob(os.path.join(os.getcwd(), "specs/mainnet-1/specs/*.json"))
+all_specs = glob.glob(os.path.join(os.getcwd(), "cookbook/specs/*.json"))
 imported = set()
 exported = {}
 

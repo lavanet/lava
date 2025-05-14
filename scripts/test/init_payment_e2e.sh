@@ -8,7 +8,7 @@ source $__dir/../useful_commands.sh
 GASPRICE="0.00002ulava"
 
 # Specs proposal
-lavad tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/cosmoswasm.json,./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdkv50.json,./cookbook/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov deposit 1 100ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block

@@ -11,7 +11,7 @@ It uses the grpc descriptors of the endpoint you provide in order to cross valid
 
 ```
 grpc_server = "juno-node-1.lavapro.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/specs/mainnet-1/specs/juno.json"
+spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/juno.json"
 ```
 
 Launch the script
@@ -36,7 +36,7 @@ Used for Scaffolding grpc interface.
 
 ```
 grpc_server = "juno-node-1.lavapro.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/specs/mainnet-1/specs/juno.json"
+spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/juno.json"
 chain = "Juno"
 result_dir = "/home/user/go/src/lava/scripts/automation_scripts/automation_results/grpcClientProtobufs"
 ```
