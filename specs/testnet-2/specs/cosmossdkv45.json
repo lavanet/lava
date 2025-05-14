@@ -36,8 +36,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/txs",
@@ -55,8 +54,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/txs/{hash}",
@@ -74,8 +72,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/bank/balances/{address}",
@@ -93,8 +90,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/bank/total",
@@ -112,8 +108,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/bank/total/{denomination}",
@@ -131,8 +126,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/auth/accounts/{address}",
@@ -150,8 +144,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/delegations",
@@ -169,8 +162,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
@@ -188,8 +180,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
@@ -207,8 +198,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
@@ -226,8 +216,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/redelegations",
@@ -245,8 +234,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/validators",
@@ -264,8 +252,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
@@ -283,8 +270,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/validators",
@@ -302,8 +288,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/validators/{validatorAddr}",
@@ -321,8 +306,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
@@ -340,8 +324,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/pool",
@@ -359,8 +342,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/parameters",
@@ -378,8 +360,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/slashing/signing_infos",
@@ -397,8 +378,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/slashing/parameters",
@@ -416,8 +396,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/minting/parameters",
@@ -435,8 +414,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/minting/inflation",
@@ -454,8 +432,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/minting/annual-provisions",
@@ -473,8 +450,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/validators/{validatorAddr}/delegations",
@@ -492,8 +468,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals",
@@ -511,8 +486,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}",
@@ -530,8 +504,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/proposer",
@@ -549,8 +522,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/deposits",
@@ -568,8 +540,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
@@ -587,8 +558,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/votes",
@@ -606,8 +576,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/votes/{voter}",
@@ -625,8 +594,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/tally",
@@ -644,8 +612,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/parameters/deposit",
@@ -663,8 +630,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/parameters/tallying",
@@ -682,8 +648,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/parameters/voting",
@@ -701,8 +666,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/rewards",
@@ -720,8 +684,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
@@ -739,8 +702,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
@@ -758,8 +720,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/validators/{validatorAddr}",
@@ -777,8 +738,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
@@ -796,8 +756,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/validators/{validatorAddr}/rewards",
@@ -815,8 +774,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/community_pool",
@@ -834,8 +792,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/parameters",
@@ -853,8 +810,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -887,8 +843,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/txs/decode",
@@ -906,8 +861,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/bank/accounts/{address}/transfers",
@@ -925,8 +879,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/slashing/validators/{validatorAddr}/unjail",
@@ -944,8 +897,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/staking/delegators/{delegatorAddr}/redelegations",
@@ -963,8 +915,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals",
@@ -982,8 +933,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/param_change",
@@ -1001,8 +951,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/deposits",
@@ -1020,8 +969,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/gov/proposals/{proposalId}/votes",
@@ -1039,8 +987,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/rewards",
@@ -1058,8 +1005,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
@@ -1077,8 +1023,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
@@ -1096,8 +1041,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/distribution/validators/{validatorAddr}/rewards",
@@ -1115,8 +1059,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

@@ -39,8 +39,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/conflict/params",
@@ -57,8 +56,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/epoch_details",
@@ -75,8 +73,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/fixated_params",
@@ -93,8 +90,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/params",
@@ -111,8 +107,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/stake_storage",
@@ -129,8 +124,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
@@ -147,8 +141,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/clients/{chainID}",
@@ -165,8 +158,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/epoch_payments",
@@ -183,8 +175,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/epoch_payments/{index}",
@@ -201,8 +192,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
@@ -219,8 +209,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/params",
@@ -237,8 +226,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_payment_storage",
@@ -255,8 +243,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
@@ -273,8 +260,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/providers/{chainID}",
@@ -291,8 +277,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
@@ -309,8 +294,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
@@ -327,8 +311,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
@@ -345,8 +328,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
@@ -365,8 +347,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/plans/show_all_plans",
@@ -383,8 +364,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
@@ -401,8 +381,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/chain/{chainID}",
@@ -419,8 +398,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/params",
@@ -437,8 +415,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/show_all_chains",
@@ -455,8 +432,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
@@ -473,8 +449,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/spec",
@@ -491,8 +466,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/spec/{index}",
@@ -509,8 +483,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/timerstore/next/{store_key}/{prefix}",
@@ -527,8 +500,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/plans/params",
@@ -545,8 +517,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/fixationstore/store_keys",
@@ -563,8 +534,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/sdk_pairing",
@@ -581,8 +551,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/pools",
@@ -599,8 +568,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/timerstore/all_timers/{store_key}/{prefix}",
@@ -617,8 +585,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/downtime/v1/params",
@@ -635,8 +602,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/fixationstore/Entry/{store_key}/{prefix}/{key}/{block}",
@@ -653,8 +619,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/dualstaking/params",
@@ -671,8 +636,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/list_projects/{subscription}",
@@ -689,8 +653,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/dualstaking/provider_delegators/{provider}",
@@ -707,8 +670,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}",
@@ -725,8 +687,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/spec_raw/{ChainID}",
@@ -743,8 +704,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/params",
@@ -761,8 +721,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/projects/info/{project}",
@@ -779,8 +738,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/dualstaking/delegator_providers/{delegator}",
@@ -797,8 +755,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/projects/developer/{developer}",
@@ -815,8 +772,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}",
@@ -833,8 +789,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/block_reward",
@@ -851,8 +806,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/plans/list",
@@ -869,8 +823,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/current/{consumer}",
@@ -887,8 +840,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/static_providers_list/{chainID}",
@@ -905,8 +857,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/conflict/provider_conflicts/{provider}",
@@ -923,8 +874,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/fixated_params/{index}",
@@ -941,8 +891,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/protocol/params",
@@ -959,8 +908,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/conflict/conflict_vote",
@@ -977,8 +925,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_monthly_payout/{provider}",
@@ -995,8 +942,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}",
@@ -1013,8 +959,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}",
@@ -1031,8 +976,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/downtime/v1/query_downtime",
@@ -1049,8 +993,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/conflict/consumer_conflicts/{consumer}",
@@ -1067,8 +1010,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}",
@@ -1085,8 +1027,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/spec_raw",
@@ -1103,8 +1044,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/timerstore/store_keys",
@@ -1121,8 +1061,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/spec/spec/{ChainID}",
@@ -1139,8 +1078,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/params",
@@ -1157,8 +1095,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/projects/params",
@@ -1175,8 +1112,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/plans/info/{plan_index}",
@@ -1193,8 +1129,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/list",
@@ -1211,8 +1146,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/next_to_month_expiry",
@@ -1229,8 +1163,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/iprpc_spec_reward/{spec}",
@@ -1247,8 +1180,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}",
@@ -1265,8 +1197,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/tracked_usage/{subscription}",
@@ -1283,8 +1214,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/iprpc_provider_reward/{provider}",
@@ -1301,8 +1231,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}",
@@ -1319,8 +1248,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/dualstaking/delegator_rewards/{delegator}",
@@ -1337,8 +1265,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/SpecTrackedInfo/{chain_id}/{provider}",
@@ -1355,8 +1282,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/providers_epoch_cu",
@@ -1373,8 +1299,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider/{address}/{chainID}",
@@ -1391,8 +1316,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}",
@@ -1409,8 +1333,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/rewards/show_iprpc_data",
@@ -1427,8 +1350,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/estimated_provider_rewards/{provider}/{amount_delegator}",
@@ -1445,8 +1367,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/epochstorage/provider_metadata/{provider}",
@@ -1463,8 +1384,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_reputation_details/{address}/{chainID}/{cluster}",
@@ -1481,8 +1401,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/subscription/estimated_pools_rewards",
@@ -1499,8 +1418,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/lavanet/lava/pairing/provider_reputation/{provider}/{chainID}/{cluster}",
@@ -1517,8 +1435,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -1580,8 +1497,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
@@ -1598,8 +1514,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.conflict.Query/Params",
@@ -1616,8 +1531,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/EpochDetails",
@@ -1634,8 +1548,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/FixatedParams",
@@ -1652,8 +1565,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
@@ -1670,8 +1582,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/Params",
@@ -1688,8 +1599,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/StakeStorage",
@@ -1706,8 +1616,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
@@ -1724,8 +1633,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/Clients",
@@ -1742,8 +1650,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/EpochPayments",
@@ -1760,8 +1667,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
@@ -1778,8 +1684,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/SdkPairing",
@@ -1796,8 +1701,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/GetPairing",
@@ -1814,8 +1718,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/Params",
@@ -1832,8 +1735,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
@@ -1850,8 +1752,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
@@ -1868,8 +1769,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/Providers",
@@ -1886,8 +1786,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
@@ -1904,8 +1803,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
@@ -1922,8 +1820,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/UserEntry",
@@ -1940,8 +1837,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/VerifyPairing",
@@ -1959,8 +1855,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/Chain",
@@ -1977,8 +1872,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/Params",
@@ -1995,8 +1889,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/ShowAllChains",
@@ -2013,8 +1906,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/ShowChainInfo",
@@ -2031,8 +1923,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/Spec",
@@ -2049,8 +1940,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/SpecAll",
@@ -2067,8 +1957,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "router.v1.Query.Params",
@@ -2085,8 +1974,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/SpecRaw",
@@ -2103,8 +1991,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/ListProjects",
@@ -2121,8 +2008,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.fixationstore.Query/AllIndices",
@@ -2139,8 +2025,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.conflict.Query/ConsumerConflicts",
@@ -2157,8 +2042,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.protocol.Query/Params",
@@ -2175,8 +2059,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.spec.Query/SpecAllRaw",
@@ -2193,8 +2076,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.projects.Query/Info",
@@ -2211,8 +2093,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.timerstore.Query/StoreKeys",
@@ -2229,8 +2110,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.projects.Query/Params",
@@ -2247,8 +2127,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.fixationstore.Query/Entry",
@@ -2265,8 +2144,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/BlockReward",
@@ -2283,8 +2161,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.dualstaking.Query/Params",
@@ -2301,8 +2178,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.dualstaking.Query/DelegatorRewards",
@@ -2319,8 +2195,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.downtime.v1.Query/QueryDowntime",
@@ -2337,8 +2212,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.timerstore.Query/Next",
@@ -2355,8 +2229,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.plans.Query/Info",
@@ -2373,8 +2246,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/EffectivePolicy",
@@ -2391,8 +2263,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/List",
@@ -2409,8 +2280,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.plans.Query/Params",
@@ -2427,8 +2297,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/StaticProvidersList",
@@ -2445,8 +2314,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.downtime.v1.Query/QueryParams",
@@ -2463,8 +2331,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/Params",
@@ -2481,8 +2348,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/Params",
@@ -2499,8 +2365,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.dualstaking.Query/ProviderDelegators",
@@ -2517,8 +2382,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.plans.Query/List",
@@ -2535,8 +2399,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.fixationstore.Query/Versions",
@@ -2553,8 +2416,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.fixationstore.Query/StoreKeys",
@@ -2571,8 +2433,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/Pools",
@@ -2589,8 +2450,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.conflict.Query/ProviderConflicts",
@@ -2607,8 +2467,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderMonthlyPayout",
@@ -2625,8 +2484,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/SubscriptionMonthlyPayout",
@@ -2643,8 +2501,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/Current",
@@ -2661,8 +2518,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.timerstore.Query/AllTimers",
@@ -2679,8 +2535,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.projects.Query/Developer",
@@ -2697,8 +2552,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.dualstaking.Query/DelegatorProviders",
@@ -2715,8 +2569,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/NextToMonthExpiry",
@@ -2733,8 +2586,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/EstimatedRewards",
@@ -2751,8 +2603,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/IprpcProviderRewardEstimation",
@@ -2769,8 +2620,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/TrackedUsage",
@@ -2787,8 +2637,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/EstimatedValidatorRewards",
@@ -2805,8 +2654,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.dualstaking.Query/DelegatorRewardsList",
@@ -2823,8 +2671,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/IprpcSpecReward",
@@ -2841,8 +2688,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProvidersEpochCu",
@@ -2859,8 +2705,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/SpecTrackedInfo",
@@ -2877,8 +2722,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/Provider",
@@ -2895,8 +2739,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderPairingChance",
@@ -2913,8 +2756,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.rewards.Query/ShowIprpcData",
@@ -2931,8 +2773,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderReputationDetails",
@@ -2949,8 +2790,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.epochstorage.Query/ProviderMetaData",
@@ -2967,8 +2807,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/EstimatedProviderRewards",
@@ -2985,8 +2824,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.subscription.Query/EstimatedPoolsRewards",
@@ -3003,8 +2841,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "lavanet.lava.pairing.Query/ProviderReputation",
@@ -3021,8 +2858,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

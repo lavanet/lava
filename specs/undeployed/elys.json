@@ -38,8 +38,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/accountedpool/accounted_pool/{pool_id}",
@@ -56,8 +55,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/balance/{address}/{denom}",
@@ -74,8 +72,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/denom_liquidity",
@@ -92,8 +89,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/denom_liquidity/{denom}",
@@ -110,8 +106,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/exit_pool_estimation",
@@ -128,8 +123,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/in_route_by_denom/{denom_in}/{denom_out}",
@@ -146,8 +140,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/join_pool_estimation",
@@ -164,8 +157,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/out_route_by_denom/{denom_out}/{denom_in}",
@@ -182,8 +174,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/params",
@@ -200,8 +191,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/pool",
@@ -218,8 +208,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/pool/{pool_id}",
@@ -236,8 +225,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/slippage_track/{pool_id}",
@@ -254,8 +242,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/slippage_tracks",
@@ -272,8 +259,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/swap_estimation",
@@ -290,8 +276,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/amm/swap_estimation_by_denom",
@@ -308,8 +293,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/assetprofile/entry",
@@ -326,8 +310,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/assetprofile/entry/{base_denom}",
@@ -344,8 +327,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/assetprofile/entry/{denom}",
@@ -362,8 +344,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/assetprofile/params",
@@ -380,8 +361,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/burner/history",
@@ -398,8 +378,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/burner/history/{timestamp}/{denom}",
@@ -416,8 +395,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/burner/params",
@@ -434,8 +412,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys/clock/v1/contracts",
@@ -452,8 +429,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys/clock/v1/params",
@@ -470,8 +446,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/commitment/params",
@@ -488,8 +463,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/commitment/show_commitments/{creator}",
@@ -506,8 +480,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/epochs/v1/current_epoch",
@@ -524,8 +497,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/epochs/v1/epochs",
@@ -542,8 +514,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/apr/{withdraw_type}/{denom}",
@@ -560,8 +531,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/aprs",
@@ -578,8 +548,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/community_pool",
@@ -596,8 +565,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/params",
@@ -614,8 +582,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/pool_aprs",
@@ -632,8 +599,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/incentive/pool_rewards",
@@ -650,8 +616,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/is-whitelisted",
@@ -668,8 +633,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/params",
@@ -686,8 +650,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/pool/{index}",
@@ -704,8 +667,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/pool/{pagination.key}",
@@ -722,8 +684,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/position/{address}/{id}",
@@ -740,8 +701,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/positions-by-pool/{amm_pool_id}/{pagination.key}",
@@ -758,8 +718,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/leveragelp​/positions-for-address​/{address}​/{pagination.key}",
@@ -776,8 +735,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/positions/{pagination.key}",
@@ -794,8 +752,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/status",
@@ -812,8 +769,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/leveragelp/whitelist/{pagination.key}",
@@ -830,8 +786,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/asset_info",
@@ -848,8 +803,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/asset_info/{denom}",
@@ -866,8 +820,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/params",
@@ -884,8 +837,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/price",
@@ -902,8 +854,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/price_feeder",
@@ -920,8 +871,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/oracle/price_feeder/{feeder}",
@@ -938,8 +888,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys/oracle/band_price_result/{request_id}",
@@ -956,8 +905,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys/oracle/last_band_price_request_id",
@@ -974,8 +922,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/parameter/params",
@@ -992,8 +939,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/perpetual​/is-whitelisted",
@@ -1010,8 +956,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/mtp/{address}/{id}",
@@ -1028,8 +973,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/perpetual​/mtps-by-pool​/{amm_pool_id}​/{pagination.key}",
@@ -1046,8 +990,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/mtps-for-address/{address}/{pagination.key}",
@@ -1064,8 +1007,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/open-estimation",
@@ -1082,8 +1024,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/params",
@@ -1100,8 +1041,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/pool/{index}",
@@ -1118,8 +1058,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/pool/{pagination.key}",
@@ -1136,8 +1075,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/positions/{pagination.key}",
@@ -1154,8 +1092,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/perpetual​/status",
@@ -1172,8 +1109,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/perpetual/whitelist/{pagination.key}",
@@ -1190,8 +1126,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/stablestake/borrow-ratio",
@@ -1208,8 +1143,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/stablestake/params",
@@ -1226,8 +1160,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/tokenomics​/airdrop",
@@ -1244,8 +1177,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/tokenomics/airdrop/{intent}",
@@ -1262,8 +1194,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/tokenomics/genesis_inflation",
@@ -1280,8 +1211,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/tokenomics/params",
@@ -1298,8 +1228,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/tokenomics/time_based_inflation",
@@ -1316,8 +1245,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/elys-network/elys/tokenomics/time_based_inflation/{start_block_height}/{end_block_height}",
@@ -1334,8 +1262,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "​/elys-network​/elys​/transferhook​/params",
@@ -1352,8 +1279,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -1415,8 +1341,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.accountedpool.Query/AllAccountedPool",
@@ -1433,8 +1358,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/Params",
@@ -1451,8 +1375,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/Pool",
@@ -1469,8 +1392,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/DenomLiquidity",
@@ -1487,8 +1409,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/DenomLiquidityAll",
@@ -1505,8 +1426,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/SwapEstimation",
@@ -1523,8 +1443,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/JoinPoolEstimation",
@@ -1541,8 +1460,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/ExitPoolEstimation",
@@ -1559,8 +1477,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/SlippageTrack",
@@ -1577,8 +1494,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/SlippageTrackAll",
@@ -1595,8 +1511,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/Balance",
@@ -1613,8 +1528,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/InRouteByDenom",
@@ -1631,8 +1545,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/OutRouteByDenom",
@@ -1649,8 +1562,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.amm.Query/SwapEstimationByDenom",
@@ -1667,8 +1579,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.assetprofile.Query/Params",
@@ -1685,8 +1596,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.assetprofile.Query/Entry",
@@ -1703,8 +1613,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.assetprofile.Query/EntryByDenom",
@@ -1721,8 +1630,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.assetprofile.Query/EntryAll",
@@ -1739,8 +1647,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.burner.Query/Params",
@@ -1757,8 +1664,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.burner.Query/History",
@@ -1775,8 +1681,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.burner.Query/HistoryAll",
@@ -1793,8 +1698,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.clock.v1.Query/Params",
@@ -1811,8 +1715,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.clock.v1.Query/ClockContracts",
@@ -1829,8 +1732,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.commitment.Query/Params",
@@ -1847,8 +1749,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.commitment.Query/ShowCommitments",
@@ -1865,8 +1766,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.epochs.v1.Query/EpochInfos",
@@ -1883,8 +1783,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.epochs.v1.Query/CurrentEpoch",
@@ -1901,8 +1800,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.estaking.Query/Params",
@@ -1919,8 +1817,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.estaking.Query/Rewards",
@@ -1937,8 +1834,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.incentive.Query/Apr",
@@ -1955,8 +1851,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.incentive.Query/Aprs",
@@ -1973,8 +1868,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.incentive.Query/PoolRewards",
@@ -1991,8 +1885,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.incentive.Query/AllProgramRewards",
@@ -2009,8 +1902,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/Params",
@@ -2027,8 +1919,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/QueryPositions",
@@ -2045,8 +1936,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/QueryPositionsByPool",
@@ -2063,8 +1953,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/GetStatus",
@@ -2081,8 +1970,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/QueryPositionsForAddress",
@@ -2099,8 +1987,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/GetWhitelist",
@@ -2117,8 +2004,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/IsWhitelisted",
@@ -2135,8 +2021,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/Pool",
@@ -2153,8 +2038,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/Pools",
@@ -2171,8 +2055,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.leveragelp.Query/Positions",
@@ -2189,8 +2072,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/Params",
@@ -2207,8 +2089,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/ExternalIncentive",
@@ -2225,8 +2106,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/PoolInfo",
@@ -2243,8 +2123,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/PoolRewardInfo",
@@ -2261,8 +2140,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/UserRewardInfo",
@@ -2279,8 +2157,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/UserPendingReward",
@@ -2297,8 +2174,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/StableStakeApr",
@@ -2315,8 +2191,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.masterchef.Query/PoolAprs",
@@ -2333,8 +2208,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/Params",
@@ -2351,8 +2225,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/BandPriceResult",
@@ -2369,8 +2242,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/LastBandRequestId",
@@ -2387,8 +2259,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/AssetInfo",
@@ -2405,8 +2276,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/AssetInfoAll",
@@ -2423,8 +2293,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/Price",
@@ -2441,8 +2310,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/PriceAll",
@@ -2459,8 +2327,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/PriceFeeder",
@@ -2477,8 +2344,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.oracle.Query/PriceFeederAll",
@@ -2495,8 +2361,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.parameter.Query/Params",
@@ -2513,8 +2378,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/Params",
@@ -2531,8 +2395,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/GetPositions",
@@ -2549,8 +2412,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/GetPositionsByPool",
@@ -2567,8 +2429,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/GetStatus",
@@ -2585,8 +2446,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/GetPositionsForAddress",
@@ -2603,8 +2463,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/GetWhitelist",
@@ -2621,8 +2480,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/IsWhitelisted",
@@ -2639,8 +2497,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/Pool",
@@ -2657,8 +2514,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/Pools",
@@ -2675,8 +2531,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/MTP",
@@ -2693,8 +2548,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.perpetual.Query/OpenEstimation",
@@ -2711,8 +2565,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.stablestake.Query/Params",
@@ -2729,8 +2582,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.stablestake.Query/BorrowRatio",
@@ -2747,8 +2599,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/Params",
@@ -2765,8 +2616,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/Airdrop",
@@ -2783,8 +2633,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/AirdropAll",
@@ -2801,8 +2650,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/GenesisInflation",
@@ -2819,8 +2667,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/TimeBasedInflation",
@@ -2837,8 +2684,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.tokenomics.Query/TimeBasedInflationAll",
@@ -2855,8 +2701,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "elys.transferhook.Query/Params",
@@ -2873,8 +2718,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

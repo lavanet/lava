@@ -38,8 +38,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "bor_getCurrentProposer",
@@ -56,8 +55,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "bor_getCurrentValidators",
@@ -74,8 +72,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "bor_getRootHash",
@@ -92,8 +89,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "bor_getSignersAtHash",
@@ -110,8 +106,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "qn_getBlockWithReceipts",
@@ -128,8 +123,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "qn_getReceipts",
@@ -146,8 +140,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "txpool_content",
@@ -164,8 +157,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "txpool_inspect",
@@ -182,8 +174,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "txpool_status",
@@ -200,8 +191,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_blockNumber",
@@ -218,8 +208,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_forks",
@@ -236,8 +225,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_getBlockByTimestamp",
@@ -254,8 +242,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_getBlockReceiptsByBlockHash",
@@ -272,8 +259,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_getHeaderByHash",
@@ -290,8 +276,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "erigon_getHeaderByNumber",
@@ -308,8 +293,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

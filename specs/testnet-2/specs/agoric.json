@@ -39,8 +39,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/swingset/mailbox/{peer}",
@@ -57,8 +56,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/swingset/params",
@@ -75,8 +73,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/vbank/params",
@@ -93,8 +90,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/vbank/state",
@@ -111,8 +107,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/vstorage/children/{path}",
@@ -129,8 +124,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/agoric/vstorage/data/{path}",
@@ -147,8 +141,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -206,8 +199,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.swingset.Query/Mailbox",
@@ -224,8 +216,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.swingset.Query/Params",
@@ -242,8 +233,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.vbank.Query/Params",
@@ -260,8 +250,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.vbank.Query/State",
@@ -278,8 +267,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.vstorage.Query/Children",
@@ -296,8 +284,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "agoric.vstorage.Query/Data",
@@ -314,8 +301,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

@@ -38,8 +38,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/mint/v1beta1/params",
@@ -56,8 +55,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stridelabs/stride/epochs",
@@ -74,8 +72,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stridelabs/stride/epochs/current_epoch",
@@ -92,8 +89,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stridelabs/stride/epochs/epoch_info",
@@ -110,8 +106,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/icacallbacks/callback_data",
@@ -128,8 +123,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/icacallbacks/callback_data/{callbackKey}",
@@ -146,8 +140,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/icacallbacks/params",
@@ -164,8 +157,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/deposit_record",
@@ -182,8 +174,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/deposit_record/{id}",
@@ -200,8 +191,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/epoch_unbonding_record",
@@ -218,8 +208,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/epoch_unbonding_record/{epochNumber}",
@@ -236,8 +225,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/user_redemption_record",
@@ -254,8 +242,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/user_redemption_record/{id}",
@@ -272,8 +259,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/records/user_redemption_record_for_user/{chainId}/{day}/{address}/{limit}",
@@ -290,8 +276,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/StrideLabs/stride/records/params",
@@ -308,8 +293,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/epoch_tracker",
@@ -326,8 +310,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/epoch_tracker/{epochIdentifier}",
@@ -344,8 +327,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/host_zone",
@@ -362,8 +344,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/host_zone/{chain_id}",
@@ -380,8 +361,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/ica_account",
@@ -398,8 +378,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/module_address/{name}",
@@ -416,8 +395,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stride-Labs/stride/stakeibc/validators/{chain_id}",
@@ -434,8 +412,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "/Stridelabs/stride/stakeibc/params",
@@ -452,8 +429,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 }
               ],
               "headers": [],
@@ -515,8 +491,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "interchain_security.ccv.consumer.v1.Query/QueryParams",
@@ -533,8 +508,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "interchain_security.ccv.consumer.v1.Query/QueryProviderInfo",
@@ -551,8 +525,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "interchain_security.ccv.consumer.v1.Query/QueryThrottleState",
@@ -569,8 +542,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "packetforward.v1.Query/Params",
@@ -587,8 +559,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/AllBlacklistedDenoms",
@@ -605,8 +576,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/AllRateLimits",
@@ -623,8 +593,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/AllWhitelistedAdresses",
@@ -641,8 +610,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/RateLimit",
@@ -659,8 +627,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/RateLimitsByChainId",
@@ -677,8 +644,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "ratelimit.v1.Query/RateLimitsByChannelId",
@@ -695,8 +661,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.autopilot.Query/Params",
@@ -713,8 +678,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/ClaimMetadata",
@@ -731,8 +695,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/ClaimRecord",
@@ -749,8 +712,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/ClaimStatus",
@@ -767,8 +729,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/ClaimableForAction",
@@ -785,8 +746,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/DistributorAccountBalance",
@@ -803,8 +763,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/Params",
@@ -821,8 +780,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/TotalClaimable",
@@ -839,8 +797,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.claim.Query/UserVestings",
@@ -857,8 +814,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.epochs.Query/EpochInfo",
@@ -875,8 +831,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.epochs.Query/EpochInfos",
@@ -893,8 +848,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.epochs.Query/CurrentEpoch",
@@ -911,8 +865,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icacallbacks.Query/CallbackData",
@@ -929,8 +882,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icacallbacks.Query/CallbackDataAll",
@@ -947,8 +899,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icacallbacks.Query/Params",
@@ -965,8 +916,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icaoracle.Query/ActiveOracles",
@@ -983,8 +933,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icaoracle.Query/AllOracles",
@@ -1001,8 +950,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icaoracle.Query/Metrics",
@@ -1019,8 +967,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.icaoracle.Query/Oracle",
@@ -1037,8 +984,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.mint.v1beta1.Query/EpochProvisions",
@@ -1055,8 +1001,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.mint.v1beta1.Query/Params",
@@ -1073,8 +1018,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/DepositRecord",
@@ -1091,8 +1035,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/DepositRecordAll",
@@ -1109,8 +1052,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/DepositRecordByHost",
@@ -1127,8 +1069,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/EpochUnbondingRecord",
@@ -1145,8 +1086,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/EpochUnbondingRecordAll",
@@ -1163,8 +1103,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/LSMDeposits",
@@ -1181,8 +1120,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/Params",
@@ -1199,8 +1137,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/UserRedemptionRecord",
@@ -1217,8 +1154,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/UserRedemptionRecordAll",
@@ -1235,8 +1171,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.records.Query/UserRedemptionRecordForUser",
@@ -1253,8 +1188,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/DelegationRecords",
@@ -1271,8 +1205,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/HostZone",
@@ -1289,8 +1222,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/RedemptionRecord",
@@ -1307,8 +1239,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/RedemptionRecords",
@@ -1325,8 +1256,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/SlashRecords",
@@ -1343,8 +1273,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakedym.Query/UnbondingRecords",
@@ -1361,8 +1290,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/AddressUnbondings",
@@ -1379,8 +1307,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/AllTradeRoutes",
@@ -1397,8 +1324,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/EpochTracker",
@@ -1415,8 +1341,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/EpochTrackerAll",
@@ -1433,8 +1358,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/HostZone",
@@ -1451,8 +1375,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/HostZoneAll",
@@ -1469,8 +1392,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/InterchainAccountFromAddress",
@@ -1487,8 +1409,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/NextPacketSequence",
@@ -1505,8 +1426,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/Params",
@@ -1523,8 +1443,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.stakeibc.Query/Validators",
@@ -1541,8 +1460,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/DelegationRecords",
@@ -1559,8 +1477,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/HostZone",
@@ -1577,8 +1494,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/RedemptionRecord",
@@ -1595,8 +1511,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/RedemptionRecords",
@@ -1613,8 +1528,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/SlashRecords",
@@ -1631,8 +1545,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "stride.staketia.Query/UnbondingRecords",
@@ -1649,8 +1562,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 },
                 {
                   "name": "vesting.v1.Query/Balances",
@@ -1667,8 +1579,7 @@
                     "local": false,
                     "subscription": false,
                     "stateful": 0
-                  },
-                  "extra_compute_units": 0
+                  }
                 }
               ],
               "headers": [],

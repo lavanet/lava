@@ -39,8 +39,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/accounts",
@@ -57,8 +56,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/accounts/{address}",
@@ -75,8 +73,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/address_by_id/{id}",
@@ -93,8 +90,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/bech32",
@@ -111,8 +107,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/bech32/{address_bytes}",
@@ -129,8 +124,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/bech32/{address_string}",
@@ -147,8 +141,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/module_accounts",
@@ -165,8 +158,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/module_accounts/{name}",
@@ -183,8 +175,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/auth/v1beta1/params",
@@ -201,8 +192,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/authz/v1beta1/grants",
@@ -219,8 +209,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/authz/v1beta1/grants/grantee/{grantee}",
@@ -237,8 +226,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/authz/v1beta1/grants/granter/{granter}",
@@ -255,8 +243,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/balances/{address}",
@@ -273,8 +260,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
@@ -291,8 +277,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
@@ -309,8 +294,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/base_denom",
@@ -327,8 +311,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/denom_owners/{denom}",
@@ -345,8 +328,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/denoms_metadata",
@@ -363,8 +345,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
@@ -381,8 +362,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/params",
@@ -399,8 +379,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/send_enabled",
@@ -417,8 +396,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
@@ -435,8 +413,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/spendable_balances/{address}/by_denom",
@@ -453,8 +430,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/supply",
@@ -471,8 +447,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/supply/by_denom",
@@ -489,8 +464,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/supply/{denom}",
@@ -507,8 +481,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/supply_without_offset",
@@ -525,8 +498,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}",
@@ -543,8 +515,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/node/v1beta1/config",
@@ -561,8 +532,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/authn",
@@ -579,8 +549,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/chain",
@@ -597,8 +566,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/codec",
@@ -615,8 +583,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/configuration",
@@ -633,8 +600,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/query_services",
@@ -651,8 +617,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/app_descriptor/tx_descriptor",
@@ -669,8 +634,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/interfaces",
@@ -687,8 +651,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/reflection/v1beta1/interfaces/{interface_name}/implementations",
@@ -705,8 +668,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/abci_query",
@@ -723,8 +685,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
@@ -741,8 +702,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
@@ -761,8 +721,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/node_info",
@@ -779,8 +738,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/syncing",
@@ -797,8 +755,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
@@ -815,8 +772,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
@@ -834,8 +790,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/consensus/v1/params",
@@ -852,8 +807,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/community_pool",
@@ -870,8 +824,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
@@ -888,8 +841,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
@@ -906,8 +858,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
@@ -924,8 +875,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
@@ -942,8 +892,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/params",
@@ -960,8 +909,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
@@ -978,8 +926,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
@@ -996,8 +943,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
@@ -1014,8 +960,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/evidence/v1beta1/evidence",
@@ -1032,8 +977,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/evidence/v1beta1/evidence/{hash}",
@@ -1051,7 +995,6 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.hash",
@@ -1074,8 +1017,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
@@ -1092,8 +1034,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
@@ -1110,8 +1051,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/params/{params_type}",
@@ -1128,8 +1068,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals",
@@ -1146,8 +1085,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}",
@@ -1164,8 +1102,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits",
@@ -1182,8 +1119,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits/{depositor}",
@@ -1200,8 +1136,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}/tally",
@@ -1218,8 +1153,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes",
@@ -1236,8 +1170,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes/{voter}",
@@ -1254,8 +1187,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/params/{params_type}",
@@ -1272,8 +1204,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals",
@@ -1290,8 +1221,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
@@ -1308,8 +1238,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
@@ -1326,8 +1255,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
@@ -1344,8 +1272,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
@@ -1362,8 +1289,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
@@ -1380,8 +1306,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
@@ -1398,8 +1323,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/mint/v1beta1/annual_provisions",
@@ -1416,8 +1340,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/mint/v1beta1/inflation",
@@ -1434,8 +1357,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/mint/v1beta1/params",
@@ -1452,8 +1374,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/params/v1beta1/params",
@@ -1470,8 +1391,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/params/v1beta1/subspaces",
@@ -1488,8 +1408,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/slashing/v1beta1/params",
@@ -1506,8 +1425,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/slashing/v1beta1/signing_infos",
@@ -1524,8 +1442,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
@@ -1542,8 +1459,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
@@ -1560,8 +1476,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
@@ -1578,8 +1493,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
@@ -1596,8 +1510,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
@@ -1614,8 +1527,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
@@ -1632,8 +1544,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/historical_info/{height}",
@@ -1652,8 +1563,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/params",
@@ -1670,8 +1580,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/pool",
@@ -1688,8 +1597,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators",
@@ -1706,8 +1614,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
@@ -1724,8 +1631,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
@@ -1742,8 +1648,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
@@ -1760,8 +1665,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
@@ -1778,8 +1682,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
@@ -1796,8 +1699,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/txs",
@@ -1814,8 +1716,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/txs/block/{height}",
@@ -1834,8 +1735,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/txs/{hash}",
@@ -1853,7 +1753,6 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.hash",
@@ -1876,8 +1775,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/upgrade/v1beta1/current_plan",
@@ -1894,8 +1792,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/upgrade/v1beta1/module_versions",
@@ -1912,8 +1809,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
@@ -1932,8 +1828,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/upgrade/v1beta1/authority",
@@ -1950,8 +1845,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/node_info",
@@ -1968,8 +1862,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/syncing",
@@ -1986,8 +1879,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/validatorsets/latest",
@@ -2004,8 +1896,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/validatorsets/{height}",
@@ -2024,8 +1915,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/vote_by_proposal_voter/{proposal_id}/{voter}",
@@ -2042,8 +1932,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/proposals/{proposal_id}/tally",
@@ -2060,8 +1949,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/group_policies_by_group/{group_id}",
@@ -2078,8 +1966,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/proposals_by_group_policy/{address}",
@@ -2096,8 +1983,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/votes_by_proposal/{proposal_id}",
@@ -2114,8 +2000,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/group/v1/group_policies_by_admin/{admin}",
@@ -2132,8 +2017,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/distribution/v1beta1/validators/{validator_address}",
@@ -2150,8 +2034,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [
@@ -2288,8 +2171,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/encode",
@@ -2306,8 +2188,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/encode/amino",
@@ -2324,8 +2205,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/simulate",
@@ -2342,8 +2222,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/tx/v1beta1/txs",
@@ -2361,8 +2240,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -2415,8 +2293,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
@@ -2433,8 +2310,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/Accounts",
@@ -2451,8 +2327,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/ModuleAccountByName",
@@ -2469,8 +2344,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
@@ -2487,8 +2361,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/Params",
@@ -2505,8 +2378,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.authz.v1beta1.Query/GranteeGrants",
@@ -2523,8 +2395,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.authz.v1beta1.Query/GranterGrants",
@@ -2541,8 +2412,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.authz.v1beta1.Query/Grants",
@@ -2559,8 +2429,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/AllBalances",
@@ -2577,8 +2446,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/Balance",
@@ -2595,8 +2463,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/BaseDenom",
@@ -2613,8 +2480,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/DenomMetadata",
@@ -2631,8 +2497,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/DenomsMetadata",
@@ -2649,8 +2514,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/Params",
@@ -2667,8 +2531,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/SpendableBalances",
@@ -2685,8 +2548,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/SupplyOf",
@@ -2703,8 +2565,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
@@ -2721,8 +2582,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/TotalSupply",
@@ -2739,8 +2599,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
@@ -2757,8 +2616,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
@@ -2777,8 +2635,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
@@ -2795,8 +2652,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
@@ -2813,8 +2669,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
@@ -2831,8 +2686,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
@@ -2849,8 +2703,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight",
@@ -2867,8 +2720,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/CommunityPool",
@@ -2885,8 +2737,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/DelegationRewards",
@@ -2903,8 +2754,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/DelegationTotalRewards",
@@ -2921,8 +2771,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/DelegatorValidators",
@@ -2939,8 +2788,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
@@ -2957,8 +2805,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/Params",
@@ -2975,8 +2822,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/ValidatorCommission",
@@ -2993,8 +2839,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards",
@@ -3011,8 +2856,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/ValidatorSlashes",
@@ -3029,8 +2873,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.evidence.v1beta1.Query/AllEvidence",
@@ -3047,8 +2890,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.evidence.v1beta1.Query/Evidence",
@@ -3065,8 +2907,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.feegrant.v1beta1.Query/Allowance",
@@ -3083,8 +2924,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.feegrant.v1beta1.Query/Allowances",
@@ -3101,8 +2941,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.feegrant.v1beta1.Query/AllowancesByGranter",
@@ -3119,8 +2958,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Deposit",
@@ -3137,8 +2975,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Deposits",
@@ -3155,8 +2992,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Params",
@@ -3173,8 +3009,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Proposal",
@@ -3191,8 +3026,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Proposals",
@@ -3209,8 +3043,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/TallyResult",
@@ -3227,8 +3060,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Vote",
@@ -3245,8 +3077,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1beta1.Query/Votes",
@@ -3263,8 +3094,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.mint.v1beta1.Query/AnnualProvisions",
@@ -3281,8 +3111,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.mint.v1beta1.Query/Inflation",
@@ -3299,8 +3128,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.mint.v1beta1.Query/Params",
@@ -3317,8 +3145,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.params.v1beta1.Query/Params",
@@ -3335,8 +3162,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.slashing.v1beta1.Query/Params",
@@ -3353,8 +3179,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.slashing.v1beta1.Query/SigningInfo",
@@ -3371,8 +3196,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.slashing.v1beta1.Query/SigningInfos",
@@ -3389,8 +3213,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Delegation",
@@ -3407,8 +3230,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/DelegatorDelegations",
@@ -3425,8 +3247,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations",
@@ -3443,8 +3264,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/DelegatorValidator",
@@ -3461,8 +3281,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/DelegatorValidators",
@@ -3479,8 +3298,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/HistoricalInfo",
@@ -3497,8 +3315,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Params",
@@ -3515,8 +3332,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Pool",
@@ -3533,8 +3349,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Redelegations",
@@ -3551,8 +3366,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/UnbondingDelegation",
@@ -3569,8 +3383,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Validator",
@@ -3587,8 +3400,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/ValidatorDelegations",
@@ -3605,8 +3417,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations",
@@ -3623,8 +3434,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.staking.v1beta1.Query/Validators",
@@ -3641,8 +3451,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/BroadcastTx",
@@ -3660,8 +3469,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/GetBlockWithTxs",
@@ -3678,8 +3486,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/GetTx",
@@ -3697,7 +3504,6 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.hash",
@@ -3720,8 +3526,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/Simulate",
@@ -3738,8 +3543,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.upgrade.v1beta1.Query/AppliedPlan",
@@ -3756,8 +3560,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.upgrade.v1beta1.Query/CurrentPlan",
@@ -3774,8 +3577,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.upgrade.v1beta1.Query/ModuleVersions",
@@ -3792,8 +3594,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.node.v1beta1.Service/Config",
@@ -3810,8 +3611,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
@@ -3828,8 +3628,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "router.v1.Query.Params",
@@ -3846,8 +3645,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupsByAdmin",
@@ -3864,8 +3662,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetCodecDescriptor",
@@ -3882,8 +3679,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Votes",
@@ -3900,8 +3696,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.params.v1beta1.Query/Subspaces",
@@ -3918,8 +3713,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/SendEnabled",
@@ -3936,8 +3730,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.upgrade.v1beta1.Query/Authority",
@@ -3954,8 +3747,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v1beta1.ReflectionService/ListImplementations",
@@ -3972,8 +3764,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupPolicyInfo",
@@ -3990,8 +3781,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v1beta1.ReflectionService/ListAllInterfaces",
@@ -4008,8 +3798,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupInfo",
@@ -4026,8 +3815,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Params",
@@ -4044,8 +3832,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.tendermint.v1beta1.Service/ABCIQuery",
@@ -4062,8 +3849,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/SpendableBalanceByDenom",
@@ -4080,8 +3866,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/VoteByProposalVoter",
@@ -4098,8 +3883,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetConfigurationDescriptor",
@@ -4116,8 +3900,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Deposit",
@@ -4134,8 +3917,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.distribution.v1beta1.Query/ValidatorDistributionInfo",
@@ -4152,8 +3934,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetChainDescriptor",
@@ -4170,8 +3951,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/TallyResult",
@@ -4188,8 +3968,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/TxDecodeAmino",
@@ -4206,8 +3985,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/TallyResult",
@@ -4224,8 +4002,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/ProposalsByGroupPolicy",
@@ -4242,8 +4019,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Deposits",
@@ -4260,8 +4036,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/VotesByVoter",
@@ -4278,8 +4053,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/VotesByProposal",
@@ -4296,8 +4070,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.bank.v1beta1.Query/DenomOwners",
@@ -4314,8 +4087,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupsByMember",
@@ -4332,8 +4104,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/TxDecode",
@@ -4350,8 +4121,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/TxEncodeAmino",
@@ -4368,8 +4138,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/Proposal",
@@ -4386,8 +4155,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.tx.v1beta1.Service/TxEncode",
@@ -4404,8 +4172,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/Groups",
@@ -4422,8 +4189,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/AddressBytesToString",
@@ -4440,8 +4206,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupMembers",
@@ -4458,8 +4223,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Proposal",
@@ -4476,8 +4240,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Vote",
@@ -4494,8 +4257,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/Bech32Prefix",
@@ -4512,8 +4274,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/AddressStringToBytes",
@@ -4530,8 +4291,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupPoliciesByGroup",
@@ -4548,8 +4308,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetTxDescriptor",
@@ -4566,8 +4325,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.gov.v1.Query/Proposals",
@@ -4584,8 +4342,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetQueryServicesDescriptor",
@@ -4602,8 +4359,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.base.reflection.v2alpha1.ReflectionService/GetAuthnDescriptor",
@@ -4620,8 +4376,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.group.v1.Query/GroupPoliciesByAdmin",
@@ -4638,8 +4393,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/AccountInfo",
@@ -4656,8 +4410,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "cosmos.auth.v1beta1.Query/AccountAddressByID",
@@ -4674,8 +4427,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [

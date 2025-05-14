@@ -39,8 +39,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/v1beta1/params",
@@ -57,8 +56,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/batched_commands/{chain}/{id}",
@@ -75,8 +73,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/burner_info",
@@ -93,8 +90,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/bytecode/{chain}/{contract}",
@@ -111,8 +107,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/chains",
@@ -129,8 +124,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/command_request",
@@ -147,8 +141,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/confirmation_height/{chain}",
@@ -165,8 +158,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/deposit_state",
@@ -183,8 +175,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/erc20_tokens/{chain}",
@@ -201,8 +192,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/event/{chain}/{event_id}",
@@ -219,8 +209,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/gateway_address/{chain}",
@@ -237,8 +226,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/key_address/{chain}",
@@ -255,8 +243,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/params/{chain}",
@@ -273,8 +260,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/pending_commands/{chain}",
@@ -291,8 +277,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/v1beta1/token_info/{chain}",
@@ -309,8 +294,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/key",
@@ -327,8 +311,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/key_id/{chain}",
@@ -345,8 +328,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/keygen_session",
@@ -363,8 +345,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/next_key_id/{chain}",
@@ -381,8 +362,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/params",
@@ -399,8 +379,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/assets/{chain}",
@@ -417,8 +396,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/chain_maintainers/{chain}",
@@ -435,8 +413,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/chain_state/{chain}",
@@ -453,8 +430,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/chains",
@@ -471,8 +447,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/chains_by_asset/{asset}",
@@ -489,8 +464,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/fee",
@@ -507,8 +481,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
@@ -525,8 +498,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/latest_deposit_address/{recipient_addr}/{recipient_chain}/{deposit_chain}",
@@ -543,8 +515,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/message",
@@ -561,8 +532,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/params",
@@ -579,8 +549,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/recipient_address/{deposit_chain}/{deposit_addr}",
@@ -597,8 +566,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/transfer_fee",
@@ -615,8 +583,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
@@ -633,8 +600,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/transfer_rate_limit/{chain}/{asset}",
@@ -651,8 +617,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/v1beta1/transfers_for_chain/{chain}/{state}",
@@ -669,8 +634,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/reward/v1beta1/inflation_rate",
@@ -687,8 +651,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/reward/v1beta1/inflation_rate/{validator}",
@@ -705,8 +668,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/reward/v1beta1/params",
@@ -723,8 +685,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/snapshot/v1beta1/params",
@@ -741,8 +702,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/tss/v1beta1/params",
@@ -759,8 +719,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/vote/v1beta1/params",
@@ -777,8 +736,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/permission/v1beta1/governance_key",
@@ -795,8 +753,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/permission/v1beta1/params",
@@ -813,8 +770,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -873,8 +829,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/call_contract",
@@ -892,8 +847,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/confirm_deposit",
@@ -911,8 +865,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/execute_pending_transfers",
@@ -930,8 +883,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/link",
@@ -949,8 +901,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/register_asset",
@@ -968,8 +919,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/register_fee_collector",
@@ -987,8 +937,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/retry_ibc_transfer",
@@ -1006,8 +955,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/route_ibc_transfers",
@@ -1025,8 +973,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/axelarnet/route_message",
@@ -1044,8 +991,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/add_chain",
@@ -1063,8 +1009,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/confirm_deposit",
@@ -1082,8 +1027,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/confirm_gateway_tx",
@@ -1101,8 +1045,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/confirm_gateway_txs",
@@ -1120,8 +1063,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/confirm_token",
@@ -1139,8 +1081,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/confirm_transfer_key",
@@ -1158,8 +1099,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/create_burn_tokens",
@@ -1177,8 +1117,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/create_deploy_token",
@@ -1196,8 +1135,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/create_pending_transfers",
@@ -1215,8 +1153,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/create_transfer_operatorship",
@@ -1234,8 +1171,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/link",
@@ -1253,8 +1189,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/retry-failed-event",
@@ -1272,8 +1207,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/set_gateway",
@@ -1291,8 +1225,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/evm/sign_commands",
@@ -1310,8 +1243,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/rotate_key",
@@ -1329,8 +1261,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/start_keygen",
@@ -1348,8 +1279,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/submit_pub_key",
@@ -1367,8 +1297,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/submit_signature",
@@ -1386,8 +1315,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/keygen_opt_in",
@@ -1405,8 +1333,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/multisig/v1beta1/keygen_opt_out",
@@ -1424,8 +1351,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/activate_chain",
@@ -1443,8 +1369,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/deactivate_chain",
@@ -1462,8 +1387,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/deregister_chain_maintainer",
@@ -1481,8 +1405,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/register_asset_fee",
@@ -1500,8 +1423,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/register_chain_maintainer",
@@ -1519,8 +1441,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/nexus/set_transfer_rate_limit",
@@ -1538,8 +1459,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/reward/refund_message",
@@ -1557,8 +1477,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/snapshot/deactivate_proxy",
@@ -1576,8 +1495,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/snapshot/register_proxy",
@@ -1595,8 +1513,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/tss/heartbeat",
@@ -1614,8 +1531,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/vote/vote",
@@ -1633,8 +1549,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/permission/deregister_controller",
@@ -1652,8 +1567,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/permission/register_controller",
@@ -1671,8 +1585,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/axelar/permission/update_governance_key",
@@ -1690,8 +1603,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -1732,8 +1644,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.axelarnet.v1beta1.QueryService/PendingIBCTransferCount",
@@ -1750,8 +1661,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/BatchedCommands",
@@ -1768,8 +1678,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/BurnerInfo",
@@ -1786,8 +1695,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Bytecode",
@@ -1804,8 +1712,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Chains",
@@ -1822,8 +1729,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Command",
@@ -1840,8 +1746,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/ConfirmationHeight",
@@ -1858,8 +1763,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/DepositState",
@@ -1876,8 +1780,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/ERC20Tokens",
@@ -1894,8 +1797,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Event",
@@ -1912,8 +1814,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/GatewayAddress",
@@ -1930,8 +1831,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/KeyAddress",
@@ -1948,8 +1848,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Params",
@@ -1966,8 +1865,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/PendingCommands",
@@ -1984,8 +1882,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
@@ -2002,8 +1899,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/Key",
@@ -2020,8 +1916,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/KeyID",
@@ -2038,8 +1933,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/KeygenSession",
@@ -2056,8 +1950,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/NextKeyID",
@@ -2074,8 +1967,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.multisig.v1beta1.QueryService/Params",
@@ -2092,8 +1984,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/Assets",
@@ -2110,8 +2001,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/ChainMaintainers",
@@ -2128,8 +2018,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/ChainState",
@@ -2146,8 +2035,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/Chains",
@@ -2164,8 +2052,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/ChainsByAsset",
@@ -2182,8 +2069,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/FeeInfo",
@@ -2200,8 +2086,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/LatestDepositAddress",
@@ -2218,8 +2103,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/Message",
@@ -2236,8 +2120,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/Params",
@@ -2254,8 +2137,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
@@ -2272,8 +2154,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/TransferFee",
@@ -2290,8 +2171,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/TransferRateLimit",
@@ -2308,8 +2188,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
@@ -2326,8 +2205,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.permission.v1beta1.Query/GovernanceKey",
@@ -2344,8 +2222,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.permission.v1beta1.Query/Params",
@@ -2362,8 +2239,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.reward.v1beta1.QueryService/InflationRate",
@@ -2380,8 +2256,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.reward.v1beta1.QueryService/Params",
@@ -2398,8 +2273,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.snapshot.v1beta1.QueryService/Params",
@@ -2416,8 +2290,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.tss.v1beta1.QueryService/Params",
@@ -2434,8 +2307,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "axelar.vote.v1beta1.QueryService/Params",
@@ -2452,8 +2324,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

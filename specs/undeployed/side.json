@@ -38,8 +38,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/me/{creator}",
@@ -56,8 +55,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/params",
@@ -74,8 +72,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/pool/all",
@@ -92,8 +89,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/pool/{pool_id}",
@@ -110,8 +106,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/volume/day/{pool_id}",
@@ -128,8 +123,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/volume/total/{pool_id}",
@@ -146,8 +140,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/yield/params",
@@ -164,8 +157,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 }
                 ],
                 "headers": [],
@@ -223,8 +215,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Pools",
@@ -241,8 +232,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/MyPools",
@@ -259,8 +249,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Pool",
@@ -277,8 +266,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Volume24",
@@ -295,8 +283,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/TotalVolume",
@@ -313,8 +300,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/APR",
@@ -331,8 +317,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.yield.QueryService/Params",
@@ -349,8 +334,7 @@
                         "local": false,
                         "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 }
                 ],
                 "headers": [],

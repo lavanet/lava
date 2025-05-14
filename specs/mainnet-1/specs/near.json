@@ -37,8 +37,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_changes",
@@ -57,8 +56,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "block",
@@ -78,8 +76,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "parsers": [
                                     {
                                         "parse_path": ".params.finality",
@@ -114,8 +111,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "chunk",
@@ -134,8 +130,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "parsers": [
                                     {
                                         "parse_path": ".params.chunk_id",
@@ -163,8 +158,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_genesis_config",
@@ -181,8 +175,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_protocol_config",
@@ -201,8 +194,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "status",
@@ -219,8 +211,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "network_info",
@@ -237,8 +228,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "validators",
@@ -258,8 +248,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "broadcast_tx_async",
@@ -277,8 +266,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "timeout_ms": 5000
                             },
                             {
@@ -297,8 +285,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "timeout_ms": 20000
                             },
                             {
@@ -317,8 +304,7 @@
                                     "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "timeout_ms": 20000
                             },
                             {
@@ -337,8 +323,7 @@
                                     "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "timeout_ms": 10000,
                                 "parsers": [
                                     {
@@ -366,8 +351,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0,
+                                }
                                 "parsers": [
                                     {
                                         "parse_path": ".params.tx_hash",
@@ -394,8 +378,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "next_light_client_block",
@@ -414,8 +397,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

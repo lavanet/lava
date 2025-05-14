@@ -29,7 +29,6 @@
                 "enabled": true,
                 "name": "/cosmos/bank/v1beta1/denoms_metadata_by_query_string",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -50,7 +49,6 @@
                 "enabled": true,
                 "name": "/cosmos/bank/v1beta1/denom_owners_by_query",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -71,7 +69,6 @@
                 "enabled": true,
                 "name": "/cosmos/base/node/v1beta1/status",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -92,7 +89,6 @@
                 "enabled": true,
                 "name": "/cosmos/distribution/v1beta1/{owner_address}/tokenize_share_record_rewards",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -113,7 +109,6 @@
                 "enabled": true,
                 "name": "/cosmos/gov/v1/constitution",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -134,7 +129,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/tokenize_share_records",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -155,7 +149,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/last_tokenize_share_record_id",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -176,7 +169,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/tokenize_share_lock_info/{address}",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -197,7 +189,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/tokenize_share_record_by_denom/{denom}",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -218,7 +209,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/tokenize_share_record_by_id/{id}",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -239,7 +229,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/tokenize_share_record_owned/{owner}",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -260,7 +249,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/total_liquid_staked",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -281,7 +269,6 @@
                 "enabled": true,
                 "name": "/cosmos/staking/v1beta1/total_tokenize_shared_assets",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -302,7 +289,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/counterparty_payee",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -323,7 +309,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/fee_enabled",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -344,7 +329,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/fee_enabled",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -365,7 +349,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/incentivized_packet",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -386,7 +369,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/incentivized_packets",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -407,7 +389,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/incentivized_packets",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -428,7 +409,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/payee",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -449,7 +429,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_ack_fees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -470,7 +449,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_recv_fees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -491,7 +469,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_timeout_fees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -512,7 +489,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/transfer/v1/denom_traces/{hash=**}",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -533,7 +509,6 @@
                 "enabled": true,
                 "name": "/ibc/core/channel/v1/params",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -554,7 +529,6 @@
                 "enabled": true,
                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/upgrade",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -575,7 +549,6 @@
                 "enabled": true,
                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/upgrade_error",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -596,7 +569,6 @@
                 "enabled": true,
                 "name": "/ibc/apps/packetforward/v1/params",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -712,7 +684,6 @@
                 "enabled": true,
                 "name": "cosmos.autocli.v1.Query/AppOptions",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -733,7 +704,6 @@
                 "enabled": true,
                 "name": "cosmos.bank.v1beta1.Query/DenomMetadataByQueryString",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -754,7 +724,6 @@
                 "enabled": true,
                 "name": "cosmos.bank.v1beta1.Query/DenomOwnersByQuery",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -775,7 +744,6 @@
                 "enabled": true,
                 "name": "cosmos.base.node.v1beta1.Service/Status",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -796,7 +764,6 @@
                 "enabled": true,
                 "name": "cosmos.consensus.v1.Query/Params",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -817,7 +784,6 @@
                 "enabled": true,
                 "name": "cosmos.distribution.v1beta1.Query/TokenizeShareRecordReward",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -838,7 +804,6 @@
                 "enabled": true,
                 "name": "cosmos.gov.v1.Query/Constitution",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -859,7 +824,6 @@
                 "enabled": true,
                 "name": "cosmos.reflection.v1.ReflectionService/FileDescriptors",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -880,7 +844,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/AllTokenizeShareRecords",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -901,7 +864,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/LastTokenizeShareRecordId",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -922,7 +884,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TokenizeShareLockInfo",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -943,7 +904,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TokenizeShareRecordByDenom",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -964,7 +924,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TokenizeShareRecordById",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -985,7 +944,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TokenizeShareRecordsOwned",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1006,7 +964,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TotalLiquidStaked",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1027,7 +984,6 @@
                 "enabled": true,
                 "name": "cosmos.staking.v1beta1.Query/TotalTokenizeSharedAssets",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1048,7 +1004,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/CounterpartyPayee",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1069,7 +1024,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/FeeEnabledChannel",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1090,7 +1044,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/FeeEnabledChannels",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1111,7 +1064,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/IncentivizedPacket",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1132,7 +1084,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/IncentivizedPackets",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1153,7 +1104,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/IncentivizedPacketsForChannel",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1174,7 +1124,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/Payee",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1195,7 +1144,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/TotalAckFees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1216,7 +1164,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/TotalRecvFees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1237,7 +1184,6 @@
                 "enabled": true,
                 "name": "ibc.applications.fee.v1.Query/TotalTimeoutFees",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1258,7 +1204,6 @@
                 "enabled": true,
                 "name": "ibc.core.channel.v1.Query/ChannelParams",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1279,7 +1224,6 @@
                 "enabled": true,
                 "name": "ibc.core.channel.v1.Query/NextSequenceSend",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1300,7 +1244,6 @@
                 "enabled": true,
                 "name": "ibc.core.channel.v1.Query/Upgrade",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1321,7 +1264,6 @@
                 "enabled": true,
                 "name": "ibc.core.channel.v1.Query/UpgradeError",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1342,7 +1284,6 @@
                 "enabled": true,
                 "name": "ibc.core.client.v1.Query/VerifyMembership",
                 "compute_units": 10,
-                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,

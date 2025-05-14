@@ -35,8 +35,7 @@
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/subgraphs/name/1",
@@ -53,8 +52,7 @@
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "inheritance_apis": [],
@@ -106,8 +104,7 @@
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "inheritance_apis": [],
@@ -137,8 +134,7 @@
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "inheritance_apis": [],

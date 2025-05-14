@@ -39,8 +39,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/cron/v1/list-privileged",
@@ -57,8 +56,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/cron/v1/params",
@@ -75,8 +73,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/globalfee/v1/authorizations",
@@ -93,8 +90,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/globalfee/v1/code_authorization/{code_id}",
@@ -111,8 +107,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/globalfee/v1/contract_authorization/{contract_address}",
@@ -129,8 +124,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/globalfee/v1/params",
@@ -147,8 +141,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/mint/v1beta1/annual_provisions",
@@ -165,8 +158,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/mint/v1beta1/params",
@@ -183,8 +175,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/tokenfactory/v1/denoms/{denom}/authority_metadata",
@@ -201,8 +192,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/tokenfactory/v1/denoms_from_creator/{creator}",
@@ -219,8 +209,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/tokenfactory/v1/params",
@@ -237,8 +226,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/claim/v1beta1/total_claimable/{address}",
@@ -255,8 +243,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/claim/v1beta1/params",
@@ -273,8 +260,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/claim/v1beta1/module_account_balance",
@@ -291,8 +277,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/claim/v1beta1/claimable_for_action/{address}/{action}",
@@ -309,8 +294,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "/stargaze/claim/v1beta1/claim_record/{address}",
@@ -327,8 +311,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               }
             ],
             "headers": [],
@@ -390,8 +373,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.mint.v1beta1.Query/AnnualProvisions",
@@ -408,8 +390,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.globalfee.v1.Query/CodeAuthorization",
@@ -426,8 +407,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.globalfee.v1.Query/Params",
@@ -444,8 +424,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.globalfee.v1.Query/ContractAuthorization",
@@ -462,8 +441,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.globalfee.v1.Query/Authorizations",
@@ -480,8 +458,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.cron.v1.Query/Params",
@@ -498,8 +475,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.cron.v1.Query/ListPrivileged",
@@ -516,8 +492,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "publicawesome.stargaze.alloc.v1beta1.Query/Params",
@@ -534,8 +509,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/Params",
@@ -552,8 +526,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
@@ -570,8 +543,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
@@ -588,8 +560,7 @@
                   "local": false,
                   "subscription": false,
                   "stateful": 0
-                },
-                "extra_compute_units": 0
+                }
               }
             ],
             "headers": [],
