@@ -7,7 +7,7 @@
                 "index": "AVAX",
                 "name": "avalanche mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 2000,
                 "imports": [
@@ -738,7 +738,7 @@
                 "index": "AVAXT",
                 "name": "avalanche testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "AVAX"
                 ],

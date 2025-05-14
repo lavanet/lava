@@ -7,7 +7,7 @@
                 "index": "BTC",
                 "name": "bitcoin",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 1,
                 "average_block_time": 600000,
                 "api_collections": [
@@ -541,7 +541,7 @@
                 "index": "BTCT",
                 "name": "bitcoin testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BTC"
                 ],

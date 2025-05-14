@@ -7,7 +7,7 @@
                 "index": "HYPERLIQUID",
                 "name": "hyperliquid mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [],
                 "finalization_distance": 0,
                 "average_block_time": 1000,
@@ -919,7 +919,7 @@
                 "index": "HYPERLIQUIDT",
                 "name": "hyperliquid testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "HYPERLIQUID"
                 ],

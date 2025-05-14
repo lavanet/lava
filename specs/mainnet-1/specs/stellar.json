@@ -7,7 +7,7 @@
                 "index": "XLM",
                 "name": "stellar mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 5000,
                 "imports": [],
@@ -261,7 +261,7 @@
                 "index": "XLMT",
                 "name": "stellar testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 5000,
                 "imports": [

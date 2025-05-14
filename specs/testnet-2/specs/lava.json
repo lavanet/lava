@@ -7,7 +7,7 @@
                 "index": "LAV1",
                 "name": "lava testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDK"
                 ],

@@ -7,7 +7,7 @@
                 "index": "MANTLE",
                 "name": "mantle testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],

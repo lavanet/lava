@@ -7,7 +7,7 @@
         "index": "ZKSYNC",
         "name": "zksync era mainnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "ETH1"
         ],
@@ -44,7 +44,7 @@
         "index": "ZKSYNCSP",
         "name": "zksync era sepolia testnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "ZKSYNC"
         ],

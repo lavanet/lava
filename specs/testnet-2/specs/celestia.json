@@ -7,7 +7,7 @@
                 "index": "CELESTIA",
                 "name": "celestia mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
@@ -1260,7 +1260,7 @@
                 "index": "CELESTIATM",
                 "name": "celestia mocha testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],
@@ -1384,7 +1384,7 @@
                 "index": "CELESTIATA",
                 "name": "celestia arabica testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],

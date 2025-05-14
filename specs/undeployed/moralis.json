@@ -7,7 +7,7 @@
                 "index": "MORALIS",
                 "name": "moralis advanced api",
                 "enabled": true,
-                "data_reliability_supported": false,
+                "data_reliability_enabled": false,
                 "finalization_distance": 0,
                 "average_block_time": 1000,
                 "api_collections": [

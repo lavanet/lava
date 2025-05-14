@@ -173,8 +173,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	}
 
 	// the following function tags are required for data reliability
-	// if data reliability is supported, the spec must have the following function tags
-	if spec.Enabled && spec.DataReliabilitySupported {
+	// if data reliability is enabled, the spec must have the following function tags
+	if spec.Enabled && spec.DataReliabilityEnabled {
 		for _, tag := range []FUNCTION_TAG{FUNCTION_TAG_GET_BLOCKNUM, FUNCTION_TAG_GET_BLOCK_BY_NUM} {
 			if found := functionTagsAll[tag]; !found {
 				return details, fmt.Errorf("missing tagged functions for hash comparison: %s", tag)

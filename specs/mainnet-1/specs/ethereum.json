@@ -7,7 +7,7 @@
                 "index": "ETH1",
                 "name": "ethereum mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 8,
                 "average_block_time": 13000,
                 "api_collections": [
@@ -1494,7 +1494,7 @@
                 "index": "SEP1",
                 "name": "ethereum testnet sepolia",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -1530,7 +1530,7 @@
                 "index": "HOL1",
                 "name": "ethereum testnet holesky",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],

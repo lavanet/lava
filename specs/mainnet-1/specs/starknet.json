@@ -7,7 +7,7 @@
                 "index": "STRK",
                 "name": "starknet mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 6,
                 "average_block_time": 30000,
                 "api_collections": [
@@ -896,7 +896,7 @@
                 "index": "STRKS",
                 "name": "starknet sepolia testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "STRK"
                 ],

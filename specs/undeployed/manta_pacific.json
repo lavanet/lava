@@ -7,7 +7,7 @@
                 "index": "MANTAPACIFIC",
                 "name": "manta pacific mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -44,7 +44,7 @@
                 "index": "MANTAPACIFICT",
                 "name": "manta pacific testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "MANTAPACIFIC"
                 ],

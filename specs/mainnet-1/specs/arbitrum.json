@@ -7,7 +7,7 @@
                 "index": "ARBITRUM",
                 "name": "arbitrum mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -191,7 +191,7 @@
                 "index": "ARBITRUMN",
                 "name": "arbitrum nova testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ARBITRUM"
                 ],
@@ -227,7 +227,7 @@
                 "index": "ARBITRUMS",
                 "name": "arbitrum sepolia testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ARBITRUM"
                 ],

@@ -7,7 +7,7 @@
                 "index": "SOLANA",
                 "name": "solana mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 0,
                 "average_block_time": 400,
                 "api_collections": [
@@ -1255,7 +1255,7 @@
                 "index": "SOLANAT",
                 "name": "solana testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "SOLANA"
                 ],

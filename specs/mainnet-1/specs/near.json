@@ -7,7 +7,7 @@
                 "index": "NEAR",
                 "name": "near mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 3,
                 "average_block_time": 1200,
                 "api_collections": [
@@ -497,7 +497,7 @@
                 "index": "NEART",
                 "name": "near testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "NEAR"
                 ],

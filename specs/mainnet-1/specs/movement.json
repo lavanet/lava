@@ -7,7 +7,7 @@
                 "index": "MOVEMENT",
                 "name": "movement mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "APT1"
                 ],
@@ -88,7 +88,7 @@
                 "index": "MOVEMENTT",
                 "name": "movement testnet bardock",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "MOVEMENT"
                 ],

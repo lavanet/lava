@@ -7,7 +7,7 @@
                 "index": "XRP",
                 "name": "ripple mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 4000,
                 "imports": [],
@@ -223,7 +223,7 @@
                 "index": "XRPT",
                 "name": "ripple testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 4000,
                 "imports": [

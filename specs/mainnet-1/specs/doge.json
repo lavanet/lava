@@ -7,7 +7,7 @@
                 "index": "DOGE",
                 "name": "dogecoin mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BTC"
                 ],
@@ -52,7 +52,7 @@
                 "index": "DOGET",
                 "name": "dogecoin testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "DOGE"
                 ],

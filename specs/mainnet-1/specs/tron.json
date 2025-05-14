@@ -7,7 +7,7 @@
                 "index": "TRX",
                 "name": "tron mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 3000,
                 "imports": [],
@@ -262,7 +262,7 @@
                 "index": "TRXT",
                 "name": "tron shasta testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 4,
                 "average_block_time": 3000,
                 "imports": [

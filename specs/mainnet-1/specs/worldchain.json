@@ -7,7 +7,7 @@
                 "index": "WORLDCHAIN",
                 "name": "worldchain mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -44,7 +44,7 @@
                 "index": "WORLDCHAINS",
                 "name": "worldchain sepolia testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "WORLDCHAIN"
                 ],

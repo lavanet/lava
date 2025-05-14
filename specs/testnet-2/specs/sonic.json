@@ -7,7 +7,7 @@
                 "index": "SONIC",
                 "name": "sonic mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -769,7 +769,7 @@
                 "index": "SONICT",
                 "name": "sonic blaze testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "SONIC"
                 ],

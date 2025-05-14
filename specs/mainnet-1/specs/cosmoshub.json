@@ -7,7 +7,7 @@
         "index": "COSMOSHUB",
         "name": "cosmos hub mainnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "COSMOSSDK50",
           "COSMOSWASM"
@@ -1088,7 +1088,7 @@
         "index": "COSMOSHUBT",
         "name": "cosmos hub testnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "COSMOSHUB"
         ],

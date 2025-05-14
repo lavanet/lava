@@ -310,8 +310,11 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
+// IsDataReliabilitySupported returns true if data reliability is supported
+// spec's DataReliabilityEnabled is true if data reliability is possible in this chain
+// DataReliabilityEnabled is a consumer-config parameter that enables/disables data reliability in general
 func (apip *TendermintChainParser) IsDataReliabilitySupported() bool {
-	return apip.spec.DataReliabilitySupported && DataReliabilityEnabled
+	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec

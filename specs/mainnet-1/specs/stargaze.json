@@ -7,7 +7,7 @@
         "index": "STRGZ",
         "name": "stargaze mainnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "COSMOSSDK50",
           "COSMOSWASM"
@@ -594,7 +594,7 @@
         "index": "STRGZT",
         "name": "stargaze testnet",
         "enabled": true,
-        "data_reliability_supported": true,
+        "data_reliability_enabled": true,
         "imports": [
           "STRGZ"
         ],

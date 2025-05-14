@@ -7,7 +7,7 @@
                 "index": "TENDERMINT",
                 "name": "tendermint",
                 "enabled": false,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [],
                 "finalization_distance": 0,
                 "average_block_time": 6500,

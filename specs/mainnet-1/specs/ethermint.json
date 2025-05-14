@@ -7,7 +7,7 @@
                 "index": "ETHERMINT",
                 "name": "ethermint",
                 "enabled": false,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 0,
                 "average_block_time": 6500,
                 "api_collections": [

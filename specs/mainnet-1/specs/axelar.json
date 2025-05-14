@@ -7,7 +7,7 @@
                 "index": "AXELAR",
                 "name": "axelar mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDK",
                     "COSMOSWASM"
@@ -2154,7 +2154,7 @@
                 "index": "AXELART",
                 "name": "axelar testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "AXELAR"
                 ],

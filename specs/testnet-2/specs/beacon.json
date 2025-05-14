@@ -7,7 +7,7 @@
                 "index": "ETHBEACON",
                 "name": "ethereum beacon mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "finalization_distance": 0,
                 "average_block_time": 6000,
                 "api_collections": [

@@ -7,7 +7,7 @@
                 "index": "COSMOSSDKFULL",
                 "name": "full cosmos sdk",
                 "enabled": false,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDK",
                     "COSMOSWASM"

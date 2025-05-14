@@ -7,7 +7,7 @@
                 "index": "POLYGON",
                 "name": "polygon mainnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
@@ -285,7 +285,7 @@
                 "index": "POLYGONA",
                 "name": "polygon amoy testnet",
                 "enabled": true,
-                "data_reliability_supported": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "POLYGON"
                 ],
