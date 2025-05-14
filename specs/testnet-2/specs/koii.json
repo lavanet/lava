@@ -12,7 +12,7 @@
                     "SOLANA"
                 ],
                 "block_distance_for_finalized_data": 0,
-                "average_block_time": 400,
+                "average_block_time": 400
             },
             {
                 "index": "KOIIT",
@@ -23,7 +23,7 @@
                     "KOII"
                 ],
                 "block_distance_for_finalized_data": 0,
-                "average_block_time": 600,
+                "average_block_time": 600
             }
         ]
     },

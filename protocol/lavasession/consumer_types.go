@@ -487,7 +487,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if retryDisabledEndpoints {
-				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress))
+				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
 			}
 
 			// check endpoint supports the requested addons
@@ -503,7 +503,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
 						// Check if the endpoint is not blocked
 						if endpointConnection.blockListed.Load() {
-							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress))
+							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
 							continue
 						}
 						connectionState := endpointConnection.connection.GetState()
@@ -532,6 +532,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 						utils.LogAttr("provider address", cswp.PublicLavaAddress),
 						utils.LogAttr("endpoint", endpoint),
 						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
+						utils.LogAttr("GUID", ctx),
 					)
 
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
@@ -539,6 +540,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
 							utils.LogAttr("Endpoint", endpoint.NetworkAddress),
 							utils.LogAttr("address", cswp.PublicLavaAddress),
+							utils.LogAttr("GUID", ctx),
 						)
 					}
 					return nil, false
@@ -585,6 +587,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
 			utils.LogAttr("provider endpoints", cswp.Endpoints),
 			utils.LogAttr("provider address", cswp.PublicLavaAddress),
+			utils.LogAttr("GUID", ctx),
 		)
 		// report provider.
 		return connected, endpointsList, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError

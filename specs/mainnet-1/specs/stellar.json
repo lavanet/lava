@@ -132,7 +132,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",
@@ -153,7 +153,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",

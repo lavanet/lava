@@ -170,7 +170,7 @@
                                         "0",
                                         "result",
                                         "ledger",
-                                        "ledger_index"
+                                        "ledger_hash"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },

@@ -228,7 +228,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
@@ -409,7 +409,7 @@
                                 "category": {
                                     "deterministic": false,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",

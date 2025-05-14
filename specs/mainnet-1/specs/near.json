@@ -70,7 +70,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.finality",
@@ -120,7 +120,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.chunk_id",
@@ -242,7 +242,7 @@
                                     "deterministic": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                }
+                                },
                                 "timeout_ms": 5000
                             },
                             {
@@ -259,7 +259,7 @@
                                     "deterministic": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                }
+                                },
                                 "timeout_ms": 20000
                             },
                             {
@@ -276,7 +276,7 @@
                                     "deterministic": false,
                                     "stateful": 1,
                                     "hanging_api": true
-                                }
+                                },
                                 "timeout_ms": 20000
                             },
                             {
@@ -293,7 +293,7 @@
                                     "deterministic": true,
                                     "stateful": 0,
                                     "hanging_api": true
-                                }
+                                },
                                 "timeout_ms": 10000,
                                 "parsers": [
                                     {
@@ -319,7 +319,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "parsers": [
                                     {
                                         "parse_path": ".params.tx_hash",
