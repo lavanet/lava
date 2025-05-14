@@ -1,21 +1,21 @@
 {
     "proposal": {
-        "title": "Add Specs: Manta Pacific",
-        "description": "Adding new specification support for relaying Manta Pacific data on Lava",
+        "title": "Add Specs: BitcoinCash",
+        "description": "Adding new specification support for relaying bitcoin cash data on Lava",
         "specs": [
             {
-                "index": "MANTAPACIFIC",
-                "name": "manta pacific mainnet",
+                "index": "BCH",
+                "name": "bitcoin cash mainnet",
                 "enabled": true,
                 "imports": [
-                    "ETH1"
+                    "BTC"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
-                "blocks_in_finalization_proof": 3,
-                "average_block_time": 10000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 600000,
+                "allowed_block_lag_for_qos_sync": 1,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -39,28 +39,36 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0xa9"
+                                        "expected_value": "main"
                                     }
                                 ]
                             }
                         ],
-                        "extensions": []
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 42600
+                                }
+                            }
+                        ]
                     }
                 ]
             },
             {
-                "index": "MANTAPACIFICT",
-                "name": "manta pacific testnet",
+                "index": "BCHT",
+                "name": "bitcoin cash testnet",
                 "enabled": true,
                 "imports": [
-                    "MANTAPACIFIC"
+                    "BCH"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
-                "blocks_in_finalization_proof": 3,
-                "average_block_time": 10000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 600000,
+                "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -84,7 +92,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x34816d"
+                                        "expected_value": "test"
                                     }
                                 ]
                             }
