@@ -25,9 +25,9 @@ func TestTendermintChainParser_Spec(t *testing.T) {
 
 	// set the spec
 	spec := spectypes.Spec{
-		Enabled:              true,
-		AverageBlockTime:     12000,
-		FinalizationDistance: 13,
+		Enabled:                       true,
+		AverageBlockTime:              12000,
+		BlockDistanceForFinalizedData: 13,
 	}
 	apip.SetSpec(spec)
 
@@ -38,7 +38,7 @@ func TestTendermintChainParser_Spec(t *testing.T) {
 	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// check that the spec was set correctly
-	assert.Equal(t, apip.spec.FinalizationDistance, finalizationDistance)
+	assert.Equal(t, apip.spec.BlockDistanceForFinalizedData, finalizationDistance)
 	assert.Equal(t, AverageBlockTime, averageBlockTime)
 }
 

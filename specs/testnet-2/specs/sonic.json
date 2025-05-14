@@ -11,7 +11,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                "finalization_distance": 7,
+                "block_distance_for_finalized_data": 7,
                 "average_block_time": 350,
                 "api_collections": [
                     {
@@ -773,7 +773,7 @@
                 "imports": [
                     "SONIC"
                 ],
-                "finalization_distance": 7,
+                "block_distance_for_finalized_data": 7,
                 "average_block_time": 350,
                 "api_collections": [
                     {

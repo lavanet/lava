@@ -235,7 +235,7 @@ func (apip *RestChainParser) ChainBlockStats() (averageBlockTime time.Duration, 
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
-	return averageBlockTime, apip.spec.FinalizationDistance
+	return averageBlockTime, apip.spec.BlockDistanceForFinalizedData
 }
 
 type RestChainListener struct {

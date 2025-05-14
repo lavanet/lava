@@ -13,7 +13,7 @@
                     "ETHERMINT",
                     "ETH1"
                 ],
-                "finalization_distance": 0,
+                "block_distance_for_finalized_data": 0,
                 "average_block_time": 3900,
                 "api_collections": [
                     {
@@ -882,7 +882,7 @@
                 "imports": [
                     "EVMOS"
                 ],
-                "finalization_distance": 0,
+                "block_distance_for_finalized_data": 0,
                 "average_block_time": 3150,
                 "api_collections": [
                     {

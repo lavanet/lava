@@ -312,7 +312,7 @@ func (k Keeper) validateBlockHeights(relayFinalization *types.RelayFinalization,
 
 	// Validate that all finalized blocks are finalized
 	for _, blockNum := range blockHeights {
-		if !spectypes.IsFinalizedBlock(blockNum, relayFinalization.GetLatestBlock(), int64(spec.FinalizationDistance)) {
+		if !spectypes.IsFinalizedBlock(blockNum, relayFinalization.GetLatestBlock(), int64(spec.BlockDistanceForFinalizedData)) {
 			return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized block is not finalized: %d", blockNum)
 		}
 	}
@@ -325,14 +325,14 @@ func (k Keeper) validateFinalizedBlock(relayFinalization *types.RelayFinalizatio
 		return fmt.Errorf("validateFinalizedBlock: spec is nil")
 	}
 	latestBlock := relayFinalization.GetLatestBlock()
-	finalizationDistance := int64(spec.FinalizationDistance)
+	finalizationDistance := int64(spec.BlockDistanceForFinalizedData)
 
 	// Validate that finalization distance is right
 	if latestFinalizedBlock != latestBlock-finalizationDistance {
 		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-finalizationDistance[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, finalizationDistance, latestBlock-finalizationDistance)
 	}
 
-	if spectypes.IsFinalizedBlock(latestFinalizedBlock+1, latestBlock, int64(spec.FinalizationDistance)) {
+	if spectypes.IsFinalizedBlock(latestFinalizedBlock+1, latestBlock, int64(spec.BlockDistanceForFinalizedData)) {
 		return fmt.Errorf("ValidateSameProviderConflict: Non finalized block marked as finalized. Block height: %d", latestFinalizedBlock+1)
 	}
 

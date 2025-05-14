@@ -8,7 +8,7 @@
                 "name": "ripple mainnet",
                 "enabled": true,
                 "data_reliability_enabled": true,
-                "finalization_distance": 4,
+                "block_distance_for_finalized_data": 4,
                 "average_block_time": 4000,
                 "imports": [],
                 "api_collections": [
@@ -224,7 +224,7 @@
                 "name": "ripple testnet",
                 "enabled": true,
                 "data_reliability_enabled": true,
-                "finalization_distance": 4,
+                "block_distance_for_finalized_data": 4,
                 "average_block_time": 4000,
                 "imports": [
                     "XRP"

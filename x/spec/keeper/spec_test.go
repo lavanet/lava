@@ -493,11 +493,11 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	parentSpec := types.Spec{
-		Index:                "parent",
-		Name:                 "parent spec",
-		Enabled:              true,
-		FinalizationDistance: 64,
-		AverageBlockTime:     13000,
+		Index:                         "parent",
+		Name:                          "parent spec",
+		Enabled:                       true,
+		BlockDistanceForFinalizedData: 64,
+		AverageBlockTime:              13000,
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -508,12 +508,12 @@ func TestSpecUpdateInherit(t *testing.T) {
 	}
 
 	childSpec := types.Spec{
-		Index:                "child",
-		Name:                 "child spec",
-		Enabled:              true,
-		FinalizationDistance: 64,
-		AverageBlockTime:     13000,
-		Imports:              []string{"parent"},
+		Index:                         "child",
+		Name:                          "child spec",
+		Enabled:                       true,
+		BlockDistanceForFinalizedData: 64,
+		AverageBlockTime:              13000,
+		Imports:                       []string{"parent"},
 	}
 
 	// add a parent spec and a child spec
@@ -1113,13 +1113,13 @@ func TestParsers(t *testing.T) {
 				apisCollections: []*types.ApiCollection{apiCollection},
 			}
 			sp := types.Spec{
-				Index:                tt.name,
-				Name:                 tt.name,
-				Enabled:              true,
-				FinalizationDistance: 0,
-				AverageBlockTime:     10,
-				BlockLastUpdated:     0,
-				ApiCollections:       tt.apisCollections,
+				Index:                         tt.name,
+				Name:                          tt.name,
+				Enabled:                       true,
+				BlockDistanceForFinalizedData: 0,
+				AverageBlockTime:              10,
+				BlockLastUpdated:              0,
+				ApiCollections:                tt.apisCollections,
 			}
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)

@@ -8,7 +8,7 @@
                 "name": "avalanche mainnet",
                 "enabled": true,
                 "data_reliability_enabled": true,
-                "finalization_distance": 4,
+                "block_distance_for_finalized_data": 4,
                 "average_block_time": 2000,
                 "imports": [
                     "ETH1"
@@ -742,7 +742,7 @@
                 "imports": [
                     "AVAX"
                 ],
-                "finalization_distance": 4,
+                "block_distance_for_finalized_data": 4,
                 "average_block_time": 2000,
                 "api_collections": [
                     {

@@ -16,7 +16,7 @@ message Spec {
   bool enabled = 4;
   reserved 5;
   bool data_reliability_enabled = 6;
-  uint32 finalization_distance = 7;
+  uint32 block_distance_for_finalized_data = 7;
   reserved 8;
   int64 average_block_time =9;
   reserved 10;

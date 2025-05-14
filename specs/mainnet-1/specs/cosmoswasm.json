@@ -8,7 +8,7 @@
         "name": "cosmos wasm",
         "enabled": false,
         "data_reliability_enabled": true,
-        "finalization_distance": 0,
+        "block_distance_for_finalized_data": 0,
         "average_block_time": 6500,
         "block_last_updated": 910837,
         "providers_types": 0,

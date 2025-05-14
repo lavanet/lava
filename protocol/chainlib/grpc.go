@@ -232,7 +232,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (averageBlockTime time.Duration, 
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return averageBlockTime, finalizationDistance from spec
-	return averageBlockTime, apip.spec.FinalizationDistance
+	return averageBlockTime, apip.spec.BlockDistanceForFinalizedData
 }
 
 type GrpcChainListener struct {

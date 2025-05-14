@@ -13,7 +13,7 @@ func CreateMockSpec() spectypes.Spec {
 	spec.Name = specName
 	spec.Index = specName
 	spec.Enabled = true
-	spec.FinalizationDistance = 0
+	spec.BlockDistanceForFinalizedData = 0
 	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
 	return spec
 }

@@ -9,7 +9,7 @@
         "enabled": true,
         "data_reliability_enabled": true,
         "imports": ["ETH1"],
-        "finalization_distance": 6,
+        "block_distance_for_finalized_data": 6,
         "average_block_time": 2000,
         "api_collections": [
           {
@@ -44,7 +44,7 @@
         "enabled": true,
         "data_reliability_enabled": true,
         "imports": ["BLAST"],
-        "finalization_distance": 6,
+        "block_distance_for_finalized_data": 6,
         "average_block_time": 2000,
         "api_collections": [
           {

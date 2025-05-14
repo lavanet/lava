@@ -12,7 +12,7 @@
           "COSMOSSDK50",
           "COSMOSWASM"
         ],
-        "finalization_distance": 0,
+        "block_distance_for_finalized_data": 0,
         "average_block_time": 5800,
         "api_collections": [
           {
@@ -598,7 +598,7 @@
         "imports": [
           "STRGZ"
         ],
-        "finalization_distance": 0,
+        "block_distance_for_finalized_data": 0,
         "average_block_time": 5800,
         "api_collections": [
           {

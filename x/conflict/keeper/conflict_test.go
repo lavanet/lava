@@ -170,7 +170,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider
 		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-		ts.spec.FinalizationDistance = 1
+		ts.spec.BlockDistanceForFinalizedData = 1
 		ts.AddSpec("modSpec", ts.spec)
 
 		latestBlockHeight := int64(6)
@@ -196,7 +196,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider
 		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-		ts.spec.FinalizationDistance = 2
+		ts.spec.BlockDistanceForFinalizedData = 2
 		ts.AddSpec("modSpec", ts.spec)
 
 		latestBlockHeight := int64(6)
@@ -222,7 +222,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider
 		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-		ts.spec.FinalizationDistance = 2
+		ts.spec.BlockDistanceForFinalizedData = 2
 		ts.AddSpec("modSpec", ts.spec)
 
 		latestBlockHeight0 := int64(6)
@@ -256,7 +256,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider
 		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-		ts.spec.FinalizationDistance = 2
+		ts.spec.BlockDistanceForFinalizedData = 2
 		ts.AddSpec("modSpec", ts.spec)
 
 		latestBlockHeight0 := int64(6)
@@ -290,7 +290,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider
 		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-		ts.spec.FinalizationDistance = 2
+		ts.spec.BlockDistanceForFinalizedData = 2
 		ts.AddSpec("modSpec", ts.spec)
 
 		latestBlockHeight0 := int64(6)

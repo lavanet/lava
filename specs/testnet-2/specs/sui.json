@@ -8,7 +8,7 @@
                 "name": "sui devnet",
                 "enabled": true,
                 "data_reliability_enabled": true,
-                "finalization_distance": 0,
+                "block_distance_for_finalized_data": 0,
                 "average_block_time": 1000,
                 "api_collections": [
                     {
