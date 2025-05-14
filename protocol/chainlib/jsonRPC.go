@@ -202,11 +202,10 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 				apiCollection = apiCollectionForMessage // overwrite apiColleciton to take the addon
 			}
 			api = &spectypes.Api{
-				Enabled:           api.Enabled && apiCont.api.Enabled,
-				Name:              api.Name + SEP + apiCont.api.Name,
-				ComputeUnits:      api.ComputeUnits + apiCont.api.ComputeUnits,
-				ExtraComputeUnits: api.ExtraComputeUnits + apiCont.api.ExtraComputeUnits,
-				Category:          category,
+				Enabled:      api.Enabled && apiCont.api.Enabled,
+				Name:         api.Name + SEP + apiCont.api.Name,
+				ComputeUnits: api.ComputeUnits + apiCont.api.ComputeUnits,
+				Category:     category,
 				BlockParsing: spectypes.BlockParser{
 					ParserArg:    []string{},
 					ParserFunc:   spectypes.PARSER_FUNC_EMPTY,

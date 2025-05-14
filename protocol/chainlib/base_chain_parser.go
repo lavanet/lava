@@ -347,11 +347,10 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 	utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "apiKey", Value: apiKey})
 	apiCont := &ApiContainer{
 		api: &spectypes.Api{
-			Enabled:           true,
-			Name:              DefaultApiName + apiKey.Name, // do not change this name
-			ComputeUnits:      20,                           // set 20 compute units by default
-			ExtraComputeUnits: 0,
-			Category:          spectypes.SpecCategory{},
+			Enabled:      true,
+			Name:         DefaultApiName + apiKey.Name, // do not change this name
+			ComputeUnits: 20,                           // set 20 compute units by default
+			Category:     spectypes.SpecCategory{},
 			BlockParsing: spectypes.BlockParser{
 				ParserFunc: spectypes.PARSER_FUNC_EMPTY,
 			},
