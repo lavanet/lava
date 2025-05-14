@@ -624,7 +624,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				var cacheReply *pairingtypes.CacheRelayReply
 				hashKey, outputFormatter, err := protocolMessage.HashCacheRequest(chainId)
 				if err != nil {
-					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err)
+					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
 				} else {
 					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
@@ -645,7 +645,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// check if the cache seen block is greater than my local seen block, this means the user requested this
 					// request spoke with another consumer instance and use that block for inter consumer consistency.
 					if rpccs.sharedState && cacheSeenBlock > protocolMessage.RelayPrivateData().SeenBlock {
-						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", protocolMessage.RelayPrivateData().SeenBlock))
+						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", protocolMessage.RelayPrivateData().SeenBlock), utils.LogAttr("GUID", ctx))
 						protocolMessage.RelayPrivateData().SeenBlock = cacheSeenBlock
 						// setting the fetched seen block from the cache server to our local cache as well.
 						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
@@ -672,14 +672,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						return nil
 					}
 					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
-					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested))
+					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
 					// cache failed, move on to regular relay
 					if performance.NotConnectedError.Is(cacheError) {
-						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError), utils.LogAttr("GUID", ctx))
 					}
 				}
 			} else {
-				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: protocolMessage.GetApi().Name})
+				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: protocolMessage.GetApi().Name}, utils.LogAttr("GUID", ctx))
 			}
 		}
 	}
@@ -692,21 +692,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
-	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions))
+	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 	usedProviders := relayProcessor.GetUsedProviders()
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 
 	// stickines id for future use
 	stickiness, ok := directiveHeaders[common.STICKINESS_HEADER_NAME]
 	if ok {
-		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness))
+		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
-				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp))
+				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 				if err != nil {
@@ -737,6 +737,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			utils.LogAttr("addons", addon),
 			utils.LogAttr("extensions", extensions),
 			utils.LogAttr("AllowSessionDegradation", relayProcessor.GetAllowSessionDegradation()),
+			utils.LogAttr("GUID", ctx),
 		)
 	}
 
@@ -781,7 +782,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 			if errResponse != nil {
-				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData))
+				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData), utils.LogAttr("GUID", ctx))
 				return
 			}
 			localRelayResult.Request = relayRequest
@@ -791,11 +792,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(providerPublicAddress, chainId, apiInterface)
 
 			if chainlib.IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
+				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data), utils.LogAttr("GUID", ctx))
 
 				params, err := json.Marshal(protocolMessage.GetRPCMessage().GetParams())
 				if err != nil {
-					utils.LavaFormatError("could not marshal params", err)
+					utils.LavaFormatError("could not marshal params", err, utils.LogAttr("GUID", ctx))
 					return
 				}
 
@@ -820,6 +821,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
 						utils.LogAttr("Provider", providerPublicAddress),
+						utils.LogAttr("GUID", ctx),
 					)
 				}
 				return
@@ -833,7 +835,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				processingTimeout = time.Until(deadline)
 				if processingTimeout <= 0 {
 					// no need to send we are out of time
-					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl))
+					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl), utils.LogAttr("GUID", ctx))
 					return
 				}
 				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
@@ -875,6 +877,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+					utils.LogAttr("GUID", ctx),
 				)
 			}
 
@@ -889,6 +892,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
 						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
+						utils.LogAttr("GUID", ctx),
 					)
 				}
 			}
@@ -897,7 +901,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpccs.debugRelays {
-				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode))
+				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
 				// in case the error is a node error we don't want to cache
@@ -917,6 +921,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
 								utils.LogAttr("copyReplyErr", copyReplyErr),
 								utils.LogAttr("hashErr", hashErr),
+								utils.LogAttr("GUID", ctx),
 							)
 							return
 						}
@@ -940,7 +945,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						}
 						var finalized bool
 						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
-						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights))
+						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights), utils.LogAttr("GUID", ctx))
 
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
@@ -961,7 +966,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							BlocksHashesToHeights: blockHashesToHeights,
 						})
 						if err2 != nil {
-							utils.LavaFormatWarning("error updating cache with new entry", err2)
+							utils.LavaFormatWarning("error updating cache with new entry", err2, utils.LogAttr("GUID", ctx))
 						}
 					}()
 				}
@@ -1052,7 +1057,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
 			if errStatus != nil {
-				utils.LavaFormatWarning("failed converting status code", errStatus, utils.LogAttr("statuses", statuses))
+				utils.LavaFormatWarning("failed converting status code", errStatus, utils.LogAttr("statuses", statuses), utils.LogAttr("GUID", ctx))
 			}
 
 			relayResult.StatusCode = codeNum
@@ -1107,11 +1112,19 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("SeenBlock", relayRequest.RelayData.SeenBlock),
 				utils.LogAttr("msg_api", relayRequest.RelayData.ApiUrl),
 				utils.LogAttr("msg_data", string(relayRequest.RelayData.Data)),
+				utils.LogAttr("GUID", ctx),
 			)
 		}
 		return 0, err, backoff
 	}
 
+	utils.LavaFormatTrace("Relay succeeded",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+		utils.LogAttr("latestBlock", reply.LatestBlock),
+		utils.LogAttr("latency", relayLatency),
+		utils.LogAttr("method", chainMessage.GetApi().Name),
+	)
 	relayResult.Reply = reply
 
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
@@ -1144,7 +1157,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
 			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
-				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
+				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
 			}
 			return 0, err, false
 		}
