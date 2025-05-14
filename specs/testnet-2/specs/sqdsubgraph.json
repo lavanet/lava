@@ -32,7 +32,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 }
@@ -49,7 +48,6 @@
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 }
@@ -101,7 +99,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 }
@@ -131,7 +128,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 }

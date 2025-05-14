@@ -31,7 +31,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -51,7 +50,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -71,7 +69,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -91,7 +88,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -111,7 +107,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -131,7 +126,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -151,7 +145,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -171,7 +164,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -191,7 +183,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -211,7 +202,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -231,7 +221,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -251,7 +240,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -271,7 +259,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -291,7 +278,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -311,7 +297,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -331,7 +316,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -351,7 +335,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -371,7 +354,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -391,7 +373,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -411,7 +392,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -431,7 +411,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -451,7 +430,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -471,7 +449,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -491,7 +468,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -511,7 +487,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -531,7 +506,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -551,7 +525,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -571,7 +544,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -686,7 +658,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -706,7 +677,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -726,7 +696,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -746,7 +715,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -766,7 +734,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -786,7 +753,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -806,7 +772,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -826,7 +791,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -846,7 +810,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -866,7 +829,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -886,7 +848,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -906,7 +867,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -926,7 +886,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -946,7 +905,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -966,7 +924,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -986,7 +943,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1006,7 +962,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1026,7 +981,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1046,7 +1000,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1066,7 +1019,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1086,7 +1038,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1106,7 +1057,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1126,7 +1076,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1146,7 +1095,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1166,7 +1114,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1186,7 +1133,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1206,7 +1152,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1226,7 +1171,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1246,7 +1190,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1266,7 +1209,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
@@ -1286,7 +1228,6 @@
                 "compute_units": 10,
                 "category": {
                   "deterministic": true,
-                  "local": false,
                   "subscription": false,
                   "stateful": 0,
                   "hanging_api": false
