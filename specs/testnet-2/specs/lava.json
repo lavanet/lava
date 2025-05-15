@@ -39,8 +39,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -101,8 +100,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

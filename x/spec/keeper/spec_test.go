@@ -1146,8 +1146,8 @@ func TestSpecParsing(t *testing.T) {
 						"index": "test",
 						"name": "test",
 						"enabled": true,
-						"data_reliability_supported": false,
-						"finalization_distance": 0,
+						"data_reliability_enabled": false,
+						"block_distance_for_finalized_data": 0,
 						"average_block_time": 10,
 						"block_last_updated": 0,
 						"api_collections": [
@@ -1166,8 +1166,7 @@ func TestSpecParsing(t *testing.T) {
 									}
 								]
 							}
-						],
-						"shares": 1
+						]
 					}
 				]
 			}
