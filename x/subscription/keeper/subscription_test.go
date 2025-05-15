@@ -1447,8 +1447,8 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	spec := ts.AddSpec("testSpec", common.CreateMockSpec()).Spec("testSpec")
 
 	// Setup validator and provider
-	testBalance := int64(1000000)
-	testStake := int64(100000)
+	testBalance := int64(5000000000000)
+	testStake := int64(50000000000)
 
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
@@ -2600,8 +2600,8 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 	spec := ts.AddSpec("testSpec", common.CreateMockSpec()).Spec("testSpec")
 
 	// Setup validator and provider
-	testBalance := int64(1000000)
-	testStake := int64(100000)
+	testBalance := int64(5000000000000)
+	testStake := int64(50000000000)
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 	acc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)

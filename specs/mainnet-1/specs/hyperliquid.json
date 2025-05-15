@@ -215,7 +215,7 @@
                                 "category": {
                                     "deterministic": true,
                                     "stateful": 0
-                                }
+                                },
                                 "timeout_ms": 1000
                             },
                             {

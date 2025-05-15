@@ -24,8 +24,8 @@ type tester struct {
 }
 
 const (
-	testBalance int64 = 1000000
-	testStake   int64 = 100000
+	testBalance int64 = 500000000000
+	testStake   int64 = 50000000000
 )
 
 func newTester(t *testing.T) *tester {

@@ -124,18 +124,18 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 	ts := newTester(t)
 	SetupForSingleProviderTests(ts, 1, 5, 0)
 
-	delegator, _ := ts.AddAccount("del", 1, 1000000000)
+	delegator, _ := ts.AddAccount("del", 1, testBalance)
 	provider0, _ := ts.GetAccount(common.PROVIDER, 0)
-	provider1, _ := ts.AddAccount(common.PROVIDER, 1, 1000000000)
+	provider1, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 
 	// delegate and check delegatetotal
-	_, err := ts.TxDualstakingDelegate(delegator.Addr.String(), provider0.Addr.String(), types.NewInt64Coin(ts.TokenDenom(), 5000))
+	_, err := ts.TxDualstakingDelegate(delegator.Addr.String(), provider0.Addr.String(), types.NewInt64Coin(ts.TokenDenom(), testStake))
 	require.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
 		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
 		require.NoError(t, err)
-		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+		require.Equal(t, int64(testStake/5), res.StakeEntries[0].DelegateTotal.Amount.Int64())
 	}
 
 	ts.AdvanceEpoch()
@@ -143,7 +143,7 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		res, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(i))
 		require.NoError(t, err)
-		require.Equal(t, int64(1000), res.StakeEntries[0].DelegateTotal.Amount.Int64())
+		require.Equal(t, int64(testStake/5), res.StakeEntries[0].DelegateTotal.Amount.Int64())
 	}
 
 	// unstake all
@@ -164,7 +164,7 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 1)
 	require.Equal(t, provider0.Addr.String(), res.Delegations[0].Provider)
-	require.Equal(t, int64(5000), res.Delegations[0].Amount.Amount.Int64())
+	require.Equal(t, testStake, res.Delegations[0].Amount.Amount.Int64())
 
 	// stake again and check we got the delegation back
 	d := common.MockDescription()
@@ -173,7 +173,7 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 
 	res1, err := ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
 	require.NoError(t, err)
-	require.Equal(t, int64(5000), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+	require.Equal(t, testStake, res1.StakeEntries[0].DelegateTotal.Amount.Int64())
 
 	// stake again on spec1 and check delegations
 	err = ts.StakeProviderExtra(provider1.GetVaultAddr(), provider0.Addr.String(), ts.Spec(SpecName(1)), testStake, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
@@ -181,11 +181,11 @@ func TestUnstakeStakeNewVault(t *testing.T) {
 
 	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(0))
 	require.NoError(t, err)
-	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+	require.Equal(t, testStake/2, res1.StakeEntries[0].DelegateTotal.Amount.Int64())
 
 	res1, err = ts.QueryPairingProvider(provider0.Addr.String(), SpecName(1))
 	require.NoError(t, err)
-	require.Equal(t, int64(2500), res1.StakeEntries[0].DelegateTotal.Amount.Int64())
+	require.Equal(t, testStake/2, res1.StakeEntries[0].DelegateTotal.Amount.Int64())
 }
 
 func TestDelegations(t *testing.T) {
@@ -369,7 +369,7 @@ func TestPairingWithDelegationDistributions(t *testing.T) {
 	ts := newTester(t)
 	SetupForSingleProviderTests(ts, 0, 2, 1)
 
-	stake := int64(1000)
+	stake := int64(testStake)
 	delegator, _ := ts.AddAccount("del", 1, stake*10000)
 	client, _ := ts.GetAccount(common.CONSUMER, 0)
 	spec := ts.Spec(SpecName(0))
@@ -461,7 +461,7 @@ func TestDistributionCli(t *testing.T) {
 		require.Equal(t, provider.Addr.String(), msg.Creator)
 		require.Equal(t, SpecName(99), msg.DstChain)
 		require.NotEqual(t, SpecName(99), msg.SrcChain)
-		require.Equal(t, int64(90000), msg.Amount.Amount.Int64())
+		require.Equal(t, int64(testStake*90/100), msg.Amount.Amount.Int64())
 
 		_, err := ts.Servers.PairingServer.MoveProviderStake(ts.Ctx, msg)
 		require.NoError(t, err)
@@ -471,12 +471,12 @@ func TestDistributionCli(t *testing.T) {
 	for i := 0; i < 99; i++ {
 		res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(i))
 		require.NoError(t, err)
-		require.Equal(t, int64(10000), res.StakeEntries[0].Stake.Amount.Int64())
+		require.Equal(t, int64(testStake*10/100), res.StakeEntries[0].Stake.Amount.Int64())
 	}
 
 	res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(99))
 	require.NoError(t, err)
-	require.Equal(t, int64(9010000), res.StakeEntries[0].Stake.Amount.Int64())
+	require.Equal(t, int64((testStake*90)+(testStake*10/100)), res.StakeEntries[0].Stake.Amount.Int64())
 
 	// distribute back to 1% each
 	res, err = ts.QueryPairingProvider(provider.Addr.String(), "")
@@ -496,7 +496,7 @@ func TestDistributionCli(t *testing.T) {
 		require.Equal(t, provider.Addr.String(), msg.Creator)
 		require.Equal(t, SpecName(99), msg.SrcChain)
 		require.NotEqual(t, SpecName(99), msg.DstChain)
-		require.Equal(t, int64(90000), msg.Amount.Amount.Int64())
+		require.Equal(t, int64(testStake*90/100), msg.Amount.Amount.Int64())
 
 		_, err := ts.Servers.PairingServer.MoveProviderStake(ts.Ctx, msg)
 		require.NoError(t, err)

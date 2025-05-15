@@ -25,7 +25,7 @@ func TestPairingUniqueness(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
 
-	var balance int64 = 10000
+	var balance int64 = testBalance
 	stake := balance / 10
 
 	_, sub1Addr := ts.Account("sub1")
@@ -2512,7 +2512,7 @@ func TestStakeNotAffectingFreeze(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(0, 0, 1) // 0 sub, 0 adm, 1 dev
 
-	var balance int64 = 10000
+	var balance int64 = testBalance
 	stake := balance / 10
 
 	// Create provider account and stake them to first spec
