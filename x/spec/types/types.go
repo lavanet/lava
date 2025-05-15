@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 )
 
 const (
@@ -152,4 +153,22 @@ func IsFinalizedBlock(requestedBlock, latestBlock, finalizationCriteria int64) b
 		}
 	}
 	return false
+}
+
+// FinalizedBlocksForDataReliability returns the number of finalized blocks the provider
+// must keep from its serviced chain for data reliability
+func FinalizedBlocksForDataReliability(averageBlockTime time.Duration) uint32 {
+	finalizedBlocks := FinalizedBlocksTimeDurationForDataReliability / averageBlockTime.Seconds()
+	if finalizedBlocks < MinBlocksForDataReliability {
+		return MinBlocksForDataReliability
+	}
+	return uint32(finalizedBlocks)
+}
+
+func AllowedBlockLag(averageBlockTime time.Duration) int64 {
+	lag := AllowedBlockLagTimeDuration / averageBlockTime.Seconds()
+	if lag < MinAllowedBlockLag {
+		return MinAllowedBlockLag
+	}
+	return int64(lag)
 }

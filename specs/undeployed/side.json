@@ -7,20 +7,12 @@
             "index": "SIDET",
             "name": "side testnet",
             "enabled": true,
+            "data_reliability_enabled": true,
             "imports": [
               "COSMOSSDKFULL"
             ],
-            "reliability_threshold": 268435455,
-            "data_reliability_enabled": true,
             "block_distance_for_finalized_data": 0,
-            "blocks_in_finalization_proof": 1,
             "average_block_time": 6000,
-            "allowed_block_lag_for_qos_sync": 2,
-            "shares": 1,
-            "min_stake_provider": {
-              "denom": "ulava",
-              "amount": "5000000000"
-            },
             "api_collections": [
               {
                 "enabled": true,
@@ -43,11 +35,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/me/{creator}",
@@ -61,11 +50,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/params",
@@ -79,11 +65,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/pool/all",
@@ -97,11 +80,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/pool/{pool_id}",
@@ -115,11 +95,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/volume/day/{pool_id}",
@@ -133,11 +110,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/gmm/volume/total/{pool_id}",
@@ -151,11 +125,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "/sideprotocol/side/yield/params",
@@ -169,11 +140,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 }
                 ],
                 "headers": [],
@@ -228,11 +196,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Pools",
@@ -246,11 +211,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/MyPools",
@@ -264,11 +226,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Pool",
@@ -282,11 +241,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/Volume24",
@@ -300,11 +256,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/TotalVolume",
@@ -318,11 +271,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.gmm.QueryService/APR",
@@ -336,11 +286,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 },
                 {
                     "name": "side.yield.QueryService/Params",
@@ -354,11 +301,8 @@
                     "enabled": true,
                     "category": {
                         "deterministic": true,
-                        "local": false,
-                        "subscription": false,
                         "stateful": 0
-                    },
-                    "extra_compute_units": 0
+                    }
                 }
                 ],
                 "headers": [],
@@ -437,7 +381,7 @@
                 ]
               }
             ]
-          }
+        }
       ]
     },
     "deposit": "10000000ulava"

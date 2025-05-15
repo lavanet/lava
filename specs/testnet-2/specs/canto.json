@@ -7,22 +7,14 @@
                 "index": "CANTO",
                 "name": "canto mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1",
                     "COSMOSSDK",
                     "COSMOSSDK45DEP"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
-                "allowed_block_lag_for_qos_sync": 2,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -45,11 +37,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/epochs/v1/epochs",
@@ -63,11 +52,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/erc20/v1/params",
@@ -81,11 +67,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/erc20/v1/token_pairs",
@@ -99,11 +82,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/erc20/v1/token_pairs/{token}",
@@ -117,11 +97,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/fees/v1/fees",
@@ -135,11 +112,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/fees/v1/fees/{contract_address}",
@@ -153,11 +127,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/fees/v1/fees/{deployer_address}",
@@ -171,11 +142,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/fees/v1/params",
@@ -189,11 +157,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/govshuttle/params",
@@ -207,11 +172,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/circulating_supply",
@@ -225,11 +187,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/epoch_mint_provision",
@@ -243,11 +202,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/inflation_rate",
@@ -261,11 +217,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/params",
@@ -279,11 +232,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/period",
@@ -297,11 +247,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/inflation/v1/skipped_epochs",
@@ -315,11 +262,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/recovery/v1/params",
@@ -333,11 +277,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/v1/csr/contract/{address}",
@@ -351,11 +292,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/v1/csr/csrs",
@@ -369,11 +307,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/v1/csr/nft/{nftId}",
@@ -387,11 +322,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/v1/csr/params",
@@ -405,11 +337,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/v1/csr/turnstile",
@@ -423,11 +352,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/canto/vesting/v1/balances/{address}",
@@ -441,11 +367,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/account/{address}",
@@ -459,11 +382,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/balances/{address}",
@@ -477,11 +397,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/base_fee",
@@ -495,11 +412,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/codes/{address}",
@@ -513,11 +427,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/cosmos_account/{address}",
@@ -531,11 +442,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/estimate_gas",
@@ -549,11 +457,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/eth_call",
@@ -567,11 +472,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/params",
@@ -585,11 +487,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/storage/{address}/{key}",
@@ -603,11 +502,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/trace_block",
@@ -621,11 +517,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/trace_tx",
@@ -639,11 +532,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/evm/v1/validator_account/{cons_address}",
@@ -657,11 +547,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/feemarket/v1/base_fee",
@@ -675,11 +562,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/feemarket/v1/block_gas",
@@ -693,11 +577,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ethermint/feemarket/v1/params",
@@ -711,11 +592,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -770,11 +648,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.csr.v1.Query/CSRByNFT",
@@ -788,11 +663,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.csr.v1.Query/CSRs",
@@ -806,11 +678,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.csr.v1.Query/Params",
@@ -824,11 +693,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.csr.v1.Query/Turnstile",
@@ -842,11 +708,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.epochs.v1.Query/CurrentEpoch",
@@ -860,11 +723,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.epochs.v1.Query/EpochInfos",
@@ -878,11 +738,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.erc20.v1.Query/Params",
@@ -896,11 +753,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.erc20.v1.Query/TokenPair",
@@ -914,11 +768,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.erc20.v1.Query/TokenPairs",
@@ -932,11 +783,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.fees.v1.Query/DeployerFees",
@@ -950,11 +798,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.fees.v1.Query/Fee",
@@ -968,11 +813,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.fees.v1.Query/Fees",
@@ -986,11 +828,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.fees.v1.Query/Params",
@@ -1004,11 +843,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.govshuttle.v1.Query/Params",
@@ -1022,11 +858,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/CirculatingSupply",
@@ -1040,11 +873,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/EpochMintProvision",
@@ -1058,11 +888,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/InflationRate",
@@ -1076,11 +903,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/Params",
@@ -1094,11 +918,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/Period",
@@ -1112,11 +933,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.inflation.v1.Query/SkippedEpochs",
@@ -1130,11 +948,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.recovery.v1.Query/Params",
@@ -1148,11 +963,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "canto.vesting.v1.Query/Balances",
@@ -1166,11 +978,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/Account",
@@ -1184,11 +993,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/Balance",
@@ -1202,11 +1008,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/BaseFee",
@@ -1220,11 +1023,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/Code",
@@ -1238,11 +1038,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/CosmosAccount",
@@ -1256,11 +1053,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/EstimateGas",
@@ -1274,11 +1068,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/EthCall",
@@ -1292,11 +1083,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/Params",
@@ -1310,11 +1098,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/Storage",
@@ -1328,11 +1113,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/TraceBlock",
@@ -1346,11 +1128,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/TraceTx",
@@ -1364,11 +1143,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.evm.v1.Query/ValidatorAccount",
@@ -1382,11 +1158,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.feemarket.v1.Query/BaseFee",
@@ -1400,11 +1173,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.feemarket.v1.Query/BlockGas",
@@ -1418,11 +1188,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ethermint.feemarket.v1.Query/Params",
@@ -1436,11 +1203,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],

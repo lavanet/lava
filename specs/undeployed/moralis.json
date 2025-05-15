@@ -7,17 +7,9 @@
                 "index": "MORALIS",
                 "name": "moralis advanced api",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": false,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 1000,
-                "allowed_block_lag_for_qos_sync": 1,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -40,11 +32,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/balance",
@@ -58,11 +47,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/wallets/balances",
@@ -76,11 +62,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/nft",
@@ -94,11 +77,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/nft/collections",
@@ -112,11 +92,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}",
@@ -130,11 +107,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/verbose",
@@ -148,11 +122,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/erc20/transfers",
@@ -166,11 +137,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/resolve/{address}/reverse",
@@ -184,11 +152,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/resolve/ens/{domain}",
@@ -202,11 +167,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/resolve/{address}/domain",
@@ -220,11 +182,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/wallets/{address}/stats",
@@ -238,11 +197,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}",
@@ -256,11 +212,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/{token_id}/metadata/resync",
@@ -274,11 +227,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/{token_id}",
@@ -292,11 +242,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/nft/transfers",
@@ -310,11 +257,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/transfers",
@@ -328,11 +272,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/block/{block_number_or_hash}/nft/transfers",
@@ -346,11 +287,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/{token_id}/transfers",
@@ -364,11 +302,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/metadata",
@@ -382,11 +317,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/owners",
@@ -400,11 +332,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/{token_id}/owners",
@@ -418,11 +347,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/trades",
@@ -436,11 +362,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/lowestprice",
@@ -454,11 +377,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/stats",
@@ -472,11 +392,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/nft/{address}/{token_id}/stats",
@@ -490,11 +407,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/metadata",
@@ -508,11 +422,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/metadata/symbols",
@@ -526,11 +437,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/{address}/price",
@@ -544,11 +452,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/erc20",
@@ -562,11 +467,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/{address}/allowance",
@@ -580,11 +482,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/{address}/transfers",
@@ -598,11 +497,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{pair_address}/reserves",
@@ -616,11 +512,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{token0_address}/{token1_address}/pairAddress",
@@ -634,11 +527,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/{address}/stats",
@@ -652,11 +542,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/market-data/erc20s/top-tokens",
@@ -670,11 +557,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/market-data/erc20s/top-movers",
@@ -688,11 +572,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/market-data/nfts/top-collections",
@@ -706,11 +587,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/market-data/nfts/hottest-collections",
@@ -724,11 +602,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/block/{block_number_or_hash}",
@@ -742,11 +617,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/dateToBlock",
@@ -760,11 +632,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/transaction/{transaction_hash}",
@@ -778,11 +647,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/transaction/{transaction_hash}/verbose",
@@ -796,11 +662,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/transaction/{transaction_hash}/internal-transactions",
@@ -814,11 +677,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/logs",
@@ -832,11 +692,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/block/{block_number_or_hash}/stats",
@@ -850,11 +707,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/web3/version",
@@ -868,11 +722,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/info/endpointWeights",
@@ -886,11 +737,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "inheritance_apis": [],
@@ -939,11 +787,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/erc20/prices",
@@ -957,11 +802,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/{address}/events",
@@ -975,11 +817,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/contracts-review",
@@ -993,11 +832,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ]
                     },
@@ -1022,11 +858,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ]
                     }

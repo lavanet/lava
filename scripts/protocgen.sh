@@ -1,19 +1,19 @@
 #!/bin/bash
 
 __dir=$(dirname "$0")
-. $__dir/useful_commands.sh
+# . $__dir/useful_commands.sh
 
-if ! command_exists buf; then
-  echo "buf not found."
-  echo "Please install buf using the init_install.sh script or manually."
-  exit 1
-fi
+# if ! command_exists buf; then
+#   echo "buf not found."
+#   echo "Please install buf using the init_install.sh script or manually."
+#   exit 1
+# fi
 
-if ! command_exists protoc-gen-gocosmos; then
-  echo "protoc-gen-gocosmos not found."
-  echo "Please install protoc-gen-gocosmos using the init_install.sh script or manually."
-  exit 1
-fi
+# if ! command_exists protoc-gen-gocosmos; then
+#   echo "protoc-gen-gocosmos not found."
+#   echo "Please install protoc-gen-gocosmos using the init_install.sh script or manually."
+#   exit 1
+# fi
 
 set -e
 

@@ -202,11 +202,10 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 				apiCollection = apiCollectionForMessage // overwrite apiColleciton to take the addon
 			}
 			api = &spectypes.Api{
-				Enabled:           api.Enabled && apiCont.api.Enabled,
-				Name:              api.Name + SEP + apiCont.api.Name,
-				ComputeUnits:      api.ComputeUnits + apiCont.api.ComputeUnits,
-				ExtraComputeUnits: api.ExtraComputeUnits + apiCont.api.ExtraComputeUnits,
-				Category:          category,
+				Enabled:      api.Enabled && apiCont.api.Enabled,
+				Name:         api.Name + SEP + apiCont.api.Name,
+				ComputeUnits: api.ComputeUnits + apiCont.api.ComputeUnits,
+				Category:     category,
 				BlockParsing: spectypes.BlockParser{
 					ParserArg:    []string{},
 					ParserFunc:   spectypes.PARSER_FUNC_EMPTY,
@@ -289,27 +288,19 @@ func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
 	return internalPaths
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the JsonRPCChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
+// IsDataReliabilitySupported returns true if data reliability is supported
+// spec's DataReliabilityEnabled is true if data reliability is possible in this chain
+// DataReliabilityEnabled is a consumer-config parameter that enables/disables data reliability in general
+func (apip *JsonRPCChainParser) IsDataReliabilitySupported() bool {
+	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
+// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.finalizationDistance)
+func (apip *JsonRPCChainParser) ChainBlockStats() (averageBlockTime time.Duration, finalizationDistance uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0, 0
+		return 0, 0
 	}
 
 	// Acquire read lock
@@ -319,8 +310,8 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	// Convert average block time from int64 -> time.Duration
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
-	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
+	// Return averageBlockTime, finalizationDistance from spec
+	return averageBlockTime, apip.spec.BlockDistanceForFinalizedData
 }
 
 type JsonRPCChainListener struct {
@@ -547,7 +538,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
-	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	averageBlockTime, _ := chainParser.ChainBlockStats()
 
 	// look for the first node url that has no internal path, otherwise take first node url
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]

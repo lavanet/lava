@@ -56,7 +56,7 @@ type Spec struct {
 	Enabled                       bool                                    `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	ReliabilityThreshold          uint32                                  `protobuf:"varint,5,opt,name=reliability_threshold,json=reliabilityThreshold,proto3" json:"reliability_threshold,omitempty"`
 	DataReliabilityEnabled        bool                                    `protobuf:"varint,6,opt,name=data_reliability_enabled,json=dataReliabilityEnabled,proto3" json:"data_reliability_enabled,omitempty"`
-	BlockDistanceForFinalizedData uint32                                  `protobuf:"varint,7,opt,name=block_distance_for_finalized_data,json=blockDistanceForFinalizedData,proto3" json:"block_distance_for_finalized_data,omitempty"`
+	finalizationDistance uint32                                  `protobuf:"varint,7,opt,name=block_distance_for_finalized_data,json=finalizationDistance,proto3" json:"block_distance_for_finalized_data,omitempty"`
 	BlocksInFinalizationProof     uint32                                  `protobuf:"varint,8,opt,name=blocks_in_finalization_proof,json=blocksInFinalizationProof,proto3" json:"blocks_in_finalization_proof,omitempty"`
 	AverageBlockTime              int64                                   `protobuf:"varint,9,opt,name=average_block_time,json=averageBlockTime,proto3" json:"average_block_time,omitempty"`
 	AllowedBlockLagForQosSync     int64                                   `protobuf:"varint,10,opt,name=allowed_block_lag_for_qos_sync,json=allowedBlockLagForQosSync,proto3" json:"allowed_block_lag_for_qos_sync,omitempty"`
@@ -138,9 +138,9 @@ func (m *Spec) GetDataReliabilityEnabled() bool {
 	return false
 }
 
-func (m *Spec) GetBlockDistanceForFinalizedData() uint32 {
+func (m *Spec) GetfinalizationDistance() uint32 {
 	if m != nil {
-		return m.BlockDistanceForFinalizedData
+		return m.finalizationDistance
 	}
 	return 0
 }
@@ -302,7 +302,7 @@ func (this *Spec) Equal(that interface{}) bool {
 	if this.DataReliabilityEnabled != that1.DataReliabilityEnabled {
 		return false
 	}
-	if this.BlockDistanceForFinalizedData != that1.BlockDistanceForFinalizedData {
+	if this.finalizationDistance != that1.finalizationDistance {
 		return false
 	}
 	if this.BlocksInFinalizationProof != that1.BlocksInFinalizationProof {
@@ -471,8 +471,8 @@ func (m *Spec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x40
 	}
-	if m.BlockDistanceForFinalizedData != 0 {
-		i = encodeVarintSpec(dAtA, i, uint64(m.BlockDistanceForFinalizedData))
+	if m.finalizationDistance != 0 {
+		i = encodeVarintSpec(dAtA, i, uint64(m.finalizationDistance))
 		i--
 		dAtA[i] = 0x38
 	}
@@ -552,8 +552,8 @@ func (m *Spec) Size() (n int) {
 	if m.DataReliabilityEnabled {
 		n += 2
 	}
-	if m.BlockDistanceForFinalizedData != 0 {
-		n += 1 + sovSpec(uint64(m.BlockDistanceForFinalizedData))
+	if m.finalizationDistance != 0 {
+		n += 1 + sovSpec(uint64(m.finalizationDistance))
 	}
 	if m.BlocksInFinalizationProof != 0 {
 		n += 1 + sovSpec(uint64(m.BlocksInFinalizationProof))
@@ -760,9 +760,9 @@ func (m *Spec) Unmarshal(dAtA []byte) error {
 			m.DataReliabilityEnabled = bool(v != 0)
 		case 7:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockDistanceForFinalizedData", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field finalizationDistance", wireType)
 			}
-			m.BlockDistanceForFinalizedData = 0
+			m.finalizationDistance = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSpec
@@ -772,7 +772,7 @@ func (m *Spec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.BlockDistanceForFinalizedData |= uint32(b&0x7F) << shift
+				m.finalizationDistance |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

@@ -195,7 +195,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			}
 
 			// automatically unfreeze the provider if it was frozen due to stake below min spec stake
-			minSpecStake := k.specKeeper.GetMinStake(ctx, chainID)
+			minSpecStake := k.specKeeper.ProviderMinStake(ctx)
 			if beforeAmount.IsLT(minSpecStake) && existingEntry.IsFrozen() && !existingEntry.IsJailed(ctx.BlockTime().UTC().Unix()) && amount.IsGTE(minSpecStake) {
 				existingEntry.UnFreeze(nextEpoch)
 				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)

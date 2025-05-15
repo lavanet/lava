@@ -7,20 +7,12 @@
                 "index": "CELESTIA",
                 "name": "celestia mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 12000,
-                "allowed_block_lag_for_qos_sync": 2,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -43,11 +35,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ibc/apps/packetforward/v1/params",
@@ -61,11 +50,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/celestia/core/v1/tx/{tx_id}",
@@ -79,11 +65,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/mint/v1beta1/inflation_rate",
@@ -97,11 +80,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/cosmos/mint/v1beta1/genesis_time",
@@ -115,11 +95,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/signal/v1/tally/{version}",
@@ -133,11 +110,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/signal/v1/upgrade",
@@ -151,11 +125,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/blob/v1/params",
@@ -169,11 +140,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/attestations/requests/{nonce}",
@@ -187,11 +155,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/data_commitment/range/height",
@@ -207,11 +172,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/evm_address",
@@ -225,11 +187,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/attestations/nonce/earliest",
@@ -243,11 +202,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/attestations/nonce/latest",
@@ -261,11 +217,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/data_commitment/latest",
@@ -279,11 +232,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/unbonding",
@@ -297,11 +247,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/valset/request/before/{nonce}",
@@ -315,11 +262,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/qgb/v1/params",
@@ -333,11 +277,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -401,11 +342,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/LatestUnbondingHeight",
@@ -419,11 +357,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/LatestAttestationNonce",
@@ -437,11 +372,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/DataCommitmentRangeForHeight",
@@ -457,11 +389,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/AttestationRequestByNonce",
@@ -475,11 +404,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/EarliestAttestationNonce",
@@ -493,11 +419,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.blob.v1.Query/Params",
@@ -511,11 +434,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.core.v1.tx.Tx/TxStatus",
@@ -529,11 +449,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/LatestValsetRequestBeforeNonce",
@@ -547,11 +464,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/Params",
@@ -565,11 +479,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "packetforward.v1.Query/Params",
@@ -583,11 +494,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.qgb.v1.Query/LatestDataCommitment",
@@ -601,11 +509,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.mint.v1.Query/AnnualProvisions",
@@ -619,11 +524,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.signal.v1.Query/GetUpgrade",
@@ -637,11 +539,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.signal.v1.Query/VersionTally",
@@ -655,11 +554,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.minfee.v1.Querycelestia.minfee.v1.Query/NetworkMinGasPrice",
@@ -673,11 +569,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.mint.v1.Query/GenesisTime",
@@ -691,11 +584,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "celestia.mint.v1.Query/InflationRate",
@@ -709,11 +599,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -821,11 +708,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "blob.GetAll",
@@ -839,11 +723,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "blob.GetProof",
@@ -857,11 +738,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "blob.Included",
@@ -875,11 +753,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "blob.Submit",
@@ -893,11 +768,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "das.SamplingStats",
@@ -911,11 +783,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "das.WaitCatchUp",
@@ -929,11 +798,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "fraud.Get",
@@ -947,11 +813,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.GetByHash",
@@ -965,11 +828,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.GetByHeight",
@@ -983,11 +843,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.GetRangeByHeight",
@@ -1001,11 +858,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.LocalHead",
@@ -1019,11 +873,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.NetworkHead",
@@ -1037,11 +888,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.SyncState",
@@ -1055,11 +903,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.SyncWait",
@@ -1073,11 +918,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "header.WaitForHeight",
@@ -1091,11 +933,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "node.Ready",
@@ -1109,11 +948,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "share.GetEDS",
@@ -1127,11 +963,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "share.GetShare",
@@ -1145,11 +978,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "share.GetSharesByNamespace",
@@ -1163,11 +993,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "share.SharesAvailable",
@@ -1181,11 +1008,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.BalanceForAddress",
@@ -1199,11 +1023,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.BeginRedelegate",
@@ -1217,11 +1038,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.CancelUnbondingDelegation",
@@ -1235,11 +1053,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.Delegate",
@@ -1253,11 +1068,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.QueryDelegation",
@@ -1271,11 +1083,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.QueryRedelegations",
@@ -1289,11 +1098,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.QueryUnbonding",
@@ -1307,11 +1113,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.SubmitPayForBlob",
@@ -1325,11 +1128,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.SubmitTx",
@@ -1343,11 +1143,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.Transfer",
@@ -1361,11 +1158,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "state.Undelegate",
@@ -1379,11 +1173,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -1469,20 +1260,12 @@
                 "index": "CELESTIATM",
                 "name": "celestia mocha testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 5100,
-                "allowed_block_lag_for_qos_sync": 2,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -1601,20 +1384,12 @@
                 "index": "CELESTIATA",
                 "name": "celestia arabica testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "CELESTIA"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
-                "allowed_block_lag_for_qos_sync": 2,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

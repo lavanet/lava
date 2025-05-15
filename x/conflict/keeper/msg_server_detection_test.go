@@ -42,8 +42,8 @@ func newTester(t *testing.T) *tester {
 
 func (ts *tester) setupForConflict(providersCount int) *tester {
 	var (
-		balance int64 = 100000
-		stake   int64 = 1000
+		balance int64 = 5000000000000
+		stake   int64 = 50000000000
 	)
 
 	ts.plan = ts.Plan("free")

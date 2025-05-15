@@ -7,17 +7,9 @@
                 "index": "BTC",
                 "name": "bitcoin",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 600000,
-                "allowed_block_lag_for_qos_sync": 1,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -41,11 +33,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
@@ -65,11 +54,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
@@ -89,11 +75,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "decodescript",
@@ -107,11 +90,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "estimatesmartfee",
@@ -125,11 +105,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getbestblockhash",
@@ -143,11 +120,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getblockchaininfo",
@@ -161,11 +135,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getblockcount",
@@ -179,11 +150,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getblockheader",
@@ -197,11 +165,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
@@ -221,11 +186,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.[0]",
@@ -249,11 +211,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getchaintxstats",
@@ -267,11 +226,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getconnectioncount",
@@ -285,11 +241,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getdifficulty",
@@ -303,11 +256,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getindexinfo",
@@ -321,11 +271,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getmemoryinfo",
@@ -339,11 +286,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getmempoolancestors",
@@ -357,11 +301,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getmempooldescendants",
@@ -375,11 +316,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getmempoolinfo",
@@ -393,11 +331,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getrawmempool",
@@ -411,11 +346,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "getrawtransaction",
@@ -429,11 +361,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "gettxoutproof",
@@ -447,11 +376,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "gettxoutsetinfo",
@@ -465,11 +391,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "gettxout",
@@ -483,11 +406,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "sendrawtransaction",
@@ -501,11 +421,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "submitpackage",
@@ -519,11 +436,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "testmempoolaccept",
@@ -537,11 +451,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "validateaddress",
@@ -555,11 +466,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "verifymessage",
@@ -573,11 +481,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -636,20 +541,12 @@
                 "index": "BTCT",
                 "name": "bitcoin testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BTC"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 7,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
-                "allowed_block_lag_for_qos_sync": 2,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

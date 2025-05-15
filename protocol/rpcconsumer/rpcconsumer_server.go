@@ -305,9 +305,8 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
-		enabled, _ := rpccs.chainParser.DataReliabilityParams()
 		// if DR is disabled it's okay to not have GET_BLOCKNUM
-		if !enabled {
+		if !rpccs.chainParser.IsDataReliabilitySupported() {
 			return true, nil
 		}
 		return false, err
@@ -397,9 +396,8 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.getSkipDataReliability() {
+	if rpccs.chainParser.IsDataReliabilitySupported() && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -407,7 +405,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		if found {
 			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
 		}
-		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
+		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, relayProcessor) // runs asynchronously
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
@@ -950,7 +948,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
-						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+						averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 							RequestHash:           hashKey,
 							ChainId:               chainId,
@@ -982,6 +980,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
+	averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 	relayRequest := relayResult.Request
 	if rpccs.debugRelays {
 		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
@@ -1130,8 +1129,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
-	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
+	_, finalizationDistance := rpccs.chainParser.ChainBlockStats()
+	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(finalizationDistance))
 	if !rpccs.chainParser.ParseDirectiveEnabled() {
 		isFinalized = false
 	}
@@ -1150,11 +1149,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
+	if rpccs.chainParser.IsDataReliabilitySupported() && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
+		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(finalizationDistance), averageBlockTime)
 		if err != nil {
 			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
 				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
@@ -1162,7 +1160,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			return 0, err, false
 		}
 
-		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
+		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(finalizationDistance), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
 		if err != nil {
 			if finalizationAccountabilityError != nil {
 				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
@@ -1288,7 +1286,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor) error {
 	if statetracker.DisableDR {
 		return nil
 	}
@@ -1305,7 +1303,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 
-	if rand.Uint32() > dataReliabilityThreshold {
+	if rand.Float64() > chainlib.DataReliabilityChance {
 		// decided not to do data reliability
 		return nil
 	}
@@ -1393,7 +1391,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 }
 
 func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
-	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+	averageBlockTime, _ := rpccs.chainParser.ChainBlockStats()
 	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))
 	return processingTimeout, relayTimeout

@@ -158,7 +158,6 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts.setupForIprpcTests(true) // setup funds IPRPC for mock2 spec
 	// set shares to 0 for mock2 spec
 	spec2 := ts.Spec(mockSpec2)
-	spec2.Shares = 0
 	ts.Keepers.Spec.SetSpec(ts.Ctx, spec2)
 	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
 

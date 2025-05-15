@@ -10,6 +10,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.MaxCU(ctx),
 		k.AllowlistedExpeditedMsgs(ctx),
+		k.ProviderMinStake(ctx),
 	)
 }
 
@@ -27,6 +28,11 @@ func (k Keeper) MaxCU(ctx sdk.Context) (res uint64) {
 // AllowlistedExpeditedMsgs returns the AllowlistedExpeditedMsgs param
 func (k Keeper) AllowlistedExpeditedMsgs(ctx sdk.Context) (res []string) {
 	k.paramstore.Get(ctx, types.KeyallowlistExpeditedMsgs, &res)
+	return
+}
+
+func (k Keeper) ProviderMinStake(ctx sdk.Context) (res sdk.Coin) {
+	k.paramstore.Get(ctx, types.KeyProviderMinStake, &res)
 	return
 }
 
