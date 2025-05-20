@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -85,7 +86,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 		latestBlock := int64(123)
 		// provider handling the response
-		finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
+		finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA", 122: "BBB", 121: "CCC"}
 		replyDataBuf := []byte("REPLY-STUB")
 		reply := &pairingtypes.RelayReply{Data: replyDataBuf}
 		jsonStr, err := json.Marshal(finalizedBlockHashes)
@@ -96,7 +97,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -119,7 +120,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 		latestBlock = int64(123)
 		// provider handling the response
-		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}
+		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA", 122: "BBB", 121: "CCC"}
 		replyDR := &pairingtypes.RelayReply{Data: replyDataBuf}
 		jsonStr, err = json.Marshal(finalizedBlockHashes)
 		require.NoError(t, err)
@@ -129,7 +130,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
@@ -244,7 +245,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 		latestBlock := int64(123)
 		// provider handling the response
-		finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
+		finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA", 122: "BBB", 121: "CCC"}
 
 		reply := &pairingtypes.RelayReply{Data: replyDataBuf}
 		jsonStr, err := json.Marshal(finalizedBlockHashes)
@@ -255,7 +256,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -283,7 +284,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		latestBlock = int64(123)
 
 		// provider handling the response
-		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}
+		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA", 122: "BBB", 121: "CCC"}
 		maliciousReply := []byte("Gimme-your-lava")
 		replyDR := &pairingtypes.RelayReply{Data: maliciousReply}
 
@@ -299,7 +300,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 
-		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,

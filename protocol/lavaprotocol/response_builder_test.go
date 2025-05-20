@@ -54,7 +54,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
-	finalizedBlockHashes := map[int64]interface{}{123: "AAA"}
+	finalizedBlockHashes := map[int64]interface{}{123: "AAA", 122: "BBB", 121: "CCC"}
 	reply := &pairingtypes.RelayReply{}
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1*time.Second)
+	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 	require.NoError(t, err)
 }
 
@@ -104,7 +104,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
 	// provider handling the response
-	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
+	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA", 122: "BBB", 121: "CCC"}
 	reply := &pairingtypes.RelayReply{}
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	require.NoError(t, err)
@@ -114,6 +114,6 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, spectypes.FinalizedBlocksTimeDurationForDataReliability*time.Second)
 	require.NoError(t, err)
 }
