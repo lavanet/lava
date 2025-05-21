@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v5/testutil/common"
@@ -497,13 +496,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		Index:                         "parent",
 		Name:                          "parent spec",
 		Enabled:                       true,
-		ReliabilityThreshold:          268435455,
-		DataReliabilityEnabled:        false,
 		BlockDistanceForFinalizedData: 64,
-		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
-		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              common.NewCoin(ts.TokenDenom(), 5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -517,13 +511,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		Index:                         "child",
 		Name:                          "child spec",
 		Enabled:                       true,
-		ReliabilityThreshold:          268435455,
-		DataReliabilityEnabled:        false,
 		BlockDistanceForFinalizedData: 64,
-		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
-		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              common.NewCoin(ts.TokenDenom(), 5000),
 		Imports:                       []string{"parent"},
 	}
 
@@ -1127,20 +1116,10 @@ func TestParsers(t *testing.T) {
 				Index:                         tt.name,
 				Name:                          tt.name,
 				Enabled:                       true,
-				ReliabilityThreshold:          0xffffff,
-				DataReliabilityEnabled:        false,
 				BlockDistanceForFinalizedData: 0,
-				BlocksInFinalizationProof:     1,
 				AverageBlockTime:              10,
-				AllowedBlockLagForQosSync:     1,
 				BlockLastUpdated:              0,
-				MinStakeProvider: sdk.Coin{
-					Denom:  "ulava",
-					Amount: math.NewInt(5000000),
-				},
-				ApiCollections: tt.apisCollections,
-				Shares:         1,
-				Identity:       "",
+				ApiCollections:                tt.apisCollections,
 			}
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
@@ -1167,17 +1146,10 @@ func TestSpecParsing(t *testing.T) {
 						"index": "test",
 						"name": "test",
 						"enabled": true,
-						"reliability_threshold": 16777215,
 						"data_reliability_enabled": false,
 						"block_distance_for_finalized_data": 0,
-						"blocks_in_finalization_proof": 1,
 						"average_block_time": 10,
-						"allowed_block_lag_for_qos_sync": 1,
 						"block_last_updated": 0,
-						"min_stake_provider": {
-							"denom": "ulava",
-							"amount": "5000000"
-						},
 						"api_collections": [
 							{
 								"apis": [
@@ -1194,9 +1166,7 @@ func TestSpecParsing(t *testing.T) {
 									}
 								]
 							}
-						],
-						"shares": 1,
-						"identity": ""
+						]
 					}
 				]
 			}

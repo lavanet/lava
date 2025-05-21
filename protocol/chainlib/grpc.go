@@ -209,27 +209,19 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the GrpcChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
+// IsDataReliabilitySupported returns true if data reliability is supported
+// spec's DataReliabilityEnabled is true if data reliability is possible in this chain
+// DataReliabilityEnabled is a consumer-config parameter that enables/disables data reliability in general
+func (apip *GrpcChainParser) IsDataReliabilitySupported() bool {
+	return apip.spec.DataReliabilityEnabled && DataReliabilityEnabled
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
+// (spec.AverageBlockTime, spec.FinalizationDistance)
+func (apip *GrpcChainParser) ChainBlockStats() (averageBlockTime time.Duration, finalizationDistance uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0, 0
+		return 0, 0
 	}
 
 	// Acquire read lock
@@ -239,8 +231,8 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	// Convert average block time from int64 -> time.Duration
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
-	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
+	// Return averageBlockTime, finalizationDistance from spec
+	return averageBlockTime, apip.spec.BlockDistanceForFinalizedData
 }
 
 type GrpcChainListener struct {
@@ -384,7 +376,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
-	_, averageBlockTime, _, _ := parser.ChainBlockStats()
+	averageBlockTime, _ := parser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(nodeUrl.Url, "/") // remove suffix if exists
 	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)

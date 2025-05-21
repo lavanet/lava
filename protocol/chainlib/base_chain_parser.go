@@ -20,7 +20,12 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var DefaultApiName = "Default-"
+var (
+	AllowMissingApisByDefault = true
+	DefaultApiName            = "Default-"
+	DataReliabilityChance     = 0.0625 // default data reliability chance is 1/16, this means that every 16th request will be a data reliability request
+	DataReliabilityEnabled    = true   // default data reliability is enabled
+)
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
@@ -342,10 +347,9 @@ func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, 
 	utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "apiKey", Value: apiKey})
 	apiCont := &ApiContainer{
 		api: &spectypes.Api{
-			Enabled:           true,
-			Name:              DefaultApiName + apiKey.Name, // do not change this name
-			ComputeUnits:      20,                           // set 20 compute units by default
-			ExtraComputeUnits: 0,
+			Enabled:      true,
+			Name:         DefaultApiName + apiKey.Name, // do not change this name
+			ComputeUnits: 20,                           // set 20 compute units by default
 			Category: spectypes.SpecCategory{
 				Deterministic: true,
 			},

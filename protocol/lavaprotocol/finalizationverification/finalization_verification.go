@@ -3,6 +3,7 @@ package finalizationverification
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -16,7 +17,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization, blocksInFinalizationProof int64) (finalizedBlocks map[int64]string, errRet error) {
+func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization int64, averageBlockTime time.Duration) (finalizedBlocks map[int64]string, errRet error) {
 	relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
@@ -46,7 +47,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 		)
 	}
 
-	err = verifyFinalizationDataIntegrity(reply, latestSessionBlock, finalizedBlocks, blockDistanceForFinalization, blocksInFinalizationProof, providerAddr)
+	err = verifyFinalizationDataIntegrity(reply, latestSessionBlock, finalizedBlocks, blockDistanceForFinalization, providerAddr, averageBlockTime)
 	if err != nil {
 		return nil, err
 	}
@@ -68,17 +69,18 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	return finalizedBlocks, errRet
 }
 
-func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessionBlock int64, finalizedBlocks map[int64]string, blockDistanceForFinalization, blocksInFinalizationProof int64, providerAddr string) (err error) {
+func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessionBlock int64, finalizedBlocks map[int64]string, blockDistanceForFinalization int64, providerAddr string, averageBlockTime time.Duration) (err error) {
 	latestBlock := reply.LatestBlock
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
 	maxBlockNum := int64(0)
 
-	if int64(len(finalizedBlocks)) != blocksInFinalizationProof {
+	finalizedBlocksForDataReliability := spectypes.FinalizedBlocksForDataReliability(averageBlockTime)
+	if uint32(len(finalizedBlocks)) != finalizedBlocksForDataReliability {
 		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks",
 			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("Provider", providerAddr),
-			utils.LogAttr("blocksInFinalizationProof", blocksInFinalizationProof),
+			utils.LogAttr("finalizedBlocksForDataReliability", finalizedBlocksForDataReliability),
 			utils.LogAttr("len(finalizedBlocks)", len(finalizedBlocks)),
 			utils.LogAttr("finalizedBlocks", finalizedBlocks),
 		)

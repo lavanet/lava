@@ -1517,8 +1517,9 @@ func TestReputationPairingScore(t *testing.T) {
 	require.NoError(t, err)
 	cluster := resQCurrent.Sub.Cluster
 
-	minStake := ts.spec.MinStakeProvider.Amount.Int64()
-	stakes := []int64{minStake * 5, minStake + 10, minStake + 10, minStake * 2}
+	minStake := ts.GetProviderMinStake()
+	minStakeAmount := minStake.Amount.Int64()
+	stakes := []int64{minStakeAmount * 5, minStakeAmount + 10, minStakeAmount + 10, minStakeAmount * 2}
 	providers := []string{}
 	for i := 0; i < 4; i++ {
 		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
@@ -1587,10 +1588,10 @@ func TestReputationPairingScoreWithinRange(t *testing.T) {
 		providers = append(providers, provider)
 	}
 
-	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	minStake := ts.GetProviderMinStake()
 	for i := 0; i < 2; i++ {
 		// create providers
-		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake.Amount.Int64())
 		require.NoError(t, err)
 	}
 	// advance epoch to apply pairing
@@ -1647,10 +1648,10 @@ func TestReputationPairingScoreZeroQosScores(t *testing.T) {
 		providers = append(providers, provider)
 	}
 
-	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	minStake := ts.GetProviderMinStake()
 	for i := 0; i < 2; i++ {
 		// create providers
-		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake.Amount.Int64())
 		require.NoError(t, err)
 	}
 	// advance epoch to apply pairing
@@ -1711,10 +1712,10 @@ func TestReputationPairingScoreFixation(t *testing.T) {
 		providers = append(providers, provider)
 	}
 
-	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	minStake := ts.GetProviderMinStake()
 	for i := 0; i < 2; i++ {
 		// create providers
-		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake.Amount.Int64())
 		require.NoError(t, err)
 	}
 	// advance epoch to apply pairing
@@ -1794,7 +1795,7 @@ func TestReputationPairingScoreStakeAggregation(t *testing.T) {
 		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
 		providers = append(providers, provider)
 	}
-	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	minStake := ts.GetProviderMinStake().Amount.Int64()
 
 	tests := []struct {
 		name            string

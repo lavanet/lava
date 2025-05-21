@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/x/spec/types"
 	typesv1 "github.com/lavanet/lava/v5/x/spec/types/migrations/v1"
 )
@@ -36,6 +37,16 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 
 		m.keeper.SetSpec(ctx, spec)
 	}
+
+	return nil
+}
+
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	utils.LavaFormatInfo("Migrating spec module v4 to v5: adding provider min stake param")
+
+	params := m.keeper.GetParams(ctx)
+	params.ProviderMinStake = types.DefaultProviderMinStake
+	m.keeper.SetParams(ctx, params)
 
 	return nil
 }

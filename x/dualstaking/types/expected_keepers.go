@@ -48,7 +48,7 @@ type SpecKeeper interface {
 	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
-	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
+	ProviderMinStake(ctx sdk.Context) (minStake sdk.Coin)
 }
 
 type StakingKeeper interface {

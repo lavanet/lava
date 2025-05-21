@@ -29,10 +29,8 @@ type relayFinalizationBlocksHandler interface {
 		request *pairingtypes.RelayRequest,
 		chainMsg ChainMessage,
 		relayTimeout time.Duration,
-		blockLagForQosSync int64,
 		averageBlockTime time.Duration,
-		blockDistanceToFinalization,
-		blocksInFinalizationData uint32,
+		finalizationDistance uint32,
 	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
 
 	BuildRelayFinalizedBlockHashes(
@@ -44,8 +42,7 @@ type relayFinalizationBlocksHandler interface {
 		updatedChainMessage bool,
 		relayTimeout time.Duration,
 		averageBlockTime time.Duration,
-		blockDistanceToFinalization uint32,
-		blocksInFinalizationData uint32,
+		finalizationDistance uint32,
 		modifiedReqBlock int64,
 	) (err error)
 }
@@ -446,18 +443,17 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	dataReliabilityEnabled, _ := pnsm.chainParser.DataReliabilityParams()
-	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
+	averageBlockTime, finalizationDistance := pnsm.chainParser.ChainBlockStats()
 	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
-	if dataReliabilityEnabled {
+	if pnsm.chainParser.IsDataReliabilitySupported() {
 		var err error
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, averageBlockTime, finalizationDistance)
 		if err != nil {
 			return err
 		}
 
-		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, finalizationDistance, modifiedReqBlock)
 		if err != nil {
 			return err
 		}
@@ -465,7 +461,7 @@ func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, repl
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, dataReliabilityEnabled)
+	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, pnsm.chainParser.IsDataReliabilitySupported())
 	if err != nil {
 		return err
 	}

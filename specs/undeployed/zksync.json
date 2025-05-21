@@ -7,18 +7,12 @@
         "index": "ZKSYNC",
         "name": "zksync era mainnet",
         "enabled": true,
-        "imports": ["ETH1"],
-        "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
+        "imports": [
+          "ETH1"
+        ],
         "block_distance_for_finalized_data": 1,
-        "blocks_in_finalization_proof": 3,
         "average_block_time": 1200,
-        "allowed_block_lag_for_qos_sync": 5,
-        "shares": 1,
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
         "api_collections": [
           {
             "enabled": true,
@@ -50,18 +44,12 @@
         "index": "ZKSYNCSP",
         "name": "zksync era sepolia testnet",
         "enabled": true,
-        "imports": ["ZKSYNC"],
-        "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
+        "imports": [
+          "ZKSYNC"
+        ],
         "block_distance_for_finalized_data": 1,
-        "blocks_in_finalization_proof": 2,
         "average_block_time": 1200,
-        "allowed_block_lag_for_qos_sync": 5,
-        "shares": 1,
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
         "api_collections": [
           {
             "enabled": true,

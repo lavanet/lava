@@ -54,6 +54,11 @@ const (
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	// specification default flags
+	AllowMissingApisByDefaultFlagName = "allow-missing-apis-by-default"
+
+	// Data reliability flags
+	DataReliabilityChanceFlag             = "data-reliability-chance" // set the data reliability chance, default is 0.0625 (=1/16)
+	DataReliabilityEnabledFlag            = "enable-data-reliability" // enable data reliability, default is true
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
