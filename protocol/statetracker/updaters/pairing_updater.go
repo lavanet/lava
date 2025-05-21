@@ -275,10 +275,13 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 			}
 			endpoints = append(endpoints, endpoint)
 		}
+		providerName := "StaticProvider_" + strconv.Itoa(idx)
+		if provider.Name != "" {
+			providerName = provider.Name
+		}
 
-		// Create provider entry with high compute units and stake for availability
-		providerEntry := lavasession.NewConsumerSessionWithProvider(
-			providerNamePrefix+strconv.Itoa(idx),
+		staticProviderEntry := lavasession.NewConsumerSessionWithProvider(
+			providerName,
 			endpoints,
 			math.MaxUint64/2, // High compute units for availability
 			epoch,
