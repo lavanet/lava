@@ -212,8 +212,13 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 			}
 			endpoints = append(endpoints, endpoint)
 		}
+		providerName := "StaticProvider_" + strconv.Itoa(idx)
+		if provider.Name != "" {
+			providerName = provider.Name
+		}
+
 		staticProviderEntry := lavasession.NewConsumerSessionWithProvider(
-			"StaticProvider_"+strconv.Itoa(idx),
+			providerName,
 			endpoints,
 			math.MaxUint64/2,
 			epoch,
