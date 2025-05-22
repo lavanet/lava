@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -220,7 +222,7 @@ func convertGitHubURLToAPI(input string) (string, error) {
 
 	parts := strings.Split(parsedURL.Path, "/")
 
-	if parts[3] != "tree" {
+	if parts[3] != "tree" || len(parts) <= 5 {
 		return "", fmt.Errorf("invalid GitHub folder URL")
 	}
 
@@ -239,13 +241,25 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 		return nil, err
 	}
 
-	// Fetch directory listing from GitHub API
-	resp, err := http.Get(githubAPIURL)
+	// Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Create a new request with context
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPIURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the request
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// require.Equal(t, http.StatusOK, resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch %s", githubAPIURL)
+	}
 
 	// Parse the GitHub API response
 	var files []struct {
@@ -273,13 +287,17 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 
 	// Test reading each spec file
 	for _, specFile := range specFiles {
+		ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
-		// Fetch the file content directly from GitHub
-		resp, err := http.Get(specFile)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, specFile, nil)
 		if err != nil {
 			return nil, err
 		}
 
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
