@@ -100,21 +100,6 @@ func (mr *MockChainParserMockRecorder) CraftMessage(parser, connectionType, craf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CraftMessage", reflect.TypeOf((*MockChainParser)(nil).CraftMessage), parser, connectionType, craftData, metadata)
 }
 
-// DataReliabilityParams mocks base method.
-func (m *MockChainParser) DataReliabilityParams() (bool, uint32) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DataReliabilityParams")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(uint32)
-	return ret0, ret1
-}
-
-// DataReliabilityParams indicates an expected call of DataReliabilityParams.
-func (mr *MockChainParserMockRecorder) DataReliabilityParams() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataReliabilityParams", reflect.TypeOf((*MockChainParser)(nil).DataReliabilityParams))
-}
-
 // ExtensionsParser mocks base method.
 func (m *MockChainParser) ExtensionsParser() *extensionslib.ExtensionParser {
 	m.ctrl.T.Helper()

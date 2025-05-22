@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -222,7 +221,7 @@ func TestHandleConsistency(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, string(replyDataBuf))
 			})
-			chainParser, chainProxy, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
@@ -231,9 +230,7 @@ func TestHandleConsistency(t *testing.T) {
 			calls := 1                                                                                      // how many times we have setLatestBlock in the mock
 			mockChainTracker.SetLatestBlock(play.chainTrackerBlocks[0], time.Now().Add(-1*play.changeTime)) // change time is only in the past
 			require.NoError(t, err)
-			reliabilityManager := reliabilitymanager.NewReliabilityManager(mockChainTracker, nil, ts.Providers[0].Addr.String(), chainProxy, chainParser)
 			rpcproviderServer := RPCProviderServer{
-				reliabilityManager: reliabilityManager,
 				rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{
 					ChainID: specId,
 				},

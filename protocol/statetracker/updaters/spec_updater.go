@@ -116,7 +116,7 @@ func (su *SpecUpdater) setBlockLastUpdatedAtomically(block uint64) {
 }
 
 // only call when locked
-func (su *SpecUpdater) updateInner(latestBlock int64) {
+func (su *SpecUpdater) updateInner() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	spec, err := su.specGetter.GetSpec(timeoutCtx, su.chainId)
@@ -147,19 +147,19 @@ func (su *SpecUpdater) Reset(latestBlock int64) {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 	su.shouldUpdate = true
-	su.updateInner(latestBlock)
+	su.updateInner()
 }
 
 func (su *SpecUpdater) Update(latestBlock int64) {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 	if su.shouldUpdate {
-		su.updateInner(latestBlock)
+		su.updateInner()
 	} else {
 		specUpdated, err := su.eventTracker.getLatestSpecModifyEvents(latestBlock)
 		if specUpdated || err != nil {
 			su.shouldUpdate = true
-			su.updateInner(latestBlock)
+			su.updateInner()
 		}
 	}
 }

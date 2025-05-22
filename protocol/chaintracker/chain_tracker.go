@@ -331,7 +331,7 @@ func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (
 	return latestBlockSaved.Hash != prevHash, nil
 }
 
-func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (gotNewBlock bool) {
+func (cs *ChainTracker) gotNewBlock(newLatestBlock int64) (gotNewBlock bool) {
 	return newLatestBlock > cs.GetAtomicLatestBlockNum()
 }
 
@@ -353,7 +353,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return err
 	}
 	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID)
-	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
+	gotNewBlock := cs.gotNewBlock(newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
 		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID)

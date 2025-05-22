@@ -656,27 +656,3 @@ func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
 		pme.totalLoLErrorsMetric.Inc()
 	}
 }
-
-func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var report OptimizerQoSReportToSend
-	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Process the received QoS report here
-	utils.LavaFormatDebug("Received QoS report",
-		utils.LogAttr("provider", report.ProviderAddress),
-		utils.LogAttr("chain_id", report.ChainId),
-		utils.LogAttr("sync_score", report.SyncScore),
-		utils.LogAttr("availability_score", report.AvailabilityScore),
-		utils.LogAttr("latency_score", report.LatencyScore),
-	)
-
-	w.WriteHeader(http.StatusOK)
-}

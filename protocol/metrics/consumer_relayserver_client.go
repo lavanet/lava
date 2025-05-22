@@ -71,14 +71,12 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 		sendQueue := cuc.addQueue
 		cuc.addQueue = make([]UpdateMetricsRequest, 0)
 		cuc.isSendQueueRunning = true
-		cuc.sendID++
-		utils.LavaFormatDebug("[CUC] Swapped queues", utils.LogAttr("sendQueue_length", len((sendQueue))), utils.LogAttr("send_id", cuc.sendID))
+		utils.LavaFormatDebug("[CUC] Swapped queues", utils.LogAttr("sendQueue_length", len((sendQueue))))
 
-		sendID := cuc.sendID
 		cucEndpointAddress := cuc.endPointAddress
 
 		go func() {
-			cuc.sendRelayData(sendQueue, sendID, cucEndpointAddress)
+			cuc.sendRelayData(sendQueue, cucEndpointAddress)
 
 			cuc.lock.Lock()
 			cuc.isSendQueueRunning = false
@@ -112,7 +110,7 @@ func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics)
 	cuc.appendQueue(request)
 }
 
-func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) (*http.Response, error) {
+func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []UpdateMetricsRequest, cucEndpointAddress string) (*http.Response, error) {
 	if cuc == nil {
 		return nil, utils.LavaFormatError("CUC is nil. misuse detected", nil)
 	}
@@ -150,7 +148,7 @@ func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []Upda
 	return nil, utils.LavaFormatWarning("[CUC] Failed to send requests after 3 attempts", err)
 }
 
-func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response, sendID int) {
+func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response) {
 	if cuc == nil {
 		return
 	}
@@ -165,16 +163,16 @@ func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Respons
 	}
 }
 
-func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) {
+func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, cucEndpointAddress string) {
 	if cuc == nil {
 		return
 	}
-	resp, err := cuc.aggregateAndSendRelayData(sendQueue, sendID, cucEndpointAddress)
+	resp, err := cuc.aggregateAndSendRelayData(sendQueue, cucEndpointAddress)
 	if err != nil {
 		utils.LavaFormatWarning("[CUC] failed sendRelay data", err)
 		return
 	}
-	cuc.handleSendRelayResponse(resp, sendID)
+	cuc.handleSendRelayResponse(resp)
 }
 
 func generateRequestArregatedCacheKey(req UpdateMetricsRequest) string {

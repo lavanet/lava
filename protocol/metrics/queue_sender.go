@@ -76,11 +76,10 @@ func (crc *QueueSender) sendQueueTick() {
 		crc.sendID++
 		utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] Swapped queues", crc.name), utils.LogAttr("sendQueue_length", len((sendQueue))), utils.LogAttr("send_id", crc.sendID))
 
-		sendID := crc.sendID
 		cucEndpointAddress := crc.endpointAddress
 
 		go func() {
-			crc.sendData(sendQueue, sendID, cucEndpointAddress)
+			crc.sendData(sendQueue, cucEndpointAddress)
 
 			crc.lock.Lock()
 			crc.isSendQueueRunning = false
@@ -100,7 +99,7 @@ func (cuc *QueueSender) appendQueue(request fmt.Stringer) {
 	cuc.addQueue = append(cuc.addQueue, request)
 }
 
-func (crc *QueueSender) send(sendQueue []fmt.Stringer, sendID int, endpointAddress string) (*http.Response, error) {
+func (crc *QueueSender) send(sendQueue []fmt.Stringer, endpointAddress string) (*http.Response, error) {
 	if crc == nil {
 		return nil, utils.LavaFormatError("QueueSender is nil. misuse detected", nil)
 	}
@@ -131,7 +130,7 @@ func (crc *QueueSender) send(sendQueue []fmt.Stringer, sendID int, endpointAddre
 	return nil, utils.LavaFormatWarning(fmt.Sprintf("[QueueSender:%s] Failed to send requests after 3 attempts", crc.name), err)
 }
 
-func (crc *QueueSender) handleSendResponse(resp *http.Response, sendID int) {
+func (crc *QueueSender) handleSendResponse(resp *http.Response) {
 	if crc == nil {
 		return
 	}
@@ -146,17 +145,17 @@ func (crc *QueueSender) handleSendResponse(resp *http.Response, sendID int) {
 	}
 }
 
-func (cuc *QueueSender) sendData(sendQueue []fmt.Stringer, sendID int, cucEndpointAddress string) {
+func (cuc *QueueSender) sendData(sendQueue []fmt.Stringer, cucEndpointAddress string) {
 	if cuc == nil {
 		return
 	}
 	if cuc.aggregationFunction != nil {
 		sendQueue = cuc.aggregationFunction(sendQueue)
 	}
-	resp, err := cuc.send(sendQueue, sendID, cucEndpointAddress)
+	resp, err := cuc.send(sendQueue, cucEndpointAddress)
 	if err != nil {
 		utils.LavaFormatWarning("[QueueSender] failed sendRelay data", err)
 		return
 	}
-	cuc.handleSendResponse(resp, sendID)
+	cuc.handleSendResponse(resp)
 }

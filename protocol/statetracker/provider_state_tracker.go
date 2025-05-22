@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -91,17 +90,6 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := updaters.NewVoteUpdater(pst.EventTracker)
-	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
-	voteUpdater, ok := voteUpdaterRaw.(*updaters.VoteUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: voteUpdaterRaw})
-	}
-	endpoint := lavasession.RPCEndpoint{ChainID: endpointP.ChainID, ApiInterface: endpointP.ApiInterface}
-	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
-}
-
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
 	paymentUpdater := updaters.NewPaymentUpdater(pst.EventTracker)
 	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
@@ -129,16 +117,12 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
 
-func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return pst.txSender.SendVoteReveal(context.Background(), voteID, vote, specID)
-}
-
-func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return pst.txSender.SendVoteCommitment(context.Background(), voteID, vote, specID)
-}
-
 func (pst *ProviderStateTracker) LatestBlock() int64 {
 	return pst.StateTracker.chainTracker.GetAtomicLatestBlockNum()
+}
+
+func (pst *ProviderStateTracker) LatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
+	return pst.StateTracker.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {

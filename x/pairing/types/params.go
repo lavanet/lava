@@ -150,7 +150,7 @@ func validateEpochBlocksOverlap(v interface{}) error {
 	return nil
 }
 
-// validateDataReliabilityReward validates the param
+// validateQoSWeight validates the param
 func validateQoSWeight(v interface{}) error {
 	QoSWeight, ok := v.(sdk.Dec)
 	if !ok {

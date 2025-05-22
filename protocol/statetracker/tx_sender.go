@@ -16,14 +16,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -46,38 +43,6 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 	clientCtx.SkipConfirm = true
 	ts := &TxSender{txFactory: txFactory, clientCtx: clientCtx}
 	return ts, nil
-}
-
-func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasUsed uint64, txFactory tx.Factory) error {
-	txEvents := simResult.GetResult().Events
-	lavaReward := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(0))
-	for _, txEvent := range txEvents {
-		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
-			for _, attribute := range txEvent.Attributes {
-				eventStr := attribute.Key
-				eventStr = strings.SplitN(eventStr, ".", 2)[0]
-				if eventStr == "BasePay" {
-					lavaRewardTemp, err := sdk.ParseCoinNormalized(attribute.Value)
-					if err != nil {
-						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: attribute.Value})
-					}
-					lavaReward = lavaReward.Add(lavaRewardTemp)
-					break
-				}
-			}
-		}
-	}
-
-	txFactory = txFactory.WithGas(gasUsed)
-
-	gasFee := txFactory.GasPrices()[0]
-	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
-	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
-
-	if gasFee.IsGTE(lavaRewardDec) {
-		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, utils.Attribute{Key: "gasFee", Value: gasFee}, utils.Attribute{Key: "lava_reward:", Value: lavaRewardDec})
-	}
-	return nil
 }
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
@@ -306,23 +271,6 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
-	if finalizationConflict != nil {
-		msg.SetFinalizationConflict(finalizationConflict)
-	} else if responseConflict != nil {
-		msg.SetResponseConflict(responseConflict)
-	} else {
-		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
-	}
-
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
-	if err != nil {
-		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
-
 type ProviderTxSender struct {
 	*TxSender
 	vaults     map[string]sdk.AccAddress // chain ID -> vault that is a fee granter
@@ -437,26 +385,6 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, true, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
-	}
-	return nil
-}
-
-func (pts *ProviderTxSender) SendVoteReveal(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
-
-func (pts *ProviderTxSender) SendVoteCommitment(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }

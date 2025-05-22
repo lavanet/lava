@@ -20,15 +20,14 @@ const (
 const (
 	ProcessStartLogText = "Process Started"
 	// cors related flags
-	CorsHeadersFlag                 = "cors-headers"           // comma separated list of headers, or * for all, default simple cors specification headers
-	CorsCredentialsFlag             = "cors-credentials"       // comma separated list of headers, or * for all, default simple cors specification headers
-	CorsOriginFlag                  = "cors-origin"            // comma separated list of origins, or * for all, default enabled completely
-	CorsMethodsFlag                 = "cors-methods"           // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
-	CDNCacheDurationFlag            = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
-	RelaysHealthEnableFlag          = "relays-health-enable"   // enable relays health check, default true
-	RelayHealthIntervalFlag         = "relays-health-interval" // interval between each relay health check, default 5m
-	SharedStateFlag                 = "shared-state"
-	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
+	CorsHeadersFlag         = "cors-headers"           // comma separated list of headers, or * for all, default simple cors specification headers
+	CorsCredentialsFlag     = "cors-credentials"       // comma separated list of headers, or * for all, default simple cors specification headers
+	CorsOriginFlag          = "cors-origin"            // comma separated list of origins, or * for all, default enabled completely
+	CorsMethodsFlag         = "cors-methods"           // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
+	CDNCacheDurationFlag    = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
+	RelaysHealthEnableFlag  = "relays-health-enable"   // enable relays health check, default true
+	RelayHealthIntervalFlag = "relays-health-interval" // interval between each relay health check, default 5m
+	SharedStateFlag         = "shared-state"
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"

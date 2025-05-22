@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -90,11 +89,6 @@ func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *b
 
 	require.NoError(t, err)
 	relayReply.Sig = sig
-
-	sigBlocks, err := sigs.Sign(providerSK, conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, relayReply, consumerAccount))
-
-	require.NoError(t, err)
-	relayReply.SigBlocks = sigBlocks
 
 	return relayReply
 }

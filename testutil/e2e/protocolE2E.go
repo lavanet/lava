@@ -1304,7 +1304,7 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 		return atomic.LoadInt32(&subscriptionContainer.newBlockMessageCount)
 	}
 
-	startWebSocketReader := func(webSocketName string, webSocketClient *websocket.Conn, subscriptionContainer *subscriptionContainer) {
+	startWebSocketReader := func(webSocketClient *websocket.Conn, subscriptionContainer *subscriptionContainer) {
 		for {
 			_, message, err := webSocketClient.ReadMessage()
 			if err != nil {
@@ -1337,7 +1337,7 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 			// Start a reader for each client to count the number of NewBlock messages received
 			utils.LavaFormatInfo("Start listening for NewBlock messages on web socket " + strconv.Itoa(i+1))
 
-			go startWebSocketReader("webSocketClient"+strconv.Itoa(i+1), webSocketClient, subscriptionContainer)
+			go startWebSocketReader(webSocketClient, subscriptionContainer)
 
 			// Subscribe to new block events
 			utils.LavaFormatInfo("Subscribing to NewBlock events on web socket " + strconv.Itoa(i+1))

@@ -14,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v5/utils"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	"github.com/lavanet/lava/v5/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
@@ -435,10 +434,6 @@ func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowa
 		sdk.MsgTypeURL(&types.MsgStakeProvider{}), // for modify-provider TX
 		sdk.MsgTypeURL(&types.MsgFreezeProvider{}),
 		sdk.MsgTypeURL(&types.MsgUnfreezeProvider{}),
-
-		// conflict module TXs
-		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteCommit{}),
-		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteReveal{}),
 	})
 	if err != nil {
 		return nil, utils.LavaFormatError("failed granting feegrant for gas fees", err,

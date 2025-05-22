@@ -474,7 +474,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				)
 
-				protocolMessage, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp, metricsData)
+				protocolMessage, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp)
 				if err != nil {
 					utils.LavaFormatError("could not craft unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
 					return
@@ -666,7 +666,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 	})
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string, metricsData *metrics.RelayMetrics) (ProtocolMessage, error) {
+func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string) (ProtocolMessage, error) {
 	request := cwsm.activeSubscriptions[hashedParams].subscriptionOriginalRequestChainMessage
 	subscriptionId := cwsm.activeSubscriptions[hashedParams].subscriptionId
 
@@ -746,7 +746,7 @@ func (cwsm *ConsumerWSSubscriptionManager) CreateWebSocketConnectionUniqueKey(da
 	return cwsm.relaySender.CreateDappKey(common.UserData{DappId: dappID, ConsumerIp: consumerIp}) + "__" + webSocketConnectionUniqueId
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, webSocketConnectionUniqueId string) error {
 	utils.LavaFormatTrace("want to unsubscribe all",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
@@ -776,7 +776,7 @@ func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.C
 		)
 
 		unsubscribeRelayGetter := func() (*unsubscribeRelayData, error) {
-			protocolMessage, err := cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp, metricsData)
+			protocolMessage, err := cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp)
 			if err != nil {
 				return nil, err
 			}
