@@ -28,6 +28,13 @@ var (
 	LavaSpecOptions = []string{TESTNET_SPEC, MAINNET_SPEC}
 )
 
+type IStateTracker interface {
+	LatestBlock() int64
+	GetAverageBlockTime() time.Duration
+	RegisterForUpdates(ctx context.Context, updater Updater) Updater
+	GetEventTracker() *updaters.EventTracker
+}
+
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type StateTracker struct {
@@ -206,4 +213,8 @@ func IsLavaNativeSpec(checked string) bool {
 		}
 	}
 	return false
+}
+
+func (st *StateTracker) LatestBlock() int64 {
+	return st.chainTracker.GetAtomicLatestBlockNum()
 }
