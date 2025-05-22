@@ -287,7 +287,8 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 
 	// Test reading each spec file
 	for _, specFile := range specFiles {
-		ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, specFile, nil)
 		if err != nil {
