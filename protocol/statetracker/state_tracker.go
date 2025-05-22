@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,14 +62,21 @@ func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chai
 		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
 
-	// offline spec mode.
-	parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
-	if err != nil {
-		return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+	if strings.Contains(specPath, "git") {
+		spec, err := updaters.GetSpecFromGit(specPath, rpcEndpoint.ChainID)
+		if err != nil {
+			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+		}
+		chainParser.SetSpec(spec)
+	} else {
+		// offline spec mode.
+		parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+		if err != nil {
+			return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+		}
+		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+		chainParser.SetSpec(parsedOfflineSpec)
 	}
-	utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-	chainParser.SetSpec(parsedOfflineSpec)
-
 	return nil
 }
 
