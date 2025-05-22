@@ -63,7 +63,7 @@ func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chai
 	}
 
 	if strings.Contains(specPath, "git") {
-		spec, err := updaters.GetSpecFromGit(specPath, rpcEndpoint.ChainID)
+		spec, err := specutils.GetSpecFromGit(specPath, rpcEndpoint.ChainID)
 		if err != nil {
 			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
 		}

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -19,7 +22,7 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/v5/x/spec/client/utils"
 	"github.com/lavanet/lava/v5/x/spec/keeper"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,8 +33,8 @@ func SpecKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 }
 
 func specKeeper() (*keeper.Keeper, sdk.Context, error) {
-	storeKey := sdk.NewKVStoreKey(spectypes.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(spectypes.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -46,7 +49,7 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	cdc := codec.NewProtoCodec(registry)
 
 	paramsSubspace := typesparams.NewSubspace(cdc,
-		spectypes.Amino,
+		types.Amino,
 		storeKey,
 		memStoreKey,
 		"SpecParams",
@@ -62,7 +65,7 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
-	k.SetParams(ctx, spectypes.DefaultParams())
+	k.SetParams(ctx, types.DefaultParams())
 
 	return k, ctx, nil
 }
@@ -80,12 +83,12 @@ func decodeProposal(path string) (utils.SpecAddProposalJSON, error) {
 	return proposal, err
 }
 
-func GetSpecsFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+func GetSpecsFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
 		keeper, ctx, err = specKeeper()
 		if err != nil {
-			return spectypes.Spec{}, err
+			return types.Spec{}, err
 		}
 	} else {
 		ctx = *ctxArg
@@ -101,15 +104,15 @@ func GetSpecsFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper
 			return spec, nil
 		}
 	}
-	return spectypes.Spec{}, fmt.Errorf("spec not found %s", specIndex)
+	return types.Spec{}, fmt.Errorf("spec not found %s", specIndex)
 }
 
-func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
 		keeper, ctx, err = specKeeper()
 		if err != nil {
-			return spectypes.Spec{}, err
+			return types.Spec{}, err
 		}
 	} else {
 		ctx = *ctxArg
@@ -117,7 +120,7 @@ func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper 
 
 	proposal, err := decodeProposal(path)
 	if err != nil {
-		return spectypes.Spec{}, err
+		return types.Spec{}, err
 	}
 
 	for _, spec := range proposal.Proposal.Specs {
@@ -127,19 +130,19 @@ func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper 
 		}
 		fullspec, err := keeper.ExpandSpec(ctx, spec)
 		if err != nil {
-			return spectypes.Spec{}, err
+			return types.Spec{}, err
 		}
 		return fullspec, nil
 	}
-	return spectypes.Spec{}, fmt.Errorf("spec not found %s", path)
+	return types.Spec{}, fmt.Errorf("spec not found %s", path)
 }
 
-func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
 		keeper, ctx, err = specKeeper()
 		if err != nil {
-			return spectypes.Spec{}, err
+			return types.Spec{}, err
 		}
 	} else {
 		ctx = *ctxArg
@@ -194,5 +197,131 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 		}
 	}
 
-	return spectypes.Spec{}, fmt.Errorf("spec not found %s", specIndex)
+	return types.Spec{}, fmt.Errorf("spec not found %s", specIndex)
+}
+
+func GetSpecFromGit(url string, index string) (types.Spec, error) {
+	specs, err := getAllSpecs(url)
+	if err != nil {
+		return types.Spec{}, err
+	}
+	spec, err := expandSpec(specs, index)
+	if err != nil {
+		return types.Spec{}, err
+	}
+	return *spec, nil
+}
+
+func convertGitHubURLToAPI(input string) (string, error) {
+	parsedURL, err := url.Parse(input)
+	if err != nil {
+		return "", err
+	}
+
+	parts := strings.Split(parsedURL.Path, "/")
+
+	if parts[3] != "tree" {
+		return "", fmt.Errorf("invalid GitHub folder URL")
+	}
+
+	owner := parts[1]
+	repo := parts[2]
+	branch := parts[4]
+	path := strings.Join(parts[5:], "/")
+
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s", owner, repo, path, branch)
+	return apiURL, nil
+}
+
+func getAllSpecs(url string) (map[string]types.Spec, error) {
+	githubAPIURL, err := convertGitHubURLToAPI(url)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch directory listing from GitHub API
+	resp, err := http.Get(githubAPIURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	// require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Parse the GitHub API response
+	var files []struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+		Url  string `json:"download_url"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&files)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter for .json files
+	var specFiles []string
+	for _, file := range files {
+		if file.Type == "file" && strings.HasSuffix(file.Name, ".json") {
+			specFiles = append(specFiles, file.Url)
+		}
+	}
+	if len(specFiles) == 0 {
+		return nil, fmt.Errorf("no spec files found")
+	}
+
+	specs := map[string]types.Spec{}
+
+	// Test reading each spec file
+	for _, specFile := range specFiles {
+
+		// Fetch the file content directly from GitHub
+		resp, err := http.Get(specFile)
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to fetch %s", specFile)
+		}
+
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		// Parse the JSON content into a spec proposal
+		var proposal utils.SpecAddProposalJSON
+		err = json.Unmarshal(content, &proposal)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, spec := range proposal.Proposal.Specs {
+			specs[spec.Index] = spec
+		}
+	}
+	return specs, nil
+}
+
+func expandSpec(specs map[string]types.Spec, index string) (*types.Spec, error) {
+	getBaseSpec := func(ctx sdk.Context, index string) (types.Spec, bool) {
+		spec, ok := specs[index]
+		return spec, ok
+	}
+	spec, ok := specs[index]
+	if !ok {
+		return nil, fmt.Errorf("spec not found for chainId: %s", index)
+	}
+	depends := map[string]bool{index: true}
+	inherit := map[string]bool{}
+
+	ctx := sdk.Context{}
+	details, err := types.DoExpandSpec(ctx, &spec, depends, &inherit, spec.Index, getBaseSpec)
+	_ = details
+	if err != nil {
+		return nil, fmt.Errorf("spec expand failed: %w", err)
+	}
+	return &spec, nil
 }
