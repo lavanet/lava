@@ -20,7 +20,6 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	conflictmodulekeeper "github.com/lavanet/lava/v5/x/conflict/keeper"
 	downtimemodulekeeper "github.com/lavanet/lava/v5/x/downtime/keeper"
 	dualstakingmodulekeeper "github.com/lavanet/lava/v5/x/dualstaking/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
@@ -67,7 +66,6 @@ type LavaKeepers struct {
 	EpochstorageKeeper    epochstoragemodulekeeper.Keeper
 	DualstakingKeeper     dualstakingmodulekeeper.Keeper
 	PairingKeeper         pairingmodulekeeper.Keeper
-	ConflictKeeper        conflictmodulekeeper.Keeper
 	ProjectsKeeper        projectsmodulekeeper.Keeper
 	PlansKeeper           plansmodulekeeper.Keeper
 	ProtocolKeeper        protocolmodulekeeper.Keeper

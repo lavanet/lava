@@ -33,8 +33,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflictkeeper "github.com/lavanet/lava/v5/x/conflict/keeper"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/v5/x/downtime/keeper"
 	downtimemoduletypes "github.com/lavanet/lava/v5/x/downtime/types"
 	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
@@ -84,7 +82,6 @@ type Keepers struct {
 	Epochstorage        epochstoragekeeper.Keeper
 	Dualstaking         dualstakingkeeper.Keeper
 	Subscription        subscriptionkeeper.Keeper
-	Conflict            conflictkeeper.Keeper
 	Pairing             pairingkeeper.Keeper
 	Projects            projectskeeper.Keeper
 	Plans               planskeeper.Keeper
@@ -102,7 +99,6 @@ type Servers struct {
 	EpochServer        epochstoragetypes.MsgServer
 	SpecServer         spectypes.MsgServer
 	PairingServer      pairingtypes.MsgServer
-	ConflictServer     conflicttypes.MsgServer
 	ProjectServer      projectstypes.MsgServer
 	ProtocolServer     protocoltypes.MsgServer
 	SubscriptionServer subscriptiontypes.MsgServer
@@ -193,11 +189,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
 	stateStore.MountStoreWithDB(tkey, storetypes.StoreTypeIAVL, db)
 
-	conflictStoreKey := sdk.NewKVStoreKey(conflicttypes.StoreKey)
-	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
-	stateStore.MountStoreWithDB(conflictStoreKey, storetypes.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(conflictMemStoreKey, storetypes.StoreTypeMemory, nil)
-
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
@@ -217,7 +208,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	paramsKeeper.Subspace(distributiontypes.ModuleName)
 	paramsKeeper.Subspace(dualstakingtypes.ModuleName)
-	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
 
@@ -236,13 +226,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	dualstakingparamsSubspace, _ := paramsKeeper.GetSubspace(dualstakingtypes.ModuleName)
 
 	rewardsparamsSubspace, _ := paramsKeeper.GetSubspace(rewardstypes.ModuleName)
-
-	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
-		conflicttypes.Amino,
-		conflictStoreKey,
-		conflictMemStoreKey,
-		"ConflictParams",
-	)
 
 	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
 
@@ -268,7 +251,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.Spec, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
-	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec, ks.StakingKeeper)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
@@ -284,7 +266,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Dualstaking.SetParams(ctx, dualstakingtypes.DefaultParams())
-	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
 	protocolParams := protocoltypes.DefaultParams()
 	protocolParams.Version = protocoltypes.Version{ProviderTarget: "0.0.1", ProviderMin: "0.0.0", ConsumerTarget: "0.0.1", ConsumerMin: "0.0.0"}
@@ -303,7 +284,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
 	ss.PlansServer = planskeeper.NewMsgServerImpl(ks.Plans)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
-	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
 	ss.ProtocolServer = protocolkeeper.NewMsgServerImpl(ks.Protocol)
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
