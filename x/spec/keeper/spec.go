@@ -77,6 +77,9 @@ func (k Keeper) GetExpandedSpec(ctx sdk.Context, index string) (types.Spec, erro
 	return types.Spec{}, fmt.Errorf("no matching spec %s", index)
 }
 
+// Define a type for the GetSpec function
+type GetSpecFunc func(ctx sdk.Context, index string) (types.Spec, bool)
+
 // ExpandSpec takes a (raw) Spec and expands the "imports" field of the spec
 // -if needed, recursively- to add to the current Spec those additional APIs
 // from the imported Spec(s). It returns the expanded Spec.
@@ -84,7 +87,7 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 	depends := map[string]bool{spec.Index: true}
 	inherit := map[string]bool{}
 
-	details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index)
+	details, err := doExpandSpec(ctx, &spec, depends, &inherit, spec.Index, k.GetSpec)
 	if err != nil {
 		return spec, utils.LavaFormatError("spec expand failed", err,
 			utils.Attribute{Key: "imports", Value: details},
@@ -100,7 +103,7 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 	depends := map[string]bool{spec.Index: true}
 	inherit := map[string]bool{}
 
-	if details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index); err != nil {
+	if details, err := doExpandSpec(ctx, &spec, depends, &inherit, spec.Index, k.GetSpec); err != nil {
 		return nil, utils.LavaFormatWarning("spec refresh failed (import)", err,
 			utils.Attribute{Key: "imports", Value: details},
 		)
@@ -133,12 +136,13 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 }
 
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
-func (k Keeper) doExpandSpec(
+func doExpandSpec(
 	ctx sdk.Context,
 	spec *types.Spec,
 	depends map[string]bool,
 	inherit *map[string]bool,
 	details string,
+	getSpecFn GetSpecFunc,
 ) (string, error) {
 	if spec == nil {
 		return "", fmt.Errorf("doExpandSpec: spec is nil")
@@ -159,7 +163,7 @@ func (k Keeper) doExpandSpec(
 		// recursion to get all parent specs (DFS)
 		comma := ""
 		for _, index := range spec.Imports {
-			imported, found := k.GetSpec(ctx, index)
+			imported, found := getSpecFn(ctx, index)
 			// import of unknown Spec not allowed
 			if !found {
 				details += fmt.Sprintf("%s%s(unknown)", comma, index)
@@ -174,7 +178,7 @@ func (k Keeper) doExpandSpec(
 			}
 
 			depends[index] = true
-			details, err := k.doExpandSpec(ctx, &imported, depends, inherit, details)
+			details, err := doExpandSpec(ctx, &imported, depends, inherit, details, getSpecFn)
 			if err != nil {
 				return details, err
 			}
