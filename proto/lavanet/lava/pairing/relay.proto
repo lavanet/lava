@@ -71,6 +71,7 @@ message RelayPrivateData {
     string addon = 8;
     repeated string extensions = 9;
     int64 seen_block = 10;
+    string request_id = 11;
 }
 
 message ReportedProvider {
