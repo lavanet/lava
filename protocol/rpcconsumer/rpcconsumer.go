@@ -357,7 +357,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	}
 	staticProvidersActive := len(relevantStaticProviderList) > 0
 
-	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	averageBlockTime, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var consumerConsistency *ConsumerConsistency
 	var finalizationConsensus *finalizationconsensus.FinalizationConsensus
@@ -564,6 +564,15 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
 			utils.SetGlobalLoggingLevel(logLevel)
+
+			// check that the data relibility chance is not zero
+			dataReliabilityChance, err := cmd.Flags().GetFloat64(common.DataReliabilityChanceFlag)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read data reliability chance flag", err)
+			}
+			if dataReliabilityChance <= 0 {
+				utils.LavaFormatFatal("data reliability chance must be greater than zero", nil)
+			}
 
 			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
 			if err != nil {
@@ -784,6 +793,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	// lava over lava backup
 	cmdRPCConsumer.Flags().Bool(LavaOverLavaBackupFlagName, true, "enable lava over lava backup to regular rpc calls")
+	// allow missing apis by default
+	cmdRPCConsumer.Flags().BoolVar(&chainlib.AllowMissingApisByDefault, common.AllowMissingApisByDefaultFlagName, true, "allows missing apis to be proxied to the provider by default, set flase to block missing apis in the spec")
+	// Data reliability flags
+	cmdRPCConsumer.Flags().Float64Var(&chainlib.DataReliabilityChance, common.DataReliabilityChanceFlag, chainlib.DataReliabilityChance, "set the data reliability chance, default is 0.0625 (=1/16)")
+	cmdRPCConsumer.Flags().BoolVar(&chainlib.DataReliabilityEnabled, common.DataReliabilityEnabledFlag, true, "enable/disable data reliability, default is true")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

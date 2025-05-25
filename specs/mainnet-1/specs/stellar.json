@@ -7,18 +7,10 @@
                 "index": "XLM",
                 "name": "stellar mainnet",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 4,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "imports": [],
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -41,11 +33,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/accounts/{account}",
@@ -59,11 +48,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/assets",
@@ -77,11 +63,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/fee_stats",
@@ -95,11 +78,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ledgers",
@@ -117,11 +97,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/operations/{id}/effects",
@@ -135,11 +112,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "/ledgers/{ledger_id}",
@@ -157,11 +131,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",
@@ -181,11 +152,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.ledger_id",
@@ -205,11 +173,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -285,11 +250,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ]
                     }
@@ -299,20 +261,12 @@
                 "index": "XLMT",
                 "name": "stellar testnet",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 4,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 5,
                 "imports": [
                     "XLM"
                 ],
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

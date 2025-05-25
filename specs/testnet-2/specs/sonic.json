@@ -7,20 +7,12 @@
                 "index": "SONIC",
                 "name": "sonic mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 7,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 350,
-                "allowed_block_lag_for_qos_sync": 29,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -43,11 +35,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_chainId",
@@ -61,11 +50,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_blockNumber",
@@ -79,11 +65,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_coinbase",
@@ -97,11 +80,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_syncing",
@@ -115,11 +95,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_subscribe",
@@ -133,11 +110,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_unsubscribe",
@@ -151,11 +125,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_feeHistory",
@@ -169,11 +140,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_maxPriorityFeePerGas",
@@ -187,11 +155,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_newBlockFilter",
@@ -205,11 +170,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_newFilter",
@@ -223,11 +185,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_newPendingTransactionFilter",
@@ -241,11 +200,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_uninstallFilter",
@@ -259,11 +215,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_createAccessList",
@@ -277,11 +230,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getTransactionReceipt",
@@ -295,11 +245,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getTransactionByBlockHashAndIndex",
@@ -313,11 +260,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getTransactionByBlockNumberAndIndex",
@@ -331,11 +275,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBlockByNumber",
@@ -349,11 +290,8 @@
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBlockReceipts",
@@ -367,11 +305,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getStorageAt",
@@ -386,11 +321,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getTransactionByHash",
@@ -404,11 +336,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_gasPrice",
@@ -422,11 +351,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBalance",
@@ -440,11 +366,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getCode",
@@ -458,11 +381,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getFilterChanges",
@@ -476,11 +396,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getFilterLogs",
@@ -494,11 +411,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getLogs",
@@ -512,11 +426,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getUncleByBlockHashAndIndex",
@@ -530,11 +441,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getUncleByBlockNumberAndIndex",
@@ -548,11 +456,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getUncleCountByBlockHash",
@@ -566,11 +471,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getUncleCountByBlockNumber",
@@ -584,11 +486,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_sign",
@@ -602,11 +501,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_signTransaction",
@@ -620,11 +516,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_sendTransaction",
@@ -638,11 +531,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBlockTransactionCountByHash",
@@ -656,11 +546,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBlockTransactionCountByNumber",
@@ -674,11 +561,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getProof",
@@ -692,11 +576,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getBlockByHash",
@@ -710,11 +591,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_getTransactionCount",
@@ -728,11 +606,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_call",
@@ -746,11 +621,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_hashrate",
@@ -764,11 +636,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_estimateGas",
@@ -782,11 +651,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "ftm_sendRawTransaction",
@@ -800,11 +666,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -843,11 +706,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "trace_filter",
@@ -861,11 +721,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "trace_transaction",
@@ -879,11 +736,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": true,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "verifications": [
@@ -915,20 +769,12 @@
                 "index": "SONICT",
                 "name": "sonic blaze testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "SONIC"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 7,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 350,
-                "allowed_block_lag_for_qos_sync": 29,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

@@ -7,20 +7,12 @@
                 "index": "BSC",
                 "name": "bsc mainnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "ETH1"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 4,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -52,20 +44,12 @@
                 "index": "BSCT",
                 "name": "bsc testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "BSC"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 4,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

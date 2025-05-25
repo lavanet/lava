@@ -7,17 +7,9 @@
                 "index": "NEAR",
                 "name": "near mainnet",
                 "enabled": true,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 3,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 1200,
-                "allowed_block_lag_for_qos_sync": 8,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -42,11 +34,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_changes",
@@ -62,11 +51,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "block",
@@ -83,11 +69,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.finality",
@@ -119,11 +102,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "chunk",
@@ -139,11 +119,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.chunk_id",
@@ -168,11 +145,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_genesis_config",
@@ -186,11 +160,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "EXPERIMENTAL_protocol_config",
@@ -206,11 +177,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "status",
@@ -224,11 +192,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "network_info",
@@ -242,11 +207,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "validators",
@@ -263,11 +225,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "broadcast_tx_async",
@@ -281,12 +240,9 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
                                 },
-                                "extra_compute_units": 0,
                                 "timeout_ms": 5000
                             },
                             {
@@ -301,12 +257,9 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
                                 },
-                                "extra_compute_units": 0,
                                 "timeout_ms": 20000
                             },
                             {
@@ -321,12 +274,9 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 1,
                                     "hanging_api": true
                                 },
-                                "extra_compute_units": 0,
                                 "timeout_ms": 20000
                             },
                             {
@@ -341,12 +291,9 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0,
                                     "hanging_api": true
                                 },
-                                "extra_compute_units": 0,
                                 "timeout_ms": 10000,
                                 "parsers": [
                                     {
@@ -371,11 +318,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
                                 "parsers": [
                                     {
                                         "parse_path": ".params.tx_hash",
@@ -399,11 +343,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             },
                             {
                                 "name": "next_light_client_block",
@@ -419,11 +360,8 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                }
                             }
                         ],
                         "headers": [],
@@ -559,20 +497,12 @@
                 "index": "NEART",
                 "name": "near testnet",
                 "enabled": true,
+                "data_reliability_enabled": true,
                 "imports": [
                     "NEAR"
                 ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 3,
-                "blocks_in_finalization_proof": 3,
                 "average_block_time": 1200,
-                "allowed_block_lag_for_qos_sync": 8,
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,

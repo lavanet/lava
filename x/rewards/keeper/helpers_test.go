@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	testStake             int64 = 100000
-	testBalance           int64 = 100000000
+	testStake             int64 = 50000000000
+	testBalance           int64 = 5000000000000
 	allocationPoolBalance int64 = 30000000000000
 	feeCollectorName            = authtypes.FeeCollectorName
 )

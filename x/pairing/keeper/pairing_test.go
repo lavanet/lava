@@ -25,7 +25,7 @@ func TestPairingUniqueness(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
 
-	var balance int64 = 10000
+	balance := testBalance
 	stake := balance / 10
 
 	_, sub1Addr := ts.Account("sub1")
@@ -94,7 +94,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	var balance int64 = 10000
+	balance := testBalance
 	stake := balance / 10
 
 	_, sub1Addr := ts.Account("sub1")
@@ -280,7 +280,7 @@ func TestPairingStatic(t *testing.T) {
 
 	// add one frozen provider
 	acc, addr := ts.AddAccount(common.PROVIDER, int(ts.plan.PlanPolicy.MaxProvidersToPair)*2, testBalance)
-	err = ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, ts.spec.MinStakeProvider.Amount.Int64()-1)
+	err = ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, ts.GetProviderMinStake().Amount.Int64()-1)
 	require.NoError(t, err)
 
 	// we expect to get all the providers in static spec
@@ -2512,7 +2512,7 @@ func TestStakeNotAffectingFreeze(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(0, 0, 1) // 0 sub, 0 adm, 1 dev
 
-	var balance int64 = 10000
+	balance := testBalance
 	stake := balance / 10
 
 	// Create provider account and stake them to first spec

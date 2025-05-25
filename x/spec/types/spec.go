@@ -9,16 +9,19 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
 )
 
 const (
-	minCU                        = 1
-	ContributorPrecision         = 100000 // Can't be 0!
-	maxContributorsPercentageStr = "0.8"
-	maxParsersPerApi             = 100
+	minCU                                         = 1
+	ContributorPrecision                          = 100000 // Can't be 0!
+	maxContributorsPercentageStr                  = "0.8"
+	maxParsersPerApi                              = 100
+	FinalizedBlocksTimeDurationForDataReliability = 60 // 60 seconds
+	MinBlocksForDataReliability                   = 3
+	AllowedBlockLagTimeDuration                   = 10 // 10 seconds
+	MinAllowedBlockLag                            = 2  // 2 blocks
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
@@ -41,19 +44,12 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("spec index can be letters and numbers only %s", spec.Index)
 	}
 
-	if len(spec.Identity) > stakingtypes.MaxIdentityLength {
-		return details, fmt.Errorf("spec identity should not be longer than %d. Identity: %s", stakingtypes.MaxIdentityLength, spec.Index)
-	}
-
 	for _, char := range spec.Name {
 		if !unicode.IsLower(char) && char != ' ' {
 			return details, fmt.Errorf("spec name must contain lowercase characters only")
 		}
 	}
 
-	if spec.ReliabilityThreshold == 0 {
-		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
-	}
 	if len(spec.Contributor) > 0 {
 		for _, contributorAddr := range spec.Contributor {
 			_, err := sdk.AccAddressFromBech32(contributorAddr)
@@ -67,20 +63,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64)).String(), maxContributorsPercentageStr)
 	}
 
-	if spec.BlocksInFinalizationProof == 0 {
-		return details, fmt.Errorf("BlocksInFinalizationProof can't be zero")
-	}
-
 	if spec.AverageBlockTime <= 0 {
 		return details, fmt.Errorf("AverageBlockTime can't be zero")
-	}
-
-	if spec.AllowedBlockLagForQosSync <= 0 {
-		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
-	}
-
-	if !spec.MinStakeProvider.IsValid() || !spec.MinStakeProvider.IsPositive() {
-		return details, fmt.Errorf("MinStakeProvider can't be zero")
 	}
 
 	for _, apiCollection := range spec.ApiCollections {
@@ -188,7 +172,9 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.DataReliabilityEnabled && spec.Enabled {
+	// the following function tags are required for data reliability
+	// if data reliability is enabled, the spec must have the following function tags
+	if spec.Enabled && spec.DataReliabilityEnabled {
 		for _, tag := range []FUNCTION_TAG{FUNCTION_TAG_GET_BLOCKNUM, FUNCTION_TAG_GET_BLOCK_BY_NUM} {
 			if found := functionTagsAll[tag]; !found {
 				return details, fmt.Errorf("missing tagged functions for hash comparison: %s", tag)

@@ -42,19 +42,15 @@ type Spec struct {
 	Name                          string                // description string of the spec
 	Enabled                       bool                  // spec enabled/disable 
 	AverageBlockTime              int64                 // average block time of the chain in msec
-	MinStakeProvider              Coin                  // min stake for a provider to be active in the chain
 	ProvidersTypes                Spec_ProvidersTypes   // determines if the spec is for lava or chains 
 	Imports                       []string              // list of chains to import ApiCollections from
 	ApiCollections                []*ApiCollection      // list of ApiCollections that defines all the interfaces and APIs of the chain
 	Contributor                   []string              // list of contributors (public lava address {lava@...})
 	ContributorPercentage         *Dec                  // the percentage of coins the contributors will get from each reward a provider get
-	Shares                        uint64                // factor for bonus rewards at the end of the month (see rewards module)
-    AllowedBlockLagForQosSync     int64                 // defines the accepted blocks a provider can be behind the chain without QOS degradation
 	BlockLastUpdated              uint64                // the last block this spec was updated on chain
-    ReliabilityThreshold          uint32                // this determines the probability of data reliability checks by the consumer
 	DataReliabilityEnabled        bool                  // enables/disables data reliability for the chain
 	BlockDistanceForFinalizedData uint32                // number of finalized blocks a provider keeps for data reliability             
-	BlocksInFinalizationProof     uint32                // number of blocks for finalization              
+	BlocksInFinalizationProof     uint32                // number of blocks for finalization             
 }
 ```
 `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
@@ -121,7 +117,6 @@ type Api struct {
 	Enabled           bool          // enable/disable the api
 	Name              string        // api name
 	ComputeUnits      uint64        // the amount of cu of this api (can be defined as the "price" of using this api)
-	ExtraComputeUnits uint64        // not used
 	Category          SpecCategory  // defines the property of the api
 	BlockParsing      BlockParser   // specify how to parse the block from the api request
 	TimeoutMs         uint64        // specifies the timeout expected for the api (mseconds)
@@ -142,11 +137,8 @@ example of an api definition:
         "enabled": true,
         "category": {
             "deterministic": true,
-            "local": false,
-            "subscription": false,
             "stateful": 0
-        },
-        "extra_compute_units": 0
+        }
     },
 ```
 
@@ -157,8 +149,6 @@ This struct defines properties of an api.
 ```go
 type SpecCategory struct {
 	Deterministic bool   // if this api have the same response across nodes
-	Local         bool   // specific to the local node (like node info query)
-	Subscription  bool   // subscription base api
 	Stateful      uint32 // true for transaction APIs
 	HangingApi    bool   // marks this api with longer timeout
 }
@@ -253,7 +243,25 @@ Rules:
 
 ## Parameters
 
-The Spec module does not contain parameters.
+The spec module contains the following parameters:
+
+| Key                                    | Type                    | Default Value    |
+| -------------------------------------- | ----------------------- | -----------------|
+| AllowlistedExpeditedMsgs                        | string list          | []              |
+| MaxCU                        | uint64          | 10000              |
+| ProviderMinStake                              | sdk.Coin          | 5000000000ulava              |
+
+### AllowlistedExpeditedMsgs
+
+AllowlistedExpeditedMsgs is used to list specs allowed to be proposed in expedited proposal. Currently empty.
+
+### MaxCU
+
+MaxCu is unused.
+
+### ProviderMinStake
+
+ProviderMinStake is the minimum stake amount a provider has to stake to serve RPC for a chain spec.
 
 ## Queries
 
@@ -296,17 +304,9 @@ A valid `add_spec_json_1` JSON proposal format:
                     "COSMOSSDK"
                 ],
                 "providers_types": 1,
-                "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
                 "average_block_time": 30000,
-                "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -329,11 +329,8 @@ A valid `add_spec_json_1` JSON proposal format:
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],

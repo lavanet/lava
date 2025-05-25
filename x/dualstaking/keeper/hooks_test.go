@@ -233,7 +233,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 func TestValidatorSlash(t *testing.T) {
 	ts := newTester(t)
-	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*1000000000)
+	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*100)
 	amount := sdk.NewIntFromUint64(1000000000)
 
 	// create valAcc and providers
@@ -278,7 +278,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	ts.addValidators(1)
 	err := ts.addProviders(5)
 	require.NoError(t, err)
-	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*1000000000)
+	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*100)
 
 	power := int64(1)
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)
@@ -456,9 +456,9 @@ func TestCancelUnbond(t *testing.T) {
 // succeed
 func TestHooksRandomDelegations(t *testing.T) {
 	ts := newTester(t)
-	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*1000000000)
-	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*1000000000)
-	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*1000000000)
+	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*100)
+	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*100)
+	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*100)
 	amount := sdk.NewIntFromUint64(1000)
 
 	// create validatorAcc and providers
@@ -477,10 +477,10 @@ func TestHooksRandomDelegations(t *testing.T) {
 	prevDelegatorAcc, prevDelegator := ts.GetAccount(common.CONSUMER, 0)
 
 	for i, d := range delegations {
-		_, _ = ts.AddAccount(common.CONSUMER, i+1, testBalance*1000000000)
+		_, _ = ts.AddAccount(common.CONSUMER, i+1, testBalance*1000)
 		delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, i+1)
 		d += 1
-		d *= 1000000037 // avoid delegating zero
+		d *= 1037 // avoid delegating zero
 		if d%2 == 0 {
 			delegatorAcc = prevDelegatorAcc
 			delegator = prevDelegator
@@ -500,15 +500,15 @@ func TestHooksRandomDelegations(t *testing.T) {
 // failed in the past due to not-rounded shares value
 func TestNotRoundedShares(t *testing.T) {
 	ts := newTester(t)
-	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*10000000000)
-	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*10000000000)
-	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*10000000000)
-	delAmount := sdk.NewIntFromUint64(1000000000000)
+	_, _ = ts.AddAccount(common.VALIDATOR, 0, testBalance*100)
+	_, _ = ts.AddAccount(common.PROVIDER, 0, testBalance*100)
+	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*100)
+	delAmount := sdk.NewIntFromUint64(10000)
 
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
 
 	validatorAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
-	ts.TxCreateValidator(validatorAcc, math.NewIntFromUint64(4495000000001))
+	ts.TxCreateValidator(validatorAcc, math.NewIntFromUint64(44951))
 
 	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validatorAcc.Addr))
 	require.True(t, found)
