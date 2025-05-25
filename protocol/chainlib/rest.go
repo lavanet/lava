@@ -303,6 +303,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
@@ -379,6 +383,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
 			msgSeed = strconv.FormatUint(guid, 10)
