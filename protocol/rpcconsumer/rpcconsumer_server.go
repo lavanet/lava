@@ -998,9 +998,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
-	if rpccs.debugRelays {
-		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
-	}
+	utils.LavaFormatInfo(fmt.Sprintf("Sending relay to provider %s", singleConsumerSession.Parent.PublicLavaAddress),
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("timeout", relayTimeout),
+		utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
+	)
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
 		metadataAdd := metadata.New(map[string]string{
@@ -1009,7 +1011,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			common.LAVA_LB_UNIQUE_ID_HEADER:   singleConsumerSession.EndpointConnection.GetLbUniqueId(),
 		})
 
-		utils.LavaFormatTrace("Sending relay to provider",
+		utils.LavaFormatInfo("Sending relay to provider from within callRelay",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
 			utils.LogAttr("providerAddress", providerPublicAddress),

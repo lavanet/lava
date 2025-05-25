@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -303,17 +304,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatDebug("in <<<",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("_path", path),
-			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("msgSeed", msgSeed),
-			utils.LogAttr("headers", restHeaders),
-		)
 		analytics.SetProcessingTimestampBeforeRelay(startTime)
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST with GUID: %d for path: %s", guid, path),
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("path", path),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("msgSeed", msgSeed),
+			utils.LogAttr("body", requestBody),
+			utils.LogAttr("headers", restHeaders),
+		)
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, userIp, analytics, restHeaders)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
@@ -374,13 +376,21 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatDebug("in <<<",
+		// utils.LavaFormatDebug("in <<<",
+		// 	utils.LogAttr("GUID", ctx),
+		// 	utils.LogAttr("_path", path),
+		// 	utils.LogAttr("dappID", dappID),
+		// 	utils.LogAttr("msgSeed", msgSeed),
+		// 	utils.LogAttr("headers", restHeaders),
+		// )
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST USE with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("_path", path),
+			utils.LogAttr("path", path),
+			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
@@ -391,6 +401,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
+				utils.LavaFormatError("api method is not supported", err, utils.LogAttr("GUID", ctx))
 				return common.CreateRestMethodNotFoundError(fiberCtx, chainID)
 			}
 
@@ -524,7 +535,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	utils.LavaFormatTrace("provider sending node message",
+	utils.LavaFormatInfo("provider sending node message",
 		utils.LogAttr("_method", nodeMessage.Path),
 		utils.LogAttr("headers", req.Header),
 		utils.LogAttr("apiInterface", "rest"),
