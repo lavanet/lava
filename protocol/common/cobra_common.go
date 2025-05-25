@@ -56,7 +56,6 @@ const (
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
 	// specification default flags
-	AllowMissingApisByDefaultFlagName      = "allow-missing-apis-by-default"
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 

@@ -175,18 +175,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 	// Fetch server apiCont by name
 	apiCont, ok := matchSpecApiByName(name, connectionType, apip.serverApis)
 
-	// Return an error if spec does not exist
+	// Return an api container does not exist, return a default one
 	if !ok {
-		if AllowMissingApisByDefault {
-			apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
-			return apip.defaultApiContainer(apiKey)
-		}
-		utils.LavaFormatError("rest api not supported",
-			nil,
-			utils.LogAttr("name", name),
-			utils.LogAttr("connectionType", connectionType),
-		)
-		return nil, common.APINotSupportedError
+		apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
+		return apip.defaultApiContainer(apiKey)
 	}
 	api := apiCont.api
 

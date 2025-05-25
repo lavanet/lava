@@ -9,13 +9,12 @@ import (
 
 func TestIsDefaultApi(t *testing.T) {
 	t.Run("default api", func(t *testing.T) {
-		AllowMissingApisByDefault = true
 		baseProtocolMessage := &BaseProtocolMessage{
 			ChainMessage: &baseChainMessageContainer{
 				api: &types.Api{
 					Name: "Default-API",
 					BlockParsing: types.BlockParser{
-						ParserFunc: types.PARSER_FUNC_EMPTY,
+						ParserFunc: types.PARSER_FUNC_DEFAULT,
 					},
 				},
 			},
@@ -24,30 +23,13 @@ func TestIsDefaultApi(t *testing.T) {
 		assert.True(t, baseProtocolMessage.IsDefaultApi())
 	})
 
-	t.Run("non-default api - AllowMissingApisByDefault is false", func(t *testing.T) {
-		AllowMissingApisByDefault = false
-		baseProtocolMessage := &BaseProtocolMessage{
-			ChainMessage: &baseChainMessageContainer{
-				api: &types.Api{
-					Name: "Default-API",
-					BlockParsing: types.BlockParser{
-						ParserFunc: types.PARSER_FUNC_EMPTY,
-					},
-				},
-			},
-		}
-
-		assert.False(t, baseProtocolMessage.IsDefaultApi())
-	})
-
 	t.Run("non-default api - Name is not Default-*", func(t *testing.T) {
-		AllowMissingApisByDefault = true
 		baseProtocolMessage := &BaseProtocolMessage{
 			ChainMessage: &baseChainMessageContainer{
 				api: &types.Api{
 					Name: "API",
 					BlockParsing: types.BlockParser{
-						ParserFunc: types.PARSER_FUNC_EMPTY,
+						ParserFunc: types.PARSER_FUNC_DEFAULT,
 					},
 				},
 			},
@@ -56,14 +38,13 @@ func TestIsDefaultApi(t *testing.T) {
 		assert.False(t, baseProtocolMessage.IsDefaultApi())
 	})
 
-	t.Run("non-default api - BlockParsing is not empty", func(t *testing.T) {
-		AllowMissingApisByDefault = true
+	t.Run("non-default api - BlockParsing is not default", func(t *testing.T) {
 		baseProtocolMessage := &BaseProtocolMessage{
 			ChainMessage: &baseChainMessageContainer{
 				api: &types.Api{
 					Name: "Default-API",
 					BlockParsing: types.BlockParser{
-						ParserFunc: types.PARSER_FUNC_DEFAULT,
+						ParserFunc: types.PARSER_FUNC_EMPTY,
 					},
 				},
 			},
