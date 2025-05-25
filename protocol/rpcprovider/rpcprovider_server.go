@@ -219,8 +219,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		defer cancel()
 	}
 
-	utils.LavaFormatDebug("Provider got relay request",
+	utils.LavaFormatInfo("Got relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "request.path", Value: request.RelayData.ApiUrl},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
@@ -269,7 +270,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
 	}
 
-	utils.LavaFormatDebug("Provider returned a relay response",
+	utils.LavaFormatInfo("Done handling request",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -917,9 +918,11 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
-	if debugLatency {
-		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
+	utils.LavaFormatInfo("Sending request to node",
+		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID},
+		utils.Attribute{Key: "path", Value: request.RelayData.ApiUrl},
+	)
 	// add stickiness header
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetTokenFromGrpcContext(ctx)})}})
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderAddressHeader, Value: rpcps.providerAddress.String()}})

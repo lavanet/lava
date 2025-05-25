@@ -126,7 +126,8 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatDebug("getSupportedApi jsonrpc failed",
+			utils.LavaFormatError("getSupportedApi jsonrpc failed",
+				err,
 				utils.LogAttr("method", msg.Method),
 				utils.LogAttr("connectionType", connectionType),
 				utils.LogAttr("internalPath", internalPath),
@@ -171,6 +172,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		parsedBlock := parsedInput.GetBlock()
 
 		if msg.Method == "eth_call" && uint64(parsedBlock) < extensionInfo.LatestBlock-126 {
+			utils.LavaFormatInfo("adding extension requirement to archive since block is 127 before lastest block")
 			// change to archive
 			extensionInfo.AdditionalExtensions = append(extensionInfo.AdditionalExtensions, extensionslib.ArchiveExtension)
 		}
@@ -446,11 +448,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		path := "/" + fiberCtx.Params("*")
-		utils.LavaFormatDebug("in <<<",
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new JSON-RPC with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("_msg", logFormattedMsg),
+			utils.LogAttr("body", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
