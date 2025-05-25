@@ -123,7 +123,7 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
-func extractCallerRequestId(c *fiber.Ctx) (requestId string) {
+func extractCallerRequestId(c *fiber.Ctx) string {
 	return c.Get("x-request-id")
 }
 
