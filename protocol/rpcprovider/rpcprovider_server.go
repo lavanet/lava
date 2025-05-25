@@ -206,6 +206,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
+	ctx = utils.AppendRequestId(ctx, lavaprotocol.GetRequestId(request.RelayData))
 	startTime := time.Now()
 	// This is for the SDK, since the timeout is not automatically added to the request like in Go
 	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(ctx)
@@ -221,6 +222,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	utils.LavaFormatInfo("Got relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "requestId", Value: ctx},
 		utils.Attribute{Key: "request.path", Value: request.RelayData.ApiUrl},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -272,6 +274,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	utils.LavaFormatInfo("Done handling request",
 		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "requestId", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
@@ -296,6 +299,7 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 			utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
 			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: ctx},
 			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 		)
 		return err
@@ -318,6 +322,7 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 			utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: ctx},
 			utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
 			utils.Attribute{Key: "replyBlock", Value: replyBlock},
 			utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
@@ -423,6 +428,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 				utils.Attribute{Key: "provider_requested_block", Value: reqBlock},
 				utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock},
 				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "requestId", Value: ctx},
 				utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata},
 			)
 		}
@@ -593,6 +599,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 			utils.Attribute{Key: "consumer lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: ctx},
 		)
 		return nil, nil, lavasession.EpochMismatchError.Wrapf("provider lava block %d, consumer lava block %d, threshold: %d", latestBlock, request.RelaySession.Epoch, rpcps.providerSessionManager.GetBlockedEpochHeight())
 	}
@@ -680,6 +687,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				return nil, utils.LavaFormatInfo("Failed to VerifyPairing for new consumer",
 					utils.Attribute{Key: "Error", Value: verifyPairingError},
 					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "requestId", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
 					utils.Attribute{Key: "provider", Value: rpcps.providerAddress},
@@ -690,6 +698,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			if !valid {
 				return nil, utils.LavaFormatError("VerifyPairing, this consumer address is not valid with this provider", nil,
 					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "requestId", Value: ctx},
 					utils.Attribute{Key: "epoch", Value: request.Epoch},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
@@ -701,6 +710,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			if getMaxCuError != nil {
 				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetMaxCuForUser failed", getMaxCuError,
 					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "requestId", Value: ctx},
 					utils.Attribute{Key: "epoch", Value: request.Epoch},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
@@ -713,6 +723,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err,
 					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "requestId", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
 					utils.Attribute{Key: "relayNum", Value: request.RelayNum},
@@ -721,6 +732,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 		} else {
 			return nil, utils.LavaFormatError("Failed to get a provider session", err,
 				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "requestId", Value: ctx},
 				utils.Attribute{Key: "sessionID", Value: request.SessionId},
 				utils.Attribute{Key: "consumer", Value: consumerAddressString},
 				utils.Attribute{Key: "relayNum", Value: request.RelayNum},
@@ -920,6 +932,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
 	utils.LavaFormatInfo("Sending request to node",
 		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "requestId", Value: ctx},
 		utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID},
 		utils.Attribute{Key: "path", Value: request.RelayData.ApiUrl},
 	)
