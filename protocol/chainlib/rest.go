@@ -320,8 +320,9 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
-		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST with GUID: %d for path: %s", guid, path),
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("request-id", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
@@ -401,6 +402,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// )
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST USE with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("request-id", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("dappID", dappID),
