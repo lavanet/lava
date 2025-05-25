@@ -181,7 +181,8 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 			apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: ""}
 			return apip.defaultApiContainer(apiKey)
 		}
-		utils.LavaFormatInfo("rest api not supported",
+		utils.LavaFormatError("rest api not supported",
+			nil,
 			utils.LogAttr("name", name),
 			utils.LogAttr("connectionType", connectionType),
 		)
