@@ -432,6 +432,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)

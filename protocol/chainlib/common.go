@@ -123,6 +123,10 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
+func extractCallerRequestId(c *fiber.Ctx) (requestId string) {
+	return c.Get("x-request-id")
+}
+
 // extractDappIDFromGrpcHeader extracts dappID from GRPC header
 func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
 	dappId := generateNewDappID()
