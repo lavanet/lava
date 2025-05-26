@@ -12,7 +12,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/utils"
@@ -22,33 +21,6 @@ import (
 )
 
 const SubscriptionTimeoutDuration = 15 * time.Minute
-
-type relayFinalizationBlocksHandler interface {
-	GetParametersForRelayDataReliability(
-		ctx context.Context,
-		request *pairingtypes.RelayRequest,
-		chainMsg ChainMessage,
-		relayTimeout time.Duration,
-		blockLagForQosSync int64,
-		averageBlockTime time.Duration,
-		blockDistanceToFinalization,
-		blocksInFinalizationData uint32,
-	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
-
-	BuildRelayFinalizedBlockHashes(
-		ctx context.Context,
-		request *pairingtypes.RelayRequest,
-		reply *pairingtypes.RelayReply,
-		latestBlock int64,
-		requestedHashes []*chaintracker.BlockStore,
-		updatedChainMessage bool,
-		relayTimeout time.Duration,
-		averageBlockTime time.Duration,
-		blockDistanceToFinalization uint32,
-		blocksInFinalizationData uint32,
-		modifiedReqBlock int64,
-	) (err error)
-}
 
 type connectedConsumerContainer struct {
 	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]
@@ -68,23 +40,21 @@ type activeSubscription struct {
 }
 
 type ProviderNodeSubscriptionManager struct {
-	chainRouter                    ChainRouter
-	chainParser                    ChainParser
-	relayFinalizationBlocksHandler relayFinalizationBlocksHandler
-	activeSubscriptions            map[string]*activeSubscription                   // key is request params hash
-	currentlyPendingSubscriptions  map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
-	privKey                        *btcec.PrivateKey
-	lock                           sync.RWMutex
+	chainRouter                   ChainRouter
+	chainParser                   ChainParser
+	activeSubscriptions           map[string]*activeSubscription                   // key is request params hash
+	currentlyPendingSubscriptions map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
+	privKey                       *btcec.PrivateKey
+	lock                          sync.RWMutex
 }
 
-func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, relayFinalizationBlocksHandler relayFinalizationBlocksHandler, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
+func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
 	return &ProviderNodeSubscriptionManager{
-		chainRouter:                    chainRouter,
-		chainParser:                    chainParser,
-		relayFinalizationBlocksHandler: relayFinalizationBlocksHandler,
-		activeSubscriptions:            make(map[string]*activeSubscription),
-		currentlyPendingSubscriptions:  make(map[string]*pendingSubscriptionsBroadcastManager),
-		privKey:                        privKey,
+		chainRouter:                   chainRouter,
+		chainParser:                   chainParser,
+		activeSubscriptions:           make(map[string]*activeSubscription),
+		currentlyPendingSubscriptions: make(map[string]*pendingSubscriptionsBroadcastManager),
+		privKey:                       privKey,
 	}
 }
 
@@ -195,7 +165,7 @@ func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock
 		firstSetupReply := paramsChannelToConnectedConsumers.firstSetupReply
 		// Making sure to sign the reply before returning it to the consumer. This will replace the sig field with the correct value
 		// (and not the signature for another consumer)
-		signingError := pnsm.signReply(ctx, firstSetupReply, consumerAddr, chainMessage, request)
+		signingError := pnsm.signReply(firstSetupReply, consumerAddr, chainMessage, request)
 		if signingError != nil {
 			return "", utils.LavaFormatError("AddConsumer failed signing reply", signingError)
 		}
@@ -287,7 +257,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
 		}
 
-		err = pnsm.signReply(ctx, reply, consumerAddr, chainMessage, request)
+		err = pnsm.signReply(reply, consumerAddr, chainMessage, request)
 		if err != nil {
 			pnsm.failedPendingSubscription(hashedParams)
 			return "", utils.LavaFormatError("failed signing subscription Reply", err)
@@ -393,7 +363,7 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("nodeMsg", nodeMsg),
 			)
-			err := pnsm.handleNewNodeMessage(ctx, hashedParams, nodeMsg)
+			err := pnsm.handleNewNodeMessage(hashedParams, nodeMsg)
 			if err != nil {
 				closeNodeSubscriptionCallback()
 			}
@@ -444,28 +414,12 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 	return marshalledMsg, nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
+func (pnsm *ProviderNodeSubscriptionManager) signReply(reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	dataReliabilityEnabled, _ := pnsm.chainParser.DataReliabilityParams()
-	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
-	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
-
-	if dataReliabilityEnabled {
-		var err error
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return err
-		}
-
-		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
-		if err != nil {
-			return err
-		}
-	}
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, dataReliabilityEnabled)
+	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply)
 	if err != nil {
 		return err
 	}
@@ -473,7 +427,7 @@ func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, repl
 	return nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Context, hashedParams string, nodeMsg interface{}) error {
+func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(hashedParams string, nodeMsg interface{}) error {
 	pnsm.lock.RLock()
 	defer pnsm.lock.RUnlock()
 	activeSub, foundActiveSubscription := pnsm.activeSubscriptions[hashedParams]
@@ -519,7 +473,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 				Metadata: []pairingtypes.Metadata{},
 			}
 
-			err = pnsm.signReply(ctx, relayMessageFromNode, connectedConsumerContainer.consumerSDKAddress, chainMessage, copiedRequest)
+			err = pnsm.signReply(relayMessageFromNode, connectedConsumerContainer.consumerSDKAddress, chainMessage, copiedRequest)
 			if err != nil {
 				return utils.LavaFormatError("error signing reply", err)
 			}

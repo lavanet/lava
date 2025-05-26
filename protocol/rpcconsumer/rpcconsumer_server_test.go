@@ -74,10 +74,9 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	return rpcConsumerServer, chainParser
 }
 
-func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress) *pairingtypes.RelayReply {
+func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey) *pairingtypes.RelayReply {
 	relayReply := &pairingtypes.RelayReply{
-		Data:                  []byte(`{"jsonrpc":"2.0","result":{}, "id":1}`),
-		FinalizedBlocksHashes: []byte(`{"0":"hash0"}`),
+		Data: []byte(`{"jsonrpc":"2.0","result":{}, "id":1}`),
 	}
 
 	relayExchange := &pairingtypes.RelayExchange{
@@ -117,7 +116,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 				trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
 			}
-			return handleRelay(t, in, providerSK, consumerAccount), nil
+			return handleRelay(t, in, providerSK), nil
 		}).
 		AnyTimes()
 

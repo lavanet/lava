@@ -21,7 +21,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/v5/testutil/common"
@@ -124,7 +123,7 @@ func CreateChainLibMocks(
 	wsServerCallback http.HandlerFunc,
 	getToTopMostPath string,
 	services []string,
-) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+) (cpar ChainParser, crout ChainRouter, cfetc IChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
 	utils.SetGlobalLoggingLevel("debug")
 	closeServer = nil
 	spec, err := specutils.GetASpec(specIndex, getToTopMostPath, nil, nil)

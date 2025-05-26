@@ -94,7 +94,7 @@ func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryCl
 	return specResponse, err
 }
 
-func NewStateTracker(ctx context.Context, txFactory tx.Factory, stateQuery *updaters.StateQuery, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
+func NewStateTracker(ctx context.Context, txFactory tx.Factory, stateQuery *updaters.StateQuery, chainFetcher chainlib.IChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := stateQuery.Status(ctx)
 	if err != nil {
@@ -149,7 +149,7 @@ func (st *StateTracker) GetAverageBlockTime() time.Duration {
 	return st.AverageBlockTime
 }
 
-func (st *StateTracker) newLavaBlock(blockFrom int64, blockTo int64, hash string) {
+func (st *StateTracker) newLavaBlock(blockFrom int64, blockTo int64) {
 	// go over the registered updaters and trigger update
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()

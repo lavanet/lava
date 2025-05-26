@@ -64,7 +64,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	}
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
+	readEventsFromBlock := func(blockFrom int64, blockTo int64) {
 		for block := blockFrom; block < blockTo; block++ {
 			queryInst := updaters.NewStateQueryAccessInst(clientCtx)
 			blockResults, err := queryInst.BlockResults(ctx, &block)
@@ -99,7 +99,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			fromBlock = latestHeight - blocks
 		}
 		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: fromBlock}, utils.Attribute{Key: "to", Value: fromBlock + blocks})
-		readEventsFromBlock(fromBlock, fromBlock+blocks, "")
+		readEventsFromBlock(fromBlock, fromBlock+blocks)
 	}
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	latestBlock, err := lavaChainFetcher.FetchLatestBlockNum(ctx)

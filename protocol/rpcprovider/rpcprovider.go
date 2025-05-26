@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -134,6 +135,7 @@ type RPCProvider struct {
 	lavaChainID                  string
 	addr                         sdk.AccAddress
 	blockMemorySize              uint64
+	finalizationConsensus        *finalizationconsensus.FinalizationConsensus
 	chainMutexes                 map[string]*sync.Mutex
 	parallelConnections          uint
 	cache                        *performance.Cache
@@ -453,26 +455,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
-	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64) {
 		for block := blockFrom + 1; block <= blockTo; block++ {
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
 	var chainFetcher chainlib.IChainFetcher
-	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-		chainFetcher = chainlib.NewChainFetcher(
-			ctx,
-			&chainlib.ChainFetcherOptions{
-				ChainRouter: chainRouter,
-				ChainParser: chainParser,
-				Endpoint:    rpcProviderEndpoint,
-				Cache:       rpcp.cache,
-			},
-		)
-	} else {
-		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-	}
+	chainFetcher = chainlib.NewChainFetcher(
+		ctx,
+		&chainlib.ChainFetcherOptions{
+			ChainRouter: chainRouter,
+			ChainParser: chainParser,
+			Endpoint:    rpcProviderEndpoint,
+			Cache:       rpcp.cache,
+		},
+	)
+
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 

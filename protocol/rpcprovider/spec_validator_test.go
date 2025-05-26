@@ -59,11 +59,9 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	spec := testcommon.CreateMockSpec()
 	specValidator := NewSpecValidator()
 
 	specName := "LAV1"
-	spec.Index = specName
 
 	ctx := context.Background()
 
@@ -105,11 +103,9 @@ func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	spec := testcommon.CreateMockSpec()
 	specValidator := NewSpecValidator()
 
 	specName := "LAV1"
-	spec.Index = specName
 
 	ctx := context.Background()
 

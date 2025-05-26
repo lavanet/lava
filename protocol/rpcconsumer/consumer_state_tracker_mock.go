@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/lavanet/lava/v5/protocol/common"
 	finalizationconsensus "github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"

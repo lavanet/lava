@@ -299,7 +299,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
 	callbackCalledTimes := 0
-	newBlockCallback := func(blockFrom int64, blockTo int64, hash string) {
+	newBlockCallback := func(blockFrom int64, blockTo int64) {
 		callbackCalledNewLatest = true
 		for block := blockFrom + 1; block <= blockTo; block++ {
 			callbackCalledTimes++

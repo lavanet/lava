@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	finalizationconsensus "github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -64,6 +65,7 @@ type RPCConsumerServer struct {
 	consumerTxSender               ConsumerTxSender
 	requiredResponses              int
 	lavaChainID                    string
+	finalizationConsensus          *finalizationconsensus.FinalizationConsensus
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            *ConsumerConsistency
 	sharedState                    bool // using the cache backend to sync the latest seen block with other consumers
@@ -90,6 +92,7 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
+	finalizationConsensus *finalizationconsensus.FinalizationConsensus,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -122,6 +125,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
@@ -488,69 +492,31 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlock(reqBlock int64, seenBlock 
 	return reqBlock
 }
 
-func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool, relayState *RelayState) ([]*pairingtypes.BlockHashToHeight, bool) {
-	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
-	// 1. The current extension is archive.
-	// 2. The user requested a single block hash.
-	// 3. The archive extension rule is set
-
-	// Adding to cache only if we upgraded to archive, meaning normal relay didn't work and archive did.
-	// It is safe to assume in most cases this hash should be used with archive.
-	// And if it is not, it will only increase archive load but wont result in user errors.
-	// After the finalized cache duration it will be reset until next time.
+func (rpccs *RPCConsumerServer) isRelayFinalized(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, relayState *RelayState) bool {
+	finalized := false
 	if relayState == nil {
-		return blockHashesToHeights, finalized
+		return false
 	}
 	if !relayState.GetIsUpgraded() {
 		if relayState.GetIsEarliestUsed() && relayState.GetIsArchive() && chainMessage.GetUsedDefaultValue() {
 			finalized = true
 		}
-		return blockHashesToHeights, finalized
+		return finalized
 	}
 
-	isArchiveRelay := false
-	var rule *spectypes.Rule
 	for _, extension := range extensions {
 		if extension.Name == extensionslib.ArchiveExtension {
-			isArchiveRelay = true
-			rule = extension.Rule
-			break
-		}
-	}
-	requestedBlocksHashes := chainMessage.GetRequestedBlocksHashes()
-	isUserRequestedSingleBlocksHashes := len(requestedBlocksHashes) == 1
-
-	if isArchiveRelay && isUserRequestedSingleBlocksHashes && rule != nil {
-		ruleBlock := int64(rule.Block)
-		if ruleBlock >= 0 {
-			height := latestBlock - ruleBlock - 1
-			if height < 0 {
-				height = 0
-			}
-			blockHashesToHeights = append(blockHashesToHeights, &pairingtypes.BlockHashToHeight{
-				Hash:   requestedBlocksHashes[0],
-				Height: height,
-			})
-			// we can assume this result is finalized.
-			finalized = true
+			return true
 		}
 	}
 
-	return blockHashesToHeights, finalized
+	return finalized
 }
 
 func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
 	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
 	for _, blockHash := range requestedBlockHashes {
 		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: spectypes.NOT_APPLICABLE})
-	}
-	return blocksHashesToHeights
-}
-
-func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashes map[int64]string) []*pairingtypes.BlockHashToHeight {
-	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
-	for height, blockHash := range finalizedBlockHashes {
-		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: height})
 	}
 	return blocksHashesToHeights
 }
@@ -879,7 +845,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
-					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
 
 					go func() {
 						// deal with copying error.
@@ -896,40 +861,22 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							return
 						}
 
-						blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0)
-
-						var finalizedBlockHashesObj map[int64]string
-						err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
-						if err != nil {
-							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
-								utils.LogAttr("GUID", ctx),
-								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
-								utils.LogAttr("providerAddr", providerPublicAddress),
-							)
-						} else {
-							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
-						}
-						var finalized bool
-						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
-						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights), utils.LogAttr("GUID", ctx))
-
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
 						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
-							RequestHash:           hashKey,
-							ChainId:               chainId,
-							RequestedBlock:        requestedBlock,
-							SeenBlock:             seenBlock,
-							BlockHash:             nil, // consumer cache doesn't care about block hashes
-							Response:              copyReply,
-							Finalized:             finalized,
-							OptionalMetadata:      nil,
-							SharedStateId:         sharedStateId,
-							AverageBlockTime:      int64(averageBlockTime), // by using average block time we can set longer TTL
-							IsNodeError:           isNodeError,
-							BlocksHashesToHeights: blockHashesToHeights,
+							RequestHash:      hashKey,
+							ChainId:          chainId,
+							RequestedBlock:   requestedBlock,
+							SeenBlock:        seenBlock,
+							BlockHash:        nil, // consumer cache doesn't care about block hashes
+							Response:         copyReply,
+							Finalized:        rpccs.isRelayFinalized(extensions, protocolMessage, relayState),
+							OptionalMetadata: nil,
+							SharedStateId:    sharedStateId,
+							AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
+							IsNodeError:      isNodeError,
 						})
 						if err2 != nil {
 							utils.LavaFormatWarning("error updating cache with new entry", err2, utils.LogAttr("GUID", ctx))
@@ -1114,6 +1061,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
+
+	err = rpccs.finalizationConsensus.UpdateLatestBlock(int64(blockDistanceForFinalizedData), providerPublicAddress, reply)
+	if err != nil {
+		return 0, err, false
+	}
 
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
