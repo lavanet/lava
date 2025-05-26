@@ -72,10 +72,10 @@ func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
 	}
 }
 
-func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher *chainlib.IChainFetcher, chainId string) error {
+func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher chainlib.IChainFetcher, chainId string) error {
 	sv.lock.Lock()
 	defer sv.lock.Unlock()
-	err := (*chainFetcher).Validate(ctx)
+	err := chainFetcher.Validate(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher *chai
 	if _, found := sv.chainFetchers[chainId]; !found {
 		sv.chainFetchers[chainId] = []*chainlib.IChainFetcher{}
 	}
-	sv.chainFetchers[chainId] = append(sv.chainFetchers[chainId], chainFetcher)
+	sv.chainFetchers[chainId] = append(sv.chainFetchers[chainId], &chainFetcher)
 
 	return nil
 }

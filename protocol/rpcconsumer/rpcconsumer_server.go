@@ -298,6 +298,9 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
+	if err != nil {
+		return false, err
+	}
 	if !ok {
 		// it's okay to not have GET_BLOCKNUM
 		return true, nil

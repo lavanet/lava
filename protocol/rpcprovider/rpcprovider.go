@@ -459,8 +459,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
-	var chainFetcher chainlib.IChainFetcher
-	chainFetcher = chainlib.NewChainFetcher(
+	chainFetcher := chainlib.NewChainFetcher(
 		ctx,
 		&chainlib.ChainFetcherOptions{
 			ChainRouter: chainRouter,
@@ -547,7 +546,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// Add the chain fetcher to the spec validator
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
 	if chainParser.ParseDirectiveEnabled() {
-		err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+		err = specValidator.AddChainFetcher(ctx, chainFetcher, chainID)
 		if err != nil {
 			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 		}
