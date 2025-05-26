@@ -37,9 +37,17 @@ func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
 	return binary.LittleEndian.Uint64(salt)
 }
 
+func GetRequestId(requestData *pairingtypes.RelayPrivateData) string {
+	return requestData.RequestId
+}
+
 func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	nonceBytes := sigs.EncodeUint64(value)
 	requestData.Salt = nonceBytes
+}
+
+func SetRequestId(requestData *pairingtypes.RelayPrivateData, value string) {
+	requestData.RequestId = value
 }
 
 func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, seenBlock int64, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
@@ -59,6 +67,11 @@ func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byt
 		guid = utils.GenerateUniqueIdentifier()
 	}
 	SetSalt(relayData, guid)
+
+	if reqId, found := utils.GetRequestId(ctx); found {
+		SetRequestId(relayData, reqId)
+	}
+
 	return relayData
 }
 

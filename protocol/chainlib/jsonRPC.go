@@ -432,6 +432,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
@@ -450,6 +454,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		path := "/" + fiberCtx.Params("*")
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new JSON-RPC with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("requestId", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("body", logFormattedMsg),

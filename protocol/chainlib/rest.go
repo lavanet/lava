@@ -295,6 +295,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
@@ -308,8 +312,9 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
-		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST with GUID: %d for path: %s", guid, path),
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("requestId", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
@@ -371,6 +376,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		callerRequestId := extractCallerRequestId(fiberCtx)
+		if callerRequestId != "" {
+			ctx = utils.WithRequestId(ctx, callerRequestId)
+		}
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
 			msgSeed = strconv.FormatUint(guid, 10)
@@ -385,6 +394,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// )
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST USE with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("requestId", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("dappID", dappID),
