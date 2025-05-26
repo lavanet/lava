@@ -772,19 +772,23 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		return nil, errV
 	}
 
-	var latestBlock int64
-	var requestedBlockHash []byte
+	latestBlock := rpcps.stateTracker.LatestBlock()
+	_, averageBlockTime, blockDistanceToFinalization, _ := rpcps.chainParser.ChainBlockStats()
+	finalized := rpcps.IsRequestBlockFinalized(request, latestBlock, blockDistanceToFinalization)
 
-	finalized := false
-
-	_, averageBlockTime, _, _ := rpcps.chainParser.ChainBlockStats()
+	// TODO: take latestBlock and lastSeenBlock and put the greater one of them
+	updatedChainMessage := chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
+	if updatedChainMessage {
+		utils.LavaFormatDebug("updated chain message",
+			utils.LogAttr("latestBlock", latestBlock), utils.LogAttr("chainMsg", chainMsg.GetRPCMessage()))
+	}
 
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply
 	var ignoredMetadata []pairingtypes.Metadata
 	var err error
 	if finalized { // try get reply from cache
-		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
+		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, finalized)
 	}
 
 	if err != nil || reply == nil {
@@ -800,7 +804,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if rpcps.cache.CacheActive() && finalized {
-			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
+			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, finalized, ignoredMetadata)
 		}
 	} else if len(request.RelayData.Extensions) > 0 {
 		// if cached, Add Archive trailer if requested by the consumer.
@@ -819,7 +823,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	return reply, nil
 }
 
-func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, request *pairingtypes.RelayRequest, requestedBlockHash []byte, finalized bool) (*pairingtypes.RelayReply, []pairingtypes.Metadata, error) {
+func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, request *pairingtypes.RelayRequest, finalized bool) (*pairingtypes.RelayReply, []pairingtypes.Metadata, error) {
 	cache := rpcps.cache
 	hashKey, outPutFormatter, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID)
 	if hashErr != nil {
@@ -831,7 +835,6 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 		RequestHash:    hashKey,
 		RequestedBlock: request.RelayData.RequestBlock,
 		ChainId:        rpcps.rpcProviderEndpoint.ChainID,
-		BlockHash:      requestedBlockHash,
 		Finalized:      finalized,
 		SeenBlock:      request.RelayData.SeenBlock,
 	})
@@ -852,7 +855,7 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 	return reply, ignoredMetadata, err
 }
 
-func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, replyWrapper *chainlib.RelayReplyWrapper, latestBlock int64, averageBlockTime time.Duration, requestedBlockHash []byte, finalized bool, ignoredMetadata []pairingtypes.Metadata) {
+func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, replyWrapper *chainlib.RelayReplyWrapper, latestBlock int64, averageBlockTime time.Duration, finalized bool, ignoredMetadata []pairingtypes.Metadata) {
 	cache := rpcps.cache
 	reply := replyWrapper.RelayReply
 
@@ -875,7 +878,6 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 			err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 				RequestHash:      hashKey,
 				RequestedBlock:   requestedBlock,
-				BlockHash:        requestedBlockHash,
 				ChainId:          rpcps.rpcProviderEndpoint.ChainID,
 				Response:         copyReply,
 				Finalized:        finalized,
@@ -983,6 +985,22 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 	case <-ctx.Done():
 		return sleepTime
 	}
+}
+
+func (rpcps *RPCProviderServer) IsRequestBlockFinalized(request *pairingtypes.RelayRequest, latestBlock int64, blockDistanceToFinalization uint32) bool {
+	specificBlock := request.RelayData.RequestBlock
+	if specificBlock < spectypes.LATEST_BLOCK {
+		// cases of EARLIEST, FINALIZED, SAFE
+		// GetLatestBlockData only supports latest relative queries or specific block numbers
+		specificBlock = spectypes.NOT_APPLICABLE
+	}
+
+	modifiedReqBlock := lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
+	if modifiedReqBlock != request.RelayData.RequestBlock {
+		request.RelayData.RequestBlock = modifiedReqBlock
+	}
+
+	return spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, int64(blockDistanceToFinalization))
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {

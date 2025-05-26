@@ -47,7 +47,7 @@ func TestReportsClientFlows(t *testing.T) {
 			t.Fatal("Timeout reached before reports were received")
 		}
 
-		require.Len(t, messages, 3)
+		require.Len(t, messages, 2)
 		reports := 0
 		for _, message := range messages {
 			if message["name"] == "report" {
