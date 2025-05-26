@@ -988,13 +988,6 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 }
 
 func (rpcps *RPCProviderServer) IsRequestBlockFinalized(request *pairingtypes.RelayRequest, latestBlock int64, blockDistanceToFinalization uint32) bool {
-	specificBlock := request.RelayData.RequestBlock
-	if specificBlock < spectypes.LATEST_BLOCK {
-		// cases of EARLIEST, FINALIZED, SAFE
-		// GetLatestBlockData only supports latest relative queries or specific block numbers
-		specificBlock = spectypes.NOT_APPLICABLE
-	}
-
 	modifiedReqBlock := lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 	if modifiedReqBlock != request.RelayData.RequestBlock {
 		request.RelayData.RequestBlock = modifiedReqBlock
