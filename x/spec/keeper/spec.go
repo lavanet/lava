@@ -84,7 +84,7 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 	depends := map[string]bool{spec.Index: true}
 	inherit := map[string]bool{}
 
-	details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index)
+	details, err := types.DoExpandSpec(ctx, &spec, depends, &inherit, spec.Index, k.GetSpec)
 	if err != nil {
 		return spec, utils.LavaFormatError("spec expand failed", err,
 			utils.Attribute{Key: "imports", Value: details},
@@ -100,7 +100,7 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 	depends := map[string]bool{spec.Index: true}
 	inherit := map[string]bool{}
 
-	if details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index); err != nil {
+	if details, err := types.DoExpandSpec(ctx, &spec, depends, &inherit, spec.Index, k.GetSpec); err != nil {
 		return nil, utils.LavaFormatWarning("spec refresh failed (import)", err,
 			utils.Attribute{Key: "imports", Value: details},
 		)
@@ -130,96 +130,6 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 	}
 
 	return inherited, nil
-}
-
-// doExpandSpec performs the actual work and recusion for ExpandSpec above.
-func (k Keeper) doExpandSpec(
-	ctx sdk.Context,
-	spec *types.Spec,
-	depends map[string]bool,
-	inherit *map[string]bool,
-	details string,
-) (string, error) {
-	if spec == nil {
-		return "", fmt.Errorf("doExpandSpec: spec is nil")
-	}
-	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
-
-	if len(spec.Imports) != 0 {
-		var parents []types.Spec
-
-		// update (cumulative) inherit
-		for _, index := range spec.Imports {
-			(*inherit)[index] = true
-		}
-
-		// visual markers when import deepens
-		details += "->["
-
-		// recursion to get all parent specs (DFS)
-		comma := ""
-		for _, index := range spec.Imports {
-			imported, found := k.GetSpec(ctx, index)
-			// import of unknown Spec not allowed
-			if !found {
-				details += fmt.Sprintf("%s%s(unknown)", comma, index)
-				return details, fmt.Errorf("imported spec unknown: %s", index)
-			}
-
-			details += fmt.Sprintf("%s%s", comma, index)
-
-			// loop in the recursion not allowed
-			if _, found := depends[index]; found {
-				return details, fmt.Errorf("import loops not allowed for spec: %s", index)
-			}
-
-			depends[index] = true
-			details, err := k.doExpandSpec(ctx, &imported, depends, inherit, details)
-			if err != nil {
-				return details, err
-			}
-			delete(depends, index)
-
-			parents = append(parents, imported)
-			comma = ","
-		}
-
-		details += "]"
-
-		for _, parent := range parents {
-			for _, parentCollection := range parent.ApiCollections {
-				// ignore disabled apiCollections
-				if !parentCollection.Enabled {
-					continue
-				}
-				if parentsCollections[parentCollection.CollectionData] == nil {
-					parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
-				}
-				parentsCollections[parentCollection.CollectionData] = append(parentsCollections[parentCollection.CollectionData], parentCollection)
-			}
-		}
-	}
-
-	myCollections := map[types.CollectionData]*types.ApiCollection{}
-	for _, collection := range spec.ApiCollections {
-		myCollections[collection.CollectionData] = collection
-	}
-
-	for _, collection := range spec.ApiCollections {
-		err := collection.InheritAllFields(myCollections, parentsCollections[collection.CollectionData])
-		if err != nil {
-			return details, err
-		}
-		delete(parentsCollections, collection.CollectionData)
-	}
-
-	// combine left over apis not overwritten by current spec
-	err := spec.CombineCollections(parentsCollections)
-	if err != nil {
-		return details, err
-	}
-
-	return details, nil
 }
 
 func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]string, error) {

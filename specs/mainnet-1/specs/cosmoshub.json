@@ -1283,7 +1283,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "theta-testnet-001"
+                    "expected_value": "provider"
                   }
                 ]
               }
@@ -1305,7 +1305,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "theta-testnet-001"
+                    "expected_value": "provider"
                   }
                 ]
               }
@@ -1325,7 +1325,7 @@
                 "name": "chain-id",
                 "values": [
                   {
-                    "expected_value": "theta-testnet-001"
+                    "expected_value": "provider"
                   }
                 ]
               }
@@ -1339,5 +1339,5 @@
       }
     ]
   },
-  "deposit": "7000000000ulava"
+  "deposit": "1750000000ulava"
 }

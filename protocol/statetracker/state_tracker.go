@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,13 @@ var (
 	// TODO: add a governance param change that indicates what spec id belongs to lava.
 	LavaSpecOptions = []string{TESTNET_SPEC, MAINNET_SPEC}
 )
+
+type IStateTracker interface {
+	LatestBlock() int64
+	GetAverageBlockTime() time.Duration
+	RegisterForUpdates(ctx context.Context, updater Updater) Updater
+	GetEventTracker() *updaters.EventTracker
+}
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
@@ -54,14 +62,21 @@ func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chai
 		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
 
-	// offline spec mode.
-	parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
-	if err != nil {
-		return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+	if strings.Contains(specPath, "git") {
+		spec, err := specutils.GetSpecFromGit(specPath, rpcEndpoint.ChainID)
+		if err != nil {
+			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+		}
+		chainParser.SetSpec(spec)
+	} else {
+		// offline spec mode.
+		parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+		if err != nil {
+			return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+		}
+		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+		chainParser.SetSpec(parsedOfflineSpec)
 	}
-	utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-	chainParser.SetSpec(parsedOfflineSpec)
-
 	return nil
 }
 
@@ -206,4 +221,8 @@ func IsLavaNativeSpec(checked string) bool {
 		}
 	}
 	return false
+}
+
+func (st *StateTracker) LatestBlock() int64 {
+	return st.chainTracker.GetAtomicLatestBlockNum()
 }

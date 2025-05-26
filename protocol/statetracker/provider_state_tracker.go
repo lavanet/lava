@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
@@ -21,7 +20,7 @@ import (
 type ProviderStateTracker struct {
 	StateQuery *updaters.ProviderStateQuery
 	txSender   *ProviderTxSender
-	*StateTracker
+	IStateTracker
 	*EmergencyTracker
 }
 
@@ -37,7 +36,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		return nil, err
 	}
 	pst := &ProviderStateTracker{
-		StateTracker:     stateTrackerBase,
+		IStateTracker:    stateTrackerBase,
 		StateQuery:       stateQuery,
 		txSender:         txSender,
 		EmergencyTracker: emergencyTracker,
@@ -51,7 +50,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 	epochUpdater := updaters.NewEpochUpdater(&pst.StateQuery.EpochStateQuery)
-	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
+	epochUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*updaters.EpochUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
@@ -61,8 +60,8 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 
 func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.StateQuery, pst.EventTracker)
-	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.StateQuery, pst.GetEventTracker())
+	specUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
@@ -72,8 +71,8 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 
 func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error {
 	// register for spec verifications sets spec and verifies when a spec has been modified
-	specUpdater := updaters.NewSpecUpdater(chainId, pst.StateQuery, pst.EventTracker)
-	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater := updaters.NewSpecUpdater(chainId, pst.StateQuery, pst.GetEventTracker())
+	specUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForSpecVerifications", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
@@ -82,8 +81,8 @@ func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Contex
 }
 
 func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
-	versionUpdater := updaters.NewVersionUpdater(pst.StateQuery, pst.EventTracker, version, versionValidator)
-	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
+	versionUpdater := updaters.NewVersionUpdater(pst.StateQuery, pst.GetEventTracker(), version, versionValidator)
+	versionUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*updaters.VersionUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
@@ -92,8 +91,8 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
-	paymentUpdater := updaters.NewPaymentUpdater(pst.EventTracker)
-	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
+	paymentUpdater := updaters.NewPaymentUpdater(pst.GetEventTracker())
+	paymentUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, paymentUpdater)
 	paymentUpdater, ok := paymentUpdaterRaw.(*updaters.PaymentUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: paymentUpdaterRaw})
@@ -104,8 +103,8 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 
 func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
-	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(pst.StateQuery, pst.EventTracker)
-	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(pst.StateQuery, pst.GetEventTracker())
+	downtimeParamsUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*updaters.DowntimeParamsUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
@@ -119,11 +118,7 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 }
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {
-	return pst.StateTracker.chainTracker.GetAtomicLatestBlockNum()
-}
-
-func (pst *ProviderStateTracker) LatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
-	return pst.StateTracker.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+	return pst.IStateTracker.LatestBlock()
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
@@ -155,5 +150,5 @@ func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*updat
 }
 
 func (pst *ProviderStateTracker) GetAverageBlockTime() time.Duration {
-	return pst.StateTracker.GetAverageBlockTime()
+	return pst.IStateTracker.GetAverageBlockTime()
 }

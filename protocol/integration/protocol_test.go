@@ -517,7 +517,7 @@ type providerData struct {
 	mockChainFetcher *MockChainFetcher
 }
 
-func setupProviderTest(t *testing.T, ctx context.Context, numProviders int, specId string, apiInterface string, epoch uint64, lavaChainID string) (string, map[uint64]*lavasession.ConsumerSessionsWithProvider, []providerData, sigs.Account, map[int]func(req []byte, header http.Header) (data []byte, status int)) {
+func setupProviderTest(t *testing.T, numProviders int, specId string, apiInterface string, epoch uint64, lavaChainID string) (string, map[uint64]*lavasession.ConsumerSessionsWithProvider, []providerData, sigs.Account, map[int]func(req []byte, header http.Header) (data []byte, status int)) {
 	consumerListenAddress := addressGen.GetAddress()
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 
@@ -588,7 +588,7 @@ func TestConsumerProviderBasicSuccess(t *testing.T) {
 	lavaChainID := "lava"
 	numProviders := 5
 
-	consumerListenAddress, pairingList, providers, consumerAccount, providerHandlers := setupProviderTest(t, ctx, numProviders, specId, apiInterface, epoch, lavaChainID)
+	consumerListenAddress, pairingList, providers, consumerAccount, providerHandlers := setupProviderTest(t, numProviders, specId, apiInterface, epoch, lavaChainID)
 
 	rpcConsumerOptions := rpcConsumerOptions{
 		specId:                specId,
