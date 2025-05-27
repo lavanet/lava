@@ -197,7 +197,7 @@ func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool
 		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
 	}
-	utils.LavaFormatInfo(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
 func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
