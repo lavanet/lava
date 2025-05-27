@@ -28,9 +28,6 @@ import (
 
 // IChainTracker represents the interface for chain tracking functionality
 type IChainTracker interface {
-	// GetLatestBlockData returns block hashes for the specified block range and a specific block
-	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, changeTime time.Time, err error)
-
 	// RegisterForBlockTimeUpdates registers an updatable to receive block time updates
 	RegisterForBlockTimeUpdates(updatable blockTimeUpdatable)
 
@@ -124,44 +121,6 @@ func (cs *ChainTracker) IsDummy() bool {
 	return false
 }
 
-// this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
-// it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
-// spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
-// if specific block is spectypes.NOT_APPLICABLE it is ignored
-func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, changeTime time.Time, err error) {
-	cs.blockQueueMu.RLock()
-	defer cs.blockQueueMu.RUnlock()
-
-	latestBlock = cs.GetAtomicLatestBlockNum()
-	if len(cs.blocksQueue) == 0 {
-		return latestBlock, nil, time.Time{}, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-	}
-	earliestBlockSaved := cs.getEarliestBlockUnsafe().Block
-	wantedBlocksData := WantedBlocksData{}
-	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
-	if err != nil {
-		return latestBlock, nil, time.Time{}, utils.LavaFormatDebug("invalid input for GetLatestBlockData",
-			utils.LogAttr("err", err),
-			utils.LogAttr("fromBlock", fromBlock),
-			utils.LogAttr("toBlock", toBlock),
-			utils.LogAttr("specificBlock", specificBlock),
-			utils.LogAttr("latestBlock", latestBlock),
-			utils.LogAttr("earliestBlockSaved", earliestBlockSaved),
-		)
-	}
-
-	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
-		blockStore := cs.blocksQueue[blocksQueueIdx]
-		if !wantedBlocksData.IsWanted(blockStore.Block) {
-			return latestBlock, nil, time.Time{}, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, utils.Attribute{Key: "blocksQueueIdx", Value: blocksQueueIdx}, utils.Attribute{Key: "blockStore", Value: blockStore},
-				utils.Attribute{Key: "wantedBlocksData", Value: wantedBlocksData})
-		}
-		requestedHashes = append(requestedHashes, &blockStore)
-	}
-
-	return latestBlock, requestedHashes, cs.latestChangeTime, nil
-}
-
 func (cs *ChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
@@ -174,19 +133,6 @@ func (cs *ChainTracker) updateAverageBlockTimeForRegistrations(averageBlockTime 
 	for updatable := range cs.blockTimeUpdatables {
 		updatable.UpdateBlockTime(averageBlockTime)
 	}
-}
-
-// blockQueueMu must be locked
-func (cs *ChainTracker) getEarliestBlockUnsafe() BlockStore {
-	return cs.blocksQueue[0]
-}
-
-// blockQueueMu must be locked
-func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
-	if len(cs.blocksQueue) == 0 {
-		return BlockStore{Hash: "BAD-HASH"}
-	}
-	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
 func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
@@ -207,8 +153,6 @@ func (cs *ChainTracker) setLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
-// this function fetches all previous blocks from the node starting at the latest provided going backwards blocksToSave blocks
-// if it reaches a hash that it already has it stops reading
 func (cs *ChainTracker) updateLatestBlock(latestBlock int64) error {
 	currentLatestBlock := cs.GetAtomicLatestBlockNum()
 	if latestBlock < currentLatestBlock {
@@ -220,37 +164,9 @@ func (cs *ChainTracker) updateLatestBlock(latestBlock int64) error {
 	return nil
 }
 
-// this function reads the hash of the latest block and finds wether there was a fork, if it identifies a newer block arrived it goes backwards to the block in memory and reads again
-func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
-	if newLatestBlock == cs.GetAtomicLatestBlockNum() {
-		// no new block arrived, compare the last hash
-		hash, err := cs.iChainFetcherWrapper.FetchBlockHashByNum(ctx, newLatestBlock)
-		if err != nil {
-			return false, err
-		}
-		cs.blockQueueMu.RLock()
-		defer cs.blockQueueMu.RUnlock()
-		latestBlockSaved := cs.getLatestBlockUnsafe()
-		return latestBlockSaved.Hash != hash, nil
-	}
-	// a new block was received, we need to compare a previous hash
-	cs.blockQueueMu.RLock()
-	latestBlockSaved := cs.getLatestBlockUnsafe()
-	cs.blockQueueMu.RUnlock() // not with defer because we are going to call an external function here
-	prevHash, err := cs.iChainFetcherWrapper.FetchBlockHashByNum(ctx, latestBlockSaved.Block)
-	if err != nil {
-		return false, err
-	}
-	return latestBlockSaved.Hash != prevHash, nil
-}
-
-func (cs *ChainTracker) gotNewBlock(newLatestBlock int64) (gotNewBlock bool) {
-	return newLatestBlock > cs.GetAtomicLatestBlockNum()
-}
-
-// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
-// if a new block or fork is not found, check the emergency mode
-func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
+// this function is periodically called, it checks if there is a new block and identifies block gaps if any
+// if a new block is not found, check the emergency mode
+func (cs *ChainTracker) checkNewBlock(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.iChainFetcherWrapper.FetchLatestBlockNum(ctx)
 	if err != nil {
 		type wrappedError interface {
@@ -266,39 +182,24 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return err
 	}
 	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID)
-	gotNewBlock := cs.gotNewBlock(newLatestBlock)
-	forked, err := cs.forkChanged(ctx, newLatestBlock)
-	if err != nil {
-		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID)
-		return utils.LavaFormatDebug("could not fetchLatestBlock Hash in ChainTracker", utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
-	}
-	prev_latest := cs.GetAtomicLatestBlockNum()
-	cs.pmetrics.SetSpecificBlockFetchSuccess(cs.endpoint.ChainID)
-	if gotNewBlock || forked {
+	currentLatestBlock := cs.GetAtomicLatestBlockNum()
+
+	if newLatestBlock > currentLatestBlock {
 		err := cs.updateLatestBlock(newLatestBlock)
 		if err != nil {
 			return err
 		}
-		if gotNewBlock {
-			if cs.newLatestCallback != nil {
-				cs.newLatestCallback(prev_latest, newLatestBlock)
-			}
-			blocksUpdated := uint64(newLatestBlock - prev_latest)
-			// update our timer resolution
-			if !cs.latestChangeTime.IsZero() {
-				cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
-			}
-			cs.latestChangeTime = time.Now()
+
+		if cs.newLatestCallback != nil {
+			cs.newLatestCallback(currentLatestBlock, newLatestBlock)
 		}
-		if forked {
-			if cs.forkCallback != nil {
-				cs.forkCallback(newLatestBlock)
-			}
+		blocksUpdated := uint64(newLatestBlock - currentLatestBlock)
+		// update our timer resolution
+		if !cs.latestChangeTime.IsZero() {
+			cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
 		}
-	} else if prev_latest > newLatestBlock {
-		if cs.consistencyCallback != nil {
-			cs.consistencyCallback(prev_latest, newLatestBlock)
-		}
+		cs.latestChangeTime = time.Now()
+
 	} else if cs.oldBlockCallback != nil {
 		// if new block is not found we should check emergency mode
 		cs.notUpdated()
@@ -338,7 +239,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 			select {
 			case <-cs.timer.C:
 				fetchCtx, cancel := context.WithTimeout(ctx, 3*time.Second) // protect this flow from hanging code
-				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
+				err := cs.checkNewBlock(fetchCtx)
 				cancel()
 				if err != nil {
 					fetchFails += 1

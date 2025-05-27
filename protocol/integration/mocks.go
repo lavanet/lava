@@ -318,28 +318,14 @@ func (ag *uniqueAddressGenerator) GetAddress() string {
 	return address
 }
 
-type GetLatestBlockDataWrapper func(rpcprovider.ReliabilityManagerInf, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
-
 type MockReliabilityManager struct {
-	ReliabilityManager        rpcprovider.ReliabilityManagerInf
-	getLatestBlockDataWrapper GetLatestBlockDataWrapper
+	ReliabilityManager rpcprovider.ReliabilityManagerInf
 }
 
 func NewMockReliabilityManager(reliabilityManager rpcprovider.ReliabilityManagerInf) *MockReliabilityManager {
 	return &MockReliabilityManager{
 		ReliabilityManager: reliabilityManager,
 	}
-}
-
-func (mrm *MockReliabilityManager) SetGetLatestBlockDataWrapper(wrapper GetLatestBlockDataWrapper) {
-	mrm.getLatestBlockDataWrapper = wrapper
-}
-
-func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
-	if mrm.getLatestBlockDataWrapper != nil {
-		return mrm.getLatestBlockDataWrapper(mrm.ReliabilityManager, fromBlock, toBlock, specificBlock)
-	}
-	return mrm.ReliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
 func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
