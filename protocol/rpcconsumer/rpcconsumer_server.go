@@ -272,7 +272,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 				if err == nil {
 					utils.LavaFormatInfo("[+] init relay succeeded",
 						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("requestId", ctx),
+						utils.LogAttr("request_id", ctx),
 						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 						utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
@@ -938,7 +938,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						if err != nil {
 							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
 								utils.LogAttr("GUID", ctx),
-								utils.LogAttr("requestId", ctx),
+								utils.LogAttr("request_id", ctx),
 								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
 								utils.LogAttr("providerAddr", providerPublicAddress),
 							)
@@ -987,6 +987,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	relayRequest := relayResult.Request
 	utils.LavaFormatInfo(fmt.Sprintf("Sending relay to provider %s", singleConsumerSession.Parent.PublicLavaAddress),
 		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("request_id", ctx),
 		utils.LogAttr("timeout", relayTimeout),
 		utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
 	)
@@ -1000,7 +1001,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 		utils.LavaFormatInfo("Sending relay to provider from within callRelay",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("requestId", ctx),
+			utils.LogAttr("request_id", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
 			utils.LogAttr("providerName", providerPublicAddress),
 			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
@@ -1027,14 +1028,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			if len(providerUniqueId) > 1 {
 				utils.LavaFormatInfo("Received more than one provider unique id in header, skipping",
 					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("requestId", ctx),
+					utils.LogAttr("request_id", ctx),
 					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 					utils.LogAttr("providerUniqueId", providerUniqueId),
 				)
 			} else if providerUniqueId[0] != "" { // Otherwise, the header is "" which is fine - it means the header is not set
 				utils.LavaFormatTrace("Received provider unique id",
 					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("requestId", ctx),
+					utils.LogAttr("request_id", ctx),
 					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 					utils.LogAttr("providerUniqueId", providerUniqueId),
 				)
@@ -1043,7 +1044,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 					return reply, 0, utils.LavaFormatError("provider unique id mismatch",
 						lavasession.SessionOutOfSyncError,
 						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("requestId", ctx),
+						utils.LogAttr("request_id", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 						utils.LogAttr("providedProviderUniqueId", providerUniqueId),
@@ -1052,7 +1053,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				} else {
 					utils.LavaFormatTrace("Provider unique id match",
 						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("requestId", ctx),
+						utils.LogAttr("request_id", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 						utils.LogAttr("providerUniqueId", providerUniqueId),
@@ -1076,7 +1077,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			providerNodeHashes := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeAddressHash)
 			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("requestId", ctx),
+				utils.LogAttr("request_id", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
 				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
 				utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
