@@ -276,7 +276,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 						utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
-						utils.LogAttr("provider address", relayResult.ProviderInfo.ProviderAddress),
+						utils.LogAttr("providerName", relayResult.ProviderInfo.ProviderAddress),
 					)
 					rpccs.relaysMonitor.LogRelay()
 					success = true
@@ -1002,7 +1002,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("requestId", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
-			utils.LogAttr("providerAddress", providerPublicAddress),
+			utils.LogAttr("providerName", providerPublicAddress),
 			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
 			utils.LogAttr("seenBlock", relayResult.Request.RelayData.SeenBlock),
 			utils.LogAttr("extensions", relayResult.Request.RelayData.Extensions),
