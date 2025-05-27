@@ -199,7 +199,6 @@ func (cs *ChainTracker) checkNewBlock(ctx context.Context) (err error) {
 			cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
 		}
 		cs.latestChangeTime = time.Now()
-
 	} else if cs.oldBlockCallback != nil {
 		// if new block is not found we should check emergency mode
 		cs.notUpdated()
