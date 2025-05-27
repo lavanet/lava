@@ -272,7 +272,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
 	}
 
-	utils.LavaFormatInfo("Done handling request",
+	utils.LavaFormatInfo("Done handling relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request_id", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
@@ -930,12 +930,9 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
-	utils.LavaFormatInfo("Sending request to node",
-		utils.Attribute{Key: "GUID", Value: ctx},
-		utils.Attribute{Key: "request_id", Value: ctx},
-		utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID},
-		utils.Attribute{Key: "path", Value: request.RelayData.ApiUrl},
-	)
+	if debugLatency {
+		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	}
 	// add stickiness header
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetTokenFromGrpcContext(ctx)})}})
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderAddressHeader, Value: rpcps.providerAddress.String()}})

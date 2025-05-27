@@ -385,14 +385,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		// utils.LavaFormatDebug("in <<<",
-		// 	utils.LogAttr("GUID", ctx),
-		// 	utils.LogAttr("_path", path),
-		// 	utils.LogAttr("dappID", dappID),
-		// 	utils.LogAttr("msgSeed", msgSeed),
-		// 	utils.LogAttr("headers", restHeaders),
-		// )
-		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST USE with GUID: %d", guid),
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST non-POST with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
 			utils.LogAttr("path", path),
@@ -545,7 +538,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	utils.LavaFormatInfo("provider sending node message",
+	utils.LavaFormatInfo("Sending request to node from provider",
 		utils.LogAttr("_method", nodeMessage.Path),
 		utils.LogAttr("headers", req.Header),
 		utils.LogAttr("apiInterface", "rest"),
