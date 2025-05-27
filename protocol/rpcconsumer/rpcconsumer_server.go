@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -1000,12 +1001,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
-	utils.LavaFormatInfo(fmt.Sprintf("Sending relay to provider %s", singleConsumerSession.Parent.PublicLavaAddress),
-		utils.LogAttr("GUID", ctx),
-		utils.LogAttr("request_id", ctx),
-		utils.LogAttr("timeout", relayTimeout),
-		utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
-	)
+
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
 		metadataAdd := metadata.New(map[string]string{
@@ -1014,7 +1010,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			common.LAVA_LB_UNIQUE_ID_HEADER:   singleConsumerSession.EndpointConnection.GetLbUniqueId(),
 		})
 
-		utils.LavaFormatInfo("Sending relay to provider from within callRelay",
+		utils.LavaFormatInfo(fmt.Sprintf("Sending relay to provider %s", singleConsumerSession.Parent.PublicLavaAddress),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
@@ -1144,9 +1140,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		return 0, err, backoff
 	}
 
-	utils.LavaFormatTrace("Relay succeeded",
+	utils.LavaFormatInfo("Provider relayed request successfully",
 		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("request_id", ctx),
 		utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+		utils.LogAttr("response", parser.CapStringLen(string(reply.Data))),
 		utils.LogAttr("latestBlock", reply.LatestBlock),
 		utils.LogAttr("latency", relayLatency),
 		utils.LogAttr("method", chainMessage.GetApi().Name),
