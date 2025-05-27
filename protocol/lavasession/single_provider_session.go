@@ -150,7 +150,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 				utils.Attribute{Key: "specCU", Value: cuFromSpec},
 				utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
 				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestId", Value: ctx},
+				utils.Attribute{Key: "request_id", Value: ctx},
 				utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 				utils.Attribute{Key: "currentMissingCUs", Value: missingCU},
 				utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
@@ -163,7 +163,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		// reading userSessionParent address because it's a fixed string value that isn't changing
 		utils.LavaFormatWarning("CU Mismatch within the threshold", nil,
 			utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "requestId", Value: ctx},
+			utils.Attribute{Key: "request_id", Value: ctx},
 			utils.Attribute{Key: "currentMissingCU", Value: missingCU},
 			utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
 			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumersProjectId},
@@ -195,7 +195,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
 	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
 		utils.Attribute{Key: "GUID", Value: ctx},
-		utils.Attribute{Key: "requestId", Value: ctx},
+		utils.Attribute{Key: "request_id", Value: ctx},
 		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
 		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
 		utils.Attribute{Key: "sps.CuSum", Value: sps.CuSum},
