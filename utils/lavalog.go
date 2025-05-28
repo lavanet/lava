@@ -167,7 +167,7 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 			} else {
 				attributes[idx] = Attribute{Key: key, Value: "no-guid"}
 			}
-		case "requestId":
+		case "request_id":
 			reqId, found := GetRequestId(value)
 			if found {
 				st_val = reqId
