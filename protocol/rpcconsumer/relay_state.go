@@ -171,36 +171,50 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		}
 		return
 	}
-	if !rs.archiveStatus.isArchive.Load() && len(hashes) > 0 {
+	if !rs.archiveStatus.isArchive.Load() && numberOfRetriesLaunched == 1 {
+		utils.LavaFormatTrace("Launching archive on first retry", utils.LogAttr("GUID", rs.ctx))
 		// Launch archive only on the second retry attempt.
-		if numberOfRetriesLaunched == 1 {
-			// Iterate over all hashes found in relay, if we don't have them in the cache we can try retry on archive.
-			// If we are familiar with all, we don't want to allow archive.
-			for _, hash := range hashes {
-				if !rs.cache.CheckHashInCache(hash) {
-					// If we didn't find the hash in the cache we can try archive relay.
-					protocolMessage := rs.GetProtocolMessage()
-					relayRequestData := protocolMessage.RelayPrivateData()
-					// We need to set archive.
-					// Create a new relay private data containing the extension.
-					userData := protocolMessage.GetUserData()
-					// add all existing extensions including archive split by "," so the override will work
-					existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
-					metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
-					newProtocolMessage, err := rs.relayParser.ParseRelay(rs.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
-					if err != nil {
-						utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
-					} else {
-						// Creating an archive protocol message, and set it to current protocol message
-						rs.SetProtocolMessage(newProtocolMessage)
-						// for future batches.
-						rs.archiveStatus.isUpgraded.Store(true)
-						rs.archiveStatus.isArchive.Store(true)
-					}
-					break
-				}
+		protocolMessage := rs.GetProtocolMessage()
+		relayRequestData := protocolMessage.RelayPrivateData()
+		// We need to set archive.
+		// Create a new relay private data containing the extension.
+		userData := protocolMessage.GetUserData()
+		// add all existing extensions including archive split by "," so the override will work
+		existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
+		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
+		newProtocolMessage, err := rs.relayParser.ParseRelay(rs.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
+		if err != nil {
+			utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+		} else {
+			// Creating an archive protocol message, and set it to current protocol message
+			rs.SetProtocolMessage(newProtocolMessage)
+			// for future batches.
+			rs.archiveStatus.isUpgraded.Store(true)
+			rs.archiveStatus.isArchive.Store(true)
+		}
+	} else if rs.archiveStatus.isUpgraded.Load() && numberOfRetriesLaunched == 2 {
+		utils.LavaFormatTrace("Removing archive on second retry", utils.LogAttr("GUID", rs.ctx))
+		// remove archive on second retry
+		protocolMessage := rs.GetProtocolMessage()
+		relayRequestData := protocolMessage.RelayPrivateData()
+		userData := protocolMessage.GetUserData()
+
+		// Remove archive extension when on second retry
+		filteredExtensions := make([]string, 0, len(relayRequestData.Extensions))
+		for _, ext := range relayRequestData.Extensions {
+			if ext != extensionslib.ArchiveExtension {
+				filteredExtensions = append(filteredExtensions, ext)
 			}
-			// We had node error, and we have a hash parsed.
+		}
+		existingExtensions := strings.Join(filteredExtensions, ",")
+		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensions}}
+		newProtocolMessage, err := rs.relayParser.ParseRelay(rs.ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
+		if err != nil {
+			utils.LavaFormatError("Failed converting to regular message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+		} else {
+			// Creating an archive protocol message, and set it to current protocol message
+			rs.SetProtocolMessage(newProtocolMessage)
+			rs.archiveStatus.isArchive.Store(false)
 		}
 	}
 }
