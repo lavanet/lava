@@ -249,6 +249,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, errors.New("unsubscribe_all method  is not supported through Relay")
 	}
 
+	rpcps.metrics.AddInFlightRelay(chainMessage.GetApi().Name)
+	defer func() {
+		go func() {
+			rpcps.metrics.SubInFlightRelay(chainMessage.GetApi().Name)
+		}()
+	}()
 	var reply *pairingtypes.RelayReply
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 		reply, err = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
@@ -263,9 +269,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		if relaySession != nil {
 			latestRelayCu = relaySession.LatestRelayCu
 		}
-		go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport)
+		go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport, chainMessage.GetApi().Name)
 	} else {
-		go rpcps.metrics.AddError()
+		go rpcps.metrics.AddFunctionError(chainMessage.GetApi().Name)
 	}
 
 	if !rpcps.StaticProvider {
@@ -940,7 +946,9 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}
 	// use the provider state machine to send the messages
-	return rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
+	relayReplayWrapper, latency, err := rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
+	go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
+	return relayReplayWrapper, err
 }
 
 func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
