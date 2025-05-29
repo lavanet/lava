@@ -62,9 +62,12 @@ check_go_version() {
 
   go_version=$(go version)
   go_version_major_full=$(echo "$go_version" | awk '{print $3}')
-  go_version_major=${go_version_major_full:2}
-  result=$(echo "${go_version_major}-$GO_VERSION" | bc -l)
-  if [ "$result" -ge 0 ]; then
+  go_version_major_minor_patch=${go_version_major_full:2}
+  IFS='.' read -r major minor patch <<< "$go_version_major_minor_patch"
+  go_version_major="$major.$minor"
+
+  result=$(echo "${go_version_major}-$GO_VERSION > 0" | bc -l)
+  if [ "$result" -eq 1 ]; then
     return 0
   fi
 
