@@ -171,14 +171,17 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		}
 		return
 	}
+	protocolMessage := rs.GetProtocolMessage()
+	relayRequestData := protocolMessage.RelayPrivateData()
+	if relayRequestData == nil {
+		utils.LavaFormatError("Relay request data is nil", nil, utils.LogAttr("GUID", rs.ctx))
+		return
+	}
+	userData := protocolMessage.GetUserData()
 	if !rs.archiveStatus.isArchive.Load() && numberOfRetriesLaunched == 1 {
 		utils.LavaFormatTrace("Launching archive on first retry", utils.LogAttr("GUID", rs.ctx))
 		// Launch archive only on the second retry attempt.
-		protocolMessage := rs.GetProtocolMessage()
-		relayRequestData := protocolMessage.RelayPrivateData()
-		// We need to set archive.
 		// Create a new relay private data containing the extension.
-		userData := protocolMessage.GetUserData()
 		// add all existing extensions including archive split by "," so the override will work
 		existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
 		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
@@ -194,11 +197,6 @@ func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numb
 		}
 	} else if rs.archiveStatus.isUpgraded.Load() && numberOfRetriesLaunched == 2 {
 		utils.LavaFormatTrace("Removing archive on second retry", utils.LogAttr("GUID", rs.ctx))
-		// remove archive on second retry
-		protocolMessage := rs.GetProtocolMessage()
-		relayRequestData := protocolMessage.RelayPrivateData()
-		userData := protocolMessage.GetUserData()
-
 		// Remove archive extension when on second retry
 		filteredExtensions := make([]string, 0, len(relayRequestData.Extensions))
 		for _, ext := range relayRequestData.Extensions {
