@@ -32,7 +32,7 @@ func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.Re
 	}
 }
 
-func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, error) {
+func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, time.Duration, error) {
 	hash, err := chainMsg.GetRawRequestHash()
 	requestHashString := ""
 	if err != nil {
@@ -43,19 +43,21 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
+	emptyTime := 0 * time.Millisecond
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
 		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+		latency := time.Since(sendTime)
 		if err != nil {
-			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
+			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
 		if replyWrapper == nil || replyWrapper.RelayReply == nil {
-			return nil, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
+			return nil, emptyTime, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
 		if debugLatency {
-			utils.LavaFormatDebug("node reply received", utils.LogAttr("attempt", retryAttempt), utils.LogAttr("timeTaken", time.Since(sendTime)), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
+			utils.LavaFormatDebug("node reply received", utils.LogAttr("attempt", retryAttempt), utils.LogAttr("timeTaken", latency), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
 		// Failed fetching hash return the reply.
@@ -69,7 +71,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		if !isNodeError {
 			// Successful relay, remove it from the cache if we have it and return a valid response.
 			go psm.relayRetriesManager.RemoveHashFromCache(requestHashString)
-			return replyWrapper, nil
+			return replyWrapper, latency, nil
 		}
 
 		// On the first retry, check if this hash has already failed previously
@@ -84,5 +86,5 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		utils.LavaFormatTrace("failed all relay retries for message")
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
-	return replyWrapper, nil
+	return replyWrapper, emptyTime, nil
 }
