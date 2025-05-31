@@ -8,11 +8,9 @@ import (
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
 	"github.com/lavanet/lava/v5/utils"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -151,54 +149,6 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 		}
 	}
 	return false, nil
-}
-
-func (et *EventTracker) getLatestVoteEvents(latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	et.lock.RLock()
-	defer et.lock.RUnlock()
-	if et.latestUpdatedBlock != latestBlock {
-		return nil, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
-	}
-	transactionResults := et.blockResults.TxsResults
-	for _, tx := range transactionResults {
-		events := tx.Events
-		for _, event := range events {
-			if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName {
-				vote, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
-				if err != nil {
-					return nil, utils.LavaFormatError("failed conflict_vote_detection_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-				utils.LavaFormatDebug("conflict_vote_detection_event", utils.Attribute{Key: "voteID", Value: vote.VoteID})
-				votes = append(votes, vote)
-			}
-		}
-	}
-
-	beginBlockEvents := et.blockResults.BeginBlockEvents
-	for _, event := range beginBlockEvents {
-		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
-			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
-			if err != nil {
-				return nil, utils.LavaFormatError("failed conflict_vote_reveal_event parsing", err, utils.Attribute{Key: "event", Value: event})
-			}
-			vote_reveal := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: voteDeadline, ParamsType: reliabilitymanager.RevealVoteType}
-			utils.LavaFormatDebug("conflict_vote_reveal_event", utils.Attribute{Key: "voteID", Value: voteID})
-			votes = append(votes, vote_reveal)
-		}
-		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName {
-			voteID, _, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
-			if err != nil {
-				if !reliabilitymanager.NoVoteDeadline.Is(err) {
-					return nil, utils.LavaFormatError("failed conflict_vote_resolved_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-			}
-			vote_resolved := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: 0, ParamsType: reliabilitymanager.CloseVoteType, CloseVote: true}
-			votes = append(votes, vote_resolved)
-			utils.LavaFormatDebug("conflict_vote_resolved_event", utils.Attribute{Key: "voteID", Value: voteID})
-		}
-	}
-
-	return votes, err
 }
 
 type tendermintRPC interface {

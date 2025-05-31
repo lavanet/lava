@@ -49,7 +49,7 @@ func TestAddChainFetcherAndSetSpecCallsValidate(t *testing.T) {
 	chainFetcher.EXPECT().FetchEndpoint().AnyTimes()
 
 	firstCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1)
-	specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
+	specValidator.AddChainFetcher(ctx, chainFetcherIf, specName)
 
 	chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall)
 	specValidator.VerifySpec(spec)
@@ -59,11 +59,9 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	spec := testcommon.CreateMockSpec()
 	specValidator := NewSpecValidator()
 
 	specName := "LAV1"
-	spec.Index = specName
 
 	ctx := context.Background()
 
@@ -84,7 +82,7 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 		firstCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1)
 
 		var chainFetcherIf chainlib.IChainFetcher = chainFetcher
-		specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
+		specValidator.AddChainFetcher(ctx, chainFetcherIf, specName)
 
 		chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Do(raiseCallCount)
 	}
@@ -105,11 +103,9 @@ func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	spec := testcommon.CreateMockSpec()
 	specValidator := NewSpecValidator()
 
 	specName := "LAV1"
-	spec.Index = specName
 
 	ctx := context.Background()
 
@@ -119,7 +115,7 @@ func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) 
 	firstCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1)
 
 	var chainFetcherIf chainlib.IChainFetcher = chainFetcher
-	specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
+	specValidator.AddChainFetcher(ctx, chainFetcherIf, specName)
 
 	secondCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Return(errors.New(""))
 

@@ -22,10 +22,10 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
@@ -82,12 +82,9 @@ type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
-	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
-	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error
-	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
@@ -137,6 +134,7 @@ type RPCProvider struct {
 	lavaChainID                  string
 	addr                         sdk.AccAddress
 	blockMemorySize              uint64
+	finalizationConsensus        *finalizationconsensus.FinalizationConsensus
 	chainMutexes                 map[string]*sync.Mutex
 	parallelConnections          uint
 	cache                        *performance.Cache
@@ -456,26 +454,21 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
-	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64) {
 		for block := blockFrom + 1; block <= blockTo; block++ {
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
-	var chainFetcher chainlib.IChainFetcher
-	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-		chainFetcher = chainlib.NewChainFetcher(
-			ctx,
-			&chainlib.ChainFetcherOptions{
-				ChainRouter: chainRouter,
-				ChainParser: chainParser,
-				Endpoint:    rpcProviderEndpoint,
-				Cache:       rpcp.cache,
-			},
-		)
-	} else {
-		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-	}
+	chainFetcher := chainlib.NewChainFetcher(
+		ctx,
+		&chainlib.ChainFetcherOptions{
+			ChainRouter: chainRouter,
+			ChainParser: chainParser,
+			Endpoint:    rpcProviderEndpoint,
+			Cache:       rpcp.cache,
+		},
+	)
+
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
@@ -553,15 +546,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// Add the chain fetcher to the spec validator
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
 	if chainParser.ParseDirectiveEnabled() {
-		err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+		err = specValidator.AddChainFetcher(ctx, chainFetcher, chainID)
 		if err != nil {
 			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 		}
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
-
-	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
-	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
@@ -578,10 +568,10 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
+		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {

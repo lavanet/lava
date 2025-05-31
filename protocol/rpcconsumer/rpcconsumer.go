@@ -34,7 +34,6 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -98,7 +97,6 @@ type ConsumerStateTrackerInf interface {
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
@@ -760,7 +758,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
-	cmdRPCConsumer.Flags().BoolVar(&statetracker.DisableDR, common.DisableConflictTransactionsFlag, statetracker.DisableDR, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")

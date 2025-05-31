@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -75,10 +74,9 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	return rpcConsumerServer, chainParser
 }
 
-func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress) *pairingtypes.RelayReply {
+func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey) *pairingtypes.RelayReply {
 	relayReply := &pairingtypes.RelayReply{
-		Data:                  []byte(`{"jsonrpc":"2.0","result":{}, "id":1}`),
-		FinalizedBlocksHashes: []byte(`{"0":"hash0"}`),
+		Data: []byte(`{"jsonrpc":"2.0","result":{}, "id":1}`),
 	}
 
 	relayExchange := &pairingtypes.RelayExchange{
@@ -90,11 +88,6 @@ func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *b
 
 	require.NoError(t, err)
 	relayReply.Sig = sig
-
-	sigBlocks, err := sigs.Sign(providerSK, conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, relayReply, consumerAccount))
-
-	require.NoError(t, err)
-	relayReply.SigBlocks = sigBlocks
 
 	return relayReply
 }
@@ -123,7 +116,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 				trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
 			}
-			return handleRelay(t, in, providerSK, consumerAccount), nil
+			return handleRelay(t, in, providerSK), nil
 		}).
 		AnyTimes()
 

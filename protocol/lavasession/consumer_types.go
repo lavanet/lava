@@ -86,21 +86,12 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type DataReliabilitySession struct {
-	SingleConsumerSession *SingleConsumerSession
-	Epoch                 uint64
-	ProviderPublicAddress string
-	UniqueIdentifier      bool
-}
-
 type EndpointConnection struct {
 	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
-	// blockListed - currently unused, use it carefully as it will block this provider's endpoint until next epoch without forgiveness.
-	// Can be used in cases of data reliability, self provider conflict etc..
-	blockListed atomic.Bool
-	lbUniqueId  string
+	blockListed                         atomic.Bool // blocks the provider's endpoint until next epoch without forgiveness
+	lbUniqueId                          string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
@@ -208,9 +199,7 @@ type ConsumerSessionsWithProvider struct {
 	MaxComputeUnits   uint64
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
-	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
-	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
-	stakeSize                sdk.Coin // the stake size the provider staked
+	stakeSize         sdk.Coin // the stake size the provider staked
 
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant
@@ -235,25 +224,6 @@ func (cswp *ConsumerSessionsWithProvider) atomicReadBlockedStatus() uint32 {
 
 func (cswp *ConsumerSessionsWithProvider) atomicWriteBlockedStatus(status uint32) {
 	atomic.StoreUint32(&cswp.blockedAndUsedWithChanceForRecoveryStatus, status) // we can only set conflict to "reported".
-}
-
-func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
-	return atomic.LoadUint32(&cswp.conflictFoundAndReported) == 1
-}
-
-func (cswp *ConsumerSessionsWithProvider) atomicWriteConflictReported() {
-	atomic.StoreUint32(&cswp.conflictFoundAndReported, 1) // we can only set conflict to "reported".
-}
-
-// checking if this provider was reported this epoch already, as we can only report once per epoch
-func (cswp *ConsumerSessionsWithProvider) ConflictAlreadyReported() bool {
-	// returns true if reported, false if not.
-	return cswp.atomicReadConflictReported()
-}
-
-// setting this provider as conflict reported.
-func (cswp *ConsumerSessionsWithProvider) StoreConflictReported() {
-	cswp.atomicWriteConflictReported()
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
@@ -397,10 +367,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
-	for sessionID, session := range cswp.Sessions {
-		if sessionID == DataReliabilitySessionId {
-			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
-		}
+	for _, session := range cswp.Sessions {
 		if session.EndpointConnection != endpointConnection {
 			// skip sessions that don't belong to the active connection
 			continue

@@ -6,10 +6,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -25,7 +24,7 @@ type ProviderStateTracker struct {
 	*EmergencyTracker
 }
 
-func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
+func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chainlib.IChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateQuery := updaters.NewProviderStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, stateQuery.StateQuery, chainFetcher, blockNotFoundCallback)
@@ -91,17 +90,6 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := updaters.NewVoteUpdater(pst.GetEventTracker())
-	voteUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, voteUpdater)
-	voteUpdater, ok := voteUpdaterRaw.(*updaters.VoteUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: voteUpdaterRaw})
-	}
-	endpoint := lavasession.RPCEndpoint{ChainID: endpointP.ChainID, ApiInterface: endpointP.ApiInterface}
-	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
-}
-
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
 	paymentUpdater := updaters.NewPaymentUpdater(pst.GetEventTracker())
 	paymentUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, paymentUpdater)
@@ -127,14 +115,6 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
-}
-
-func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return pst.txSender.SendVoteReveal(context.Background(), voteID, vote, specID)
-}
-
-func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return pst.txSender.SendVoteCommitment(context.Background(), voteID, vote, specID)
 }
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {

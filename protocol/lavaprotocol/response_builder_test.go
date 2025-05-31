@@ -3,10 +3,8 @@ package lavaprotocol
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"testing"
 
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -53,17 +51,11 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
-	finalizedBlockHashes := map[int64]interface{}{123: "AAA"}
 	reply := &pairingtypes.RelayReply{}
-	jsonStr, err := json.Marshal(finalizedBlockHashes)
-	require.NoError(t, err)
-	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = 123
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply)
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
-	require.NoError(t, err)
-	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }
 
@@ -103,16 +95,10 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
 	// provider handling the response
-	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
 	reply := &pairingtypes.RelayReply{}
-	jsonStr, err := json.Marshal(finalizedBlockHashes)
-	require.NoError(t, err)
-	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply)
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
-	require.NoError(t, err)
-	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }

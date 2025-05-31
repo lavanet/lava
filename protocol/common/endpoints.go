@@ -247,11 +247,6 @@ func ValidateEndpoint(endpoint, apiInterface string) error {
 	}
 }
 
-type ConflictHandlerInterface interface {
-	ConflictAlreadyReported() bool
-	StoreConflictReported()
-}
-
 type ProviderInfo struct {
 	ProviderAddress           string
 	ProviderReputationSummary sdk.Dec // the number represents the average qos for this provider session
@@ -264,7 +259,6 @@ type RelayResult struct {
 	ProviderInfo    ProviderInfo
 	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
-	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
 	Quorum          int
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).

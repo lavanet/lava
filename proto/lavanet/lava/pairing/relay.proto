@@ -95,9 +95,8 @@ message RelayReply {
     bytes data = 1;
     bytes sig = 2;
     reserved 3;
-    int64 latest_block = 4;
-    bytes finalized_blocks_hashes = 5;
-    bytes sig_blocks = 6;
+    int64 latest_block = 4; // latest finalized block
+    reserved 5,6;
     repeated Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
 

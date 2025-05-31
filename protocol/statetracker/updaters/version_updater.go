@@ -48,7 +48,7 @@ func (vu *VersionUpdater) RegisterVersionUpdatable() {
 }
 
 // call when locked only
-func (vu *VersionUpdater) updateInner(latestBlock int64) {
+func (vu *VersionUpdater) updateInner() {
 	// fetch updated version from consensus
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
@@ -70,19 +70,19 @@ func (vu *VersionUpdater) Reset(latestBlock int64) {
 	vu.Lock.Lock()
 	defer vu.Lock.Unlock()
 	vu.shouldUpdate = true
-	vu.updateInner(latestBlock)
+	vu.updateInner()
 }
 
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.Lock.Lock()
 	defer vu.Lock.Unlock()
 	if vu.shouldUpdate {
-		vu.updateInner(latestBlock)
+		vu.updateInner()
 	} else {
 		versionUpdated, err := vu.eventTracker.getLatestVersionEvents(latestBlock)
 		if versionUpdated || err != nil {
 			vu.shouldUpdate = true
-			vu.updateInner(latestBlock)
+			vu.updateInner()
 		}
 	}
 	// monitor protocol version on each new block even if it was not updated (used for logging purposes)

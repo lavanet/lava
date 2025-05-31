@@ -240,8 +240,6 @@ func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 			SuccessCount: 1,
 			Latency:      100,
 			RelayCounts:  2,
-			Source:       GatewaySource,
-			Origin:       "origin",
 		}
 
 		// arrange

@@ -7,12 +7,10 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (
-	reportName   = "report"
-	conflictName = "conflict"
+	reportName = "report"
 )
 
 type ConsumerReportsClient struct {
@@ -53,38 +51,6 @@ func (rr ReportsRequest) String() string {
 
 type Reporter interface {
 	AppendReport(report ReportsRequest)
-	AppendConflict(report ConflictRequest)
-}
-
-func NewConflictRequest(request1 *pairingtypes.RelayRequest, result1 *pairingtypes.RelayReply, request2 *pairingtypes.RelayRequest, result2 *pairingtypes.RelayReply) ConflictRequest {
-	return ConflictRequest{
-		Name: conflictName,
-		Conflicts: []ConflictContainer{{
-			Request: *request1,
-			Reply:   *result1,
-		}, {
-			Request: *request2,
-			Reply:   *result2,
-		}},
-	}
-}
-
-type ConflictContainer struct {
-	Request pairingtypes.RelayRequest `json:"request"`
-	Reply   pairingtypes.RelayReply   `json:"reply"`
-}
-type ConflictRequest struct {
-	Name      string              `json:"name"`
-	Conflicts []ConflictContainer `json:"conflicts"`
-}
-
-func (rr ConflictRequest) String() string {
-	rr.Name = conflictName
-	bytes, err := json.Marshal(rr)
-	if err != nil {
-		return ""
-	}
-	return string(bytes)
 }
 
 func NewConsumerReportsClient(endpointAddress string, interval ...time.Duration) *ConsumerReportsClient {
@@ -100,13 +66,6 @@ func NewConsumerReportsClient(endpointAddress string, interval ...time.Duration)
 }
 
 func (cuc *ConsumerReportsClient) AppendReport(report ReportsRequest) {
-	if cuc == nil {
-		return
-	}
-	cuc.appendQueue(report)
-}
-
-func (cuc *ConsumerReportsClient) AppendConflict(report ConflictRequest) {
 	if cuc == nil {
 		return
 	}

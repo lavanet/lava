@@ -10,11 +10,6 @@ const DummyChainTrackerLatestBlock = int64(math.MaxInt64)
 
 type DummyChainTracker struct{}
 
-// GetLatestBlockData returns block hashes for the specified block range and a specific block
-func (dct *DummyChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, changeTime time.Time, err error) {
-	return DummyChainTrackerLatestBlock, []*BlockStore{}, time.Now(), nil
-}
-
 // RegisterForBlockTimeUpdates registers an updatable to receive block time updates
 func (dct *DummyChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {}
 

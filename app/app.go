@@ -116,9 +116,6 @@ import (
 	appparams "github.com/lavanet/lava/v5/app/params"
 	"github.com/lavanet/lava/v5/app/upgrades"
 	"github.com/lavanet/lava/v5/docs"
-	conflictmodule "github.com/lavanet/lava/v5/x/conflict"
-	conflictmodulekeeper "github.com/lavanet/lava/v5/x/conflict/keeper"
-	conflictmoduletypes "github.com/lavanet/lava/v5/x/conflict/types"
 	downtimemodule "github.com/lavanet/lava/v5/x/downtime"
 	downtimemodulekeeper "github.com/lavanet/lava/v5/x/downtime/keeper"
 	downtimemoduletypes "github.com/lavanet/lava/v5/x/downtime/types"
@@ -234,7 +231,6 @@ var (
 		dualstakingmodule.AppModuleBasic{},
 		subscriptionmodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
-		conflictmodule.AppModuleBasic{},
 		projectsmodule.AppModuleBasic{},
 		protocolmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
@@ -349,7 +345,6 @@ func New(
 		dualstakingmoduletypes.StoreKey,
 		subscriptionmoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
-		conflictmoduletypes.StoreKey,
 		projectsmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
 		downtimemoduletypes.StoreKey,
@@ -655,21 +650,6 @@ func New(
 		govtypes.NewMultiGovHooks(),
 	)
 
-	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
-		appCodec,
-		keys[conflictmoduletypes.StoreKey],
-		keys[conflictmoduletypes.MemStoreKey],
-		app.GetSubspace(conflictmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.PairingKeeper,
-		app.EpochstorageKeeper,
-		app.SpecKeeper,
-		app.StakingKeeper,
-	)
-	conflictModule := conflictmodule.NewAppModule(appCodec, app.ConflictKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.ProtocolKeeper = *protocolmodulekeeper.NewKeeper(
 		appCodec,
 		keys[protocolmoduletypes.StoreKey],
@@ -742,7 +722,6 @@ func New(
 		dualstakingModule,
 		subscriptionModule,
 		pairingModule,
-		conflictModule,
 		projectsModule,
 		plansModule,
 		protocolModule,
@@ -782,7 +761,6 @@ func New(
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
-		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		downtimemoduletypes.ModuleName, // downtime needs to run before pairing
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
@@ -813,7 +791,6 @@ func New(
 		epochstoragemoduletypes.ModuleName,
 		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
-		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
 		protocolmoduletypes.ModuleName,
@@ -864,9 +841,8 @@ func New(
 		feegrant.ModuleName,
 		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName,
-		fixationtypes.ModuleName,       // fixation store has no init genesis but module manager requires it.
-		timerstoretypes.ModuleName,     // timer store has no init genesis but module manager requires it.
-		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
+		fixationtypes.ModuleName,   // fixation store has no init genesis but module manager requires it.
+		timerstoretypes.ModuleName, // timer store has no init genesis but module manager requires it.
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -1101,7 +1077,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
-	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
 	paramsKeeper.Subspace(projectsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(protocolmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)

@@ -6,7 +6,7 @@ import (
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
@@ -24,7 +24,7 @@ type BadgeStateTracker struct {
 	statetracker.ConsumerEmergencyTrackerInf
 }
 
-func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, chainFetcher chaintracker.ChainFetcher, chainId string) (ret *BadgeStateTracker, err error) {
+func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, chainFetcher chainlib.IChainFetcher, chainId string) (ret *BadgeStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker(nil)
 	txFactory := tx.Factory{}
 	txFactory = txFactory.WithChainID(chainId)

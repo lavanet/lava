@@ -130,7 +130,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer.sessionMap[projectId]
 	if !foundAddressInMap {
 		epochData := &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, notDataReliabilityPSWC, pairedProviders)
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, pairedProviders)
 		mapOfProviderSessionsWithConsumer.sessionMap[projectId] = providerSessionWithConsumer
 	}
 

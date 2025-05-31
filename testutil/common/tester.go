@@ -382,10 +382,6 @@ func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projects
 	return ts.Keepers.Projects.GetProjectDeveloperData(ts.Ctx, devkey, block)
 }
 
-func (ts *Tester) VotePeriod() uint64 {
-	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
-}
-
 func (ts *Tester) ChangeDelegationTimestamp(provider, delegator string, block uint64, timestamp int64) error {
 	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, provider, delegator, timestamp)
 }
