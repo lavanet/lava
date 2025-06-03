@@ -670,11 +670,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
 			}
 
-			// validate user is does not provide multi chain setup when using the offline spec feature.
-			if consumerPropagatedFlags.StaticSpecPath != "" && len(rpcEndpoints) > 1 && !strings.Contains(consumerPropagatedFlags.StaticSpecPath, "github") {
-				utils.LavaFormatFatal("offline spec modifications are supported only in single chain bootstrapping", nil, utils.LogAttr("len(rpcEndpoints)", len(rpcEndpoints)), utils.LogAttr("rpcEndpoints", rpcEndpoints))
-			}
-
 			if viper.GetBool(LavaOverLavaBackupFlagName) {
 				additionalEndpoint := func() *lavasession.RPCEndpoint {
 					for _, endpoint := range rpcEndpoints {

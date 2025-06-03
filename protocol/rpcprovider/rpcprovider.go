@@ -256,10 +256,6 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		}
 	}
 
-	if rpcp.staticSpecPath != "" && len(rpcp.chainMutexes) > 1 {
-		utils.LavaFormatFatal("Provider set static spec with more than one chain. static spec configuration supports only a single chain id", nil, utils.LogAttr("Chains", rpcp.chainMutexes), utils.LogAttr("static_spec", rpcp.staticSpecPath))
-	}
-
 	specValidator := NewSpecValidator()
 	utils.LavaFormatInfo("Running setup for RPCProvider endpoints", utils.LogAttr("endpoints", options.rpcProviderEndpoints))
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
