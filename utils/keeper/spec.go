@@ -244,7 +244,6 @@ func GetSpecFromLocalDir(specPath string, index string) (types.Spec, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -303,6 +302,7 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch %s", githubAPIURL)
 	}
