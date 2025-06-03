@@ -88,6 +88,7 @@ message ShowAllChainsInfoStruct {
 	string chainID = 2;
 	repeated string enabledApiInterfaces = 3;
 	uint64 api_count = 4;
+	bool enabled = 5;
 }
 
 message QueryShowChainInfoRequest {
