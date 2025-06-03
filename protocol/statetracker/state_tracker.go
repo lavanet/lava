@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -69,13 +70,29 @@ func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chai
 		}
 		chainParser.SetSpec(spec)
 	} else {
-		// offline spec mode.
-		parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+		// Check if specPath is a directory
+		fileInfo, err := os.Stat(specPath)
 		if err != nil {
-			return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+			return utils.LavaFormatError("failed accessing spec path", err, utils.LogAttr("spec_path", specPath))
 		}
-		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-		chainParser.SetSpec(parsedOfflineSpec)
+
+		if fileInfo.IsDir() {
+			// Directory mode - load all spec files from the directory
+			spec, err := specutils.GetSpecFromLocalDir(specPath, rpcEndpoint.ChainID)
+			if err != nil {
+				return utils.LavaFormatError("failed loading local spec directory", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", rpcEndpoint.ChainID))
+			}
+
+			chainParser.SetSpec(spec)
+		} else {
+			// Single file mode - existing logic
+			parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+			if err != nil {
+				return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+			}
+			utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+			chainParser.SetSpec(parsedOfflineSpec)
+		}
 	}
 	return nil
 }

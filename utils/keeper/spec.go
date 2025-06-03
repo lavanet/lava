@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -207,6 +209,49 @@ func GetSpecFromGit(url string, index string) (types.Spec, error) {
 	if err != nil {
 		return types.Spec{}, err
 	}
+	spec, err := expandSpec(specs, index)
+	if err != nil {
+		return types.Spec{}, err
+	}
+	return *spec, nil
+}
+
+func GetSpecFromLocalDir(specPath string, index string) (types.Spec, error) {
+	specs := map[string]types.Spec{}
+	var errs []error
+
+	// Walk through all files and subdirectories in the specPath
+	err := filepath.WalkDir(specPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error accessing path %s: %w", path, err))
+			return nil // Continue walking, but record the error
+		}
+
+		if d.IsDir() {
+			return nil // Skip directories
+		}
+
+		// Attempt to decode the proposal from the file
+		proposal, err := decodeProposal(path)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error decoding proposal from %s: %w", path, err))
+			return nil // Continue walking, but record the error
+		}
+
+		// Extract specs from the proposal and add them to the map
+		for _, spec := range proposal.Proposal.Specs {
+			specs[spec.Index] = spec
+		}
+		return nil
+	})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return types.Spec{}, fmt.Errorf("multiple errors occurred: %v", errs)
+	}
+
 	spec, err := expandSpec(specs, index)
 	if err != nil {
 		return types.Spec{}, err
