@@ -244,7 +244,6 @@ func GetSpecFromLocalDir(specPath string, index string) (types.Spec, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		errs = append(errs, err)
 	}
