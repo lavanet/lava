@@ -1,14 +1,7 @@
 endpoints:
-    - api-interface: rest
-      chain-id: HYPERLIQUID
-      network-address:
-        address: "127.0.0.1:2220"
-      node-urls:
-        - url: "https://api.hyperliquid.xyz"
     - api-interface: jsonrpc
       chain-id: HYPERLIQUID
       network-address:
         address: "127.0.0.1:2220"
       node-urls:
         - url: "https://rpc.hyperliquid.xyz/evm"
-          internal-path: /evm
