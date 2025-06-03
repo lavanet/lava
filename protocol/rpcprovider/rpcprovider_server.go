@@ -78,6 +78,7 @@ type RPCProviderServer struct {
 type ReliabilityManagerInf interface {
 	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error)
 	GetLatestBlockNum() (int64, time.Time)
+	IsDummy() bool
 }
 
 type RewardServerInf interface {
@@ -155,6 +156,10 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	}
 
 	rpcps.relaysMonitor.SetRelaySender(func() (bool, error) {
+		if rpcps.reliabilityManager.IsDummy() {
+			return true, nil
+		}
+
 		chainMessage, err := rpcps.craftChainMessage()
 		if err != nil {
 			return false, err
