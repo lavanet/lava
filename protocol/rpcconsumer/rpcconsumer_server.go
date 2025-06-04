@@ -455,8 +455,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if task.IsDone() {
 			return relayProcessor, task.err
 		}
-		utils.LavaFormatDebug("[RPCConsumerServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx))
-		time.Sleep(300 * time.Millisecond)
+		utils.LavaFormatTrace("[RPCConsumerServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.numOfProviders))
 		err := rpccs.sendRelayToProvider(ctx, task.numOfProviders, task.relayState, relayProcessor, task.analytics)
 		relayProcessor.UpdateBatch(err)
 	}
