@@ -617,7 +617,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			txFactory = txFactory.WithGasPrices(gasPricesStr)
 			utils.LavaFormatInfo("Setting gas for tx Factory", utils.LogAttr("gas-prices", gasPricesStr), utils.LogAttr("gas-adjustment", txFactory.GasAdjustment()))
 			rpcConsumer := RPCConsumer{}
-			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
+			requiredResponses := 3 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
 

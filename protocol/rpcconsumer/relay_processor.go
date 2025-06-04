@@ -98,6 +98,10 @@ func NewRelayProcessor(
 	return relayProcessor
 }
 
+func (rp *RelayProcessor) GetNeededRequiredResults() int {
+	return rp.requiredSuccesses
+}
+
 // true if we never got an extension. (default value)
 func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 	return atomic.LoadUint32(&rp.allowSessionDegradation) == 0
@@ -166,13 +170,16 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	if rp.ResultsManager.RequiredResults(rp.requiredSuccesses, rp.selection) {
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.requiredSuccesses), utils.LogAttr("selection", rp.selection))
 		return true
 	}
 	// check if we got all of the responses
 	if responsesCount >= rp.usedProviders.SessionsLatestBatch() {
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - SessionsLatestBatch", utils.LogAttr("GUID", rp.guid), utils.LogAttr("responsesCount", responsesCount), utils.LogAttr("SessionsLatestBatch", rp.usedProviders.SessionsLatestBatch()))
 		// no active sessions, and we read all the responses, we can return
 		return true
 	}
+	utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - false", utils.LogAttr("GUID", rp.guid), utils.LogAttr("responsesCount", responsesCount), utils.LogAttr("SessionsLatestBatch", rp.usedProviders.SessionsLatestBatch()))
 	return false
 }
 
