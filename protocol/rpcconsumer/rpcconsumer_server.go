@@ -436,9 +436,21 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
+
+	quorumString := protocolMessage.GetDirectiveHeaders()[common.QUORUM_HEADER_NAME]
+	quorum := rpccs.requiredResponses
+	if quorumString != "" {
+		quorumInt, err := strconv.Atoi(quorumString)
+		if err != nil {
+			utils.LavaFormatError("Invalid quorum value", err, utils.LogAttr("quorum", quorumString))
+		} else {
+			quorum = quorumInt
+		}
+	}
+
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		rpccs.requiredResponses,
+		quorum,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
