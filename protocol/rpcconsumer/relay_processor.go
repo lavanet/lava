@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/common/types"
 )
 
 type Selection int
@@ -318,15 +319,36 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	if quorumSize <= 0 {
 		return nil, errors.New("quorumSize must be greater than zero")
 	}
-	countMap := make(map[string]int) // Map to store the count of each unique result.Reply.Data
+
+	type resultCount struct {
+		count  int
+		result common.RelayResult
+	}
+
+	countMap := make(map[string]*resultCount)
 	deterministic := rp.RelayStateMachine.GetProtocolMessage().GetApi().Category.Deterministic
 	var bestQosResult common.RelayResult
 	bestQos := sdktypes.ZeroDec()
 	nilReplies := 0
 	nilReplyIdx := -1
+
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
-			countMap[string(result.Reply.Data)]++
+			// Create canonical form for comparison
+			canonicalForm, err := types.CreateCanonicalJSON(result.Reply.Data)
+			if err != nil {
+				continue
+			}
+
+			if count, exists := countMap[canonicalForm]; exists {
+				count.count++
+			} else {
+				countMap[canonicalForm] = &resultCount{
+					count:  1,
+					result: result,
+				}
+			}
+
 			if !deterministic {
 				if result.ProviderInfo.ProviderReputationSummary.IsNil() || result.ProviderInfo.ProviderStake.Amount.IsNil() {
 					continue
@@ -342,33 +364,33 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			nilReplyIdx = idx
 		}
 	}
-	var mostCommonResult common.RelayResult
+
 	var maxCount int
-	for _, result := range results {
-		if result.Reply != nil && result.Reply.Data != nil {
-			count := countMap[string(result.Reply.Data)]
-			if count > maxCount {
-				maxCount = count
-				mostCommonResult = result
-			}
+	var mostCommonResult common.RelayResult
+	for _, count := range countMap {
+		if count.count > maxCount {
+			maxCount = count.count
+			mostCommonResult = count.result
 		}
 	}
 
 	if nilReplies >= quorumSize && maxCount < quorumSize {
-		// we don't have a quorum with a valid response, but we have a quorum with an empty one
 		maxCount = nilReplies
 		mostCommonResult = results[nilReplyIdx]
 	}
-	// Check if the majority count is less than quorumSize
+
 	if maxCount < quorumSize {
 		if !deterministic {
-			// non deterministic apis might not have a quorum
-			// instead of failing get the best one
 			bestQosResult.Quorum = 1
 			return &bestQosResult, nil
 		}
-		return nil, utils.LavaFormatInfo("majority count is less than quorumSize", utils.LogAttr("nilReplies", nilReplies), utils.LogAttr("results", len(results)), utils.LogAttr("maxCount", maxCount), utils.LogAttr("quorumSize", quorumSize))
+		return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
+			utils.LogAttr("nilReplies", nilReplies),
+			utils.LogAttr("results", len(results)),
+			utils.LogAttr("maxCount", maxCount),
+			utils.LogAttr("quorumSize", quorumSize))
 	}
+
 	mostCommonResult.Quorum = maxCount
 	return &mostCommonResult, nil
 }
