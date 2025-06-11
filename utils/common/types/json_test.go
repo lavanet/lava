@@ -74,7 +74,6 @@ func TestCreateCanonicalJSON(t *testing.T) {
 			want:    `{"array":[1,"two",3.0,null,false],"bool":true,"float":3.14,"null":null,"number":42,"string":"value"}`,
 			wantErr: false,
 		},
-		// New test cases
 		{
 			name:    "Empty array",
 			input:   []byte(`{"arr":[]}`),

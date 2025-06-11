@@ -1,12 +1,14 @@
 package types
 
 import (
-	"encoding/json"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // createCanonicalJSON creates a canonical form of JSON for comparison
 func CreateCanonicalJSON(data []byte) (string, error) {
 	var parsed interface{}
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		return "", err
 	}
