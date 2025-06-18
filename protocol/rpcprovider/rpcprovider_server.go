@@ -952,7 +952,9 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	}
 	// use the provider state machine to send the messages
 	relayReplayWrapper, latency, err := rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
-	go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
+	if latency.Milliseconds() != 0 { // if node error empty time is returned
+		go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
+	}
 	return relayReplayWrapper, err
 }
 
