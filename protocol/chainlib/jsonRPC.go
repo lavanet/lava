@@ -432,10 +432,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
-		callerRequestId := extractCallerRequestId(fiberCtx)
-		if callerRequestId != "" {
-			ctx = utils.WithRequestId(ctx, callerRequestId)
-		}
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		msgSeed := strconv.FormatUint(guid, 10)
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
@@ -455,6 +452,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new JSON-RPC with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
+			utils.LogAttr("task_id", ctx),
+			utils.LogAttr("tx_id", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("body", logFormattedMsg),
@@ -654,7 +653,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		// this could be a batch message
 		batchMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcBatchMessage)
 		if !ok {
-			return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast JsonrpcMessage or JsonrpcBatchMessage from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+			return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast JsonrpcMessage or JsonrpcBatchMessage from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 		}
 		if ch != nil {
 			return nil, "", nil, utils.LavaFormatError("does not support subscribe in a batch", nil)
@@ -724,7 +723,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	replyMsg, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx})
 	}
 	// validate result is valid
 	if replyMsg.Error == nil {
@@ -737,7 +736,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
-			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx},
 			utils.Attribute{Key: "nodeMessageRequestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
 			utils.Attribute{Key: "reply", Value: replyMsg},
@@ -766,7 +765,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if common.IsQuoted(string(replyMsg.Result)) {
 			subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 			if err != nil {
-				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx})
 			}
 		} else {
 			subscriptionID = string(replyMsg.Result)

@@ -70,7 +70,7 @@ func (sps *SingleProviderSession) tryLockForUse(ctx context.Context) error {
 		return nil
 	}
 	occupyingGuid := sps.GetOccupyingGuid()
-	return utils.LavaFormatError("tryLockForUse failure", SessionOutOfSyncError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Error", Value: LockMisUseDetectedError}, utils.Attribute{Key: "occupyingGuid", Value: occupyingGuid})
+	return utils.LavaFormatError("tryLockForUse failure", SessionOutOfSyncError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "Error", Value: LockMisUseDetectedError}, utils.Attribute{Key: "occupyingGuid", Value: occupyingGuid})
 }
 
 func (sps *SingleProviderSession) GetOccupyingGuid() uint64 {
@@ -117,7 +117,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64, virtualEpoch uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
+		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
 	}
 
 	// checking if this user session is a data reliability user session.
@@ -151,6 +151,8 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 				utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
 				utils.Attribute{Key: "GUID", Value: ctx},
 				utils.Attribute{Key: "request_id", Value: ctx},
+				utils.Attribute{Key: "task_id", Value: ctx},
+				utils.Attribute{Key: "tx_id", Value: ctx},
 				utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 				utils.Attribute{Key: "currentMissingCUs", Value: missingCU},
 				utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
@@ -164,6 +166,8 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		utils.LavaFormatWarning("CU Mismatch within the threshold", nil,
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "request_id", Value: ctx},
+			utils.Attribute{Key: "task_id", Value: ctx},
+			utils.Attribute{Key: "tx_id", Value: ctx},
 			utils.Attribute{Key: "currentMissingCU", Value: missingCU},
 			utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
 			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumersProjectId},
@@ -196,6 +200,8 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request_id", Value: ctx},
+		utils.Attribute{Key: "task_id", Value: ctx},
+		utils.Attribute{Key: "tx_id", Value: ctx},
 		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
 		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
 		utils.Attribute{Key: "sps.CuSum", Value: sps.CuSum},

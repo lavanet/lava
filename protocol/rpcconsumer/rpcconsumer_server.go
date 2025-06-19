@@ -281,6 +281,8 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 					utils.LavaFormatInfo("[+] init relay succeeded",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("request_id", ctx),
+						utils.LogAttr("task_id", ctx),
+						utils.LogAttr("tx_id", ctx),
 						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 						utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
@@ -401,7 +403,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
-		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
 		return nil, err
 	}
 
@@ -422,7 +424,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
 
 	if analytics != nil {
@@ -778,6 +780,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if found {
 				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
 			}
+			goroutineCtx = utils.UpdateAllCustomContextFields(ctx, goroutineCtx)
 
 			defer func() {
 				// Return response
@@ -955,6 +958,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
 								utils.LogAttr("GUID", ctx),
 								utils.LogAttr("request_id", ctx),
+								utils.LogAttr("task_id", ctx),
+								utils.LogAttr("tx_id", ctx),
 								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
 								utils.LogAttr("providerAddr", providerPublicAddress),
 							)
@@ -1013,6 +1018,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		utils.LavaFormatInfo(fmt.Sprintf("Sending relay to provider %s", singleConsumerSession.Parent.PublicLavaAddress),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
+			utils.LogAttr("task_id", ctx),
+			utils.LogAttr("tx_id", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
 			utils.LogAttr("providerName", providerPublicAddress),
 			utils.LogAttr("requestBlock", relayResult.Request.RelayData.RequestBlock),
@@ -1040,6 +1047,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LavaFormatInfo("Received more than one provider unique id in header, skipping",
 					utils.LogAttr("GUID", ctx),
 					utils.LogAttr("request_id", ctx),
+					utils.LogAttr("task_id", ctx),
+					utils.LogAttr("tx_id", ctx),
 					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 					utils.LogAttr("providerUniqueId", providerUniqueId),
 				)
@@ -1047,6 +1056,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LavaFormatTrace("Received provider unique id",
 					utils.LogAttr("GUID", ctx),
 					utils.LogAttr("request_id", ctx),
+					utils.LogAttr("task_id", ctx),
+					utils.LogAttr("tx_id", ctx),
 					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 					utils.LogAttr("providerUniqueId", providerUniqueId),
 				)
@@ -1056,6 +1067,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 						lavasession.SessionOutOfSyncError,
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("request_id", ctx),
+						utils.LogAttr("task_id", ctx),
+						utils.LogAttr("tx_id", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 						utils.LogAttr("providedProviderUniqueId", providerUniqueId),
@@ -1065,6 +1078,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 					utils.LavaFormatTrace("Provider unique id match",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("request_id", ctx),
+						utils.LogAttr("task_id", ctx),
+						utils.LogAttr("tx_id", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 						utils.LogAttr("providerUniqueId", providerUniqueId),
@@ -1089,6 +1104,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("request_id", ctx),
+				utils.LogAttr("task_id", ctx),
+				utils.LogAttr("tx_id", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
 				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
 				utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
@@ -1348,7 +1365,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	reqBlock, _ := protocolMessage.RequestedBlock()
 	if reqBlock <= spectypes.NOT_APPLICABLE {
 		if reqBlock <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
+			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
 		}
 		// does not support sending data reliability requests on a block that is not specific
 		return nil
@@ -1409,7 +1426,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			if len(protocolMessage.GetExtensions()) == 0 {
 				err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, relayResultDataReliability.ConflictHandler)
 				if err != nil {
-					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
+					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
 				}
 				if rpccs.reporter != nil {
 					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
