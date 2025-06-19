@@ -41,6 +41,14 @@ func GetRequestId(requestData *pairingtypes.RelayPrivateData) string {
 	return requestData.RequestId
 }
 
+func GetTaskId(requestData *pairingtypes.RelayPrivateData) string {
+	return requestData.GetTaskId()
+}
+
+func GetTxId(requestData *pairingtypes.RelayPrivateData) string {
+	return requestData.GetTxId()
+}
+
 func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	nonceBytes := sigs.EncodeUint64(value)
 	requestData.Salt = nonceBytes
@@ -48,6 +56,18 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 
 func SetRequestId(requestData *pairingtypes.RelayPrivateData, value string) {
 	requestData.RequestId = value
+}
+
+func SetTaskId(requestData *pairingtypes.RelayPrivateData, value string) {
+	requestData.XTaskId = &pairingtypes.RelayPrivateData_TaskId{
+		TaskId: value,
+	}
+}
+
+func SetTxId(requestData *pairingtypes.RelayPrivateData, value string) {
+	requestData.XTxId = &pairingtypes.RelayPrivateData_TxId{
+		TxId: value,
+	}
 }
 
 func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, seenBlock int64, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
@@ -70,6 +90,12 @@ func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byt
 
 	if reqId, found := utils.GetRequestId(ctx); found {
 		SetRequestId(relayData, reqId)
+	}
+	if taskId, found := utils.GetTaskId(ctx); found {
+		SetTaskId(relayData, taskId)
+	}
+	if txId, found := utils.GetTxId(ctx); found {
+		SetTxId(relayData, txId)
 	}
 
 	return relayData
@@ -148,7 +174,7 @@ func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabili
 	if conflict_now {
 		return detectionMessage
 	}
-	utils.LavaFormatInfo("Reliability verified successfully!", utils.Attribute{Key: "GUID", Value: ctx})
+	utils.LavaFormatInfo("Reliability verified successfully!", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx})
 	return nil
 }
 
