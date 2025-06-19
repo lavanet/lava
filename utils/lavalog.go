@@ -173,7 +173,23 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 				st_val = reqId
 				attributes[idx] = Attribute{Key: key, Value: reqId}
 			} else {
-				attributes[idx] = Attribute{Key: key, Value: "no-request-id"}
+				attributes[idx] = Attribute{Key: key, Value: ""}
+			}
+		case "task_id":
+			taskId, found := GetTaskId(value)
+			if found {
+				st_val = taskId
+				attributes[idx] = Attribute{Key: key, Value: taskId}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: ""}
+			}
+		case "tx_id":
+			txId, found := GetTxId(value)
+			if found {
+				st_val = txId
+				attributes[idx] = Attribute{Key: key, Value: txId}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: ""}
 			}
 		default:
 			attributes[idx] = Attribute{Key: key, Value: "context-masked"}
