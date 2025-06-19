@@ -303,10 +303,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-		callerRequestId := extractCallerRequestId(fiberCtx)
-		if callerRequestId != "" {
-			ctx = utils.WithRequestId(ctx, callerRequestId)
-		}
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
@@ -323,6 +320,8 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
+			utils.LogAttr("task_id", ctx),
+			utils.LogAttr("tx_id", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
@@ -384,10 +383,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-		callerRequestId := extractCallerRequestId(fiberCtx)
-		if callerRequestId != "" {
-			ctx = utils.WithRequestId(ctx, callerRequestId)
-		}
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
 			msgSeed = strconv.FormatUint(guid, 10)
@@ -396,6 +392,8 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST non-POST with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("request_id", ctx),
+			utils.LogAttr("task_id", ctx),
+			utils.LogAttr("tx_id", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("dappID", dappID),
@@ -509,7 +507,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_id", Value: ctx}, utils.Attribute{Key: "task_id", Value: ctx}, utils.Attribute{Key: "tx_id", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
