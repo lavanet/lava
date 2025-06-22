@@ -739,7 +739,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		}
 	}
 
-	utils.LavaFormatTrace("Choosing providers",
+	utils.LavaFormatInfo("Choosing providers",
 		utils.LogAttr("validAddresses", validAddresses),
 		utils.LogAttr("ignoredProvidersList", ignoredProvidersList),
 		utils.LogAttr("chosenProviders", providers),
