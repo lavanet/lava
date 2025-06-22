@@ -34,6 +34,12 @@ const (
 	NoColor = true
 )
 
+const (
+	KEY_REQUEST_ID     = "request_id"
+	KEY_TASK_ID        = "task_id"
+	KEY_TRANSACTION_ID = "tx_id"
+)
+
 var (
 	JsonFormat = false
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
@@ -167,7 +173,7 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 			} else {
 				attributes[idx] = Attribute{Key: key, Value: "no-guid"}
 			}
-		case "request_id":
+		case KEY_REQUEST_ID:
 			reqId, found := GetRequestId(value)
 			if found {
 				st_val = reqId
@@ -175,7 +181,7 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 			} else {
 				attributes[idx] = Attribute{Key: key, Value: ""}
 			}
-		case "task_id":
+		case KEY_TASK_ID:
 			taskId, found := GetTaskId(value)
 			if found {
 				st_val = taskId
@@ -183,7 +189,7 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 			} else {
 				attributes[idx] = Attribute{Key: key, Value: ""}
 			}
-		case "tx_id":
+		case KEY_TRANSACTION_ID:
 			txId, found := GetTxId(value)
 			if found {
 				st_val = txId
