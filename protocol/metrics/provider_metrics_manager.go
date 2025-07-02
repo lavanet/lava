@@ -17,6 +17,8 @@ const (
 	MetricsListenFlagName    = "metrics-listen-address"
 	AddApiMethodCallsMetrics = "add-api-method-metrics"
 	RelayServerFlagName      = "relay-server-address"
+	RelayKafkaFlagName       = "relay-kafka-address"
+	RelayKafkaTopicFlagName  = "relay-kafka-topic"
 	DisabledFlagOption       = "disabled"
 )
 
