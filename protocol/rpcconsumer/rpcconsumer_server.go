@@ -236,9 +236,15 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	success := false
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Get quorum parameters from protocol message
+	quorumRate, quorumMaxRate, quorumMinRate := protocolMessage.GetQuorumParameters()
+
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		1,
+		quorumRate,
+		quorumMaxRate,
+		quorumMinRate,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -437,20 +443,13 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
-	quorumString := protocolMessage.GetDirectiveHeaders()[common.QUORUM_HEADER_NAME]
-	quorum := rpccs.requiredResponses
-	if quorumString != "" {
-		quorumInt, err := strconv.Atoi(quorumString)
-		if err != nil {
-			utils.LavaFormatError("Invalid quorum value", err, utils.LogAttr("quorum", quorumString))
-		} else {
-			quorum = quorumInt
-		}
-	}
+	quorumRate, quorumMaxRate, quorumMinRate := protocolMessage.GetQuorumParameters()
 
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		quorum,
+		quorumRate,
+		quorumMaxRate,
+		quorumMinRate,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -1349,13 +1348,20 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		userData := protocolMessage.GetUserData()
 		//  We create new protocol message from the old one, but with a new instance of relay request data.
 		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
+
+		// Get quorum parameters from the data reliability protocol message
+		quorumRate, quorumMaxRate, quorumMinRate := dataReliabilityProtocolMessage.GetQuorumParameters()
+
 		relayProcessorDataReliability := NewRelayProcessor(
 			ctx,
-			1,
+			quorumRate,
+			quorumMaxRate,
+			quorumMinRate,
 			rpccs.consumerConsistency,
 			rpccs.rpcConsumerLogs,
 			rpccs,
 			rpccs.relayRetriesManager,
+
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 			rpccs.consumerSessionManager.GetQoSManager(),
 		)

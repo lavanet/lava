@@ -41,7 +41,9 @@ const (
 	LAVA_DEBUG_RELAY                      = "lava-debug-relay"
 	LAVA_LB_UNIQUE_ID_HEADER              = "lava-lb-unique-id"
 	STICKINESS_HEADER_NAME                = "lava-stickiness"
-	QUORUM_HEADER_NAME                    = "lava-quorum"
+	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
+	QUORUM_HEADER_MAX                     = "lava-quorum-max"
+	QUORUM_HEADER_MIN                     = "lava-quorum-min"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH                                       = "/lava/health"
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
@@ -54,7 +56,9 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
 	LAVA_DEBUG_RELAY:                      {},
 	STICKINESS_HEADER_NAME:                {},
-	QUORUM_HEADER_NAME:                    {},
+	QUORUM_HEADER_RATE:                    {},
+	QUORUM_HEADER_MAX:                     {},
+	QUORUM_HEADER_MIN:                     {},
 }
 
 type UserData struct {
