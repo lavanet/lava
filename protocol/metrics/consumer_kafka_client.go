@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"sync"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/segmentio/kafka-go/sasl/scram"
 
 	"github.com/lavanet/lava/v5/utils"
 )
@@ -29,9 +32,15 @@ type ConsumerKafkaClient struct {
 	retryQueue []UpdateMetricsRequest
 	maxRetries int
 	retryDelay time.Duration
+	// Authentication fields
+	username    string
+	password    string
+	mechanism   string
+	tlsEnabled  bool
+	tlsInsecure bool
 }
 
-func NewConsumerKafkaClient(kafkaAddress string, topic string) *ConsumerKafkaClient {
+func NewConsumerKafkaClient(kafkaAddress string, topic string, username string, password string, mechanism string, tlsEnabled bool, tlsInsecure bool) *ConsumerKafkaClient {
 	if kafkaAddress == DisabledFlagOption {
 		utils.LavaFormatInfo("Running with Consumer Kafka Client Disabled")
 		return nil
@@ -45,10 +54,67 @@ func NewConsumerKafkaClient(kafkaAddress string, topic string) *ConsumerKafkaCli
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Configure Kafka writer with authentication
 	writer := &kafka.Writer{
 		Addr:     kafka.TCP(addresses...),
 		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
+	}
+
+	// Configure authentication if provided
+	if username != "" && password != "" {
+		switch mechanism {
+		case "PLAIN":
+			writer.Transport = &kafka.Transport{
+				SASL: plain.Mechanism{
+					Username: username,
+					Password: password,
+				},
+			}
+		case "SCRAM-SHA-256":
+			saslMechanism, err := scram.Mechanism(scram.SHA256, username, password)
+			if err != nil {
+				utils.LavaFormatWarning("Failed to create SCRAM-SHA-256 mechanism", err, utils.LogAttr("username", username))
+			} else {
+				writer.Transport = &kafka.Transport{
+					SASL: saslMechanism,
+				}
+			}
+		case "SCRAM-SHA-512":
+			saslMechanism, err := scram.Mechanism(scram.SHA512, username, password)
+			if err != nil {
+				utils.LavaFormatWarning("Failed to create SCRAM-SHA-512 mechanism", err, utils.LogAttr("username", username))
+			} else {
+				writer.Transport = &kafka.Transport{
+					SASL: saslMechanism,
+				}
+			}
+		default:
+			utils.LavaFormatWarning("Unsupported SASL mechanism", nil, utils.LogAttr("mechanism", mechanism), utils.LogAttr("supported", "PLAIN, SCRAM-SHA-256, SCRAM-SHA-512"))
+		}
+	}
+
+	// Configure TLS if enabled
+	if tlsEnabled {
+		var transport *kafka.Transport
+		if writer.Transport == nil {
+			transport = &kafka.Transport{}
+			writer.Transport = transport
+		} else {
+			var ok bool
+			transport, ok = writer.Transport.(*kafka.Transport)
+			if !ok {
+				transport = &kafka.Transport{}
+				writer.Transport = transport
+			}
+		}
+		tlsConfig := &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		if tlsInsecure {
+			tlsConfig.InsecureSkipVerify = true
+		}
+		transport.TLS = tlsConfig
 	}
 
 	consumerKafkaClient := &ConsumerKafkaClient{
@@ -66,9 +132,14 @@ func NewConsumerKafkaClient(kafkaAddress string, topic string) *ConsumerKafkaCli
 		retryQueue:         []UpdateMetricsRequest{},
 		maxRetries:         3,
 		retryDelay:         5 * time.Second,
+		username:           username,
+		password:           password,
+		mechanism:          mechanism,
+		tlsEnabled:         tlsEnabled,
+		tlsInsecure:        tlsInsecure,
 	}
 
-	utils.LavaFormatInfo("Starting Consumer Kafka Client", utils.LogAttr("kafka_address", kafkaAddress), utils.LogAttr("topic", topic))
+	utils.LavaFormatInfo("Starting Consumer Kafka Client", utils.LogAttr("kafka_address", kafkaAddress), utils.LogAttr("topic", topic), utils.LogAttr("auth_mechanism", mechanism), utils.LogAttr("tls_enabled", tlsEnabled), utils.LogAttr("tls_insecure", tlsInsecure))
 	consumerKafkaClient.relayDataSendQueueStart()
 	return consumerKafkaClient
 }

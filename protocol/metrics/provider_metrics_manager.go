@@ -14,12 +14,17 @@ import (
 )
 
 const (
-	MetricsListenFlagName    = "metrics-listen-address"
-	AddApiMethodCallsMetrics = "add-api-method-metrics"
-	RelayServerFlagName      = "relay-server-address"
-	RelayKafkaFlagName       = "relay-kafka-address"
-	RelayKafkaTopicFlagName  = "relay-kafka-topic"
-	DisabledFlagOption       = "disabled"
+	MetricsListenFlagName         = "metrics-listen-address"
+	AddApiMethodCallsMetrics      = "add-api-method-metrics"
+	RelayServerFlagName           = "relay-server-address"
+	RelayKafkaFlagName            = "relay-kafka-address"
+	RelayKafkaTopicFlagName       = "relay-kafka-topic"
+	RelayKafkaUsernameFlagName    = "relay-kafka-username"
+	RelayKafkaPasswordFlagName    = "relay-kafka-password"
+	RelayKafkaMechanismFlagName   = "relay-kafka-mechanism"
+	RelayKafkaTLSEnabledFlagName  = "relay-kafka-tls-enabled"
+	RelayKafkaTLSInsecureFlagName = "relay-kafka-tls-insecure"
+	DisabledFlagOption            = "disabled"
 )
 
 var ShowProviderEndpointInProviderMetrics = false

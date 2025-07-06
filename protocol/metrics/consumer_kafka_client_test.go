@@ -9,13 +9,13 @@ import (
 
 func TestNewConsumerKafkaClient(t *testing.T) {
 	// Test with disabled flag
-	client := NewConsumerKafkaClient(DisabledFlagOption, "test-topic")
+	client := NewConsumerKafkaClient(DisabledFlagOption, "test-topic", "", "", "", false, false)
 	if client != nil {
 		t.Errorf("Expected nil client when disabled, got %v", client)
 	}
 
 	// Test with valid address - this will try to connect but we'll close it immediately
-	client = NewConsumerKafkaClient("localhost:9092", "test-topic")
+	client = NewConsumerKafkaClient("localhost:9092", "test-topic", "", "", "", false, false)
 	if client == nil {
 		t.Errorf("Expected non-nil client with valid address, got nil")
 		return
@@ -35,7 +35,7 @@ func TestNewConsumerKafkaClient(t *testing.T) {
 
 func TestConsumerKafkaClient_SetRelayMetrics(t *testing.T) {
 	// Skip this test if we can't connect to Kafka (which is expected in test environment)
-	client := NewConsumerKafkaClient("localhost:9092", "test-topic")
+	client := NewConsumerKafkaClient("localhost:9092", "test-topic", "", "", "", false, false)
 	if client == nil {
 		t.Skip("Kafka client is nil, skipping test")
 	}
@@ -69,7 +69,7 @@ func TestConsumerKafkaClient_SetRelayMetrics(t *testing.T) {
 
 func TestConsumerKafkaClient_AggregateRelayData(t *testing.T) {
 	// Skip this test if we can't connect to Kafka (which is expected in test environment)
-	client := NewConsumerKafkaClient("localhost:9092", "test-topic")
+	client := NewConsumerKafkaClient("localhost:9092", "test-topic", "", "", "", false, false)
 	if client == nil {
 		t.Skip("Kafka client is nil, skipping test")
 	}
