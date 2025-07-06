@@ -49,7 +49,7 @@ type chainIdAndApiInterfaceGetter interface {
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
 	responses                    chan *relayResponse
-	requiredSuccesses            int
+	quorumParams                 common.QuorumParams
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
@@ -67,7 +67,7 @@ type RelayProcessor struct {
 
 func NewRelayProcessor(
 	ctx context.Context,
-	requiredSuccesses int,
+	quorumParams common.QuorumParams,
 	consumerConsistency *ConsumerConsistency,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
@@ -76,11 +76,11 @@ func NewRelayProcessor(
 	availabilityDegrader QoSAvailabilityDegrader,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
-	if requiredSuccesses <= 0 {
-		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
+	if quorumParams.Min <= 0 {
+		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", quorumParams.Min))
 	}
 	relayProcessor := &RelayProcessor{
-		requiredSuccesses:            requiredSuccesses,
+		quorumParams:                 quorumParams,
 		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		ResultsManager:               NewResultsManager(guid),
 		guid:                         guid,
@@ -100,7 +100,7 @@ func NewRelayProcessor(
 }
 
 func (rp *RelayProcessor) GetNeededRequiredResults() int {
-	return rp.requiredSuccesses
+	return rp.quorumParams.Min
 }
 
 // true if we never got an extension. (default value)
@@ -170,8 +170,8 @@ func (rp *RelayProcessor) SetResponse(response *relayResponse) {
 func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	if rp.ResultsManager.RequiredResults(rp.requiredSuccesses, rp.selection) {
-		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.requiredSuccesses), utils.LogAttr("selection", rp.selection))
+	if rp.ResultsManager.RequiredResults(rp.quorumParams.Min, rp.selection) {
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.quorumParams.Min), utils.LogAttr("selection", rp.selection))
 		return true
 	}
 	// check if we got all of the responses
@@ -239,7 +239,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	resultsCount, nodeErrors, _ := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	if resultsCount >= rp.requiredSuccesses {
+	if resultsCount >= rp.quorumParams.Min {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
@@ -256,7 +256,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
-		if nodeErrors+resultsCount >= rp.requiredSuccesses {
+		if nodeErrors+resultsCount >= rp.quorumParams.Min {
 			// Retry on node error flow:
 			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
 		}
@@ -435,16 +435,16 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}()
 	// there are enough successes
-	if successResultsCount >= rp.requiredSuccesses {
+	if successResultsCount >= rp.quorumParams.Min {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
 		}
-		return rp.responsesQuorum(successResults, rp.requiredSuccesses)
+		return rp.responsesQuorum(successResults, rp.quorumParams.Min)
 	}
 
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
-		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.requiredSuccesses", rp.requiredSuccesses))
+		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
 		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("nodeErrorCount", nodeErrorCount), utils.LogAttr("protocolErrorCount", protocolErrorCount))
 		for idx, result := range successResults {
 			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
@@ -458,19 +458,19 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	// there are not enough successes, let's check if there are enough node errors
-	if successResultsCount+nodeErrorCount >= rp.requiredSuccesses {
+	if successResultsCount+nodeErrorCount >= rp.quorumParams.Min {
 		if rp.selection == Quorum {
 			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
+			return rp.responsesQuorum(nodeResults, rp.quorumParams.Min)
 		} else if rp.selection == BestResult && successResultsCount > nodeErrorCount {
 			// we have more than half succeeded, and we are success oriented
-			return rp.responsesQuorum(successResults, (rp.requiredSuccesses+1)/2)
+			return rp.responsesQuorum(successResults, (rp.quorumParams.Min+1)/2)
 		}
 	}
 	// we don't have enough for a quorum, prefer a node error on protocol errors
-	if nodeErrorCount >= rp.requiredSuccesses { // if we have node errors, we prefer returning them over protocol errors.
+	if nodeErrorCount >= rp.quorumParams.Min { // if we have node errors, we prefer returning them over protocol errors.
 		nodeErr := rp.GetBestNodeErrorMessageForUser()
 		return &nodeErr.response.relayResult, nil
 	}

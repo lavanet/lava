@@ -115,9 +115,12 @@ const (
 	DEFAULT_QUORUM_MIN  = 2
 )
 
-func (bpm *BaseProtocolMessage) GetQuorumParameters() (quorumRate float64, quorumMax int, quorumMin int) {
+func (bpm *BaseProtocolMessage) GetQuorumParameters() common.QuorumParams {
 	var err error
 	enabled := false
+	var quorumRate float64
+	var quorumMax int
+	var quorumMin int
 
 	quorumRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_RATE]
 	enabled = enabled || ok
@@ -154,10 +157,10 @@ func (bpm *BaseProtocolMessage) GetQuorumParameters() (quorumRate float64, quoru
 
 	if enabled {
 		utils.LavaFormatInfo("Quorum parameters", utils.LogAttr("quorumRate", quorumRate), utils.LogAttr("quorumMax", quorumMax), utils.LogAttr("quorumMin", quorumMin))
-		return quorumRate, quorumMax, quorumMin
+		return common.QuorumParams{Rate: quorumRate, Max: quorumMax, Min: quorumMin}
 	} else {
 		utils.LavaFormatInfo("Quorum parameters not enabled")
-		return 1, 1, 1
+		return common.QuorumParams{Rate: 1, Max: 1, Min: 1}
 	}
 }
 
@@ -170,5 +173,5 @@ type ProtocolMessage interface {
 	GetUserData() common.UserData
 	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
-	GetQuorumParameters() (quorumRate float64, quorumMaxRate int, quorumMinRate int)
+	GetQuorumParameters() common.QuorumParams
 }
