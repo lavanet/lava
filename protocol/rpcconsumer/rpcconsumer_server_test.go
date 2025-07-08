@@ -67,7 +67,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	consumerCmdFlags := common.ConsumerCmdFlags{
 		RelaysHealthEnableFlag: false,
 	}
-	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
+	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)

@@ -276,7 +276,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
-	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
+	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)

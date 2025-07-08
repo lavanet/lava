@@ -36,16 +36,18 @@ type RPCConsumerLogs struct {
 	excludedUserAgent          []string
 	consumerMetricsManager     *ConsumerMetricsManager
 	consumerRelayServerClient  *ConsumerRelayServerClient
+	consumerKafkaClient        *ConsumerKafkaClient
 	consumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient, consumerKafkaClient *ConsumerKafkaClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
 		return &RPCConsumerLogs{
 			consumerMetricsManager:     consumerMetricsManager,
 			consumerRelayServerClient:  consumerRelayServerClient,
+			consumerKafkaClient:        consumerKafkaClient,
 			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 		}, nil // newRelicApplication is nil safe to use
 	}
@@ -57,6 +59,7 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 		return &RPCConsumerLogs{
 			consumerMetricsManager:     consumerMetricsManager,
 			consumerRelayServerClient:  consumerRelayServerClient,
+			consumerKafkaClient:        consumerKafkaClient,
 			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 		}, nil
 	}
@@ -82,7 +85,14 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 		newrelic.ConfigFromEnvironment(),
 	)
 
-	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}
+	rpcConsumerLogs := &RPCConsumerLogs{
+		newRelicApplication:        newRelicApplication,
+		StoreMetricData:            false,
+		consumerMetricsManager:     consumerMetricsManager,
+		consumerRelayServerClient:  consumerRelayServerClient,
+		consumerKafkaClient:        consumerKafkaClient,
+		consumerOptimizerQoSClient: consumerOptimizerQoSClient,
+	}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
 		rpcConsumerLogs.StoreMetricData = true
@@ -222,6 +232,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analyti
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
+	rpccl.consumerKafkaClient.SetRelayMetrics(data)
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
 	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -233,6 +244,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
+	rpccl.consumerKafkaClient.SetRelayMetrics(data)
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -252,6 +264,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 	}
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
+	rpccl.consumerKafkaClient.SetRelayMetrics(data)
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
