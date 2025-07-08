@@ -185,11 +185,17 @@ func (rssi *RelayStateSendInstructions) IsDone() bool {
 }
 
 func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
+	chainId, _ := crsm.relaySender.GetChainIdAndApiInterface()
 	if !crsm.Initialized() {
-		return nil, utils.LavaFormatError("ConsumerRelayStateMachine was not initialized properly", nil)
+		return nil, utils.LavaFormatError(
+			"rpcconsumer: ConsumerRelayStateMachine was not initialized properly",
+			nil,
+			utils.LogAttr("chainID", chainId),
+		)
 	}
 	relayTaskChannel := make(chan RelayStateSendInstructions)
 	go func() {
+		chainId, _ := crsm.relaySender.GetChainIdAndApiInterface()
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool, 1)
 		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
@@ -250,7 +256,13 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 					consecutiveBatchErrors++                        // Increase consecutive error counter
 					if consecutiveBatchErrors > SendRelayAttempts { // If we failed sending a message more than "SendRelayAttempts" time in a row.
 						if crsm.usedProviders.BatchNumber() == 0 && consecutiveBatchErrors == SendRelayAttempts+1 { // First relay attempt. print on first failure only.
-							utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", consecutiveBatchErrors), utils.LogAttr("GUID", crsm.ctx))
+							utils.LavaFormatWarning(
+								"rpcconsumer: Failed Sending First Message",
+								err,
+								utils.LogAttr("chainID", chainId),
+								utils.LogAttr("consecutive errors", consecutiveBatchErrors),
+								utils.LogAttr("GUID", crsm.ctx),
+							)
 						}
 						go validateReturnCondition(err) // Check if we have ongoing messages pending return.
 					} else {
@@ -301,7 +313,10 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			case <-processingCtx.Done():
 				// In case we got a processing timeout we return context deadline exceeded to the user.
 				userData := crsm.GetProtocolMessage().GetUserData()
-				utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
+				utils.LavaFormatWarning(
+					"rpcconsumer: Relay Got processingCtx timeout",
+					nil,
+					utils.LogAttr("chainID", chainId),
 					utils.LogAttr("processingTimeout", processingTimeout),
 					utils.LogAttr("dappId", userData.DappId),
 					utils.LogAttr("consumerIp", userData.ConsumerIp),
