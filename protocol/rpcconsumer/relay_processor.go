@@ -135,7 +135,9 @@ func (rp *RelayProcessor) String() string {
 
 func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
 	if rp == nil {
-		utils.LavaFormatError("RelayProcessor.GetUsedProviders is nil, misuse detected", nil)
+		utils.LavaFormatError("rpcconsumer: RelayProcessor.GetUsedProviders is nil, misuse detected", nil,
+			utils.LogAttr("chainID", rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()),
+		)
 		return nil
 	}
 	rp.lock.RLock()
@@ -208,12 +210,9 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 		} else {
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-			utils.LavaFormatWarning("Failed to recover retries on node errors, might be an invalid input", nil,
-				utils.LogAttr("api", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name),
-				utils.LogAttr("params", rp.RelayStateMachine.GetProtocolMessage().GetRPCMessage().GetParams()),
-				utils.LogAttr("chainId", chainId),
+			utils.LavaFormatWarning("rpcconsumer: Failed to recover retries on node errors, might be an invalid input", nil,
+				utils.LogAttr("chainID", chainId),
 				utils.LogAttr("apiInterface", apiInterface),
-				utils.LogAttr("hash", utils.ToHexString(hash)),
 			)
 			rp.relayRetriesManager.AddHashToCache(hash)
 		}
@@ -289,7 +288,9 @@ func (rp *RelayProcessor) readExistingResponses() {
 // it then updates the responses in their respective place, node errors, protocol errors or success results
 func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	if rp == nil {
-		return utils.LavaFormatError("RelayProcessor.WaitForResults is nil, misuse detected", nil)
+		return utils.LavaFormatError("rpcconsumer: RelayProcessor.WaitForResults is nil, misuse detected", nil,
+			utils.LogAttr("chainID", rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()),
+		)
 	}
 	responsesCount := 0
 	for {
@@ -374,7 +375,9 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
-		return nil, utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
+		return nil, utils.LavaFormatError("rpcconsumer: RelayProcessor.ProcessingResult is nil, misuse detected", nil,
+			utils.LogAttr("chainID", rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()),
+		)
 	}
 
 	// this must be here before the lock because this function locks
@@ -391,7 +394,9 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	defer func() {
 		if shouldDegradeAvailability {
 			if rp.availabilityDegrader == nil {
-				utils.LavaFormatWarning("Availability degrader is nil, skipping availability degradation", nil)
+				utils.LavaFormatWarning("rpcconsumer: Availability degrader is nil, skipping availability degradation", nil,
+					utils.LogAttr("chainID", rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()),
+				)
 				return
 			}
 			for _, result := range nodeErrors {
@@ -464,5 +469,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
-	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError)
+	return returnedResult, utils.LavaFormatError("rpcconsumer: failed relay, insufficient results", processingError,
+		utils.LogAttr("chainID", rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()),
+	)
 }
