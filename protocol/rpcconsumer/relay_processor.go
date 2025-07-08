@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -63,6 +64,8 @@ type RelayProcessor struct {
 	ResultsManager
 	RelayStateMachine
 	availabilityDegrader QoSAvailabilityDegrader
+	qourumMap            map[string]int
+	highestQourum        int
 }
 
 func NewRelayProcessor(
@@ -93,14 +96,16 @@ func NewRelayProcessor(
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
 		availabilityDegrader:         availabilityDegrader,
+		qourumMap:                    make(map[string]int),
+		highestQourum:                0,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
 	return relayProcessor
 }
 
-func (rp *RelayProcessor) GetNeededRequiredResults() int {
-	return rp.quorumParams.Min
+func (rp *RelayProcessor) GetQuorumParams() common.QuorumParams {
+	return rp.quorumParams
 }
 
 // true if we never got an extension. (default value)
@@ -210,7 +215,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", utils.ToHexString(hash)))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-				return false
+				return true
 			}
 			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", utils.ToHexString(hash)))
 		} else {
@@ -227,10 +232,10 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 		}
 	}
 	// Do not perform a retry
-	return true
+	return false
 }
 
-func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
+func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	if rp == nil {
 		return false, 0
 	}
@@ -239,7 +244,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	resultsCount, nodeErrors, _ := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	if resultsCount >= rp.quorumParams.Min {
+	neededForQuorum := int(math.Ceil(rp.quorumParams.Rate * float64(tries)))
+	if rp.quorumParams.Enabled() && neededForQuorum >= rp.highestQourum ||
+		!rp.quorumParams.Enabled() && resultsCount >= rp.quorumParams.Min {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
@@ -256,9 +263,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
-		if nodeErrors+resultsCount >= rp.quorumParams.Min {
+		if nodeErrors+resultsCount >= neededForQuorum {
 			// Retry on node error flow:
-			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
+			return !rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
@@ -267,6 +274,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 
 func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
+
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
 	if nodeError != nil && rp.selection != BestResult {
 		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
@@ -274,10 +282,20 @@ func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
-	if response != nil && response.relayResult.GetReply().GetLatestBlock() > 0 {
-		// set consumer consistency when possible
-		blockSeen := response.relayResult.GetReply().GetLatestBlock()
-		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
+	if response != nil {
+		canonicalForm, err := types.CreateCanonicalJSON(response.relayResult.GetReply().GetData())
+		if err == nil {
+			rp.qourumMap[canonicalForm]++
+			if rp.qourumMap[canonicalForm] > rp.highestQourum {
+				rp.highestQourum = rp.qourumMap[canonicalForm]
+			}
+		}
+
+		if response.relayResult.GetReply().GetLatestBlock() > 0 {
+			// set consumer consistency when possible
+			blockSeen := response.relayResult.GetReply().GetLatestBlock()
+			rp.consumerConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
+		}
 	}
 }
 

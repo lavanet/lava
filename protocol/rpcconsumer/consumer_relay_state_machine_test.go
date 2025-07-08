@@ -153,7 +153,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults()
+				results, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
@@ -304,7 +304,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				sendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults()
+				results, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)

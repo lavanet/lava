@@ -6,3 +6,7 @@ type QuorumParams struct {
 	Max  int
 	Min  int
 }
+
+func (qp QuorumParams) Enabled() bool {
+	return qp.Rate == 1 && qp.Max == 1 && qp.Min == 1
+}

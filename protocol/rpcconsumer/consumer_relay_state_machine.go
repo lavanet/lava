@@ -29,8 +29,8 @@ type RelayStateMachine interface {
 
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
-	HasRequiredNodeResults() (bool, int)
-	GetNeededRequiredResults() int
+	HasRequiredNodeResults(tries int) (bool, int)
+	GetQuorumParams() common.QuorumParams
 }
 
 type ConsumerRelaySender interface {
@@ -156,7 +156,10 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
-	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+
+	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
+		return false
+	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
 	// best result sends to top 10 providers anyway.
@@ -209,13 +212,9 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			utils.LavaFormatTrace("[StateMachine] Waiting for results", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 			crsm.resultsChecker.WaitForResults(processingCtx)
 			// Decide if we need to resend or not
-			metRequiredNodeResults, numberOfNodeErrors := crsm.resultsChecker.HasRequiredNodeResults()
+			metRequiredNodeResults, numberOfNodeErrors := crsm.resultsChecker.HasRequiredNodeResults(crsm.usedProviders.BatchNumber())
 			numberOfNodeErrorsAtomic.Store(uint64(numberOfNodeErrors))
-			if metRequiredNodeResults {
-				gotResults <- true
-			} else {
-				gotResults <- false
-			}
+			gotResults <- metRequiredNodeResults
 		}
 		go readResultsFromProcessor()
 		returnCondition := make(chan error, 1)
@@ -236,7 +235,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 		relayTaskChannel <- RelayStateSendInstructions{
 			analytics:      crsm.analytics,
 			relayState:     crsm.getLatestState(),
-			numOfProviders: crsm.resultsChecker.GetNeededRequiredResults(),
+			numOfProviders: crsm.resultsChecker.GetQuorumParams().Min,
 		}
 
 		// Initialize parameters

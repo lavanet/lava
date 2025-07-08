@@ -242,7 +242,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults(1)
 		require.False(t, requiredNodeResults)
 		// check first retry
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
@@ -250,7 +250,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.False(t, requiredNodeResults)
 
 		// check first second retry
@@ -259,7 +259,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, requiredNodeResults)
 
 		// 2nd relay, same inputs
@@ -285,7 +285,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, requiredNodeResults)
 
 		// 3nd relay, different inputs
@@ -311,7 +311,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults(1)
 		// check our hashing mechanism works with different inputs
 		require.False(t, requiredNodeResults)
 
@@ -339,7 +339,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk = relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, requiredNodeResults)
 
 		// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
@@ -388,7 +388,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults()
+		requiredNodeResults, _ := relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, requiredNodeResults)
 		relayCountOnNodeError = 2
 	})
@@ -575,14 +575,14 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 			err := relayProcessor.WaitForResults(ctx)
 			require.NoError(t, err)
 			// Decide if we need to resend or not
-			if results, _ := relayProcessor.HasRequiredNodeResults(); results {
+			if results, _ := relayProcessor.HasRequiredNodeResults(1); results {
 				break
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		resultsOk, _ = relayProcessor.HasRequiredNodeResults()
+		resultsOk, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
