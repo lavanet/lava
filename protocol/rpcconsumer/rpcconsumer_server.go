@@ -198,7 +198,7 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1
-			utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
+			utils.LavaFormatWarning("rpcconsumer: failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
 				utils.LogAttr("times_checked", numberOfTimesChecked),
 				utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 				utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
@@ -210,7 +210,7 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
 	parsing, apiCollection, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
-		return false, nil, nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
+		return false, nil, nil, utils.LavaFormatWarning("rpcconsumer: did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 		)
@@ -221,7 +221,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 	data := []byte(parsing.FunctionTemplate)
 	chainMessage, err = rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	if err != nil {
-		return false, nil, nil, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err,
+		return false, nil, nil, utils.LavaFormatError("rpcconsumer: failed creating chain message in rpc consumer init relays", err,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface))
 	}
@@ -321,7 +321,7 @@ func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
 	if numProviders > 0 && latestKnownBlock > 0 {
 		return uint64(latestKnownBlock)
 	}
-	utils.LavaFormatWarning("no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
+	utils.LavaFormatWarning("rpcconsumer: no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0}, utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID))
 	return 0
 }
 
@@ -392,7 +392,13 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	if err != nil && !relayProcessor.HasResults() {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
-		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		utils.LavaFormatError("rpcconsumer: failed getting responses from providers", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()),
+			utils.LogAttr("userIp", userData.ConsumerIp),
+			utils.LogAttr("relayProcessor", relayProcessor),
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+		)
 		return nil, err
 	}
 
@@ -413,7 +419,11 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		return returnedResult, utils.LavaFormatError("rpcconsumer: failed processing responses from providers", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()),
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+		)
 	}
 
 	if analytics != nil {
@@ -460,7 +470,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	}
 
 	// shouldn't happen.
-	return relayProcessor, utils.LavaFormatError("ProcessRelaySend channel closed unexpectedly", nil)
+	return relayProcessor, utils.LavaFormatError("rpcconsumer: ProcessRelaySend channel closed unexpectedly", nil, utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID))
 }
 
 func (rpccs *RPCConsumerServer) CreateDappKey(userData common.UserData) string {
@@ -477,7 +487,10 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 		ctxHolder.CancelFunc()
 		delete(rpccs.connectedSubscriptionsContexts, subscriptionKey)
 	} else {
-		utils.LavaFormatWarning("tried to cancel context for subscription ID that does not exist", nil, utils.LogAttr("subscriptionID", subscriptionKey))
+		utils.LavaFormatWarning("rpcconsumer: tried to cancel context for subscription ID that does not exist", nil,
+			utils.LogAttr("subscriptionID", subscriptionKey),
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+		)
 	}
 }
 
@@ -624,7 +637,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				var cacheReply *pairingtypes.CacheRelayReply
 				hashKey, outputFormatter, err := protocolMessage.HashCacheRequest(chainId)
 				if err != nil {
-					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
+					utils.LavaFormatError("rpcconsumer: sendRelayToProvider Failed getting Hash for cache request", err,
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+					)
 				} else {
 					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
@@ -706,7 +722,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
-				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
+				return utils.LavaFormatError("rpcconsumer: No Providers For Addon", err,
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("userIp", userData.ConsumerIp),
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+				)
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 				if err != nil {
@@ -782,7 +804,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 			if errResponse != nil {
-				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData), utils.LogAttr("GUID", ctx))
+				utils.LavaFormatError("rpcconsumer: Failed ConstructRelayRequest", errResponse,
+					utils.LogAttr("Request data", localRelayRequestData),
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+				)
 				return
 			}
 			localRelayResult.Request = relayRequest
@@ -817,11 +843,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
-					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
+					utils.LavaFormatError("rpcconsumer: Failed relaySubscriptionInner", errResponse,
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
 						utils.LogAttr("Provider", providerPublicAddress),
 						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 					)
 				}
 				return
@@ -835,7 +862,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				processingTimeout = time.Until(deadline)
 				if processingTimeout <= 0 {
 					// no need to send we are out of time
-					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl), utils.LogAttr("GUID", ctx))
+					utils.LavaFormatWarning("rpcconsumer: Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil,
+						utils.LogAttr("processingTimeout", processingTimeout),
+						utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl),
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+					)
 					return
 				}
 				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
@@ -855,7 +887,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// relay failed need to fail the session advancement
 					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, origErr)
 					if errReport != nil {
-						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: origErr.Error()})
+						utils.LavaFormatError("rpcconsumer: failed relay onSessionFailure errored", errReport,
+							utils.Attribute{Key: "GUID", Value: goroutineCtx},
+							utils.Attribute{Key: "original error", Value: origErr.Error()},
+							utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+						)
 					}
 				}
 				go failRelaySession(errResponse, backoff)
@@ -871,13 +907,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			if expectedBH-latestBlock > 1000 {
-				utils.LavaFormatWarning("identified block gap", nil,
+				utils.LavaFormatWarning("rpcconsumer: identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
 					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 				)
 			}
 
@@ -918,10 +955,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					go func() {
 						// deal with copying error.
 						if copyReplyErr != nil || hashErr != nil {
-							utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
+							utils.LavaFormatError("rpcconsumer: Failed copying relay private data sendRelayToProvider", nil,
 								utils.LogAttr("copyReplyErr", copyReplyErr),
 								utils.LogAttr("hashErr", hashErr),
 								utils.LogAttr("GUID", ctx),
+								utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 							)
 							return
 						}
@@ -935,10 +973,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						var finalizedBlockHashesObj map[int64]string
 						err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
 						if err != nil {
-							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
+							utils.LavaFormatError("rpcconsumer: failed unmarshalling finalizedBlockHashes", err,
 								utils.LogAttr("GUID", ctx),
 								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
 								utils.LogAttr("providerAddr", providerPublicAddress),
+								utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 							)
 						} else {
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
@@ -966,7 +1005,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							BlocksHashesToHeights: blockHashesToHeights,
 						})
 						if err2 != nil {
-							utils.LavaFormatWarning("error updating cache with new entry", err2, utils.LogAttr("GUID", ctx))
+							utils.LavaFormatWarning("rpcconsumer: error updating cache with new entry", err2, utils.LogAttr("GUID", ctx))
 						}
 					}()
 				}
@@ -1033,13 +1072,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				)
 
 				if !singleConsumerSession.VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId[0]) {
-					return reply, 0, utils.LavaFormatError("provider unique id mismatch",
+					return reply, 0, utils.LavaFormatError("rpcconsumer: provider unique id mismatch",
 						lavasession.SessionOutOfSyncError,
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 						utils.LogAttr("providedProviderUniqueId", providerUniqueId),
 						utils.LogAttr("providerUniqueId", singleConsumerSession.GetProviderUniqueId()),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 					), false
 				} else {
 					utils.LavaFormatTrace("Provider unique id match",
@@ -1057,7 +1097,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
 			if errStatus != nil {
-				utils.LavaFormatWarning("failed converting status code", errStatus, utils.LogAttr("statuses", statuses), utils.LogAttr("GUID", ctx))
+				utils.LavaFormatWarning("rpcconsumer: failed converting status code", errStatus, utils.LogAttr("statuses", statuses), utils.LogAttr("GUID", ctx))
 			}
 
 			relayResult.StatusCode = codeNum
@@ -1105,7 +1145,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		// adding some error information for future debug
 		if relayRequest.RelayData.RequestBlock == 0 {
 			reqBlock, _ := chainMessage.RequestedBlock()
-			utils.LavaFormatWarning("Got Error, with requested block 0", err,
+			utils.LavaFormatWarning("rpcconsumer: Got Error, with requested block 0", err,
 				utils.LogAttr("relayRequest.RelayData.RequestBlock", relayRequest.RelayData.RequestBlock),
 				utils.LogAttr("chainMessage.RequestedBlock", reqBlock),
 				utils.LogAttr("existingSessionLatestBlock", existingSessionLatestBlock),
@@ -1113,6 +1153,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("msg_api", relayRequest.RelayData.ApiUrl),
 				utils.LogAttr("msg_data", string(relayRequest.RelayData.Data)),
 				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			)
 		}
 		return 0, err, backoff
@@ -1185,7 +1226,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
+			return utils.LavaFormatError("rpcconsumer: subscribe relay failed onSessionFailure errored", errReport,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("originalError", err.Error()),
@@ -1199,7 +1240,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
+			return utils.LavaFormatError("rpcconsumer: subscribe relay failed onSessionFailure errored", errReport,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("originalError", err.Error()),
