@@ -8,5 +8,5 @@ type QuorumParams struct {
 }
 
 func (qp QuorumParams) Enabled() bool {
-	return qp.Rate == 1 && qp.Max == 1 && qp.Min == 1
+	return !(qp.Rate == 1 && qp.Max == 1 && qp.Min == 1)
 }

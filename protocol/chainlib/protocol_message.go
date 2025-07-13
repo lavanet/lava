@@ -156,6 +156,10 @@ func (bpm *BaseProtocolMessage) GetQuorumParameters() (common.QuorumParams, erro
 		}
 	}
 
+	if quorumMin > quorumMax {
+		return common.QuorumParams{}, errors.New("quorum min is greater than quorum max")
+	}
+
 	if enabled {
 		utils.LavaFormatInfo("Quorum parameters", utils.LogAttr("quorumRate", quorumRate), utils.LogAttr("quorumMax", quorumMax), utils.LogAttr("quorumMin", quorumMin))
 		return common.QuorumParams{Rate: quorumRate, Max: quorumMax, Min: quorumMin}, nil

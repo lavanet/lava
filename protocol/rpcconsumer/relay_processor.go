@@ -244,8 +244,8 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	resultsCount, nodeErrors, _ := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	neededForQuorum := int(math.Ceil(rp.quorumParams.Rate * float64(tries)))
-	if rp.quorumParams.Enabled() && neededForQuorum >= rp.highestQourum ||
+	neededForQuorum := int(math.Ceil(rp.quorumParams.Rate * float64(max(rp.quorumParams.Min, tries))))
+	if rp.quorumParams.Enabled() && neededForQuorum <= rp.highestQourum ||
 		!rp.quorumParams.Enabled() && resultsCount >= rp.quorumParams.Min {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel

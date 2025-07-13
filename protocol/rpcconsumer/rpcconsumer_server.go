@@ -396,7 +396,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 
 	relaySentTime := time.Now()
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, analytics)
-	if err != nil && !relayProcessor.HasResults() {
+	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
 		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
