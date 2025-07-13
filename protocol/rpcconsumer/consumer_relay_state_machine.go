@@ -29,7 +29,8 @@ type RelayStateMachine interface {
 
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
-	HasRequiredNodeResults() (bool, int)
+	HasRequiredNodeResults(tries int) (bool, int)
+	GetQuorumParams() common.QuorumParams
 }
 
 type ConsumerRelaySender interface {
@@ -154,7 +155,11 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 }
 
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
-	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
+
+	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
+		return false
+	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
 	// best result sends to top 10 providers anyway.
@@ -174,10 +179,11 @@ func (crsm *ConsumerRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMes
 }
 
 type RelayStateSendInstructions struct {
-	analytics  *metrics.RelayMetrics
-	err        error
-	done       bool
-	relayState *RelayState
+	analytics      *metrics.RelayMetrics
+	err            error
+	done           bool
+	relayState     *RelayState
+	numOfProviders int
 }
 
 func (rssi *RelayStateSendInstructions) IsDone() bool {
@@ -206,13 +212,9 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			utils.LavaFormatTrace("[StateMachine] Waiting for results", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 			crsm.resultsChecker.WaitForResults(processingCtx)
 			// Decide if we need to resend or not
-			metRequiredNodeResults, numberOfNodeErrors := crsm.resultsChecker.HasRequiredNodeResults()
+			metRequiredNodeResults, numberOfNodeErrors := crsm.resultsChecker.HasRequiredNodeResults(crsm.usedProviders.BatchNumber())
 			numberOfNodeErrorsAtomic.Store(uint64(numberOfNodeErrors))
-			if metRequiredNodeResults {
-				gotResults <- true
-			} else {
-				gotResults <- false
-			}
+			gotResults <- metRequiredNodeResults
 		}
 		go readResultsFromProcessor()
 		returnCondition := make(chan error, 1)
@@ -231,8 +233,9 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 		crsm.stateTransition(nil, 0)
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
-			analytics:  crsm.analytics,
-			relayState: crsm.getLatestState(),
+			analytics:      crsm.analytics,
+			relayState:     crsm.getLatestState(),
+			numOfProviders: crsm.resultsChecker.GetQuorumParams().Min,
 		}
 
 		// Initialize parameters
@@ -256,7 +259,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 					} else {
 						utils.LavaFormatTrace("[StateMachine] batchUpdate - err != nil - batch fail retry attempt", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", crsm.ctx))
 						// Failed sending message, but we still want to attempt sending more.
-						relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState()}
+						relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState(), numOfProviders: 1}
 					}
 					continue
 				}
@@ -268,13 +271,14 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				// If we had a successful result return what we currently have
 				// Or we are done sending relays, and we have no other relays pending results.
 				if success { // Check wether we can return the valid results or we need to send another relay
+					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{done: true}
 					return
 				}
 				// If should retry == true, send a new batch. (success == false)
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState()}
+					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
+					relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState(), numOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
 				}
@@ -283,7 +287,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState()}
+					relayTaskChannel <- RelayStateSendInstructions{relayState: crsm.getLatestState(), numOfProviders: 1}
 					// Add ticker launch metrics
 					go crsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(crsm.relaySender.GetChainIdAndApiInterface())
 				}
