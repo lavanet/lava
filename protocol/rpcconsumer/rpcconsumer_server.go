@@ -238,7 +238,10 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	usedProviders := lavasession.NewUsedProviders(nil)
 
 	// Get quorum parameters from protocol message
-	quorumParams := protocolMessage.GetQuorumParameters()
+	quorumParams, err := protocolMessage.GetQuorumParameters()
+	if err != nil {
+		return false, err
+	}
 
 	relayProcessor := NewRelayProcessor(
 		ctx,
@@ -441,7 +444,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
-	quorumParams := protocolMessage.GetQuorumParameters()
+	quorumParams, err := protocolMessage.GetQuorumParameters()
+	if err != nil {
+		return nil, err
+	}
 
 	relayProcessor := NewRelayProcessor(
 		ctx,
@@ -1346,7 +1352,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
 
 		// Get quorum parameters from the data reliability protocol message
-		quorumParams := dataReliabilityProtocolMessage.GetQuorumParameters()
+		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
+		if err != nil {
+			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
+		}
 
 		relayProcessorDataReliability := NewRelayProcessor(
 			ctx,
@@ -1358,7 +1367,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 			rpccs.consumerSessionManager.GetQoSManager(),
 		)
-		err := rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
+		err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
