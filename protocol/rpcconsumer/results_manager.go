@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -16,7 +17,7 @@ type ResultsManager interface {
 	RequiredResults(requiredSuccesses int, selection Selection) bool
 	ProtocolErrors() uint64
 	HasResults() bool
-	GetResults() (success int, nodeErrors int, protocolErrors int)
+	GetResults() (success int, nodeErrors int, specialNodeErrors int, protocolErrors int)
 	GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError)
 	SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error)
 	GetBestNodeErrorMessageForUser() RelayError
@@ -110,19 +111,27 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 	return nil
 }
 
-func (rm *ResultsManagerInst) GetResults() (success int, nodeErrors int, protocolErrors int) {
+func (rm *ResultsManagerInst) GetResults() (success int, nodeErrors int, specialNodeErrors int, protocolErrors int) {
 	rm.lock.RLock()
 	defer rm.lock.RUnlock()
 
-	nodeErrors = len(rm.nodeResponseErrors.relayErrors)
+	specialErrorPatterns := []string{"The node does not track the shard ID"}
+	for _, err := range rm.nodeResponseErrors.relayErrors {
+		for _, specialErrorPattern := range specialErrorPatterns {
+			if strings.Contains(string(err.response.relayResult.Reply.Data), specialErrorPattern) {
+				specialNodeErrors++
+			}
+		}
+	}
+	nodeErrors = len(rm.nodeResponseErrors.relayErrors) - specialNodeErrors
 	protocolErrors = len(rm.protocolResponseErrors.relayErrors)
 	success = len(rm.successResults)
-	return success, nodeErrors, protocolErrors
+	return success, nodeErrors, specialNodeErrors, protocolErrors
 }
 
 func (rm *ResultsManagerInst) String() string {
-	results, nodeErrors, protocolErrors := rm.GetResults()
-	return fmt.Sprintf("resultsManager {success %d, nodeErrors:%d, protocolErrors:%d}", results, nodeErrors, protocolErrors)
+	results, nodeErrors, specialNodeErrors, protocolErrors := rm.GetResults()
+	return fmt.Sprintf("resultsManager {success %d, nodeErrors:%d, specialNodeErrors:%d, protocolErrors:%d}", results, nodeErrors, specialNodeErrors, protocolErrors)
 }
 
 // this function returns all results that came from a node, meaning success, and node errors

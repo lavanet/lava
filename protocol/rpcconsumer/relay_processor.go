@@ -186,36 +186,15 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 }
 
 // Deciding wether we should send a relay retry attempt based on the node error
-func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
+func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, specialNodeErrors int, hash string) bool {
 	// Retries will be performed based on the following scenarios:
 	// 1. If relayCountOnNodeError > 0
 	// 2. If we have 0 successful relays and we have only node errors.
 	// 3. Hash calculation was successful.
 	// 4. Number of retries < relayCountOnNodeError.
 	if relayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
-		if nodeErrors <= relayCountOnNodeError {
-			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
-
-			// Check if user specified to disable caching - OR
-			// Check hash already exist, if it does, we don't want to retry
-			if !rp.relayRetriesManager.CheckHashInCache(hash) {
-				// If we didn't find the hash in the hash map we can retry
-				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", utils.ToHexString(hash)))
-				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-				return false
-			}
-			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", utils.ToHexString(hash)))
-		} else {
-			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
-			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-			utils.LavaFormatWarning("Failed to recover retries on node errors, might be an invalid input", nil,
-				utils.LogAttr("api", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name),
-				utils.LogAttr("params", rp.RelayStateMachine.GetProtocolMessage().GetRPCMessage().GetParams()),
-				utils.LogAttr("chainId", chainId),
-				utils.LogAttr("apiInterface", apiInterface),
-				utils.LogAttr("hash", utils.ToHexString(hash)),
-			)
-			rp.relayRetriesManager.AddHashToCache(hash)
+		if nodeErrors <= relayCountOnNodeError && specialNodeErrors <= relayCountOnNodeError {
+			return false
 		}
 	}
 	// Do not perform a retry
@@ -228,7 +207,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	resultsCount, nodeErrors, _ := rp.GetResults()
+	resultsCount, nodeErrors, specialNodeErrors, _ := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
 	if resultsCount >= rp.requiredSuccesses {
@@ -250,7 +229,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() (bool, int) {
 		// We need a quorum of all node results
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
-			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash), nodeErrors
+			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors, hash), nodeErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
