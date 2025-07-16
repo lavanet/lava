@@ -117,9 +117,11 @@ func (rm *ResultsManagerInst) GetResults() (success int, nodeErrors int, special
 
 	specialErrorPatterns := []string{"The node does not track the shard ID"}
 	for _, err := range rm.nodeResponseErrors.relayErrors {
-		for _, specialErrorPattern := range specialErrorPatterns {
-			if strings.Contains(string(err.response.relayResult.Reply.Data), specialErrorPattern) {
-				specialNodeErrors++
+		if err.response != nil && err.response.relayResult.Reply != nil && err.response.relayResult.Reply.Data != nil {
+			for _, specialErrorPattern := range specialErrorPatterns {
+				if strings.Contains(string(err.response.relayResult.Reply.Data), specialErrorPattern) {
+					specialNodeErrors++
+				}
 			}
 		}
 	}
