@@ -23,7 +23,7 @@ type ErrorData struct {
 }
 
 func TestGetUniqueGuidResponseForError(t *testing.T) {
-	plog, err := NewRPCConsumerLogs(nil, nil, nil)
+	plog, err := NewRPCConsumerLogs(nil, nil, nil, nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -39,7 +39,7 @@ func TestGetUniqueGuidResponseForError(t *testing.T) {
 }
 
 func TestGetUniqueGuidResponseDeterministic(t *testing.T) {
-	plog, err := NewRPCConsumerLogs(nil, nil, nil)
+	plog, err := NewRPCConsumerLogs(nil, nil, nil, nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -58,7 +58,7 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
 		mt, _, _ := c.ReadMessage()
-		plog, _ := NewRPCConsumerLogs(nil, nil, nil)
+		plog, _ := NewRPCConsumerLogs(nil, nil, nil, nil)
 		responseError := errors.New("response error")
 		formatterMsg := plog.AnalyzeWebSocketErrorAndGetFormattedMessage(c.LocalAddr().String(), responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
 		assert.NotNil(t, formatterMsg)
