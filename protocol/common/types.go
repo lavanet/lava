@@ -7,6 +7,12 @@ type QuorumParams struct {
 	Min  int
 }
 
+var DefaultQuorumParams = QuorumParams{
+	Rate: 1,
+	Max:  1,
+	Min:  1,
+}
+
 func (qp QuorumParams) Enabled() bool {
-	return !(qp.Rate == 1 && qp.Max == 1 && qp.Min == 1)
+	return !(qp.Rate == DefaultQuorumParams.Rate && qp.Max == DefaultQuorumParams.Max && qp.Min == DefaultQuorumParams.Min)
 }

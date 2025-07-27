@@ -333,7 +333,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			// Create canonical form for comparison
 			canonicalForm, err := types.CreateCanonicalJSON(result.Reply.Data)
 			if err != nil {
-				continue
+				utils.LavaFormatError("failed to create canonical form", err, utils.LogAttr("result", result.Reply.Data))
 			}
 
 			if count, exists := countMap[canonicalForm]; exists {
