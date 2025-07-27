@@ -10,6 +10,7 @@ var allowedErrors = map[string]string{
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
 	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Failed To Connect to cache at address":                          "This error is allowed because it is caused by cache being connected only during the test and not during the bootup",
+	"failed to create canonical form":                                "This error is allowed because it is caused by the relay processor not being able to create a canonical form",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{

@@ -115,7 +115,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -153,7 +153,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults()
+				results, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
@@ -186,7 +186,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -256,7 +256,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			1,
+			common.DefaultQuorumParams,
 			consistency,
 			relayProcessorMetrics,
 			relayProcessorMetrics,
@@ -304,7 +304,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				sendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults()
+				results, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)

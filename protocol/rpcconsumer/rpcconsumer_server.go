@@ -236,9 +236,16 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	success := false
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Get quorum parameters from protocol message
+	quorumParams, err := protocolMessage.GetQuorumParameters()
+	if err != nil {
+		return false, err
+	}
+
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		1,
+		quorumParams,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -255,11 +262,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+		err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+			err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -389,7 +396,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 
 	relaySentTime := time.Now()
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, analytics)
-	if err != nil && !relayProcessor.HasResults() {
+	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
 		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
@@ -436,14 +443,20 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
+
+	quorumParams, err := protocolMessage.GetQuorumParameters()
+	if err != nil {
+		return nil, err
+	}
+
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		rpccs.requiredResponses,
+		quorumParams,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 		rpccs.consumerSessionManager.GetQoSManager(),
 	)
 
@@ -455,7 +468,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if task.IsDone() {
 			return relayProcessor, task.err
 		}
-		err := rpccs.sendRelayToProvider(ctx, task.relayState, relayProcessor, task.analytics)
+		utils.LavaFormatTrace("[RPCConsumerServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.numOfProviders))
+		err := rpccs.sendRelayToProvider(ctx, task.numOfProviders, task.relayState, relayProcessor, task.analytics)
 		relayProcessor.UpdateBatch(err)
 	}
 
@@ -585,6 +599,7 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
+	numOfProviders int,
 	relayState *RelayState,
 	relayProcessor *RelayProcessor,
 	analytics *metrics.RelayMetrics,
@@ -702,13 +717,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
-				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 				if err != nil {
 					return err
 				}
@@ -1335,9 +1350,16 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		userData := protocolMessage.GetUserData()
 		//  We create new protocol message from the old one, but with a new instance of relay request data.
 		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
+
+		// Get quorum parameters from the data reliability protocol message
+		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
+		if err != nil {
+			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
+		}
+
 		relayProcessorDataReliability := NewRelayProcessor(
 			ctx,
-			1,
+			quorumParams,
 			rpccs.consumerConsistency,
 			rpccs.rpcConsumerLogs,
 			rpccs,
@@ -1345,7 +1367,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 			rpccs.consumerSessionManager.GetQoSManager(),
 		)
-		err := rpccs.sendRelayToProvider(ctx, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
+		err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
