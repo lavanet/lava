@@ -154,7 +154,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 		MaxComputeUnits:   200,
 		PairingEpoch:      epoch1,
 	}
-	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
+	err := csm.UpdateAllProviders(epoch1, cswpList, nil) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
 	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
