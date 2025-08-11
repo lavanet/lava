@@ -29,7 +29,7 @@ type ConsumerStateQueryInf interface {
 
 type ConsumerSessionManagerInf interface {
 	RPCEndpoint() lavasession.RPCEndpoint
-	UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider) error
+	UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, backupProviderList map[uint64]*lavasession.ConsumerSessionsWithProvider) error
 }
 
 type PairingUpdater struct {
@@ -40,6 +40,7 @@ type PairingUpdater struct {
 	pairingUpdatables          []*PairingUpdatable
 	specId                     string
 	staticProviders            []*lavasession.RPCProviderEndpoint
+	backupProviders            []*lavasession.RPCProviderEndpoint
 }
 
 func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *PairingUpdater {
@@ -60,21 +61,33 @@ func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.R
 	return len(pu.staticProviders)
 }
 
+func (pu *PairingUpdater) updateBackupProviders(backupProviders []*lavasession.RPCProviderEndpoint) {
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
+	utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
+	if len(backupProviders) > 0 && len(pu.backupProviders) == 0 {
+		utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
+		pu.backupProviders = backupProviders
+	}
+}
+
 func (pu *PairingUpdater) getNumberOfStaticProviders() int {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
 	return len(pu.staticProviders)
 }
 
-func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint) error {
+func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint, backupProviders []*lavasession.RPCProviderEndpoint) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
-	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)
-	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1) //fetching pairing list from blockchain
+	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)                           //updating static providers, updateStaticProviders function returns the number of relevant static providers
+	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {                                //if there is an error from blockchain AND no static providers || epoch = 0, return error
 		return err
 	}
+	utils.LavaFormatInfo("calling update backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
+	pu.updateBackupProviders(backupProviders) //updating backup providers
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
@@ -179,7 +192,12 @@ func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pair
 	if len(pu.staticProviders) > 0 {
 		pairingListForThisCSM = pu.addStaticProvidersToPairingList(pairingListForThisCSM, consumerSessionManager.RPCEndpoint(), epoch)
 	}
-	err = consumerSessionManager.UpdateAllProviders(epoch, pairingListForThisCSM)
+	backupProviders := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+	if len(pu.backupProviders) > 0 {
+		utils.LavaFormatInfo("Adding backup providers to pairing list", utils.Attribute{Key: "backupProviders", Value: len(pu.backupProviders)})
+		backupProviders = pu.parseBackupProviders(pairingListForThisCSM, consumerSessionManager.RPCEndpoint(), epoch)
+	}
+	err = consumerSessionManager.UpdateAllProviders(epoch, pairingListForThisCSM, backupProviders)
 	return
 }
 
@@ -223,6 +241,52 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 		pairingList[startIdx+uint64(idx)] = staticProviderEntry
 	}
 	return pairingList
+}
+
+// parseBackupProviders transforms raw backup provider data into ConsumerSessionsWithProvider objects for emergency fallback scenarios.
+func (pu *PairingUpdater) parseBackupProviders(pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) map[uint64]*lavasession.ConsumerSessionsWithProvider {
+	backupProviders := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+	startIdx := uint64(0)
+	// Calculate start index to avoid conflicts with existing pairing list indices
+	for key := range pairingList {
+		if key >= startIdx {
+			startIdx = key + 1
+		}
+	}
+	for idx, provider := range pu.backupProviders {
+		// Only take the provider entries relevant for this apiInterface (filter by API compatibility)
+		if provider.ApiInterface != rpcEndpoint.ApiInterface {
+			continue
+		}
+		endpoints := []*lavasession.Endpoint{}
+		for _, url := range provider.NodeUrls {
+			extensions := map[string]struct{}{}
+			for _, extension := range url.Addons {
+				extensions[extension] = struct{}{}
+			}
+
+			// TODO might be problematic adding both addons and extensions with same map.
+			endpoint := &lavasession.Endpoint{
+				NetworkAddress: url.Url,
+				Enabled:        true,
+				Addons:         extensions,
+				Extensions:     extensions,
+				Connections:    []*lavasession.EndpointConnection{},
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+		// Create backup provider entry with high compute units and stake for emergency scenarios
+		backupProviderEntry := lavasession.NewConsumerSessionWithProvider(
+			"BackupProvider_"+strconv.Itoa(idx),
+			endpoints,
+			math.MaxUint64/2, // High compute units for emergency availability
+			epoch,
+			sdk.NewInt64Coin("ulava", 1000000000000000), // 1b LAVA stake for backup providers
+		)
+		backupProviderEntry.StaticProvider = true // Mark as static provider for simplified handling
+		backupProviders[startIdx+uint64(idx)] = backupProviderEntry
+	}
+	return backupProviders
 }
 
 func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, currentGeo planstypes.Geolocation, pairingList []epochstoragetypes.StakeEntry, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) (filteredList map[uint64]*lavasession.ConsumerSessionsWithProvider, err error) {
