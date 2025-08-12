@@ -120,6 +120,12 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 			reqPayload = string(response.relayResult.Request.RelayData.Data)
 			reqHeaders = response.relayResult.Request.RelayData.Metadata
 		}
+		// Get request URL safely
+		requestUrl := ""
+		if protocolMessage.RelayPrivateData() != nil {
+			requestUrl = protocolMessage.RelayPrivateData().ApiUrl
+		}
+
 		utils.LavaFormatError(
 			"received node error reply from provider",
 			err,
@@ -127,7 +133,7 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 			utils.LogAttr("provider", response.relayResult.ProviderInfo),
 			utils.LogAttr("statusCode", response.relayResult.StatusCode),
 			utils.LogAttr("api", protocolMessage.GetApi().Name),
-			utils.LogAttr("requestUrl", protocolMessage.RelayPrivateData().ApiUrl),
+			utils.LogAttr("requestUrl", requestUrl),
 			utils.LogAttr("payload", string(response.relayResult.Reply.Data)),
 			utils.LogAttr("headers", response.relayResult.Reply.Metadata),
 			utils.LogAttr("requestPayload", reqPayload),
