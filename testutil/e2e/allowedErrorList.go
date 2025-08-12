@@ -11,6 +11,7 @@ var allowedErrors = map[string]string{
 	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Failed To Connect to cache at address":                          "This error is allowed because it is caused by cache being connected only during the test and not during the bootup",
 	"Not Implemented":                                                "This error is allowed because the /lavanet/lava/pairing/clients API endpoint returns 501 Not Implemented from providers during tests",
+	"tx already exists in cache":                                     "This error is allowed because it can occur when transactions are retried during the test",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
