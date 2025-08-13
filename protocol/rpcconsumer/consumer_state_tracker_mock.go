@@ -92,15 +92,15 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) GetProtocolVersion(ctx any) *
 }
 
 // RegisterConsumerSessionManagerForPairingUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint) {
+func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager, staticProvidersList)
+	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }
 
 // RegisterConsumerSessionManagerForPairingUpdates indicates an expected call of RegisterConsumerSessionManagerForPairingUpdates.
-func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, staticProvidersList any) *gomock.Call {
+func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, staticProvidersList, backupProvidersList any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }
 
 // RegisterFinalizationConsensusForUpdates mocks base method.
