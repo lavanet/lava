@@ -1,6 +1,8 @@
 package chainlib
 
 import (
+	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
@@ -108,6 +110,65 @@ func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]s
 	}
 }
 
+const (
+	DEFAULT_QUORUM_RATE = 0.66
+	DEFAULT_QUORUM_MAX  = 5
+	DEFAULT_QUORUM_MIN  = 2
+)
+
+func (bpm *BaseProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
+	var err error
+	enabled := false
+	var quorumRate float64
+	var quorumMax int
+	var quorumMin int
+
+	quorumRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_RATE]
+	enabled = enabled || ok
+	if !ok {
+		quorumRate = DEFAULT_QUORUM_RATE
+	} else {
+		quorumRate, err = strconv.ParseFloat(quorumRateString, 64)
+		if err != nil || quorumRate < 0 || quorumRate > 1 {
+			return common.QuorumParams{}, errors.New("invalid quorum rate")
+		}
+	}
+
+	quorumMaxRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MAX]
+	enabled = enabled || ok
+	if !ok {
+		quorumMax = DEFAULT_QUORUM_MAX
+	} else {
+		quorumMax, err = strconv.Atoi(quorumMaxRateString)
+		if err != nil || quorumMax < 0 {
+			return common.QuorumParams{}, errors.New("invalid quorum max")
+		}
+	}
+
+	quorumMinRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MIN]
+	enabled = enabled || ok
+	if !ok {
+		quorumMin = DEFAULT_QUORUM_MIN
+	} else {
+		quorumMin, err = strconv.Atoi(quorumMinRateString)
+		if err != nil || quorumMin < 0 {
+			return common.QuorumParams{}, errors.New("invalid quorum min")
+		}
+	}
+
+	if quorumMin > quorumMax {
+		return common.QuorumParams{}, errors.New("quorum min is greater than quorum max")
+	}
+
+	if enabled {
+		utils.LavaFormatInfo("Quorum parameters", utils.LogAttr("quorumRate", quorumRate), utils.LogAttr("quorumMax", quorumMax), utils.LogAttr("quorumMin", quorumMin))
+		return common.QuorumParams{Rate: quorumRate, Max: quorumMax, Min: quorumMin}, nil
+	} else {
+		utils.LavaFormatInfo("Quorum parameters not enabled")
+		return common.QuorumParams{Rate: 1, Max: 1, Min: 1}, nil
+	}
+}
+
 type ProtocolMessage interface {
 	ChainMessage
 	GetDirectiveHeaders() map[string]string
@@ -117,4 +178,5 @@ type ProtocolMessage interface {
 	GetUserData() common.UserData
 	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
+	GetQuorumParameters() (common.QuorumParams, error)
 }
