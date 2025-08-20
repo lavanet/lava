@@ -45,6 +45,7 @@ require (
 	github.com/itchyny/gojq v0.12.16
 	github.com/jhump/protoreflect v1.15.1
 	github.com/joho/godotenv v1.3.0
+	github.com/json-iterator/go v1.1.12
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/praserx/ipconv v1.2.1
 	github.com/spf13/pflag v1.0.5
@@ -121,6 +122,8 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/gomega v1.34.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
