@@ -73,7 +73,7 @@ func (sw *selectionWeighterInst) WeightedChoice(entries []Entry) string {
 		currentWeight += int64(float64(sw.weightInner(entry.Address)) * entry.Part)
 		if currentWeight > randWeight {
 			utils.LavaFormatInfo("selected provider", utils.LogAttr("address", entry.Address), utils.LogAttr("weight", currentWeight), utils.LogAttr("randWeight", randWeight))
-			return entry.Address //return selected provider address
+			return entry.Address // return selected provider address
 		}
 	}
 

@@ -81,13 +81,13 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1) //fetching pairing list from blockchain
-	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)                           //updating static providers, updateStaticProviders function returns the number of relevant static providers
-	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {                                //if there is an error from blockchain AND no static providers || epoch = 0, return error
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1) // fetching pairing list from blockchain
+	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)                           // updating static providers, updateStaticProviders function returns the number of relevant static providers
+	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {                                // if there is an error from blockchain AND no static providers || epoch = 0, return error
 		return err
 	}
 	utils.LavaFormatInfo("calling update backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
-	pu.updateBackupProviders(backupProviders) //updating backup providers
+	pu.updateBackupProviders(backupProviders) // updating backup providers
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
