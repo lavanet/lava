@@ -886,9 +886,12 @@ func (lt *lavaTest) saveLogs() {
 					}
 				}
 				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
-				if !lt.testFinishedProperly || !isAllowedError {
+				if !isAllowedError {
 					errorFound = true
 					errorLines = append(errorLines, line)
+				} else if !lt.testFinishedProperly {
+					// Save allowed errors for debugging when test didn't finish properly, but don't treat them as failures
+					errorLines = append(errorLines, line+" [ALLOWED ERROR]")
 				}
 			}
 		}

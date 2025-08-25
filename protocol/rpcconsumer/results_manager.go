@@ -45,6 +45,14 @@ func (rp *ResultsManagerInst) setErrorResponse(response *relayResponse) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
 	utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: rp.guid}, utils.Attribute{Key: "provider", Value: response.relayResult.ProviderInfo.ProviderAddress}, utils.Attribute{Key: "error", Value: response.err.Error()})
+	utils.LavaFormatError(
+		"could not send relay to provider",
+		response.err,
+		utils.Attribute{Key: "GUID", Value: rp.guid},
+		utils.Attribute{Key: "provider", Value: response.relayResult.ProviderInfo.ProviderAddress},
+		utils.Attribute{Key: "statusCode", Value: response.relayResult.StatusCode},
+		utils.Attribute{Key: "providerTrailer", Value: response.relayResult.ProviderTrailer},
+	)
 	rp.protocolResponseErrors.relayErrors = append(rp.protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 }
 
@@ -104,6 +112,33 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 		// we may choose to wait until there will be a response or timeout happens
 		// if we decide to wait and timeout happens we will take the majority of response messages
 		err := fmt.Errorf("%s", errorMessage)
+		// Log node error payload and headers for troubleshooting
+		// also log the original request payload and request headers if available
+		reqPayload := ""
+		var reqHeaders interface{}
+		if response.relayResult.Request != nil && response.relayResult.Request.RelayData != nil {
+			reqPayload = string(response.relayResult.Request.RelayData.Data)
+			reqHeaders = response.relayResult.Request.RelayData.Metadata
+		}
+		// Get request URL safely
+		requestUrl := ""
+		if protocolMessage.RelayPrivateData() != nil {
+			requestUrl = protocolMessage.RelayPrivateData().ApiUrl
+		}
+
+		utils.LavaFormatError(
+			"received node error reply from provider",
+			err,
+			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("provider", response.relayResult.ProviderInfo),
+			utils.LogAttr("statusCode", response.relayResult.StatusCode),
+			utils.LogAttr("api", protocolMessage.GetApi().Name),
+			utils.LogAttr("requestUrl", requestUrl),
+			utils.LogAttr("payload", string(response.relayResult.Reply.Data)),
+			utils.LogAttr("headers", response.relayResult.Reply.Metadata),
+			utils.LogAttr("requestPayload", reqPayload),
+			utils.LogAttr("requestHeaders", reqHeaders),
+		)
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 		return err
 	}
@@ -164,6 +199,7 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 	resultsCount := len(rp.successResults)
 	if resultsCount >= requiredSuccesses {
 		// we have enough successes, we can return
+		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
 		return true
 	}
 	if selection == Quorum {
@@ -171,6 +207,7 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= requiredSuccesses {
 			// we have enough node results for our quorum
+			utils.LavaFormatDebug("Reached RequiredResults with errors", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("requiredSuccesses", requiredSuccesses))
 			return true
 		}
 	}
