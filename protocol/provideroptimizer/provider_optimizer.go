@@ -35,8 +35,8 @@ const (
 )
 
 var (
-	OptimizerNumTiers = 4
-	MinimumEntries    = 5
+	OptimizerNumTiers = 4 // number of tiers to use
+	MinimumEntries    = 5 // minimum number of entries in a tier to be considered for selection
 	ATierChance       = 0.75
 	LastTierChance    = 0.0
 	AutoAdjustTiers   = false
@@ -346,8 +346,8 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	selectionTierScoresCount := selectionTier.ScoresCount()
+	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock) // spliting to tiers by score
+	selectionTierScoresCount := selectionTier.ScoresCount()                                                                  // length of the selectionTier
 	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
 
 	if selectionTierScoresCount == 0 {

@@ -94,7 +94,7 @@ func (s *strategyValue) Type() string {
 
 type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
-	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint)
+	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -136,6 +136,7 @@ type rpcConsumerStartOptions struct {
 	stateShare               bool
 	refererData              *chainlib.RefererData
 	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
+	backupProvidersList      []*lavasession.RPCProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
 }
 
@@ -237,6 +238,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	errCh := make(chan error)
 
+	// Register for updates
 	consumerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + consumerAddr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
@@ -422,7 +424,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 	// Register For Updates
-	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
+	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList, options.backupProvidersList)
 
 	var relaysMonitor *metrics.RelaysMonitor
 	if options.cmdFlags.RelaysHealthEnableFlag {
@@ -620,6 +622,19 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				}
 			}
 
+			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseEndpointsCustomName function
+			var backupProviderEndpoints []*lavasession.RPCProviderEndpoint
+			if viper.IsSet(common.BackupProvidersConfigName) {
+				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
+				backupProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
+				if err != nil {
+					return utils.LavaFormatError("invalid backup providers definition", err)
+				}
+				for _, endpoint := range backupProviderEndpoints {
+					utils.LavaFormatInfo("Backup Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
+				}
+			}
+
 			// set up the txFactory with gas adjustments and gas
 			txFactory = txFactory.WithGasAdjustment(viper.GetFloat64(flags.FlagGasAdjustment))
 			txFactory = txFactory.WithGasPrices(gasPricesStr)
@@ -733,6 +748,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				rpcConsumerSharedState,
 				refererData,
 				staticProviderEndpoints,
+				backupProviderEndpoints,
 				geolocation,
 			})
 			return err

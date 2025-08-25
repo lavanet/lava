@@ -74,7 +74,7 @@ func TestHappyFlow(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 	pairingList[0].Endpoints[0], pairingList[0].Endpoints[1] = pairingList[0].Endpoints[1], pairingList[0].Endpoints[0]
 
 	// update the pairing and wait for the routine to send all requests
-	err = csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err = csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 
 	_, ok := csm.pairing[pairingList[0].PublicLavaAddress]
@@ -272,7 +272,7 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 
 	addCu := 10
@@ -332,7 +332,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}) // create two providers
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}, nil) // create two providers
 	require.NoError(t, err)
 	timeLimit := time.Second * 30
 	loopStartTime := time.Now()
@@ -438,7 +438,7 @@ func TestHappyFlowVirtualEpoch(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	css, err := csm.GetSessions(ctx, 1, maxCuForVirtualEpoch*(virtualEpoch+1), NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch, "") // get a session
 	require.NoError(t, err)
@@ -461,7 +461,7 @@ func TestVirtualEpochWithFailure(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 
 	_, err = csm.GetSessions(ctx, 1, maxCuForVirtualEpoch*(virtualEpoch+1)+10, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch, "") // get a session
@@ -472,7 +472,7 @@ func TestPairingReset(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	csm.validAddresses = []string{}                                                                                                     // set valid addresses to zero
 	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
@@ -497,7 +497,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	for {
 		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
@@ -531,7 +531,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	pairingList := createPairingList("", true)
 	// make list shorter otherwise we wont be able to ban all as it takes slightly more time now
 	pairingList = map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 
 	for numberOfResets := 0; numberOfResets < numberOfResetsToTest; numberOfResets++ {
@@ -586,7 +586,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 
 	type session struct {
@@ -646,7 +646,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		}
 	}
 
-	err = csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2", true)) // update the providers. with half of them
+	err = csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2", true), nil) // update the providers. with half of them
 	require.NoError(t, err)
 
 	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
@@ -700,7 +700,7 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	ch1 := make(chan int)
 	ch2 := make(chan int)
@@ -745,7 +745,7 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	ch1 := make(chan int)
 	ch2 := make(chan int)
@@ -761,7 +761,7 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 		if len(all_chs) == parallelGoRoutines { // at half of the go routines launch the swap.
 			go func() {
 				utils.LavaFormatInfo("#### UPDATING PROVIDERS ####")
-				err := csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2", true)) // update the providers. with half of them
+				err := csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2", true), nil) // update the providers. with half of them
 				require.NoError(t, err)
 			}()
 		}
@@ -798,7 +798,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
@@ -832,7 +832,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
@@ -842,7 +842,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
 
-		err = csm.UpdateAllProviders(secondEpochHeight, pairingList) // update the providers again.
+		err = csm.UpdateAllProviders(secondEpochHeight, pairingList, nil) // update the providers again.
 		require.NoError(t, err)
 		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 		require.NoError(t, err)
@@ -853,7 +853,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", false)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	cs, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.Nil(t, cs)
@@ -863,7 +863,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 func TestUpdateAllProviders(t *testing.T) {
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
 	require.Equal(t, len(csm.validAddresses), numberOfProviders) // checking there are 2 valid addresses
 	require.Equal(t, len(csm.pairingAddresses), numberOfProviders)
@@ -876,9 +876,9 @@ func TestUpdateAllProviders(t *testing.T) {
 func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
-	err = csm.UpdateAllProviders(firstEpochHeight, pairingList)
+	err = csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.Error(t, err)
 	// perform same validations as normal usage
 	require.Equal(t, len(csm.validAddresses), numberOfProviders) // checking there are 2 valid addresses
@@ -893,7 +893,7 @@ func TestGetSession(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
 	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "")
 	require.NoError(t, err)
@@ -933,7 +933,7 @@ func TestPairingWithAddons(t *testing.T) {
 		t.Run(addon, func(t *testing.T) {
 			csm := CreateConsumerSessionManager()
 			pairingList := createPairingList("", true)
-			err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+			err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 			require.NoError(t, err)
 			time.Sleep(5 * time.Millisecond) // let probes finish
 			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil)}, utils.Attribute{Key: "addon", Value: addon})
@@ -1001,7 +1001,7 @@ func TestPairingWithExtensions(t *testing.T) {
 		t.Run(extensionOpt.name, func(t *testing.T) {
 			csm := CreateConsumerSessionManager()
 			pairingList := createPairingList("", true)
-			err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+			err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 			require.NoError(t, err)
 			time.Sleep(5 * time.Millisecond) // let probes finish
 			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)}, utils.Attribute{Key: "extensions", Value: extensionOpt.extensions}, utils.Attribute{Key: "addon", Value: extensionOpt.addon})
@@ -1041,7 +1041,7 @@ func TestPairingWithExtensions(t *testing.T) {
 func TestNoPairingsError(t *testing.T) {
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // let probes finish
 	_, err = csm.getValidProviderAddresses(context.Background(), 1, map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
@@ -1052,9 +1052,9 @@ func TestNoPairingsError(t *testing.T) {
 func TestPairingWithStateful(t *testing.T) {
 	ctx := context.Background()
 	t.Run("stateful", func(t *testing.T) {
-		csm := CreateConsumerSessionManager()                        // crates an optimizer returning always 1 provider
-		pairingList := createPairingList("", true)                   // creates 10 providers
-		err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+		csm := CreateConsumerSessionManager()                             // crates an optimizer returning always 1 provider
+		pairingList := createPairingList("", true)                        // creates 10 providers
+		err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 		require.NoError(t, err)
 		addon := ""
 		time.Sleep(5 * time.Millisecond) // let probes finish
@@ -1082,7 +1082,7 @@ func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}, nil) // update the providers.
 	require.NoError(t, err)
 	utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
 	for i := 0; i < MaxSessionsAllowedPerProvider; i++ {

@@ -61,7 +61,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 			PairingEpoch:      epoch,
 			Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayer}}}},
 		},
-	})
+	}, nil)
 
 	consumerConsistency := NewConsumerConsistency(specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{
