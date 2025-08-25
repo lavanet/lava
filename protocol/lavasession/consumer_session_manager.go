@@ -846,13 +846,6 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProviderFromBacku
 			continue
 		}
 
-		// Check if provider has enough compute units for the requested session
-		if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {
-			// Add to ignored list to avoid retrying failed providers
-			ignoredProviders.providers[providerAddress] = struct{}{}
-			continue
-		}
-
 		backupProviderAddresses = append(backupProviderAddresses, providerAddress)
 	}
 
