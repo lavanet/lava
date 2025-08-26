@@ -222,7 +222,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	resultsCount, nodeErrors, specialNodeErrors, _ := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	neededForQuorum := int(math.Ceil(rp.quorumParams.Rate * float64(max(rp.quorumParams.Min, tries))))
+	neededForQuorum := rp.getActualQuorumSize(resultsCount)
 	if rp.quorumParams.Enabled() && neededForQuorum <= rp.highestQourum ||
 		!rp.quorumParams.Enabled() && resultsCount >= rp.quorumParams.Min {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
@@ -237,20 +237,83 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
 			}
 		}
+		if rp.debugRelay {
+			utils.LavaFormatDebug("HasRequiredNodeResults quorum met",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("tries", tries),
+				utils.LogAttr("neededForQuorum", neededForQuorum),
+				utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+				utils.LogAttr("resultsCount", resultsCount),
+				utils.LogAttr("nodeErrors", nodeErrors),
+				utils.LogAttr("specialNodeErrors", specialNodeErrors),
+				utils.LogAttr("highestQourum", rp.highestQourum),
+			)
+		}
 		return true, nodeErrors
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
-		if nodeErrors+resultsCount >= neededForQuorum {
+
+		// Define retryOnNodeErrorFlow based on quorum feature status
+		var retryForQuorumNeeded bool
+
+		if rp.quorumParams.Enabled() {
+			// Quorum feature enabled: check if quorum is still mathematically possible and quorum is not yet reached
+			maxRemainingProviders := rp.quorumParams.Max - (nodeErrors + resultsCount)
+			// The following line checks if, after accounting for the maximum possible additional responses (maxRemainingProviders)
+			// and the current highest number of matching responses (rp.highestQourum), it is still mathematically possible
+			// to reach the required quorum threshold (calculated as quorum rate * max providers).
+			// If not, then retrying is not needed because quorum cannot be achieved anymore.
+			retryForQuorumNeeded = maxRemainingProviders+rp.highestQourum >= int(math.Ceil(rp.quorumParams.Rate*float64(rp.quorumParams.Max)))
+			if rp.debugRelay {
+				utils.LavaFormatDebug("HasRequiredNodeResults retryForQuorumNeeded calculation", utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("maxRemainingProviders", maxRemainingProviders),
+					utils.LogAttr("rp.highestQourum", rp.highestQourum),
+					utils.LogAttr("retryForQuorumNeeded", retryForQuorumNeeded),
+				)
+			}
+		} else {
+			// Quorum feature disabled: check if we have enough results for quorum
+			retryForQuorumNeeded = !(nodeErrors+resultsCount >= neededForQuorum)
+		}
+
+		if !retryForQuorumNeeded {
 			// Retry on node error flow:
-			return !rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors), nodeErrors
+			shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors)
+			if rp.debugRelay {
+				utils.LavaFormatDebug("HasRequiredNodeResults shouldRetry",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("shouldRetry", shouldRetry),
+					utils.LogAttr("tries", tries),
+					utils.LogAttr("neededForQuorum", neededForQuorum),
+					utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+					utils.LogAttr("resultsCount", resultsCount),
+					utils.LogAttr("nodeErrors", nodeErrors),
+					utils.LogAttr("specialNodeErrors", specialNodeErrors),
+					utils.LogAttr("highestQourum", rp.highestQourum),
+				)
+			}
+			return !shouldRetry, nodeErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
+	if rp.debugRelay {
+		utils.LavaFormatDebug("HasRequiredNodeResults returning false",
+			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("tries", tries),
+			utils.LogAttr("neededForQuorum", neededForQuorum),
+			utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+			utils.LogAttr("resultsCount", resultsCount),
+			utils.LogAttr("nodeErrors", nodeErrors),
+			utils.LogAttr("specialNodeErrors", specialNodeErrors),
+			utils.LogAttr("highestQourum", rp.highestQourum),
+		)
+	}
 	return false, nodeErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *relayResponse) {
+
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
@@ -311,9 +374,26 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
+// getActualQuorumSize calculates the actual quorum size based on quorum rate and succeeded replies
+func (rp *RelayProcessor) getActualQuorumSize(succeededReplies int) int {
+	return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, succeededReplies))))
+}
+
 func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
 	if quorumSize <= 0 {
 		return nil, errors.New("quorumSize must be greater than zero")
+	}
+
+	// Declare originalQuorumSize at function level for use in error messages
+	var originalQuorumSize int
+
+	// When quorum feature is enabled, use the actual calculated quorum size for all comparisons
+	if rp.quorumParams.Enabled() {
+		// Preserve the original quorum size for error reporting
+		originalQuorumSize = quorumSize
+
+		actualQuorumSize := rp.getActualQuorumSize(len(results))
+		quorumSize = actualQuorumSize
 	}
 
 	type resultCount struct {
@@ -380,11 +460,24 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			bestQosResult.Quorum = 1
 			return &bestQosResult, nil
 		}
-		return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
-			utils.LogAttr("nilReplies", nilReplies),
-			utils.LogAttr("results", len(results)),
-			utils.LogAttr("maxCount", maxCount),
-			utils.LogAttr("quorumSize", quorumSize))
+		// Only apply quorum logic when quorum feature is enabled
+		if rp.quorumParams.Enabled() {
+			return nil, utils.LavaFormatInfo("equal results count is less than actualQuorumSize",
+				utils.LogAttr("nilReplies", nilReplies),
+				utils.LogAttr("results", len(results)),
+				utils.LogAttr("maxCount", maxCount),
+				utils.LogAttr("actualQuorumSize", quorumSize),
+				utils.LogAttr("originalQuorumSize", originalQuorumSize),
+				utils.LogAttr("succeededReplies", len(results)),
+				utils.LogAttr("quorumRate", rp.quorumParams.Rate))
+		} else {
+			// Quorum feature disabled - return original error message
+			return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
+				utils.LogAttr("nilReplies", nilReplies),
+				utils.LogAttr("results", len(results)),
+				utils.LogAttr("maxCount", maxCount),
+				utils.LogAttr("quorumSize", quorumSize))
+		}
 	}
 
 	mostCommonResult.Quorum = maxCount
@@ -430,6 +523,10 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 			}
 		}
 	}()
+
+	if rp.debugRelay {
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min))
+	}
 	// there are enough successes
 	if successResultsCount >= rp.quorumParams.Min {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
