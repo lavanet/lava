@@ -529,7 +529,6 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 		expectedErrors int
 		useSameData    int // Number of providers that should send the same data (0 = all different)
 	}{
-
 		{
 			name: "quorum not met with different data from providers",
 			quorumParams: common.QuorumParams{
