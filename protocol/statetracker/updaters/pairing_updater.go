@@ -66,9 +66,13 @@ func (pu *PairingUpdater) updateBackupProviders(backupProviders []*lavasession.R
 	defer pu.lock.Unlock()
 	utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
 	if len(backupProviders) > 0 && len(pu.backupProviders) == 0 {
-		utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
-		pu.backupProviders = backupProviders
+		for _, backupProvider := range backupProviders {
+			if backupProvider.ChainID == pu.specId {
+				pu.backupProviders = append(pu.backupProviders, backupProvider)
+			}
+		}
 	}
+	utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(pu.backupProviders)})
 }
 
 func (pu *PairingUpdater) getNumberOfStaticProviders() int {
@@ -237,6 +241,10 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 	for idx, provider := range providers {
 		// Only take the provider entries relevant for this apiInterface
 		if provider.ApiInterface != rpcEndpoint.ApiInterface {
+			continue
+		}
+
+		if provider.ChainID != rpcEndpoint.ChainID {
 			continue
 		}
 
