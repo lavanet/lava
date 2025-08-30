@@ -2,22 +2,23 @@ package reliabilitymanager
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -28,8 +29,8 @@ const (
 )
 
 type TxSender interface {
-	SendVoteReveal(voteID string, vote *VoteData) error
-	SendVoteCommitment(voteID string, vote *VoteData) error
+	SendVoteReveal(voteID string, vote *VoteData, specID string) error
+	SendVoteCommitment(voteID string, vote *VoteData, specID string) error
 }
 
 type ChainTrackerInf interface {
@@ -79,7 +80,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		}
 		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result",
 			utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
-		rm.txSender.SendVoteReveal(voteID, vote)
+		rm.txSender.SendVoteReveal(voteID, vote, voteParams.ChainID)
 		return nil
 	} else {
 		// new vote
@@ -130,7 +131,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		vote = &VoteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		rm.votes[voteID] = vote
 		utils.LavaFormatInfo("Received Vote start, sending commitment for result", utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
-		rm.txSender.SendVoteCommitment(voteID, vote)
+		rm.txSender.SendVoteCommitment(voteID, vote, voteParams.ChainID)
 		return nil
 	}
 }

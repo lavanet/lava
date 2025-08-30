@@ -7,14 +7,18 @@ import (
 
 	"github.com/cometbft/cometbft/rpc/core"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (
 	EPOCH_BLOCK_DIVIDER uint64 = 5 // determines how many blocks from the previous epoch will be included in the average block time calculation
 	MIN_SAMPLE_STEP     uint64 = 1 // the minimal sample step when calculating the average block time
 )
+
+func CalculateNextPairingUpdateBlock(nextEpochBlock uint64, epochBlocksOverlap uint64) uint64 {
+	return nextEpochBlock + epochBlocksOverlap
+}
 
 // Function to calculate how much time (in seconds) is left until the next epoch
 func (k Keeper) calculateNextEpochTimeAndBlock(ctx sdk.Context) (uint64, uint64, error) {
@@ -37,7 +41,7 @@ func (k Keeper) calculateNextEpochTimeAndBlock(ctx sdk.Context) (uint64, uint64,
 	overlapBlocks := k.EpochBlocksOverlap(ctx)
 
 	// calculate the block in which the next pairing will happen (+overlap)
-	nextPairingBlock := nextEpochStart + overlapBlocks
+	nextPairingBlock := CalculateNextPairingUpdateBlock(nextEpochStart, overlapBlocks)
 
 	// Get number of blocks from the current block to the next epoch
 	blocksUntilNewEpoch := nextPairingBlock - uint64(ctx.BlockHeight())

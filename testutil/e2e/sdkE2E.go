@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"go/build"
@@ -11,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	commonconsts "github.com/lavanet/lava/testutil/common/consts"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
-	"github.com/lavanet/lava/utils"
-	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
+	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
+	"github.com/lavanet/lava/v5/testutil/e2e/sdk"
+	"github.com/lavanet/lava/v5/utils"
+	epochStorageTypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,21 +21,15 @@ import (
 const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
 
 // startBadgeServer starts badge server
-func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey, publicKey, port, maxCU string) {
-	badgeUserData := fmt.Sprintf(`{"1":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":%s}},"2":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":%s}}}`, publicKey, privateKey, maxCU, publicKey, privateKey, maxCU)
-	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
-	if err != nil {
-		panic(err)
-	}
+func (lt *lavaTest) startBadgeServer(ctx context.Context, walletName, port, configPath string) {
+	command := fmt.Sprintf(
+		"%s badgeserver %s --port %s --chain-id=lava --from %s --log_level debug",
+		lt.protocolPath, configPath, port, walletName,
+	)
 
-	command := fmt.Sprintf("%s badgegenerator --port=%s --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath, port)
-	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
-	if err != nil {
-		panic(err)
-	}
 	logName := "01_BadgeServer_" + port
 	funcName := "startBadgeServer_" + port
-	lt.execCommandWithRetry(ctx, funcName, logName, command)
+	lt.execCommand(ctx, funcName, logName, command, false)
 
 	lt.checkBadgeServerResponsive(ctx, fmt.Sprintf("127.0.0.1:%s", port), time.Minute)
 
@@ -96,7 +89,7 @@ func runSDKE2E(timeout time.Duration) {
 		protocolPath: gopath + "/bin/lavap",
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*bytes.Buffer),
+		logs:         make(map[string]*sdk.SafeBuffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      sdkLogsFolder,
@@ -124,18 +117,14 @@ func runSDKE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	lt.checkStakeLava(2, 8, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, NumberOfSpecsExpectedInE2E, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
-	// Export user1 private key
-	privateKey := exportUserPrivateKey(lt.lavadPath, "user1")
-
-	// Export user1 public key
-	publicKey := exportUserPublicKey(lt.lavadPath, "user1")
+	userWallet := "user1"
 
 	// Start Badge server
-	lt.startBadgeServer(ctx, privateKey, publicKey, "7070", "3333333333")
+	lt.startBadgeServer(ctx, userWallet, "7070", badgeserverConfigFolder+"1")
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
@@ -147,8 +136,14 @@ func runSDKE2E(timeout time.Duration) {
 	// Lava Flow
 	lt.startLavaProviders(ctx)
 
+	// Export user private key
+	privateKey := exportUserPrivateKey(lt.lavadPath, userWallet)
+
+	// Export user public key
+	publicKey := exportUserPublicKey(lt.lavadPath, userWallet)
+
 	// Test SDK
-	lt.logs["01_sdkTest"] = new(bytes.Buffer)
+	lt.logs["01_sdkTest"] = &sdk.SafeBuffer{}
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"], "7070")
 
 	// Emergency mode tests
@@ -186,9 +181,14 @@ func runSDKE2E(timeout time.Duration) {
 	// skip current epoch
 	<-signalChannel
 
-	privateKey = exportUserPrivateKey(lt.lavadPath, "user5")
-	publicKey = exportUserPublicKey(lt.lavadPath, "user5")
-	lt.startBadgeServer(ctx, privateKey, publicKey, "5050", "60")
+	userWallet = "user5"
+	// Export user private key
+	privateKey = exportUserPrivateKey(lt.lavadPath, userWallet)
+
+	// Export user public key
+	publicKey = exportUserPublicKey(lt.lavadPath, userWallet)
+
+	lt.startBadgeServer(ctx, userWallet, "5050", badgeserverConfigFolder+"2")
 
 	defer func() {
 		// Delete the file directly without checking if it exists

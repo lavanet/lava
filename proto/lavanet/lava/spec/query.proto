@@ -8,7 +8,7 @@ import "lavanet/lava/spec/params.proto";
 import "lavanet/lava/spec/spec.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "github.com/lavanet/lava/x/spec/types";
+option go_package = "github.com/lavanet/lava/v5/x/spec/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -88,6 +88,7 @@ message ShowAllChainsInfoStruct {
 	string chainID = 2;
 	repeated string enabledApiInterfaces = 3;
 	uint64 api_count = 4;
+	bool enabled = 5;
 }
 
 message QueryShowChainInfoRequest {

@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type RelayErrors struct {
@@ -55,10 +55,10 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	for idx, relayError := range r.relayErrors {
 		errorMessage := r.sanitizeError(relayError.err)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
-		if relayError.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
+		if relayError.ProviderInfo.ProviderReputationSummary.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
 		}
-		currentResult := relayError.ProviderInfo.ProviderQoSExcellenceSummery.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
+		currentResult := relayError.ProviderInfo.ProviderReputationSummary.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
 		if currentResult.GTE(bestResult) { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
 			bestResult.Set(currentResult)
 			bestIndex = idx
@@ -77,7 +77,7 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	if bestIndex != -1 {
 		// Return the chosen error.
 		// Print info for the consumer to know which errors happened
-		utils.LavaFormatInfo("Failed all relays", utils.LogAttr("error_map", errorMap))
+		utils.LavaFormatDebug("Failed all relays", utils.LogAttr("error_map", errorMap))
 		return r.relayErrors[bestIndex]
 	}
 	// if we didn't manage to find any index return all.
@@ -114,7 +114,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 			mergedMessage += ", "
 		}
 	}
-	return fmt.Errorf(mergedMessage)
+	return fmt.Errorf("%s", mergedMessage)
 }
 
 // TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse

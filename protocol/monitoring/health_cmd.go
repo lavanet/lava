@@ -3,21 +3,22 @@ package monitoring
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v5/app"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -51,6 +52,8 @@ const (
 	AllProvidersMarker                   = "all"
 	ConsumerGrpcTLSFlagName              = "consumer-grpc-tls"
 	allowInsecureConsumerDialingFlagName = "allow-insecure-consumer-dialing"
+	telegramBotTokenFlagName             = "telegram-alert-bot-token"
+	telegramChannelIDFlagName            = "telegram-alert-channel-id"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*HealthRPCEndpoint, err error) {
@@ -164,6 +167,10 @@ reference_endpoints:
 				SameAlertInterval:             viper.GetDuration(alertSuppressionIntervalFlagName),
 				DisableAlertSuppression:       viper.GetBool(disableAlertSuppressionFlagName),
 				SuppressionCounterThreshold:   viper.GetUint64(SuppressionCountThresholdFlagName),
+				TelegramAlertingOptions: TelegramAlertingOptions{
+					TelegramBotToken:  viper.GetString(telegramBotTokenFlagName),
+					TelegramChannelID: viper.GetString(telegramChannelIDFlagName),
+				},
 			}
 			resultsPostAddress := viper.GetString(resultsPostAddressFlagName)
 
@@ -246,6 +253,8 @@ reference_endpoints:
 	cmdTestHealth.Flags().Bool(AllProvidersFlagName, false, "a flag to overwrite the provider addresses with all the currently staked providers")
 	cmdTestHealth.Flags().Bool(ConsumerGrpcTLSFlagName, true, "use tls configuration for grpc connections to your consumer")
 	cmdTestHealth.Flags().Bool(allowInsecureConsumerDialingFlagName, false, "used to test grpc, to allow insecure (self signed cert).")
+	cmdTestHealth.Flags().String(telegramBotTokenFlagName, "", "telegram bot token used for sending alerts to telegram channels (obtain from @BotFather)")
+	cmdTestHealth.Flags().String(telegramChannelIDFlagName, "", "telegram channel ID where alerts will be sent (must start with -100)")
 	viper.BindPFlag(queryRetriesFlagName, cmdTestHealth.Flags().Lookup(queryRetriesFlagName)) // bind the flag
 	flags.AddQueryFlagsToCmd(cmdTestHealth)
 	common.AddRollingLogConfig(cmdTestHealth)

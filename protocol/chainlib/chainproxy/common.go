@@ -1,12 +1,14 @@
 package chainproxy
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (
@@ -86,6 +88,14 @@ func (dri DefaultRPCInput) GetMethod() string {
 
 func (dri DefaultRPCInput) GetResult() json.RawMessage {
 	return dri.Result
+}
+
+func (dri DefaultRPCInput) GetID() json.RawMessage {
+	return nil
+}
+
+func (dri DefaultRPCInput) GetError() *rpcclient.JsonError {
+	return nil
 }
 
 func (dri DefaultRPCInput) ParseBlock(inp string) (int64, error) {

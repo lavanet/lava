@@ -1,41 +1,53 @@
 package keeper
 
 import (
-	"fmt"
-
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidenceTypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 // balance delegators dualstaking after potential validators slashing
-func (k Keeper) HandleSlashedValidators(ctx sdk.Context, req abci.RequestBeginBlock) {
-	for _, tmEvidence := range req.ByzantineValidators {
-		switch tmEvidence.Type {
-		case abci.MisbehaviorType_DUPLICATE_VOTE, abci.MisbehaviorType_LIGHT_CLIENT_ATTACK:
-			evidence := evidenceTypes.FromABCIEvidence(tmEvidence)
-			evidenceEq, ok := evidence.(*evidenceTypes.Equivocation)
-			if ok {
-				k.BalanceValidatorsDelegators(ctx, evidenceEq)
-			}
-
-		default:
-			k.Logger(ctx).Error(fmt.Sprintf("ignored unknown evidence type: %s", tmEvidence.Type))
-		}
+func (k Keeper) HandleSlashedValidators(ctx sdk.Context) {
+	slashedValidators := k.GetSlashedValidators(ctx)
+	for _, validator := range slashedValidators {
+		k.BalanceValidatorsDelegators(ctx, validator)
 	}
+	k.SetSlashedValidators(ctx, []string{})
 }
 
-func (k Keeper) BalanceValidatorsDelegators(ctx sdk.Context, evidence *evidenceTypes.Equivocation) {
-	consAddr := evidence.GetConsensusAddress()
-
-	validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
-	if validator == nil || validator.GetOperator().Empty() {
+func (k Keeper) BalanceValidatorsDelegators(ctx sdk.Context, validator string) {
+	valAcc, err := sdk.ValAddressFromBech32(validator)
+	if err != nil {
+		utils.LavaFormatError("failed to get validator address", err, utils.LogAttr("validator", validator))
 		return
 	}
 
-	delegators := k.stakingKeeper.GetValidatorDelegations(ctx, validator.GetOperator())
+	delegators := k.stakingKeeper.GetValidatorDelegations(ctx, valAcc)
 	for _, delegator := range delegators {
 		delAddr := delegator.GetDelegatorAddr()
 		k.BalanceDelegator(ctx, delAddr)
 	}
+}
+
+// SetDisableDualstakingHook set disableDualstakingHook in the store
+func (k Keeper) SetSlashedValidators(ctx sdk.Context, val []string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SlashedValidatorsPrefix))
+	slashedValidators := types.SlashedValidators{Validators: val}
+	b := k.cdc.MustMarshal(&slashedValidators)
+	store.Set([]byte{0}, b)
+}
+
+// GetDisableDualstakingHook returns disableDualstakingHook
+func (k Keeper) GetSlashedValidators(ctx sdk.Context) []string {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SlashedValidatorsPrefix))
+
+	b := store.Get([]byte{0})
+	if b == nil {
+		return []string{}
+	}
+
+	var val types.SlashedValidators
+	k.cdc.MustUnmarshal(b, &val)
+	return val.Validators
 }

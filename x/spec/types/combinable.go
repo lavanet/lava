@@ -25,6 +25,10 @@ func (h *Header) Differeniator() string {
 }
 
 func (parsing *ParseDirective) Differeniator() string {
+	if parsing.FunctionTag == FUNCTION_TAG_SUBSCRIBE || parsing.FunctionTag == FUNCTION_TAG_UNSUBSCRIBE {
+		// handle subscribe and unsubscribe differently because they can be not unique (see solana spec)
+		return parsing.FunctionTag.String() + "_" + parsing.ApiName
+	}
 	return parsing.FunctionTag.String()
 }
 
@@ -141,7 +145,7 @@ func CombineUnique[T Combinable](appendFrom, appendTo []T, currentMap map[string
 		} else {
 			// overwriting the inherited field might need Overwrite actions
 			if overwritten, isOverwritten := current.currentCombinable.Overwrite(combinable); isOverwritten {
-				if appendTo[current.index].Differeniator() != combinable.Differeniator() {
+				if len(appendTo) <= current.index || appendTo[current.index].Differeniator() != combinable.Differeniator() {
 					return nil, fmt.Errorf("differentiator mismatch in overwrite %s vs %s", combinable.Differeniator(), appendTo[current.index].Differeniator())
 				}
 				overwrittenT, ok := overwritten.(T)

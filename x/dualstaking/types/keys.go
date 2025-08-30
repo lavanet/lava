@@ -1,7 +1,7 @@
 package types
 
 import (
-	"strings"
+	"cosmossdk.io/collections"
 )
 
 const (
@@ -17,45 +17,22 @@ const (
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_dualstaking"
 
-	// prefix for the delegations fixation store
-	DelegationPrefix = "delegation-fs"
-
-	// prefix for the delegators fixation store
-	DelegatorPrefix = "delegator-fs"
-
-	// prefix for the unbonding timer store
-	UnbondingPrefix = "unbonding-ts"
-
-	// empty provider consts
-	EMPTY_PROVIDER         = "empty_provider"
-	EMPTY_PROVIDER_CHAINID = ""
-
 	// DisableDualstakingHooks prefix
 	DisableDualstakingHookPrefix = "disable-dualstaking-hooks"
+
+	// SlashedValidators prefix
+	SlashedValidatorsPrefix = "slashed-validators"
 )
 
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
 
-// DelegationKey returns the key/prefix for the Delegation entry in fixation store.
-// Using " " (space) as spearator is safe because Bech32 forbids its use as part of
-// the address (and is the only visible character that can be safely used).
-// (reference https://en.bitcoin.it/wiki/BIP_0173#Specification)
-func DelegationKey(provider, delegator, chainID string) string {
-	return provider + " " + delegator + " " + chainID
+func DelegationKey(provider, delegator string) collections.Pair[string, string] {
+	return collections.Join(provider, delegator)
 }
 
-func DelegationKeyDecode(prefix string) (provider, delegator, chainID string) {
-	split := strings.Split(prefix, " ")
-	return split[0], split[1], split[2]
-}
-
-// DelegatorKey returns the key/prefix for the Delegator entry in fixation store.
-func DelegatorKey(delegator string) string {
-	return delegator
-}
-
-func DelegatorKeyDecode(prefix string) (delegator string) {
-	return prefix
-}
+var (
+	DelegationsPrefix = collections.NewPrefix([]byte("Delegations/"))
+	RewardPrefix      = collections.NewPrefix([]byte("Rewards/"))
+)

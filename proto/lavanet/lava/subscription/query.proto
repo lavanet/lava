@@ -1,16 +1,17 @@
 syntax = "proto3";
 package lavanet.lava.subscription;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
+import "lavanet/lava/subscription/cu_tracker.proto";
 import "lavanet/lava/subscription/params.proto";
-import "cosmos/base/v1beta1/coin.proto";
-
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/subscription/subscription.proto";
+import "amino/amino.proto";
 
-option go_package = "github.com/lavanet/lava/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v5/x/subscription/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -19,25 +20,51 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/subscription/params";
   }
   // Queries a list of Current items.
-	rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
-	}
+  rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
+  }
 
   // Queries a list of ListProjects items.
-	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
-	}
+  rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
+  }
 
   // Queries a list of List items.
-	rpc List(QueryListRequest) returns (QueryListResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/list";
-	}
+  rpc List(QueryListRequest) returns (QueryListResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/list";
+  }
 
   // Queries the subscription with the closest month expiry
-	rpc NextToMonthExpiry(QueryNextToMonthExpiryRequest) returns (QueryNextToMonthExpiryResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/next_to_month_expiry";
-	}
-// this line is used by starport scaffolding # 2
+  rpc NextToMonthExpiry(QueryNextToMonthExpiryRequest) returns (QueryNextToMonthExpiryResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/next_to_month_expiry";
+  }
+
+  // Queries a list of Current items.
+  rpc TrackedUsage(QuerySubscriptionTrackedUsageRequest) returns (QuerySubscriptionTrackedUsageResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/tracked_usage/{subscription}";
+  }
+
+// Queries a rewards estimation.
+// Deprecated: please use EstimatedProviderRewards
+rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option deprecated = true;
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
+}
+
+// Queries a rewards estimation.
+rpc EstimatedProviderRewards(QueryEstimatedProviderRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_provider_rewards/{provider}/{amount_delegator}";
+}
+
+rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}";
+}
+
+rpc EstimatedPoolsRewards(QueryEstimatedPoolsRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_pools_rewards";
+}
+
+  // this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -65,8 +92,7 @@ message QueryListProjectsResponse {
   repeated string projects = 1;
 }
 
-message QueryListRequest {
-}
+message QueryListRequest {}
 
 message QueryListResponse {
   repeated ListInfoStruct subs_info = 1 [(gogoproto.nullable) = false];
@@ -88,8 +114,7 @@ message ListInfoStruct {
   cosmos.base.v1beta1.Coin credit = 13;
 }
 
-message QueryNextToMonthExpiryRequest {
-}
+message QueryNextToMonthExpiryRequest {}
 
 message TimerExpiryInfo {
   string consumer = 1;
@@ -98,6 +123,66 @@ message TimerExpiryInfo {
 
 message QueryNextToMonthExpiryResponse {
   repeated TimerExpiryInfo subscriptions = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySubscriptionTrackedUsageRequest {
+  string subscription = 1;
+}
+
+message QuerySubscriptionTrackedUsageResponse {
+  Subscription subscription = 1 [(gogoproto.nullable) = true];
+  repeated TrackedCuInfo usage = 2;
+  uint64 total_usage = 3;
+}
+
+message QueryEstimatedRewardsRequest {
+  option deprecated = true;
+  string provider = 1;
+  string chain_id = 2 [(gogoproto.moretags) = "yaml:\"chain_id\",deprecated:\"true\"", deprecated = true];
+  string amount_delegator = 3; 
+}
+
+message QueryEstimatedProviderRewardsRequest {
+  string provider = 1;
+  string amount_delegator = 2; 
+}
+
+message EstimatedRewardInfo {
+  string source = 1;
+  repeated cosmos.base.v1beta1.DecCoin amount = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+message QueryEstimatedRewardsResponse {
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = false];
+  repeated cosmos.base.v1beta1.DecCoin total = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+  uint64 recommended_block = 3; // if the query is run in the first 24H of the month, recommended_block will be non-zero.
+                                // The IPRPC estimation might be misleading in the first 24H since it's dependent on CU count
+                                // so the user should run the query again using the --height flag with the recommended_block
+}
+
+message QueryEstimatedValidatorRewardsRequest {
+  string validator = 1;
+  string amount_delegator = 2; 
+}
+
+message QueryEstimatedValidatorRewardsResponse {
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
+  repeated cosmos.base.v1beta1.DecCoin total = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+message QueryEstimatedPoolsRewardsRequest {
 }
 
 // this line is used by starport scaffolding # 3

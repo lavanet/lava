@@ -12,7 +12,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	lavasession "github.com/lavanet/lava/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,6 +40,21 @@ func (m *MockChainFetcherIf) EXPECT() *MockChainFetcherIfMockRecorder {
 	return m.recorder
 }
 
+func (m *MockChainFetcherIf) GetVerificationsStatus() []*pairingtypes.Verification {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVerificationsStatus")
+	ret0, _ := ret[0].([]*pairingtypes.Verification)
+	return ret0
+}
+
+// FetchBlockHashByNum mocks base method.
+func (m *MockChainFetcherIf) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomMessage", ctx, path, data, connectionType, apiName)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
 // FetchBlockHashByNum mocks base method.
 func (m *MockChainFetcherIf) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	m.ctrl.T.Helper()
@@ -46,6 +62,17 @@ func (m *MockChainFetcherIf) FetchBlockHashByNum(ctx context.Context, blockNum i
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// FetchBlockHashByNum indicates an expected call of FetchBlockHashByNum.
+func (mr *MockChainFetcherIfMockRecorder) CustomMessage(ctx, path, data, connectionType, apiName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomMessage", reflect.TypeOf((*MockChainFetcherIf)(nil).CustomMessage), ctx, path, data, connectionType, apiName)
+}
+
+func (mr *MockChainFetcherIfMockRecorder) GetVerificationsStatus() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVerificationsStatus", reflect.TypeOf((*MockChainFetcherIf)(nil).GetVerificationsStatus))
 }
 
 // FetchBlockHashByNum indicates an expected call of FetchBlockHashByNum.

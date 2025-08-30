@@ -31,10 +31,11 @@ lavavisor create-service provider ./config/provider_examples/lava_example.yml --
 echo "[Lavavisor Setup] finished creating service files for lavavisor"
 
 echo "[Lavavisor Setup] submitting spec proposal"
-lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_45.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava &
+specs=$(get_all_specs)
+lavad tx gov submit-legacy-proposal spec-add $specs -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.00002ulava &
 wait_next_block
 wait_next_block
-lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
+lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.00002ulava;
 
 echo "[Lavavisor Setup] adding lavavisor screen"
 screen -d -m -S lavavisor bash -c "lavavisor start --auto-download 2>&1 | tee $LOGS_DIR/LAVAVISOR.log";
@@ -43,7 +44,7 @@ echo "[Lavavisor Setup] sleeping 10 seconds for lavavisor to finish setup (if it
 sleep 10
 
 echo "[Lavavisor Setup] submitting param change vote"
-lavad tx gov submit-legacy-proposal param-change ./cookbook/param_changes/param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
+lavad tx gov submit-legacy-proposal param-change ./cookbook/param_changes/param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.00002ulava; 
 wait_next_block
 wait_next_block
-lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
+lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.00002ulava;

@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	chainlib "github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	plantypes "github.com/lavanet/lava/x/plans/types"
+	chainlib "github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 )
 
 const (

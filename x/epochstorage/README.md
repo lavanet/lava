@@ -13,8 +13,9 @@ Note that the module will make sure that any changes will be applied only in the
   * [Epoch](#epoch)
     * [EpochDetails](#epochdetails)
   * [FixatedParams](#fixatedparams)
-  * [StakeStorage](#stakeStorage)
+  * [Metadata](#metadata)
   * [StakeEntry](#stakeentry)
+	* [StakeEntry Storage](#stakeentry-storage)
 * [Parameters](#parameters)
 * [Queries](#queries)
 * [Transactions](#transactions)
@@ -63,27 +64,20 @@ type FixatedParams struct {
 
 This is done in the [BeginBlock method of the module](keeper/fixated_params.go)
 
+### Metadata
 
-### StakeStorage
-
-StakeStorage is an object that is saved on the store per epoch. it contains the list of all the providers that are available in this epoch per chainID.
-
+The metadata struct includes all the data for a provider that is the same accross all chains
 ```go
-type StakeStorage struct {
-	Index          string       // index of the stake storage (epoch + chainid)
-	StakeEntries   []StakeEntry // list of providers stake
-	EpochBlockHash []byte       // the block hash of the of the epoch block (used as salt for pairing)
+type ProviderMetadata struct {
+	Provider           string 				// provider address           
+	Vault              string            	// vault address
+	TotalDelegations   types.Coin        	// total delegations by delegators
+	Chains             []string          	// list of all chain ids the provider is staken on
+	DelegateCommission uint64            	// provider commission from rewards
+	LastChange         uint64            	// date of the last commission change
+	Description        types1.Description	// string descriptions of the provider entity (moniker, identity, wesite...)
 }
 ```
-
-The index of the stakestorage is constructed from the epoch and chainID, for example: "100 ETH1"
-
-When a provider stakes itself to a chain (using the pairing module) it will be in the providers list of the next epoch. the stake storage of the next epoch (e.g. current stakestorage) is where all the changes are registered.
-
-When a new epoch starts, the module will create a copy of the current stake and save it as a specific epoch stake storage. this is done in the BeginBlock method of the module.
-
-Also, when a new epoch starts the epoch storage will delete any outdated stakestorage (determined by the param EpochsToSave).
-Note that if a stakestorage does not exist (either if it was deleted or it is in the future), verify pairing and relay payments will fail for the requested epoch (look at pairing readme).
 
 ### StakeEntry
 
@@ -92,22 +86,37 @@ The stake entry is a struct that contains all the information of a provider.
 ```go
 type StakeEntry struct {
 	Stake              types.Coin // the providers stake amount (self delegation)
-	Address            string     // the lava address of the provider
+	Vault              string     // the lava address of the provider's vault which holds most of its funds
+	Address            string     // the lava address of the provider is used to run and operate the provider process
 	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
 	Endpoints          []Endpoint // the endpoints of the provider
 	Geolocation        int32      // the geolocation this provider supports
-	Chain              string     // the chainID of the provider
+	Chain              string     // the chain ID on which the provider is staked on
 	Moniker            string     // free string description
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
-	DelegateCommission uint64     // commision from delegation rewards
+	DelegateCommission uint64     // commission from delegation rewards
 }
 ```
+
+The provider entity utilizes two different addresses: the operator address ("address" field in the StakeEntry protobuf) and the vault address. The operator address is used when running the provider process, while the vault address holds the provider's funds. This separation enhances security by allowing the user to store the vault address' private key on a different machine from the one running the visible provider process.
+
+Despite the provider being operated via the operator address, all rewards are directed to the vault address, which holds the provider's funds. Most provider-related transactions can be executed using the operator address, except for actions like staking/unstaking, changing delegation limit and commission, and claiming rewards. These actions can only be done by the vault address.
+
+It's important to note that the operator address is used for the pairing mechanism and relay payments. Also, note that specifying a vault address when staking a provider is optional. By default, the same address is used for both operating the provider and holding its funds.
 
 Geolocation are bit flags that indicate all the geolocations that the provider supports, this is the sum of all endpoints geolocations.
 for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto).
 
 For more information about delegation, go to dualstaking [README.md](../dualstaking/README.md).
+
+#### StakeEntry Storage
+
+Stake entries are kept in two dedicated KV stores. One store keeps the current stake entries and the other keeps past stake entries (by epoch).
+
+The current stake entries store is updated when a provider stakes itself to a chain (using the pairing module). This will make it be in the providers list of the next epoch.
+
+When a new epoch starts, the epochstorage module will create a copy of the current stake entries and save it in the past stake entries store with their matching epoch. Then, every outdated stake entry is deleted (determined by the param EpochsToSave).
 
 ### EndPoint
 
@@ -153,6 +162,7 @@ The epochstorage module supports the following queries:
 | `show-fixated-params` | chainid           | a specific fixated param                      |
 | `list-stake-storage`  | chainid           | list of all stake storages indices            |
 | `show-stake-storage`  | chainid           | show a specific stake storage                 |
+| `provider-metadata`   | provider-address  | shows the metadata of a specific provider, if left empty returns metadata for all providers                 |
 
 ## Transactions
 

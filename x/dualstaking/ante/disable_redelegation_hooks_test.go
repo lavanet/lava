@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	commontypes "github.com/lavanet/lava/common/types"
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/x/dualstaking/ante"
+	"github.com/lavanet/lava/v5/testutil/common"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/ante"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,12 +23,14 @@ func TestDisableRedelegationHooks(t *testing.T) {
 		{newStakingRedelegateMsg(), true},
 		{newStakingDelegateMsg(), false},
 		{newStakingUndelegateMsg(), false},
+		{newAuthzMsg([]sdk.Msg{newStakingRedelegateMsg()}), true},
+		{newAuthzMsg([]sdk.Msg{newAuthzMsg([]sdk.Msg{newStakingRedelegateMsg()})}), true},
 	}
 
 	rf := ante.NewRedelegationFlager(ts.Keepers.Dualstaking)
 
 	for _, testCase := range testCases {
-		err := rf.DisableRedelegationHooks(ts.Ctx, []sdk.Msg{testCase.msg})
+		_, err := rf.AnteHandle(ts.Ctx, TxMock{msgs: []sdk.Msg{testCase.msg}}, false, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) { return })
 		require.NoError(t, err)
 		disableHooksFlag := ts.Keepers.Dualstaking.GetDisableDualstakingHook(ts.Ctx)
 		require.Equal(t, testCase.expectedFlagValue, disableHooksFlag)
@@ -57,4 +60,21 @@ func newStakingUndelegateMsg() *stakingtypes.MsgUndelegate {
 		sdk.ValAddress("val1"),
 		sdk.NewCoin(commontypes.TokenDenom, sdk.OneInt()),
 	)
+}
+
+func newAuthzMsg(msgs []sdk.Msg) *authz.MsgExec {
+	msg := authz.NewMsgExec(sdk.AccAddress("grantee"), msgs)
+	return &msg
+}
+
+type TxMock struct {
+	msgs []sdk.Msg
+}
+
+func (tmock TxMock) GetMsgs() []sdk.Msg {
+	return tmock.msgs
+}
+
+func (tmock TxMock) ValidateBasic() error {
+	return nil
 }

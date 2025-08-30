@@ -1,14 +1,16 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/goccy/go-json"
+
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
@@ -23,6 +25,29 @@ type JsonrpcMessage struct {
 	chainproxy.BaseMessage `json:"-"`
 }
 
+func (jm *JsonrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return string(reply.Result)
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (jm *JsonrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := jm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+
+	methodByteArray := []byte(jm.Method)
+
+	paramsByteArray, err := json.Marshal(jm.Params)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling params on jsonRpc message", err, utils.LogAttr("headers", jm.Params))
+		return []byte{}, err
+	}
+	return sigs.HashMsg(append(append(methodByteArray, paramsByteArray...), headersByteArray...)), nil
+}
+
 // returns if error exists and
 func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	result := &JsonrpcMessage{}
@@ -31,7 +56,7 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	if result.Error == nil {
+	if result.Error == nil { // no error
 		return false, ""
 	}
 	return result.Error.Message != "", result.Error.Message
@@ -85,40 +110,44 @@ func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage
 	return msg, nil
 }
 
-func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
 	return false
 }
 
-func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
+func (jm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msg := &JsonrpcMessage{}
 	err := json.Unmarshal(input, msg)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
 	}
 
-	// Make sure the response does not have an error
-	if msg.Error != nil && msg.Result == nil {
-		return nil, utils.LavaFormatError("response is an error message", msg.Error)
+	return ParsableRPCInput{Result: msg.Result, Error: msg.Error}, nil
+}
+
+func (jm JsonrpcMessage) GetParams() interface{} {
+	return jm.Params
+}
+
+func (jm JsonrpcMessage) GetMethod() string {
+	return jm.Method
+}
+
+func (jm JsonrpcMessage) GetResult() json.RawMessage {
+	if jm.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: jm.Error})
 	}
-	return ParsableRPCInput{Result: msg.Result}, nil
+	return jm.Result
 }
 
-func (cp JsonrpcMessage) GetParams() interface{} {
-	return cp.Params
+func (jm JsonrpcMessage) GetID() json.RawMessage {
+	return jm.ID
 }
 
-func (cp JsonrpcMessage) GetMethod() string {
-	return cp.Method
+func (jm JsonrpcMessage) GetError() *rpcclient.JsonError {
+	return jm.Error
 }
 
-func (cp JsonrpcMessage) GetResult() json.RawMessage {
-	if cp.Error != nil {
-		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
-	}
-	return cp.Result
-}
-
-func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
+func (jm JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
@@ -133,13 +162,16 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 		var batch []JsonrpcMessage
 		errBatch := json.Unmarshal(data, &batch)
 		if errBatch != nil {
-			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first charqacter is "["
+			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first character is "["
 			if len(data) > 0 && data[0] == '[' {
 				return nil, errBatch
 			}
 			return nil, err
 		}
 		return batch, nil
+	}
+	if msg.ID == nil {
+		msg.ID = []byte("null")
 	}
 	return []JsonrpcMessage{msg}, nil
 }
@@ -149,12 +181,26 @@ type JsonrpcBatchMessage struct {
 	chainproxy.BaseMessage
 }
 
+func (jbm *JsonrpcBatchMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+// on batches we don't want to calculate the batch hash as its impossible to get the args
+// we will just return false so retry wont trigger.
+func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
+	return nil, WontCalculateBatchHash
+}
+
 func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
 	return false
 }
 
 func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 	return jbm.batch
+}
+
+func (jbm JsonrpcBatchMessage) GetParams() interface{} {
+	return [][]byte{}
 }
 
 func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {

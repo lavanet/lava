@@ -8,15 +8,16 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/v5/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,8 +37,8 @@ func TestPairingUniqueness(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -102,8 +103,8 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 10; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -128,6 +129,26 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		ts.AdvanceBlock()
 		testAllProviders()
 	}
+}
+
+// TestVaultProviderValidatePairing tests that validating pairing works with provider address
+// and not vault
+func TestVaultProviderValidatePairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 3)
+
+	ts.AdvanceEpoch()
+
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+	consumer, _ := ts.GetAccount(common.CONSUMER, 0)
+
+	res, err := ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.Addr.String(), ts.BlockHeight())
+	require.NoError(t, err)
+	require.True(t, res.Valid)
+
+	res, err = ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.GetVaultAddr(), ts.BlockHeight())
+	require.NoError(t, err)
+	require.False(t, res.Valid)
 }
 
 func TestGetPairing(t *testing.T) {
@@ -252,14 +273,14 @@ func TestPairingStatic(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
-		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
+		acc, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, testStake+int64(i))
 		require.NoError(t, err)
 	}
 
 	// add one frozen provider
-	_, addr := ts.AddAccount(common.PROVIDER, int(ts.plan.PlanPolicy.MaxProvidersToPair)*2, testBalance)
-	err = ts.StakeProvider(addr, ts.spec, ts.spec.MinStakeProvider.Amount.Int64()-1)
+	acc, addr := ts.AddAccount(common.PROVIDER, int(ts.plan.PlanPolicy.MaxProvidersToPair)*2, testBalance)
+	err = ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, ts.spec.MinStakeProvider.Amount.Int64()-1)
 	require.NoError(t, err)
 
 	// we expect to get all the providers in static spec
@@ -497,9 +518,8 @@ func TestAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors out
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 12)
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 12)
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -626,7 +646,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	err = ts.addProvider(200)
 	require.NoError(t, err)
 
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
 	_, p2 := ts.GetAccount(common.PROVIDER, 1)
 	_, p3 := ts.GetAccount(common.PROVIDER, 2)
 	_, p4 := ts.GetAccount(common.PROVIDER, 3)
@@ -757,11 +777,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
 				// unstake p1 and remove from expected providers
-				_, err = ts.TxPairingUnstakeProvider(p1, ts.spec.Index)
+				_, err = ts.TxPairingUnstakeProvider(p1Acc.GetVaultAddr(), ts.spec.Index)
 				require.NoError(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, ts.spec, testBalance/2)
+				err := ts.StakeProvider(p1Acc.GetVaultAddr(), p1, ts.spec, testBalance/2)
 				require.NoError(t, err)
 			}
 
@@ -819,6 +839,55 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.True(t, lavaslices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
 				require.True(t, lavaslices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
 			}
+		})
+	}
+}
+
+// TestVaultProviderSelectedProviders tests that selected providers only work with provider addresses
+// Scenarios:
+//  1. put vault addresses and provider address in the selected providers policy -> expect only
+//     provider addresses can be picked
+func TestVaultProviderSelectedProviders(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 2)
+
+	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	pAcc1, _ := ts.GetAccount(common.PROVIDER, 0)
+	pAcc2, _ := ts.GetAccount(common.PROVIDER, 1)
+	policy := ts.plan.PlanPolicy
+
+	provider1 := pAcc1.Addr.String()
+	vault2 := pAcc2.GetVaultAddr()
+	provider2 := pAcc2.Addr.String()
+
+	res, err := ts.QueryProjectDeveloper(cAcc.Addr.String())
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                    string
+		selectedProviders       []string
+		expectedPairedProviders []string
+	}{
+		{"both providers", []string{provider1, provider2}, []string{provider1, provider2}},
+		{"one provider one vault", []string{provider1, vault2}, []string{provider1}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempPolicy := policy
+			tempPolicy.SelectedProvidersMode = planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+			tempPolicy.SelectedProviders = tt.selectedProviders
+			_, err := ts.TxProjectSetPolicy(res.Project.Index, res.Project.Subscription, &tempPolicy)
+			require.NoError(t, err)
+
+			ts.AdvanceEpoch()
+			res, err := ts.QueryPairingGetPairing(ts.spec.Index, cAcc.Addr.String())
+			require.NoError(t, err)
+			pairedProviders := []string{}
+			for _, p := range res.Providers {
+				pairedProviders = append(pairedProviders, p.Address)
+			}
+			require.ElementsMatch(t, tt.expectedPairedProviders, pairedProviders)
 		})
 	}
 }
@@ -899,7 +968,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	_, err = ts.TxDualstakingDelegate(p.Address, p.Address, ts.spec.Index, p.Stake)
+	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -1062,14 +1131,8 @@ func TestGeolocationPairingScores(t *testing.T) {
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
 
-			subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
-			require.NoError(t, err)
-			cluster := subRes.Sub.Cluster
-
 			for i := range stakeEntries {
-				// TODO: require err to be nil once the providerQosFS's update is implemented
-				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
-				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], sdk.OneDec())
 				providerScores = append(providerScores, providerScore)
 			}
 
@@ -1898,9 +1961,8 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalExtSupportingEndpoints) // this errors as it doesnt implement mandatory
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 26) // one for stub and 25 others
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 26) // one for stub and 25 others
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2145,7 +2207,7 @@ func TestMixBothExetensionAndAddonPairing(t *testing.T) {
 func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
-	specEth, err := testkeeper.GetASpec("ETH1", "../../../", nil, nil)
+	specEth, err := specutils.GetASpec("ETH1", "../../../", nil, nil)
 	if err != nil {
 		require.NoError(t, err)
 	}
@@ -2351,8 +2413,8 @@ func TestPairingPerformance(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -2390,38 +2452,98 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	}
 
 	// try staking with 2*MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
-	_, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
+	acc, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
+	d := common.MockDescription()
 	err := ts.StakeProviderExtra(
+		acc.GetVaultAddr(),
 		addr,
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.Error(t, err)
 
 	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO*2 for USE and EU, should succeed
 	validEndpointsArray := endpoints[types.MAX_ENDPOINTS_AMOUNT_PER_GEO : 3*types.MAX_ENDPOINTS_AMOUNT_PER_GEO]
 	err = ts.StakeProviderExtra(
+		acc.GetVaultAddr(),
 		addr,
 		ts.spec,
 		testStake/2,
 		validEndpointsArray,
 		geolocations[0]+geolocations[1],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.NoError(t, err)
 
 	// try modifying the existing stake entry with more endpoints than allowed in USE, should fail
 	// note, calling StakeProviderExtra for an existing stake entry will run the modify stake entry code flow
 	err = ts.StakeProviderExtra(
+		acc.GetVaultAddr(),
 		addr,
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.Error(t, err)
+}
+
+// TestStakeNotAffectingFreeze checks the following scenario:
+// 1. a provider is staked and frozen
+// 2. the provider stakes to a new chain
+// 3. the provider's freeze status in the original chain is not affected
+func TestStakeNotAffectingFreeze(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(0, 0, 1) // 0 sub, 0 adm, 1 dev
+
+	var balance int64 = 10000
+	stake := balance / 10
+
+	// Create provider account and stake them to first spec
+	acc, addr := ts.AddAccount(common.PROVIDER, 1, balance)
+	err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// Freeze the provider
+	_, err = ts.TxPairingFreezeProvider(addr, ts.spec.Index)
+	require.NoError(t, err)
+
+	// Verify provider is frozen
+	frozen := ts.isProviderFrozen(addr, ts.spec.Index)
+	require.True(t, frozen)
+
+	// Create a second spec and stake provider to it
+	spec1 := ts.spec
+	spec1Name := "spec1"
+	spec1.Index, spec1.Name = spec1Name, spec1Name
+	ts.AddSpec(spec1Name, spec1)
+	err = ts.StakeProvider(acc.GetVaultAddr(), addr, spec1, stake)
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	// Verify provider is still frozen in original spec
+	frozen = ts.isProviderFrozen(addr, ts.spec.Index)
+	require.True(t, frozen)
+
+	// Verify provider is not frozen in new spec
+	frozen = ts.isProviderFrozen(addr, spec1.Index)
+	require.False(t, frozen)
 }

@@ -4,107 +4,153 @@ import (
 	"math"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
+	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
+	GetRawRequestHash() ([]byte, error)
 }
 
 type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
+	requestedBlockHashes   []string
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
+	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
+	usedDefaultValue       bool
+
+	inputHashCache []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
+func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	updatedSuccessfully := false
+	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
+		// check earliest is not unset (0) or incoming is lower than current value
+		if bcmc.earliestRequestedBlock == 0 || bcmc.earliestRequestedBlock > incomingEarliest {
+			bcmc.earliestRequestedBlock = incomingEarliest
+			updatedSuccessfully = true
+		}
+	}
+	return updatedSuccessfully
+}
+
+func (bcnc *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
+	return bcnc.requestedBlockHashes
+}
+
+func (bcnc *baseChainMessageContainer) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return bcnc.msg.SubscriptionIdExtractor(reply)
+}
+
+// returning parse directive for the api. can be nil.
+func (bcnc *baseChainMessageContainer) GetParseDirective() *spectypes.ParseDirective {
+	return bcnc.parseDirective
+}
+
+func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
+	if len(pm.inputHashCache) > 0 {
+		// Get the cached value
+		return pm.inputHashCache, nil
+	}
+	hash, err := pm.msg.GetRawRequestHash()
+	if err == nil {
+		// Now we have the hash cached so we call it only once.
+		pm.inputHashCache = hash
+	}
+	return hash, err
+}
+
 // not necessary for base chain message.
-func (pm *baseChainMessageContainer) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	if pm.resultErrorParsingMethod == nil {
+func (bcnc *baseChainMessageContainer) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	if bcnc.resultErrorParsingMethod == nil {
 		utils.LavaFormatError("tried calling resultErrorParsingMethod when it is not set", nil)
 		return false, ""
 	}
-	return pm.resultErrorParsingMethod(data, httpStatusCode)
+	return bcnc.resultErrorParsingMethod(data, httpStatusCode)
 }
 
-func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {
+func (bcnc *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {
 	if len(override) > 0 {
-		pm.timeoutOverride = override[0]
+		bcnc.timeoutOverride = override[0]
 	}
-	return pm.timeoutOverride
+	return bcnc.timeoutOverride
 }
 
-func (pm *baseChainMessageContainer) SetForceCacheRefresh(force bool) bool {
-	pm.forceCacheRefresh = force
-	return pm.forceCacheRefresh
+func (bcnc *baseChainMessageContainer) SetForceCacheRefresh(force bool) bool {
+	bcnc.forceCacheRefresh = force
+	return bcnc.forceCacheRefresh
 }
 
-func (pm *baseChainMessageContainer) GetForceCacheRefresh() bool {
-	return pm.forceCacheRefresh
+func (bcnc *baseChainMessageContainer) GetForceCacheRefresh() bool {
+	return bcnc.forceCacheRefresh
 }
 
-func (pm *baseChainMessageContainer) DisableErrorHandling() {
-	pm.msg.DisableErrorHandling()
+func (bcnc *baseChainMessageContainer) DisableErrorHandling() {
+	bcnc.msg.DisableErrorHandling()
 }
 
-func (pm baseChainMessageContainer) AppendHeader(metadata []pairingtypes.Metadata) {
-	pm.msg.AppendHeader(metadata)
+func (bcnc baseChainMessageContainer) AppendHeader(metadata []pairingtypes.Metadata) {
+	bcnc.msg.AppendHeader(metadata)
 }
 
-func (pm baseChainMessageContainer) GetApi() *spectypes.Api {
-	return pm.api
+func (bcnc baseChainMessageContainer) GetApi() *spectypes.Api {
+	return bcnc.api
 }
 
-func (pm baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollection {
-	return pm.apiCollection
+func (bcnc baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollection {
+	return bcnc.apiCollection
 }
 
-func (pm baseChainMessageContainer) RequestedBlock() (latest int64, earliest int64) {
-	if pm.earliestRequestedBlock == 0 {
+func (bcnc baseChainMessageContainer) RequestedBlock() (latest int64, earliest int64) {
+	if bcnc.earliestRequestedBlock == 0 {
 		// earliest is optional and not set here
-		return pm.latestRequestedBlock, pm.latestRequestedBlock
+		return bcnc.latestRequestedBlock, bcnc.latestRequestedBlock
 	}
-	return pm.latestRequestedBlock, pm.earliestRequestedBlock
+	return bcnc.latestRequestedBlock, bcnc.earliestRequestedBlock
 }
 
-func (pm baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
-	return pm.msg
+func (bcnc baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
+	return bcnc.msg
 }
 
-func (pm *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
-	requestedBlock, _ := pm.RequestedBlock()
+func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
+	requestedBlock, _ := bcnc.RequestedBlock()
 	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
 		return false
 	}
-	success := pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
+	success := bcnc.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
 	if success {
-		pm.latestRequestedBlock = latestBlock
+		bcnc.latestRequestedBlock = latestBlock
 		return true
 	}
 	return false
 }
 
-func (pm *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
-	return pm.extensions
+func (bcnc *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
+	return bcnc.extensions
 }
 
 // adds the following extensions
-func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
+func (bcnc *baseChainMessageContainer) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
 	existingExtensions := map[string]struct{}{}
-	for _, extension := range pm.extensions {
+	for _, extension := range bcnc.extensions {
 		existingExtensions[extension.Name] = struct{}{}
 	}
 	for _, extensionName := range extensionNames {
@@ -112,44 +158,49 @@ func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string,
 			existingExtensions[extensionName] = struct{}{}
 			extensionKey := extensionslib.ExtensionKey{
 				Extension:      extensionName,
-				ConnectionType: pm.apiCollection.CollectionData.Type,
-				InternalPath:   pm.apiCollection.CollectionData.InternalPath,
-				Addon:          pm.apiCollection.CollectionData.AddOn,
+				ConnectionType: bcnc.apiCollection.CollectionData.Type,
+				InternalPath:   bcnc.apiCollection.CollectionData.InternalPath,
+				Addon:          bcnc.apiCollection.CollectionData.AddOn,
 			}
 			extension := extensionParser.GetExtension(extensionKey)
 			if extension != nil {
-				pm.extensions = append(pm.extensions, extension)
-				pm.updateCUForApi(extension)
+				bcnc.extensions = append(bcnc.extensions, extension)
+				bcnc.updateCUForApi(extension)
 			}
 		}
 	}
 }
 
-func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
-	if len(pm.extensions) > 0 {
-		for _, ext := range pm.extensions {
+func (bcnc *baseChainMessageContainer) GetUsedDefaultValue() bool {
+	return bcnc.usedDefaultValue
+}
+
+func (bcnc *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
+	if len(bcnc.extensions) > 0 {
+		for _, ext := range bcnc.extensions {
 			if ext.Name == extension.Name {
 				// already existing, no need to add
 				return
 			}
 		}
-		pm.extensions = append(pm.extensions, extension)
+		bcnc.extensions = append(bcnc.extensions, extension)
 	} else {
-		pm.extensions = []*spectypes.Extension{extension}
+		bcnc.extensions = []*spectypes.Extension{extension}
 	}
-	pm.updateCUForApi(extension)
+	bcnc.updateCUForApi(extension)
 }
 
-func (pm *baseChainMessageContainer) updateCUForApi(extension *spectypes.Extension) {
-	copyApi := *pm.api // we can't modify this because it points to an object inside the chainParser
+func (bcnc *baseChainMessageContainer) updateCUForApi(extension *spectypes.Extension) {
+	copyApi := *bcnc.api // we can't modify this because it points to an object inside the chainParser
 	copyApi.ComputeUnits = uint64(math.Floor(float64(extension.GetCuMultiplier()) * float64(copyApi.ComputeUnits)))
-	pm.api = &copyApi
+	bcnc.api = &copyApi
 }
 
 type CraftData struct {
 	Path           string
 	Data           []byte
 	ConnectionType string
+	InternalPath   string
 }
 
 func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {

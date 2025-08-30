@@ -6,11 +6,12 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // Lava visor doesn't require complicated state tracker, it just needs to periodically fetch the protocol version.
@@ -23,7 +24,8 @@ type LavaVisorStateTracker struct {
 
 func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (lvst *LavaVisorStateTracker, err error) {
 	// validate chainId
-	status, err := clientCtx.Client.Status(ctx)
+	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	status, err := stateQuery.Status(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("[Lavavisor] failed getting status", err)
 	}
@@ -31,19 +33,11 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 		return nil, utils.LavaFormatError("[Lavavisor] Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		ChainID: "LAV1",
-	})
+	specResponse, err := statetracker.GetLavaSpecWithRetry(ctx, specQueryClient)
 	if err != nil {
-		utils.LavaFormatFatal("blockchain missing LAV1 spec, cant initialize lavavisor", err)
+		utils.LavaFormatFatal("chain is missing Lava spec, cant initialize lavavisor", err)
 	}
-	for i := 0; i < updaters.BlockResultRetry && err != nil; i++ {
-		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-			ChainID: "LAV1",
-		})
-	}
-
-	lst := &LavaVisorStateTracker{stateQuery: updaters.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
+	lst := &LavaVisorStateTracker{stateQuery: stateQuery, averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
 	return lst, nil
 }
 

@@ -4,7 +4,7 @@
 
 This document specifies the pairing module of Lava Protocol.
 
-The pairing module is responsible for handling providers staking, providers freezing, calulating the providers pairing list for consumers, punishing unresponsive providers and handling providers relay payment requests.
+The pairing module is responsible for handling providers staking, providers freezing, calculating the providers pairing list for consumers, punishing unresponsive providers and handling providers relay payment requests.
 
 The Pairing Engine is a sophisticated algorithmic mechanism designed to match consumers with the most appropriate service providers, considering a wide array of inputs and constraints. It upholds the network's principles of fairness, security, and quality of service, while ensuring each consumer's experience is personalized and in line with their specific requirements.
 
@@ -21,6 +21,8 @@ The pairing module is one of Lava's core modules and is closely connected to the
     * [Filters](#filters)
     * [Scores](#scores)
     * [Quality Of Service](#quality-of-service)
+	  * [Reputation](#reputation)
+	  * [Passable QoS](#passable-qos)
     * [Pairing Verification](#pairing-verification)
     * [Unresponsiveness](#unresponsiveness)
     * [Static Providers](#static-providers)
@@ -43,24 +45,32 @@ The pairing module is one of Lava's core modules and is closely connected to the
 
 Providers are entities that have access to blockchains and want to monetize that access by providing services to consumers. Providers stake tokens under a geolocation and supported specifications (e.g. Ethereum JSON-RPC in U.S. East), once active they must provide service to consumers. Providers run the lava process and the desired blockchain or service (e.g. Ethereum JSON-RPC) they are providing access for.
 
+Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its provider address. All the provider's rewards are sent to its vault address. In case a provider address is defined (which is different from the vault address),
+it is recommended to let the provider use the vault address' funds for gas fees with the appropriate flag (see below).
+
 #### Stake
 
 When a provider stakes, a new stake entry is created on-chain. A stake entry is defined as follows:
 
 ```go
 type StakeEntry struct {
-	Stake               Coin        // stake amount
-	Address             string      // provider Lava address
-	StakeAppliedBlock   uint64      // the block in which the stake is active
-	Endpoints           []Endpoint  // a list of endpoints
-	Geolocation         int32       // supported geolocation
-	Chain               string      // chain in which the provider is staked on
-	Moniker             string      // non-unique human name
-	DelegateTotal       Coin        // total delegations
-	DelegateLimit       Coin        // max amount of delegations the provider accepts
-	DelegateCommission  uint64      // commission for delegation
+	Stake              types.Coin // the providers stake amount (self delegation)
+	Vault              string     // the lava address of the provider's vault which holds most of its funds
+	Address           string      // the lava address of the provider entity's which is used to run and operate the provider process
+	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
+	Endpoints          []Endpoint // the endpoints of the provider
+	Geolocation        int32      // the geolocation this provider supports
+	Chain              string     // the chain ID on which the provider staked on
+	Moniker            string     // free string description
+	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
+	DelegateLimit      types.Coin // delegation total limit
+	DelegateCommission uint64     // commission from delegation rewards
+	Jails              uint64     // number of times the provider has been jailed
+	JailTime           int64      // the end of the jail time, after which the provider can return to service
 }
 ```
+
+To bolster security, a provider entity is now associated with two addresses: the vault address and the provider address. If the provider entity doesn't specify the provider address when staking, it defaults to being the same as the vault address. When a provider entity stakes, the account from which the funds originate is considered the vault address. This address is utilized to hold the provider entity's funds and to receive rewards from the provider entity's service. Any other actions performed by the provider entity utilize the provider entity's provider address. The provider address can perform all actions except for staking/unstaking, modifying stake-related fields in the provider entity's stake entry, and claiming rewards. To let the provider address use the vault's funds for gas fees, use the `--grant-provider-gas-fees-auth`. The only transactions that are funded by the vault are: `relay-payment`, `freeze`, `unfreeze`, `modify-provider`, `detection` (conflict module), `conflict-vote-commit` and `conflict-vote-reveal`. When executing any of these transactions using the CLI with the provider entity, use the `--fee-granter` flag to specify the vault address which will pay for the gas fees. It's important to note that once an provider address is registered through a provider entity's staking, it cannot stake on the same chain again.
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). A provider can accept delegations to increase its effective stake, which increases its chances of being selected in the pairing process. The provider can also set a delegation limit, which determines the maximum value of delegations they can accept. This limit is in place to prevent delegators from increasing the provider's effective stake to a level where the provider is overwhelmed with more consumers than they can handle in the pairing process. For more details about delegations, refer to the dualstaking module README.
 
@@ -81,6 +91,16 @@ type Endpoint struct {
 A consumer sends requests to a provider's endpoint to communicate with them. The aggregated geolocations of all the provider's endpoints should be equal to the geolocation field present in the provider's stake entry. Other than that, the `Addons`, `ApiInterfaces` and `Extensions` specify the "extra" features the provider supports. To get more details about those, see the spec module README.
 
 Stake entries' storage is managed by the epochstorage module. For more details, see its README.
+
+Providers `DelegateTotal` is the delegators delegations part for this chain and is calculated by as follows: `total_provider_delegations` * `stake` / `total_stake`
+
+when:
+
+`stake` is the providers stake on a specific chain
+
+`total_stake` is the total stake of the provider across all chains
+
+`total_provider_delegations` is the total delegations for the provider
 
 #### Unstake
 
@@ -179,17 +199,17 @@ Finally, we calculate the score of each provider for a specific slot and select 
 
 #### Quality Of Service
 
-##### Excellence QoS
+##### Reputation
 
-The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system.
+The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS excellence metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system. The provider's performance metric is called "Reputation". Higher reputation indicates higher QoS scores.
 
 To further enhance the integrity of the QoS scores, updates are aggregated across all consumers in a manner that safeguards against false reports. Negative reports are weighted by usage, meaning that a consumer must actively use and pay a provider to diminish their QoS score. This mechanism discourages users from artificially lowering a provider's score.
 
-These QoS excellence metrics only affect pairings and are aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the QoS system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
+The Reputation metric only affect pairings and is aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the reputation system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
 
-##### QoS
+##### Passable QoS
 
-In the Lava Network, alongside the comprehensive Quality of Service of Excellence metrics, there exists an additional metric known as Passable QoS. Unlike Excellence QoS, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
+In the Lava Network, alongside the comprehensive Reputation metric (which is calculated using QoS excellence reports), there exists an additional metric known as Passable QoS. Unlike Reputation, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
 
 The Passable QoS score directly influences the total payout for a specific payment; however, it's important to note that only 50% of the payout is exposed to this metric (can be changed via governance). This allocation ensures a balance between incentivizing excellent service and discouraging poor performance.
 
@@ -201,11 +221,17 @@ Pairing verification is used by the provider to determine whether to offer servi
 
 #### Unresponsiveness
 
-Providers can get punished for being unresponsive to consumer requests. If a provider wishes to stop getting paired with consumers for any reason to avoid getting punished, it can freeze itself. Currently, the punishment for being unresponsive is freezing. In the future, providers will be jailed for this kind of behaviour.
+Providers can get punished for being unresponsive to consumer requests. If a provider wishes to stop getting paired with consumers for any reason to avoid getting punished, it can freeze itself. Currently, the punishment for being unresponsive is jailing.
 
 When a consumer is getting paired with a provider, it sends requests for service. If provider A is unresponsive after a few tries, the consumer switches to another provider from its pairing list, provider B, and send requests to it. When communicatting with provider B, the consumer appends the address of provider A to its request, thus adding the current request's CU to provider A's "complainers CU" counter.
 
 Every epoch start, the amount of complainers CU is compared with the amount of serviced CU of each provider across a few epochs back. If the complainers CU is higher, the provider is considered unresponsive and gets punished. The number of epochs back is determined by the recommendedEpochNumToCollectPayment parameter
+
+#### Jail
+
+If a provider is down and users report it, the provider will be jailed.
+The first 2 instances of jailing are temporary, lasting 1 hour each, and will be automatically removed.
+After 2 consecutive jailings, the provider will be jailed for 24 hours and set to a 'frozen' state. To resume activity, the provider must send an 'unfreeze' transaction after the jail time has ended.
 
 #### Static Providers
 
@@ -298,6 +324,22 @@ EpochBlocksOverlap is the number of blocks a consumer waits before interacting w
 
 RecommendedEpochNumToCollectPayment is the recommended max number of epochs for providers to claim payments. It's also used for determining unresponsiveness.
 
+### ReputationVarianceStabilizationPeriod
+
+ReputationVarianceStabilizationPeriod is the period in which reputation reports are not truncated due to variance.
+
+### ReputationLatencyOverSyncFactor
+
+ReputationLatencyOverSyncFactor is the factor that decreases the reputation's sync report influence when calculating the reputation score.
+
+### ReputationHalfLifeFactor
+
+ReputationHalfLifeFactor is the half life factor that determines the degradation in old reputation samples (when the reputation is updated).
+
+### ReputationRelayFailureCost
+
+ReputationRelayFailureCost is the cost (in seconds) for a failed relay sent from the consumer to the provider. This is part of the reputation report calculation.
+
 ## Queries
 
 The pairing module supports the following queries:
@@ -310,8 +352,13 @@ The pairing module supports the following queries:
 | `list-epoch-payments`     | none  | show all epochPayment objects                  |
 | `list-provider-payment-storage`     | none  | show all providerPaymentStorage objects                 |
 | `list-unique-payment-storage-client-provider`     | none  | show all uniquePaymentStorageClientProvider objects                 |
+| `provider`     | chain-id (string)  | show a provider staked on a specific chain                  |
 | `provider-monthly-payout`     | provider (string)  |  show the current monthly payout for a specific provider                 |
+| `provider-pairing-chance`     | provider (string), chain-id (string)  | show the chance of a provider has to be part of the pairing list for a specific chain                 |
+| `provider-reputation`     | provider (string), chain-id (string), cluster (string)  | show the provider's rank compared to other provider with the same chain-id and cluster by their reputation score                |
+| `provider-reputation-details`     | provider (string), chain-id (string), cluster (string)  | developer query to show the provider's reputation score raw data                |
 | `providers`     | chain-id (string)  | show all the providers staked on a specific chain                  |
+| `providers-epoch-cu`     |   | developer query to list the amount of CU serviced by all the providers every epoch               |
 | `sdk-pairing`     | none  | query used by Lava-SDK to get all the required pairing info                  |
 | `show-epoch-payments`     | index (string)  | show an epochPayment object by index                  |
 | `show-provider-payment-storage`     | index (string)  | show a providerPaymentStorage object by index                  |
@@ -337,11 +384,14 @@ The pairing module supports the following transactions:
 | `modify-provider`     | chain-id (string)  | modify a provider's stake entry (use the TX optional flags)                  |
 | `relay-payment`     | chain-id (string) | automatically generated TX used by a provider to request payment for their service                  | 
 | `simulate-relay-payment`     | consumer-key (string), chainId (string)  | simulate a relay payment TX                  |
-| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) | stake a provider in a chain with multiple endpoints                 |
+| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) --grant-provider-gas-fees-auth (bool)| stake a provider in a chain with multiple endpoints                 |
 | `unfreeze`     | chain-ids ([]string)  | unfreeze a provider in multiple chains                  |
 | `unstake-provider`     | chain-ids ([]string), validator (string, optional)  | unstake a provider from multiple chains                  |
+| `move-provider-stake`     | src-chain dst-chain  amount (Coin)| move provider stake amount from one chain to another                  |
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument. The `Endpoint` type defines a provider endpoint. From the CLI, use "my-provider-grpc-addr.com:9090,1" for one endpoint (includes the endpoint's URL+port and the endpoint's geolocation). When it comes to staking-related transactions, the geolocation argument should encompass the geolocations of all the endpoints combined.
+
+Moreover, using `--grant-provider-gas-fees-auth` flag when staking a provider entity will let the provider address use the vault address funds for gas fees. When sending a TX, the provider address should add the `--fee-granter` flag to specify the vault's account as the payer of gas fees.
 
 ## Proposals
 

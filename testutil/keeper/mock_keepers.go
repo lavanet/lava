@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // account keeper mock
@@ -35,6 +37,60 @@ func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccount
 
 // mock bank keeper
 var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
+
+type mockStakingKeeperEmpty struct{}
+
+func (k mockStakingKeeperEmpty) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+	return nil
+}
+
+func (k mockStakingKeeperEmpty) UnbondingTime(ctx sdk.Context) time.Duration {
+	return time.Duration(0)
+}
+
+func (k mockStakingKeeperEmpty) GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation {
+	return nil
+}
+
+func (k mockStakingKeeperEmpty) GetDelegatorValidator(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
+	return stakingtypes.Validator{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool) {
+	return stakingtypes.Delegation{}, false
+}
+
+func (k mockStakingKeeperEmpty) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool) {
+	return stakingtypes.Validator{}, false
+}
+
+func (k mockStakingKeeperEmpty) GetValidatorDelegations(ctx sdk.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation) {
+	return []stakingtypes.Delegation{}
+}
+
+func (k mockStakingKeeperEmpty) BondDenom(ctx sdk.Context) string {
+	return "ulava"
+}
+
+func (k mockStakingKeeperEmpty) ValidateUnbondAmount(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares sdk.Dec, err error) {
+	return sdk.Dec{}, nil
+}
+
+func (k mockStakingKeeperEmpty) Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error) {
+	return time.Time{}, nil
+}
+
+func (k mockStakingKeeperEmpty) Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares sdk.Dec, err error) {
+	return sdk.Dec{}, nil
+}
+
+func (k mockStakingKeeperEmpty) GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator {
+	return []stakingtypes.Validator{}
+}
+
+func (k mockStakingKeeperEmpty) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
+	return []stakingtypes.Validator{}
+}
 
 type mockBankKeeper struct{}
 
@@ -163,7 +219,7 @@ type MockBlockStore struct {
 
 var (
 	fixedTime bool
-	fixedDate = time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)
+	fixedDate = time.Date(2024, time.May, 1, 1, 1, 1, 1, time.UTC)
 )
 
 func (b *MockBlockStore) SetHeight(height int64) {

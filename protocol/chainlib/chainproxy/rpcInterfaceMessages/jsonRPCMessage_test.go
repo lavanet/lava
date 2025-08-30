@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,8 +77,6 @@ func TestJsonrpcMessage_ParseBlock(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -117,6 +115,18 @@ func TestParseJsonRPCMsg(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected error, but got nil")
 	}
+}
+
+func TestParseJsonRPCMissingId(t *testing.T) {
+	// Test Case 1: Valid JSON input
+	data := []byte(`{"jsonrpc": "2.0", "id": nil, "method": "getblock", "params": []}`)
+	_, err := ParseJsonRPCMsg(data)
+	require.Error(t, err, err)
+
+	data = []byte(`{"jsonrpc": "2.0", "method": "getblock", "params": []}`)
+	msg, err := ParseJsonRPCMsg(data)
+	require.NoError(t, err)
+	require.Equal(t, json.RawMessage([]byte("null")), msg[0].ID)
 }
 
 func TestParseJsonRPCBatch(t *testing.T) {

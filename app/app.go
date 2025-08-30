@@ -15,13 +15,13 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/fixationstore"
-	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	"github.com/lavanet/lava/x/timerstore"
-	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/v5/x/fixationstore/keeper"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	"github.com/lavanet/lava/v5/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/v5/x/timerstore/keeper"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/keeper"
@@ -46,7 +46,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
@@ -113,48 +112,48 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	"github.com/lavanet/lava/app/keepers"
-	appparams "github.com/lavanet/lava/app/params"
-	"github.com/lavanet/lava/app/upgrades"
-	"github.com/lavanet/lava/docs"
-	conflictmodule "github.com/lavanet/lava/x/conflict"
-	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
-	conflictmoduletypes "github.com/lavanet/lava/x/conflict/types"
-	downtimemodule "github.com/lavanet/lava/x/downtime"
-	downtimemodulekeeper "github.com/lavanet/lava/x/downtime/keeper"
-	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
-	dualstakingmodule "github.com/lavanet/lava/x/dualstaking"
-	dualstakingmodulekeeper "github.com/lavanet/lava/x/dualstaking/keeper"
-	dualstakingmoduletypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
-	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingmodule "github.com/lavanet/lava/x/pairing"
-	pairingmoduleclient "github.com/lavanet/lava/x/pairing/client"
-	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
-	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
-	plansmodule "github.com/lavanet/lava/x/plans"
-	plansmoduleclient "github.com/lavanet/lava/x/plans/client"
-	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
-	plansmoduletypes "github.com/lavanet/lava/x/plans/types"
-	projectsmodule "github.com/lavanet/lava/x/projects"
-	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
-	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
-	protocolmodule "github.com/lavanet/lava/x/protocol"
-	protocolmoduleclient "github.com/lavanet/lava/x/protocol/client/cli"
-	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
-	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
-	rewardsmodule "github.com/lavanet/lava/x/rewards"
-	rewardsmoduleclient "github.com/lavanet/lava/x/rewards/client/cli"
-	rewardsmodulekeeper "github.com/lavanet/lava/x/rewards/keeper"
-	rewardsmoduletypes "github.com/lavanet/lava/x/rewards/types"
-	specmodule "github.com/lavanet/lava/x/spec"
-	specmoduleclient "github.com/lavanet/lava/x/spec/client"
-	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
-	specmoduletypes "github.com/lavanet/lava/x/spec/types"
-	subscriptionmodule "github.com/lavanet/lava/x/subscription"
-	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
-	subscriptionmoduletypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v5/app/keepers"
+	appparams "github.com/lavanet/lava/v5/app/params"
+	"github.com/lavanet/lava/v5/app/upgrades"
+	"github.com/lavanet/lava/v5/docs"
+	conflictmodule "github.com/lavanet/lava/v5/x/conflict"
+	conflictmodulekeeper "github.com/lavanet/lava/v5/x/conflict/keeper"
+	conflictmoduletypes "github.com/lavanet/lava/v5/x/conflict/types"
+	downtimemodule "github.com/lavanet/lava/v5/x/downtime"
+	downtimemodulekeeper "github.com/lavanet/lava/v5/x/downtime/keeper"
+	downtimemoduletypes "github.com/lavanet/lava/v5/x/downtime/types"
+	dualstakingmodule "github.com/lavanet/lava/v5/x/dualstaking"
+	dualstakingmodulekeeper "github.com/lavanet/lava/v5/x/dualstaking/keeper"
+	dualstakingmoduletypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragemodule "github.com/lavanet/lava/v5/x/epochstorage"
+	epochstoragemodulekeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
+	epochstoragemoduletypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingmodule "github.com/lavanet/lava/v5/x/pairing"
+	pairingmoduleclient "github.com/lavanet/lava/v5/x/pairing/client"
+	pairingmodulekeeper "github.com/lavanet/lava/v5/x/pairing/keeper"
+	pairingmoduletypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plansmodule "github.com/lavanet/lava/v5/x/plans"
+	plansmoduleclient "github.com/lavanet/lava/v5/x/plans/client"
+	plansmodulekeeper "github.com/lavanet/lava/v5/x/plans/keeper"
+	plansmoduletypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectsmodule "github.com/lavanet/lava/v5/x/projects"
+	projectsmodulekeeper "github.com/lavanet/lava/v5/x/projects/keeper"
+	projectsmoduletypes "github.com/lavanet/lava/v5/x/projects/types"
+	protocolmodule "github.com/lavanet/lava/v5/x/protocol"
+	protocolmoduleclient "github.com/lavanet/lava/v5/x/protocol/client/cli"
+	protocolmodulekeeper "github.com/lavanet/lava/v5/x/protocol/keeper"
+	protocolmoduletypes "github.com/lavanet/lava/v5/x/protocol/types"
+	rewardsmodule "github.com/lavanet/lava/v5/x/rewards"
+	rewardsmoduleclient "github.com/lavanet/lava/v5/x/rewards/client/cli"
+	rewardsmodulekeeper "github.com/lavanet/lava/v5/x/rewards/keeper"
+	rewardsmoduletypes "github.com/lavanet/lava/v5/x/rewards/types"
+	specmodule "github.com/lavanet/lava/v5/x/spec"
+	specmoduleclient "github.com/lavanet/lava/v5/x/spec/client"
+	specmodulekeeper "github.com/lavanet/lava/v5/x/spec/keeper"
+	specmoduletypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptionmodule "github.com/lavanet/lava/v5/x/subscription"
+	subscriptionmodulekeeper "github.com/lavanet/lava/v5/x/subscription/keeper"
+	subscriptionmoduletypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/spf13/cast"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
@@ -166,34 +165,15 @@ const (
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
 var Upgrades = []upgrades.Upgrade{
-	upgrades.Upgrade_0_22_0,
-	upgrades.Upgrade_0_23_0,
-	upgrades.Upgrade_0_23_2,
-	upgrades.Upgrade_0_23_4,
-	upgrades.Upgrade_0_23_5,
-	upgrades.Upgrade_0_24_0,
-	upgrades.Upgrade_0_25_0,
-	upgrades.Upgrade_0_25_1,
-	upgrades.Upgrade_0_25_2,
-	upgrades.Upgrade_0_26_0,
-	upgrades.Upgrade_0_26_1,
-	upgrades.Upgrade_0_26_2,
-	upgrades.Upgrade_0_27_0,
-	upgrades.Upgrade_0_30_0,
-	upgrades.Upgrade_0_30_1,
-	upgrades.Upgrade_0_30_2,
-	upgrades.Upgrade_0_31_0,
-	upgrades.Upgrade_0_31_1,
-	upgrades.Upgrade_0_32_0,
-	upgrades.Upgrade_0_32_3,
-	upgrades.Upgrade_0_33_0,
-	upgrades.Upgrade_0_34_0,
-	upgrades.Upgrade_0_35_0,
-	upgrades.Upgrade_1_0_0,
-	upgrades.Upgrade_1_0_1,
-	upgrades.Upgrade_1_1_0,
-	upgrades.Upgrade_1_2_0,
-	upgrades.Upgrade_2_0_0,
+	upgrades.Upgrade_3_1_0,
+	upgrades.Upgrade_4_0_0,
+	upgrades.Upgrade_4_1_0,
+	upgrades.Upgrade_4_2_0,
+	upgrades.Upgrade_5_0_0,
+	upgrades.Upgrade_5_1_0,
+	upgrades.Upgrade_5_2_0,
+	upgrades.Upgrade_5_3_0,
+	upgrades.Upgrade_5_4_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -277,6 +257,7 @@ var (
 		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Minter, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsLeftOverPoolName):     {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
@@ -573,6 +554,7 @@ func New(
 		app.PlansKeeper,
 		app.DualstakingKeeper,
 		app.RewardsKeeper,
+		app.SpecKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 		app.StakingKeeper,
@@ -662,7 +644,7 @@ func New(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	govConfig := govtypes.Config{MaxMetadataLen: 3000} // 1640 TODO fix it from spec test proposal
+	govConfig := govtypes.Config{MaxMetadataLen: 4000} // 1640 TODO fix it from spec test proposal
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.MsgServiceRouter(), govConfig,
@@ -896,34 +878,7 @@ func New(
 	app.setupUpgradeHandlers()
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
-	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
-		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
-		params.NewAppModule(app.ParamsKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
-		ibc.NewAppModule(app.IBCKeeper),
-		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		transferModule,
-		specModule,
-		epochstorageModule,
-		dualstakingModule,
-		subscriptionModule,
-		pairingModule,
-		conflictModule,
-		projectsModule,
-		protocolModule,
-		plansModule,
-		rewardsModule,
-		// this line is used by starport scaffolding # stargate/app/appModule
-	)
-	app.sm.RegisterStoreDecoders()
+	app.sm = module.NewSimulationManager()
 
 	// initialize stores
 	app.MountKVStores(keys)
@@ -1134,7 +1089,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint:staticcheck
+	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibcexported.ModuleName)

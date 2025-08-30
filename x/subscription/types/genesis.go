@@ -1,8 +1,8 @@
 package types
 
 import (
-	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	fixationstoretypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 // this line is used by starport scaffolding # genesis/types/import

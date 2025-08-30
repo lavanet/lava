@@ -6,25 +6,29 @@ import (
 	"strconv"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
+	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/dgraph-io/ristretto"
-	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	"github.com/dgraph-io/ristretto/v2"
+	reliabilitymanager "github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/utils"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	epochkeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingkeeper "github.com/lavanet/lava/v5/x/pairing/keeper"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 const (
 	CacheMaxCost                = 10 * 1024 // 10K cost
-	CacheNumCounters            = 100000    // expect 10K items
+	CacheNumCounters            = 10 * 1025 // expect 10K items
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"
@@ -37,23 +41,67 @@ type ProtocolVersionResponse struct {
 	BlockNumber string
 }
 
-type StateQuery struct {
-	SpecQueryClient         spectypes.QueryClient
-	PairingQueryClient      pairingtypes.QueryClient
-	EpochStorageQueryClient epochstoragetypes.QueryClient
-	ProtocolClient          protocoltypes.QueryClient
-	DowntimeClient          downtimev1.QueryClient
-	ResponsesCache          *ristretto.Cache
+type StateQueryAccessInf interface {
+	grpc1.ClientConn
+	tendermintRPC
+	client.TendermintRPC
+	GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error)
 }
 
-func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
-	sq := &StateQuery{}
-	sq.SpecQueryClient = spectypes.NewQueryClient(clientCtx)
-	sq.PairingQueryClient = pairingtypes.NewQueryClient(clientCtx)
-	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
-	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
-	sq.DowntimeClient = downtimev1.NewQueryClient(clientCtx)
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+type StateQueryAccessInst struct {
+	grpc1.ClientConn
+	tendermintRPC
+	client.TendermintRPC
+	clientCtx    client.Context
+	hybridClient *hybrid_client.HTTP
+}
+
+func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
+	tenderRpc, ok := clientCtx.Client.(tendermintRPC)
+	if !ok {
+		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
+	}
+	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client, clientCtx: clientCtx}
+	sq.TryConnectingClients()
+	return sq
+}
+
+func (psq *StateQueryAccessInst) GetBlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
+	results, err := psq.hybridClient.BlockResults(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.BeginBlockEvents...)
+	results.FinalizeBlockEvents = append(results.FinalizeBlockEvents, results.EndBlockEvents...)
+	return results, nil
+}
+
+func (sq *StateQueryAccessInst) TryConnectingClients() {
+	// connect v50
+	hybrid_client, err := hybrid_client.New(sq.clientCtx.NodeURI, "/websocket")
+	if err != nil {
+		utils.LavaFormatError("failed to connect to v50 client", err, utils.Attribute{Key: "nodeURI", Value: sq.clientCtx.NodeURI})
+		return
+	}
+	sq.hybridClient = hybrid_client
+}
+
+type StateQuery struct {
+	specQueryClient         spectypes.QueryClient
+	pairingQueryClient      pairingtypes.QueryClient
+	epochStorageQueryClient epochstoragetypes.QueryClient
+	protocolClient          protocoltypes.QueryClient
+	downtimeClient          downtimev1.QueryClient
+	ResponsesCache          *ristretto.Cache[string, any]
+	tendermintRPC
+	client.TendermintRPC
+	accessInf StateQueryAccessInf
+}
+
+func NewStateQuery(ctx context.Context, accessInf StateQueryAccessInf) *StateQuery {
+	sq := &StateQuery{accessInf: accessInf}
+	sq.UpdateAccess(accessInf)
+	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
@@ -61,9 +109,27 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	return sq
 }
 
+func (sq *StateQuery) UpdateAccess(accessInf StateQueryAccessInf) {
+	sq.specQueryClient = spectypes.NewQueryClient(accessInf)
+	sq.pairingQueryClient = pairingtypes.NewQueryClient(accessInf)
+	sq.epochStorageQueryClient = epochstoragetypes.NewQueryClient(accessInf)
+	sq.protocolClient = protocoltypes.NewQueryClient(accessInf)
+	sq.downtimeClient = downtimev1.NewQueryClient(accessInf)
+	sq.tendermintRPC = accessInf
+	sq.TendermintRPC = accessInf
+}
+
+func (sq *StateQuery) Provider(ctx context.Context, in *pairingtypes.QueryProviderRequest, opts ...grpc.CallOption) (*pairingtypes.QueryProviderResponse, error) {
+	return sq.pairingQueryClient.Provider(ctx, in, opts...)
+}
+
+func (sq *StateQuery) GetSpecQueryClient() spectypes.QueryClient {
+	return sq.specQueryClient
+}
+
 func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	header := metadata.MD{}
-	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
+	param, err := csq.protocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +142,7 @@ func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*ProtocolVersion
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
-	spec, err := csq.SpecQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+	spec, err := csq.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		ChainID: chainID,
 	})
 	if err != nil {
@@ -86,7 +152,7 @@ func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.
 }
 
 func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
-	res, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	res, err := csq.downtimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -94,13 +160,13 @@ func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Param
 }
 
 type ConsumerStateQuery struct {
-	StateQuery
-	clientCtx   client.Context
+	*StateQuery
+	fromAddress string
 	lastChainID string
 }
 
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
-	csq := &ConsumerStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx, lastChainID: ""}
+	csq := &ConsumerStateQuery{StateQuery: NewStateQuery(ctx, NewStateQueryAccessInst(clientCtx)), fromAddress: clientCtx.FromAddress.String(), lastChainID: ""}
 	return csq
 }
 
@@ -114,7 +180,7 @@ func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerA
 		}
 	}
 
-	resp, err := csq.PairingQueryClient.EffectivePolicy(ctx, &pairingtypes.QueryEffectivePolicyRequest{
+	resp, err := csq.pairingQueryClient.EffectivePolicy(ctx, &pairingtypes.QueryEffectivePolicyRequest{
 		Consumer: consumerAddress,
 		SpecID:   specID,
 	})
@@ -127,13 +193,7 @@ func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerA
 
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch, nextBlockForUpdate uint64, errRet error) {
 	if chainID == "" {
-		if csq.lastChainID != "" {
-			chainID = csq.lastChainID
-		}
-		if chainID == "" {
-			chainID = "LAV1"
-			utils.LavaFormatWarning("failed to run get pairing as there is no entry for empty chainID call, using default chainID", nil, utils.Attribute{Key: "chainID", Value: chainID})
-		}
+		return nil, 0, 0, utils.LavaFormatError("chain id is empty in GetPairing while not allowed", nil, utils.Attribute{Key: "chainID", Value: chainID})
 	}
 
 	cachedInterface, found := csq.ResponsesCache.Get(PairingRespKey + chainID)
@@ -147,25 +207,64 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 		}
 	}
 
-	pairingResp, err := csq.PairingQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
+	pairingResp, err := csq.pairingQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
 		ChainID: chainID,
-		Client:  csq.clientCtx.FromAddress.String(),
+		Client:  csq.fromAddress,
 	})
 	if err != nil {
-		return nil, 0, 0, utils.LavaFormatError("Failed in get pairing query", err, utils.Attribute{})
+		// if we can't get pairing, try to get epoch details and params
+		epochParamsResp, epochParamsErr := csq.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
+		epochDetailsResp, epochDetailsErr := csq.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+		pairingParamsResp, pairingParamsErr := csq.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+		if epochDetailsErr != nil || epochParamsErr != nil || pairingParamsErr != nil {
+			return nil, 0, 0, err // if we can't get epoch details or params, return the original error
+		}
+
+		nextEpochBlock := epochkeeper.CalculateNextEpochBlock(epochDetailsResp.EpochDetails.StartBlock, epochParamsResp.Params.EpochBlocks)
+		nextPairingBlock := pairingkeeper.CalculateNextPairingUpdateBlock(nextEpochBlock, pairingParamsResp.Params.EpochBlocksOverlap)
+		return nil, epochDetailsResp.EpochDetails.StartBlock, nextPairingBlock, err
 	}
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)
+	if len(pairingResp.Providers) == 0 {
+		utils.LavaFormatWarning("Chain returned empty provider list, check node connection and consumer subscription status, or no providers provide this chain", nil,
+			utils.LogAttr("chainId", chainID),
+			utils.LogAttr("epoch", pairingResp.CurrentEpoch),
+			utils.LogAttr("consumer_address", csq.fromAddress),
+		)
+	}
 	return pairingResp.Providers, pairingResp.CurrentEpoch, pairingResp.BlockOfNextPairing, nil
 }
 
 func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error) {
-	address := csq.clientCtx.FromAddress.String()
-	UserEntryRes, err := csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
-	if err != nil {
-		return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
+
+	key := csq.entryKey(chainID, epoch)
+	cachedInterface, found := csq.ResponsesCache.Get(key)
+
+	if found && cachedInterface != nil {
+		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
+			userEntryRes = cachedResp
+		} else {
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+		}
 	}
-	return UserEntryRes.GetMaxCU(), nil
+
+	if userEntryRes == nil {
+		address := csq.fromAddress
+		userEntryRes, err = csq.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
+		if err != nil {
+			return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+		}
+
+		csq.ResponsesCache.SetWithTTL(key, userEntryRes, 1, DefaultTimeToLiveExpiration)
+	}
+
+	return userEntryRes.GetMaxCU(), nil
+}
+
+func (csq *ConsumerStateQuery) entryKey(chainID string, epoch uint64) string {
+	return MaxCuResponseKey + chainID + strconv.FormatUint(epoch, 10)
 }
 
 type EpochStateQuery struct {
@@ -173,7 +272,7 @@ type EpochStateQuery struct {
 }
 
 func (esq *EpochStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
-	epochDetails, err := esq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+	epochDetails, err := esq.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
 	if err != nil {
 		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err)
 	}
@@ -186,15 +285,14 @@ func NewEpochStateQuery(stateQuery *StateQuery) *EpochStateQuery {
 }
 
 type ProviderStateQuery struct {
-	StateQuery
+	*StateQuery
 	EpochStateQuery
-	clientCtx client.Context
 }
 
-func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *ProviderStateQuery {
-	sq := NewStateQuery(ctx, clientCtx)
+func NewProviderStateQuery(ctx context.Context, stateQueryAccess StateQueryAccessInf) *ProviderStateQuery {
+	sq := NewStateQuery(ctx, stateQueryAccess)
 	esq := NewEpochStateQuery(sq)
-	csq := &ProviderStateQuery{StateQuery: *sq, EpochStateQuery: *esq, clientCtx: clientCtx}
+	csq := &ProviderStateQuery{StateQuery: sq, EpochStateQuery: *esq}
 	return csq
 }
 
@@ -210,7 +308,7 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		}
 	}
 	if userEntryRes == nil {
-		userEntryRes, err = psq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: consumerAddress, Block: epoch})
+		userEntryRes, err = psq.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: consumerAddress, Block: epoch})
 		if err != nil {
 			return 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch})
 		}
@@ -225,10 +323,7 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	brp, err := TryIntoTendermintRPC(psq.clientCtx.Client)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed to get block result provider", err)
-	}
+	brp := psq.StateQuery.tendermintRPC
 	blockResults, err := brp.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return nil, err
@@ -288,7 +383,7 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		}
 	}
 	if verifyResponse == nil {
-		verifyResponse, err = psq.PairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+		verifyResponse, err = psq.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 			ChainID:  chainID,
 			Client:   consumerAddress,
 			Provider: providerAddress,
@@ -300,13 +395,18 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("consumer_address", consumerAddress),
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("from_cache", extractedResultFromCache),
+		)
 	}
 	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), verifyResponse.ProjectId, nil
 }
 
 func (psq *ProviderStateQuery) GetEpochSize(ctx context.Context) (uint64, error) {
-	res, err := psq.EpochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
+	res, err := psq.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -314,7 +414,7 @@ func (psq *ProviderStateQuery) GetEpochSize(ctx context.Context) (uint64, error)
 }
 
 func (psq *ProviderStateQuery) EarliestBlockInMemory(ctx context.Context) (uint64, error) {
-	res, err := psq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+	res, err := psq.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -322,7 +422,7 @@ func (psq *ProviderStateQuery) EarliestBlockInMemory(ctx context.Context) (uint6
 }
 
 func (psq *ProviderStateQuery) GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
-	res, err := psq.PairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	res, err := psq.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -339,4 +439,8 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 		return 0, err
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
+}
+
+func (psq *StateQuery) BlockResults(ctx context.Context, height *int64) (*hybrid_client.ResultBlockResults, error) {
+	return psq.accessInf.GetBlockResults(ctx, height)
 }

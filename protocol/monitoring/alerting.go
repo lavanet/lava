@@ -2,16 +2,17 @@ package monitoring
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/goccy/go-json"
+
+	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	CacheNumCounters           = 100000    // expect 10K items
 	OKString                   = "OK"
 	FrozenProviderAttribute    = "frozen_provider_alert"
+	JailedProviderAttribute    = "jailed_provider_alert"
 	SubscriptionAlertAttribute = "subscription_limit_alert"
 	UnhealthyProviderAttribute = "unhealthy_provider_alert"
 	UnhealthyConsumerAttribute = "unhealthy_consumer_alert"
@@ -35,7 +37,8 @@ const (
 )
 
 type AlertingOptions struct {
-	Url                           string // where to send the alerts
+	Url string // where to send the alerts
+	TelegramAlertingOptions
 	Logging                       bool   // wether to log alerts to stdout
 	Identifier                    string // a unique identifier added to all alerts
 	SubscriptionCUPercentageAlert float64
@@ -71,7 +74,7 @@ type Alerting struct {
 	allowedTimeGapVsReference     time.Duration
 	maxProviderLatency            time.Duration
 	sameAlertInterval             time.Duration
-	AlertsCache                   *ristretto.Cache
+	AlertsCache                   *ristretto.Cache[string, any]
 	activeAlerts                  map[AlertEntry]AlertCount // count how many occurrences of an alert
 	healthy                       map[LavaEntity]struct{}
 	unhealthy                     map[LavaEntity]struct{}
@@ -80,15 +83,17 @@ type Alerting struct {
 	suppressedAlerts              uint64 // monitoring
 	payload                       map[string]interface{}
 	colorToggle                   bool
+	TelegramAlerting              TelegramAlertingOptions
 }
 
 func NewAlerting(options AlertingOptions) *Alerting {
 	al := &Alerting{
-		activeAlerts:  map[AlertEntry]AlertCount{},
-		healthy:       map[LavaEntity]struct{}{},
-		unhealthy:     map[LavaEntity]struct{}{},
-		currentAlerts: map[AlertEntry]struct{}{},
-		payload:       map[string]interface{}{},
+		activeAlerts:     map[AlertEntry]AlertCount{},
+		healthy:          map[LavaEntity]struct{}{},
+		unhealthy:        map[LavaEntity]struct{}{},
+		currentAlerts:    map[AlertEntry]struct{}{},
+		payload:          map[string]interface{}{},
+		TelegramAlerting: options.TelegramAlertingOptions,
 	}
 	if options.Url != "" {
 		al.url = options.Url
@@ -113,7 +118,7 @@ func NewAlerting(options AlertingOptions) *Alerting {
 		} else {
 			al.sameAlertInterval = defaultSameAlertInterval
 		}
-		cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+		cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 		if err != nil {
 			utils.LavaFormatFatal("failed setting up cache for queries", err)
 		}
@@ -159,6 +164,9 @@ func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 
 	if al.url != "" {
 		go al.AppendUrlAlert(alert, attrs)
+	}
+	if err := al.SendTelegramAlert(alert, attrs); err != nil {
+		utils.LavaFormatError("failed to send telegram alert", err)
 	}
 	if al.logging {
 		if al.identifier != "" {
@@ -306,6 +314,18 @@ func (al *Alerting) SendFrozenProviders(frozenProviders map[LavaEntity]struct{})
 	}
 }
 
+func (al *Alerting) SendJailedProviders(jailedProviders map[LavaEntity]struct{}) {
+	providers := map[string][]string{}
+	attrs := []AlertAttribute{}
+	for jailed := range jailedProviders {
+		attrs = append(attrs, AlertAttribute{entity: jailed, data: "jailed"})
+		providers[jailed.Address] = append(providers[jailed.Address], jailed.SpecId)
+	}
+	if len(attrs) > 0 {
+		al.SendAlert(FrozenProviderAttribute, attrs)
+	}
+}
+
 func (al *Alerting) UnhealthyProviders(unhealthy map[LavaEntity]string) {
 	attrs := []AlertAttribute{}
 	for provider, errSt := range unhealthy {
@@ -417,6 +437,11 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 	// handle frozen providers
 	if len(healthResults.FrozenProviders) > 0 {
 		al.SendFrozenProviders(healthResults.FrozenProviders)
+	}
+
+	// handle jailed providers
+	if len(healthResults.JailedProviders) > 0 {
+		al.SendJailedProviders(healthResults.JailedProviders)
 	}
 
 	// handle subscriptions

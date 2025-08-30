@@ -9,14 +9,16 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
-	"github.com/lavanet/lava/utils"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
 )
 
 const (
 	minCU                        = 1
 	ContributorPrecision         = 100000 // Can't be 0!
 	maxContributorsPercentageStr = "0.8"
+	maxParsersPerApi             = 100
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
@@ -37,6 +39,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	ok := commontypes.ValidateString(spec.Index, commontypes.INDEX_RESTRICTIONS, nil)
 	if !ok {
 		return details, fmt.Errorf("spec index can be letters and numbers only %s", spec.Index)
+	}
+
+	if len(spec.Identity) > stakingtypes.MaxIdentityLength {
+		return details, fmt.Errorf("spec identity should not be longer than %d. Identity: %s", stakingtypes.MaxIdentityLength, spec.Index)
 	}
 
 	for _, char := range spec.Name {
@@ -73,7 +79,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
 	}
 
-	if spec.MinStakeProvider.Amount.IsZero() {
+	if !spec.MinStakeProvider.IsValid() || !spec.MinStakeProvider.IsPositive() {
 		return details, fmt.Errorf("MinStakeProvider can't be zero")
 	}
 
@@ -124,6 +130,21 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			if strings.Contains(api.Name, " ") {
 				details["api"] = api.Name
 				return details, fmt.Errorf("api name includes a space character %s", api.Name)
+			}
+			parsers := api.GetParsers()
+			if len(parsers) > 0 {
+				for idx, parser := range parsers {
+					if parser.ParsePath == "" || parser.ParseType == PARSER_TYPE_NO_PARSER {
+						details["parser_index"] = strconv.Itoa(idx)
+						details["api"] = api.Name
+						return details, fmt.Errorf("invalid parser in api %s index %d", api.Name, idx)
+					}
+				}
+			}
+
+			if len(parsers) > maxParsersPerApi {
+				details["api"] = api.Name
+				return details, fmt.Errorf("invalid api %s too many parsers %d", api.Name, len(parsers))
 			}
 		}
 		currentHeaders := map[string]struct{}{}
@@ -179,6 +200,9 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 }
 
 func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
+	if spec == nil {
+		return fmt.Errorf("CombineCollections: spec is nil")
+	}
 	collectionDataList := make([]CollectionData, 0)
 	// Populate the keys slice with the map keys
 	for key := range parentsCollections {
@@ -204,7 +228,7 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 				break
 			}
 		}
-		if !combined.Enabled {
+		if combined == nil || !combined.Enabled {
 			// no collections enabled to combine, we skip this
 			continue
 		}

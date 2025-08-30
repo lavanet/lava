@@ -2,30 +2,38 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/parser"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-const SEP = "&"
+const (
+	SEP = "&"
+)
+
+var MaximumNumberOfParallelWebsocketConnectionsPerIp int64 = 0
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -58,7 +66,12 @@ func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string, int
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -80,7 +93,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, msg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, msg, apiCollection, false), nil
 }
 
 // this func parses message data into chain message object
@@ -102,8 +115,10 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	blockHashes := []string{}
+	parsedDefault := true
 	for idx, msg := range msgs {
-		var requestedBlockForMessage int64
+		parsedInput := parser.NewParsedInput()
 		internalPath := ""
 		if apip.isValidInternalPath(url) {
 			internalPath = url
@@ -111,7 +126,13 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatDebug("getSupportedApi jsonrpc failed",
+				utils.LogAttr("method", msg.Method),
+				utils.LogAttr("connectionType", connectionType),
+				utils.LogAttr("internalPath", internalPath),
+				utils.LogAttr("error", err),
+			)
+
 			return nil, err
 		}
 
@@ -126,28 +147,39 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
-			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-					utils.LogAttr("chain", apip.spec.Name),
-					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-					utils.LogAttr("apiName", apiCont.api.Name),
-					utils.LogAttr("connectionType", "jsonrpc"),
-				)
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+			parsedInput = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing, apiCont.api.Parsers)
+			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
+				blockHashes = append(blockHashes, hashes...)
+			}
+			if !parsedInput.UsedDefaultValue {
+				parsedDefault = false
 			}
 		} else {
-			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
+			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
+			parsedInput.SetBlock(parsedBlock)
 			if err != nil {
-				utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+				utils.LavaFormatError("failed parsing block from an overwrite header", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
+				)
+				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
+
+		parsedBlock := parsedInput.GetBlock()
+
+		if msg.Method == "eth_call" && uint64(parsedBlock) < extensionInfo.LatestBlock-126 {
+			// change to archive
+			extensionInfo.AdditionalExtensions = append(extensionInfo.AdditionalExtensions, extensionslib.ArchiveExtension)
+		}
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
-			latestRequestedBlock = requestedBlockForMessage
+			latestRequestedBlock = parsedBlock
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -182,14 +214,16 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					Encoding:     "",
 				},
 			}
-			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
+
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, earliestRequestedBlock, parsedBlock)
 		}
 	}
+
 	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &msgs[0], apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection, parsedDefault)
 	} else {
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +232,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -207,20 +241,26 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedBlockHashes,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
+		parseDirective:           nil,
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg, err
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedBlockHashes []string, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedBlockHashes,
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -238,7 +278,7 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
@@ -284,11 +324,14 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 }
 
 type JsonRPCChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint                      *lavasession.RPCEndpoint
+	relaySender                   RelaySender
+	healthReporter                HealthReporter
+	logger                        *metrics.RPCConsumerLogs
+	refererData                   *RefererData
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -296,14 +339,17 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
+		endpoint:                      listenEndpoint,
+		relaySender:                   relaySender,
+		healthReporter:                healthReporter,
+		logger:                        rpcConsumerLogs,
+		refererData:                   refererData,
+		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -320,6 +366,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
+
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -332,91 +380,38 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 
-	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
-		var (
-			messageType int
-			msg         []byte
-			err         error
-		)
-		startTime := time.Now()
-		msgSeed := apil.logger.GetMessageSeed()
-		for {
-			if messageType, msg, err = websockConn.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-				break
-			}
-			dappID, ok := websockConn.Locals("dapp-id").(string)
-			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-			}
-			refererMatch, ok := websockConn.Locals(refererMatchString).(string)
-			ctx, cancel := context.WithCancel(context.Background())
-			guid := utils.GenerateUniqueIdentifier()
-			ctx = utils.WithUniqueIdentifier(ctx, guid)
-			msgSeed = strconv.FormatUint(guid, 10)
-			defer cancel() // incase there's a problem make sure to cancel the connection
-
-			logFormattedMsg := string(msg)
-			if !cmdFlags.DebugRelays {
-				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
-			}
-
-			utils.LavaFormatDebug("ws in <<<",
-				utils.LogAttr("seed", msgSeed),
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("msg", logFormattedMsg),
-				utils.LogAttr("dappID", dappID),
-			)
-			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websockConn)
-			}
-			reply := relayResult.GetReply()
-			replyServer := relayResult.GetReplyServer()
-			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
-			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-				continue
-			}
-			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
-			if replyServer != nil {
-				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
-				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-
-				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				for {
-					err = (*replyServer).RecvMsg(&reply)
-					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-						break
-					}
-
-					// If portal cant write to the client
-					if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-						// break
-					}
-
-					apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				}
-			} else {
-				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-			}
+	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
 		}
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
+		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+
+		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
+			WebsocketConn:                 websocketConn,
+			RpcConsumerLogs:               apil.logger,
+			RefererMatchString:            refererMatchString,
+			CmdFlags:                      cmdFlags,
+			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
+			ChainID:                       chainID,
+			ApiInterface:                  apiInterface,
+			ConnectionType:                fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:                   apil.refererData,
+			RelaySender:                   apil.relaySender,
+			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
+		})
+
+		consumerWebsocketManager.ListenToMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)
@@ -430,6 +425,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
@@ -439,7 +435,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			apil.logger.LogTestMode(fiberCtx)
 		}
 
-		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 
@@ -459,15 +455,19 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
 				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
+			}
+
+			if _, ok := err.(*json.SyntaxError); ok {
+				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcParseError)
 			}
 
 			// Get unique GUID response
@@ -488,7 +488,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
-		response := string(reply.Data)
+
+		response := checkBTCResponseAndFixReply(chainID, reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
@@ -503,8 +504,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		// Return json response and add metric for after provider processing
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 	if apil.refererData != nil && apil.refererData.Marker != "" {
 		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
@@ -521,12 +524,23 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	}
 	app.Post("/*", handlerPost)
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *JsonRPCChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type JrpcChainProxy struct {
 	BaseChainProxy
-	conn map[string]*chainproxy.Connector
+	conn *chainproxy.Connector
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -534,72 +548,54 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+
+	// look for the first node url that has no internal path, otherwise take first node url
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
-		conn:           map[string]*chainproxy.Connector{},
+		BaseChainProxy: BaseChainProxy{
+			averageBlockTime: averageBlockTime,
+			NodeUrl:          nodeUrl,
+			ErrorHandler:     &JsonRPCErrorHandler{},
+			ChainID:          rpcProviderEndpoint.ChainID,
+		},
+		conn: nil,
 	}
-	verifyRPCEndpoint(nodeUrl.Url)
-	internalPaths := map[string]struct{}{}
-	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
-	if ok {
-		internalPaths = jsonRPCChainParser.GetInternalPaths()
-	}
-	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
-		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
-	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
-		// provider provided specific endpoints but not enough to fill all requirements
-		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
-	}
-	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
+
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
-func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
-	for _, url := range nodeUrls {
-		_, ok := internalPaths[url.InternalPath]
-		if !ok {
-			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
+	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		isWs, parseErr := IsUrlWebSocket(nodeUrl.Url)
+		if parseErr == nil && isWs {
+			newUrl := strings.TrimSuffix(nodeUrl.Url, "/") + "/ws"
+			originalUrl := nodeUrl.Url
+			utils.LavaFormatWarning("Failed creating connector for ws, trying to create with /ws path", err, utils.LogAttr("url", nodeUrl.UrlStr()), utils.LogAttr("newUrl", newUrl))
+			nodeUrl.Url = newUrl
+			conn, newConnErr := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+			if newConnErr == nil {
+				cp.conn = conn
+				return nil
+			}
+			nodeUrl.Url = originalUrl
 		}
-		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: url.String()})
-		conn, err := chainproxy.NewConnector(ctx, nConns, url)
-		if err != nil {
-			return err
-		}
-		cp.conn[url.InternalPath] = conn
+		return err
 	}
-	if len(cp.conn) != len(internalPaths) {
-		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
-	}
-	return nil
-}
 
-func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
-	if len(internalPaths) == 0 {
-		internalPaths = map[string]struct{}{"": {}} // add default path
-	}
-	basePath := nodeUrl.Url
-	for path := range internalPaths {
-		nodeUrl.Url = basePath + path
-		conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-		if err != nil {
-			return err
-		}
-		cp.conn[path] = conn
-		if cp.conn == nil {
-			return errors.New("g_conn == nil")
-		}
-	}
+	cp.conn = conn
 	return nil
 }
 
 func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
 			rpc.SetHeader(metadata.Name, metadata.Value)
@@ -624,7 +620,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	}
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx, element := range batch {
-		// convert them because batch elements can't be marshaled back to the user, they are missing tags and flieds
+		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
 		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
 		if err != nil {
 			return nil, err
@@ -645,8 +641,6 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 }
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	// Get node
-
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
@@ -661,15 +655,18 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		reply, err := cp.sendBatchMessage(ctx, batchMessage, chainMessage)
 		return reply, "", nil, err
 	}
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+
+	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+	defer cp.conn.ReturnRpc(rpc)
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
+
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	// support setting headers
 	if len(nodeMessage.GetHeaders()) > 0 {
@@ -679,8 +676,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			defer rpc.SetHeader(metadata.Name, "")
 		}
 	}
+	var nodeErr error
 	if ch != nil {
-		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+		sub, rpcMessage, nodeErr = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// we use the minimum timeout between the two, spec or context. to prevent the provider from hanging
 		// we don't use the context alone so the provider won't be hanging forever by an attack
@@ -688,47 +686,52 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		defer cancel()
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
-		if err != nil {
+		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
+		if nodeErr != nil {
 			// here we are getting an error for every code that is not 200-300
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
-				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
-			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
+			if parsedError := cp.HandleNodeError(ctx, nodeErr); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}
 	}
 
-	var replyMsg rpcInterfaceMessages.JsonrpcMessage
+	var replyMsg *rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
-	if err != nil {
-		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		return nil, "", nil, err
-	} else {
-		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
+	if nodeErr != nil {
+		// try to parse node error as json message
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr), utils.LogAttr("nodeUrl", cp.NodeUrl.Url))
+			return nil, "", nil, nodeErr
 		}
-		// validate result is valid
-		if replyMessage.Error == nil {
-			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
-			if responseIsNilValidationError != nil {
-				return nil, "", nil, responseIsNilValidationError
-			}
-		}
+	}
 
-		replyMsg = *replyMessage
-		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
-				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
-				utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
-			)
+	replyMsg, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
+	}
+	// validate result is valid
+	if replyMsg.Error == nil {
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
+		if responseIsNilValidationError != nil {
+			return nil, "", nil, responseIsNilValidationError
 		}
+	}
+
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
+			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+			utils.Attribute{Key: "reply", Value: replyMsg},
+			utils.Attribute{Key: "request", Value: nodeMessage},
+		)
 	}
 
 	retData, err := json.Marshal(replyMsg)
@@ -745,9 +748,17 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	if ch != nil {
-		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+		if replyMsg.Error != nil {
+			return reply, "", nil, nil
+		}
+
+		if common.IsQuoted(string(replyMsg.Result)) {
+			subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
+			if err != nil {
+				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+			}
+		} else {
+			subscriptionID = string(replyMsg.Result)
 		}
 	}
 

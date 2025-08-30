@@ -18,7 +18,6 @@ package rpcclient
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -27,8 +26,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 var (
@@ -176,14 +177,14 @@ func (op *requestOp) wait(ctx context.Context, c *Client) (*JsonrpcMessage, erro
 //
 // The client reconnects automatically if the connection is lost.
 func Dial(rawurl string) (*Client, error) {
-	return DialContext(context.Background(), rawurl)
+	return DialContext(context.Background(), rawurl, nil)
 }
 
 // DialContext creates a new RPC client, just like Dial.
 //
 // The context is used to cancel or time out the initial connection establishment. It does
 // not affect subsequent interactions with the client.
-func DialContext(ctx context.Context, rawurl string) (*Client, error) {
+func DialContext(ctx context.Context, rawurl string, wsHeaders map[string]string) (*Client, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err
@@ -192,7 +193,7 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 	case "http", "https":
 		return DialHTTP(rawurl)
 	case "ws", "wss":
-		return DialWebsocket(ctx, rawurl, "")
+		return DialWebsocket(ctx, rawurl, wsHeaders)
 	case "stdio":
 		return DialStdIO(ctx)
 	case "":
@@ -292,7 +293,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 	var msg *JsonrpcMessage
 	var err error
 	switch p := params.(type) {
-	case []interface{}:
+	case []interface{}, string:
 		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
@@ -513,6 +514,11 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 		return nil, nil, err
 	}
 	resp, err := op.wait(ctx, c)
+	// In the case of response containing the error message, we want to return it to the user as-is
+	if err != nil && resp != nil && resp.Error != nil {
+		return nil, resp, nil
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}

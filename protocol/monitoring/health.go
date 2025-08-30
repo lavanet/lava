@@ -2,28 +2,28 @@ package monitoring
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gogo/status"
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	lvutil "github.com/lavanet/lava/v5/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -85,6 +85,7 @@ func RunHealth(ctx context.Context,
 		ConsumerBlocks:     map[LavaEntity]int64{},
 		SubscriptionsData:  map[string]SubscriptionData{},
 		FrozenProviders:    map[LavaEntity]struct{}{},
+		JailedProviders:    map[LavaEntity]struct{}{},
 		UnhealthyProviders: map[LavaEntity]string{},
 		UnhealthyConsumers: map[LavaEntity]string{},
 		Specs:              map[string]*spectypes.Spec{},
@@ -127,7 +128,7 @@ func RunHealth(ctx context.Context,
 	errCh := make(chan error, 1)
 
 	// get a list of all necessary specs for the test
-	dualStakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
+	epochstorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 	if getAllProviders {
 		// var specResp *spectypes.QueryGetSpecResponse
 		var specsResp *spectypes.QueryShowAllChainsResponse
@@ -156,28 +157,23 @@ func RunHealth(ctx context.Context,
 			defer wgproviders.Done()
 			var err error
 			for i := 0; i < BasicQueryRetries; i++ {
-				var response *dualstakingtypes.QueryDelegatorProvidersResponse
+				var response *epochstoragetypes.QueryProviderMetaDataResponse
 				queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-				response, err = dualStakingQuerier.DelegatorProviders(queryCtx, &dualstakingtypes.QueryDelegatorProvidersRequest{
-					Delegator:   providerAddress,
-					WithPending: false,
-				})
+				response, err = epochstorageQuerier.ProviderMetaData(queryCtx, &epochstoragetypes.QueryProviderMetaDataRequest{Provider: providerAddress})
 				cancel()
 				if err != nil || response == nil {
 					time.Sleep(QuerySleepTime)
 					continue
 				}
-				delegations := response.GetDelegations()
-				for _, delegation := range delegations {
-					if delegation.Provider == providerAddress {
-						healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
-						for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
-							healthResults.SetProviderData(LavaEntity{
-								Address:      providerAddress,
-								SpecId:       delegation.ChainID,
-								ApiInterface: apiInterface,
-							}, ReplyData{})
-						}
+
+				for _, chain := range response.MetaData[0].Chains {
+					healthResults.setSpec(&spectypes.Spec{Index: chain})
+					for _, apiInterface := range chainIdToApiInterfaces[chain] {
+						healthResults.SetProviderData(LavaEntity{
+							Address:      providerAddress,
+							SpecId:       chain,
+							ApiInterface: apiInterface,
+						}, ReplyData{})
 					}
 				}
 				return
@@ -286,7 +282,11 @@ func RunHealth(ctx context.Context,
 				mutex.Lock() // Lock before updating stakeEntries
 				if _, ok := healthResults.getProviderData(lookupKey); ok || getAllProviders {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
-						healthResults.FreezeProvider(providerKey)
+						if providerEntry.IsFrozen() {
+							healthResults.JailedProvider(providerKey)
+						} else if providerEntry.Jails > 0 {
+							healthResults.FreezeProvider(providerKey)
+						}
 					} else {
 						stakeEntries[providerKey] = providerEntry
 					}
@@ -354,6 +354,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 		healthResults.updateLatestBlock(specId, providerBlock)
 	}
 	errCh := make(chan error, 1)
+	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
 	queryEndpoint := func(endpoint *HealthRPCEndpoint, isReference bool) error {
 		chainParser, err := chainlib.NewChainParser(endpoint.ApiInterface)
 		if err != nil {
@@ -542,13 +543,12 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
-				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+				relayerClient, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
 					utils.LavaFormatDebug("failed connecting to provider endpoint", utils.LogAttr("error", err), utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					return 0, "", 0, err
 				}
 				defer conn.Close()
-				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
 				probeReq := &pairingtypes.ProbeRequest{
@@ -604,9 +604,12 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 					continue
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
-				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+				if lvutil.IsVersionLessThan(parsedVer, targetVersion) {
 					healthResults.SetUnhealthyProvider(providerKey, "Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
+				}
+				if lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+					utils.LavaFormatWarning("provider endpoint version is greater than the target version, this is ok but can lead to unexpected behavior", nil, utils.LogAttr("version", version), utils.LogAttr("targetVersion", lavaVersion.ProviderTarget))
 				}
 				latestData := ReplyData{
 					Block:   latestBlockFromProbe,
@@ -626,10 +629,10 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 
 func prettifyProviderError(err error) string {
 	code := status.Code(err)
-	if code == codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()) {
+	if code == codes.Code(protocolerrors.UnhandledRelayReceiverError.ABCICode()) {
 		return "provider running with unhandled support"
 	}
-	if code == codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()) {
+	if code == codes.Code(protocolerrors.DisabledRelayReceiverError.ABCICode()) {
 		return "provider running with disabled support due to verification"
 	}
 	if len(err.Error()) < NiceOutputLength {

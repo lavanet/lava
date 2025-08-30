@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/testutil/common"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,8 +43,8 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 	err := ts.addProviders(stakedCount)
 	require.NoError(ts.T, err)
 	for i := 0; i < stakedCount; i++ {
-		_, addr := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(addr, ts.spec, testStake)
+		acc, provider := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(acc.GetVaultAddr(), provider, ts.spec, testStake)
 		require.NoError(ts.T, err)
 	}
 
@@ -54,11 +54,11 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 	require.NoError(ts.T, err)
 
 	for i := 0; i < unstakingCount; i++ {
-		_, addr := ts.GetAccount(common.PROVIDER, stakedCount+unstakedCount+i)
-		err := ts.StakeProvider(addr, ts.spec, testStake)
+		acc, provider := ts.GetAccount(common.PROVIDER, stakedCount+unstakedCount+i)
+		err := ts.StakeProvider(acc.GetVaultAddr(), provider, ts.spec, testStake)
 		require.NoError(ts.T, err)
 		ts.AdvanceEpoch()
-		_, err = ts.TxPairingUnstakeProvider(addr, ts.spec.Name)
+		_, err = ts.TxPairingUnstakeProvider(acc.GetVaultAddr(), ts.spec.Name)
 		require.NoError(ts.T, err)
 	}
 
@@ -95,7 +95,7 @@ func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetyp
 	epoch := ts.EpochStart()
 	keeper := ts.Keepers.Epochstorage
 
-	stakeEntry, found := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
+	stakeEntry, found := keeper.GetStakeEntry(ts.Ctx, epoch, chainID, provider)
 	if !found {
 		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
 	}

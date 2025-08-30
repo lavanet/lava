@@ -46,15 +46,15 @@ type Spec struct {
 	ProvidersTypes                Spec_ProvidersTypes   // determines if the spec is for lava or chains 
 	Imports                       []string              // list of chains to import ApiCollections from
 	ApiCollections                []*ApiCollection      // list of ApiCollections that defines all the interfaces and APIs of the chain
-	Contributor                   []string              // list of contributers (public lava address {lava@...})
-	ContributorPercentage         *Dec                  // the percentage of coins the contributers will get from each reward a provider get
+	Contributor                   []string              // list of contributors (public lava address {lava@...})
+	ContributorPercentage         *Dec                  // the percentage of coins the contributors will get from each reward a provider get
 	Shares                        uint64                // factor for bonus rewards at the end of the month (see rewards module)
     AllowedBlockLagForQosSync     int64                 // defines the accepted blocks a provider can be behind the chain without QOS degradation
 	BlockLastUpdated              uint64                // the last block this spec was updated on chain
     ReliabilityThreshold          uint32                // this determines the probability of data reliability checks by the consumer
 	DataReliabilityEnabled        bool                  // enables/disables data reliability for the chain
-	BlockDistanceForFinalizedData uint32                              
-	BlocksInFinalizationProof     uint32                              
+	BlockDistanceForFinalizedData uint32                // number of finalized blocks a provider keeps for data reliability             
+	BlocksInFinalizationProof     uint32                // number of blocks for finalization              
 }
 ```
 `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
@@ -102,7 +102,7 @@ The `AddOn` field lets you use additional optional APIs like debug, trace etc.
 
 ### Extension
 
-this field defines an extansion for the api collection.
+this field defines an extension for the api collection.
 
 ```go
 type Extension struct {
@@ -157,9 +157,9 @@ This struct defines properties of an api.
 ```go
 type SpecCategory struct {
 	Deterministic bool   // if this api have the same response across nodes
-	Local         bool   // TBD
+	Local         bool   // specific to the local node (like node info query)
 	Subscription  bool   // subscription base api
-	Stateful      uint32 // TBD
+	Stateful      uint32 // true for transaction APIs
 	HangingApi    bool   // marks this api with longer timeout
 }
 ```
@@ -207,7 +207,7 @@ type ParseDirective struct {
 ```
 const (
 	FUNCTION_TAG_GET_BLOCKNUM           FUNCTION_TAG = 1 // get latest block number
-	FUNCTION_TAG_GET_BLOCK_BY_NUM       FUNCTION_TAG = 2 // get a specific block by block numer
+	FUNCTION_TAG_GET_BLOCK_BY_NUM       FUNCTION_TAG = 2 // get a specific block by block number
 	FUNCTION_TAG_SET_LATEST_IN_METADATA FUNCTION_TAG = 3
 	FUNCTION_TAG_SET_LATEST_IN_BODY     FUNCTION_TAG = 4
 	FUNCTION_TAG_VERIFICATION           FUNCTION_TAG = 5
@@ -229,7 +229,7 @@ type Verification struct {
 
 ### Headers
 
-Thie struct defines for the provider what action to take on the headers of the relayed message.
+This struct defines for the provider what action to take on the headers of the relayed message.
 
 ```go
 type Header struct {

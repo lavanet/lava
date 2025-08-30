@@ -9,11 +9,11 @@ type MetricsManagerInf interface {
 }
 
 type MetricsUpdater struct {
-	consumerMetricsManager MetricsManagerInf
+	metricsManager MetricsManagerInf
 }
 
-func NewMetricsUpdater(consumerMetricsManager MetricsManagerInf) *MetricsUpdater {
-	return &MetricsUpdater{consumerMetricsManager: consumerMetricsManager}
+func NewMetricsUpdater(metricsManager MetricsManagerInf) *MetricsUpdater {
+	return &MetricsUpdater{metricsManager: metricsManager}
 }
 
 func (mu *MetricsUpdater) UpdaterKey() string {
@@ -25,8 +25,8 @@ func (mu *MetricsUpdater) Reset(latestBlock int64) {
 }
 
 func (mu *MetricsUpdater) Update(latestBlock int64) {
-	if mu.consumerMetricsManager == nil {
+	if mu.metricsManager == nil {
 		return
 	}
-	mu.consumerMetricsManager.SetBlock(latestBlock)
+	mu.metricsManager.SetBlock(latestBlock)
 }

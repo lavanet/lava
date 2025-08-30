@@ -1,0 +1,47 @@
+{
+    "proposal": {
+        "title": "Add Specs: Koii",
+        "description": "Adding new specification support for relaying Koii data on Lava",
+        "specs": [
+            {
+                "index": "KOII",
+                "name": "koii main net",
+                "enabled": true,
+                "imports": [
+                    "SOLANA"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 400,
+                "allowed_block_lag_for_qos_sync": 25,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
+            },
+            {
+                "index": "KOIIT",
+                "name": "koii test net",
+                "enabled": true,
+                "imports": [
+                    "KOII"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 600,
+                "allowed_block_lag_for_qos_sync": 17,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}

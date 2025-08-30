@@ -11,14 +11,14 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (
@@ -34,7 +34,6 @@ const (
 	MaxPaymentRequestsRetiresForSession = 3
 	RewardServerMaxRelayRetires         = 3
 	splitRewardsIntoChunksSize          = 500 // if the reward array is larger than this it will split it into chunks and send multiple requests instead of a huge one
-	debug                               = false
 )
 
 type PaymentRequest struct {
@@ -47,6 +46,8 @@ type PaymentRequest struct {
 	Description         string
 	ChainID             string
 	ConsumerRewardsKey  string
+	ProviderAddress     string
+	RelayNumber         uint64
 }
 
 func (pr *PaymentRequest) String() string {
@@ -81,6 +82,21 @@ type RelaySessionsToRetryAttempts struct {
 type PaymentConfiguration struct {
 	relaySessionChunks       [][]*pairingtypes.RelaySession // small chunks of relay session to request payments for
 	shouldAddExpectedPayment bool
+}
+
+// used to disable provider rewards claiming
+type DisabledRewardServer struct{}
+
+func (rws *DisabledRewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
+	return 0, true
+}
+
+func (rws *DisabledRewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
+	// TODO: hold off reward claims for subscription while this is still active
+}
+
+func (rws *DisabledRewardServer) SubscribeEnded(consumer string, epoch uint64, subscribeID string) {
+	// TODO: can collect now
 }
 
 type RewardServer struct {
@@ -302,9 +318,15 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 						rws.addExpectedPayment(expectedPay)
 						rws.updateCUServiced(relay.CuSum)
 						specs[relay.SpecId] = struct{}{}
-						if debug {
-							utils.LavaFormatDebug("Adding Payment for Spec", utils.LogAttr("spec", relay.SpecId), utils.LogAttr("Cu Sum", relay.CuSum), utils.LogAttr("epoch", relay.Epoch), utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("number_of_relays_served", relay.RelayNum), utils.LogAttr("sessionId", relay.SessionId))
-						}
+
+						utils.LavaFormatTrace("Adding Payment for Spec",
+							utils.LogAttr("spec", relay.SpecId),
+							utils.LogAttr("Cu Sum", relay.CuSum),
+							utils.LogAttr("epoch", relay.Epoch),
+							utils.LogAttr("consumerAddr", consumerAddr),
+							utils.LogAttr("number_of_relays_served", relay.RelayNum),
+							utils.LogAttr("sessionId", relay.SessionId),
+						)
 					}
 				} else { // just add the specs
 					for _, relay := range failedRewardRequestsToRetry {
@@ -457,6 +479,9 @@ func (rws *RewardServer) updateCUPaid(cu uint64) {
 }
 
 func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string, shardID uint) {
+	if rws == nil {
+		return
+	}
 	// the db itself doesn't need locks. as it self manages locks inside.
 	// but opening a db can race. (NewLocalDB) so we lock this method.
 	// Also, we construct the in-memory rewards from the DB, so that needs a lock as well
@@ -470,6 +495,9 @@ func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string
 }
 
 func (rws *RewardServer) CloseAllDataBases() error {
+	if rws == nil {
+		return nil
+	}
 	return rws.rewardDB.Close()
 }
 
@@ -800,6 +828,20 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if err != nil {
 			return nil, err
 		}
+
+		// if these fail we don't fail the method, worst case scenario they will be empty. these fields are used for event parsing
+		providerString, ok := attributes["provider"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field provider", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumberString, ok := attributes["relayNumber"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field relayNumber", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumber, err := strconv.ParseUint(relayNumberString, 10, 64)
+		if err != nil {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment failed parsing uint from relay number string", err, utils.Attribute{Key: "relayNumberString", Value: relayNumberString}, utils.Attribute{Key: "idx", Value: idx})
+		}
 		payment := &PaymentRequest{
 			CU:                  cu,
 			BlockHeightDeadline: block,
@@ -809,6 +851,8 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			Description:         description,
 			UniqueIdentifier:    uniqueID,
 			ChainID:             chainID,
+			ProviderAddress:     providerString,
+			RelayNumber:         relayNumber,
 		}
 		payments = append(payments, payment)
 	}

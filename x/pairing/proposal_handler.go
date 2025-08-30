@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/pairing/keeper"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 // NewPlanProposalsHandler creates a new governance Handler for a Plan
@@ -49,6 +49,7 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 					chainID,
 					err.Error(),
 				}, ","))
+				continue
 			}
 
 			err = k.UnstakeEntryForce(ctx, stakeEntry.Chain, stakeEntry.Address, "unstaked via gov proposal")

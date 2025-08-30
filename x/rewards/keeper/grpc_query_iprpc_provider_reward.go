@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v5/x/rewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,12 +31,18 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 		bps, _ := k.specProvidersBasePay(ctx, specFund.Spec, false)
 		providerIprpcCu := uint64(0)
 		totalIprpcCu := uint64(0)
-		providerBpIndex := types.BasePayIndex{Provider: req.Provider, ChainID: specFund.Spec}
+
+		stakeEntry, found := k.epochstorage.GetStakeEntryCurrent(ctx, specFund.Spec, req.Provider)
+		if !found {
+			continue
+		}
+
+		providerBpIndex := types.BasePayWithIndex{Provider: stakeEntry.Address, ChainId: specFund.Spec}
 		for _, bp := range bps {
-			if bp.BasePayIndex.String() == providerBpIndex.String() {
-				providerIprpcCu = bp.IprpcCu
+			if bp.Index() == providerBpIndex.Index() {
+				providerIprpcCu = bp.BasePay.IprpcCu
 			}
-			totalIprpcCu += bp.IprpcCu
+			totalIprpcCu += bp.BasePay.IprpcCu
 		}
 
 		// get the provider's relative reward by CU

@@ -4,28 +4,32 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
-	commontypes "github.com/lavanet/lava/common/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (
-	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	DefaultGasAdjustment = "1000.0"
+	DefaultGasPrice      = "0.00002" + commontypes.TokenDenom
+	DefaultGasAdjustment = "3.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -76,8 +80,11 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	return nil
 }
 
-func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
-	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
+func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
+	txfactory := ts.txFactory
+	if feeGranter != nil {
+		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
+	}
 
 	if err := msg.ValidateBasic(); err != nil {
 		return err
@@ -94,7 +101,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 	latestResult := common.TxResultData{}
 	var gasUsed uint64
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
-		utils.LavaFormatDebug("Attempting to send relay payment transaction", utils.LogAttr("index", idx+1))
+		utils.LavaFormatDebug("Attempting to send transaction", utils.LogAttr("index", idx+1))
 		txfactory, gasUsed, err = ts.simulateTxWithRetry(clientCtx, txfactory, msg)
 		if err != nil {
 			return utils.LavaFormatError("Failed Simulating transaction", err)
@@ -155,7 +162,7 @@ func (ts *TxSender) parseTxErrorsAndTryGettingANewFactory(txResultString string,
 	} else if strings.Contains(txResultString, "insufficient fees; got:") { // handle a case where node minimum gas fees is misconfigured
 		return ts.txFactory, parseInsufficientFeesError(txResultString, gasUsed)
 	}
-	return txfactory, fmt.Errorf(txResultString)
+	return txfactory, fmt.Errorf("%s", txResultString)
 }
 
 func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
@@ -194,9 +201,9 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
 	}
 	myWriter.Reset()
-	if debug {
-		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
-	}
+
+	utils.LavaFormatTrace("transaction results", utils.LogAttr("jsonParsedResult", jsonParsedResult))
+
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
 	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
@@ -233,7 +240,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				return
 			}
 			utils.LavaFormatDebug("Keep Waiting tx results...", utils.LogAttr("reason", err))
-			if debug {
+			if utils.IsTraceLogLevelEnabled() {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
 		}
@@ -299,9 +306,17 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
+	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
+	if finalizationConflict != nil {
+		msg.SetFinalizationConflict(finalizationConflict)
+	} else if responseConflict != nil {
+		msg.SetResponseConflict(responseConflict)
+	} else {
+		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
+	}
+
+	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
 	}
@@ -310,6 +325,8 @@ func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, final
 
 type ProviderTxSender struct {
 	*TxSender
+	vaults     map[string]sdk.AccAddress // chain ID -> vault that is a fee granter
+	vaultsLock sync.RWMutex
 }
 
 func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Factory) (ret *ProviderTxSender, err error) {
@@ -318,31 +335,126 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 		return nil, err
 	}
 	ts := &ProviderTxSender{TxSender: txSender}
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, updaters.TimeOutForFetchingLavaBlocks)
+	defer cancel()
+	ts.vaults, err = ts.getVaults(ctxWithTimeout)
+	if err != nil {
+		utils.LavaFormatInfo("failed getting vaults from chain, could be provider is not staked yet", utils.LogAttr("reason", err))
+	}
 	return ts, nil
+}
+
+func (pts *ProviderTxSender) UpdateEpoch(epoch uint64) {
+	// need to update vault information
+	ctx, cancel := context.WithTimeout(context.Background(), updaters.TimeOutForFetchingLavaBlocks)
+	defer cancel()
+	vaults, err := pts.getVaults(ctx)
+	if err != nil {
+		// failed getting vaults, try again next epoch
+		return
+	}
+	utils.LavaFormatDebug("ProviderTxSender got epoch update, updating vaults", utils.LogAttr("new vaults", vaults), utils.LogAttr("epoch", epoch))
+	pts.vaultsLock.Lock()
+	defer pts.vaultsLock.Unlock()
+	pts.vaults = vaults
+}
+
+func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]sdk.AccAddress, error) {
+	vaults := map[string]sdk.AccAddress{}
+	pairingQuerier := pairingtypes.NewQueryClient(pts.clientCtx)
+	res, err := pairingQuerier.Provider(ctx, &pairingtypes.QueryProviderRequest{Address: pts.clientCtx.FromAddress.String()})
+	if err != nil {
+		utils.LavaFormatWarning("could not get provider vault addresses. provider is not staked on any chain", err,
+			utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+		)
+		return vaults, err
+	}
+
+	// this can happen if the provider is not staked yet
+	if len(res.StakeEntries) == 0 {
+		return vaults, utils.LavaFormatWarning("couldn't find entries on chain - could be that the provider is not staked yet", nil)
+	}
+
+	feegrantQuerier := feegrant.NewQueryClient(pts.clientCtx)
+	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Vault == stakeEntry.Address {
+			// if provider == vault, there is no feegrant, skip the stake entry
+			continue
+		}
+		vaultAcc, err := sdk.AccAddressFromBech32(stakeEntry.Vault)
+		if err != nil {
+			utils.LavaFormatError("critical: invalid vault address in stake entry", err,
+				utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+				utils.LogAttr("vault", stakeEntry.Vault),
+				utils.LogAttr("chain_id", stakeEntry.Chain),
+			)
+			continue
+		}
+		res, err := feegrantQuerier.Allowance(ctx, &feegrant.QueryAllowanceRequest{
+			Granter: stakeEntry.Vault,
+			Grantee: pts.clientCtx.FromAddress.String(),
+		})
+		if err != nil {
+			// Allowance doesn't return an error if allowance doesn't exist. Error is returned on parsing issues
+			utils.LavaFormatWarning("could not get gas fee allowance for provider and vault", err,
+				utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+				utils.LogAttr("vault", stakeEntry.Vault),
+				utils.LogAttr("chain_id", stakeEntry.Chain),
+			)
+			continue
+		}
+		if res.Allowance != nil {
+			vaults[stakeEntry.Chain] = vaultAcc
+		}
+	}
+
+	return vaults, nil
+}
+
+func (pts *ProviderTxSender) getFeeGranterFromVaults(chainId string) sdk.AccAddress {
+	pts.vaultsLock.RLock()
+	defer pts.vaultsLock.RUnlock()
+	if len(pts.vaults) == 0 {
+		return nil
+	}
+
+	feeGranter, ok := pts.vaults[chainId]
+	if ok {
+		return feeGranter
+	}
+	// else get the first fee granter
+	for _, val := range pts.vaults {
+		return val
+	}
+
+	return nil
 }
 
 func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description, latestBlocks)
 	utils.LavaFormatDebug("Sending reward TX", utils.LogAttr("Number_of_relay_sessions_for_payment", len(relayRequests)))
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
+	feeGranter := pts.getFeeGranterFromVaults("")
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, true, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
 	}
 	return nil
 }
 
-func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+func (pts *ProviderTxSender) SendVoteReveal(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
 	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+	feeGranter := pts.getFeeGranterFromVaults(specId)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }
 
-func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+func (pts *ProviderTxSender) SendVoteCommitment(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
 	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+	feeGranter := pts.getFeeGranterFromVaults(specId)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}
@@ -368,7 +480,7 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	}
 	minimumGasPricesGot := (float64(gasUsed) / float64(required))
 	return utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
-		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
+		utils.Attribute{Key: "Required Minimum Gas Prices", Value: DefaultGasPrice},
 		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
 }

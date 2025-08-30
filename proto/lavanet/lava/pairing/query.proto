@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/pairing/params.proto";
+import "lavanet/lava/pairing/reputation.proto";
 import "lavanet/lava/spec/spec.proto";
 
 
@@ -15,7 +16,7 @@ import "lavanet/lava/subscription/subscription.proto";
 import "lavanet/lava/projects/project.proto";
 import "lavanet/lava/downtime/v1/downtime.proto";
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v5/x/pairing/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -29,6 +30,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
 	}
 
+  // Queries a Provider item.
+  	rpc Provider(QueryProviderRequest) returns (QueryProviderResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider/{address}/{chainID}";
+	}
+
 // Queries a list of GetPairing items.
 	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
@@ -37,6 +43,11 @@ service Query {
 // Queries a list of VerifyPairing items.
 	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
+	}
+
+// Queries a list of ProviderPairingChance items.
+	rpc ProviderPairingChance(QueryProviderPairingChanceRequest) returns (QueryProviderPairingChanceResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}";
 	}
 
 // Queries a UserEntry items.
@@ -70,9 +81,19 @@ service Query {
 	}
 
 // Queries a for the aggregated CU of all ProviderEpochCu objects all the providers.
-rpc ProvidersEpochCu(QueryProvidersEpochCuRequest) returns (QueryProvidersEpochCuResponse) {
-	option (google.api.http).get = "/lavanet/lava/pairing/providers_epoch_cu";
-}
+	rpc ProvidersEpochCu(QueryProvidersEpochCuRequest) returns (QueryProvidersEpochCuResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/providers_epoch_cu";
+	}
+
+// Queries a for a provider reputation.
+	rpc ProviderReputation(QueryProviderReputationRequest) returns (QueryProviderReputationResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation/{provider}/{chainID}/{cluster}";
+	}
+
+// Queries a for a provider reputation's details (mainly for developers).
+	rpc ProviderReputationDetails(QueryProviderReputationDetailsRequest) returns (QueryProviderReputationDetailsResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_reputation_details/{address}/{chainID}/{cluster}";
+	}
 
 	// this line is used by starport scaffolding # 2
 
@@ -95,6 +116,15 @@ message QueryProvidersRequest {
 message QueryProvidersResponse {
   repeated lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
   reserved 2;  
+}
+
+message QueryProviderRequest {
+	string address = 1;
+	string chainID = 2;
+}
+  
+message QueryProviderResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry stakeEntries = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryGetPairingRequest {
@@ -123,6 +153,17 @@ message QueryVerifyPairingResponse {
   uint64 paired_providers = 3;
   uint64 cu_per_epoch = 4;
   string project_id = 5;
+}
+
+message QueryProviderPairingChanceRequest {
+  string provider = 1;
+  string chainID = 2;
+  int32 geolocation = 3;
+  string cluster = 4;
+}
+  
+message QueryProviderPairingChanceResponse {
+  string chance = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
 }
 
 message QueryUserEntryRequest {
@@ -208,4 +249,39 @@ message QueryProvidersEpochCuResponse {
 message ProviderCuInfo {
 	string provider = 1;
 	uint64 cu = 2;
+}
+
+message QueryProviderReputationRequest {
+	string provider = 1;
+	string chainID = 2;
+	string cluster = 3;
+}
+
+message ReputationData {
+	uint64 rank = 1; // rank compared to other providers
+	uint64 providers = 2; // amount of providers with the same chainID+cluster
+	string overall_performance = 3; // overall performance metric which can be "good", "bad", or "low variance"
+	string chainID = 4;
+	string cluster = 5;
+}
+
+message QueryProviderReputationResponse {
+	repeated ReputationData data = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryProviderReputationDetailsRequest {
+	string address = 1;
+	string chainID = 2;
+	string cluster = 3;
+}
+
+message ReputationDevData {
+	Reputation reputation = 1 [(gogoproto.nullable) = false];
+	ReputationPairingScore reputation_pairing_score = 2 [(gogoproto.nullable) = false];
+	string chainID = 4;
+	string cluster = 5;
+}
+
+message QueryProviderReputationDetailsResponse {
+	repeated ReputationDevData data = 1 [(gogoproto.nullable) = false];
 }

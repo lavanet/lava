@@ -1,12 +1,13 @@
 package metrics
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 const (

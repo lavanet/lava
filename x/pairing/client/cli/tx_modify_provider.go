@@ -2,20 +2,19 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"github.com/spf13/cobra"
 )
 
@@ -101,7 +100,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Address == address.String() {
+				if provider.IsAddressVaultOrProvider(address.String()) {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}
@@ -109,6 +108,8 @@ func CmdModifyProvider() *cobra.Command {
 			if providerEntry == nil {
 				return utils.LavaFormatError("provider isn't staked on chainID, no address match", nil)
 			}
+
+			validator := getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			newAmount, err := cmd.Flags().GetString(AmountFlagName)
 			if err != nil {
 				return err
@@ -118,8 +119,16 @@ func CmdModifyProvider() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if providerEntry.Stake.Amount.GT(newStake.Amount) {
-					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: providerEntry.Stake}, utils.Attribute{Key: "requested", Value: providerEntry.Stake})
+
+				if !providerEntry.Stake.IsEqual(newStake) {
+					if cmd.Flags().Changed(ValidatorFlag) {
+						validator, err = cmd.Flags().GetString(ValidatorFlag)
+						if err != nil {
+							return err
+						}
+					} else {
+						return fmt.Errorf("increasing or decreasing stake must be accompanied with validator flag")
+					}
 				}
 				providerEntry.Stake = newStake
 			}
@@ -149,7 +158,7 @@ func CmdModifyProvider() *cobra.Command {
 				return err
 			}
 			if moniker != "" {
-				providerEntry.Moniker = moniker
+				providerEntry.Description.Moniker = moniker
 			}
 
 			if cmd.Flags().Changed(types.FlagCommission) {
@@ -159,25 +168,41 @@ func CmdModifyProvider() *cobra.Command {
 				}
 			}
 
-			if cmd.Flags().Changed(types.FlagDelegationLimit) {
-				delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
-				if err != nil {
-					return err
-				}
-				providerEntry.DelegateLimit, err = sdk.ParseCoinNormalized(delegationLimitStr)
-				if err != nil {
-					return err
-				}
+			identity, err := cmd.Flags().GetString(types.FlagIdentity)
+			if err != nil {
+				return err
+			}
+			if identity != "" {
+				providerEntry.Description.Identity = identity
 			}
 
-			var validator string
-			if cmd.Flags().Changed(ValidatorFlag) {
-				validator, err = cmd.Flags().GetString(types.FlagMoniker)
-				if err != nil {
-					return err
-				}
-			} else {
-				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
+			website, err := cmd.Flags().GetString(types.FlagWebsite)
+			if err != nil {
+				return err
+			}
+			if website != "" {
+				providerEntry.Description.Website = website
+			}
+
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+			if err != nil {
+				return err
+			}
+			if securityContact != "" {
+				providerEntry.Description.SecurityContact = securityContact
+			}
+
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+			if descriptionDetails != "" {
+				providerEntry.Description.Details = descriptionDetails
+			}
+
+			description, err := providerEntry.Description.EnsureLength()
+			if err != nil {
+				return err
 			}
 
 			// modify fields
@@ -188,14 +213,10 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Stake,
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
-				providerEntry.Moniker,
-				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
+				providerEntry.Address,
+				description,
 			)
-
-			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
-				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-			}
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -209,7 +230,10 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(ValidatorFlag, "", "the validator to delegate/bond to with dualstaking")
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
-	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

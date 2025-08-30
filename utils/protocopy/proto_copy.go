@@ -1,7 +1,7 @@
 package protocopy
 
 import (
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type protoTypeOut interface {

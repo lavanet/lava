@@ -6,9 +6,9 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/sigs"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -156,12 +156,18 @@ func TestFundIprpcTX(t *testing.T) {
 func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // setup funds IPRPC for mock2 spec
+	// set shares to 0 for mock2 spec
+	spec2 := ts.Spec(mockSpec2)
+	spec2.Shares = 0
+	ts.Keepers.Spec.SetSpec(ts.Ctx, spec2)
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
 
 	// get consumers and providers (note, only c1 is IPRPC eligible)
 	c1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
 	c2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
-	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p2Acc, p2 := ts.GetAccount(common.PROVIDER, 1)
+	providerAccs := []sigs.Account{p1Acc, p2Acc}
 
 	// send relays from both consumers to both providers
 	type relayInfo struct {
@@ -188,6 +194,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 		provider string
 		fund     sdk.Coins
 	}
+	tax := sdk.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
 	expectedProviderRewards := []providerRewards{
 		{provider: p1, fund: iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))},
 		{provider: p2, fund: iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(4)).QuoInt(sdk.NewInt(5))},
@@ -202,12 +209,36 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 
-	// check that rewards were distributed as expected
-	for _, expectedProviderReward := range expectedProviderRewards {
-		res2, err := ts.QueryDualstakingDelegatorRewards(expectedProviderReward.provider, expectedProviderReward.provider, ts.specs[1].Index)
+	// check that rewards were distributed as expected (use vault address as delegator)
+	for i, expectedProviderReward := range expectedProviderRewards {
+		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].GetVaultAddr(), expectedProviderReward.provider, ts.specs[1].Index)
 		require.NoError(t, err)
-		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund)) // taking 0 index because there are no delegators
+		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund.MulInt(tax).QuoInt(sdk.NewInt(100)))) // taking 0 index because there are no delegators
 	}
+}
+
+// TestVaultProviderIprpcProviderRewardQuery tests that the query works as expected for both provider and vault
+// using both vault and provider should work
+func TestVaultProviderIprpcProviderRewardQuery(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(true)
+
+	pAcc, _ := ts.GetAccount(common.PROVIDER, 0)
+	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	provider := pAcc.Addr.String()
+	vault := pAcc.GetVaultAddr()
+
+	msg := ts.SendRelay(provider, cAcc, []string{ts.specs[1].Index}, 100)
+	_, err := ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &msg)
+	require.NoError(t, err)
+
+	res, err := ts.QueryRewardsIprpcProviderRewardEstimation(provider)
+	require.NoError(t, err)
+	require.Len(t, res.SpecFunds, 1)
+
+	res, err = ts.QueryRewardsIprpcProviderRewardEstimation(vault)
+	require.NoError(t, err)
+	require.Len(t, res.SpecFunds, 1)
 }
 
 // TestIprpcSpecRewardQuery tests the IprpcSpecReward query functionality
@@ -409,8 +440,12 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 func TestFundIprpcTwice(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
+	validatorTax := sdk.NewInt(10)
+	tax := sdk.NewInt(100).Sub(validatorTax).SubRaw(45) // tax is 10% validators and 45% community
+
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
 
 	// fund iprpc pool
 	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
@@ -433,9 +468,13 @@ func TestFundIprpcTwice(t *testing.T) {
 	ts.AdvanceMonths(1).AdvanceEpoch()
 
 	// check rewards - should be only from first funding (=iprpcFunds)
-	res, err := ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+
+	taxed := iprpcFunds.Sub(minIprpcCost).MulInt(validatorTax).QuoInt(sdk.NewInt(100))
+	validatorDistributionPoolTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.ValidatorsRewardsDistributionPoolName)
+	require.Equal(t, validatorDistributionPoolTokens.AmountOf(ibcDenom), taxed.AmountOf(ibcDenom))
 
 	// make a provider service an IPRPC eligible consumer and advance month again
 	relay = ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
@@ -445,9 +484,9 @@ func TestFundIprpcTwice(t *testing.T) {
 	ts.AdvanceMonths(1).AdvanceEpoch()
 
 	// check rewards - should be only from first + second funding (=iprpcFunds*3)
-	res, err = ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
@@ -514,65 +553,78 @@ func TestIprpcMinCost(t *testing.T) {
 // 1. p1 provides service for both consumers, p2 provides service for c1 -> IPRPC reward should divide equally between p1 and p2
 // 2. both providers provide service for c2 -> No IPRPC rewards should be given
 func TestIprpcEligibleSubscriptions(t *testing.T) {
-	ts := newTester(t, true)
-	ts.setupForIprpcTests(true) // setup creates consumers and providers and funds IPRPC pool for mock2 spec
+	// do the test for the following consumers:
+	// 1. subscription owners
+	// 2. developers in the admin project
+	// 3. developers in a regular project that belongs to the subscriptions
+	const (
+		SUB_OWNERS                 = 0
+		DEVELOPERS_ADMIN_PROJECT   = 1
+		DEVELOPERS_REGULAR_PROJECT = 2
+	)
+	modes := []int{SUB_OWNERS, DEVELOPERS_ADMIN_PROJECT, DEVELOPERS_REGULAR_PROJECT}
 
-	c1Acc, c1 := ts.GetAccount(common.CONSUMER, 0)
-	c2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
-	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	for _, mode := range modes {
+		ts := newTester(t, true)
+		ts.setupForIprpcTests(true) // setup creates consumers and providers and funds IPRPC pool for mock2 spec
 
-	// p1 provides service for both consumers, p2 provides service for c1
-	msg := ts.SendRelay(p1, c1Acc, []string{mockSpec2}, 100)
-	_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// add developers to the admin project of the subscription and add an additional project with developers
+		c1Acc, c2Acc := ts.getConsumersForIprpcSubTest(mode)
 
-	msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// p1 provides service for both consumers, p2 provides service for c1
+		_, p1 := ts.GetAccount(common.PROVIDER, 0)
+		_, p2 := ts.GetAccount(common.PROVIDER, 1)
+		msg := ts.SendRelay(p1, c1Acc, []string{mockSpec2}, 100)
+		_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	msg = ts.SendRelay(p2, c1Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// check expected reward for each provider, it should be equal (the service for c1 was equal)
-	res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
-	require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
+		msg = ts.SendRelay(p2, c1Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// fund the pool again (advance month to apply)
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))))
-	require.NoError(ts.T, err)
-	ts.AdvanceMonths(1).AdvanceEpoch()
+		// check expected reward for each provider, it should be equal (the service for c1 was equal)
+		res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
 
-	// provide service only for c2
-	msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// fund the pool again (advance month to apply)
+		_, err = ts.TxRewardsFundIprpc(c1Acc.Addr.String(), mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))))
+		require.NoError(ts.T, err)
+		ts.AdvanceMonths(1).AdvanceEpoch()
 
-	msg = ts.SendRelay(p2, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// provide service only for c2
+		msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// check none of the providers should get rewards
-	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.Len(t, res1.SpecFunds, 0)
-	require.Len(t, res2.SpecFunds, 0)
+		msg = ts.SendRelay(p2, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// advance another month and see there are still no rewards
-	ts.AdvanceMonths(1).AdvanceEpoch()
-	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.Len(t, res1.SpecFunds, 0)
-	require.Len(t, res2.SpecFunds, 0)
+		// check none of the providers should get rewards
+		res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.Len(t, res1.SpecFunds, 0)
+		require.Len(t, res2.SpecFunds, 0)
+
+		// advance another month and see there are still no rewards
+		ts.AdvanceMonths(1).AdvanceEpoch()
+		res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.Len(t, res1.SpecFunds, 0)
+		require.Len(t, res2.SpecFunds, 0)
+	}
 }
 
 // TestMultipleIprpcSpec checks that rewards are distributed correctly when multiple specs are configured in the IPRPC pool
@@ -584,8 +636,8 @@ func TestMultipleIprpcSpec(t *testing.T) {
 	ts.setupForIprpcTests(false) // creates consumers and providers staked on two stakes
 
 	c1Acc, c1 := ts.GetAccount(common.CONSUMER, 0)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
-	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p2Acc, p2 := ts.GetAccount(common.PROVIDER, 1)
 
 	// add another spec and stake the providers
 	mockSpec3 := "mock3"
@@ -593,9 +645,9 @@ func TestMultipleIprpcSpec(t *testing.T) {
 	spec3.Index = mockSpec3
 	spec3.Name = mockSpec3
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec3, spec3).Spec(mockSpec3))
-	err := ts.StakeProvider(p1, ts.specs[2], testStake)
+	err := ts.StakeProvider(p1Acc.GetVaultAddr(), p1, ts.specs[2], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(p2, ts.specs[2], testStake)
+	err = ts.StakeProvider(p2Acc.GetVaultAddr(), p2, ts.specs[2], testStake)
 	require.NoError(ts.T, err)
 
 	// fund iprpc pool for mock2 spec for 1 months
@@ -658,17 +710,17 @@ func TestMultipleIprpcSpec(t *testing.T) {
 }
 
 // TestIprpcRewardWithZeroSubRewards checks that even if a subscription is free (providers won't get paid for their service)
-// if the providers service an IPRPC eligible subscription, they get IPRPC rewards
+// if the providers service an IPRPC eligible subscription, they get IPRPC rewards (which are taxed)
 // Scenarios:
-// 0. consumer is IPRPC eligible and community tax = 100% -> provider won't get paid for its service
-// 1. two providers provide service -> they get IPRPC reward relative to their serviced CU
+// consumer is IPRPC eligible and community tax = 100% -> provider won't get paid for its service and IPRPC
+// rewards will be transffered to the community pool
 func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // create a consumer and buys subscription + funds iprpc
 
 	c1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
-	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p2Acc, p2 := ts.GetAccount(common.PROVIDER, 1)
 
 	// make community participation percentage to be 100% to make the provider not get rewarded for its service later
 	distParams := distributiontypes.DefaultParams()
@@ -690,16 +742,13 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	// check provider rewards (should be only expected IPRPC rewards)
-	p1ExpectedReward := iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))
-	res1, err := ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	// check there are no provider rewards
+	res1, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, p1ExpectedReward.IsEqual(res1.Rewards[0].Amount))
-
-	p2ExpectedReward := p1ExpectedReward.MulInt(sdk.NewInt(4))
-	res2, err := ts.QueryDualstakingDelegatorRewards(p2, p2, mockSpec2)
+	require.Len(t, res1.Rewards, 0)
+	res2, err := ts.QueryDualstakingDelegatorRewards(p2Acc.GetVaultAddr(), p2, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, p2ExpectedReward.IsEqual(res2.Rewards[0].Amount))
+	require.Len(t, res2.Rewards, 0)
 }
 
 // TestMinIprpcCostForSeveralMonths checks that if a user sends fund=1.1*minIprpcCost with duration=2

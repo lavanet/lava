@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/spf13/pflag"
 )
 
@@ -14,7 +14,7 @@ import (
 func FindSequenceNumber(sequence string) (int, error) {
 	re := regexp.MustCompile(`expected (\d+), got (\d+)`)
 	match := re.FindStringSubmatch(sequence)
-	if match == nil || len(match) < 2 {
+	if len(match) < 2 {
 		return 0, utils.LavaFormatWarning("Failed to parse sequence number from error", nil, utils.Attribute{Key: "sequence", Value: sequence})
 	}
 	return strconv.Atoi(match[1]) // atoi return 0 upon error, so it will be ok when sequenceNumberParsed uses it

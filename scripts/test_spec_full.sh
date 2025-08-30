@@ -2,7 +2,7 @@
 # call this bash with this format:
 # test_spec_full [SPEC_file_path] {[api_interface] [service-url] ...} [--install]
 # example:
-# test_spec_full cookbook/specs/spec_add_lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
+# test_spec_full specs/mainnet-1/specs/lava.json rest 127.0.0.1:1317 tendermintrpc 127.0.0.1:26657 
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
@@ -66,9 +66,10 @@ if [ "$dry" = false ]; then
     sleep 5
     wait_for_lava_node_to_start
 
-    GASPRICE="0.000000001ulava"
+    GASPRICE="0.00002ulava"
     # add all existing specs so inheritance works
-    lavad tx gov submit-legacy-proposal spec-add ${__dir}/../cookbook/specs/spec_add_ibc.json,${__dir}/../cookbook/specs/spec_add_cosmoswasm.json,${__dir}/../cookbook/specs/spec_add_cosmossdk.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_45.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_full.json,${__dir}/../cookbook/specs/spec_add_ethereum.json,${__dir}/../cookbook/specs/spec_add_cosmoshub.json,${__dir}/../cookbook/specs/spec_add_lava.json,${__dir}/../cookbook/specs/spec_add_osmosis.json,${__dir}/../cookbook/specs/spec_add_fantom.json,${__dir}/../cookbook/specs/spec_add_celo.json,${__dir}/../cookbook/specs/spec_add_optimism.json,${__dir}/../cookbook/specs/spec_add_arbitrum.json,${__dir}/../cookbook/specs/spec_add_starknet.json,${__dir}/../cookbook/specs/spec_add_aptos.json,${__dir}/../cookbook/specs/spec_add_juno.json,${__dir}/../cookbook/specs/spec_add_polygon.json,${__dir}/../cookbook/specs/spec_add_evmos.json,${__dir}/../cookbook/specs/spec_add_base.json,${__dir}/../cookbook/specs/spec_add_canto.json,${__dir}/../cookbook/specs/spec_add_sui.json,${__dir}/../cookbook/specs/spec_add_solana.json,${__dir}/../cookbook/specs/spec_add_bsc.json,${__dir}/../cookbook/specs/spec_add_axelar.json,${__dir}/../cookbook/specs/spec_add_avalanche.json,${__dir}/../cookbook/specs/spec_add_fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
+    specs=$(get_all_specs)
+    lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
     wait_next_block
     wait_next_block
     lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -88,7 +89,6 @@ if [ "$dry" = false ]; then
     sleep 4
 
     PROVIDERSTAKE="500000000000ulava"
-    DELEGATE_LIMIT="0ulava"
 
     # do not change this port without modifying the input_yaml
     PROVIDER1_LISTENER="127.0.0.1:2220"
@@ -98,7 +98,7 @@ if [ "$dry" = false ]; then
     for index in ${index_list[@]}
     do
         echo "Processing index: $index"
-        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --delegate-limit $DELEGATE_LIMIT  --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
         wait_next_block
     done
 
@@ -122,7 +122,7 @@ fi
 
 ## Handle Provider ##
 
-input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml"
+input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml" #if testing archive change to test_spec_template_archive.yml
 output_yaml="${LOGS_DIR}/provider.yml"
 
 line_numbers=()
@@ -135,7 +135,7 @@ copy_content() {
     local end_line="$2"
     local index="$3"
     local url="$4"
-    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("RELACE_THIS_URL", url, $0);sub("INDEX_RELACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
+    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("REPLACE_THIS_URL", url, $0);sub("INDEX_REPLACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
 }
 
 head -n 1 "$input_yaml" >> "$output_yaml"
@@ -207,7 +207,7 @@ done
 echo "[+]generated consumer config: $output_consumer_yaml"
 cat $output_consumer_yaml
 if [ "$dry" = false ]; then
-    screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/PORTAL.log"
+    screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMER.log"
 
     echo "[+] letting providers start and running health check then running command with flags: $test_consumer_command_args"
     sleep 10

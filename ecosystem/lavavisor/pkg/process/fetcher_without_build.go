@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	lvutil "github.com/lavanet/lava/v5/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v5/utils"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 type ProtocolBinaryFetcherWithoutBuild struct {
@@ -64,8 +64,10 @@ func (pbf *ProtocolBinaryFetcherWithoutBuild) FetchProtocolBinary(protocolConsen
 	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin) // min(currentRunning, minVersionInParams)
 
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
-		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion) || lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion)) {
+		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion)) {
 			return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, couldn't fetch the new binary.", nil)
+		} else if currentRunningVersion != nil && lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion) {
+			utils.LavaFormatWarning("provider endpoint version is greater than the target version, this is ok but can lead to unexpected behavior", nil, utils.LogAttr("version", currentRunningVersion), utils.LogAttr("targetVersion", currentVersion))
 		}
 		utils.LavaFormatInfo("[Lavavisor] Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
 		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))

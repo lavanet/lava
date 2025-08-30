@@ -1,13 +1,14 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
-
 // this line is used by starport scaffolding # proto/tx/import
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "lavanet/lava/epochstorage/endpoint.proto";
 import "lavanet/lava/pairing/relay.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+import "amino/amino.proto";
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v5/x/pairing/types";
 
 // Msg defines the Msg service.
 service Msg {
@@ -16,25 +17,30 @@ service Msg {
   rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
   rpc FreezeProvider(MsgFreezeProvider) returns (MsgFreezeProviderResponse);
   rpc UnfreezeProvider(MsgUnfreezeProvider) returns (MsgUnfreezeProviderResponse);
+  rpc MoveProviderStake(MsgMoveProviderStake) returns (MsgMoveProviderStakeResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 message MsgStakeProvider {
+  option (amino.name) = "pairing/StakeProvider";
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   repeated lavanet.lava.epochstorage.Endpoint endpoints = 4 [(gogoproto.nullable) = false];
   int32 geolocation = 5;
-  string moniker = 6;
+  reserved 6;
   cosmos.base.v1beta1.Coin delegate_limit = 7 [(gogoproto.nullable) = false];
   uint64 delegate_commission = 8; // delegation commission (precentage 0-100)
   string validator = 9;
+  string address = 10;
+  cosmos.staking.v1beta1.Description description = 11 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 message MsgStakeProviderResponse {
 }
 
 message MsgUnstakeProvider {
+  option (amino.name) = "pairing/UnstakeProvider";
   string creator = 1;
   string chainID = 2;
   string validator = 3;
@@ -44,6 +50,7 @@ message MsgUnstakeProviderResponse {
 }
 
 message MsgRelayPayment {
+  option (amino.name) = "pairing/RelayPayment";
   reserved 3;
   string creator = 1;
   repeated RelaySession relays = 2;
@@ -61,6 +68,7 @@ message MsgRelayPaymentResponse {
 }
 
 message MsgFreezeProvider {
+  option (amino.name) = "pairing/Freeze";
   string creator = 1;
   repeated string chainIds = 2;
   string reason = 3;
@@ -70,11 +78,24 @@ message MsgFreezeProviderResponse {
 }
 
 message MsgUnfreezeProvider {
+  option (amino.name) = "pairing/Unfreeze";
   string creator = 1;
   repeated string chainIds = 2;
 }
 
 message MsgUnfreezeProviderResponse {
+}
+
+
+message MsgMoveProviderStake {
+  option (amino.name) = "pairing/MoveProviderStake";
+  string creator = 1;
+  string src_chain =2;
+  string dst_chain =3;
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgMoveProviderStakeResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

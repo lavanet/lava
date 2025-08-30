@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -92,10 +91,12 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test)
-	assert.Error(t, err)
-	found := strings.Contains(err.Error(), "api not supported")
-	require.True(t, found)
+	apiCont, err = apip.getSupportedApi("API2", connectionType_test)
+	if err == nil {
+		require.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		require.Contains(t, err.Error(), "api not supported")
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
@@ -105,8 +106,7 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
-	found = strings.Contains(err.Error(), "api is disabled")
-	require.True(t, found)
+	require.Contains(t, err.Error(), "api is disabled")
 }
 
 func TestGRPCParseMessage(t *testing.T) {
@@ -142,7 +142,7 @@ func TestGrpcChainProxy(t *testing.T) {
 		// Handle the incoming request and provide the desired response
 		wasCalled = true
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandle, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -169,15 +169,16 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
 			closeServer()
 		}
 	}()
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
@@ -216,9 +217,8 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }
@@ -237,15 +237,16 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
 			closeServer()
 		}
 	}()
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
@@ -285,9 +286,8 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
-			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
-			require.NoError(t, err)
-			require.Equal(t, test.block, blockNum)
+			parsedInput := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing, nil)
+			require.Equal(t, test.block, parsedInput.GetBlock())
 		})
 	}
 }

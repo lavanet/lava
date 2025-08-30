@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	lvutil "github.com/lavanet/lava/v5/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v5/utils"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 type ProtocolBinaryFetcher struct {
@@ -71,12 +71,14 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(protocolConsensusVersion *
 	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin) // min(currentRunning, minVersionInParams)
 
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
-		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion) || lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion)) {
+		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion)) {
 			if !pbf.AutoDownload {
 				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, waiting for directory upgrade directory to be placed in lavavisor config", nil)
 			} else {
 				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, couldn't fetch the new binary.", nil)
 			}
+		} else if currentRunningVersion != nil && lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion) {
+			utils.LavaFormatWarning("provider endpoint version is greater than the target version, this is ok but can lead to unexpected behavior", nil, utils.LogAttr("version", currentRunningVersion), utils.LogAttr("targetVersion", currentVersion))
 		}
 		utils.LavaFormatInfo("[Lavavisor] Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
 		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
@@ -315,7 +317,7 @@ func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, 
 	}
 
 	stringGoVersion := string(goVersion)
-	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.20.5 linux/amd64
+	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.23 linux/amd64
 	if len(splitGoVersion) < 3 {
 		return "", utils.LavaFormatError("[Lavavisor] Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
 	}
@@ -410,7 +412,7 @@ func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string,
 func (pbf *ProtocolBinaryFetcher) VerifyGoInstallation() (string, error) {
 	goCommand := "go"
 	emptyGoCommand := ""
-	expectedGeVersion := "1.20.5"
+	expectedGeVersion := "1.23.3"
 	homePath, err := GetHomePath()
 	if err != nil {
 		return emptyGoCommand, err

@@ -1,0 +1,74 @@
+{
+  "deposit": "10000000ulava",
+  "proposal": {
+    "title": "Add spec: NAMADA SE testnet",
+    "description": "Adding new specification support for relaying data on NAMADA",
+    "specs": [
+      {
+        "index": "NAMTSE",
+        "name": "namada se testnet",
+        "enabled": true,
+        "imports": [
+          "TENDERMINT"
+        ],
+        "reliability_threshold": 268435455,
+        "data_reliability_enabled": false,
+        "block_distance_for_finalized_data": 0,
+        "blocks_in_finalization_proof": 1,
+        "average_block_time": 10000,
+        "allowed_block_lag_for_qos_sync": 2,
+        "shares": 1,
+        "min_stake_provider": {
+          "denom": "ulava",
+          "amount": "5000000000"
+        },
+        "api_collections": [
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "tendermintrpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [],
+            "headers": [],
+            "inheritance_apis": [],
+            "parse_directives": [],
+            "verifications": [
+              {
+                "name": "chain-id",
+                "values": [
+                  {
+                    "expected_value": "shielded-expedition.88f17d1d14"
+                  }
+                ]
+              },
+              {
+                "name": "pruning",
+                "values": [
+                  {
+                    "latest_distance": 8640
+                  },
+                  {
+                    "extension": "archive",
+                    "expected_value": "237907"
+                  }
+                ]
+              }
+            ],
+            "extensions": [
+              {
+                "name": "archive",
+                "cu_multiplier": 5,
+                "rule": {
+                  "block": 8520
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

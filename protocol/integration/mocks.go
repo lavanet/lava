@@ -3,44 +3,57 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-type mockConsumerStateTracker struct{}
+type TxConflictDetectionMock func(context.Context, *conflicttypes.FinalizationConflict, *conflicttypes.ResponseConflict, common.ConflictHandlerInterface) error
+
+type mockConsumerStateTracker struct {
+	txConflictDetectionMock TxConflictDetectionMock
+}
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }
 
-func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
+func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCProviderEndpoint) {
 }
 
 func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	return nil
 }
 
-func (m *mockConsumerStateTracker) RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus) {
+func (m *mockConsumerStateTracker) RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool) {
 }
 
 func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	return nil
 }
 
-func (m *mockConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
+func (m *mockConsumerStateTracker) SetTxConflictDetectionWrapper(txConflictDetectionWrapper TxConflictDetectionMock) {
+	m.txConflictDetectionMock = txConflictDetectionWrapper
+}
+
+func (m *mockConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
+	if m.txConflictDetectionMock != nil {
+		return m.txConflictDetectionMock(ctx, finalizationConflict, responseConflict, conflictHandler)
+	}
 	return nil
 }
 
@@ -100,11 +113,11 @@ func (m *mockProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return nil
 }
 
-func (m *mockProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+func (m *mockProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	return nil
 }
 
-func (m *mockProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+func (m *mockProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	return nil
 }
 
@@ -160,6 +173,10 @@ type MockChainFetcher struct {
 	mutex       sync.Mutex
 	fork        string
 	callBack    func()
+}
+
+func (mcf *MockChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	return nil, utils.LavaFormatError("Not Implemented CustomMessage for MockChainFetcher", nil)
 }
 
 func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
@@ -245,17 +262,111 @@ func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockC
 	return &mockCHainFetcher
 }
 
-type uniqueAddresGenerator struct {
-	seed int
-	lock sync.Mutex
+const (
+	minPort = 1024
+	maxPort = 49151
+)
+
+type uniqueAddressGenerator struct {
+	currentPort int
+	lock        sync.Mutex
 }
 
-func (ug *uniqueAddresGenerator) GetAddress() string {
-	ug.lock.Lock()
-	defer ug.lock.Unlock()
-	ug.seed++
-	if ug.seed < 100 {
-		return "localhost:111" + strconv.Itoa(ug.seed)
+func isPortInUse(port int) bool {
+	addresses := []string{
+		fmt.Sprintf(":%d", port),          // all interfaces
+		fmt.Sprintf("localhost:%d", port), // localhost specifically
+		fmt.Sprintf("127.0.0.1:%d", port), // IPv4 localhost
+		fmt.Sprintf("[::1]:%d", port),     // IPv6 localhost
 	}
-	return "localhost:11" + strconv.Itoa(ug.seed)
+
+	for _, addr := range addresses {
+		// Try TCP
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		tcpListener, err := net.ListenTCP("tcp", tcpAddr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		// Close the listener immediately if successful
+		tcpListener.Close()
+
+		// Try UDP (unchanged)
+		udpAddr, err := net.ResolveUDPAddr("udp", addr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		udpConn, err := net.ListenUDP("udp", udpAddr)
+		if err != nil {
+			// If there's an error, the port is likely in use
+			return true
+		}
+
+		// Close the listener immediately if successful
+		udpConn.Close()
+	}
+
+	return false
+}
+
+func NewUniqueAddressGenerator() uniqueAddressGenerator {
+	return uniqueAddressGenerator{
+		currentPort: minPort,
+	}
+}
+
+func (ag *uniqueAddressGenerator) GetAddress() string {
+	ag.lock.Lock()
+	defer ag.lock.Unlock()
+
+	for {
+		if !isPortInUse(ag.currentPort) {
+			break
+		}
+		ag.currentPort++
+	}
+
+	if ag.currentPort > maxPort {
+		panic("all ports have been exhausted")
+	}
+
+	address := fmt.Sprintf("localhost:%d", ag.currentPort)
+	ag.currentPort++
+	return address
+}
+
+type GetLatestBlockDataWrapper func(rpcprovider.ReliabilityManagerInf, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
+
+type MockReliabilityManager struct {
+	ReliabilityManager        rpcprovider.ReliabilityManagerInf
+	getLatestBlockDataWrapper GetLatestBlockDataWrapper
+}
+
+func NewMockReliabilityManager(reliabilityManager rpcprovider.ReliabilityManagerInf) *MockReliabilityManager {
+	return &MockReliabilityManager{
+		ReliabilityManager: reliabilityManager,
+	}
+}
+
+func (mrm *MockReliabilityManager) SetGetLatestBlockDataWrapper(wrapper GetLatestBlockDataWrapper) {
+	mrm.getLatestBlockDataWrapper = wrapper
+}
+
+func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
+	if mrm.getLatestBlockDataWrapper != nil {
+		return mrm.getLatestBlockDataWrapper(mrm.ReliabilityManager, fromBlock, toBlock, specificBlock)
+	}
+	return mrm.ReliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+}
+
+func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
+	return mrm.ReliabilityManager.GetLatestBlockNum()
 }

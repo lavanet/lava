@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/v5/testutil/common"
+	"github.com/lavanet/lava/v5/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -156,7 +156,7 @@ func TestUnstakeFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	_, err = ts.TxPairingUnstakeProvider(providerToFreeze.Address, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerToFreeze.Vault, ts.spec.Index)
 	require.NoError(t, err)
 
 	// unfreeze the provider and verify it remains not in the pairing list

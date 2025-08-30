@@ -3,9 +3,9 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,8 @@ func CmdEffectivePolicy() *cobra.Command {
 			if len(args) > 1 {
 				address, err = utils.ParseCLIAddress(clientCtx, args[1])
 				if err != nil {
-					return err
+					// this should allow project names not only addresses
+					address = args[1]
 				}
 			} else {
 				clientCtxForTx, err := client.GetClientQueryContext(cmd)

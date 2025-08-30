@@ -8,11 +8,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/qos"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -38,26 +39,33 @@ func (list EndpointInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-const AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+const (
+	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
+	maximumStreamsOverASingleConnection    = 100
+	WeightMultiplierForStaticProviders     = 10
+)
 
-var AllowInsecureConnectionToProviders = false
+var (
+	AllowInsecureConnectionToProviders                   = false
+	AllowGRPCCompressionForConsumerProviderCommunication = false
+)
 
 type UsedProvidersInf interface {
-	RemoveUsed(providerAddress string, err error)
-	TryLockSelection(context.Context) bool
+	RemoveUsed(providerAddress string, routerKey RouterKey, err error)
+	TryLockSelection(context.Context) error
 	AddUsed(ConsumerSessionsMap, error)
-	GetUnwantedProvidersToSend() map[string]struct{}
-	AddUnwantedAddresses(address string)
+	GetUnwantedProvidersToSend(RouterKey) map[string]struct{}
+	AddUnwantedAddresses(address string, routerKey RouterKey)
 	CurrentlyUsed() int
 }
 
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	StakeSize         sdk.Coin
-	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
+	QoSSummaryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
-	RemoveExtensions  bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -65,25 +73,17 @@ type ConsumerSessionsMap map[string]*SessionInfo
 type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
-	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
-	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
+	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
+	ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
+	UpdateWeights(map[string]int64, uint64)
 }
 
 type ignoredProviders struct {
 	providers    map[string]struct{}
 	currentEpoch uint64
-}
-
-type QoSReport struct {
-	LastQoSReport           *pairingtypes.QualityOfServiceReport
-	LastExcellenceQoSReport *pairingtypes.QualityOfServiceReport
-	LatencyScoreList        []sdk.Dec
-	SyncScoreSum            int64
-	TotalSyncScore          int64
-	TotalRelays             uint64
-	AnsweredRelays          uint64
 }
 
 type DataReliabilitySession struct {
@@ -93,24 +93,85 @@ type DataReliabilitySession struct {
 	UniqueIdentifier      bool
 }
 
+type EndpointConnection struct {
+	Client                              pairingtypes.RelayerClient
+	connection                          *grpc.ClientConn
+	numberOfSessionsUsingThisConnection uint64
+	// blockListed - currently unused, use it carefully as it will block this provider's endpoint until next epoch without forgiveness.
+	// Can be used in cases of data reliability, self provider conflict etc..
+	blockListed atomic.Bool
+	lbUniqueId  string
+	// In case we got disconnected, we cant reconnect as we might lose stickiness
+	// with the provider, if its using a load balancer
+	disconnected bool
+}
+
+func (ec *EndpointConnection) GetLbUniqueId() string {
+	return ec.lbUniqueId
+}
+
+func (ec *EndpointConnection) addSessionUsingConnection() {
+	atomic.AddUint64(&ec.numberOfSessionsUsingThisConnection, 1)
+}
+
+func (ec *EndpointConnection) decreaseSessionUsingConnection() {
+	for {
+		knownValue := ec.getNumberOfLiveSessionsUsingThisConnection()
+		if knownValue >= 1 {
+			swapped := atomic.CompareAndSwapUint64(&ec.numberOfSessionsUsingThisConnection, knownValue, knownValue-1)
+			if swapped {
+				return
+			}
+		} else {
+			utils.LavaFormatError("decreaseSessionUsingConnection, Value below 1 is stored in numberOfSessionsUsingThisConnection. it must always be above 1", nil)
+			return
+		}
+	}
+}
+
+func (ec *EndpointConnection) getNumberOfLiveSessionsUsingThisConnection() uint64 {
+	return atomic.LoadUint64(&ec.numberOfSessionsUsingThisConnection)
+}
+
+type EndpointAndChosenConnection struct {
+	endpoint                 *Endpoint
+	chosenEndpointConnection *EndpointConnection
+}
+
 type Endpoint struct {
 	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
-	Client             *pairingtypes.RelayerClient
-	connection         *grpc.ClientConn
+	Connections        []*EndpointConnection
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
 	Geolocation        planstypes.Geolocation
 }
 
+func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (supported bool) {
+	if addon != "" {
+		if _, ok := e.Addons[addon]; !ok {
+			return false
+		}
+	}
+	for _, extension := range extensions {
+		if extension == "" {
+			continue
+		}
+		if _, ok := e.Extensions[extension]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
-	RemoveExtensions     bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
+	retryConnecting      bool
 }
 
-type SessionWithProviderMap map[string]*SessionWithProvider
+type SessionWithProviderMap map[string]*SessionWithProvider // key is the provider address
 
 type RPCEndpoint struct {
 	NetworkAddress  string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
@@ -154,6 +215,7 @@ type ConsumerSessionsWithProvider struct {
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant
 	blockedAndUsedWithChanceForRecoveryStatus uint32
+	StaticProvider                            bool
 }
 
 func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
@@ -215,7 +277,7 @@ endpointLoop:
 	for _, endpoint := range cswp.Endpoints {
 		for _, extension := range extensions {
 			if _, ok := endpoint.Extensions[extension]; !ok {
-				// doesn;t support the extension required, continue to next endpoint
+				// doesn't support the extension required, continue to next endpoint
 				continue endpointLoop
 			}
 		}
@@ -246,9 +308,9 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
-			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
-			utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits * (virtualEpoch + 1)},
-			utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
+			utils.LogAttr("cu", cswp.UsedComputeUnits+cu),
+			utils.LogAttr("maxCu", cswp.MaxComputeUnits*(virtualEpoch+1)),
+			utils.LogAttr("virtualEpoch", virtualEpoch),
 		)
 	}
 	return nil
@@ -298,10 +360,10 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
+func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
+	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders, false, AllowGRPCCompressionForConsumerProviderCommunication)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -322,14 +384,14 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	case <-ch:
 	}
 	c := pairingtypes.NewRelayerClient(conn)
-	return &c, conn, nil
+	return c, conn, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64, qosManager *qos.QoSManager) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
-	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (numberOfResets + 1) // +1 as we start from 0
+	maximumBlockedSessionsAllowed := utils.Min(MaxSessionsAllowedPerProvider, MaxAllowedBlockListedSessionPerProvider*(numberOfResets+1)) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
@@ -339,12 +401,9 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
 		}
-		if session.Endpoint != endpoint {
+		if session.EndpointConnection != endpointConnection {
 			// skip sessions that don't belong to the active connection
 			continue
-		}
-		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
-			return nil, 0, MaximumNumberOfBlockListedSessionsError
 		}
 		blocked, ok := session.TryUseSession()
 		if ok {
@@ -353,7 +412,13 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		if blocked {
 			numberOfBlockedSessions += 1 // increase the number of blocked sessions so we can block this provider is too many are blocklisted
 		}
+
+		// this must come after the TryUseSession, as we need to check if we reached the maximum number of blocked sessions allowed.
+		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
+			return nil, 0, MaximumNumberOfBlockListedSessionsError
+		}
 	}
+
 	// No Sessions available, create a new session or return an error upon maximum sessions allowed
 	if len(cswp.Sessions) > MaxSessionsAllowedPerProvider {
 		return nil, 0, MaximumNumberOfSessionsExceededError
@@ -363,14 +428,17 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	for randomSessionId == 0 { // we don't allow 0
 		randomSessionId = rand.Int63()
 	}
-
 	consumerSession := &SingleConsumerSession{
-		SessionId: randomSessionId,
-		Parent:    cswp,
-		Endpoint:  endpoint,
+		SessionId:          randomSessionId,
+		Parent:             cswp,
+		EndpointConnection: endpointConnection,
+		StaticProvider:     cswp.StaticProvider,
+		routerKey:          NewRouterKey(nil),
+		epoch:              cswp.PairingEpoch,
+		QoSManager:         qosManager,
 	}
-	consumerSession.TryUseSession() // we must lock the session so other requests wont get it.
 
+	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
 	cswp.Sessions[consumerSession.SessionId] = consumerSession // applying the session to the pool of sessions.
 	return consumerSession, cswp.PairingEpoch, nil
 }
@@ -407,9 +475,9 @@ func (cswp *ConsumerSessionsWithProvider) sortEndpointsByLatency(endpointInfos [
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool) (connected bool, endpointsList []*Endpoint, providerAddress string, err error) {
-	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr []*Endpoint, allDisabled bool) {
-		endpoints := make([]*Endpoint, 0)
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool, addon string, extensionNames []string) (connected bool, endpointsList []*EndpointAndChosenConnection, providerAddress string, err error) {
+	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr []*EndpointAndChosenConnection, allDisabled bool) {
+		endpoints := make([]*EndpointAndChosenConnection, 0)
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
 		for idx, endpoint := range cswp.Endpoints {
@@ -418,52 +486,78 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !retryDisabledEndpoints && !endpoint.Enabled {
 				continue
 			}
-			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
-				if endpoint.Client != nil && endpoint.connection != nil && endpoint.connection.GetState() != connectivity.Shutdown && endpoint.connection.GetState() != connectivity.Idle {
-					return true
+			if retryDisabledEndpoints {
+				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
+			}
+
+			// check endpoint supports the requested addons
+			supported := endpoint.CheckSupportForServices(addon, extensionNames)
+			if !supported {
+				continue
+			}
+			// return
+			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
+				for _, endpointConnection := range endpoint.Connections {
+					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
+					// and it didn't disconnect before. Use it.
+					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+						// Check if the endpoint is not blocked
+						if endpointConnection.blockListed.Load() {
+							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
+							continue
+						}
+						connectionState := endpointConnection.connection.GetState()
+						// Check Disconnections
+						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
+							// We got disconnected, we can't use this connection anymore.
+							endpointConnection.disconnected = true
+							continue
+						}
+						// Check if we can use the connection later.
+						if connectionState == connectivity.TransientFailure || connectionState == connectivity.Connecting {
+							continue
+						}
+						// Check we didn't reach the maximum streams per connection.
+						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
+							return endpointConnection, true
+						}
+					}
 				}
 				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatInfo("error connecting to provider", utils.LogAttr("err", err), utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "refusals", Value: endpoint.ConnectionRefusals})
+					utils.LavaFormatInfo("error connecting to provider",
+						utils.LogAttr("err", err),
+						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
+						utils.LogAttr("provider address", cswp.PublicLavaAddress),
+						utils.LogAttr("endpoint", endpoint),
+						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
+						utils.LogAttr("GUID", ctx),
+					)
+
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
+							utils.LogAttr("Endpoint", endpoint.NetworkAddress),
+							utils.LogAttr("address", cswp.PublicLavaAddress),
+							utils.LogAttr("GUID", ctx),
+						)
 					}
-					return false
+					return nil, false
 				}
 				endpoint.ConnectionRefusals = 0
-				endpoint.Client = client
-				if endpoint.connection != nil {
-					endpoint.connection.Close() // just to be safe
-				}
-				endpoint.connection = conn
-				return true
+				newConnection := &EndpointConnection{connection: conn, Client: client, lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)}
+				endpoint.Connections = append(endpoint.Connections, newConnection)
+				return newConnection, true
 			}
-			endpointState := connectivity.Idle
-			if endpoint.connection != nil {
-				endpointState = endpoint.connection.GetState()
-			}
-			if endpoint.Client == nil {
-				connected_ := connectEndpoint(cswp, ctx, endpoint)
-				if !connected_ {
-					continue
-				}
-			} else if endpointState == connectivity.Shutdown || endpointState == connectivity.Idle {
-				// connection was shut down, so we need to create a new one
-				endpoint.connection.Close()
-				connected_ := connectEndpoint(cswp, ctx, endpoint)
-				if !connected_ {
-					continue
-				}
-			} else if endpointState == connectivity.TransientFailure || endpointState == connectivity.Connecting {
-				// can't use this one right now, but we could in the future
+
+			endpointConnection, connected_ := connectEndpoint(cswp, ctx, endpoint)
+			if !connected_ {
 				continue
 			}
-			cswp.Endpoints[idx] = endpoint
 			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
-			// successful connection add to endpoints list
-			endpoints = append(endpoints, endpoint)
+			// successful new connection add to endpoints list
+			endpoints = append(endpoints, &EndpointAndChosenConnection{endpoint: endpoint, chosenEndpointConnection: endpointConnection})
 			if !getAllEndpoints {
 				return true, endpoints, false
 			}
@@ -490,7 +584,11 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointsList, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatInfo("purging provider after all endpoints are disabled", utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
+		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
+			utils.LogAttr("provider endpoints", cswp.Endpoints),
+			utils.LogAttr("provider address", cswp.PublicLavaAddress),
+			utils.LogAttr("GUID", ctx),
+		)
 		// report provider.
 		return connected, endpointsList, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
@@ -498,8 +596,27 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	return connected, endpointsList, cswp.PublicLavaAddress, nil
 }
 
-func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {
-	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
-	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
-	return downtimePercentage, scaledAvailabilityScore
+func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
+	weights = make(map[string]int64)
+	staticProviders := make([]*ConsumerSessionsWithProvider, 0)
+	maxWeight := int64(1)
+	for _, cswp := range providers {
+		if cswp.StaticProvider {
+			staticProviders = append(staticProviders, cswp)
+			continue
+		}
+		stakeAmount := cswp.getProviderStakeSize().Amount
+		stake := int64(10) // defaults to 10 if stake isn't set
+		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
+			stake = stakeAmount.Int64()
+		}
+		if stake > maxWeight {
+			maxWeight = stake
+		}
+		weights[cswp.PublicLavaAddress] = stake
+	}
+	for _, cswp := range staticProviders {
+		weights[cswp.PublicLavaAddress] = maxWeight * WeightMultiplierForStaticProviders
+	}
+	return weights
 }

@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/pairing/client/cli"
-	"github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/x/pairing/client/cli"
+	"github.com/lavanet/lava/v5/x/pairing/keeper"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 var (
@@ -133,6 +133,18 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.MigrateVersion2To3); err != nil {
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
+	// // register v3 -> v4 migration
+	// if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.MigrateVersion3To4); err != nil {
+	// 	panic(fmt.Errorf("%s: failed to register migration to v4: %w", types.ModuleName, err))
+	// }
+	// register v4 -> v5 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.MigrateVersion4To5); err != nil {
+		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
+	}
+	// register v5 -> v6 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.MigrateVersion5To6); err != nil {
+		panic(fmt.Errorf("%s: failed to register migration to v6: %w", types.ModuleName, err))
+	}
 }
 
 // RegisterInvariants registers the capability module's invariants.
@@ -157,7 +169,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 3 }
+func (AppModule) ConsensusVersion() uint64 { return 6 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
@@ -166,6 +178,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	am.keeper.EndBlock(ctx)
 	return []abci.ValidatorUpdate{}
 }

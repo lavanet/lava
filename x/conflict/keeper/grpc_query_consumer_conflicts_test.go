@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/conflict/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/x/conflict/types"
 	"github.com/stretchr/testify/require"
 )
 

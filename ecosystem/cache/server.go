@@ -7,15 +7,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/utils/lavaslices"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -27,42 +29,62 @@ const (
 	ExpirationTimeFinalizedMultiplierFlagName    = "expiration-multiplier"
 	ExpirationNonFinalizedFlagName               = "expiration-non-finalized"
 	ExpirationTimeNonFinalizedMultiplierFlagName = "expiration-non-finalized-multiplier"
+	ExpirationBlocksHashesToHeightsFlagName      = "expiration-blocks-hashes-to-heights"
 	ExpirationNodeErrorsOnFinalizedFlagName      = "expiration-finalized-node-errors"
 	FlagCacheSizeName                            = "max-items"
 	DefaultExpirationForNonFinalized             = 500 * time.Millisecond
 	DefaultExpirationTimeFinalizedMultiplier     = 1.0
 	DefaultExpirationTimeNonFinalizedMultiplier  = 1.0
+	DefaultExpirationBlocksHashesToHeights       = 48 * time.Hour
 	DefaultExpirationTimeFinalized               = time.Hour
-	DefaultExpirationNodeErrors                  = 5 * time.Second
+	DefaultExpirationNodeErrors                  = 250 * time.Millisecond
 	CacheNumCounters                             = 100000000 // expect 10M items
+	unixPrefix                                   = "unix:"
 )
 
 type CacheServer struct {
-	finalizedCache         *ristretto.Cache
-	tempCache              *ristretto.Cache
-	ExpirationFinalized    time.Duration
-	ExpirationNonFinalized time.Duration
-	ExpirationNodeErrors   time.Duration
+	finalizedCache                  *ristretto.Cache[string, any]
+	tempCache                       *ristretto.Cache[string, any] // cache for temporary inputs, such as latest blocks
+	blocksHashesToHeightsCache      *ristretto.Cache[string, any]
+	ExpirationFinalized             time.Duration
+	ExpirationNonFinalized          time.Duration
+	ExpirationNodeErrors            time.Duration
+	ExpirationBlocksHashesToHeights time.Duration
 
 	CacheMetrics *CacheMetrics
 	CacheMaxCost int64
 }
 
-func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string, expirationFinalizedMultiplier float64, expirationNonFinalizedMultiplier float64) {
+func (cs *CacheServer) InitCache(
+	ctx context.Context,
+	expiration time.Duration,
+	expirationNonFinalized time.Duration,
+	expirationNodeErrorsOnFinalized time.Duration,
+	expirationBlocksHashesToHeights time.Duration,
+	metricsAddr string,
+	expirationFinalizedMultiplier float64,
+	expirationNonFinalizedMultiplier float64,
+) {
 	cs.ExpirationFinalized = time.Duration(float64(expiration) * expirationFinalizedMultiplier)
 	cs.ExpirationNonFinalized = time.Duration(float64(expirationNonFinalized) * expirationNonFinalizedMultiplier)
+	cs.ExpirationNodeErrors = expirationNodeErrorsOnFinalized
+	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights))
 
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	var err error
+	cs.tempCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
 	}
-	cs.tempCache = cache
 
-	cache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	cs.finalizedCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
 	}
-	cs.finalizedCache = cache
+
+	cs.blocksHashesToHeightsCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	if err != nil {
+		utils.LavaFormatFatal("could not create blocks hashes to heights cache", err)
+	}
 
 	// initialize prometheus
 	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)
@@ -78,10 +100,45 @@ func (cs *CacheServer) Serve(ctx context.Context,
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	lis, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		utils.LavaFormatFatal("cache server failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: listenAddr})
+
+	// Determine the listener type (TCP vs Unix socket)
+	var lis net.Listener
+	var err error
+	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
+		host, port, err := net.SplitHostPort(listenAddr)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to parse unix socket, provide address in this format unix:/tmp/example.sock", err)
+			return
+		}
+
+		syscall.Unlink(port)
+
+		addr, err := net.ResolveUnixAddr(host, port)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to resolve unix socket address", err)
+			return
+		}
+
+		lis, err = net.ListenUnix(host, addr)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to listen to unix socket listener", err)
+			return
+		}
+
+		// Set permissions for the Unix socket
+		err = os.Chmod(port, 0o600)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to set permissions for Unix socket", err)
+			return
+		}
+	} else {
+		lis, err = net.Listen("tcp", listenAddr)
+		if err != nil {
+			utils.LavaFormatFatal("Cache server failure setting up TCP listener", err)
+			return
+		}
 	}
+
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(chainproxy.MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(serverReceiveMaxMessageSize)
 
@@ -145,6 +202,16 @@ func Server(
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNonFinalizedFlagName})
 	}
 
+	expirationNodeErrorsOnFinalizedFlagName, err := flags.GetDuration(ExpirationNodeErrorsOnFinalizedFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNodeErrorsOnFinalizedFlagName})
+	}
+
+	expirationBlocksHashesToHeights, err := flags.GetDuration(ExpirationBlocksHashesToHeightsFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationBlocksHashesToHeightsFlagName})
+	}
+
 	expirationFinalizedMultiplier, err := flags.GetFloat64(ExpirationTimeFinalizedMultiplierFlagName)
 	if err != nil {
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationTimeFinalizedMultiplierFlagName})
@@ -161,7 +228,7 @@ func Server(
 	}
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, expirationNodeErrorsOnFinalizedFlagName, expirationBlocksHashesToHeights, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }

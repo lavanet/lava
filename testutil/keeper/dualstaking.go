@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -12,12 +13,12 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
-	speckeeper "github.com/lavanet/lava/x/spec/keeper"
-	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragekeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
+	fixationkeeper "github.com/lavanet/lava/v5/x/fixationstore/keeper"
+	speckeeper "github.com/lavanet/lava/v5/x/spec/keeper"
+	timerstorekeeper "github.com/lavanet/lava/v5/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +65,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		&mockBankKeeper{},
-		nil,
+		&mockStakingKeeperEmpty{},
 		&mockAccountKeeper{},
 		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec, nil),
@@ -72,7 +73,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
 

@@ -1,18 +1,22 @@
 package rewardserver
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
-const keySeparator = "."
+const (
+	keySeparator = "."
+	batchSize    = 1000
+)
 
 type DB interface {
 	Key() string
@@ -76,6 +80,20 @@ func (rs *RewardDB) BatchSave(rewardEntities []*RewardEntity) (err error) {
 
 		err = db.BatchSave(rewards)
 		if err != nil {
+			if len(rewards) > batchSize {
+				// possible rewards is too big, try to save it in chunks
+				for i := 0; i < len(rewards); i += batchSize {
+					end := i + batchSize
+					if len(rewards) < i+batchSize {
+						end = len(rewards)
+					}
+					chunk := rewards[i:end]
+					err = db.BatchSave(chunk)
+					if err != nil {
+						return err
+					}
+				}
+			}
 			return err
 		}
 	}

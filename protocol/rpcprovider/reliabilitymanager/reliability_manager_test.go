@@ -10,19 +10,21 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/statetracker"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/qos"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,27 +45,28 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		providerDR_sk, providerDR_address := sigs.GenerateFloatingKey()
 		specId := "LAV1"
 		epoch := int64(100)
+		qosManager := qos.NewQoSManager()
 		singleConsumerSession := &lavasession.SingleConsumerSession{
-			CuSum:         20,
-			LatestRelayCu: 10, // set by GetSessions cuNeededForSession
-			QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-			SessionId:     123,
-			Parent:        nil,
-			RelayNum:      1,
-			LatestBlock:   epoch,
-			Endpoint:      nil,
-			BlockListed:   false, // if session lost sync we blacklist it.
+			CuSum:              20,
+			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
+			QoSManager:         qosManager,
+			SessionId:          123,
+			Parent:             nil,
+			RelayNum:           1,
+			LatestBlock:        epoch,
+			EndpointConnection: nil,
+			BlockListed:        false, // if session lost sync we blacklist it.
 		}
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
-			CuSum:         200,
-			LatestRelayCu: 100, // set by GetSessions cuNeededForSession
-			QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-			SessionId:     456,
-			Parent:        nil,
-			RelayNum:      5,
-			LatestBlock:   epoch,
-			Endpoint:      nil,
-			BlockListed:   false, // if session lost sync we blacklist it.
+			CuSum:              200,
+			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
+			QoSManager:         qosManager,
+			SessionId:          456,
+			Parent:             nil,
+			RelayNum:           5,
+			LatestBlock:        epoch,
+			EndpointConnection: nil,
+			BlockListed:        false, // if session lost sync we blacklist it.
 		}
 		metadataValue := make([]pairingtypes.Metadata, 1)
 		metadataValue[0] = pairingtypes.Metadata{
@@ -93,7 +96,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -126,7 +129,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
+		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
@@ -142,17 +145,17 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 }
 
 type mockTx struct {
-	callbackCommit func(voteID string, voteData *reliabilitymanager.VoteData)
-	callbackReveal func(voteID string, voteData *reliabilitymanager.VoteData)
+	callbackCommit func(voteID string, voteData *reliabilitymanager.VoteData, specID string)
+	callbackReveal func(voteID string, voteData *reliabilitymanager.VoteData, specID string)
 }
 
-func (m mockTx) SendVoteCommitment(voteID string, voteData *reliabilitymanager.VoteData) error {
-	m.callbackCommit(voteID, voteData)
+func (m mockTx) SendVoteCommitment(voteID string, voteData *reliabilitymanager.VoteData, specID string) error {
+	m.callbackCommit(voteID, voteData, specID)
 	return nil
 }
 
-func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteData) error {
-	m.callbackReveal(voteID, voteData)
+func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteData, specID string) error {
+	m.callbackReveal(voteID, voteData, specID)
 	return nil
 }
 
@@ -160,7 +163,7 @@ type txSenderMock struct {
 	cb func() error
 }
 
-func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
+func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
 	if tsm.cb == nil {
 		return fmt.Errorf("No cb")
 	}
@@ -185,43 +188,47 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, string(replyDataBuf))
 		})
-		chainParser, chainProxy, chainFetcher, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../", nil)
+		chainParser, chainProxy, chainFetcher, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
+
 		require.NoError(t, err)
 		require.NotNil(t, chainParser)
 		require.NotNil(t, chainProxy)
 		require.NotNil(t, chainFetcher)
 
-		consumerSesssionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
+		qosManager := qos.NewQoSManager()
+		consumerSessionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
 		singleConsumerSession := &lavasession.SingleConsumerSession{
-			CuSum:         20,
-			LatestRelayCu: 10, // set by GetSessions cuNeededForSession
-			QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-			SessionId:     123,
-			Parent:        nil,
-			RelayNum:      1,
-			LatestBlock:   epoch,
-			Endpoint:      nil,
-			BlockListed:   false, // if session lost sync we blacklist it.
+			CuSum:              20,
+			LatestRelayCu:      10, // set by GetSessions cuNeededForSession
+			QoSManager:         qosManager,
+			SessionId:          123,
+			Parent:             nil,
+			RelayNum:           1,
+			LatestBlock:        epoch,
+			EndpointConnection: nil,
+			BlockListed:        false, // if session lost sync we blacklist it.
 		}
+
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
-			CuSum:         200,
-			LatestRelayCu: 100, // set by GetSessions cuNeededForSession
-			QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-			SessionId:     456,
-			Parent:        consumerSesssionWithProvider,
-			RelayNum:      5,
-			LatestBlock:   epoch,
-			Endpoint:      nil,
-			BlockListed:   false, // if session lost sync we blacklist it.
+			CuSum:              200,
+			LatestRelayCu:      100, // set by GetSessions cuNeededForSession
+			QoSManager:         qosManager,
+			SessionId:          456,
+			Parent:             consumerSessionWithProvider,
+			RelayNum:           5,
+			LatestBlock:        epoch,
+			EndpointConnection: nil,
+			BlockListed:        false, // if session lost sync we blacklist it.
 		}
-		metadataValue := make([]pairingtypes.Metadata, 1)
-		metadataValue[0] = pairingtypes.Metadata{
+
+		metadataValue := []pairingtypes.Metadata{{
 			Name:  "banana",
 			Value: "55",
-		}
+		}}
+
 		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		reqBlock, _ := chainMessage.RequestedBlock()
@@ -248,7 +255,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -274,19 +281,25 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 		latestBlock = int64(123)
+
 		// provider handling the response
 		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}
 		maliciousReply := []byte("Gimme-your-lava")
 		replyDR := &pairingtypes.RelayReply{Data: maliciousReply}
+
 		jsonStr, err = json.Marshal(finalizedBlockHashes)
 		require.NoError(t, err)
+
 		replyDR.FinalizedBlocksHashes = jsonStr
 		replyDR.LatestBlock = latestBlock
+
 		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
+
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
+
+		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
@@ -298,18 +311,21 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		conflict := lavaprotocol.VerifyReliabilityResults(ts.Ctx, relayResult, relayResultDR, chainMessage.GetApiCollection(), chainParser)
 		require.NotNil(t, conflict)
-		msg := conflicttypes.NewMsgDetection(consumer_address.String(), nil, conflict, nil)
+		msg := conflicttypes.NewMsgDetection(consumer_address.String())
+		msg.SetResponseConflict(conflict)
 
 		cb := func() error {
 			_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
 			require.NoError(t, err)
 			return err
 		}
+
 		txm := &txSenderMock{cb: cb}
+
 		consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // report first time
+		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // report first time
 		require.NoError(t, err)
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // make sure we dont report 2nd time
+		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // make sure we dont report 2nd time
 		require.NoError(t, err)
 
 		_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.
@@ -326,13 +342,13 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		commitCalled := false
 		revealCalled := false
-		sendVoteCommit := func(voteID string, vote *reliabilitymanager.VoteData) {
+		sendVoteCommit := func(voteID string, vote *reliabilitymanager.VoteData, specID string) {
 			commitCalled = true
 			msg := conflicttypes.NewMsgConflictVoteCommit(votingProvider.Addr.String(), voteID, vote.CommitHash)
 			_, err := ts.Servers.ConflictServer.ConflictVoteCommit(ts.Ctx, msg)
 			require.NoError(t, err)
 		}
-		sendVoteReveal := func(voteID string, vote *reliabilitymanager.VoteData) {
+		sendVoteReveal := func(voteID string, vote *reliabilitymanager.VoteData, specID string) {
 			revealCalled = true
 			msg := conflicttypes.NewMsgConflictVoteReveal(votingProvider.Addr.String(), voteID, vote.Nonce, vote.RelayDataHash)
 			_, err := ts.Servers.ConflictServer.ConflictVoteReveal(ts.Ctx, msg)

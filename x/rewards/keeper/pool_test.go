@@ -4,12 +4,14 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -269,6 +271,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 // TestBlocksAndTimeToNextExpiry tests that the time/blocks to the next timer expiry are as expected
 func TestBlocksAndTimeToNextExpiry(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 
 	// TimeToNextTimerExpiry should be equal to the number of seconds in a month
@@ -347,6 +350,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 // 1. There's a single timer at all times the expires after a month
 // 2. The timer's data contains the months left before the allocation pool's funds are depleted
 func TestRefillPoolsTimerStore(t *testing.T) {
+	testkeeper.SetFixedTime()
 	ts := newTester(t, false)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 
@@ -381,4 +385,21 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 	}
+}
+
+// TestBlockRewardsWith2Tokens tests that block rewatds from the distribution pool works with more than 1 kind of token
+func TestBlockRewardsWith2Tokens(t *testing.T) {
+	ts := newTester(t, true)
+	startTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	err := ts.Keepers.BankKeeper.AddToBalance(testkeeper.GetModuleAddress(string(types.ValidatorsRewardsDistributionPoolName)),
+		sdk.NewCoins(sdk.NewCoin(ibcDenom, startTokens[0].Amount)))
+	require.NoError(t, err)
+	startTokens = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+
+	ts.AdvanceBlock()
+	distribution.BeginBlocker(ts.Ctx, abci.RequestBeginBlock{}, ts.Keepers.Distribution)
+
+	currentTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	require.Equal(t, currentTokens.AmountOf(ibcDenom), currentTokens.AmountOf(ts.BondDenom()))
+	require.True(t, currentTokens.IsAllLT(startTokens))
 }

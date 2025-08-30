@@ -7,11 +7,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils/sigs"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	"github.com/lavanet/lava/v5/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

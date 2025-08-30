@@ -3,33 +3,47 @@ package chainlib
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
-	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/maps"
+	epochstorage "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
+
+var DefaultApiName = "Default-"
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
 	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
 }
 
+type InternalPath struct {
+	Path           string
+	Enabled        bool
+	ApiInterface   string
+	ConnectionType string
+	Addon          string
+}
+
 type BaseChainParser struct {
-	internalPaths   map[string]struct{}
+	internalPaths   map[string]InternalPath
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec            spectypes.Spec
 	rwLock          sync.RWMutex
 	serverApis      map[ApiKey]ApiContainer
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey][]VerificationContainer
+	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
 	allowedAddons   map[string]bool
 	extensionParser extensionslib.ExtensionParser
 	active          bool
@@ -157,9 +171,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
-		if _, ok := policyInformation[addon]; ok {
-			bcp.allowedAddons[addon] = true
-		}
+		_, bcp.allowedAddons[addon] = policyInformation[addon]
 	}
 }
 
@@ -189,19 +201,21 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			if supportedToCheck == "" {
 				continue
 			}
-			if bcp.isExtension(supportedToCheck) {
+			if bcp.isExtension(supportedToCheck) || supportedToCheck == WebSocketExtension {
 				extensions = append(extensions, supportedToCheck)
 				continue
 			}
 			// neither is an error
-			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
+			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err,
+				utils.Attribute{Key: "spec", Value: bcp.spec.Index},
+				utils.Attribute{Key: "supported", Value: supportedToCheck})
 		}
 	}
 	return addons, extensions, err
 }
 
 // gets all verifications for an endpoint supporting multiple addons and extensions
-func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerifications []VerificationContainer, err error) {
+func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath string, apiInterface string) (retVerifications []VerificationContainer, err error) {
 	// addons will contains extensions and addons,
 	// extensions must exist in all verifications, addons must be split because they are separated
 	addons, extensions, err := bcp.SeparateAddonsExtensions(supported)
@@ -212,24 +226,27 @@ func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerificatio
 		extensions = []string{""}
 	}
 	addons = append(addons, "") // always add the empty addon
+
 	for _, addon := range addons {
 		for _, extension := range extensions {
 			verificationKey := VerificationKey{
 				Extension: extension,
 				Addon:     addon,
 			}
-			verifications, ok := bcp.verifications[verificationKey]
+			collectionVerifications, ok := bcp.verifications[verificationKey]
 			if ok {
-				retVerifications = append(retVerifications, verifications...)
+				if verifications, ok := collectionVerifications[internalPath]; ok {
+					retVerifications = append(retVerifications, verifications...)
+				}
 			}
 		}
 	}
-	return
+	return retVerifications, nil
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]InternalPath, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
-	verifications map[VerificationKey][]VerificationContainer, extensionParser extensionslib.ExtensionParser,
+	verifications map[VerificationKey]map[string][]VerificationContainer,
 ) {
 	bcp.spec = spec
 	bcp.internalPaths = internalPaths
@@ -240,19 +257,28 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 	bcp.verifications = verifications
 	allowedAddons := map[string]bool{}
 	allowedExtensions := map[string]struct{}{}
-	for _, apoCollection := range apiCollections {
-		for _, extension := range apoCollection.Extensions {
+	for _, apiCollection := range apiCollections {
+		for _, extension := range apiCollection.Extensions {
 			allowedExtensions[extension.Name] = struct{}{}
 		}
-		allowedAddons[apoCollection.CollectionData.AddOn] = false
+		// if addon was already existing (happens on spec update), use the existing policy, otherwise set it to false by default
+		allowedAddons[apiCollection.CollectionData.AddOn] = bcp.allowedAddons[apiCollection.CollectionData.AddOn]
 	}
 	bcp.allowedAddons = allowedAddons
 
-	bcp.extensionParser = extensionslib.ExtensionParser{AllowedExtensions: allowedExtensions}
-	bcp.extensionParser.SetConfiguredExtensions(extensionParser.GetConfiguredExtensions())
+	bcp.extensionParser = extensionslib.NewExtensionParser(allowedExtensions, bcp.extensionParser.GetConfiguredExtensions())
 }
 
-func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
+func (bcp *BaseChainParser) ParseDirectiveEnabled() bool {
+	_, _, ok := bcp.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	if !ok {
+		return false
+	}
+	_, _, ok = bcp.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	return ok
+}
+
+func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
@@ -260,7 +286,32 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	if !ok {
 		return nil, nil, false
 	}
-	return val.Parsing, &val.ApiCollection.CollectionData, ok
+	return val.Parsing, val.ApiCollection, ok
+}
+
+func (bcp *BaseChainParser) IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+
+	apiCollection, ok := bcp.apiCollections[collectionKey]
+	return ok && lavaslices.ContainsPredicate(apiCollection.ParseDirectives, func(elem *spectypes.ParseDirective) bool {
+		return elem.FunctionTag == tag
+	})
+}
+
+func (bcp *BaseChainParser) GetAllInternalPaths() []string {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	return lavaslices.Map(maps.ValuesSlice(bcp.internalPaths), func(internalPath InternalPath) string {
+		return internalPath.Path
+	})
+}
+
+func (bcp *BaseChainParser) IsInternalPathEnabled(internalPath string, apiInterface string, addon string) bool {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	internalPathObj, ok := bcp.internalPaths[internalPath]
+	return ok && internalPathObj.Enabled && internalPathObj.ApiInterface == apiInterface && internalPathObj.Addon == addon
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
@@ -283,6 +334,38 @@ func (bcp *BaseChainParser) extensionParsingInner(addon string, parsedMessageArg
 	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)
 }
 
+func (apip *BaseChainParser) defaultApiContainer(apiKey ApiKey) (*ApiContainer, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "apiKey", Value: apiKey})
+	apiCont := &ApiContainer{
+		api: &spectypes.Api{
+			Enabled:           true,
+			Name:              DefaultApiName + apiKey.Name, // do not change this name
+			ComputeUnits:      20,                           // set 20 compute units by default
+			ExtraComputeUnits: 0,
+			Category: spectypes.SpecCategory{
+				Deterministic: true,
+			},
+			BlockParsing: spectypes.BlockParser{
+				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+				ParserArg:  []string{spectypes.ParserArgLatest},
+			},
+			TimeoutMs: 0,
+			Parsers:   []spectypes.GenericParser{},
+		},
+		collectionKey: CollectionKey{
+			ConnectionType: apiKey.ConnectionType,
+			InternalPath:   apiKey.InternalPath,
+			Addon:          "",
+		},
+	}
+
+	return apiCont, nil
+}
+
 // getSupportedApi fetches service api from spec by name
 func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
@@ -297,9 +380,9 @@ func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, erro
 	// Fetch server api by name
 	apiCont, ok := apip.serverApis[apiKey]
 
-	// Return an error if spec does not exist
+	// Return an api container does not exist, return a default one
 	if !ok {
-		return nil, common.APINotSupportedError
+		return apip.defaultApiContainer(apiKey)
 	}
 
 	// Return an error if api is disabled
@@ -314,8 +397,60 @@ func (apip *BaseChainParser) isValidInternalPath(path string) bool {
 	if apip == nil || len(apip.internalPaths) == 0 {
 		return false
 	}
+
+	apip.rwLock.RLock()
+	defer apip.rwLock.RUnlock()
 	_, ok := apip.internalPaths[path]
 	return ok
+}
+
+// take an http request and direct it through the consumer
+func (apip *BaseChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	// Extract relative URL path
+	url = request.URL.Path
+	// Extract connection type
+	connectionType = request.Method
+
+	// Extract metadata
+	for key, values := range request.Header {
+		for _, value := range values {
+			metadata = append(metadata, pairingtypes.Metadata{
+				Name:  key,
+				Value: value,
+			})
+		}
+	}
+
+	// Extract data
+	if request.Body != nil {
+		bodyBytes, err := io.ReadAll(request.Body)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		data = string(bodyBytes)
+	}
+
+	return url, data, connectionType, metadata, nil
+}
+
+func (apip *BaseChainParser) SetResponseFromRelayResult(relayResult *common.RelayResult) (*http.Response, error) {
+	if relayResult == nil {
+		return nil, errors.New("relayResult is nil")
+	}
+	response := &http.Response{
+		StatusCode: relayResult.StatusCode,
+		Header:     make(http.Header),
+	}
+
+	for _, values := range relayResult.Reply.Metadata {
+		response.Header.Add(values.Name, values.Value)
+	}
+
+	if relayResult.Reply != nil && relayResult.Reply.Data != nil {
+		response.Body = io.NopCloser(strings.NewReader(string(relayResult.Reply.Data)))
+	}
+
+	return response, nil
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -338,7 +473,8 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "connectionType", Value: connectionType})
+		utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, common.APINotSupportedError
 	}
 
 	// Return an error if api is disabled
@@ -349,13 +485,23 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey][]VerificationContainer) {
-	retInternalPaths = map[string]struct{}{}
+func getServiceApis(
+	spec spectypes.Spec,
+	rpcInterface string,
+) (
+	retInternalPaths map[string]InternalPath,
+	retServerApis map[ApiKey]ApiContainer,
+	retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+	retApiCollections map[CollectionKey]*spectypes.ApiCollection,
+	retHeaders map[ApiKey]*spectypes.Header,
+	retVerifications map[VerificationKey]map[string][]VerificationContainer,
+) {
+	retInternalPaths = map[string]InternalPath{}
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
-	verifications := map[VerificationKey][]VerificationContainer{}
+	verifications := map[VerificationKey]map[string][]VerificationContainer{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
@@ -371,12 +517,30 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 			}
 
 			// add as a valid internal path
-			retInternalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+			retInternalPaths[apiCollection.CollectionData.InternalPath] = InternalPath{
+				Path:           apiCollection.CollectionData.InternalPath,
+				Enabled:        apiCollection.Enabled,
+				ApiInterface:   apiCollection.CollectionData.ApiInterface,
+				ConnectionType: apiCollection.CollectionData.Type,
+				Addon:          apiCollection.CollectionData.AddOn,
+			}
 
 			for _, parsing := range apiCollection.ParseDirectives {
-				taggedApis[parsing.FunctionTag] = TaggedContainer{
-					Parsing:       parsing,
-					ApiCollection: apiCollection,
+				// We do this because some specs may have multiple parse directives
+				// with the same tag - SUBSCRIBE (like in Solana).
+				//
+				// Since the function tag is not used for handling the subscription flow,
+				// we can ignore the extra parse directives and take only the first one. The
+				// subscription flow is handled by the consumer websocket manager and the chain router
+				// that uses the api collection to fetch the correct parse directive.
+				//
+				// The only place the SUBSCRIBE tag is checked against the taggedApis map is in the chain parser with GetParsingByTag.
+				// But there, we're not interested in the parse directive, only if the tag is present.
+				if _, ok := taggedApis[parsing.FunctionTag]; !ok {
+					taggedApis[parsing.FunctionTag] = TaggedContainer{
+						Parsing:       parsing,
+						ApiCollection: apiCollection,
+					}
 				}
 			}
 
@@ -384,13 +548,14 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 				if !api.Enabled {
 					continue
 				}
-				//
+
 				// TODO: find a better spot for this (more optimized, precompile regex, etc)
 				if rpcInterface == spectypes.APIInterfaceRest {
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
-					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex/", `[^\/\s]+/`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]*`)
 					serverApis[ApiKey{
 						Name:           processedName,
 						ConnectionType: collectionKey.ConnectionType,
@@ -453,6 +618,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 					}
 
 					verCont := VerificationContainer{
+						InternalPath:    apiCollection.CollectionData.InternalPath,
 						ConnectionType:  apiCollection.CollectionData.Type,
 						Name:            verification.Name,
 						ParseDirective:  *verification.ParseDirective,
@@ -462,10 +628,13 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 						Severity:        parseValue.Severity,
 					}
 
+					internalPath := apiCollection.CollectionData.InternalPath
 					if extensionVerifications, ok := verifications[verificationKey]; !ok {
-						verifications[verificationKey] = []VerificationContainer{verCont}
+						verifications[verificationKey] = map[string][]VerificationContainer{internalPath: {verCont}}
+					} else if collectionVerifications, ok := extensionVerifications[internalPath]; !ok {
+						verifications[verificationKey][internalPath] = []VerificationContainer{verCont}
 					} else {
-						verifications[verificationKey] = append(extensionVerifications, verCont)
+						verifications[verificationKey][internalPath] = append(collectionVerifications, verCont)
 					}
 				}
 			}

@@ -26,7 +26,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 var (
@@ -214,7 +214,7 @@ func (c *callback) call(ctx context.Context, method string, args []reflect.Value
 		var ok bool
 		errRet, ok := err.(error)
 		if !ok {
-			return reflect.Value{}, fmt.Errorf("(c *callback) call - errRet, ok := err.(error) - type assertion failed" + fmt.Sprintf("%s", err))
+			return reflect.Value{}, fmt.Errorf("(c *callback) call - errRet, ok := err.(error) - type assertion failed %s", err)
 		}
 		return reflect.Value{}, errRet
 	}

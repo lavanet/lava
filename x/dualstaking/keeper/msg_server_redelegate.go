@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (*types.MsgRedelegateResponse, error) {
@@ -24,9 +24,8 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 		msg.Creator,
 		msg.FromProvider,
 		msg.ToProvider,
-		msg.FromChainID,
-		msg.ToChainID,
 		msg.Amount,
+		false,
 	)
 
 	if err == nil {
@@ -35,8 +34,6 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 			"delegator":     msg.Creator,
 			"from_provider": msg.FromProvider,
 			"to_provider":   msg.ToProvider,
-			"from_chainID":  msg.FromChainID,
-			"to_chainID":    msg.ToChainID,
 			"amount":        msg.Amount.String(),
 		}
 		utils.LogLavaEvent(ctx, logger, types.RedelegateEventName, details, "Redelegate")

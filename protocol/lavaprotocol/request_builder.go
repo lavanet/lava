@@ -5,19 +5,15 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-)
-
-const (
-	debug = false
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/v5/x/conflict/types/construct"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type HeaderFilterer interface {
@@ -75,8 +71,8 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		return nil
 	}
 
-	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastQoSReport)
-	copiedExcellenceQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastExcellenceQoSReport)
+	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSManager.GetLastQoSReport(uint64(epoch), singleConsumerSession.SessionId))
+	copiedReputation := copyQoSServiceReport(singleConsumerSession.QoSManager.GetLastReputationQoSReport(uint64(epoch), singleConsumerSession.SessionId)) // copy reputation report for the node
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
@@ -91,7 +87,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
 		Badge:                 nil,
-		QosExcellenceReport:   copiedExcellenceQOS,
+		QosExcellenceReport:   copiedReputation,
 	}
 }
 
@@ -155,17 +151,28 @@ func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayRep
 	}
 
 	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(reply1.Data)}, utils.Attribute{Key: "Data1", Value: reply2.Data})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil,
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("Request0", request1.RelayData),
+		utils.LogAttr("Data0", string(reply1.Data)),
+		utils.LogAttr("Request1", request2.RelayData),
+		utils.LogAttr("Data1", string(reply2.Data)),
+	)
+
 	responseConflict = &conflicttypes.ResponseConflict{
 		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(&reply1, &request1),
 		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(&reply2, &request2),
 	}
-	if debug {
+	if utils.IsTraceLogLevelEnabled() {
 		firstAsString := string(reply1.Data)
 		secondAsString := string(reply2.Data)
 		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
 		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
-			utils.LavaFormatDebug("difference in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
+			utils.LavaFormatTrace("difference in responses detected",
+				utils.LogAttr("index", idxDiff),
+				utils.LogAttr("first_diff", firstAsString[idxDiff:idxDiff+100]),
+				utils.LogAttr("second_diff", secondAsString[idxDiff:idxDiff+100]),
+			)
 		}
 	}
 	return true, responseConflict

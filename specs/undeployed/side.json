@@ -1,0 +1,444 @@
+{
+    "proposal": {
+      "title": "Add Specs: SIDET",
+      "description": "Adding new specification support for relaying Side testnet data on Lava",
+      "specs": [
+        {
+            "index": "SIDET",
+            "name": "side testnet",
+            "enabled": true,
+            "imports": [
+              "COSMOSSDKFULL"
+            ],
+            "reliability_threshold": 268435455,
+            "data_reliability_enabled": true,
+            "block_distance_for_finalized_data": 0,
+            "blocks_in_finalization_proof": 1,
+            "average_block_time": 6000,
+            "allowed_block_lag_for_qos_sync": 2,
+            "shares": 1,
+            "min_stake_provider": {
+              "denom": "ulava",
+              "amount": "5000000000"
+            },
+            "api_collections": [
+              {
+                "enabled": true,
+                "collection_data": {
+                  "api_interface": "rest",
+                  "internal_path": "",
+                  "type": "GET",
+                  "add_on": ""
+                },
+                "apis": [
+                  {
+                    "name": "/sideprotocol/side/gmm/apr/{pool_id}",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/me/{creator}",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/params",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/pool/all",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/pool/{pool_id}",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/volume/day/{pool_id}",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/gmm/volume/total/{pool_id}",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "/sideprotocol/side/yield/params",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                }
+                ],
+                "headers": [],
+                "inheritance_apis": [],
+                "parse_directives": [],
+                "verifications": [
+                    {
+                        "name": "chain-id",
+                        "values": [
+                            {
+                                "expected_value": "S2-testnet-2"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pruning",
+                        "values": [
+                          {
+                            "latest_distance": 14400
+                        }
+                        ]
+                    }
+                ],
+                "extensions": [
+                    {
+                        "name": "archive",
+                        "cu_multiplier": 5,
+                        "rule": {
+                            "block": 14250
+                        }
+                    }
+                ]
+            },
+              {
+                "enabled": true,
+                "collection_data": {
+                  "api_interface": "grpc",
+                  "internal_path": "",
+                  "type": "",
+                  "add_on": ""
+                },
+                "apis": [
+                    {
+                    "name": "side.gmm.QueryService/Params",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/Pools",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/MyPools",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/Pool",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/Volume24",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/TotalVolume",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.gmm.QueryService/APR",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                },
+                {
+                    "name": "side.yield.QueryService/Params",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "extra_compute_units": 0
+                }
+                ],
+                "headers": [],
+                "inheritance_apis": [],
+                "parse_directives": [],
+                "verifications": [
+                    {
+                        "name": "chain-id",
+                        "values": [
+                            {
+                                "expected_value": "S2-testnet-2"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pruning",
+                        "values": [
+                          {
+                            "latest_distance": 14400
+                        }
+                        ]
+                    }
+                ],
+                "extensions": [
+                    {
+                        "name": "archive",
+                        "cu_multiplier": 5,
+                        "rule": {
+                            "block": 14250
+                        }
+                    }
+                ]
+            },
+              {
+                "enabled": true,
+                "collection_data": {
+                  "api_interface": "tendermintrpc",
+                  "internal_path": "",
+                  "type": "",
+                  "add_on": ""
+                },
+                "apis": [],
+                "headers": [],
+                "inheritance_apis": [],
+                "parse_directives": [],
+                "verifications": [
+                    {
+                        "name": "chain-id",
+                        "values": [
+                            {
+                                "expected_value": "S2-testnet-2"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pruning",
+                        "values": [
+                            {
+                                "latest_distance": 14400
+                            },
+                            {
+                                "extension": "archive",
+                                "expected_value": "1"
+                            }
+                        ]
+                    }
+                ],
+                "extensions": [
+                    {
+                        "name": "archive",
+                        "cu_multiplier": 5,
+                        "rule": {
+                            "block": 14250
+                        }
+                    }
+                ]
+              }
+            ]
+          }
+      ]
+    },
+    "deposit": "10000000ulava"
+  }

@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,27 +9,40 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
-	common "github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	common "github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc/metadata"
 )
 
 const (
-	ContextUserValueKeyDappID = "dappID"
-	RetryListeningInterval    = 10 // seconds
-	debug                     = false
-	refererMatchString        = "refererMatch"
-	relayMsgLogMaxChars       = 200
+	ContextUserValueKeyDappID  = "dappID"
+	RetryListeningInterval     = 10 // seconds
+	debug                      = false
+	refererMatchString         = "refererMatch"
+	relayMsgLogMaxChars        = 200
+	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
+	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
+	RpcProviderLoadRateHeader  = "Lava-Provider-Load-Rate"
+	RpcProviderUniqueIdHeader  = "Lava-Provider-Unique-Id"
+	WebSocketExtension         = "websocket"
 )
 
-var InvalidResponses = []string{"null", "", "nil", "undefined"}
+var (
+	TrailersToAddToHeaderResponse      = []string{RPCProviderNodeExtension, RpcProviderLoadRateHeader}
+	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
+	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
+)
 
 type RelayReplyWrapper struct {
 	StatusCode int
@@ -43,6 +55,7 @@ type VerificationKey struct {
 }
 
 type VerificationContainer struct {
+	InternalPath   string
 	ConnectionType string
 	Name           string
 	ParseDirective spectypes.ParseDirective
@@ -86,6 +99,7 @@ type BaseChainProxy struct {
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
 	ChainID          string
+	HashedNodeUrl    string
 }
 
 // returns the node url and chain id for that proxy.
@@ -163,6 +177,34 @@ func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackTo
 	return handler
 }
 
+func checkBTCResponseAndFixReply(chainID string, replyData []byte) string {
+	response := string(replyData)
+	if chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" {
+		var jsonMsg *rpcclient.JsonrpcMessage
+		if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
+			btcResponse := &rpcclient.BTCResponse{
+				Version: jsonMsg.Version,
+				ID:      jsonMsg.ID,
+				Method:  jsonMsg.Method,
+				Error:   jsonMsg.Error,
+				Result:  jsonMsg.Result,
+			}
+			if marshaledRes, err := json.Marshal(btcResponse); err == nil {
+				response = string(marshaledRes)
+			}
+		}
+	}
+	return response
+}
+
+func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	return c.SendString(data)
+}
+
 func convertToJsonError(errorMsg string) string {
 	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
@@ -178,54 +220,24 @@ func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyRPCEndpoint(endpoint string) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
-	}
-	switch u.Scheme {
-	case "ws", "wss":
-		return
-	default:
-		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
-	}
-}
-
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
+func validateEndpoints(endpoints []common.NodeUrl, apiInterface string) {
 	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint.Url)
-		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
-		}
-		switch u.Scheme {
-		case "http", "https":
-			httpEndpoint = endpoint
-		case "ws", "wss":
-			websocketEndpoint = endpoint
-		default:
-			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil)
-		}
+		common.ValidateEndpoint(endpoint.Url, apiInterface)
 	}
-
-	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
-		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			utils.Attribute{Key: "websocket", Value: websocketEndpoint.String()}, utils.Attribute{Key: "http", Value: httpEndpoint.String()})
-		if httpEndpoint.String() != "" {
-			return httpEndpoint, httpEndpoint
-		} else {
-			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil)
-		}
-	}
-	return websocketEndpoint, httpEndpoint
 }
 
-func ListenWithRetry(app *fiber.App, address string) {
+func ListenWithRetry(app *fiber.App, address string, chosenAddrCh *common.SafeChannelSender[string]) {
 	for {
-		err := app.Listen(address)
+		ln, err := net.Listen("tcp", address)
 		if err != nil {
-			utils.LavaFormatError("app.Listen(listenAddr)", err)
+			utils.LavaFormatError("net.Listen(tcp, address)", err, utils.LogAttr("address", address))
+		} else {
+			chosenAddrCh.Send(ln.Addr().String())
+
+			err = app.Listener(ln)
+			if err != nil {
+				utils.LavaFormatError("app.Listen(listenAddr)", err)
+			}
 		}
 		time.Sleep(RetryListeningInterval * time.Second)
 	}
@@ -282,35 +294,48 @@ func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
 // FINALIZED
 // numeric value (descending)
 // EARLIEST
-func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
-	if firstRequestedBlock == spectypes.EARLIEST_BLOCK {
-		return second, firstRequestedBlock
-	}
-	if second == spectypes.EARLIEST_BLOCK {
-		return firstRequestedBlock, second
+func CompareRequestedBlockInBatch(currentLatestRequestedBlock, currentEarliestRequestedBlock, parsedBlock int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
+	latestCallback := func(currentLatest int64, parsedBlock int64) int64 {
+		if currentLatest < 0 && parsedBlock < 0 {
+			return utils.Max(currentLatest, parsedBlock)
+		}
+
+		if currentLatest > 0 && parsedBlock < 0 && parsedBlock != spectypes.EARLIEST_BLOCK {
+			return parsedBlock
+		}
+
+		if currentLatest < 0 && parsedBlock > 0 && currentLatest != spectypes.EARLIEST_BLOCK {
+			return currentLatest
+		}
+
+		return utils.Max(currentLatest, parsedBlock)
 	}
 
-	returnBigger := func(in_first int64, in_second int64) (int64, int64) {
-		if in_first > in_second {
-			return in_first, in_second
+	earliestCallback := func(currentEarliest int64, parsedBlock int64) int64 {
+		if currentEarliest == spectypes.EARLIEST_BLOCK || parsedBlock == spectypes.EARLIEST_BLOCK {
+			return spectypes.EARLIEST_BLOCK
 		}
-		return in_second, in_first
+
+		if currentEarliest == spectypes.NOT_APPLICABLE || parsedBlock == spectypes.NOT_APPLICABLE {
+			return spectypes.NOT_APPLICABLE
+		}
+
+		if currentEarliest < 0 && parsedBlock < 0 {
+			return utils.Min(currentEarliest, parsedBlock)
+		}
+
+		if currentEarliest > 0 && parsedBlock < 0 {
+			return currentEarliest
+		}
+
+		if currentEarliest < 0 && parsedBlock > 0 {
+			return parsedBlock
+		}
+
+		return utils.Min(currentEarliest, parsedBlock)
 	}
 
-	if firstRequestedBlock < 0 {
-		if second < 0 {
-			// both are negative
-			return returnBigger(firstRequestedBlock, second)
-		}
-		// first is negative non earliest second is positive
-		return firstRequestedBlock, second
-	}
-	if second < 0 {
-		// second is negative non earliest first is positive
-		return second, firstRequestedBlock
-	}
-	// both are positive
-	return returnBigger(firstRequestedBlock, second)
+	return latestCallback(currentLatestRequestedBlock, parsedBlock), earliestCallback(currentEarliestRequestedBlock, parsedBlock)
 }
 
 func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Duration) time.Duration {
@@ -327,12 +352,15 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
+	return extraRelayTimeout + relayTimeAddition
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
-	app := fiber.New(fiber.Config{})
+	app := fiber.New(fiber.Config{
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
+	})
 	app.Use(favicon.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 	app.Use(func(c *fiber.Ctx) error {
@@ -400,7 +428,7 @@ type RefererData struct {
 	ReferrerClient *metrics.ConsumerReferrerClient
 }
 
-func (rd *RefererData) SendReferer(refererMatchString string, chainId string, msg string, headers map[string][]string, c *websocket.Conn) error {
+func (rd *RefererData) SendReferer(refererMatchString string, chainId string, msg string, userIp string, headers map[string][]string, c *websocket.Conn) error {
 	if rd == nil || rd.Address == "" {
 		return nil
 	}
@@ -426,8 +454,8 @@ func (rd *RefererData) SendReferer(refererMatchString string, chainId string, ms
 		userAgent, _ = c.Locals(metrics.UserAgentHeaderKey).(string)
 	}
 
-	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
-	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent))
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString), utils.LogAttr("ip", userIp), utils.LogAttr("msg", msg), utils.LogAttr("origin", origin), utils.LogAttr("userAgent", userAgent))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent, userIp))
 	return nil
 }
 
@@ -437,4 +465,13 @@ func GetTimeoutInfo(chainMessage ChainMessageForSend) common.TimeoutInfo {
 		Hanging:  IsHangingApi(chainMessage),
 		Stateful: GetStateful(chainMessage),
 	}
+}
+
+func IsUrlWebSocket(urlToParse string) (bool, error) {
+	u, err := url.Parse(urlToParse)
+	if err != nil {
+		return false, err
+	}
+
+	return u.Scheme == "ws" || u.Scheme == "wss", nil
 }

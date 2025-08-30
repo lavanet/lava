@@ -6,11 +6,11 @@ import (
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 // adding 3 blocks delay, to update the epoch.
@@ -28,12 +28,12 @@ func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, c
 	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker(nil)
 	txFactory := tx.Factory{}
 	txFactory = txFactory.WithChainID(chainId)
-	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
+	stateQuery := updaters.NewStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))
+	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, stateQuery, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
-	stateTracker := updaters.NewStateQuery(ctx, clientCtx)
-	epochStateTracker := updaters.NewEpochStateQuery(stateTracker)
+	epochStateTracker := updaters.NewEpochStateQuery(stateQuery)
 
 	badgeStateTracker := &BadgeStateTracker{
 		StateTracker:                stateTrackerBase,

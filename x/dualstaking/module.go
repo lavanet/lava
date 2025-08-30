@@ -17,9 +17,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/dualstaking/client/cli"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/client/cli"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 var (
@@ -118,26 +118,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	migrator := keeper.NewMigrator(am.keeper)
 
-	// register v1 -> v2 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 1, migrator.MigrateVersion1To2); err != nil {
+	// register v5 -> v6 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.MigrateVersion5To6); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v2: %w", types.ModuleName, err))
+		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
-
-	// register v2 -> v3 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.MigrateVersion2To3); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
-	}
-
-	// register v3 -> v4 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.MigrateVersion3To4); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v4: %w", types.ModuleName, err))
-	}
-
-	// register v4 -> v5 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.MigrateVersion4To5); err != nil {
+	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.MigrateVersion6To7); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
@@ -164,7 +150,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion is a sequence number for state-breaking change of the module. It should be incremented on each consensus-breaking change introduced by the module. To avoid wrong/empty versions, the initial version should be set to 1
-func (AppModule) ConsensusVersion() uint64 { return 5 }
+func (AppModule) ConsensusVersion() uint64 { return 7 }
 
 // BeginBlock contains the logic that is automatically triggered at the beginning of each block
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {

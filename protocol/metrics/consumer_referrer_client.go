@@ -1,11 +1,12 @@
 package metrics
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/utils"
 )
 
 const (
@@ -20,7 +21,7 @@ type ConsumerReferrerClient struct {
 	*QueueSender
 }
 
-func NewReferrerRequest(referrerId string, chainId string, msg string, referer string, origin string, userAgent string) ReferrerRequest {
+func NewReferrerRequest(referrerId string, chainId string, msg string, referer string, origin string, userAgent string, userIp string) ReferrerRequest {
 	return ReferrerRequest{
 		Name:       referrerName,
 		ReferrerId: referrerId,
@@ -30,6 +31,7 @@ func NewReferrerRequest(referrerId string, chainId string, msg string, referer s
 		Referer:    referer,
 		Origin:     origin,
 		UserAgent:  userAgent,
+		UserIp:     userIp,
 	}
 }
 
@@ -42,6 +44,7 @@ type ReferrerRequest struct {
 	Referer    string `json:"http-referer"`
 	Origin     string `json:"origin"`
 	UserAgent  string `json:"user-agent"`
+	UserIp     string `json:"user-ip"`
 }
 
 func (rr ReferrerRequest) String() string {

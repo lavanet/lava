@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/v5/utils"
+	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
 )
 
 const maxEpochsToStore = 3
@@ -56,6 +56,7 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 	cs.lock.Lock()
 	defer cs.lock.Unlock()
 
+	// checking if we already parsed that epoch.
 	if epoch <= cs.latestEpoch {
 		return
 	}

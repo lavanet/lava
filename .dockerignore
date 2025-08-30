@@ -17,5 +17,16 @@ ecosystem/**/package-lock.json
 .idea/
 .vscode/
 .storage/
+.vscode/
+go.work
+go.work.sum
+*.md
 
 Dockerfile
+docker/docker-compose.*
+cmd/**/Dockerfile
+
+.dockerignore
+.gcloudignore
+
+Makefile

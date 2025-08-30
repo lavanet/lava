@@ -1,15 +1,17 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/goccy/go-json"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/utils"
+
+	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
 type TendermintrpcMessage struct {
@@ -17,18 +19,76 @@ type TendermintrpcMessage struct {
 	Path string
 }
 
+func (tm TendermintrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	params, err := json.Marshal(tm.GetParams())
+	if err != nil {
+		utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", tm))
+		return ""
+	}
+	return string(params)
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (tm *TendermintrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := tm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	methodByteArray := []byte(tm.Method + tm.Path)
+
+	paramsByteArray, err := json.Marshal(tm.Params)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling params on jsonRpc message", err, utils.LogAttr("headers", tm.Params))
+		return []byte{}, err
+	}
+	return sigs.HashMsg(append(append(methodByteArray, paramsByteArray...), headersByteArray...)), nil
+}
+
 func (cp TendermintrpcMessage) GetParams() interface{} {
 	return cp.Params
 }
 
-func (cp TendermintrpcMessage) GetResult() json.RawMessage {
-	if cp.Error != nil {
-		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
-	}
-	return cp.Result
+type TendermintMessageResponseBody struct {
+	Code int    `json:"code,omitempty"`
+	Log  string `json:"log,omitempty"`
 }
 
-func (cp TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
+type TendermintMessageResponse struct {
+	Response TendermintMessageResponseBody `json:"response,omitempty"`
+}
+
+// returns if error exists and
+func (jm TendermintrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	result := &JsonrpcMessage{}
+	err := json.Unmarshal(data, result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+
+	if result.Error == nil { // no error
+		if result.Result != nil { // check if we got a tendermint error
+			tendermintResponse := &TendermintMessageResponse{}
+			err := json.Unmarshal(result.Result, tendermintResponse)
+			if err == nil {
+				return (tendermintResponse.Response.Code != 0 && tendermintResponse.Response.Log != ""), tendermintResponse.Response.Log
+			}
+		}
+		return false, ""
+	}
+	return result.Error.Message != "", result.Error.Message
+}
+
+func (tm TendermintrpcMessage) GetResult() json.RawMessage {
+	if tm.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: tm.Error})
+	}
+	return tm.Result
+}
+
+func (tm TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
@@ -103,6 +163,8 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 	case float64:
 		// json.Unmarshal uses float64 for all numbers
 		return JSONRPCIntID(int(id)), nil
+	case nil:
+		return jsonrpcId(nil), nil
 	default:
 		typ := reflect.TypeOf(id)
 		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, []utils.Attribute{{Key: "id", Value: string(rawID)}, {Key: "id type", Value: typ}}...)

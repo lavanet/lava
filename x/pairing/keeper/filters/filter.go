@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v5/utils"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/v5/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 )
 
 // The Filter interface allows creating filters that filter out providers in the pairing process.
@@ -60,7 +60,7 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) (activeFil
 	return activeFilters
 }
 
-func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, cluster string, qg pairingscores.QosGetter) ([]*pairingscores.PairingScore, error) {
+func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, cluster string, rg pairingscores.ReputationGetter) ([]*pairingscores.PairingScore, error) {
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool
@@ -83,7 +83,10 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 
 	// create providerScore array with all possible providers
 	providerScores := []*pairingscores.PairingScore{}
-	for j := 0; j < len(providers); j++ {
+	// currently, the providers are sorted by stake with increasing order
+	// the pairing mechanism works best if we iterate over the largest stake
+	// providers first, so we iterate in reverse order
+	for j := len(providers) - 1; j >= 0; j-- {
 		result := true
 		slotFiltering := map[int]struct{}{} // for mix filters
 		// check provider for each filter
@@ -105,14 +108,11 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 		}
 
 		if result {
-			// TODO: uncomment this code once the providerQosFS's update is implemented (it's currently always empty)
-			// qos, err := qg.GetQos(ctx, providers[j].Chain, cluster, providers[j].Address)
-			// if err != nil {
-			// 	// only printing error and skipping provider so pairing won't fail
-			// 	utils.LavaFormatError("could not construct provider qos", err)
-			// 	continue
-			// }
-			providerScore := pairingscores.NewPairingScore(&providers[j], types.QualityOfServiceReport{})
+			reputationScore, _, found := rg.GetReputationScoreForBlock(ctx, providers[j].Chain, cluster, providers[j].Address, currentEpoch)
+			if !found {
+				reputationScore = types.DefaultReputationPairingScore
+			}
+			providerScore := pairingscores.NewPairingScore(&providers[j], reputationScore)
 			providerScore.SlotFiltering = slotFiltering
 			providerScores = append(providerScores, providerScore)
 		}

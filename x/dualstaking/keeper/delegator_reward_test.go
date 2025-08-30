@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,6 @@ func createNDelegatorReward(keeper *keeper.Keeper, ctx sdk.Context, n int) []typ
 	for i := range items {
 		items[i].Provider = "p" + strconv.Itoa(i)
 		items[i].Delegator = "d" + strconv.Itoa(i)
-		items[i].ChainId = "c" + strconv.Itoa(i)
 		keeper.SetDelegatorReward(ctx, items[i])
 	}
 	return items
@@ -30,10 +29,8 @@ func TestDelegatorRewardGet(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
-		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
 		rst, found := keeper.GetDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		require.True(t, found)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -46,13 +43,10 @@ func TestDelegatorRewardRemove(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
-		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
 		keeper.RemoveDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		_, found := keeper.GetDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		require.False(t, found)
 	}
 }

@@ -14,20 +14,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/sigs"
-	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	dualstakingante "github.com/lavanet/lava/v5/x/dualstaking/ante"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v5/x/fixationstore/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -114,7 +115,12 @@ func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
 
 func (ts *Tester) AddAccount(kind string, idx int, balance int64) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
-	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	acc := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	if kind == PROVIDER {
+		vault := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+		acc.Vault = &vault
+	}
+	ts.accounts[name] = acc
 	return ts.Account(name)
 }
 
@@ -150,17 +156,57 @@ func (ts *Tester) AccountsMap() map[string]sigs.Account {
 	return ts.accounts
 }
 
-func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
+func (ts *Tester) StakeProvider(vault string, provider string, spec spectypes.Spec, amount int64) error {
+	d := MockDescription()
+	return ts.StakeProviderExtra(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+}
+
+func (ts *Tester) StakeProviderCommision(vault string, provider string, spec spectypes.Spec, amount int64, commission uint64) error {
+	d := MockDescription()
+	return ts.StakeProviderFull(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, commission)
 }
 
 func (ts *Tester) StakeProviderExtra(
-	addr string,
+	vault string,
+	provider string,
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
+) error {
+	return ts.StakeProviderFull(vault,
+		provider,
+		spec,
+		amount,
+		endpoints,
+		geoloc,
+		moniker,
+		identity,
+		website,
+		securityContact,
+		descriptionDetails,
+		uint64(100),
+	)
+}
+
+func (ts *Tester) StakeProviderFull(
+	vault string,
+	provider string,
+	spec spectypes.Spec,
+	amount int64,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc int32,
+	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
+	commission uint64,
 ) error {
 	// if geoloc left zero, use default 1
 	if geoloc == 0 {
@@ -186,7 +232,8 @@ func (ts *Tester) StakeProviderExtra(
 	}
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
-	_, err := ts.TxPairingStakeProvider(addr, spec.Index, stake, endpoints, geoloc, moniker)
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description, commission)
 
 	return err
 }
@@ -208,7 +255,6 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
 
 	var req abci.RequestBeginBlock
-	req.ByzantineValidators = []abci.Misbehavior{{Type: abci.MisbehaviorType_DUPLICATE_VOTE, Validator: abci.Validator{Address: valConsAddr}}}
 	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
 
 	// calculate expected burned tokens
@@ -340,9 +386,8 @@ func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
 }
 
-func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
-	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
-	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator string, block uint64, timestamp int64) error {
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, provider, delegator, timestamp)
 }
 
 // proposals, transactions, queries
@@ -367,7 +412,6 @@ func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
 func (ts *Tester) TxDualstakingDelegate(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -375,7 +419,6 @@ func (ts *Tester) TxDualstakingDelegate(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -385,14 +428,13 @@ func (ts *Tester) TxDualstakingDelegateValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	msg := &dualstakingtypes.MsgDelegate{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
@@ -403,16 +445,14 @@ func (ts *Tester) TxDualstakingRedelegate(
 	creator string,
 	fromProvider string,
 	toProvider string,
-	fromChainID string,
-	toChainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgRedelegateResponse, error) {
 	msg := &dualstakingtypes.MsgRedelegate{
 		Creator:      creator,
 		FromProvider: fromProvider,
 		ToProvider:   toProvider,
-		FromChainID:  fromChainID,
-		ToChainID:    toChainID,
+		FromChainID:  "fromChainID",
+		ToChainID:    "toChainID",
 		Amount:       amount,
 	}
 	return ts.Servers.DualstakingServer.Redelegate(ts.GoCtx, msg)
@@ -422,7 +462,6 @@ func (ts *Tester) TxDualstakingRedelegate(
 func (ts *Tester) TxDualstakingUnbond(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -430,7 +469,6 @@ func (ts *Tester) TxDualstakingUnbond(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -440,14 +478,13 @@ func (ts *Tester) TxDualstakingUnbondValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	msg := &dualstakingtypes.MsgUnbond{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
@@ -554,38 +591,45 @@ func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy *planstype
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProvider(
-	addr string,
+	vault string,
+	provider string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
+	description stakingtypes.Description,
+	commission uint64,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
-		DelegateCommission: 100,
+		DelegateCommission: commission,
+		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProviderFull(
-	addr string,
+	vault string,
+	provider string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
 	commission uint64,
-	delegateLimit uint64,
+	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -611,38 +655,40 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		}
 	}
 
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
-		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
+		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
 func (ts *Tester) TxPairingUnstakeProvider(
-	addr string,
+	vault string,
 	chainID string,
 ) (*pairingtypes.MsgUnstakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgUnstakeProvider{
 		Validator: sdk.ValAddress(val.Addr).String(),
-		Creator:   addr,
+		Creator:   vault,
 		ChainID:   chainID,
 	}
 	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingRelayPayment: implement 'tx pairing relay-payment'
-func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
+func (ts *Tester) TxPairingRelayPayment(provider string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
 	msg := &pairingtypes.MsgRelayPayment{
-		Creator:           addr,
+		Creator:           provider,
 		Relays:            rs,
 		DescriptionString: "test",
 	}
@@ -666,6 +712,17 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 		ChainIds: lavaslices.Slice(chainID),
 	}
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
+}
+
+// TxPairingMoveStake: implement 'tx pairing move-provider-stake'
+func (ts *Tester) TxPairingMoveStake(provider, src, dst string, amount int64) (*pairingtypes.MsgMoveProviderStakeResponse, error) {
+	msg := &pairingtypes.MsgMoveProviderStake{
+		Creator:  provider,
+		SrcChain: src,
+		DstChain: dst,
+		Amount:   NewCoin(ts.BondDenom(), amount),
+	}
+	return ts.Servers.PairingServer.MoveProviderStake(ts.GoCtx, msg)
 }
 
 func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
@@ -772,6 +829,15 @@ func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.Query
 	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
 }
 
+// QuerySubscriptionEstimateRewards: implement 'q subscription estimate-provider-rewards'
+func (ts *Tester) QuerySubscriptionEstimateProviderRewards(provider string, amountDelegator string) (*subscriptiontypes.QueryEstimatedRewardsResponse, error) {
+	msg := &subscriptiontypes.QueryEstimatedProviderRewardsRequest{
+		Provider:        provider,
+		AmountDelegator: amountDelegator,
+	}
+	return ts.Keepers.Subscription.EstimatedProviderRewards(ts.GoCtx, msg)
+}
+
 // QueryProjectInfo implements 'q project info'
 func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
 	msg := &projectstypes.QueryInfoRequest{Project: projectID}
@@ -793,6 +859,17 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderPairingChance implements 'q pairing get-pairing'
+func (ts *Tester) QueryPairingProviderPairingChance(provider string, chainID string, geolocation int32, cluster string) (*pairingtypes.QueryProviderPairingChanceResponse, error) {
+	msg := &pairingtypes.QueryProviderPairingChanceRequest{
+		Provider:    provider,
+		ChainID:     chainID,
+		Geolocation: geolocation,
+		Cluster:     cluster,
+	}
+	return ts.Keepers.Pairing.ProviderPairingChance(ts.GoCtx, msg)
+}
+
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{
@@ -800,6 +877,15 @@ func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingty
 		ShowFrozen: frozen,
 	}
 	return ts.Keepers.Pairing.Providers(ts.GoCtx, msg)
+}
+
+// QueryPairingProvider: implement 'q pairing provider'
+func (ts *Tester) QueryPairingProvider(address string, chainID string) (*pairingtypes.QueryProviderResponse, error) {
+	msg := &pairingtypes.QueryProviderRequest{
+		Address: address,
+		ChainID: chainID,
+	}
+	return ts.Keepers.Pairing.Provider(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q pairing verfy-pairing'
@@ -836,6 +922,26 @@ func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, c
 	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderReputation implements 'q pairing provider-reputation'
+func (ts *Tester) QueryPairingProviderReputation(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationRequest{
+		Provider: provider,
+		ChainID:  chainID,
+		Cluster:  cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputation(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderReputationDetails implements 'q pairing provider-reputation-details'
+func (ts *Tester) QueryPairingProviderReputationDetails(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationDetailsResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationDetailsRequest{
+		Address: provider,
+		ChainID: chainID,
+		Cluster: cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputationDetails(ts.GoCtx, msg)
+}
+
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
 func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
 	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
@@ -845,19 +951,17 @@ func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairi
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
-func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
+func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{
-		Delegator:   delegator,
-		WithPending: withPending,
+		Delegator: delegator,
 	}
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
 // QueryDualstakingProviderDelegators implements 'q dualstaking provider-delegators'
-func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPending bool) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
+func (ts *Tester) QueryDualstakingProviderDelegators(provider string) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
 	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
-		Provider:    provider,
-		WithPending: withPending,
+		Provider: provider,
 	}
 	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
 }
@@ -943,11 +1047,6 @@ func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryI
 }
 
 // block/epoch helpers
-// QueryRewardsProviderReward implements 'q rewards provider-reward'
-func (ts *Tester) QueryRewardsProviderReward(chainID string, provider string) (*rewardstypes.QueryProviderRewardResponse, error) {
-	msg := &rewardstypes.QueryProviderRewardRequest{ChainId: chainID, Provider: provider}
-	return ts.Keepers.Rewards.ProviderReward(ts.GoCtx, msg)
-} // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
 	return uint64(ts.Ctx.BlockHeight())
@@ -1012,6 +1111,15 @@ func (ts *Tester) GetNextMonth(from time.Time) int64 {
 	return utils.NextMonth(from).UTC().Unix()
 }
 
+func (ts *Tester) BlockTimeDefault() time.Duration {
+	return ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
+}
+
+func (ts *Tester) EpochTimeDefault() time.Duration {
+	epochBlocks := ts.Keepers.Epochstorage.GetParams(ts.Ctx).EpochBlocks
+	return ts.BlockTimeDefault() * time.Duration(epochBlocks)
+}
+
 func (ts *Tester) AdvanceToBlock(block uint64) {
 	if block < ts.BlockHeight() {
 		panic("AdvanceToBlock: block in the past: " +
@@ -1071,6 +1179,14 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	return ts
 }
 
+func (ts *Tester) AdvanceTimeHours(timeDelta time.Duration) *Tester {
+	endTime := ts.BlockTime().Add(timeDelta)
+	for ts.BlockTime().Before(endTime) {
+		ts.AdvanceBlock(time.Hour)
+	}
+	return ts
+}
+
 func (ts *Tester) BondDenom() string {
 	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
 }
@@ -1091,7 +1207,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	}
 
 	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := testkeeper.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	spec, err := specutils.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
 	if err != nil {
 		return err
 	}
@@ -1129,8 +1245,14 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	// setup providers
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
-		_, addr := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(addr, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		acc, provider := ts.AddAccount(PROVIDER, start+i, balance)
+		d := MockDescription()
+		moniker := d.Moniker + strconv.Itoa(start+i)
+		identity := d.Identity + strconv.Itoa(start+i)
+		website := d.Website + strconv.Itoa(start+i)
+		securityContact := d.SecurityContact + strconv.Itoa(start+i)
+		details := d.Details + strconv.Itoa(start+i)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, moniker, identity, website, securityContact, details)
 		if err != nil {
 			return err
 		}
@@ -1186,4 +1308,22 @@ func (ts *Tester) DisableParticipationFees() {
 	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
 	require.Nil(ts.T, err)
 	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
+}
+
+// deductParticipationFees calculates the validators and community participation
+// fees and returns the providers reward after deducting them
+func (ts *Tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
+	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward)
+	require.Nil(ts.T, err)
+	valParticipation = valPerc.MulInt(reward).TruncateInt()
+	communityParticipation = communityPerc.MulInt(reward).TruncateInt()
+	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
+}
+
+// EstimateProviderRewards uses the subscription's "estimate-provider-rewards" query and returns
+// the estimated rewards in math.Int form
+func (ts *Tester) EstimateProviderRewards(provider string, delegatorAmount string) (total math.Int, info []subscriptiontypes.EstimatedRewardInfo) {
+	res, err := ts.QuerySubscriptionEstimateProviderRewards(provider, delegatorAmount)
+	require.NoError(ts.T, err)
+	return res.Total.AmountOf(ts.BondDenom()).TruncateInt(), res.Info
 }

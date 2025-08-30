@@ -3,11 +3,11 @@ package chaintracker
 import (
 	"time"
 
-	"github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/metrics"
 )
 
 const (
-	DefualtAssumedBlockMemory      = 20
+	DefaultAssumedBlockMemory      = 20
 	DefaultBlockCheckpointDistance = 100
 )
 
@@ -22,6 +22,9 @@ type ChainTrackerConfig struct {
 	ServerBlockMemory        uint64
 	BlocksCheckpointDistance uint64 // this causes the chainTracker to trigger it's checkpoint every X blocks
 	Pmetrics                 *metrics.ProviderMetricsManager
+	PollingTimeMultiplier    int
+	ChainId                  string
+	ParseDirectiveEnabled    bool
 }
 
 func (cnf *ChainTrackerConfig) validate() error {
@@ -33,7 +36,7 @@ func (cnf *ChainTrackerConfig) validate() error {
 	}
 
 	if cnf.ServerBlockMemory == 0 {
-		cnf.ServerBlockMemory = DefualtAssumedBlockMemory
+		cnf.ServerBlockMemory = DefaultAssumedBlockMemory
 	}
 	if cnf.BlocksCheckpointDistance == 0 {
 		cnf.BlocksCheckpointDistance = DefaultBlockCheckpointDistance

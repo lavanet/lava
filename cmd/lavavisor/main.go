@@ -6,10 +6,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/cmd/lavad/cmd"
-	lvcmd "github.com/lavanet/lava/ecosystem/lavavisor/cmd"
-	"github.com/lavanet/lava/protocol/upgrade"
+	"github.com/lavanet/lava/v5/app"
+	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
+	lvcmd "github.com/lavanet/lava/v5/ecosystem/lavavisor/cmd"
+	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/spf13/cobra"
 )
 

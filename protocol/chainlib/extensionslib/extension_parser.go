@@ -1,8 +1,10 @@
 package extensionslib
 
 import (
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
+
+const ArchiveExtension = "archive"
 
 type ExtensionInfo struct {
 	ExtensionOverride    []string
@@ -27,8 +29,15 @@ type ExtensionParserRule interface {
 }
 
 type ExtensionParser struct {
-	AllowedExtensions    map[string]struct{}
+	allowedExtensions    map[string]struct{}
 	configuredExtensions map[ExtensionKey]*spectypes.Extension
+}
+
+func NewExtensionParser(allowedExtensions map[string]struct{}, configuredExtensions map[ExtensionKey]*spectypes.Extension) ExtensionParser {
+	return ExtensionParser{
+		allowedExtensions:    allowedExtensions,
+		configuredExtensions: configuredExtensions,
+	}
 }
 
 func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Extension {
@@ -50,7 +59,7 @@ func (ep *ExtensionParser) AllowedExtension(extension string) bool {
 	if extension == "" {
 		return true
 	}
-	_, ok := ep.AllowedExtensions[extension]
+	_, ok := ep.allowedExtensions[extension]
 	return ok
 }
 
@@ -62,14 +71,13 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 	if len(ep.configuredExtensions) == 0 {
 		return
 	}
-
 	for extensionKey, extension := range ep.configuredExtensions {
 		if extensionKey.Addon != addon {
 			// this extension is not relevant for this api
 			continue
 		}
 		extensionParserRule := NewExtensionParserRule(extension)
-		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
+		if extensionParserRule != nil && extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
 		}
 	}
@@ -77,7 +85,7 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 
 func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule {
 	switch extension.Name {
-	case "archive":
+	case ArchiveExtension:
 		return ArchiveParserRule{extension: extension}
 	default:
 		// unsupported rule

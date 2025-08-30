@@ -2,33 +2,31 @@ package updaters
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
+	"github.com/lavanet/lava/v5/utils"
+	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (
-	debug            = false
 	BlockResultRetry = 20
 )
 
 var TimeOutForFetchingLavaBlocks = time.Second * 5
 
 type EventTracker struct {
-	lock               sync.RWMutex
-	ClientCtx          client.Context
-	blockResults       *ctypes.ResultBlockResults
+	lock sync.RWMutex
+	*StateQuery
+	blockResults       *hybrid_client.ResultBlockResults
 	latestUpdatedBlock int64
 }
 
@@ -39,7 +37,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
 			timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
-			res, err = et.ClientCtx.Client.Status(timeoutCtx)
+			res, err = et.StateQuery.Status(timeoutCtx)
 			cancel()
 			if err == nil {
 				break
@@ -51,22 +49,18 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
 
-	brp, err := TryIntoTendermintRPC(et.ClientCtx.Client)
-	if err != nil {
-		return utils.LavaFormatError("could not get block result provider", err)
-	}
-	var blockResults *ctypes.ResultBlockResults
+	var blockResults *hybrid_client.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
 		timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
-		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
+		blockResults, err = et.StateQuery.BlockResults(timeoutCtx, &latestBlock)
 		cancel()
 		if err == nil {
 			break
 		}
-		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesnt just spam the attempts, and tendermint fails getting block results pretty often
+		time.Sleep(100 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
-		return utils.LavaFormatError("could not get block result", err)
+		return utils.LavaFormatError("could not get block result", err, utils.LogAttr("block_requested", latestBlock))
 	}
 	// lock for update after successful block result query
 	et.lock.Lock()
@@ -92,9 +86,9 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				if debug {
-					utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-				}
+
+				utils.LavaFormatTrace("relay_payment_event", utils.LogAttr("payment", paymentList))
+
 				payments = append(payments, paymentList...)
 			}
 		}
@@ -216,12 +210,4 @@ type tendermintRPC interface {
 		ctx context.Context,
 		height *int64,
 	) (*ctypes.ResultConsensusParams, error)
-}
-
-func TryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
-	brp, ok := cl.(tendermintRPC)
-	if !ok {
-		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)
-	}
-	return brp, nil
 }

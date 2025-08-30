@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type RelaysMonitor struct {

@@ -5,15 +5,18 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/spec/client/utils"
-	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
+	"github.com/lavanet/lava/v5/testutil/common"
+	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/spec/client/utils"
+	"github.com/lavanet/lava/v5/x/spec/keeper"
+	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,6 +59,7 @@ func prepareMockApis(count int, apiDiff string) []*types.Api {
 			BlockParsing: types.BlockParser{
 				DefaultValue: apiDiff,
 			},
+			ComputeUnits: 20,
 		}
 
 		api.Enabled = true
@@ -67,6 +71,7 @@ func prepareMockApis(count int, apiDiff string) []*types.Api {
 			BlockParsing: types.BlockParser{
 				DefaultValue: apiDiff,
 			},
+			ComputeUnits: 10,
 		}
 		mockApis[i+count/2] = api
 	}
@@ -220,6 +225,14 @@ func TestSpecRemove(t *testing.T) {
 		_, found := ts.getSpec(item.Index)
 		require.False(t, found)
 	}
+}
+
+func TestMain(m *testing.M) {
+	// This code will run once before any test cases are executed.
+	cmd.InitSDKConfig()
+	// Run the actual tests
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 func TestSpecGetAll(t *testing.T) {
@@ -803,52 +816,163 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	}
 }
 
-func TestCookbookSpecs(t *testing.T) {
+// TestSolanaSpecAddMultipleSubscribe tests if the solana spec is expanded correctly
+// The Solana spec is special since it has multiple parse directives of subscribe and unsubscribe
+// unlike other specs that have strictly unique parse directives
+func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 	ts := newTester(t)
 
-	getToTopMostPath := "../../.././cookbook/specs/"
-	// base specs needs to be proposed first
-	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_45.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json", "spec_add_solana.json"}
-
-	Specs, err := getAllFilesInDirectory(getToTopMostPath)
+	// read solana spec from file
+	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
+	require.NoError(t, err)
+	fileName := ""
+	for _, specFile := range specsFiles {
+		if strings.Contains(specFile, "solana.json") {
+			fileName = specFile
+			break
+		}
+	}
+	contents, err := os.ReadFile(fileName)
 	require.NoError(t, err)
 
-	// remove the base specs so there wont be a duplicate
-	Specs = removeSetFromSet(baseSpecs, Specs)
-	Specs = append(baseSpecs, Specs...)
-	for _, fileName := range Specs {
-		proposal := utils.SpecAddProposalJSON{}
+	// Parse contents of solana spec into a proposal
+	var proposal utils.SpecAddProposalJSON
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	err = decoder.Decode(&proposal)
+	require.NoError(t, err, fileName)
 
-		contents, err := os.ReadFile(getToTopMostPath + fileName)
+	// Find the solana spec in the proposal
+	solanaSpec := types.Spec{}
+	for _, spec := range proposal.Proposal.Specs {
+		for _, apiCol := range spec.ApiCollections {
+			for _, parseDirective := range apiCol.ParseDirectives {
+				if parseDirective.FunctionTag == types.FUNCTION_TAG_SUBSCRIBE {
+					solanaSpec = spec
+					break
+				}
+			}
+		}
+	}
+
+	// Simulate the addspec proposal
+	err = ts.TxProposalAddSpecs(solanaSpec)
+	require.NoError(t, err)
+
+	// Check if the solana spec is added to the keeper
+	specs := ts.Keepers.Spec.GetAllSpec(ts.Ctx)
+	require.Equal(t, 1, len(specs))
+	require.Equal(t, solanaSpec.Index, specs[0].Index)
+
+	// Check if the solana spec is expanded correctly and has multiple parse directives of subscribe and unsubscribe
+	subscribeCount := 0
+	unsubscribeCount := 0
+	for _, apiCol := range specs[0].ApiCollections {
+		for _, parseDirective := range apiCol.ParseDirectives {
+			if parseDirective.FunctionTag == types.FUNCTION_TAG_SUBSCRIBE {
+				subscribeCount++
+			} else if parseDirective.FunctionTag == types.FUNCTION_TAG_UNSUBSCRIBE {
+				unsubscribeCount++
+			}
+		}
+	}
+	require.Greater(t, subscribeCount, 2)
+	require.Greater(t, unsubscribeCount, 2)
+}
+
+func TestSpecs(t *testing.T) {
+	ts := newTester(t)
+
+	getToTopMostPath := "../../.././specs/mainnet-1/specs/"
+
+	specsFiles, err := getAllFilesInDirectory(getToTopMostPath)
+	require.NoError(t, err)
+
+	getToTopMostPath = "../../.././specs/testnet-2/specs/"
+
+	specsFilesTestnet, err := getAllFilesInDirectory(getToTopMostPath)
+	require.NoError(t, err)
+
+	specsFiles = append(specsFiles, specsFilesTestnet...)
+
+	// Sort specs by hierarchy - specs that are imported by others should come first
+	specImports := make(map[string][]string)
+	specProposals := make(map[string]types.Spec)
+
+	// First read all spec contents
+	for _, fileName := range specsFiles {
+		contents, err := os.ReadFile(fileName)
 		require.NoError(t, err)
 
+		// Parse imports from spec
+		var proposal utils.SpecAddProposalJSON
 		decoder := json.NewDecoder(bytes.NewReader(contents))
 		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 		err = decoder.Decode(&proposal)
 		require.NoError(t, err, fileName)
 
-		for _, sp := range proposal.Proposal.Specs {
-			ts.setSpec(sp)
-			fullspec, err := ts.expandSpec(sp)
-			require.NoError(t, err)
-			require.NotNil(t, fullspec)
-			verifications := []*types.Verification{}
-			for _, apiCol := range fullspec.ApiCollections {
-				for _, verification := range apiCol.Verifications {
-					require.NotNil(t, verification.ParseDirective)
-					if verification.ParseDirective.FunctionTag == types.FUNCTION_TAG_VERIFICATION {
-						require.NotEqual(t, "", verification.ParseDirective.ApiName)
-					}
-				}
-				verifications = append(verifications, apiCol.Verifications...)
+		imports := []string{}
+		for _, spec := range proposal.Proposal.Specs {
+			if spec.Imports != nil {
+				imports = append(imports, spec.Imports...)
 			}
-			if fullspec.Enabled {
-				// all specs need to have verifications
-				require.Greater(t, len(verifications), 0, fullspec.Index)
-			}
-			_, err = fullspec.ValidateSpec(10000000)
-			require.NoError(t, err)
+			specImports[spec.Index] = imports
+			specProposals[spec.Index] = spec
 		}
+	}
+
+	// Topologically sort based on imports
+	var sortedSpecs []string
+	visited := make(map[string]bool)
+	visiting := make(map[string]bool)
+
+	var visit func(string)
+	visit = func(spec string) {
+		if visiting[spec] {
+			require.Fail(t, "Circular dependency detected")
+		}
+		if visited[spec] {
+			return
+		}
+		visiting[spec] = true
+		for _, imp := range specImports[spec] {
+			visit(imp)
+		}
+		visiting[spec] = false
+		visited[spec] = true
+		sortedSpecs = append(sortedSpecs, spec)
+	}
+
+	for spec := range specImports {
+		if !visited[spec] {
+			visit(spec)
+		}
+	}
+
+	for _, specName := range sortedSpecs {
+		sp, found := specProposals[specName]
+		require.True(t, found, specName)
+
+		ts.setSpec(sp)
+		fullspec, err := ts.expandSpec(sp)
+		require.NoError(t, err)
+		require.NotNil(t, fullspec)
+		verifications := []*types.Verification{}
+		for _, apiCol := range fullspec.ApiCollections {
+			for _, verification := range apiCol.Verifications {
+				require.NotNil(t, verification.ParseDirective)
+				if verification.ParseDirective.FunctionTag == types.FUNCTION_TAG_VERIFICATION {
+					require.NotEqual(t, "", verification.ParseDirective.ApiName)
+				}
+			}
+			verifications = append(verifications, apiCol.Verifications...)
+		}
+		if fullspec.Enabled {
+			// all specs need to have verifications
+			require.Greater(t, len(verifications), 0, fullspec.Index)
+		}
+		_, err = fullspec.ValidateSpec(10000000)
+		require.NoError(t, err, sp.Name)
 	}
 }
 
@@ -865,7 +989,7 @@ func getAllFilesInDirectory(directory string) ([]string, error) {
 			// Skip directories; we only want files
 			continue
 		}
-		files = append(files, entry.Name())
+		files = append(files, directory+entry.Name())
 	}
 
 	return files, nil
@@ -887,4 +1011,206 @@ func removeSetFromSet(set1, set2 []string) []string {
 	}
 
 	return resultSet
+}
+
+func TestParsers(t *testing.T) {
+	parserBook := []struct {
+		parsers   []types.GenericParser
+		name      string
+		shouldErr bool
+	}{
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "1",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_NO_PARSER,
+				},
+			},
+			name:      "invalid parsers type",
+			shouldErr: true,
+		},
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			name:      "invalid parsers path",
+			shouldErr: true,
+		},
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "0",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			name:      "valid block parser",
+			shouldErr: false,
+		},
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "0",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+				{
+					ParsePath: "1",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			name:      "valid multiple block parser",
+			shouldErr: false,
+		},
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "0",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+				{
+					ParsePath: "1",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_NO_PARSER,
+				},
+			},
+			name:      "invalid type multiple block parser",
+			shouldErr: true,
+		},
+		{
+			parsers: []types.GenericParser{
+				{
+					ParsePath: "0",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+				{
+					ParsePath: "",
+					Value:     "",
+					ParseType: types.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			name:      "invalid type multiple block parser",
+			shouldErr: true,
+		},
+	}
+	for _, parsers := range parserBook {
+		t.Run(parsers.name, func(t *testing.T) {
+			ts := newTester(t)
+
+			apiCollection := createApiCollection(5, []int{1, 2, 3}, 0, "jsonrpc", "POST", "", nil, "")
+			api := apiCollection.Apis[0]
+			api.Parsers = parsers.parsers
+			tt := struct {
+				desc                 string
+				name                 string
+				imports              []string
+				apisCollections      []*types.ApiCollection
+				resultApiCollections int
+				result               []int
+				totalApis            int
+				ok                   bool
+			}{
+				desc:            "",
+				name:            "test",
+				imports:         []string{},
+				apisCollections: []*types.ApiCollection{apiCollection},
+			}
+			sp := types.Spec{
+				Index:                         tt.name,
+				Name:                          tt.name,
+				Enabled:                       true,
+				ReliabilityThreshold:          0xffffff,
+				DataReliabilityEnabled:        false,
+				BlockDistanceForFinalizedData: 0,
+				BlocksInFinalizationProof:     1,
+				AverageBlockTime:              10,
+				AllowedBlockLagForQosSync:     1,
+				BlockLastUpdated:              0,
+				MinStakeProvider: sdk.Coin{
+					Denom:  "ulava",
+					Amount: math.NewInt(5000000),
+				},
+				ApiCollections: tt.apisCollections,
+				Shares:         1,
+				Identity:       "",
+			}
+			fullspec, err := ts.expandSpec(sp)
+			require.NoError(t, err)
+			_, err = fullspec.ValidateSpec(10000)
+			if parsers.shouldErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.True(t, len(fullspec.ApiCollections[0].Apis[0].Parsers) > 0)
+			}
+			ts.setSpec(sp)
+		})
+	}
+}
+
+func TestSpecParsing(t *testing.T) {
+	specJSON := `
+		{
+			"proposal": {
+				"title": "Add Specs: Lava",
+				"description": "Adding new specification support for relaying Lava data on Lava",
+				"specs": [
+					{
+						"index": "test",
+						"name": "test",
+						"enabled": true,
+						"reliability_threshold": 16777215,
+						"data_reliability_enabled": false,
+						"block_distance_for_finalized_data": 0,
+						"blocks_in_finalization_proof": 1,
+						"average_block_time": 10,
+						"allowed_block_lag_for_qos_sync": 1,
+						"block_last_updated": 0,
+						"min_stake_provider": {
+							"denom": "ulava",
+							"amount": "5000000"
+						},
+						"api_collections": [
+							{
+								"apis": [
+									{
+										"name": "APIName",
+										"compute_units": 10,
+										"parsers": [
+											{
+												"parse_path": "0",
+												"value": "",
+												"parse_type": "BLOCK_LATEST"
+											}
+										]
+									}
+								]
+							}
+						],
+						"shares": 1,
+						"identity": ""
+					}
+				]
+			}
+		}`
+
+	var proposal utils.SpecAddProposalJSON
+	err := json.Unmarshal([]byte(specJSON), &proposal)
+	require.NoError(t, err)
+	ts := newTester(t)
+	for _, spec := range proposal.Proposal.Specs {
+		fullspec, err := ts.expandSpec(spec)
+		require.NoError(t, err)
+		_, err = fullspec.ValidateSpec(10000)
+		require.NoError(t, err)
+		ts.setSpec(spec)
+	}
 }

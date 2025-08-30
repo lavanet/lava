@@ -74,11 +74,11 @@ check_go_version() {
 # Function to find the latest vote
 latest_vote() {
   # Check if jq is not installed
-  if ! command_exists yq; then
-      echo "yq not found. Please install yq using the init_install.sh script or manually."
+  if ! command_exists jq; then
+      echo "jq not found. Please install jq using the init_install.sh script or manually."
       exit 1
   fi
-  lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
+  lavad q gov proposals --output=json 2> /dev/null | jq '.proposals[].id' | wc -l
 }
 
 create_health_config() {
@@ -138,4 +138,114 @@ wait_for_lava_node_to_start() {
 
 operator_address() {
     lavad q staking validators -o json | jq -r '.validators[0].operator_address'
+}
+
+
+validate_env() {
+# Array of variables to check
+required_vars=(
+  ETH_RPC_WS SEP_RPC_WS HOL_RPC_WS FTM_RPC_HTTP CELO_HTTP
+  CELO_ALFAJORES_HTTP ARB1_HTTP APTOS_REST STARKNET_RPC POLYGON_MAINNET_RPC
+  OPTIMISM_RPC BASE_RPC BSC_RPC SOLANA_RPC SUI_RPC OSMO_REST OSMO_RPC OSMO_GRPC
+  LAVA_REST LAVA_RPC LAVA_RPC_WS LAVA_GRPC GAIA_REST GAIA_RPC GAIA_GRPC JUNO_REST
+  JUNO_RPC JUNO_GRPC EVMOS_RPC EVMOS_TENDERMINTRPC EVMOS_REST EVMOS_GRPC CANTO_RPC
+  CANTO_TENDERMINT CANTO_REST CANTO_GRPC AXELAR_RPC_HTTP AXELAR_REST AXELAR_GRPC
+  AVALANCH_PJRPC AVALANCHT_PJRPC FVM_JRPC NEAR_JRPC AGORIC_REST AGORIC_GRPC
+  KOIITRPC AGORIC_RPC AGORIC_TEST_REST AGORIC_TEST_GRPC AGORIC_TEST_RPC
+  STARGAZE_RPC_HTTP STARGAZE_REST STARGAZE_GRPC
+)
+
+echo ""
+echo "---------------------------------------------"
+echo "-              ENV Validation               -"
+echo "---------------------------------------------"
+# Check each variable and print a warning if not set
+for var in "${required_vars[@]}"; do
+  if [ -z "${!var}" ]; then
+    echo "Warning: Variable '$var' is not set or is empty."
+  fi
+done
+echo "---------------------------------------------"
+echo "-            ENV Validation Done            -"
+echo "---------------------------------------------"
+}
+
+get_base_specs() {
+    local priority_specs=(
+        "specs/mainnet-1/specs/ibc.json"
+        "specs/mainnet-1/specs/cosmoswasm.json"
+        "specs/mainnet-1/specs/tendermint.json"
+        "specs/mainnet-1/specs/cosmossdk.json"
+        "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/testnet-2/specs/cosmossdk_full.json"
+        "specs/mainnet-1/specs/cosmossdkv50.json"
+        "specs/mainnet-1/specs/ethermint.json"
+        "specs/mainnet-1/specs/ethereum.json"
+        "specs/mainnet-1/specs/solana.json"
+        "specs/mainnet-1/specs/aptos.json"
+        "specs/mainnet-1/specs/btc.json"
+    )
+
+    (IFS=,; echo "${priority_specs[*]}")
+}
+
+get_hyperliquid_specs() {
+    local priority_specs=(
+        "specs/mainnet-1/specs/ibc.json"
+        "specs/mainnet-1/specs/cosmoswasm.json"
+        "specs/mainnet-1/specs/tendermint.json"
+        "specs/mainnet-1/specs/cosmossdk.json"
+        "specs/testnet-2/specs/cosmossdkv45.json"
+        "specs/testnet-2/specs/cosmossdk_full.json"
+        "specs/mainnet-1/specs/cosmossdkv50.json"
+        "specs/testnet-2/specs/lava.json"
+        "specs/mainnet-1/specs/hyperliquid.json"
+    )
+
+    (IFS=,; echo "${priority_specs[*]}")
+}
+
+get_all_specs() {
+    # Ensure get_base_specs outputs elements correctly split into an array
+    IFS=',' read -r -a priority_specs <<< "$(get_base_specs)" 
+
+    local other_specs=()
+
+    # Find all JSON spec files and store them in a temporary file
+    find specs/{mainnet-1,testnet-2}/specs -name "*.json" > /tmp/specs_list.txt
+
+    # Process each file from the find command
+    while IFS= read -r file; do
+        local is_priority=false
+        local is_in_other_specs=false
+
+        # Check if the file is in priority_specs
+        for pspec in "${priority_specs[@]}"; do
+            if [[ "$file" == "$pspec" ]]; then
+                is_priority=true
+                break
+            fi
+        done
+
+        # Check if the file is already in other_specs
+        if [[ "$is_priority" == "false" ]]; then
+            for ospec in "${other_specs[@]}"; do
+                if [[ "$file" == "$ospec" ]]; then
+                    is_in_other_specs=true
+                    break
+                fi
+            done
+        fi
+
+        # Add the file to other_specs if it's not already there
+        if [[ "$is_priority" == "false" && "$is_in_other_specs" == "false" ]]; then
+            other_specs+=("$file")
+        fi
+    done < /tmp/specs_list.txt
+
+    # Cleanup temporary file
+    rm /tmp/specs_list.txt
+
+    # Combine arrays and output as a comma-separated string
+    (IFS=,; echo "${priority_specs[*]},${other_specs[*]}")
 }

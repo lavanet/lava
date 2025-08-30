@@ -9,14 +9,42 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/gorilla/websocket"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func createWebSocketHandler(handler func(string) string) http.HandlerFunc {
+	upGrader := websocket.Upgrader{}
+
+	// Create a simple websocket server that mocks the node
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upGrader.Upgrade(w, r, nil)
+		if err != nil {
+			fmt.Println(err)
+			panic("got error in upgrader")
+		}
+		defer conn.Close()
+
+		for {
+			// Read the request
+			messageType, message, err := conn.ReadMessage()
+			if err != nil {
+				panic("got error in ReadMessage")
+			}
+			fmt.Println("got ws message", string(message), messageType)
+			retMsg := handler(string(message))
+			conn.WriteMessage(messageType, []byte(retMsg))
+			fmt.Println("writing ws message", string(message), messageType)
+		}
+	}
+}
 
 func TestJSONChainParser_Spec(t *testing.T) {
 	// create a new instance of RestChainParser
@@ -87,8 +115,12 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test, "")
-	assert.Error(t, err)
+	apiCont, err := apip.getSupportedApi("API2", connectionType_test, "")
+	if err == nil {
+		assert.Equal(t, "Default-API2", apiCont.api.Name)
+	} else {
+		assert.ErrorIs(t, err, common.APINotSupportedError)
+	}
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &JsonRPCChainParser{
@@ -134,26 +166,34 @@ func TestJSONParseMessage(t *testing.T) {
 
 func TestJsonRpcChainProxy(t *testing.T) {
 	ctx := context.Background()
-	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	wsServerHandler := func(message string) string {
+		return `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`
+	}
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandler, createWebSocketHandler(wsServerHandler), "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
+
 	block, err := chainFetcher.FetchLatestBlockNum(ctx)
 	require.Greater(t, block, int64(0))
 	require.NoError(t, err)
+
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:invalid parser input format"
-	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
-	if closeServer != nil {
-		closeServer()
-	}
+	expectedErrMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse {error:failed to parse with legacy block parser ErrMsg: blockParsing -"
+	actualErrMsg := err.Error()[:len(expectedErrMsg)]
+	require.Equal(t, expectedErrMsg, actualErrMsg, err.Error())
 }
 
 func TestAddonAndVerifications(t *testing.T) {
@@ -164,13 +204,21 @@ func TestAddonAndVerifications(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
 	})
 
-	chainParser, chainRouter, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"debug"})
+	wsServerHandler := func(message string) string {
+		return `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`
+	}
+
+	chainParser, chainRouter, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, createWebSocketHandler(wsServerHandler), "../../", []string{"debug"})
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainRouter)
 	require.NotNil(t, chainFetcher)
 
-	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	verifications, err := chainParser.GetVerifications([]string{"debug"}, "", "jsonrpc")
 	require.NoError(t, err)
 	require.NotEmpty(t, verifications)
 	for _, verification := range verifications {
@@ -183,9 +231,6 @@ func TestAddonAndVerifications(t *testing.T) {
 		_, err = FormatResponseForParsing(reply.RelayReply, chainMessage)
 		require.NoError(t, err)
 	}
-	if closeServer != nil {
-		closeServer()
-	}
 }
 
 func TestExtensions(t *testing.T) {
@@ -196,8 +241,16 @@ func TestExtensions(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
 	})
 
+	wsServerHandler := func(message string) string {
+		return `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`
+	}
+
 	specname := "ETH1"
-	chainParser, chainRouter, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, specname, spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"archive"})
+	chainParser, chainRouter, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, specname, spectypes.APIInterfaceJsonRPC, serverHandle, createWebSocketHandler(wsServerHandler), "../../", []string{"archive"})
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainRouter)
@@ -205,12 +258,13 @@ func TestExtensions(t *testing.T) {
 	configuredExtensions := map[string]struct{}{
 		"archive": {},
 	}
-	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
+	spec, err := specutils.GetASpec(specname, "../../", nil, nil)
 	require.NoError(t, err)
 
 	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: specname, Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	cuCost := uint64(0)
 	for _, api := range spec.ApiCollections[0].Apis {
 		if api.Name == parsingForCrafting.ApiName {
@@ -258,9 +312,6 @@ func TestExtensions(t *testing.T) {
 	require.Len(t, chainMessage.GetExtensions(), 1)
 	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
 	require.Equal(t, cuCostExt, chainMessage.GetApi().ComputeUnits)
-	if closeServer != nil {
-		closeServer()
-	}
 }
 
 func TestJsonRpcBatchCall(t *testing.T) {
@@ -279,7 +330,16 @@ func TestJsonRpcBatchCall(t *testing.T) {
 		fmt.Fprint(w, response)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	wsServerHandler := func(message string) string {
+		require.Equal(t, batchCallData, message)
+		return response
+	}
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, createWebSocketHandler(wsServerHandler), "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -287,18 +347,15 @@ func TestJsonRpcBatchCall(t *testing.T) {
 
 	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
+
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
+
 	relayReply, _, _, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, response, string(relayReply.RelayReply.Data))
-	defer func() {
-		if closeServer != nil {
-			closeServer()
-		}
-	}()
 }
 
 func TestJsonRpcBatchCallSameID(t *testing.T) {
@@ -320,7 +377,16 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 		fmt.Fprint(w, response)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	wsServerHandler := func(message string) string {
+		require.Equal(t, sentBatchCallData, message)
+		return response
+	}
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, createWebSocketHandler(wsServerHandler), "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -335,21 +401,21 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, responseExpected, string(relayReply.RelayReply.Data))
-	defer func() {
-		if closeServer != nil {
-			closeServer()
-		}
-	}()
 }
 
-func TestJsonRpcInternalPathsMultipleVersions(t *testing.T) {
+func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
 	ctx := context.Background()
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "STRK", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "STRK", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -377,7 +443,234 @@ func TestJsonRpcInternalPathsMultipleVersions(t *testing.T) {
 	collection = chainMessage.GetApiCollection()
 	require.Equal(t, "starknet_specVersion", api.Name)
 	require.Equal(t, v6_path, collection.CollectionData.InternalPath)
-	if closeServer != nil {
-		closeServer()
+}
+
+func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
+	type reqWithApiName struct {
+		apiName string
+		reqData []byte
 	}
+
+	// TODO: Add the empty path back in once the ETH spec will be fixed
+	// allPaths := []string{"", "/C/rpc", "/C/avax", "/P", "/X"}
+	allPaths := []string{"/C/rpc", "/C/avax", "/P", "/X"}
+	pathToReqData := map[string]reqWithApiName{
+		"/C/rpc": { // Eth jsonrpc path
+			apiName: "eth_blockNumber",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": []}`),
+		},
+		"/C/avax": { // Avalanche jsonrpc path
+			apiName: "avax.export",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avax.export", "params": []}`),
+		},
+		"/P": { // Platform jsonrpc path
+			apiName: "platform.addDelegator",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "platform.addDelegator", "params": []}`),
+		},
+		"/X": { // Avm jsonrpc path
+			apiName: "avm.getAssetDescription",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avm.getAssetDescription", "params": []}`),
+		},
+	}
+
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "AVAX", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
+	for correctPath, reqDataWithApiName := range pathToReqData {
+		for _, path := range allPaths {
+			shouldErr := path != correctPath
+			t.Run(fmt.Sprintf("ApiName:%s,CorrectPath:%s,Path:%s,ShouldError:%v", reqDataWithApiName.apiName, correctPath, path, shouldErr), func(t *testing.T) {
+				chainMessage, err := chainParser.ParseMsg(path, reqDataWithApiName.reqData, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+
+				if !shouldErr {
+					require.NoError(t, err)
+					api := chainMessage.GetApi()
+					collection := chainMessage.GetApiCollection()
+					require.Equal(t, reqDataWithApiName.apiName, api.Name)
+					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
+				} else {
+					if err == nil {
+						require.Contains(t, chainMessage.GetApi().Name, "Default-")
+					} else {
+						require.ErrorIs(t, err, common.APINotSupportedError)
+						require.Nil(t, chainMessage)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestJsonRPC_SpecUpdateWithAddons(t *testing.T) {
+	// create a new instance of RestChainParser
+	apip, err := NewJrpcChainParser()
+	if err != nil {
+		t.Errorf("Error creating RestChainParser: %v", err)
+	}
+
+	// set the spec
+	spec := spectypes.Spec{
+		Enabled:                       true,
+		ReliabilityThreshold:          10,
+		AllowedBlockLagForQosSync:     11,
+		AverageBlockTime:              12000,
+		BlockDistanceForFinalizedData: 13,
+		BlocksInFinalizationProof:     14,
+		ApiCollections: []*spectypes.ApiCollection{
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: "jsonrpc",
+					InternalPath: "",
+					Type:         "POST",
+					AddOn:        "debug",
+				},
+				Apis: []*spectypes.Api{
+					{
+						Enabled: true,
+						Name:    "foo",
+					},
+				},
+			},
+		},
+	}
+
+	// Set the spec for the first time
+	apip.SetSpec(spec)
+
+	// At first, addon should be disabled
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Setting the spec again, for sanity check
+	apip.SetSpec(spec)
+
+	// Sanity check that addon still disabled
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Allow the addon
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{
+		"debug": {},
+	})
+
+	// Sanity check
+	require.True(t, apip.allowedAddons["debug"])
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.True(t, apip.allowedAddons["debug"])
+
+	// Disallow the addon
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{})
+
+	// Sanity check
+	require.False(t, apip.allowedAddons["debug"])
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.False(t, apip.allowedAddons["debug"])
+}
+
+func TestJsonRPC_SpecUpdateWithExtensions(t *testing.T) {
+	// create a new instance of RestChainParser
+	apip, err := NewJrpcChainParser()
+	if err != nil {
+		t.Errorf("Error creating RestChainParser: %v", err)
+	}
+
+	// set the spec
+	spec := spectypes.Spec{
+		Enabled:                       true,
+		ReliabilityThreshold:          10,
+		AllowedBlockLagForQosSync:     11,
+		AverageBlockTime:              12000,
+		BlockDistanceForFinalizedData: 13,
+		BlocksInFinalizationProof:     14,
+		ApiCollections: []*spectypes.ApiCollection{
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: "jsonrpc",
+					InternalPath: "",
+					Type:         "POST",
+					AddOn:        "",
+				},
+				Extensions: []*spectypes.Extension{
+					{
+						Name: "archive",
+						Rule: &spectypes.Rule{
+							Block: 123,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	extensionKey := extensionslib.ExtensionKey{
+		Extension:      "archive",
+		ConnectionType: "POST",
+		InternalPath:   "",
+		Addon:          "",
+	}
+
+	isExtensionConfigured := func() bool {
+		_, isConfigured := apip.extensionParser.GetConfiguredExtensions()[extensionKey]
+		return isConfigured
+	}
+
+	// Set the spec for the first time
+	apip.SetSpec(spec)
+
+	// At first, extension should not be configured
+	require.False(t, isExtensionConfigured())
+
+	// Setting the spec again, for sanity check
+	apip.SetSpec(spec)
+
+	// Sanity check that extension is still not configured
+	require.False(t, isExtensionConfigured())
+
+	// Allow the extension
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{
+		"archive": {},
+	})
+
+	// Sanity check
+	require.True(t, isExtensionConfigured())
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.True(t, isExtensionConfigured())
+
+	// Disallow the extension
+	apip.SetPolicyFromAddonAndExtensionMap(map[string]struct{}{})
+
+	// Sanity check
+	require.False(t, isExtensionConfigured())
+
+	// Set the spec again
+	apip.SetSpec(spec)
+
+	// Should stay the same
+	require.False(t, isExtensionConfigured())
 }

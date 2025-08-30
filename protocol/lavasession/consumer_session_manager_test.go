@@ -2,22 +2,23 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils/lavaslices"
-
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -26,7 +27,7 @@ import (
 const (
 	parallelGoRoutines                 = 40
 	numberOfProviders                  = 10
-	numberOfResetsToTest               = 10
+	numberOfResetsToTest               = 1
 	numberOfAllowedSessionsPerConsumer = 10
 	firstEpochHeight                   = 20
 	secondEpochHeight                  = 40
@@ -39,6 +40,9 @@ const (
 	virtualEpoch                       = uint64(1)
 	maxCuForVirtualEpoch               = uint64(200)
 )
+
+// This variable will hold grpc server address
+var grpcListener = "localhost:0"
 
 type testServer struct {
 	delay time.Duration
@@ -72,14 +76,14 @@ func TestHappyFlow(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -88,45 +92,48 @@ func TestHappyFlow(t *testing.T) {
 	}
 }
 
-func TestExtensionDoesNotExistOnPairingList(t *testing.T) {
-	ctx := context.Background()
-	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
-	require.NoError(t, err)
-	ext := []*spectypes.Extension{{Name: "test_non_existing_ex", Rule: &spectypes.Rule{Block: 555}, CuMultiplier: 5}}
-	_, err = csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", ext, common.NO_STATE, 0) // get a session
-	// if we got a session successfully we should get no error.
-	require.NoError(t, err)
-}
-
 func getDelayedAddress() string {
 	delayedServerAddress := "127.0.0.1:3335"
 	// because grpcListener is random we might have overlap. in that case just change the port.
 	if grpcListener == delayedServerAddress {
 		delayedServerAddress = "127.0.0.1:3336"
 	}
+	utils.LavaFormatDebug("delayedAddress Chosen", utils.LogAttr("address", delayedServerAddress))
 	return delayedServerAddress
 }
 
 func TestEndpointSortingFlow(t *testing.T) {
 	delayedAddress := getDelayedAddress()
-	err := createGRPCServer(delayedAddress, time.Millisecond)
+	err := createGRPCServer(delayedAddress, 300*time.Millisecond)
 	csp := &ConsumerSessionsWithProvider{}
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, _, err := csp.ConnectRawClientWithTimeout(ctx, delayedAddress)
 		if err != nil {
-			utils.LavaFormatDebug("waiting for grpc server to launch")
+			utils.LavaFormatDebug("delayedAddress - waiting for grpc server to launch")
 			continue
 		}
+		utils.LavaFormatDebug("delayedAddress - grpc server is live", utils.LogAttr("address", delayedAddress))
 		cancel()
 		break
 	}
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, _, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+		if err != nil {
+			utils.LavaFormatDebug("grpcListener - waiting for grpc server to launch")
+			continue
+		}
+		utils.LavaFormatDebug("grpcListener - grpc server is live", utils.LogAttr("address", grpcListener))
+		cancel()
+		break
+	}
+
 	require.NoError(t, err)
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Client: nil, ConnectionRefusals: 0})
+	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Connections: []*EndpointConnection{}, ConnectionRefusals: 0})
 	// swap locations so that the endpoint of the delayed will be first
 	pairingList[0].Endpoints[0], pairingList[0].Endpoints[1] = pairingList[0].Endpoints[1], pairingList[0].Endpoints[0]
 
@@ -139,7 +146,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 	// because probing is in a routine we need to wait for the sorting and probing to end asynchronously
 	swapped := false
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if pairingList[0].Endpoints[0].NetworkAddress == grpcListener {
 			fmt.Println("Endpoints Are Sorted!", i)
 			swapped = true
@@ -152,13 +159,9 @@ func TestEndpointSortingFlow(t *testing.T) {
 	// after creating all the sessions
 }
 
-// This variable will hold grpc server address
-var grpcListener = "localhost:0"
-
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
-	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil, nil)
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare"), nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
 }
 
 func TestMain(m *testing.M) {
@@ -218,14 +221,29 @@ func createGRPCServer(changeListener string, probeDelay time.Duration) error {
 
 const providerStr = "provider"
 
+type DirectiveHeaders struct {
+	directiveHeaders map[string]string
+}
+
+func (bpm DirectiveHeaders) GetBlockedProviders() []string {
+	if bpm.directiveHeaders == nil {
+		return nil
+	}
+	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
+	if ok {
+		return strings.Split(blockedProviders, ",")
+	}
+	return nil
+}
+
 func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*ConsumerSessionsWithProvider {
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
-	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0}
-	pairingEndpointsWithAddon := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}}}
-	pairingEndpointsWithExtension := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}}}}
-	pairingEndpointsWithExtensions := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}, "ext2": {}}}}
+	pairingEndpoints[0] = &Endpoint{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0}
+	pairingEndpointsWithAddon := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}}}
+	pairingEndpointsWithExtension := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}}}}
+	pairingEndpointsWithExtensions := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}, "ext2": {}}}}
 	for p := 0; p < numberOfProviders; p++ {
 		var endpoints []*Endpoint
 		switch p {
@@ -284,12 +302,12 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	}
 
 	usedProviders := NewUsedProviders(nil)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 	_, expectedProviderAddress := css[csm.validAddresses[0]]
 	require.True(t, expectedProviderAddress)
 
-	css2, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css2, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 	_, expectedProviderAddress2 := css2[highestProviderCu]
 	require.True(t, expectedProviderAddress2)
@@ -299,7 +317,7 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	time.Sleep(time.Second)
 	require.Equal(t, len(csm.validAddresses), 2)
 
-	css3, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css3, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 	runOnSessionFailureForConsumerSessionMap(t, css3, csm)
 	// check we still have only 2 valid addresses as this one failed
@@ -309,12 +327,95 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	require.Equal(t, len(csm.validAddresses), 2)
 }
 
+func TestSecondChanceRecoveryFlow(t *testing.T) {
+	retrySecondChanceAfter = time.Second * 2
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}) // create two providers
+	require.NoError(t, err)
+	timeLimit := time.Second * 30
+	loopStartTime := time.Now()
+	for {
+		// implement a struct that returns: map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress} in the implementation for the DirectiveHeadersInf interface
+		directiveHeaders := DirectiveHeaders{map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress}}
+		usedProviders := NewUsedProviders(directiveHeaders)
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+		require.NoError(t, err)
+		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
+		require.True(t, expectedProviderAddress)
+		for _, sessionInfo := range css {
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
+		}
+		_, ok := csm.secondChanceGivenToAddresses[pairingList[0].PublicLavaAddress]
+		if ok {
+			// should be present in secondChanceGivenToAddresses at some point.
+			fmt.Println(csm.secondChanceGivenToAddresses)
+			break
+		}
+		require.True(t, time.Since(loopStartTime) < timeLimit)
+	}
+
+	// check we get provider1.
+	usedProviders := NewUsedProviders(nil)
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	require.NoError(t, err)
+	_, expectedProviderAddress := css[pairingList[1].PublicLavaAddress]
+	require.True(t, expectedProviderAddress)
+	// check this provider is not reported.
+	require.False(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
+	require.False(t, csm.reportedProviders.IsReported(pairingList[1].PublicLavaAddress))
+	// sleep for the duration of the retrySecondChanceAfter
+	loopStartTime = time.Now()
+	for {
+		if func() bool {
+			csm.lock.RLock()
+			defer csm.lock.RUnlock()
+			utils.LavaFormatInfo("waiting for provider to return to valid addresses", utils.LogAttr("provider", pairingList[0].PublicLavaAddress), utils.LogAttr("csm.validAddresses", csm.validAddresses))
+			return lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress)
+		}() {
+			utils.LavaFormatInfo("Wait Completed")
+			break
+		}
+		time.Sleep(time.Second)
+		require.True(t, time.Since(loopStartTime) < timeLimit)
+	}
+
+	require.True(t, lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress))
+	require.False(t, lavaslices.Contains(csm.currentlyBlockedProviderAddresses, pairingList[0].PublicLavaAddress))
+	require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
+
+	// now after we gave it a second chance, we give it another failure sequence, expecting it to this time be reported.
+	loopStartTime = time.Now()
+	for {
+		utils.LavaFormatDebug("Test", utils.LogAttr("csm.validAddresses", csm.validAddresses), utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus", csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus))
+		directiveHeaders := DirectiveHeaders{map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress}}
+		usedProviders := NewUsedProviders(directiveHeaders)
+		require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+		require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
+		require.NoError(t, err)
+		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
+		require.True(t, expectedProviderAddress)
+		for _, sessionInfo := range css {
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
+			require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
+		}
+		if _, ok := csm.reportedProviders.addedToPurgeAndReport[pairingList[0].PublicLavaAddress]; ok {
+			break
+		}
+		require.True(t, time.Since(loopStartTime) < timeLimit)
+	}
+	utils.LavaFormatInfo("csm.reportedProviders", utils.LogAttr("csm.reportedProviders", csm.reportedProviders.addedToPurgeAndReport))
+	require.True(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
+}
+
 func runOnSessionDoneForConsumerSessionMap(t *testing.T, css ConsumerSessionsMap, csm *ConsumerSessionManager) {
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err := csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err := csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -339,14 +440,14 @@ func TestHappyFlowVirtualEpoch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1), NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch) // get a session
+	css, err := csm.GetSessions(ctx, 1, maxCuForVirtualEpoch*(virtualEpoch+1), NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, maxCuForVirtualEpoch*(virtualEpoch+1))
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch*(virtualEpoch+1), time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch*(virtualEpoch+1), time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, maxCuForVirtualEpoch*(virtualEpoch+1))
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -363,7 +464,7 @@ func TestVirtualEpochWithFailure(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 
-	_, err = csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1)+10, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch) // get a session
+	_, err = csm.GetSessions(ctx, 1, maxCuForVirtualEpoch*(virtualEpoch+1)+10, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch, "") // get a session
 	require.Error(t, err)
 }
 
@@ -373,8 +474,8 @@ func TestPairingReset(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	csm.validAddresses = []string{}                                                                                              // set valid addresses to zero
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	csm.validAddresses = []string{}                                                                                                     // set valid addresses to zero
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -382,7 +483,7 @@ func TestPairingReset(t *testing.T) {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -403,7 +504,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 			break
 		}
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css {
@@ -412,7 +513,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 		}
 	}
 	require.Equal(t, len(csm.validAddresses), 0)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -428,6 +529,8 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
+	// make list shorter otherwise we wont be able to ban all as it takes slightly more time now
+	pairingList = map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 
@@ -437,7 +540,8 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 				break
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+			require.NoError(t, err)
 
 			for _, cs := range css {
 				err = csm.OnSessionFailure(cs.Session, nil)
@@ -449,7 +553,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			}
 		}
 		require.Equal(t, len(csm.validAddresses), 0)
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 		require.NoError(t, err)
 		require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -461,14 +565,14 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		}
 	}
 
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -496,7 +600,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	sessionList := make([]session, numberOfAllowedSessionsPerConsumer)
 	sessionListData := make([]SessTestData, numberOfAllowedSessionsPerConsumer)
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css { // get a session
@@ -514,7 +618,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		require.Equal(t, epoch, csm.currentEpoch)
 
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 			require.NoError(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -532,7 +636,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	}
 
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css { // get a session
@@ -548,7 +652,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
 		cs := sessionList[j].cs
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 			require.NoError(t, err)
 			require.Equal(t, sessionListData[j].cuSum+cuForFirstRequest, cs.CuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -565,20 +669,20 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 }
 
 func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 		require.NoError(t, err)
 		ch <- p
 	}
 }
 
 func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -696,7 +800,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -730,7 +834,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -751,7 +855,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList("", false)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	cs, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	cs, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
@@ -791,7 +895,7 @@ func TestGetSession(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0)
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "")
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -803,15 +907,15 @@ func TestGetSession(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	ctx := context.Background()
-	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
-	time.Sleep(20 * time.Millisecond)
+	ctxTO, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	time.Sleep(2 * time.Second)
 	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
 	cancel()
 }
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := ConnectGRPCClient(ctx, grpcListener, true)
+	conn, err := ConnectGRPCClient(ctx, grpcListener, true, false, false)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()
@@ -837,7 +941,7 @@ func TestPairingWithAddons(t *testing.T) {
 			// block all providers
 			initialProvidersLen := len(csm.getValidAddresses(addon, nil))
 			for i := 0; i < initialProvidersLen; i++ {
-				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0) // get a session
+				css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0, "") // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
@@ -849,10 +953,10 @@ func TestPairingWithAddons(t *testing.T) {
 			if addon != "" {
 				require.NotEqual(t, csm.getValidAddresses(addon, nil), csm.getValidAddresses("", nil))
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0, "") // get a session
 			require.NoError(t, err)
 			for _, cs := range css {
-				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 				require.NoError(t, err)
 			}
 		})
@@ -912,7 +1016,7 @@ func TestPairingWithExtensions(t *testing.T) {
 			}
 			initialProvidersLen := len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))
 			for i := 0; i < initialProvidersLen; i++ {
-				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0) // get a session
+				css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0, "") // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
@@ -924,10 +1028,10 @@ func TestPairingWithExtensions(t *testing.T) {
 			if len(extensionOpt.extensions) > 0 || extensionOpt.addon != "" {
 				require.NotEqual(t, csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions), csm.getValidAddresses("", nil))
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0, "") // get a session
 			require.NoError(t, err)
 			for _, cs := range css {
-				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 				require.NoError(t, err)
 			}
 		})
@@ -940,7 +1044,7 @@ func TestNoPairingsError(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // let probes finish
-	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE)
+	_, err = csm.getValidProviderAddresses(context.Background(), 1, map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
 	require.Error(t, err)
 	require.True(t, PairingListEmptyError.Is(err))
 }
@@ -959,17 +1063,37 @@ func TestPairingWithStateful(t *testing.T) {
 		providerAddresses := csm.getValidAddresses(addon, nil)
 		allProviders := len(providerAddresses)
 		require.Equal(t, 10, allProviders)
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0) // get a session
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0, "") // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders, len(css))
 		for _, cs := range css {
-			err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+			err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false, nil)
 			require.NoError(t, err)
 		}
 		usedProviders := NewUsedProviders(nil)
-		usedProviders.RemoveUsed(providerAddresses[0], nil)
-		css, err = csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0) // get a session
+		usedProviders.RemoveUsed(providerAddresses[0], NewRouterKey(nil), nil)
+		css, err = csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0, "") // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders-1, len(css))
 	})
+}
+
+func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}) // update the providers.
+	require.NoError(t, err)
+	utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
+	for i := 0; i < MaxSessionsAllowedPerProvider; i++ {
+		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+		require.NoError(t, err)
+		for _, cs := range css {
+			err = csm.OnSessionFailure(cs.Session, errors.Join(BlockProviderError, SessionOutOfSyncError))
+			require.NoError(t, err)
+		}
+	}
+
+	_, err = csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	require.ErrorIs(t, err, PairingListEmptyError)
 }

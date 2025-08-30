@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/spec/client/cli"
-	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/x/spec/client/cli"
+	"github.com/lavanet/lava/v5/x/spec/keeper"
+	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
 var (
@@ -129,12 +129,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 
 	migrator := keeper.NewMigrator(am.keeper)
-
-	// register v2 -> v3 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.Migrate2to3); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
-	}
 
 	// register v3 -> v4 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.Migrate3to4); err != nil {

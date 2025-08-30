@@ -1,7 +1,7 @@
 package types
 
 import (
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	fixationtypes "github.com/lavanet/lava/v5/x/fixationstore/types"
 )
 
 // DefaultIndex is the default capability global index

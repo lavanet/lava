@@ -9,6 +9,8 @@ const (
 	ValidatorSlashEventName    = "validator_slash"
 	FreezeFromUnbond           = "freeze_from_unbond"
 	UnstakeFromUnbond          = "unstake_from_unbond"
+	ProviderRewardEventName    = "provider_reward"
+	DelegatorRewardEventName   = "delegator_reward"
 )
 
 const (

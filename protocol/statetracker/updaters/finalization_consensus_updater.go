@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 const (
@@ -15,16 +15,18 @@ const (
 
 type FinalizationConsensusUpdater struct {
 	lock                              sync.RWMutex
-	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
+	registeredFinalizationConsensuses []*finalizationconsensus.FinalizationConsensus
 	nextBlockForUpdate                uint64
 	stateQuery                        *ConsumerStateQuery
+	specId                            string
+	ignoreQueryErrors                 bool // used when static providers are configured so we don't spam errors on failed get pairing.
 }
 
-func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
-	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
+func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery, specId string, ignoreQueryErrors bool) *FinalizationConsensusUpdater {
+	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*finalizationconsensus.FinalizationConsensus{}, stateQuery: stateQuery, specId: specId, ignoreQueryErrors: ignoreQueryErrors}
 }
 
-func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
+func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
 	// TODO: also update here for the first time
 	fcu.lock.Lock()
 	defer fcu.lock.Unlock()
@@ -43,9 +45,11 @@ func (fcu *FinalizationConsensusUpdater) updateInner(latestBlock int64) {
 	}
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
-	if err != nil {
-		utils.LavaFormatError("could not get block stats for finalization consensus updater, trying again next block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(timeoutCtx, fcu.specId, latestBlock)
+	if err != nil && epoch == 0 {
+		if !fcu.ignoreQueryErrors {
+			utils.LavaFormatError("could not get block stats for finalization consensus updater, trying again next block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+		}
 		fcu.nextBlockForUpdate += 1
 		return
 	}

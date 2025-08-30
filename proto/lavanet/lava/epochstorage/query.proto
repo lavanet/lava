@@ -7,11 +7,12 @@ import "lavanet/lava/epochstorage/params.proto";
 import "lavanet/lava/epochstorage/stake_storage.proto";
 import "lavanet/lava/epochstorage/epoch_details.proto";
 import "lavanet/lava/epochstorage/fixated_params.proto";
+import "lavanet/lava/epochstorage/provider_metadata.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+option go_package = "github.com/lavanet/lava/v5/x/epochstorage/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -42,6 +43,11 @@ service Query {
 	// Queries a list of FixatedParams items.
 	rpc FixatedParamsAll(QueryAllFixatedParamsRequest) returns (QueryAllFixatedParamsResponse) {
 		option (google.api.http).get = "/lavanet/lava/epochstorage/fixated_params";
+	}
+
+	// Queries provider metadata.
+	rpc ProviderMetaData(QueryProviderMetaDataRequest) returns (QueryProviderMetaDataResponse) {
+		option (google.api.http).get = "/lavanet/lava/epochstorage/provider_metadata/{provider}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -96,6 +102,14 @@ message QueryAllFixatedParamsRequest {
 message QueryAllFixatedParamsResponse {
 	repeated FixatedParams fixatedParams = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryProviderMetaDataRequest {
+	string provider = 1;
+}
+
+message QueryProviderMetaDataResponse {
+	repeated ProviderMetadata MetaData = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

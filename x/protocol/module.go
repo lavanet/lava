@@ -18,9 +18,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/protocol/client/cli"
-	"github.com/lavanet/lava/x/protocol/keeper"
-	"github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v5/x/protocol/client/cli"
+	"github.com/lavanet/lava/v5/x/protocol/keeper"
+	"github.com/lavanet/lava/v5/x/protocol/types"
 )
 
 var (
@@ -132,72 +132,59 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
-
 	// register v3 -> v4 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
-
 	// register v4 -> v5 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
-
 	// register v5 -> v6 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v6: %w", types.ModuleName, err))
 	}
-
 	// register v6 -> v7 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v7: %w", types.ModuleName, err))
 	}
-
 	// register v7 -> v8 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 7, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v8: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 8, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v9: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 9, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v10: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 10, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v11: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 11, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v12: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 12, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v13: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 13, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v14: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 14, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v15: %w", types.ModuleName, err))
 	}
-
 	if err := cfg.RegisterMigration(types.ModuleName, 15, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v16: %w", types.ModuleName, err))
@@ -206,10 +193,50 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v17: %w", types.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(types.ModuleName, 17, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v18: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 18, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v19: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 19, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v20: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 20, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v21: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 21, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v22: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 22, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v23: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 23, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v24: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 24, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v25: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 25, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v26: %w", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 26, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v27: %w", types.ModuleName, err))
+	}
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 17 }
+func (AppModule) ConsensusVersion() uint64 { return 27 }
 
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}

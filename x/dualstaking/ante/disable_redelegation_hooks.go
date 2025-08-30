@@ -7,8 +7,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/keeper"
 )
 
 // RedelegationFlager sets the dualstaking redelegation flag when needed.
@@ -22,7 +22,7 @@ func NewRedelegationFlager(dualstaking keeper.Keeper) RedelegationFlager {
 }
 
 func (rf RedelegationFlager) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	msgs, err := rf.unwrapAuthz(tx)
+	msgs, err := rf.unwrapAuthz(tx.GetMsgs())
 	if err != nil {
 		return ctx, err
 	}
@@ -35,15 +35,19 @@ func (rf RedelegationFlager) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 	return next(ctx, tx, simulate)
 }
 
-func (rf RedelegationFlager) unwrapAuthz(tx sdk.Tx) ([]sdk.Msg, error) {
+func (rf RedelegationFlager) unwrapAuthz(msgs []sdk.Msg) ([]sdk.Msg, error) {
 	var unwrappedMsgs []sdk.Msg
-	for _, txMsg := range tx.GetMsgs() {
+	for _, txMsg := range msgs {
 		if authzMsg, ok := txMsg.(*authz.MsgExec); ok {
-			msgs, err := authzMsg.GetMessages()
+			azmsgs, err := authzMsg.GetMessages()
 			if err != nil {
 				return nil, utils.LavaFormatError("could not unwrap authz from msgs", err)
 			}
-			unwrappedMsgs = append(unwrappedMsgs, msgs...)
+			azmsgs, err = rf.unwrapAuthz(azmsgs)
+			if err != nil {
+				return nil, err
+			}
+			unwrappedMsgs = append(unwrappedMsgs, azmsgs...)
 		} else {
 			unwrappedMsgs = append(unwrappedMsgs, txMsg)
 		}

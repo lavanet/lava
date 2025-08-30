@@ -5,10 +5,10 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	v1 "github.com/lavanet/lava/x/downtime/v1"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	v1 "github.com/lavanet/lava/v5/x/downtime/v1"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	timerstoretypes "github.com/lavanet/lava/v5/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -38,7 +38,9 @@ type TimerStoreKeeper interface {
 }
 
 type EpochstorageKeeper interface {
-	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
+	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
+	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
 }
 
 type DowntimeKeeper interface {
@@ -52,7 +54,7 @@ type StakingKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error)
 	// Methods imported from bank should be defined here
 }
 

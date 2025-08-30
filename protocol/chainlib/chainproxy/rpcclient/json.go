@@ -19,7 +19,6 @@ package rpcclient
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -28,15 +27,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/utils"
 )
 
 const (
-	Vsn                      = "2.0"
-	serviceMethodSeparator   = "_"
-	subscribeMethodSuffix    = "_subscribe"
-	unsubscribeMethodSuffix  = "_unsubscribe"
-	notificationMethodSuffix = "_subscription"
+	Vsn                              = "2.0"
+	serviceMethodSeparator           = "_"
+	subscribeMethodSuffix            = "_subscribe"
+	unsubscribeMethodSuffix          = "_unsubscribe"
+	ethereumNotificationMethodSuffix = "_subscription"
+	solanaNotificationMethodSuffix   = "Notification"
 
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
@@ -45,6 +47,11 @@ var null = json.RawMessage("null")
 
 type ethereumSubscriptionResult struct {
 	ID     string          `json:"subscription"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type integerIdSubscriptionResult struct {
+	ID     int             `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
@@ -63,12 +70,26 @@ type JsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+// BTCResponse represents a unified Bitcoin RPC response structure
+type BTCResponse struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   interface{}     `json:"error"`  // Can be *JsonError or string
+	Result  interface{}     `json:"result"` // Can be json.RawMessage or string
+}
+
 type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
 
+func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
+	return msg.ID == nil && msg.Method != "" && msg.Result != nil
+}
+
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
-	return msg.ID == nil && msg.Method != ""
+	return msg.ID == nil && msg.Method != "" && msg.Params != nil
 }
 
 func (msg *JsonrpcMessage) isTendermintNotification() bool {
@@ -145,6 +166,8 @@ type JsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+	Name    interface{} `json:"name,omitempty"`
+	Cause   interface{} `json:"cause,omitempty"`
 }
 
 func (err *JsonError) Error() string {
@@ -160,6 +183,20 @@ func (err *JsonError) ErrorCode() int {
 
 func (err *JsonError) ErrorData() interface{} {
 	return err.Data
+}
+
+func (err *JsonError) ToMap() map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"code":    err.Code,
+		"message": err.Message,
+		"data":    err.Data,
+		"name":    err.Name,
+		"cause":   err.Cause,
+	}
 }
 
 // Conn is a subset of the methods of net.Conn which are sufficient for ServerCodec.

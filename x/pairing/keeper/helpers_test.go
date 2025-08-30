@@ -2,16 +2,18 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testutil "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
+	testutil "github.com/lavanet/lava/v5/testutil/keeper"
+	dualstakingtypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	rewardstypes "github.com/lavanet/lava/v5/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,35 +74,49 @@ func (ts *tester) addValidators(count int) {
 
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
-	return ts.addProviderExtra(count, nil, 0, "prov") // default: endpoints, geolocation, moniker
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec) // default: endpoints, geolocation, moniker
+}
+
+// addProvider: with default endpoints, geolocation, moniker
+func (ts *tester) addProviderSpec(count int, spec string) error {
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.Spec(spec))
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
 func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
-	return ts.addProviderExtra(count, nil, geolocation, "prov")
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, geolocation, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec)
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	return ts.addProviderExtra(count, endpoints, 0, "prov")
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, endpoints, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details, ts.spec)
 }
 
-// addProviderMoniker: with moniker, and default endpoints, geolocation
-func (ts *tester) addProviderMoniker(count int, moniker string) error {
-	return ts.addProviderExtra(count, nil, 0, moniker)
+// addProviderDescription: with description, and default endpoints, geolocation
+func (ts *tester) addProviderDescription(count int, moniker string, identity string, website string, securityContact string, descriptionDetails string) error {
+	return ts.addProviderExtra(count, nil, 0, moniker, identity, website, securityContact, descriptionDetails, ts.spec)
 }
 
-// addProviderExtra: with mock endpoints, and preset geolocation, moniker
+// addProviderExtra: with mock endpoints, and preset geolocation, description details
 func (ts *tester) addProviderExtra(
 	count int,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
+	spec spectypes.Spec,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
-		err := ts.StakeProviderExtra(addr, ts.spec, testStake, endpoints, geoloc, moniker)
+		acc, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, spec, testStake, endpoints, geoloc, moniker, identity, website, securityContact, descriptionDetails)
 		if err != nil {
 			return err
 		}
@@ -137,14 +153,44 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	return ts
 }
 
+const (
+	GreatQos = iota
+	GoodQos
+	BadQos
+)
+
+func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pairingtypes.QualityOfServiceReport) {
+	ts.setupForPayments(0, 1, 5) // 0 providers, 1 client, default providers-to-pair
+
+	greatQos := pairingtypes.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
+	goodQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(3), Availability: sdk.OneDec(), Sync: sdk.NewDec(3)}
+	badQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
+
+	if modifyHalfLifeFactor {
+		// set half life factor to be epoch time
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &pairingtypes.QueryParamsRequest{})
+		require.NoError(ts.T, err)
+		resQParams.Params.ReputationHalfLifeFactor = uint64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+	}
+
+	// set min self delegation to zero
+	resQParams2, err := ts.Keepers.Dualstaking.Params(ts.GoCtx, &dualstakingtypes.QueryParamsRequest{})
+	require.NoError(ts.T, err)
+	resQParams2.Params.MinSelfDelegation = sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())
+	ts.Keepers.Dualstaking.SetParams(ts.Ctx, resQParams2.Params)
+
+	return ts, []pairingtypes.QualityOfServiceReport{greatQos, goodQos, badQos}
+}
+
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
-// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// The providerRewardPerc arg is the part of the provider reward after deducting
 // the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
-	providerAddr sdk.AccAddress,
+	providerVault sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
 	providerRewardPerc uint64,
@@ -215,11 +261,25 @@ func (ts *tester) payAndVerifyBalance(
 	require.Nil(ts.T, err)
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
-
-	// advance month + blocksToSave + 1 to trigger the provider monthly payment
-	ts.AdvanceMonths(1)
-	ts.AdvanceEpoch()
-	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	timeToExpiry := time.Unix(int64(sub.Sub.MonthExpiryTime), 0)
+	durLeft := sub.Sub.DurationLeft
+	if timeToExpiry.After(ts.Ctx.BlockTime()) && relayPayment.DescriptionString == exactConst {
+		ts.AdvanceTimeHours(timeToExpiry.Sub(ts.Ctx.BlockTime()))
+		// subs only pays after blocks to save
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+		if durLeft > 0 {
+			sub, err = ts.QuerySubscriptionCurrent(proj.Project.Subscription)
+			require.Nil(ts.T, err)
+			require.NotNil(ts.T, sub.Sub)
+			require.Equal(ts.T, durLeft-1, sub.Sub.DurationLeft, "month expiry time: %s current time: %s", time.Unix(int64(sub.Sub.MonthExpiryTime), 0).UTC(), ts.BlockTime().UTC())
+		}
+	} else {
+		// advance month + blocksToSave + 1 to trigger the provider monthly payment
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
 
 	// verify provider's balance
 	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
@@ -228,17 +288,17 @@ func (ts *tester) payAndVerifyBalance(
 		want = credit.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
 
-	balanceWant := ts.GetBalance(providerAddr) + want.Int64()
-	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
+	balanceWant := ts.GetBalance(providerVault) + want.Int64()
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerVault.String(), relayPayment.Creator, "")
 	require.Nil(ts.T, err)
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
-	require.True(ts.T, want.IsZero())
-	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
+	require.True(ts.T, want.IsZero(), want)
+	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
-	balance := ts.GetBalance(providerAddr) + want.Int64()
+	balance := ts.GetBalance(providerVault) + want.Int64()
 	require.Equal(ts.T, balanceWant, balance)
 }
 
@@ -289,4 +349,22 @@ func (ts *tester) newRelaySession(
 		RelayNum:    relay,
 	}
 	return relaySession
+}
+
+func (ts *tester) isProviderFrozen(provider string, chain string) bool {
+	res, err := ts.QueryPairingProvider(provider, chain)
+	require.NoError(ts.T, err)
+	foundChain := false
+	var isFrozen bool
+	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Address == provider && stakeEntry.Chain == chain {
+			foundChain = true
+			isFrozen = stakeEntry.IsFrozen()
+			break
+		}
+	}
+	if !foundChain {
+		require.Fail(ts.T, "provider not staked in chain", "provider: %s, chain: %s", provider, chain)
+	}
+	return isFrozen
 }

@@ -10,6 +10,7 @@ const (
 	APIInterfaceTendermintRPC = "tendermintrpc"
 	APIInterfaceRest          = "rest"
 	APIInterfaceGrpc          = "grpc"
+	ParserArgLatest           = "latest"
 )
 
 const (
@@ -54,6 +55,26 @@ func (s *PARSER_FUNC) UnmarshalJSON(b []byte) error {
 	}
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
 	*s = PARSER_FUNC(PARSER_FUNC_value[j])
+	return nil
+}
+
+// allows unmarshaling generic parser type
+func (s PARSER_TYPE) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(PARSER_TYPE_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (s *PARSER_TYPE) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'NO_PARSER' in this case.
+	*s = PARSER_TYPE(PARSER_TYPE_value[j])
 	return nil
 }
 
@@ -117,7 +138,7 @@ func (s *ParseValue_VerificationSeverity) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria uint32) bool {
+func IsFinalizedBlock(requestedBlock, latestBlock, finalizationCriteria int64) bool {
 	switch requestedBlock {
 	case NOT_APPLICABLE:
 		return false
@@ -126,7 +147,7 @@ func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria ui
 		if requestedBlock < 0 {
 			return false
 		}
-		if requestedBlock <= latestBlock-int64(finalizationCriteria) {
+		if requestedBlock <= latestBlock-finalizationCriteria {
 			return true
 		}
 	}

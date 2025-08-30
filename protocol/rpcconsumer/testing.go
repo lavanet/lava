@@ -10,15 +10,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	commonlib "github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider"
-	"github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	commonlib "github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,6 +31,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
 	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
 	for _, rpcProviderEndpoint := range rpcEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
@@ -68,17 +69,19 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:        blocksToSaveChainTracker,
-				AverageBlockTime:    averageBlockTime,
-				ServerBlockMemory:   rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback:   printOnNewLatestCallback,
-				ConsistencyCallback: consistencyErrorCallback,
+				BlocksToSave:          blocksToSaveChainTracker,
+				AverageBlockTime:      averageBlockTime,
+				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:     printOnNewLatestCallback,
+				ConsistencyCallback:   consistencyErrorCallback,
+				ParseDirectiveEnabled: true,
 			}
 			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: rpcProviderEndpoint, Cache: nil})
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
+			chainTracker.StartAndServe(ctx)
 			_ = chainTracker // let the chain tracker work and make queries
 			return nil
 		}(rpcProviderEndpoint)

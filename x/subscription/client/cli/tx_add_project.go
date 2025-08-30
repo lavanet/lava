@@ -6,11 +6,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/decoder"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/decoder"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
+	"github.com/lavanet/lava/v5/x/subscription/types"
 	"github.com/spf13/cobra"
 )
 

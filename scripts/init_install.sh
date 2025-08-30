@@ -40,6 +40,18 @@ if ! $jq_installed; then
 fi
 
 ############################# BUF INSTALLATION ######################################
+if ! command_exists protoc-gen-grpc-gateway; then
+    git clone https://github.com/grpc-ecosystem/grpc-gateway -b v1.16.0
+    cd grpc-gateway
+    go mod download
+    go install \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
+    github.com/golang/protobuf/protoc-gen-go
+    cd ..
+    rm -rf grpc-gateway
+fi
+  
 
 if ! command_exists buf; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -73,7 +85,7 @@ else
 fi
 
 if ! command_exists protoc-gen-gocosmos; then
-    git clone https://github.com/cosmos/gogoproto.git
+    git clone https://github.com/cosmos/gogoproto.git -b v1.4.9
     cd gogoproto
     go mod download
     make install

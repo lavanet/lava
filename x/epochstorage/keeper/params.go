@@ -4,55 +4,22 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.UnstakeHoldBlocksRaw(ctx),
 		k.EpochBlocksRaw(ctx),
 		k.EpochsToSaveRaw(ctx),
 		k.LatestParamChange(ctx),
-		k.UnstakeHoldBlocksStaticRaw(ctx),
 	)
 }
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
-}
-
-func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocks), block, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw returns the UnstakeHoldBlocks param
-func (k Keeper) UnstakeHoldBlocksRaw(ctx sdk.Context) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.paramstore.Get(ctx, types.KeyUnstakeHoldBlocks, &res)
-	return
-}
-
-func (k Keeper) UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocksStatic), block, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw returns the UnstakeHoldBlocks param
-func (k Keeper) UnstakeHoldBlocksStaticRaw(ctx sdk.Context) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.paramstore.Get(ctx, types.KeyUnstakeHoldBlocksStatic, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw sets the UnstakeHoldBlocks param
-func (k Keeper) SetUnstakeHoldBlocksStaticRaw(ctx sdk.Context, unstakeHoldBlocksStatic uint64) {
-	k.paramstore.Set(ctx, types.KeyUnstakeHoldBlocksStatic, unstakeHoldBlocksStatic)
 }
 
 // EpochBlocks returns the EpochBlocks fixated param
@@ -138,10 +105,14 @@ func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart
 	return targetEpochStart, blockInTargetEpoch, err
 }
 
+func CalculateNextEpochBlock(epochStart uint64, epochBlocks uint64) uint64 {
+	return epochStart + epochBlocks
+}
+
 func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error) {
 	epochBlocks, err := k.EpochBlocks(ctx, block)
 	epochStart, _, err2 := k.GetEpochStartForBlock(ctx, block)
-	nextEpoch = epochStart + epochBlocks
+	nextEpoch = CalculateNextEpochBlock(epochStart, epochBlocks)
 	if err != nil {
 		erro = err
 	} else if err2 != nil {
@@ -154,7 +125,7 @@ func (k Keeper) GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64) {
 	epochBlocks := k.EpochBlocksRaw(ctx)
 	details, found := k.GetEpochDetails(ctx)
 	if details.EarliestStart == details.StartBlock {
-		nextEpoch = details.StartBlock + epochBlocks
+		nextEpoch = CalculateNextEpochBlock(details.StartBlock, epochBlocks)
 		if !found {
 			utils.LavaFormatPanic("blabla", nil)
 		}

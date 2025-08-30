@@ -4,68 +4,50 @@ import (
 	"strconv"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
 func (k Keeper) SetDelegatorReward(ctx sdk.Context, delegatorReward types.DelegatorReward) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
-	index := types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator, delegatorReward.ChainId)
-	b := k.cdc.MustMarshal(&delegatorReward)
-	store.Set(types.DelegatorRewardKey(
-		index,
-	), b)
+	err := k.rewards.Set(ctx, types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator), delegatorReward)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // GetDelegatorReward returns a DelegatorReward from its index
-func (k Keeper) GetDelegatorReward(
-	ctx sdk.Context,
-	index string,
-) (val types.DelegatorReward, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
-
-	b := store.Get(types.DelegatorRewardKey(
-		index,
-	))
-	if b == nil {
-		return val, false
-	}
-
-	k.cdc.MustUnmarshal(b, &val)
-	return val, true
+func (k Keeper) GetDelegatorReward(ctx sdk.Context, provider, delegator string) (val types.DelegatorReward, found bool) {
+	val, err := k.rewards.Get(ctx, types.DelegationKey(provider, delegator))
+	return val, err == nil
 }
 
 // RemoveDelegatorReward removes a DelegatorReward from the store
 func (k Keeper) RemoveDelegatorReward(
 	ctx sdk.Context,
-	index string,
+	provider, delegator string,
 ) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
-	store.Delete(types.DelegatorRewardKey(
-		index,
-	))
+	err := k.rewards.Remove(ctx, types.DelegationKey(provider, delegator))
+	if err != nil {
+		panic(err)
+	}
 }
 
 // GetAllDelegatorReward returns all DelegatorReward
 func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorReward) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var val types.DelegatorReward
-		k.cdc.MustUnmarshal(iterator.Value(), &val)
-		list = append(list, val)
+	iter, err := k.rewards.Iterate(ctx, nil)
+	if err != nil {
+		panic(err)
 	}
 
-	return
+	list, err = iter.Values()
+	if err != nil {
+		panic(err)
+	}
+
+	return list
 }
 
 // The reward for servicing a consumer is divided between the provider and its delegators.
@@ -82,36 +64,27 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, totalReward sdk.Coins, delegations []types.Delegation) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
+func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfDelegation types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
 	zeroCoins := sdk.NewCoins()
-	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
+	totalDelegationsWithSelf := totalDelegations.Add(selfDelegation.Amount.Amount)
 
 	// Sanity check - effectiveStake != 0
-	if effectiveStake.IsZero() {
+	if totalDelegationsWithSelf.IsZero() {
 		return zeroCoins, zeroCoins
 	}
-	providerReward = totalReward.MulInt(stakeEntry.Stake.Amount).QuoInt(effectiveStake)
-	if !effectiveDelegations.IsZero() && stakeEntry.DelegateCommission != 0 {
-		rawDelegatorsReward := totalReward.MulInt(effectiveDelegations).QuoInt(effectiveStake)
-		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(stakeEntry.DelegateCommission)).QuoInt(sdk.NewInt(100))
+
+	if commission == 100 {
+		return totalReward, zeroCoins
+	}
+
+	providerReward = totalReward.MulInt(selfDelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
+	if !totalDelegations.IsZero() && commission != 0 {
+		rawDelegatorsReward := totalReward.MulInt(totalDelegations).QuoInt(totalDelegationsWithSelf)
+		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(commission)).QuoInt(sdk.NewInt(100))
 		providerReward = providerReward.Add(providerCommission...)
 	}
 
 	return providerReward, totalReward.Sub(providerReward...)
-}
-
-// CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
-// effectiveDelegations = min(totalDelegations, delegateLimit)
-// effectiveStake = effectiveDelegations + providerStake
-func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry, delegations []types.Delegation) (effectiveDelegations math.Int, effectiveStake math.Int) {
-	var totalDelegations int64
-	for _, d := range delegations {
-		totalDelegations += d.Amount.Amount.Int64()
-	}
-
-	effectiveDelegationsInt64 := math.Min(totalDelegations, stakeEntry.DelegateLimit.Amount.Int64())
-	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
-	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
@@ -150,9 +123,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	rewardCoins := sdk.NewCoins()
 	for _, reward := range res.Rewards {
 		rewardCoins = rewardCoins.Add(reward.Amount...)
-
-		ind := types.DelegationKey(reward.Provider, delegator, reward.ChainId)
-		k.RemoveDelegatorReward(ctx, ind)
+		k.RemoveDelegatorReward(ctx, reward.Provider, delegator)
 	}
 
 	// not minting new coins because they're minted when the provider
@@ -172,56 +143,76 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+// since this function does not actually send rewards to the providers and delegator (but only allocates rewards to be claimed)
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
-	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
+
+	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
-		return zeroCoins, zeroCoins, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+		return zeroCoins, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
-	stakeEntry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, provider, epoch)
-	if !found {
-		return zeroCoins, zeroCoins, err
-	}
 
-	delegations, err := k.GetProviderDelegators(ctx, provider, epoch)
+	delegations, err := k.GetProviderDelegators(ctx, provider)
 	if err != nil {
-		return zeroCoins, zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
+		return zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
 	}
-	claimableRewards = totalReward
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	contributorsNum := sdk.NewInt(int64(len(contributorAddresses)))
+	contributorReward := zeroCoins
 	if !contributorsNum.IsZero() && contributorPart.GT(math.LegacyZeroDec()) {
-		contributorReward := totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(sdk.NewInt(spectypes.ContributorPrecision))
+		contributorReward = totalReward.MulInt(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt()).QuoInt(sdk.NewInt(spectypes.ContributorPrecision))
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoInt(contributorsNum).MulInt(contributorsNum)
-		claimableRewards = totalReward.Sub(contributorReward...)
-		if !calcOnlyContributer {
+		if !calcOnlyContributor {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
-				return zeroCoins, zeroCoins, err
+				return zeroCoins, err
 			}
 		}
 	}
 
-	relevantDelegations := lavaslices.Filter(delegations,
-		func(d types.Delegation) bool {
-			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != d.Provider
-		})
+	relevantDelegations := []types.Delegation{}
+	totalDelegations := sdk.ZeroInt()
+	var selfDelegation types.Delegation
+	// fetch relevant delegations (those who are passed the first week of delegation), self delegation and sum the total delegations
+	for _, delegation := range delegations {
+		if delegation.Delegator == metadata.Vault {
+			selfDelegation = delegation
+			// we are normalizing all delegations according to the time they were staked,
+			// if the provider is staked less than a month that would handicap them so we need to adjust the provider stake as well
+			credit := k.CalculateMonthlyCredit(ctx, selfDelegation)
+			if credit.IsZero() {
+				// should never happen
+				continue
+			}
+			selfDelegation.Amount = credit
+		} else {
+			credit := k.CalculateMonthlyCredit(ctx, delegation)
+			if credit.IsZero() {
+				continue
+			}
+			// modify the delegation for reward calculation based on the time it was staked
+			delegation.Amount = credit
+			relevantDelegations = append(relevantDelegations, delegation)
+			totalDelegations = totalDelegations.Add(delegation.Amount.Amount)
+		}
+	}
 
-	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, totalReward.Sub(contributorReward...), totalDelegations, selfDelegation, metadata.DelegateCommission)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
+	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {
-		k.rewardDelegator(ctx, types.Delegation{Provider: provider, ChainID: chainID, Delegator: provider}, fullProviderReward, senderModule)
+		// reward provider's vault
+		k.rewardDelegator(ctx, types.Delegation{Provider: metadata.Provider, Delegator: metadata.Vault}, fullProviderReward, senderModule)
 	}
 
-	return fullProviderReward, claimableRewards, nil
+	return fullProviderReward, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
@@ -230,11 +221,9 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 
 	for _, delegation := range delegations {
 		delegatorReward := k.CalcDelegatorReward(ctx, delegatorsReward, totalDelegations, delegation)
-
 		if !calcOnly {
 			k.rewardDelegator(ctx, delegation, delegatorReward, senderModule)
 		}
-
 		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward...)
 	}
 
@@ -246,12 +235,10 @@ func (k Keeper) rewardDelegator(ctx sdk.Context, delegation types.Delegation, am
 		return
 	}
 
-	rewardMapKey := types.DelegationKey(delegation.Provider, delegation.Delegator, delegation.ChainID)
-	delegatorReward, found := k.GetDelegatorReward(ctx, rewardMapKey)
+	delegatorReward, found := k.GetDelegatorReward(ctx, delegation.Provider, delegation.Delegator)
 	if !found {
 		delegatorReward.Provider = delegation.Provider
 		delegatorReward.Delegator = delegation.Delegator
-		delegatorReward.ChainId = delegation.ChainID
 		delegatorReward.Amount = amount
 	} else {
 		delegatorReward.Amount = delegatorReward.Amount.Add(amount...)
@@ -271,8 +258,9 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 	}
 	rewardCoins := contributorReward.QuoInt(sdk.NewInt(int64(len(contributorAddresses))))
 	details := map[string]string{
-		"rewardCoins": rewardCoins.String(),
-		"specId":      specId,
+		"total_reward_coins":           contributorReward.String(),
+		"reward_coins_per_contributor": rewardCoins.String(),
+		"chain_id":                     specId,
 	}
 	leftRewards := contributorReward
 	for i, contributorAddress := range contributorAddresses {
@@ -286,7 +274,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 			return err
 		}
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributors rewards given")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "All contributors rewarded successfully")
 	if !leftRewards.IsZero() {
 		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		// we don;t want to bail on this

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	testcommon "github.com/lavanet/lava/v5/testutil/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -44,7 +44,7 @@ func TestAddChainFetcherAndSetSpecCallsValidate(t *testing.T) {
 	ctx := context.Background()
 
 	chainFetcher := chainlib.NewMockChainFetcherIf(ctrl)
-	var chainFetcherIf chainlib.ChainFetcherIf = chainFetcher
+	var chainFetcherIf chainlib.IChainFetcher = chainFetcher
 
 	chainFetcher.EXPECT().FetchEndpoint().AnyTimes()
 
@@ -83,7 +83,7 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 		chainFetcher.EXPECT().FetchEndpoint().AnyTimes()
 		firstCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1)
 
-		var chainFetcherIf chainlib.ChainFetcherIf = chainFetcher
+		var chainFetcherIf chainlib.IChainFetcher = chainFetcher
 		specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
 
 		chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Do(raiseCallCount)
@@ -118,7 +118,7 @@ func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) 
 
 	firstCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1)
 
-	var chainFetcherIf chainlib.ChainFetcherIf = chainFetcher
+	var chainFetcherIf chainlib.IChainFetcher = chainFetcher
 	specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
 
 	secondCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Return(errors.New(""))

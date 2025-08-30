@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.spec;
 
-option go_package = "github.com/lavanet/lava/x/spec/types";
+option go_package = "github.com/lavanet/lava/v5/x/spec/types";
 option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
@@ -61,10 +61,13 @@ message Header {
     pass_reply = 1;
     pass_both = 2;
     pass_ignore = 3; // allows it to pass around but is not signed
+    pass_nullify = 4; // removes a header from being sent to the node (for example, content-type)
+    pass_override = 5; // overrides a header value if header is present, adds the header if it’s missing.
   }
 
   HeaderType kind = 2;
   FUNCTION_TAG function_tag = 3;
+  string value = 4;
 }
 
 message Api {
@@ -75,6 +78,7 @@ message Api {
   SpecCategory category = 6 [(gogoproto.nullable) = false];
   BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
   uint64 timeout_ms = 8;
+  repeated GenericParser parsers = 9 [(gogoproto.nullable) = false];
 }
 
 message ParseDirective {
@@ -82,6 +86,7 @@ message ParseDirective {
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
+  repeated GenericParser parsers = 5 [(gogoproto.nullable) = false];
 }
 
 message BlockParser {
@@ -89,6 +94,13 @@ message BlockParser {
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
   string encoding =4; // used to parse byte responses: base64,hex,bech32
+}
+
+message GenericParser {
+  string parse_path = 1;
+  string value = 2;
+  PARSER_TYPE parse_type = 3;
+  string rule = 4;
 }
 
 enum EXTENSION {
@@ -104,6 +116,20 @@ enum FUNCTION_TAG {
   SET_LATEST_IN_BODY = 4;
   VERIFICATION = 5;
   GET_EARLIEST_BLOCK = 6;
+  SUBSCRIBE = 7;
+  UNSUBSCRIBE = 8;
+  UNSUBSCRIBE_ALL = 9;
+}
+
+enum PARSER_TYPE {
+  NO_PARSER = 0; // parsing is disabled
+  BLOCK_LATEST = 1; // parse the latest block
+  BLOCK_EARLIEST = 2; // parse the earliest block
+  RESULT = 3; // parse the result of the rpc call
+  EXTENSION_ARG = 4; // parse the extension argument (e.g. should we turn on an extension or not, based on the parsed value)
+  IDENTIFIER = 5; // parse the id of the rpc message
+  DEFAULT_VALUE = 6; // set the default value for the parsed result (currently used for block, after all other generic parsers failed)
+  BLOCK_HASH = 7; // parse the block hash
 }
 
 enum PARSER_FUNC{

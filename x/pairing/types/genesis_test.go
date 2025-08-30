@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,6 +80,20 @@ func TestGenesisState_Validate(t *testing.T) {
 						Project:                 "1",
 						ChainId:                 "1",
 						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
+					},
+				},
+				Reputations: []types.ReputationGenesis{
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
+					},
+					{
+						ChainId:    "1",
+						Cluster:    "1",
+						Provider:   "1",
+						Reputation: types.Reputation{},
 					},
 				},
 				// this line is used by starport scaffolding # types/genesis/validField
@@ -170,6 +184,27 @@ func TestGenesisState_Validate(t *testing.T) {
 						Project:                 "0",
 						ChainId:                 "0",
 						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated reputations",
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				Reputations: []types.ReputationGenesis{
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
+					},
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
 					},
 				},
 			},

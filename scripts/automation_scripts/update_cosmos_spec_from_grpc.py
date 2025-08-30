@@ -39,7 +39,7 @@ def parse_endpoints_from_grpcurl(grpc_url: str) -> dict[str, list[str]]:
     print("### Parsing endpoints from gRPC service")
 
     endpoints: dict[str, list[str]] = {"grpc": [], "rest": []}
-    content = os.popen(f"grpcurl -plaintext {grpc_url} describe").read()
+    content = os.popen(f"grpcurl --plaintext {grpc_url} describe").read()
 
     # Regex pattern to find services starting with their corresponding rpc and rest paths
     grpc_pattern = re.compile(
@@ -48,18 +48,20 @@ def parse_endpoints_from_grpcurl(grpc_url: str) -> dict[str, list[str]]:
     )
 
     rpc_pattern = re.compile(r"rpc (\w+) \(")
-    rest_pattern = re.compile(r'option \(.*?\) = {.*?get: "(.*?)"', re.DOTALL)
+    rest_pattern = re.compile(r'get:\s*"(.*?)"', re.DOTALL)
 
     # Finding all services that start with 'lavanet'
     for service_match in grpc_pattern.finditer(content):
         service_name, service_content = service_match.groups()
 
         if (
-            "cosmos" in service_content
-            or "cosmwasm" in service_content
+            "cosmwasm" in service_content
             or "ibc" in service_content
             or "grpc.reflection.v1alpha" in service_content
         ):
+            continue
+
+        if "cosmos" in service_content and "evm" not in service_content:
             continue
 
         # Extracting all grpc paths

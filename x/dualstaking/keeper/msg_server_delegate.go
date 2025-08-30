@@ -2,27 +2,21 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/x/dualstaking/types"
 )
 
 func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	return &types.MsgDelegateResponse{}, k.Keeper.DelegateFull(ctx, msg.Creator, msg.Validator, msg.Provider, msg.ChainID, msg.Amount)
+	return &types.MsgDelegateResponse{}, k.Keeper.DelegateFull(ctx, msg.Creator, msg.Validator, msg.Provider, msg.Amount, false)
 }
 
 // DelegateFull uses staking module for to delegate with hooks
-func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error {
-	_, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found && chainID != types.EMPTY_PROVIDER_CHAINID {
-		return utils.LavaFormatWarning("invalid chain ID", fmt.Errorf("chain ID not found"),
-			utils.LogAttr("chain_id", chainID))
-	}
-
+func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error {
 	valAddr, valErr := sdk.ValAddressFromBech32(validator)
 	if valErr != nil {
 		return valErr
@@ -46,9 +40,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
-
-	delegation, found := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+	delegation, found := k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
 	amountBefore := sdk.ZeroInt()
 	if found {
 		amountBefore = delegation.Amount.Amount
@@ -59,18 +51,17 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	delegation, _ = k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+	delegation, _ = k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
 
 	amount.Amount = delegation.Amount.Amount.Sub(amountBefore)
 
 	err = k.Redelegate(
 		ctx,
 		delegator,
-		types.EMPTY_PROVIDER,
+		commontypes.EMPTY_PROVIDER,
 		provider,
-		types.EMPTY_PROVIDER_CHAINID,
-		chainID,
 		amount,
+		stake,
 	)
 
 	if err == nil {
@@ -78,7 +69,6 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		details := map[string]string{
 			"delegator": delegator,
 			"provider":  provider,
-			"chainID":   chainID,
 			"amount":    amount.String(),
 		}
 		utils.LogLavaEvent(ctx, logger, types.DelegateEventName, details, "Delegate")

@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/testutil/network"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/epochstorage/client/cli"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/testutil/network"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/epochstorage/client/cli"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 func networkWithEpochDetailsObjects(t *testing.T) (*network.Network, types.EpochDetails) {
@@ -49,8 +49,8 @@ func TestShowEpochDetails(t *testing.T) {
 			obj:  obj,
 		},
 	} {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
 			var args []string
 			args = append(args, tc.args...)
 			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowEpochDetails(), args)

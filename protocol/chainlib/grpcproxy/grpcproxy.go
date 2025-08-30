@@ -3,15 +3,18 @@ package grpcproxy
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -27,6 +30,7 @@ type HealthReporter interface {
 func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter) (*grpc.Server, *http.Server, error) {
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}), serverReceiveMaxMessageSize)
+	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
@@ -79,7 +83,18 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 		if err != nil {
 			return err
 		}
-		stream.SetHeader(md)
+
+		// Convert metadata keys to lowercase
+		lowercaseMD := metadata.New(map[string]string{})
+		for k, v := range md {
+			lowerKey := strings.ToLower(k)
+			lowercaseMD[lowerKey] = v
+		}
+		md = lowercaseMD
+
+		if err := stream.SetHeader(md); err != nil {
+			utils.LavaFormatError("Got error when setting header", err, utils.LogAttr("headers", md))
+		}
 		return stream.SendMsg(respBytes)
 	}
 }
@@ -97,7 +112,7 @@ func (RawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 func (RawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	bufferPtr, ok := v.(*[]byte)
 	if !ok {
-		return utils.LavaFormatError("cannot decode into type", nil, utils.Attribute{Key: "v", Value: v})
+		return utils.LavaFormatDebug("cannot decode into type", utils.LogAttr("v", v), utils.LogAttr("data", data))
 	}
 	*bufferPtr = data
 	return nil

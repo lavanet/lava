@@ -8,7 +8,7 @@ import (
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	_ "github.com/lavanet/lava/x/spec/types"
+	_ "github.com/lavanet/lava/v5/x/spec/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,8 +26,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // The geolocation values are encoded as bits in a bitmask, with two special values:
-// GLS is set to 0 so it will be restrictive with the AND operator.
-// GL is set to -1 so it will be permissive with the AND operator.
+// GLS is set to 0 so it will be restrictive with the AND provider.
+// GL is set to -1 so it will be permissive with the AND provider.
 type Geolocation int32
 
 const (

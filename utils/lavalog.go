@@ -30,15 +30,16 @@ const (
 	LAVA_LOG_ERROR
 	LAVA_LOG_FATAL
 	LAVA_LOG_PANIC
+	LAVA_LOG_PRODUCTION
 	NoColor = true
 )
 
 var (
 	JsonFormat = false
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
-	ExtendedLogLevel = "development"
-	rollingLogLogger = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
-	globalLogLevel   = zerolog.TraceLevel
+	ExtendedLogLevel      = "development"
+	rollingLogLogger      = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
+	defaultGlobalLogLevel = zerolog.DebugLevel
 )
 
 type Attribute struct {
@@ -94,7 +95,7 @@ func getLogLevel(logLevel string) zerolog.Level {
 func SetGlobalLoggingLevel(logLevel string) {
 	// setting global level prevents us from having two different levels for example one for stdout and one for rolling log.
 	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
-	globalLogLevel = getLogLevel(logLevel)
+	defaultGlobalLogLevel = getLogLevel(logLevel)
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
@@ -198,6 +199,13 @@ func StrValue(val interface{}) string {
 		st_val = strconv.FormatUint(value, 10)
 	case error:
 		st_val = value.Error()
+	case []error:
+		for _, err := range value {
+			if err == nil {
+				continue
+			}
+			st_val += err.Error() + ";"
+		}
 	case []string:
 		st_val = strings.Join(value, ",")
 	// needs to come after stringer so byte inheriting objects will use their string method if implemented (like AccAddress)
@@ -214,9 +222,21 @@ func StrValue(val interface{}) string {
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if JsonFormat {
-		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(globalLogLevel)
+		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
 	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(globalLogLevel)
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+	}
+
+	// depending on the build flag, this log function will log either a warning or an error.
+	// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
+	// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
+	// in test environment we don't expect to have these errors and if they occur we would like to fail the test.
+	if severity == LAVA_LOG_PRODUCTION {
+		if ExtendedLogLevel == "production" {
+			severity = LAVA_LOG_WARN
+		} else {
+			severity = LAVA_LOG_ERROR
+		}
 	}
 
 	var logEvent *zerolog.Event
@@ -279,7 +299,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
-		return fmt.Errorf(output)
+		return fmt.Errorf("%s", output)
 	}
 	return errRet
 }
@@ -294,16 +314,9 @@ func LavaFormatFatal(description string, err error, attributes ...Attribute) {
 	LavaFormatLog(description, err, attributes, LAVA_LOG_FATAL)
 }
 
-// depending on the build flag, this log function will log either a warning or an error.
-// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
-// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
-// in test environment we dont expect to have these errors and if they occur we would like to fail the test.
+// see documentation in LavaFormatLog function
 func LavaFormatProduction(description string, err error, attributes ...Attribute) error {
-	if ExtendedLogLevel == "production" {
-		return LavaFormatWarning(description, err, attributes...)
-	} else {
-		return LavaFormatError(description, err, attributes...)
-	}
+	return LavaFormatLog(description, err, attributes, LAVA_LOG_PRODUCTION)
 }
 
 func LavaFormatError(description string, err error, attributes ...Attribute) error {
@@ -326,6 +339,10 @@ func LavaFormatTrace(description string, attributes ...Attribute) error {
 	return LavaFormatLog(description, nil, attributes, LAVA_LOG_TRACE)
 }
 
+func IsTraceLogLevelEnabled() bool {
+	return defaultGlobalLogLevel == zerolog.TraceLevel
+}
+
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
 	st := ""
 	for _, printable := range listToPrint {
@@ -342,4 +359,8 @@ func FormatLongString(msg string, maxCharacters int) string {
 		return msg[:prefixLen] + "...truncated..." + msg[len(msg)-postfixLen:]
 	}
 	return msg
+}
+
+func ToHexString(hash string) string {
+	return fmt.Sprintf("%x", hash)
 }

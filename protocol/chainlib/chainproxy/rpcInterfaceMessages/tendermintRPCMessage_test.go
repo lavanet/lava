@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,8 +59,6 @@ func TestTendermintrpcMessage_ParseBlock(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -111,8 +109,6 @@ func TestGetTendermintRPCError(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -153,8 +149,8 @@ func TestConvertErrorToRPCError(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			errMsg := ""
 
 			if testCase.err != nil {
@@ -205,9 +201,8 @@ func TestIdFromRawMessage(t *testing.T) {
 	}
 
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := IdFromRawMessage(testCase.rawID)
 			if testCase.expectedErr == false {
 				assert.Equal(t, testCase.expectedResult, result)
@@ -308,8 +303,6 @@ func TestConvertTendermintMsg(t *testing.T) {
 		},
 	}
 	for _, testCase := range testTable {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			res, err := ConvertTendermintMsg(testCase.rpcMsg)

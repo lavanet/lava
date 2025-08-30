@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,19 +11,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -60,7 +61,12 @@ func (apip *TendermintChainParser) getSupportedApi(name, connectionType string) 
 
 func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -84,7 +90,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 		return nil, err
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.ApiName}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, &tenderMsg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection, false), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -126,19 +132,28 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		msg.Params = params
 		msgs = []rpcInterfaceMessages.JsonrpcMessage{msg}
 	}
-	if len(msgs) == 0 {
+
+	msgsLength := len(msgs)
+
+	if msgsLength == 0 {
 		return nil, errors.New("empty unmarshaled json")
 	}
 
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
-	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	var latestRequestedBlock, earliestRequestedBlock int64 = 0, spectypes.LATEST_BLOCK
+	blockHashes := []string{}
+	parsedDefault := true
 	for idx, msg := range msgs {
-		var requestedBlockForMessage int64
+		parsedInput := parser.NewParsedInput()
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatDebug("getSupportedApi tendermintrpc failed",
+				utils.LogAttr("method", msg.Method),
+				utils.LogAttr("connectionType", connectionType),
+				utils.LogAttr("error", err),
+			)
 			return nil, err
 		}
 
@@ -153,28 +168,34 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
-			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-					utils.LogAttr("chain", apip.spec.Name),
-					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-					utils.LogAttr("apiName", apiCont.api.Name),
-					utils.LogAttr("connectionType", "tendermintRPC"),
-				)
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+			parsedInput = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing, apiCont.api.Parsers)
+			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
+				blockHashes = append(blockHashes, hashes...)
+			}
+			if !parsedInput.UsedDefaultValue {
+				parsedDefault = false
 			}
 		} else {
-			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
+			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
+			parsedInput.SetBlock(parsedBlock)
 			if err != nil {
-				utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+				utils.LavaFormatError("failed parsing block from an overwrite header", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
+				)
+				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+			} else {
+				parsedInput.UsedDefaultValue = false
 			}
 		}
+
+		parsedBlock := parsedInput.GetBlock()
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
-			latestRequestedBlock = requestedBlockForMessage
+			latestRequestedBlock = parsedBlock
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -209,20 +230,23 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					Encoding:     "",
 				},
 			}
-			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
+		}
+
+		if msgsLength > 1 {
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, earliestRequestedBlock, parsedBlock)
 		}
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if len(msgs) == 1 {
+	if msgsLength == 1 {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &tenderMsg, apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
 		var err error
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +256,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -241,20 +265,32 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+// overwritten because tendermintrpc doesnt use POST but an empty connecionType
+func (apip *TendermintChainParser) ExtractDataFromRequest(request *http.Request) (url string, data string, connectionType string, metadata []pairingtypes.Metadata, err error) {
+	url, data, _, metadata, err = apip.BaseChainParser.ExtractDataFromRequest(request)
+	return url, data, "", metadata, err
+}
+
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		usedDefaultValue:         usedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -272,7 +308,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -310,11 +346,14 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 }
 
 type TendermintRpcChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint                      *lavasession.RPCEndpoint
+	relaySender                   RelaySender
+	healthReporter                HealthReporter
+	logger                        *metrics.RPCConsumerLogs
+	refererData                   *RefererData
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -322,14 +361,17 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
+		endpoint:                      listenEndpoint,
+		relaySender:                   relaySender,
+		healthReporter:                healthReporter,
+		logger:                        rpcConsumerLogs,
+		refererData:                   refererData,
+		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -348,6 +390,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	apiInterface := apil.endpoint.ApiInterface
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -357,90 +400,38 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		var (
-			mt  int
-			msg []byte
-			err error
-		)
-		msgSeed := apil.logger.GetMessageSeed()
-		startTime := time.Now()
-		for {
-			if mt, msg, err = websocketConn.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-				break
-			}
-			dappID, ok := websocketConn.Locals("dappId").(string)
-			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-			}
-
-			ctx, cancel := context.WithCancel(context.Background())
-			guid := utils.GenerateUniqueIdentifier()
-			ctx = utils.WithUniqueIdentifier(ctx, guid)
-			defer cancel() // incase there's a problem make sure to cancel the connection
-
-			logFormattedMsg := string(msg)
-			if !cmdFlags.DebugRelays {
-				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
-			}
-
-			utils.LavaFormatDebug("ws in <<<",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("seed", msgSeed),
-				utils.LogAttr("msg", logFormattedMsg),
-				utils.LogAttr("dappID", dappID),
-			)
-			msgSeed = strconv.FormatUint(guid, 10)
-			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
-			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websocketConn)
-			}
-			reply := relayResult.GetReply()
-			replyServer := relayResult.GetReplyServer()
-			go apil.logger.AddMetricForWebSocket(metricsData, err, websocketConn)
-			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-				continue
-			}
-			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
-			if replyServer != nil {
-				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
-				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-
-				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				for {
-					err = (*replyServer).RecvMsg(&reply)
-					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-						break
-					}
-
-					// If portal cant write to the client
-					if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-						// break
-					}
-					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				}
-			} else {
-				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-			}
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
 		}
+
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
+		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+
+		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
+			WebsocketConn:                 websocketConn,
+			RpcConsumerLogs:               apil.logger,
+			RefererMatchString:            refererMatchString,
+			CmdFlags:                      cmdFlags,
+			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
+			ChainID:                       chainID,
+			ApiInterface:                  apiInterface,
+			ConnectionType:                "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:                   apil.refererData,
+			RelaySender:                   apil.relaySender,
+			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
+		})
+
+		consumerWebsocketManager.ListenToMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)
@@ -454,6 +445,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -476,9 +468,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
@@ -513,7 +506,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		response := string(reply.Data)
 		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 
 	handlerGet := func(fiberCtx *fiber.Ctx) error {
@@ -531,6 +526,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 		utils.LavaFormatDebug("urirpc in <<<",
@@ -539,13 +535,11 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		if refererMatch != "" && apil.refererData != nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, metadataValues, nil)
-		}
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
 		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
@@ -581,7 +575,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 
 	if apil.refererData != nil && apil.refererData.Marker != "" {
@@ -603,15 +599,24 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	app.Get("/*", handlerGet)
 	//
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *TendermintRpcChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	httpNodeUrl   common.NodeUrl
-	httpConnector *chainproxy.Connector
-	httpClient    *http.Client
+	httpClient *http.Client
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -619,26 +624,23 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
-	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID}, conn: map[string]*chainproxy.Connector{}},
-		httpNodeUrl:    httpUrl,
-		httpConnector:  nil,
-	}
-	cp.addHttpConnector(ctx, nConns, httpUrl)
-	return cp, cp.start(ctx, nConns, websocketUrl, nil)
-}
 
-func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
-	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-	if err != nil {
-		return err
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceTendermintRPC)
+
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	cp := &tendermintRpcChainProxy{
+		JrpcChainProxy: JrpcChainProxy{
+			BaseChainProxy: BaseChainProxy{
+				averageBlockTime: averageBlockTime,
+				NodeUrl:          nodeUrl,
+				ErrorHandler:     &TendermintRPCErrorHandler{},
+				ChainID:          rpcProviderEndpoint.ChainID,
+			},
+			conn: nil,
+		},
 	}
-	cp.httpConnector = conn
-	if cp.httpConnector == nil {
-		return errors.New("g_conn == nil")
-	}
-	return nil
+
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
@@ -669,22 +671,27 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		// return an error if the channel is not nil
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil)
 	}
+
 	if cp.httpClient == nil {
 		cp.httpClient = &http.Client{
 			Timeout: 5 * time.Minute, // we are doing a timeout by request
 		}
 	}
+
 	httpClient := cp.httpClient
 
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
+
 	// construct the url by concatenating the node url with the path variable
-	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
+	url := cp.NodeUrl.Url + "/" + nodeMessage.Path
 
 	// set context with timeout
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 
 	// create a new http request
-	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.httpNodeUrl.AuthConfig.AddAuthPath(url), nil)
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.NodeUrl.AuthConfig.AddAuthPath(url), nil)
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -701,15 +708,14 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		}
 	}
 
-	cp.httpNodeUrl.SetAuthHeaders(ctx, req.Header.Set)
+	cp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
-	cp.httpNodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 	// send the http request and get the response
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))) // we ignore this error here since this code can be triggered not from grpc
 	}
 	if err != nil {
 		return nil, "", nil, err
@@ -751,26 +757,18 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
 	var rpc *rpcclient.Client
-	if ch != nil {
-		internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-		rpc, err = cp.conn[internalPath].GetRpc(ctx, true)
-		if err != nil {
-			return nil, "", nil, err
-		}
-		// return the rpc connection to the websocket pool after the function completes
-		defer cp.conn[internalPath].ReturnRpc(rpc)
-	} else {
-		rpc, err = cp.httpConnector.GetRpc(ctx, true)
-		if err != nil {
-			return nil, "", nil, err
-		}
-		// return the rpc connection to the http pool after the function completes
-		defer cp.httpConnector.ReturnRpc(rpc)
+	rpc, err = cp.conn.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
 	}
+	// return the rpc connection to the websocket pool after the function completes
+	defer cp.conn.ReturnRpc(rpc)
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *rpcInterfaceMessages.RPCResponse
 	var sub *rpcclient.ClientSubscription
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
@@ -780,9 +778,17 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 	}
 	// If ch is not nil do subscription
+	var nodeErr error
 	if ch != nil {
 		// subscribe to the rpc call if the channel is not nil
-		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+		utils.LavaFormatTrace("Sending subscription",
+			utils.LogAttr("chainID", cp.BaseChainProxy.ChainID),
+			utils.LogAttr("apiName", chainMessage.GetApi().Name),
+			utils.LogAttr("nodeMessage.ID", nodeMessage.ID),
+			utils.LogAttr("nodeMessage.Method", nodeMessage.Method),
+			utils.LogAttr("nodeMessage.Params", nodeMessage.Params),
+		)
+		sub, rpcMessage, nodeErr = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// set context with timeout
 		connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
@@ -790,14 +796,14 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		// perform the rpc call
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
-		if err != nil {
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
-				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
+		if nodeErr != nil {
+			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
-			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
+			if parsedError := cp.HandleNodeError(ctx, nodeErr); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}
@@ -805,32 +811,34 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
-	if err != nil {
-		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		return nil, "", nil, err
-	} else {
-		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err)
+	if nodeErr != nil {
+		rpcMessage = TryRecoverNodeErrorFromClientError(nodeErr)
+		if rpcMessage == nil {
+			utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+			return nil, "", nil, nodeErr
 		}
-		// if we didn't get a node error.
-		if replyMessage.Error == nil {
-			// validate result is valid
-			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
-			if responseIsNilValidationError != nil {
-				return nil, "", nil, responseIsNilValidationError
-			}
-		}
-		replyMsg = replyMessage
+	}
 
-		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
-				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
-				utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
-			)
+	replyMsg, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("tendermintRPC error", err)
+	}
+
+	// if we didn't get a node error.
+	if replyMsg.Error == nil {
+		// validate result is valid
+		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
+		if responseIsNilValidationError != nil {
+			return nil, "", nil, responseIsNilValidationError
 		}
+	}
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
+			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+		)
 	}
 
 	// marshal the jsonrpc message to json
@@ -857,7 +865,9 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		subscriptionID, ok = paramsMap["query"].(string)
 		if !ok {
-			return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil)
+			utils.LavaFormatTrace("could not get subscriptionID from query params", utils.LogAttr("params", params))
+			// This is probably because of a misuse, therefore the provider will return a node error to the user as the subscription failed
+			subscriptionID = ""
 		}
 	}
 

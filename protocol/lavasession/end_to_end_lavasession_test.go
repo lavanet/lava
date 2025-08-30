@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +28,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 	successfulRelays++
 
 	for i := 0; i < len(consumerVirtualEpochs); i++ {
-		css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, consumerVirtualEpochs[i]) // get a session
+		css, err := csm.GetSessions(ctx, 1, maxCuForVirtualEpoch, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, consumerVirtualEpochs[i], "") // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css {
@@ -72,7 +72,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 				err = psm.OnSessionDone(sps, cs.Session.RelayNum-skippedRelays)
 				require.NoError(t, err)
 
-				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
+				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false, nil)
 				require.NoError(t, err)
 			}
 
@@ -92,7 +92,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 	csm, psm, ctx := prepareSessionsWithFirstRelay(t, maxCuForVirtualEpoch)
 
-	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch) // get a session
+	css, err := csm.GetSessions(ctx, 1, maxCuForVirtualEpoch, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -146,7 +146,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 1)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
-	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Client: nil, ConnectionRefusals: 0}
+	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}, ConnectionRefusals: 0}
 	cswpList[0] = &ConsumerSessionsWithProvider{
 		PublicLavaAddress: "provider",
 		Endpoints:         pairingEndpoints,
@@ -157,7 +157,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -195,7 +195,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 		require.NoError(t, err)
 
 		// Consumer Side:
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)

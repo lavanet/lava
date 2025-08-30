@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 const (
@@ -24,15 +24,15 @@ var (
 type SpecValidator struct {
 	lock sync.RWMutex
 
-	chainFetchers     map[string][]*chainlib.ChainFetcherIf // key is chainId
-	providerListeners map[string]*ProviderListener          // key is address
-	skipValidations   map[string]struct{}                   // key is a validation name to skip
+	chainFetchers     map[string][]*chainlib.IChainFetcher // key is chainId
+	providerListeners map[string]*ProviderListener         // key is address
+	skipValidations   map[string]struct{}                  // key is a validation name to skip
 }
 
 func NewSpecValidator() *SpecValidator {
 	return &SpecValidator{
 		lock:              sync.RWMutex{},
-		chainFetchers:     make(map[string][]*chainlib.ChainFetcherIf),
+		chainFetchers:     make(map[string][]*chainlib.IChainFetcher),
 		providerListeners: make(map[string]*ProviderListener),
 		skipValidations:   make(map[string]struct{}),
 	}
@@ -72,7 +72,7 @@ func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
 	}
 }
 
-func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher *chainlib.ChainFetcherIf, chainId string) error {
+func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher *chainlib.IChainFetcher, chainId string) error {
 	sv.lock.Lock()
 	defer sv.lock.Unlock()
 	err := (*chainFetcher).Validate(ctx)
@@ -81,7 +81,7 @@ func (sv *SpecValidator) AddChainFetcher(ctx context.Context, chainFetcher *chai
 	}
 
 	if _, found := sv.chainFetchers[chainId]; !found {
-		sv.chainFetchers[chainId] = []*chainlib.ChainFetcherIf{}
+		sv.chainFetchers[chainId] = []*chainlib.IChainFetcher{}
 	}
 	sv.chainFetchers[chainId] = append(sv.chainFetchers[chainId], chainFetcher)
 
@@ -111,7 +111,7 @@ func (sv *SpecValidator) Active() bool {
 	return true
 }
 
-func (sv *SpecValidator) getRpcProviderEndpointFromChainFetcher(chainFetcher *chainlib.ChainFetcherIf) *lavasession.RPCEndpoint {
+func (sv *SpecValidator) getRpcProviderEndpointFromChainFetcher(chainFetcher *chainlib.IChainFetcher) *lavasession.RPCEndpoint {
 	endpoint := (*chainFetcher).FetchEndpoint()
 	return &lavasession.RPCEndpoint{
 		NetworkAddress: endpoint.NetworkAddress.Address,

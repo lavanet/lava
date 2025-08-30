@@ -3,22 +3,22 @@ package chainlib
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
-	"github.com/lavanet/lava/protocol/parser"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy"
+	dyncodec "github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,15 +29,15 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
@@ -47,25 +47,6 @@ const GRPCStatusCodeOnFailedMessages = 32
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 	ErrorCode    uint32 `json:"error_code"`
-}
-
-type grpcDescriptorCache struct {
-	cachedDescriptors sync.Map // method name is the key, method descriptor is the value
-}
-
-func (gdc *grpcDescriptorCache) getDescriptor(methodName string) *desc.MethodDescriptor {
-	if descriptor, ok := gdc.cachedDescriptors.Load(methodName); ok {
-		converted, success := descriptor.(*desc.MethodDescriptor) // convert to a descriptor
-		if success {
-			return converted
-		}
-		utils.LavaFormatError("Failed Converting method descriptor", nil, utils.Attribute{Key: "Method", Value: methodName})
-	}
-	return nil
-}
-
-func (gdc *grpcDescriptorCache) setDescriptor(methodName string, descriptor *desc.MethodDescriptor) {
-	gdc.cachedDescriptors.Store(methodName, descriptor)
 }
 
 type GrpcChainParser struct {
@@ -134,7 +115,9 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
+	parsedInput := &parser.ParsedInput{}
+	parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+	return apip.newChainMessage(apiCont.api, parsedInput, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -147,7 +130,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Check API is supported and save it in nodeMsg.
 	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
+		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, utils.LogAttr("url", url), utils.LogAttr("connectionType", connectionType))
 	}
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -171,39 +154,41 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	blockParser := apiCont.api.BlockParsing
-	var requestedBlock int64
+	api := apiCont.api
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
-		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser)
-		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-				utils.LogAttr("chain", apip.spec.Name),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("apiName", apiCont.api.Name),
-				utils.LogAttr("connectionType", "grpc"),
-			)
-			requestedBlock = spectypes.NOT_APPLICABLE
-		}
+		parsedInput = parser.ParseBlockFromParams(grpcMessage, api.BlockParsing, api.Parsers)
 	} else {
-		requestedBlock, err = grpcMessage.ParseBlock(overwriteReqBlock)
+		parsedBlock, err := grpcMessage.ParseBlock(overwriteReqBlock)
+		parsedInput.SetBlock(parsedBlock)
 		if err != nil {
-			utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteRequestedBlock", Value: overwriteReqBlock})
-			requestedBlock = spectypes.NOT_APPLICABLE
+			utils.LavaFormatError("failed parsing block from an overwrite header", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
+			)
+			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
+		} else {
+			parsedInput.UsedDefaultValue = false
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	requestedBlock := parsedInput.GetBlock()
+	requestedHashes, _ := parsedInput.GetBlockHashes()
 	nodeMsg := &baseChainMessageContainer{
 		api:                      api,
 		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
+		parseDirective:           GetParseDirective(api, apiCollection),
+		usedDefaultValue:         parsedInput.UsedDefaultValue,
 	}
 	return nodeMsg
 }
@@ -221,7 +206,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -259,12 +244,13 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type GrpcChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	logger         *metrics.RPCConsumerLogs
-	chainParser    *GrpcChainParser
-	healthReporter HealthReporter
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	logger           *metrics.RPCConsumerLogs
+	chainParser      *GrpcChainParser
+	healthReporter   HealthReporter
+	refererData      *RefererData
+	listeningAddress string
 }
 
 func NewGrpcChainListener(
@@ -278,12 +264,12 @@ func NewGrpcChainListener(
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
-		listenEndpoint,
-		relaySender,
-		rpcConsumerLogs,
-		chainParser.(*GrpcChainParser),
-		healthReporter,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		logger:         rpcConsumerLogs,
+		chainParser:    chainParser.(*GrpcChainParser),
+		healthReporter: healthReporter,
+		refererData:    refererData,
 	}
 	return chainListener
 }
@@ -296,6 +282,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
+	apil.listeningAddress = lis.Addr().String()
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
 		if method == "grpc.reflection.v1.ServerReflection/ServerReflectionInfo" {
@@ -317,6 +304,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", grpcHeaders),
 		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		consumerIp := common.GetIpFromGrpcContext(ctx)
 		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
 		relayReply := relayResult.GetReply()
@@ -324,10 +312,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
-			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
-			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
+			apil.logger.LogRequestAndResponse("grpc in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
+			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf("%s", errMasking))
 		}
-		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, apil.endpoint.ChainID, apiInterface)
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}
@@ -376,10 +365,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 }
 
+func (apil *GrpcChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
+}
+
 type GrpcChainProxy struct {
 	BaseChainProxy
 	conn             grpcConnectorInterface
-	descriptorsCache *grpcDescriptorCache
+	descriptorsCache *common.SafeSyncMap[string, *desc.MethodDescriptor]
 }
 type grpcConnectorInterface interface {
 	Close()
@@ -403,8 +396,8 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 
 func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
-		descriptorsCache: &grpcDescriptorCache{},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID, HashedNodeUrl: chainproxy.HashURL(rpcProviderEndpoint.NodeUrls[0].Url)},
+		descriptorsCache: &common.SafeSyncMap[string, *desc.MethodDescriptor]{},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -439,6 +432,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	defer cp.conn.ReturnRpc(conn)
 
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.BaseChainProxy.HashedNodeUrl))
+
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
 	if !ok {
@@ -459,9 +455,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 
-	// check if we have method descriptor already cached.
-	methodDescriptor := cp.descriptorsCache.getDescriptor(methodName)
-	if methodDescriptor == nil { // method descriptor not cached yet, need to fetch it and add to cache
+	// Check if we have method descriptor already cached.
+	// The reason we do Load and then Store here, instead of LoadOrStore:
+	// On the worst case scenario, where 2 threads are accessing the map at the same time, the same descriptor will be stored twice.
+	// It is better than the alternative, which is always creating the descriptor, since the outcome is the same.
+	methodDescriptor, found, _ := cp.descriptorsCache.Load(methodName)
+	if !found { // method descriptor not cached yet, need to fetch it and add to cache
 		var descriptor desc.Descriptor
 		if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
 			return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
@@ -476,7 +475,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 
 		// add the descriptor to the chainProxy cache
-		cp.descriptorsCache.setDescriptor(methodName, methodDescriptor)
+		cp.descriptorsCache.Store(methodName, methodDescriptor)
 	}
 
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
@@ -521,13 +520,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: metadataMap},
-			utils.Attribute{Key: "apiInterface", Value: "grpc"},
-		)
-	}
+
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", metadataMap),
+		utils.LogAttr("apiInterface", "grpc"),
+	)
+
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
@@ -545,8 +544,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, handlingError
 		}
 		// set status code for user header
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))) // we ignore this error here since this code can be triggered not from grpc
 		reply := &RelayReplyWrapper{
 			StatusCode: int(statusCode),
 			RelayReply: &pairingtypes.RelayReply{
@@ -564,8 +562,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	// set response status code
 	validResponseStatus := http.StatusOK
-	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))
-	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))) // we ignore this error here since this code can be triggered not from grpc
 	// create reply wrapper
 	reply := &RelayReplyWrapper{
 		StatusCode: validResponseStatus, // status code is used only for rest at the moment

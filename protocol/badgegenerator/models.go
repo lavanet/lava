@@ -1,6 +1,6 @@
 package badgegenerator
 
-import "github.com/lavanet/lava/x/pairing/types"
+import "github.com/lavanet/lava/v5/x/pairing/types"
 
 type ProjectConfiguration struct {
 	ProjectPublicKey  string                                    `json:"project_public_key"`

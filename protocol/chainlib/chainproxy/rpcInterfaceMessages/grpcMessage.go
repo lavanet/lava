@@ -1,10 +1,11 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
@@ -12,10 +13,13 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	dyncodec "github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -32,6 +36,22 @@ type GrpcMessage struct {
 	chainproxy.BaseMessage
 }
 
+func (gm *GrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (gm *GrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := gm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	pathByteArray := []byte(gm.Path)
+	return sigs.HashMsg(append(append(pathByteArray, gm.Msg...), headersByteArray...)), nil
+}
+
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// grpc status code different than OK or 0 is a node error.
 	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
@@ -43,14 +63,16 @@ func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {
-	if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
-		var parsedData interface{}
-		err := json.Unmarshal(gm.Msg, &parsedData)
-		if err != nil {
-			utils.LavaFormatError("failed to unmarshal GetParams", err)
-			return nil
+	if len(gm.Msg) > 0 {
+		if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
+			var parsedData interface{}
+			err := json.Unmarshal(gm.Msg, &parsedData)
+			if err != nil {
+				utils.LavaFormatError("failed to unmarshal GetParams", err)
+				return nil
+			}
+			return parsedData
 		}
-		return parsedData
 	}
 	parsedData, err := gm.dynamicResolve()
 	if err != nil {
@@ -98,6 +120,14 @@ func (gm GrpcMessage) GetResult() json.RawMessage {
 
 func (gm GrpcMessage) GetMethod() string {
 	return gm.Path
+}
+
+func (gm GrpcMessage) GetID() json.RawMessage {
+	return nil
+}
+
+func (gm GrpcMessage) GetError() *rpcclient.JsonError {
+	return nil
 }
 
 func (gm GrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {

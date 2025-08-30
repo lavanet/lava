@@ -3,7 +3,7 @@ package common
 import (
 	"time"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,6 +29,32 @@ const (
 	RelayHealthIntervalFlag         = "relays-health-interval" // interval between each relay health check, default 5m
 	SharedStateFlag                 = "shared-state"
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
+	// Disable relay retries when we get node errors.
+	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
+	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
+	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+
+	// optimizer flags
+	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
+	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
+	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
+	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
+
+	// optimizer qos server flags
+	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
+	OptimizerQosListenFlag                 = "optimizer-qos-listen"            // enable listening for qos reports on metrics endpoint
+	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
+	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
+	// websocket flags
+	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
+	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
+	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
+	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
+	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	// specification default flags
+	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
 const (
@@ -42,15 +68,15 @@ const (
 
 // helper struct to propagate flags deeper into the code in an organized manner
 type ConsumerCmdFlags struct {
-	HeadersFlag                 string        // comma separated list of headers, or * for all, default simple cors specification headers
-	CredentialsFlag             string        // access-control-allow-credentials, defaults to "true"
-	OriginFlag                  string        // comma separated list of origins, or * for all, default enabled completely
-	MethodsFlag                 string        // whether to allow access control headers *, most proxies have their own access control so its not required
-	CDNCacheDuration            string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
-	RelaysHealthEnableFlag      bool          // enables relay health check
-	RelaysHealthIntervalFlag    time.Duration // interval for relay health check
-	DebugRelays                 bool          // enables debug mode for relays
-	DisableConflictTransactions bool          // disable conflict transactions
+	HeadersFlag              string        // comma separated list of headers, or * for all, default simple cors specification headers
+	CredentialsFlag          string        // access-control-allow-credentials, defaults to "true"
+	OriginFlag               string        // comma separated list of origins, or * for all, default enabled completely
+	MethodsFlag              string        // whether to allow access control headers *, most proxies have their own access control so its not required
+	CDNCacheDuration         string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
+	RelaysHealthEnableFlag   bool          // enables relay health check
+	RelaysHealthIntervalFlag time.Duration // interval for relay health check
+	DebugRelays              bool          // enables debug mode for relays
+	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

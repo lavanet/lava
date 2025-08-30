@@ -17,12 +17,18 @@ const (
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
 	DefaultTimeout                      = 30 * time.Second
+	DefaultTimeoutLongIsh               = 1 * time.Minute
 	DefaultTimeoutLong                  = 3 * time.Minute
 	CacheTimeout                        = 50 * time.Millisecond
+	// On subscriptions we must use context.Background(),
+	// we cant have a context.WithTimeout() context, meaning we can hang for ever.
+	// to avoid that we introduced a first reply timeout using a routine.
+	// if the first reply doesn't return after the specified timeout a timeout error will occur
+	SubscriptionFirstReplyTimeout = 10 * time.Second
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
-	return BaseTimePerCU(cu) + AverageWorldLatency // TODO: remove average world latency once our providers run locally, or allow a flag that says local to make it tight, tighter timeouts are better
+	return BaseTimePerCU(cu)
 }
 
 func BaseTimePerCU(cu uint64) time.Duration {
@@ -72,7 +78,10 @@ type TimeoutInfo struct {
 
 func GetTimeoutForProcessing(relayTimeout time.Duration, timeoutInfo TimeoutInfo) time.Duration {
 	ctxTimeout := DefaultTimeout
-	if timeoutInfo.Hanging || timeoutInfo.CU > 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
+	if timeoutInfo.CU >= 50 { // for heavyish relays we set longish timeout :)
+		ctxTimeout = DefaultTimeoutLongIsh
+	}
+	if timeoutInfo.Hanging || timeoutInfo.CU >= 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
 		ctxTimeout = DefaultTimeoutLong
 	}
 	if relayTimeout > ctxTimeout {

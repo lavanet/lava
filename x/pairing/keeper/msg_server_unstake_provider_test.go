@@ -3,39 +3,38 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/testutil/common"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/common"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnstakeStaticProvider(t *testing.T) {
+// TestVaultProviderUnstake tests that only the vault address can unstake.
+// Scenarios:
+// 1. unstake with vault -> should work
+// 2. try with provider -> should work
+func TestVaultProviderUnstake(t *testing.T) {
 	ts := newTester(t)
+	ts.setupForPayments(2, 0, 0)
 
-	// will overwrite the default "mock" spec
-	ts.spec.ProvidersTypes = spectypes.Spec_static
-	ts.AddSpec("mock", ts.spec)
+	acc1, _ := ts.GetAccount(common.PROVIDER, 0)
+	provider1 := acc1.Addr.String()
 
-	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	_, provider := ts.AddAccount(common.PROVIDER, 0, balance)
+	acc2, _ := ts.GetAccount(common.PROVIDER, 1)
+	vault2 := acc2.GetVaultAddr()
 
-	err := ts.StakeProvider(provider, ts.spec, balance/2)
-	require.NoError(t, err)
+	tests := []struct {
+		name    string
+		creator string
+	}{
+		{"provider unstakes", provider1},
+		{"vault unstakes", vault2},
+	}
 
-	ts.AdvanceEpoch()
-
-	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
-	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
-
-	_, err = ts.TxPairingUnstakeProvider(provider, ts.spec.Index)
-	require.NoError(t, err)
-
-	ts.AdvanceBlocks(unstakeHoldBlocks)
-
-	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
-	require.True(t, found)
-
-	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
-
-	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
-	require.False(t, found)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prov := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+			_ = prov
+			_, err := ts.TxPairingUnstakeProvider(tt.creator, ts.spec.Index)
+			require.NoError(t, err)
+		})
+	}
 }

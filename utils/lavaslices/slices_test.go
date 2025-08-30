@@ -2,6 +2,7 @@ package lavaslices
 
 import (
 	"math"
+	"reflect"
 	"testing"
 	"time"
 
@@ -106,7 +107,7 @@ func TestConcat(t *testing.T) {
 	}
 }
 
-func TestMedian(t *testing.T) {
+func TestMedianInt(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		slice  []int
@@ -130,6 +131,75 @@ func TestMedian(t *testing.T) {
 	}
 }
 
+func TestMedianInt64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []int64
+		want  int64
+	}{
+		{"empty slice", []int64{}, 0},
+		{"single element", []int64{42}, 42},
+		{"odd count", []int64{10, 20, 30}, 20},
+		{"even count", []int64{10, 20, 30, 40}, 25},
+		{"negative values", []int64{-30, -20, -10}, -20},
+		{"mixed values", []int64{-10, 0, 10}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianFloat64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []float64
+		want  float64
+	}{
+		{"empty slice", []float64{}, 0},
+		{"single element", []float64{42.0}, 42.0},
+		{"odd count", []float64{1.1, 2.2, 3.3}, 2.2},
+		{"even count", []float64{1.1, 2.2, 3.3, 4.4}, 2.75},
+		{"negative values", []float64{-3.3, -2.2, -1.1}, -2.2},
+		{"mixed values", []float64{-1.1, 0, 1.1}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianUint64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []uint64
+		want  uint64
+	}{
+		{"odd count", []uint64{10, 20, 30}, 20},
+		{"even count", []uint64{10, 20, 30, 40}, 25},
+		{"single element", []uint64{42}, 42},
+		{"empty slice", []uint64{}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianPrecision(t *testing.T) {
+	t.Run("test large int64", func(t *testing.T) {
+		const largeInt = 9007199254740993
+		median := Median([]int64{largeInt, largeInt})
+		require.Equal(t, int64(largeInt), median)
+	})
+}
+
 func TestPercentile(t *testing.T) {
 	// test it equals median
 	for _, tt := range []struct {
@@ -149,7 +219,7 @@ func TestPercentile(t *testing.T) {
 		{"even length identical", []int{4, 4, 4, 4}, 4},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			percentile := Percentile(tt.slice, 0.5)
+			percentile := Percentile(tt.slice, 0.5, false)
 			median := Median(tt.slice)
 			require.Equal(t, tt.median, median)
 			require.Equal(t, tt.median, percentile)
@@ -175,7 +245,7 @@ func TestPercentile(t *testing.T) {
 		{"rank even length identical", []time.Duration{4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond}, 4 * time.Millisecond, 0.33},
 	} {
 		t.Run(tt2.name, func(t *testing.T) {
-			percentile := Percentile(tt2.slice, tt2.rank)
+			percentile := Percentile(tt2.slice, tt2.rank, false)
 			require.Equal(t, tt2.percentile, percentile)
 		})
 	}
@@ -439,5 +509,58 @@ func TestSliceSplitter(t *testing.T) {
 			}
 			originalSizeCopy -= i
 		}
+	}
+}
+
+func TestDifference(t *testing.T) {
+	tests := []struct {
+		name     string
+		slice1   []int
+		slice2   []int
+		expected []int
+	}{
+		{
+			name:     "Basic difference",
+			slice1:   []int{1, 2, 3, 4},
+			slice2:   []int{3, 4, 5, 6},
+			expected: []int{1, 2},
+		},
+		{
+			name:     "No difference",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{1, 2, 3},
+			expected: []int{},
+		},
+		{
+			name:     "All elements different",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{4, 5, 6},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "Empty first slice",
+			slice1:   []int{},
+			slice2:   []int{1, 2, 3},
+			expected: []int{},
+		},
+		{
+			name:     "Empty second slice",
+			slice1:   []int{1, 2, 3},
+			slice2:   []int{},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "Mixed elements",
+			slice1:   []int{1, 2, 2, 3, 4},
+			slice2:   []int{2, 4},
+			expected: []int{1, 3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MissingElements(tt.slice1, tt.slice2)
+			require.True(t, reflect.DeepEqual(result, tt.expected))
+		})
 	}
 }

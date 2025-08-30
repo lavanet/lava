@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils/lavaslices"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type HealthResults struct {
@@ -15,6 +15,7 @@ type HealthResults struct {
 	ProviderData       map[LavaEntity]ReplyData    `json:"providerData,omitempty"`
 	SubscriptionsData  map[string]SubscriptionData `json:"subscriptionsData,omitempty"`
 	FrozenProviders    map[LavaEntity]struct{}     `json:"frozenProviders,omitempty"`
+	JailedProviders    map[LavaEntity]struct{}     `json:"jailedProviders,omitempty"`
 	UnhealthyProviders map[LavaEntity]string       `json:"unhealthyProviders,omitempty"`
 	UnhealthyConsumers map[LavaEntity]string       `json:"unhealthyConsumers,omitempty"`
 	Specs              map[string]*spectypes.Spec  `json:"specs,omitempty"`
@@ -47,6 +48,9 @@ func (healthResults *HealthResults) GetAllEntities() map[LavaEntity]struct{} {
 	for entity := range healthResults.FrozenProviders {
 		entities[entity] = struct{}{}
 	}
+	for entity := range healthResults.JailedProviders {
+		entities[entity] = struct{}{}
+	}
 	for entity := range healthResults.UnhealthyProviders {
 		entities[entity] = struct{}{}
 	}
@@ -73,6 +77,12 @@ func (healthResults *HealthResults) FreezeProvider(providerKey LavaEntity) {
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	healthResults.FrozenProviders[providerKey] = struct{}{}
+}
+
+func (healthResults *HealthResults) JailedProvider(providerKey LavaEntity) {
+	healthResults.Lock.Lock()
+	defer healthResults.Lock.Unlock()
+	healthResults.JailedProviders[providerKey] = struct{}{}
 }
 
 func (healthResults *HealthResults) setSpec(spec *spectypes.Spec) {

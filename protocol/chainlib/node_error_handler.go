@@ -2,44 +2,86 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"net/url"
+	"regexp"
 	"strings"
-	"syscall"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/itchyny/gojq"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type genericErrorHandler struct{}
 
 func (geh *genericErrorHandler) handleConnectionError(err error) error {
-	if err == net.ErrWriteToConnected {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: Write to connected connection", nil)
-	} else if err == net.ErrClosed {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: Operation on closed connection", nil)
-	} else if err == io.EOF {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: End of input stream reached", nil)
-	} else if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: Network operation timed out", nil)
-	} else if _, ok := err.(*net.DNSError); ok {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: DNS resolution failed", nil)
-	} else if opErr, ok := err.(*net.OpError); ok {
-		if sysErr, ok := opErr.Err.(*os.SyscallError); ok && sysErr.Err == syscall.ECONNREFUSED {
-			return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: Connection refused", nil)
-		}
-	} else if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
-		return utils.LavaFormatProduction("Provider Side Failed Sending Message, Reason: misconfigured http endpoint as https", nil)
+	// Generic error message
+	genericMsg := "Provider Side Failed Sending Message"
+
+	switch {
+	case err == net.ErrWriteToConnected:
+		return utils.LavaFormatProduction(genericMsg+", Reason: Write to connected connection", nil)
+	case err == net.ErrClosed:
+		return utils.LavaFormatProduction(genericMsg+", Reason: Operation on closed connection", nil)
+	case err == io.EOF:
+		return utils.LavaFormatProduction(genericMsg+", Reason: End of input stream reached", nil)
+	case strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client"):
+		return utils.LavaFormatProduction(genericMsg+", Reason: misconfigured http endpoint as https", nil)
 	}
-	return nil // do not return here so the caller will return the error inside the data so it reaches the user when it doesn't match any specific cases
+
+	if opErr, ok := err.(*net.OpError); ok {
+		switch {
+		case opErr.Timeout():
+			return utils.LavaFormatProduction(genericMsg+", Reason: Network operation timed out", nil)
+		case strings.Contains(opErr.Error(), "connection refused"):
+			return utils.LavaFormatProduction(genericMsg+", Reason: Connection refused", nil)
+		default:
+			// Handle other OpError cases without exposing specific details
+			return utils.LavaFormatProduction(genericMsg+", Reason: Network operation error", nil)
+		}
+	}
+	if urlErr, ok := err.(*url.Error); ok {
+		switch {
+		case urlErr.Timeout():
+			return utils.LavaFormatProduction(genericMsg+", Reason: url.Error issue", nil)
+		case strings.Contains(urlErr.Error(), "connection refused"):
+			return utils.LavaFormatProduction(genericMsg+", Reason: Connection refused", nil)
+		}
+	}
+
+	if _, ok := err.(*net.DNSError); ok {
+		return utils.LavaFormatProduction(genericMsg+", Reason: DNS resolution failed", nil)
+	}
+
+	// Mask IP addresses and potential secrets in the error message, and check if any secret was found
+	maskedError, foundSecret := maskSensitiveInfo(err.Error())
+	if foundSecret {
+		// Log or handle the case when a secret was found, if necessary
+		utils.LavaFormatProduction(genericMsg+maskedError, nil)
+	}
+	return nil
+}
+
+func maskSensitiveInfo(errMsg string) (string, bool) {
+	foundSecret := false
+
+	// Mask IP addresses
+	ipRegex := regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+	if ipRegex.MatchString(errMsg) {
+		foundSecret = true
+		errMsg = ipRegex.ReplaceAllString(errMsg, "[IP_ADDRESS]")
+	}
+
+	return errMsg, foundSecret
 }
 
 func (geh *genericErrorHandler) handleGenericErrors(ctx context.Context, nodeError error) error {
@@ -70,15 +112,9 @@ func (geh *genericErrorHandler) HandleStatusError(statusCode int, strict bool) e
 }
 
 func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
-	var jsonData map[string]interface{}
-	err := json.Unmarshal(replyData, &jsonData)
+	_, err := gojq.Parse(string(replyData))
 	if err != nil {
-		// if failed to parse might be an array of jsons
-		var jsonArrayData []map[string]interface{}
-		parsingErr := json.Unmarshal(replyData, &jsonArrayData)
-		if parsingErr != nil {
-			return utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(replyData)})
-		}
+		return utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(replyData)})
 	}
 	return nil
 }
@@ -86,14 +122,28 @@ func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
 func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
 	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
 	if idErr != nil {
-		return fmt.Errorf("Failed parsing ID " + idErr.Error())
+		return fmt.Errorf("failed parsing ID %s", idErr.Error())
 	}
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
 	if idErr != nil {
-		return fmt.Errorf("Failed parsing ID " + idErr.Error())
+		return fmt.Errorf("failed parsing ID %s", idErr.Error())
 	}
 	if reqId != respId {
 		return fmt.Errorf("ID mismatch error")
+	}
+	return nil
+}
+
+func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage {
+	// try to parse node error as json message
+	httpError, ok := nodeErr.(rpcclient.HTTPError)
+	if ok {
+		jsonMessage := &rpcclient.JsonrpcMessage{}
+		err := json.Unmarshal(httpError.Body, jsonMessage)
+		if err == nil {
+			utils.LavaFormatDebug("Successfully recovered HTTPError to node message", utils.LogAttr("jsonMessage", jsonMessage))
+			return jsonMessage
+		}
 	}
 	return nil
 }

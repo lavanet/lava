@@ -7,8 +7,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 // SetFixatedParams set a specific fixatedParams in the store from its index
@@ -174,7 +174,7 @@ func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, bl
 					utils.Attribute{Key: "earliest", Value: earliestEpochStart},
 				)
 			} else {
-				err = utils.LavaFormatError("block not found", fmt.Errorf("tried to read index: "+thisIdxKey+" but wasn't found"),
+				err = utils.LavaFormatError("block not found", fmt.Errorf("tried to read index: %s but wasn't found", thisIdxKey),
 					utils.Attribute{Key: "block", Value: block},
 				)
 			}

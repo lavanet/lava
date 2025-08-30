@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/x/rewards/types"
 )
 
 func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund sdk.Coins, spec string) error {
@@ -127,14 +127,22 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 
 // distributeIprpcRewards is distributing the IPRPC rewards for providers according to their serviced CU
 func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcReward, specCuMap map[string]types.SpecCuType) {
+	// set the last rewards block
+	err := k.SetLastRewardsBlock(ctx)
+	if err != nil {
+		utils.LavaFormatError("distributeIprpcRewards failed", err)
+		return
+	}
+
 	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
 	if len(specCuMap) == 0 {
 		k.handleNoIprpcRewardToProviders(ctx, iprpcReward.SpecFunds)
 		return
 	}
-
 	leftovers := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
+		details := map[string]string{}
+
 		// verify specCuMap holds an entry for the relevant spec
 		specCu, ok := specCuMap[specFund.Spec]
 		if !ok {
@@ -146,6 +154,18 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			continue
 		}
 
+		// tax the rewards to the community and validators
+		fundAfterTax := sdk.NewCoins()
+		for _, coin := range specFund.Fund {
+			leftover, err := k.ContributeToValidatorsAndCommunityPool(ctx, coin, string(types.IprpcPoolName))
+			if err != nil {
+				// if ContributeToValidatorsAndCommunityPool fails we continue with the next providerrewards
+				continue
+			}
+			fundAfterTax = fundAfterTax.Add(leftover)
+		}
+		specFund.Fund = fundAfterTax
+
 		UsedReward := sdk.NewCoins()
 		// distribute IPRPC reward for spec
 		for _, providerCU := range specCu.ProvidersCu {
@@ -154,9 +174,9 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
+			providerAndDelegatorsIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(providerCU.CU)).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
 
-			UsedRewardTemp := UsedReward.Add(providerIprpcReward...)
+			UsedRewardTemp := UsedReward.Add(providerAndDelegatorsIprpcReward...)
 			if UsedReward.IsAnyGT(specFund.Fund) {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", fmt.Errorf("tried to send more rewards than funded"), utils.LogAttr("provider", providerCU))
 				break
@@ -164,21 +184,42 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerAndDelegatorsIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
-				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
+				// failed sending the rewards, add the claimable rewards to the leftovers that will be transferred to the community pool
+				utils.LavaFormatError("failed to send iprpc rewards to provider", err,
+					utils.LogAttr("provider", providerCU.Provider),
+					utils.LogAttr("chain_id", specFund.Spec),
+					utils.LogAttr("provider_and_delegators_reward", providerAndDelegatorsIprpcReward.String()),
+					utils.LogAttr("provider_reward", providerReward.String()),
+				)
 			}
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerReward.String())
+			details[providerCU.Provider+"_delegators"] = providerAndDelegatorsIprpcReward.Sub(providerReward...).String()
 		}
+		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
+		details["total_rewards"] = specFund.Fund.String()
+		details["chainid"] = specFund.GetSpec()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 
 		// count used rewards
 		leftovers = leftovers.Add(specFund.Fund.Sub(UsedReward...)...)
 	}
 
 	// handle leftovers
-	err := k.FundCommunityPoolFromModule(ctx, leftovers, string(types.IprpcPoolName))
+	err = k.FundCommunityPoolFromModule(ctx, leftovers, string(types.IprpcPoolName))
 	if err != nil {
 		utils.LavaFormatError("could not send iprpc leftover to community pool", err)
 	}
+}
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, map[string]string{"iprpc_rewards_leftovers": leftovers.String()}, "IPRPC monthly rewards distributed successfully")
+// SetLastRewardsBlock sets the lastRewardsBlock as the current height
+func (k Keeper) SetLastRewardsBlock(ctx sdk.Context) error {
+	return k.lastRewardsBlock.Set(ctx, uint64(ctx.BlockHeight()))
+}
+
+// GetLastRewardsBlock returns the last block in which the IPRPC rewards were distributed.
+// This is used by the subscription module's estimate-rewards query
+func (k Keeper) GetLastRewardsBlock(ctx sdk.Context) (rewardsDistributionBlock uint64, err error) {
+	return k.lastRewardsBlock.Get(ctx)
 }

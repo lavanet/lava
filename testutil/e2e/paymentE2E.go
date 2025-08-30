@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -14,13 +13,14 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/cmd/lavad/cmd"
-	commonconsts "github.com/lavanet/lava/testutil/common/consts"
-	"github.com/lavanet/lava/utils"
-	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingTypes "github.com/lavanet/lava/x/pairing/types"
-	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
+	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
+	e2esdk "github.com/lavanet/lava/v5/testutil/e2e/sdk"
+	"github.com/lavanet/lava/v5/utils"
+	dualstakingTypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochStorageTypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	pairingTypes "github.com/lavanet/lava/v5/x/pairing/types"
+	subscriptionTypes "github.com/lavanet/lava/v5/x/subscription/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -28,7 +28,7 @@ import (
 var startLavaLogName = "00_StartLava"
 
 func (lt *lavaTest) startLavaForPayment(ctx context.Context) {
-	command := "./scripts/start_env_dev_for_payment_e2e.sh"
+	command := "./scripts/test/start_env_dev_for_payment_e2e.sh"
 	logName := startLavaLogName
 	funcName := "startLava"
 
@@ -37,7 +37,7 @@ func (lt *lavaTest) startLavaForPayment(ctx context.Context) {
 }
 
 func (lt *lavaTest) stakeLavaForPayment(ctx context.Context) {
-	command := "./scripts/init_payment_e2e.sh"
+	command := "./scripts/test/init_payment_e2e.sh"
 	logName := "01_stakeLavaForPayment"
 	funcName := "stakeLavaForPayment"
 
@@ -49,7 +49,7 @@ func (lt *lavaTest) startLavaProvidersForPayment(ctx context.Context) {
 	for idx := 1; idx <= 2; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/lavaProvider%d --chain-id=lava --from servicer%d %s",
-			lt.protocolPath, configFolder, idx+5, idx, lt.lavadArgs,
+			lt.protocolPath, providerConfigsFolder, idx+5, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startLavaProvidersForPayment (provider %02d)", idx)
@@ -68,7 +68,7 @@ func (lt *lavaTest) startLavaConsumerForPayment(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava --from %s %s --concurrent-providers 1",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startLavaConsumerForPayment (consumer %02d)", idx+1)
@@ -283,7 +283,7 @@ func runPaymentE2E(timeout time.Duration) {
 		protocolPath: gopath + lavapPath,
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*bytes.Buffer),
+		logs:         make(map[string]*e2esdk.SafeBuffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
@@ -314,14 +314,14 @@ func runPaymentE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLavaForPayment(ctx)
 
-	// scripts/init_payment_e2e.sh will:
+	// scripts/test/init_payment_e2e.sh will:
 	// - produce 2 spec: LAV1, COSMOS-SDK, IBC
 	// - produce 1 plan: "DefaultPlan"
 	// - produce 2 staked providers (for LAV1)
 	// - produce 1 staked client (for LAV1)
 	// - produce 1 subscription (for LAV1)
 
-	lt.checkStakeLava(1, 5, 1, 2, checkedPlansE2E, []string{"LAV1"}, []string{"user1"}, "Staking Lava OK")
+	lt.checkStakeLava(1, 6, 1, 2, checkedPlansE2E, []string{"LAV1"}, []string{"user1"}, "Staking Lava OK")
 
 	// get balance of providers right after stake for payment check later
 	providers, err := lt.getProvidersAddresses()

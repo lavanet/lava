@@ -22,7 +22,6 @@ import (
 	crand "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -31,7 +30,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/goccy/go-json"
+
+	"github.com/lavanet/lava/v5/utils"
 )
 
 var (
@@ -180,7 +181,7 @@ func (n *Notifier) send(sub *Subscription, data json.RawMessage) error {
 	ctx := context.Background()
 	return n.h.conn.writeJSON(ctx, &JsonrpcMessage{
 		Version: Vsn,
-		Method:  n.namespace + notificationMethodSuffix,
+		Method:  n.namespace + ethereumNotificationMethodSuffix,
 		Params:  params,
 	})
 }
@@ -339,7 +340,7 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 				var ok bool
 				err, ok = recv.Interface().(error)
 				if !ok {
-					return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(error) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+					return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(error) - type assertion failed %s", recv.Interface())
 				}
 			}
 			if err == errUnsubscribed {
@@ -351,7 +352,7 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 		case 1: // <-sub.in
 			msg, ok := recv.Interface().(*JsonrpcMessage)
 			if !ok {
-				return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(*JsonrpcMessage) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+				return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(*JsonrpcMessage) - type assertion failed %s", recv.Interface())
 			}
 			if msg.Error != nil {
 				return true, err

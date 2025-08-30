@@ -2,21 +2,13 @@ run:
   tests: true
   # timeout for analysis, e.g. 30s, 5m, default is 1m
   timeout: 7m
-  skip-files:
-    - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
-    - "protocol/chainlib/grpc.go"
-    - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
-    - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
-    - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
-    - "ecosystem/lavajs/*"
-    - "ecosystem/lava-sdk/*"
 
 linters:
   disable-all: true
   #for list of linters and what they do: https://golangci-lint.run/usage/linters/
   enable:
     - dogsled
-    - exportloopref
+    - copyloopvar
     - gocritic
     - gofumpt
     - gosimple
@@ -41,6 +33,14 @@ linters:
     - whitespace
 
 issues:
+  exclude-files:
+    - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
+    - "protocol/chainlib/grpc.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
+    - "ecosystem/lavajs/*"
+    - "ecosystem/lava-sdk/*"
   exclude-rules:
     - text: "singleCaseSwitch"
       linters:
@@ -56,7 +56,7 @@ issues:
     - text: "ST1016:"
       linters:
         - stylecheck
-    - text: "SA1019:.*\"github.com/golang/protobuf/proto\" is deprecated.*" # proto is deprecated, but some places couldn't be removed
+    - text: 'SA1019:.*"github.com/golang/protobuf/proto" is deprecated.*' # proto is deprecated, but some places couldn't be removed
       linters:
         - staticcheck
     - path: "migrations"
@@ -70,9 +70,6 @@ issues:
 linters-settings:
   dogsled:
     max-blank-identifiers: 5
-  maligned:
-    # print struct with more effective memory layout or not, false by default
-    suggest-new: true
   nolintlint:
     allow-unused: false
     require-explanation: false

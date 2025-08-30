@@ -13,12 +13,14 @@ type Test_mode_ctx_key struct{}
 const (
 	PlainTextConnection                = "allow-plaintext-connection"
 	EndpointsConfigName                = "endpoints"
+	StaticProvidersConfigName          = "static-providers"
 	SaveConfigFlagName                 = "save-conf"
 	GeolocationFlag                    = "geolocation"
 	TestModeFlagName                   = "test-mode"
 	MaximumConcurrentProvidersFlagName = "concurrent-providers"
 	StatusCodeMetadataKey              = "status-code"
 	VersionMetadataKey                 = "lavap-version"
+	LavaChainIdMetadataKey             = "lavap-chain-id"
 	TimeOutForFetchingLavaBlocksFlag   = "timeout-for-fetching-lava-blocks"
 )
 

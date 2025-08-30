@@ -8,10 +8,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -24,15 +24,47 @@ const (
 	RETRY_COUNT_HEADER_NAME                         = "Lava-Retries"
 	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
+	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
+	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
+	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	USER_REQUEST_TYPE                               = "lava-user-request-type"
+	STATEFUL_API_HEADER                             = "lava-stateful-api"
+	REQUESTED_BLOCK_HEADER_NAME                     = "lava-parsed-requested-block"
+	LAVA_IDENTIFIED_NODE_ERROR_HEADER               = "lava-identified-node-error"
+	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
+	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
 	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
 	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
+	LAVA_DEBUG_RELAY                      = "lava-debug-relay"
+	LAVA_LB_UNIQUE_ID_HEADER              = "lava-lb-unique-id"
+	STICKINESS_HEADER_NAME                = "lava-stickiness"
+	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
+	QUORUM_HEADER_MAX                     = "lava-quorum-max"
+	QUORUM_HEADER_MIN                     = "lava-quorum-min"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH                                       = "/lava/health"
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
 )
+
+var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME: {},
+	RELAY_TIMEOUT_HEADER_NAME:             {},
+	EXTENSION_OVERRIDE_HEADER_NAME:        {},
+	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
+	LAVA_DEBUG_RELAY:                      {},
+	STICKINESS_HEADER_NAME:                {},
+	QUORUM_HEADER_RATE:                    {},
+	QUORUM_HEADER_MAX:                     {},
+	QUORUM_HEADER_MIN:                     {},
+}
+
+type UserData struct {
+	ConsumerIp string
+	DappId     string
+}
 
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
@@ -42,6 +74,7 @@ type NodeUrl struct {
 	Timeout           time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
 	Addons            []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
+	Methods           []string      `yaml:"methods,omitempty" json:"methods,omitempty" mapstructure:"methods"`
 }
 
 type ChainMessageGetApiInterface interface {
@@ -52,7 +85,7 @@ func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
-		return urlStr + "(" + strings.Join(nurl.Addons, ",") + ")"
+		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")" + ", internal-path: " + nurl.InternalPath
 	}
 	return urlStr
 }
@@ -64,6 +97,10 @@ func (nurl *NodeUrl) UrlStr() string {
 	}
 	parsedURL.User = nil
 	return parsedURL.String()
+}
+
+func (url *NodeUrl) GetAuthHeaders() map[string]string {
+	return url.AuthConfig.AuthHeaders
 }
 
 func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
@@ -154,18 +191,43 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 
 func ValidateEndpoint(endpoint, apiInterface string) error {
 	switch apiInterface {
-	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:
+	case spectypes.APIInterfaceRest:
 		parsedUrl, err := url.Parse(endpoint)
 		if err != nil {
-			return utils.LavaFormatError("could not parse node url", err, utils.Attribute{Key: "url", Value: endpoint}, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
+
+		switch parsedUrl.Scheme {
+		case "http", "https":
+			return nil
+		default:
+			return utils.LavaFormatError("URL scheme should be (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC:
+		parsedUrl, err := url.Parse(endpoint)
+		if err != nil {
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+
 		switch parsedUrl.Scheme {
 		case "http", "https":
 			return nil
 		case "ws", "wss":
 			return nil
 		default:
-			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
 	case spectypes.APIInterfaceGrpc:
 		if endpoint == "" {
@@ -197,23 +259,25 @@ type ConflictHandlerInterface interface {
 }
 
 type ProviderInfo struct {
-	ProviderAddress              string
-	ProviderQoSExcellenceSummery sdk.Dec // the number represents the average qos for this provider session
-	ProviderStake                sdk.Coin
+	ProviderAddress           string
+	ProviderReputationSummary sdk.Dec // the number represents the average qos for this provider session
+	ProviderStake             sdk.Coin
 }
 
 type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
 	ProviderInfo    ProviderInfo
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
 	Quorum          int
+	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError     bool
 }
 
-func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
+func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
 	if rr == nil {
 		return nil
 	}
@@ -272,7 +336,7 @@ func GetTokenFromGrpcContext(ctx context.Context) string {
 	return ""
 }
 
-func GetUniqueToken(consumerAddress string, ip string) string {
-	data := []byte(consumerAddress + ip)
+func GetUniqueToken(userData UserData) string {
+	data := []byte(userData.DappId + userData.ConsumerIp)
 	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }

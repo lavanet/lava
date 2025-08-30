@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/gorilla/websocket"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 )
 
 // var mockFolder string = "testutil/e2e/proxy/mockMaps/"
@@ -143,6 +144,15 @@ func main(host, port *string) {
 	startProxyProcess(process)
 }
 
+// Define the upgrader
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 func startProxyProcess(process proxyProcess) {
 	process.mock.requests = jsonFileToMap(process.mockfile)
 	if process.mock.requests == nil {
@@ -168,7 +178,71 @@ func startProxyProcess(process proxyProcess) {
 	fmt.Print(fmt.Sprintf(" ::: Proxy Started! 	::: ID: %s", process.id) + "\n")
 	fmt.Print(fmt.Sprintf(" ::: Listening On 	::: %s", "http://0.0.0.0:"+process.port+"/") + "\n")
 
+	// Define the WebSocket handler
+	wsHandler := func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Upgrade error:", err)
+			return
+		}
+		defer conn.Close()
+
+		for {
+			// Read message from browser
+			msgType, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Read error:", err)
+				break
+			}
+			// Print the message to the console
+			log.Printf("WS Received: %s\n", msg)
+
+			var respmsg rpcclient.JsonrpcMessage
+			err = json.Unmarshal(msg, &respmsg)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+
+			replyMessage, err := rpcInterfaceMessages.ConvertJsonRPCMsg(&respmsg)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+
+			jStruct := &jsonStruct{}
+			err = json.Unmarshal(msg, jStruct)
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+			jStruct.ID = 0
+			rawBodySNoID, _ := json.Marshal(jStruct)
+
+			if val, ok := process.mock.requests[string(rawBodySNoID)]; ok && process.cache {
+				orderedJSON := idInsertedResponse(val, replyMessage)
+				println(dotsStr+process.port+dotsStr+process.id+" ::: Cached Response ::: ", orderedJSON)
+				cacheCount += 1
+
+				// Change Response
+				if fakeResponse {
+					val = fakeResult(val, "0xe000000000000000000")
+					// val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
+					println(process.port+" ::: Fake Response ::: ", val)
+					fakeCount += 1
+				}
+				time.Sleep(500 * time.Millisecond)
+				conn.WriteMessage(msgType, []byte(orderedJSON))
+			} else if err = conn.WriteMessage(msgType, msg); err != nil {
+				// Write message back to browser
+				log.Println("Write error:", err)
+				break
+			}
+		}
+	}
+
 	http.HandleFunc("/", process.handler)
+	http.HandleFunc("/ws", wsHandler)
 	err := http.ListenAndServe(":"+process.port, nil)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -213,7 +287,7 @@ func fakeResult(val, fake string) string {
 	return strings.Join(parts, ",")
 }
 
-func idInstertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcMessage) string {
+func idInsertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcMessage) string {
 	// Extract ID from raw message
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMessage.ID)
 	if idErr != nil {
@@ -243,12 +317,12 @@ func idInstertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcM
 
 const dotsStr = " ::: "
 
-func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
+func (p proxyProcess) LavaTestProxy(responseWriter http.ResponseWriter, request *http.Request) {
 	host := p.host
 	mock := p.mock
 
 	// Get request body
-	rawBody := getDataFromIORead(&req.Body, true)
+	rawBody := getDataFromIORead(&request.Body, true)
 	// TODO: set all ids to 1
 	rawBodyS := string(rawBody)
 	// sep := "id\":"
@@ -261,7 +335,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	println(dotsStr+p.port+dotsStr+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
 
 	var respmsg rpcclient.JsonrpcMessage
-	if err := json.NewDecoder(req.Body).Decode(&respmsg); err != nil {
+	if err := json.NewDecoder(request.Body).Decode(&respmsg); err != nil {
 		println(err.Error())
 	}
 	replyMessage, err := rpcInterfaceMessages.ConvertJsonRPCMsg(&respmsg)
@@ -275,8 +349,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	if fakeResponse && strings.Contains(rawBodyS, "blockNumber") {
 		println("!!!!!!!!!!!!!! block number")
-		rw.WriteHeader(200)
-		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":\"%s\"}", respId, getMockBlockNumber())))
+		returnResponse(responseWriter, http.StatusOK, []byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":\"%s\"}", respId, getMockBlockNumber())))
 	} else {
 		// Return Cached data if found in history and fromCache is set on
 		jStruct := &jsonStruct{}
@@ -284,7 +357,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		jStruct.ID = 0
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
-			orderedJSON := idInstertedResponse(val, replyMessage)
+			orderedJSON := idInsertedResponse(val, replyMessage)
 			println(dotsStr+p.port+dotsStr+p.id+" ::: Cached Response ::: ", orderedJSON)
 			cacheCount += 1
 
@@ -296,11 +369,10 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				fakeCount += 1
 			}
 			time.Sleep(500 * time.Millisecond)
-			rw.WriteHeader(200)
-			rw.Write([]byte(orderedJSON))
+			returnResponse(responseWriter, http.StatusOK, []byte(orderedJSON))
 		} else {
 			// Recreating Request
-			proxyRequest, err := createProxyRequest(req, host, rawBodyS)
+			proxyRequest, err := createProxyRequest(request, host, rawBodyS)
 			if err != nil {
 				println(err.Error())
 			} else {
@@ -327,7 +399,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
 
 					// Recreating Request
-					proxyRequest, err = createProxyRequest(req, host, rawBodyS)
+					proxyRequest, err = createProxyRequest(request, host, rawBodyS)
 					if err != nil {
 						println(err.Error())
 						respBody = []byte(err.Error())
@@ -370,7 +442,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					respBody = []byte("error")
 				}
 				// time.Sleep(500 * time.Millisecond)
-				returnResponse(rw, status, respBody)
+				returnResponse(responseWriter, status, respBody)
 			}
 		}
 	}

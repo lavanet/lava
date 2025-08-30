@@ -8,13 +8,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/v5/x/projects/types"
 )
 
 type BadgeData struct {
@@ -71,8 +70,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
-	rejected_relays_num := len(msg.Relays)
-	validatePairingCache := map[string][]epochstoragetypes.StakeEntry{}
+	rejectedRelaysNum := len(msg.Relays)
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -172,6 +170,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
 
+		// update the reputation's epoch QoS score
+		// the excellece QoS report can be nil when the provider and consumer geolocations are not equal
+		if relay.QosExcellenceReport != nil {
+			err = k.aggregateReputationEpochQosScore(ctx, project.Subscription, relay)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("RelayPayment: could not update reputation epoch QoS score", err,
+					utils.LogAttr("consumer", project.Subscription),
+					utils.LogAttr("project", project.Index),
+					utils.LogAttr("chain", relay.SpecId),
+					utils.LogAttr("provider", relay.Provider),
+					utils.LogAttr("qos_excellence_report", relay.QosExcellenceReport.String()),
+					utils.LogAttr("sync_factor", k.ReputationLatencyOverSyncFactor(ctx).String()),
+				)
+			}
+		}
+
 		// TODO: add support for spec changes
 		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
 		if !found || !spec.Enabled {
@@ -180,44 +194,28 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
-		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
 		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
-		val, ok := validatePairingCache[validatePairingKey]
-		if ok {
-			providers = val
-			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
-			if err != nil {
-				return nil, utils.LavaFormatError("strictest policy calculation for pairing validation cache failed", err,
-					utils.LogAttr("project", project.Index),
-					utils.LogAttr("chainID", relay.SpecId),
-					utils.LogAttr("block", strconv.FormatUint(epochStart, 10)),
-				)
-			}
-			allowedCU = strictestPolicy.EpochCuLimit
-		} else {
-			isValidPairing := false
-			isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
-				ctx,
-				relay.SpecId,
-				providerAddr,
-				uint64(relay.Epoch),
-				project,
+
+		isValidPairing := false
+		isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
+			ctx,
+			relay.SpecId,
+			providerAddr,
+			uint64(relay.Epoch),
+			project,
+		)
+		if err != nil {
+			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAddr.String()},
 			)
-			if err != nil {
-				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
-					utils.Attribute{Key: "client", Value: clientAddr.String()},
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-				)
-			}
-			if !isValidPairing {
-				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
-					utils.Attribute{Key: "client", Value: clientAddr.String()},
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-				)
-			}
-			validatePairingCache[validatePairingKey] = providers
+		}
+		if !isValidPairing {
+			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAddr.String()},
+			)
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
@@ -239,7 +237,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{
+			"chainID":           relay.SpecId,
+			"epoch":             strconv.FormatInt(relay.Epoch, 10),
+			"client":            clientAddr.String(),
+			"provider":          providerAddr.String(),
+			"CU":                strconv.FormatUint(relay.CuSum, 10),
+			"totalCUInEpoch":    strconv.FormatUint(totalCUInEpochForUserProvider, 10),
+			"uniqueIdentifier":  strconv.FormatUint(relay.SessionId, 10),
+			"descriptionString": msg.DescriptionString,
+		}
 		details["rewardedCU"] = strconv.FormatUint(relay.CuSum, 10)
 
 		if relay.QosReport != nil {
@@ -299,11 +306,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 		rejectedCu -= relay.CuSum
-		rejected_relays_num--
+		rejectedRelaysNum--
 	}
 
 	// if all relays failed, fail the TX
-	if rejected_relays_num != 0 {
+	if rejectedRelaysNum != 0 {
 		return nil, utils.LavaFormatWarning("relay payment failed", fmt.Errorf("all relays rejected"),
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "description", Value: msg.DescriptionString},
@@ -332,13 +339,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 }
 
 func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr string, chainID string, latestBlock uint64) {
-	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, providerAddr)
 	if found {
 		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
 			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
 			LatestBlock: latestBlock,
 		}
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
+		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 	}
 }
 
@@ -376,16 +383,17 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 		}
 		k.SetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
 
-		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
+		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0).UTC()
 		details := map[string]string{
 			"provider":                   unresponsiveProvider.Address,
-			"timestamp":                  timestamp.Format(time.DateTime),
+			"timestamp":                  timestamp.Format(time.RFC3339),
 			"disconnections":             strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10),
 			"errors":                     strconv.FormatUint(unresponsiveProvider.GetErrors(), 10),
 			"project":                    project,
 			"cu":                         strconv.FormatUint(complainerCuToAdd, 10),
 			"epoch":                      strconv.FormatUint(epoch, 10),
 			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
+			"chainID":                    chainID,
 		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}
@@ -480,4 +488,41 @@ func (k Keeper) handleBadgeCu(ctx sdk.Context, badgeData BadgeData, provider str
 
 	badgeUsedCuMapEntry.UsedCu += relayCuSum
 	k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
+}
+
+func (k Keeper) aggregateReputationEpochQosScore(ctx sdk.Context, subscription string, relay *types.RelaySession) error {
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, subscription)
+	if !found {
+		return utils.LavaFormatError("RelayPayment: could not get cluster for reputation score update", fmt.Errorf("relay consumer's subscription not found"),
+			utils.LogAttr("subscription", subscription),
+			utils.LogAttr("chain", relay.SpecId),
+			utils.LogAttr("provider", relay.Provider),
+		)
+	}
+
+	syncFactor := k.ReputationLatencyOverSyncFactor(ctx)
+	score, err := relay.QosExcellenceReport.ComputeReputation(types.WithSyncFactor(syncFactor))
+	if err != nil {
+		return utils.LavaFormatWarning("RelayPayment: could not compute qos excellence score", err,
+			utils.LogAttr("consumer", subscription),
+			utils.LogAttr("chain", relay.SpecId),
+			utils.LogAttr("provider", relay.Provider),
+			utils.LogAttr("qos_excellence_report", relay.QosExcellenceReport.String()),
+			utils.LogAttr("sync_factor", syncFactor.String()),
+		)
+	}
+
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, relay.SpecId, relay.Provider)
+	if !found {
+		return utils.LavaFormatWarning("RelayPayment: could not get stake entry for reputation", fmt.Errorf("stake entry not found"),
+			utils.LogAttr("consumer", subscription),
+			utils.LogAttr("chain", relay.SpecId),
+			utils.LogAttr("provider", relay.Provider),
+		)
+	}
+	effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.TotalStake())
+
+	// note the current weight used is by cu. In the future, it might change
+	k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.CuSum), effectiveStake)
+	return nil
 }

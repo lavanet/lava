@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/testutil/network"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/spec/client/cli"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v5/testutil/network"
+	"github.com/lavanet/lava/v5/testutil/nullify"
+	"github.com/lavanet/lava/v5/x/spec/client/cli"
+	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
 // Prevent strconv unused error
@@ -70,7 +70,6 @@ func TestShowSpec(t *testing.T) {
 			err:  status.Error(codes.InvalidArgument, "not found"),
 		},
 	} {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			args := []string{
 				tc.idIndex,

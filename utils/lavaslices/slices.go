@@ -79,18 +79,27 @@ func Median[T Number](slice []T) T {
 	if data_len == 0 {
 		return 0
 	} else if data_len%2 == 0 {
-		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
+		left := slice[data_len/2-1]
+		right := slice[data_len/2]
+		return (left + right) / 2
 	} else {
 		return slice[(data_len-1)/2]
 	}
 }
 
-func Percentile[T Number](slice []T, rank float64) T {
+// Percentile returns the value at the given rank in the slice.
+// If reverse is true, the slice is sorted in descending order.
+// If reverse is false, the slice is sorted in ascending order.
+func Percentile[T Number](slice []T, rank float64, reverse bool) T {
 	data_len := len(slice)
 	if data_len == 0 || rank < 0.0 || rank > 1.0 {
 		return 0
 	}
-	slices.Sort(slice)
+	if reverse {
+		slices.SortFunc(slice, func(i, j T) bool { return i > j })
+	} else {
+		slices.Sort(slice)
+	}
 
 	// Calculate the position based on the rank
 	position := int(float64(data_len-1) * rank)
@@ -129,6 +138,15 @@ func Contains[T comparable](slice []T, elem T) bool {
 	return false
 }
 
+func ContainsPredicate[T comparable](slice []T, predicate func(elem T) bool) bool {
+	for _, e := range slice {
+		if predicate(e) {
+			return true
+		}
+	}
+	return false
+}
+
 // Remove removes the first instance (if exists) of elem from the slice, and
 // returns the new slice and indication if removal took place.
 func Remove[T comparable](slice []T, elem T) ([]T, bool) {
@@ -142,6 +160,15 @@ func Remove[T comparable](slice []T, elem T) ([]T, bool) {
 		}
 	}
 	return slice, false
+}
+
+func AddUnique[T comparable](slice []T, elem T) []T {
+	for _, e := range slice {
+		if e == elem {
+			return slice
+		}
+	}
+	return append(slice, elem)
 }
 
 func IsSubset[T comparable](subset, superset []T) bool {
@@ -226,6 +253,29 @@ func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
 	return res
 }
 
+// returns the missing elements from slice2 that are not in slice1
+func MissingElements[T comparable](slice1, slice2 []T) []T {
+	// This function returns the difference between two slices
+	// (i.e., the elements that are in slice1 but not in slice2)
+
+	// Create a map to store elements of the second slice for quick lookup
+	elementMap := make(map[T]bool)
+	for _, elem := range slice2 {
+		elementMap[elem] = true
+	}
+
+	// Create a slice to hold the difference
+	diff := make([]T, 0)
+	for _, elem := range slice1 {
+		// If the element in slice1 is not in slice2, add it to the result
+		if !elementMap[elem] {
+			diff = append(diff, elem)
+		}
+	}
+
+	return diff
+}
+
 func Map[T, V any](slice []T, filter func(T) V) []V {
 	values := make([]V, len(slice))
 	for i := range slice {
@@ -295,4 +345,20 @@ func SplitGenericSliceIntoChunks[T any](arr []T, chunkSize int) [][]T {
 	}
 
 	return result
+}
+
+func SortStable[T constraints.Ordered](slice []T) {
+	slices.SortStableFunc(slice, func(i, j T) bool { return i < j })
+}
+
+// This function is used to check if the slice is consecutive.
+// It returns the index of the first non-consecutive element or 0 if all elements are consecutive.
+func IsSliceConsecutive[T constraints.Integer](slice []T) (int, bool) {
+	for index := range slice {
+		if index != 0 && slice[index]-1 != slice[index-1] {
+			return index, false
+		}
+	}
+
+	return 0, true
 }

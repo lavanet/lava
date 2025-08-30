@@ -4,14 +4,15 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 )
 
 const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegateLimit sdk.Coin, delegateCommission uint64) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegateCommission uint64, provider string, description stakingtypes.Description) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:            creator,
 		Validator:          validator,
@@ -19,9 +20,10 @@ func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, en
 		Amount:             amount,
 		Endpoints:          endpoints,
 		Geolocation:        geolocation,
-		Moniker:            moniker,
-		DelegateLimit:      delegateLimit,
+		DelegateLimit:      sdk.Coin{},
 		DelegateCommission: delegateCommission,
+		Address:            provider,
+		Description:        description,
 	}
 }
 
@@ -55,16 +57,16 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	if len(msg.Moniker) > MAX_LEN_MONIKER {
-		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
+	if _, err := sdk.AccAddressFromBech32(msg.Address); err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid provider address (%s)", err)
+	}
+
+	if _, err := msg.Description.EnsureLength(); err != nil {
+		return sdkerrors.Wrapf(InvalidDescriptionError, "error: %s", err.Error())
 	}
 
 	if msg.DelegateCommission > 100 {
 		return sdkerrors.Wrapf(DelegateCommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
-	}
-
-	if err := msg.DelegateLimit.Validate(); err != nil {
-		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
 	}
 
 	if !msg.Amount.IsValid() {

@@ -15,12 +15,12 @@ import (
 	"github.com/spf13/cobra"
 
 	// "github.com/cosmos/cosmos-sdk/client/flags"
-	commontypes "github.com/lavanet/lava/common/types"
-	lavautils "github.com/lavanet/lava/utils"
-	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/client/utils"
-	"github.com/lavanet/lava/x/pairing/types"
+	lavautils "github.com/lavanet/lava/v5/utils"
+	commontypes "github.com/lavanet/lava/v5/utils/common/types"
+	dualstakingTypes "github.com/lavanet/lava/v5/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	"github.com/lavanet/lava/v5/x/pairing/client/utils"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
@@ -48,6 +48,8 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(CmdUnfreeze())
 	cmd.AddCommand(CmdModifyProvider())
 	cmd.AddCommand(CmdSimulateRelayPayment())
+	cmd.AddCommand(CmdMoveProviderStake())
+	cmd.AddCommand(CmdDistributeProviderStake())
 
 	// this line is used by starport scaffolding # 1
 
@@ -134,12 +136,10 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Address, ChainId: providerEntry.Chain}}
 				content.DelegatorsSlashing = []types.DelegatorSlashing{}
 				for _, delegator := range delegators.Delegations {
-					if delegator.ChainID == providerEntry.Chain {
-						content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
-							Delegator:      delegator.Delegator,
-							SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
-						})
-					}
+					content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
+						Delegator:      delegator.Delegator,
+						SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
+					})
 				}
 			}
 

@@ -10,7 +10,7 @@ import (
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	// sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -26,7 +26,9 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdQueryParams())
 	cmd.AddCommand(CmdProviders())
+	cmd.AddCommand(CmdProvider())
 	cmd.AddCommand(CmdGetPairing())
+	cmd.AddCommand(CmdProviderPairingChance())
 	cmd.AddCommand(CmdVerifyPairing())
 	cmd.AddCommand(CmdUserMaxCu())
 
@@ -39,6 +41,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdSubscriptionMonthlyPayout())
 
 	cmd.AddCommand(CmdProvidersEpochCu())
+	cmd.AddCommand(CmdProviderReputation())
+	cmd.AddCommand(CmdProviderReputationDetails())
 
 	cmd.AddCommand(CmdDebugQuery())
 
