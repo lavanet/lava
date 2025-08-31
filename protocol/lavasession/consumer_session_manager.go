@@ -892,7 +892,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx cont
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 
-	utils.LavaFormatTrace("Called getValidConsumerSessionsWithProvider", utils.LogAttr("ignoredProviders", ignoredProviders), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("Called getValidConsumerSessionsWithProvider", utils.LogAttr("wantedProviderNumber", wantedProviderNumber), utils.LogAttr("ignoredProviders", ignoredProviders), utils.LogAttr("GUID", ctx))
 
 	currentEpoch := csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {

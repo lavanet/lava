@@ -499,3 +499,179 @@ func TestRelayProcessorLatest(t *testing.T) {
 		// require.NotEqual(t, spectypes.LATEST_BLOCK, reqBlock) // disabled until we enable requested block modification again
 	})
 }
+
+// Helper function to create mock relay responses with different data
+func createMockRelayResponseWithData(providerAddr string, data []byte, err error) *relayResponse {
+	return &relayResponse{
+		relayResult: common.RelayResult{
+			Reply: &pairingtypes.RelayReply{
+				Data: data,
+			},
+			ProviderInfo: common.ProviderInfo{
+				ProviderAddress: providerAddr,
+			},
+		},
+		err: err,
+	}
+}
+
+func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
+	const baseTimestamp = 1234567890
+	mockData := []byte(`{"result": "success", "data": "mock1", "timestamp": 1234567890}`)
+
+	tests := []struct {
+		name           string
+		quorumParams   common.QuorumParams
+		successResults int
+		nodeErrors     int
+		tries          int
+		expectedResult bool
+		expectedErrors int
+		useSameData    int // Number of providers that should send the same data (0 = all different)
+	}{
+		{
+			name: "quorum not met with different data from providers",
+			quorumParams: common.QuorumParams{
+				Min:  2,
+				Rate: 0.6,
+				Max:  5,
+			},
+			successResults: 2,
+			nodeErrors:     0,
+			tries:          1,
+			expectedResult: false, // Different data won't meet quorum
+			expectedErrors: 0,
+			useSameData:    0, // 0 means all different data
+		},
+		{
+			name: "quorum not met with different data from providers",
+			quorumParams: common.QuorumParams{
+				Min:  2,
+				Rate: 1,
+				Max:  5,
+			},
+			successResults: 2,
+			nodeErrors:     0,
+			tries:          1,
+			expectedResult: true, // we have the final result and dont need to retry since there is no mathematical potentiol to meet quorum
+			expectedErrors: 0,
+			useSameData:    0, // 0 means all different data
+		},
+		{
+			name: "quorum met with same data from min providers",
+			quorumParams: common.QuorumParams{
+				Min:  3,
+				Rate: 0.6,
+				Max:  5,
+			},
+			successResults: 3,
+			nodeErrors:     0,
+			tries:          1,
+			expectedResult: true, // Same data should meet quorum
+			expectedErrors: 0,
+			useSameData:    2, // 2 providers with same data, 1 with different
+		},
+		{
+			name: "quorum met with all providers sending same data",
+			quorumParams: common.QuorumParams{
+				Min:  2,
+				Rate: 0.6,
+				Max:  5,
+			},
+			successResults: 3,
+			nodeErrors:     0,
+			tries:          1,
+			expectedResult: true, // All same data should definitely meet quorum
+			expectedErrors: 0,
+			useSameData:    3, // All 3 providers with same data
+		},
+		{
+			name: "quorum not met with mixed data (1 same, 2 different)",
+			quorumParams: common.QuorumParams{
+				Min:  3,
+				Rate: 0.6,
+				Max:  5,
+			},
+			successResults: 3,
+			nodeErrors:     0,
+			tries:          1,
+			expectedResult: false, // Mixed data won't meet quorum
+			expectedErrors: 0,
+			useSameData:    1, // Only 1 provider with same data
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			// Create a minimal protocol message to avoid nil pointer panic
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				tt.quorumParams,
+				nil,
+				relayProcessorMetrics,
+				relayProcessorMetrics,
+				relayRetriesManagerInstance,
+				NewRelayStateMachine(ctx, lavasession.NewUsedProviders(nil), &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics),
+				qos.NewQoSManager(),
+			)
+
+			// Set the batch size so WaitForResults knows how many responses to expect
+			consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+			for i := 0; i < tt.successResults+tt.nodeErrors; i++ {
+				consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+			}
+			relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+			// Create mock responses to populate the results
+			for i := 0; i < tt.successResults; i++ {
+				var data []byte
+				if i < tt.useSameData {
+					// Use same data for the first 'useSameData' providers (should meet quorum)
+					data = mockData
+				} else {
+					// Use different data for remaining providers (should not meet quorum)
+					// Create unique data by adding 'i' to the timestamp for each provider
+					uniqueTimestamp := baseTimestamp + i
+					data = []byte(fmt.Sprintf(`{"result": "success", "data": "mock%d", "timestamp": %d}`, i+1, uniqueTimestamp))
+				}
+
+				mockResponse := createMockRelayResponseWithData(
+					fmt.Sprintf("provider%d", i),
+					data,
+					nil,
+				)
+				relayProcessor.SetResponse(mockResponse)
+			}
+
+			for i := 0; i < tt.nodeErrors; i++ {
+				mockResponse := createMockRelayResponseWithData(
+					fmt.Sprintf("provider%d", i+tt.successResults),
+					[]byte(`{"error": "node error"}`),
+					fmt.Errorf("node error"),
+				)
+				relayProcessor.SetResponse(mockResponse)
+			}
+
+			// Wait for responses to be processed
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(ctx)
+
+			// Test the quorum functionality
+			result, errors := relayProcessor.HasRequiredNodeResults(tt.tries)
+
+			require.Equal(t, tt.expectedResult, result, "quorum result mismatch")
+			require.Equal(t, tt.expectedErrors, errors, "error count mismatch")
+		})
+	}
+}
