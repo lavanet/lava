@@ -240,7 +240,11 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 
 	for idx, provider := range providers {
 		// Only take the provider entries relevant for this apiInterface
-		if (provider.ApiInterface != rpcEndpoint.ApiInterface) || (provider.ChainID != rpcEndpoint.ChainID) {
+		if provider.ApiInterface != rpcEndpoint.ApiInterface {
+			continue
+		}
+
+		if provider.ChainID != rpcEndpoint.ChainID {
 			continue
 		}
 
