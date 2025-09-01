@@ -490,9 +490,9 @@
                                 ]
                             },
                             {
-                                "name": "pruning-archive",
+                                "name": "pruning-archive-10000000",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":9820210},\"id\":1}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":10000000},\"id\":1}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
@@ -507,14 +507,36 @@
                                 "values": [
                                     {
                                         "extension": "archive",
-                                        "expected_value": "9820210"
+                                        "expected_value": "10000000"
                                     }
                                 ]
                             },
                             {
-                                "name": "tracking-shards",
+                                "name": "pruning-archive-158184433",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"floor.is.lava\"}}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":158184433},\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "header",
+                                            "height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "block"
+                                },
+                                "values": [
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "158184433"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-0",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967401.near\"}}",
                                     "function_tag": "VERIFICATION",
                                     "parsers": [
                                         {
@@ -532,8 +554,207 @@
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*",
-                                        "severity": "Warning"
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-1",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967409.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-2",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967404.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-3",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967402.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-4",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967410.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-5",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967406.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-6",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967374.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-7",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967387.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tracking-shard-8",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":\"dontcare\",\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"kkuuue2akv_1630967390.near\"}}",
+                                    "function_tag": "VERIFICATION",
+                                    "parsers": [
+                                        {
+                                            "parse_path": ".error.cause.name",
+                                            "value": "UNKNOWN_ACCOUNT",
+                                            "parse_type": "RESULT"
+                                        },
+                                        {
+                                            "parse_path": ".result.amount",
+                                            "value": "*",
+                                            "parse_type": "RESULT"
+                                        }
+                                    ],
+                                    "api_name": "query"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
                                     }
                                 ]
                             }
