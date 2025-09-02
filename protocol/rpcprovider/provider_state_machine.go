@@ -43,6 +43,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
+	var errorMessage string
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
 		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
@@ -58,14 +59,14 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			utils.LavaFormatDebug("node reply received", utils.LogAttr("attempt", retryAttempt), utils.LogAttr("timeTaken", time.Since(sendTime)), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
+		// Check for node errors
+		isNodeError, errorMessage = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
+
 		// Failed fetching hash return the reply.
 		if requestHashString == "" {
 			utils.LavaFormatWarning("Failed to hash request, shouldn't happen", nil, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 			break // We can't perform the retries as we failed fetching the request hash.
 		}
-
-		// Check for node errors
-		isNodeError, errorMessage := chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
 		if !isNodeError {
 			// Successful relay, remove it from the cache if we have it and return a valid response.
 			go psm.relayRetriesManager.RemoveHashFromCache(requestHashString)
@@ -79,15 +80,34 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 			// Extract method name if available
 			methodName := ""
+			apiInterface := ""
 			if chainMsg != nil && chainMsg.GetApi() != nil {
 				methodName = chainMsg.GetApi().Name
+				if chainMsg.GetApiCollection() != nil {
+					apiInterface = chainMsg.GetApiCollection().CollectionData.ApiInterface
+				}
 			}
 
-			utils.LavaFormatTrace("received unsupported method error, marking for no payment generation",
+			// Comprehensive structured logging
+			utils.LavaFormatInfo("unsupported method error detected - preventing payment generation",
+				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", errorMessage),
 				utils.LogAttr("method", methodName),
+				utils.LogAttr("api_interface", apiInterface),
+				utils.LogAttr("chain_id", psm.chainId),
 				utils.LogAttr("url", request.RelayData.ApiUrl),
-				utils.LogAttr("data", string(request.RelayData.Data)))
+				utils.LogAttr("consumer_address", request.RelayData.GetMetadata()),
+				utils.LogAttr("session_id", request.RelaySession.SessionId),
+				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+				utils.LogAttr("spec_id", request.RelaySession.SpecId),
+				utils.LogAttr("cu_sum", request.RelaySession.CuSum),
+				utils.LogAttr("request_block", request.RelayData.RequestBlock),
+				utils.LogAttr("seen_block", request.RelayData.SeenBlock),
+				utils.LogAttr("timestamp", time.Now().UTC()),
+				utils.LogAttr("retry_attempt", retryAttempt),
+				utils.LogAttr("request_data", string(request.RelayData.Data)),
+				utils.LogAttr("status_code", replyWrapper.StatusCode),
+			)
 			return replyWrapper, nil
 		}
 
@@ -99,8 +119,8 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		utils.LavaFormatTrace("Errored Node Message, retrying message", utils.LogAttr("retry", retryAttempt))
 	}
 
-	if isNodeError {
-		utils.LavaFormatTrace("failed all relay retries for message")
+	if isNodeError && requestHashString != "" {
+		utils.LavaFormatTrace("failed all relay retries for message", utils.LogAttr("hash", requestHashString))
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
 	return replyWrapper, nil

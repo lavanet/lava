@@ -21,6 +21,36 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
+// Error pattern constants for unsupported method detection
+const (
+	// JSON-RPC error patterns
+	JSONRPCMethodNotFound     = "method not found"
+	JSONRPCMethodNotSupported = "method not supported"
+	JSONRPCUnknownMethod      = "unknown method"
+	JSONRPCMethodDoesNotExist = "method does not exist"
+	JSONRPCInvalidMethod      = "invalid method"
+	JSONRPCErrorCode          = "-32601" // JSON-RPC 2.0 method not found error code
+
+	// REST API error patterns
+	RESTEndpointNotFound = "endpoint not found"
+	RESTRouteNotFound    = "route not found"
+	RESTPathNotFound     = "path not found"
+	RESTNotFound         = "not found"
+	RESTMethodNotAllowed = "method not allowed"
+
+	// gRPC error patterns
+	GRPCMethodNotImplemented = "method not implemented"
+	GRPCUnimplemented        = "unimplemented"
+	GRPCServiceNotFound      = "service not found"
+
+	// HTTP status codes for unsupported endpoints
+	HTTPStatusNotFound         = 404
+	HTTPStatusMethodNotAllowed = 405
+
+	// JSON-RPC error code for method not found
+	JSONRPCMethodNotFoundCode = -32601
+)
+
 type UnsupportedMethodError struct {
 	originalError error
 	methodName    string
@@ -51,6 +81,33 @@ func NewUnsupportedMethodError(originalError error, methodName string) *Unsuppor
 	}
 }
 
+// GetUnsupportedMethodPatterns returns all error patterns that indicate an unsupported method
+// This is useful for documentation and testing purposes
+func GetUnsupportedMethodPatterns() map[string][]string {
+	return map[string][]string{
+		"json-rpc": {
+			JSONRPCMethodNotFound,
+			JSONRPCMethodNotSupported,
+			JSONRPCUnknownMethod,
+			JSONRPCMethodDoesNotExist,
+			JSONRPCInvalidMethod,
+			JSONRPCErrorCode,
+		},
+		"rest": {
+			RESTEndpointNotFound,
+			RESTRouteNotFound,
+			RESTPathNotFound,
+			RESTNotFound,
+			RESTMethodNotAllowed,
+		},
+		"grpc": {
+			GRPCMethodNotImplemented,
+			GRPCUnimplemented,
+			GRPCServiceNotFound,
+		},
+	}
+}
+
 // IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
 // This is a convenience function that accepts a string directly
 func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
@@ -62,29 +119,29 @@ func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
 
 	switch {
 	// JSON-RPC method not found patterns
-	case strings.Contains(errorMsg, "method not found"),
-		strings.Contains(errorMsg, "method not supported"),
-		strings.Contains(errorMsg, "unknown method"),
-		strings.Contains(errorMsg, "method does not exist"),
-		strings.Contains(errorMsg, "invalid method"):
+	case strings.Contains(errorMsg, JSONRPCMethodNotFound),
+		strings.Contains(errorMsg, JSONRPCMethodNotSupported),
+		strings.Contains(errorMsg, JSONRPCUnknownMethod),
+		strings.Contains(errorMsg, JSONRPCMethodDoesNotExist),
+		strings.Contains(errorMsg, JSONRPCInvalidMethod):
 		return true
 
 	// REST API patterns
-	case strings.Contains(errorMsg, "endpoint not found"),
-		strings.Contains(errorMsg, "route not found"),
-		strings.Contains(errorMsg, "path not found"),
-		strings.Contains(errorMsg, "not found"),
-		strings.Contains(errorMsg, "method not allowed"):
+	case strings.Contains(errorMsg, RESTEndpointNotFound),
+		strings.Contains(errorMsg, RESTRouteNotFound),
+		strings.Contains(errorMsg, RESTPathNotFound),
+		strings.Contains(errorMsg, RESTNotFound),
+		strings.Contains(errorMsg, RESTMethodNotAllowed):
 		return true
 
 	// gRPC patterns
-	case strings.Contains(errorMsg, "method not implemented"),
-		strings.Contains(errorMsg, "unimplemented"),
-		strings.Contains(errorMsg, "service not found"):
+	case strings.Contains(errorMsg, GRPCMethodNotImplemented),
+		strings.Contains(errorMsg, GRPCUnimplemented),
+		strings.Contains(errorMsg, GRPCServiceNotFound):
 		return true
 
 	// Check for JSON-RPC error code -32601 (Method not found) in the message
-	case strings.Contains(errorMsg, "-32601"):
+	case strings.Contains(errorMsg, JSONRPCErrorCode):
 		return true
 
 	default:
@@ -105,7 +162,7 @@ func IsUnsupportedMethodError(nodeError error) bool {
 
 	// Check for HTTP status codes that indicate unsupported endpoints
 	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
-		return httpError.StatusCode == 404 || httpError.StatusCode == 405
+		return httpError.StatusCode == HTTPStatusNotFound || httpError.StatusCode == HTTPStatusMethodNotAllowed
 	}
 
 	// Check for gRPC status codes
@@ -116,7 +173,7 @@ func IsUnsupportedMethodError(nodeError error) bool {
 	// Try to recover JSON-RPC error from HTTP error
 	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
 		// JSON-RPC error code -32601 is "Method not found"
-		if jsonMsg.Error.Code == -32601 {
+		if jsonMsg.Error.Code == JSONRPCMethodNotFoundCode {
 			return true
 		}
 		// Check error message patterns in JSON-RPC error

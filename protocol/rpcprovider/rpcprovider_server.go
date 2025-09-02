@@ -325,11 +325,28 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
 		)
 	} else if sendRewards && replyWrapper != nil && replyWrapper.ShouldNotGeneratePayment {
-		utils.LavaFormatTrace("Payment generation prevented for unsupported method",
-			utils.LogAttr("request.SessionId", request.RelaySession.SessionId),
+		// Comprehensive logging for payment prevention
+		apiInterface := ""
+		if chainMessage.GetApiCollection() != nil {
+			apiInterface = chainMessage.GetApiCollection().CollectionData.ApiInterface
+		}
+
+		utils.LavaFormatInfo("payment generation skipped - unsupported method",
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("session_id", request.RelaySession.SessionId),
+			utils.LogAttr("relay_num", request.RelaySession.RelayNum),
 			utils.LogAttr("method", chainMessage.GetApi().Name),
-			utils.LogAttr("url", request.RelayData.ApiUrl))
+			utils.LogAttr("api_interface", apiInterface),
+			utils.LogAttr("url", request.RelayData.ApiUrl),
+			utils.LogAttr("consumer", consumerAddress.String()),
+			utils.LogAttr("chain_id", request.RelaySession.SpecId),
+			utils.LogAttr("cu_sum", request.RelaySession.CuSum),
+			utils.LogAttr("epoch", request.RelaySession.Epoch),
+			utils.LogAttr("provider", rpcps.providerAddress.String()),
+			utils.LogAttr("timestamp", time.Now().UTC()),
+			utils.LogAttr("request_block", request.RelayData.RequestBlock),
+			utils.LogAttr("reply_block", replyBlock),
+		)
 	}
 	return nil
 }
@@ -811,7 +828,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var ignoredMetadata []pairingtypes.Metadata
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
-	
+
 	if requestedBlockHash != nil || finalized { // try get reply from cache
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}

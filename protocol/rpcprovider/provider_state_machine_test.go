@@ -60,19 +60,24 @@ func TestStateMachineAllFailureFlows(t *testing.T) {
 		AnyTimes()
 	chainMsgMock.
 		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
 		CheckResponseError(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(msg interface{}, msg2 interface{}) (interface{}, interface{}) {
 			if returnFalse {
 				return false, ""
 			}
-			return true, ""
+			return true, "some node error"
 		}).
 		AnyTimes()
 	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
 	hash, _ := chainMsgMock.GetRawRequestHash()
 	require.Equal(t, numberOfRetriesAllowedOnNodeErrors+1, relaySender.numberOfTimesHitSendNodeMsg)
 	for i := 0; i < 10; i++ {
-		// wait for routine to end..
+		// wait for routine to end and cache to become consistent
 		if stateMachine.relayRetriesManager.CheckHashInCache(string(hash)) {
 			break
 		}
@@ -97,19 +102,24 @@ func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 		AnyTimes()
 	chainMsgMock.
 		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
 		CheckResponseError(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(msg interface{}, msg2 interface{}) (interface{}, interface{}) {
 			if returnFalse {
 				return false, ""
 			}
-			return true, ""
+			return true, "some node error"
 		}).
 		AnyTimes()
 	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
 	hash, _ := chainMsgMock.GetRawRequestHash()
 	require.Equal(t, numberOfRetriesAllowedOnNodeErrors+1, relaySender.numberOfTimesHitSendNodeMsg)
 	for i := 0; i < 10; i++ {
-		// wait for routine to end..
+		// wait for routine to end and cache to become consistent
 		if stateMachine.relayRetriesManager.CheckHashInCache(string(hash)) {
 			break
 		}
