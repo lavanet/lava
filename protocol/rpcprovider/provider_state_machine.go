@@ -65,10 +65,29 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		}
 
 		// Check for node errors
-		isNodeError, _ = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
+		isNodeError, errorMessage := chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
 		if !isNodeError {
 			// Successful relay, remove it from the cache if we have it and return a valid response.
 			go psm.relayRetriesManager.RemoveHashFromCache(requestHashString)
+			return replyWrapper, nil
+		}
+
+		// Check if this is an unsupported method error
+		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
+			// Don't retry, don't cache, and mark for no-payment
+			replyWrapper.ShouldNotGeneratePayment = true
+
+			// Extract method name if available
+			methodName := ""
+			if chainMsg != nil && chainMsg.GetApi() != nil {
+				methodName = chainMsg.GetApi().Name
+			}
+
+			utils.LavaFormatTrace("received unsupported method error, marking for no payment generation",
+				utils.LogAttr("error", errorMessage),
+				utils.LogAttr("method", methodName),
+				utils.LogAttr("url", request.RelayData.ApiUrl),
+				utils.LogAttr("data", string(request.RelayData.Data)))
 			return replyWrapper, nil
 		}
 

@@ -21,6 +21,113 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
+type UnsupportedMethodError struct {
+	originalError error
+	methodName    string
+}
+
+func (e *UnsupportedMethodError) Error() string {
+	if e.methodName != "" {
+		return fmt.Sprintf("unsupported method '%s': %v", e.methodName, e.originalError)
+	}
+	return fmt.Sprintf("unsupported method: %v", e.originalError)
+}
+
+func (e *UnsupportedMethodError) Unwrap() error {
+	return e.originalError
+}
+
+// WithMethod sets the method name for the error
+func (e *UnsupportedMethodError) WithMethod(method string) *UnsupportedMethodError {
+	e.methodName = method
+	return e
+}
+
+// NewUnsupportedMethodError creates a new UnsupportedMethodError with optional method name
+func NewUnsupportedMethodError(originalError error, methodName string) *UnsupportedMethodError {
+	return &UnsupportedMethodError{
+		originalError: originalError,
+		methodName:    methodName,
+	}
+}
+
+// IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
+// This is a convenience function that accepts a string directly
+func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
+	if errorMessage == "" {
+		return false
+	}
+
+	errorMsg := strings.ToLower(errorMessage)
+
+	switch {
+	// JSON-RPC method not found patterns
+	case strings.Contains(errorMsg, "method not found"),
+		strings.Contains(errorMsg, "method not supported"),
+		strings.Contains(errorMsg, "unknown method"),
+		strings.Contains(errorMsg, "method does not exist"),
+		strings.Contains(errorMsg, "invalid method"):
+		return true
+
+	// REST API patterns
+	case strings.Contains(errorMsg, "endpoint not found"),
+		strings.Contains(errorMsg, "route not found"),
+		strings.Contains(errorMsg, "path not found"),
+		strings.Contains(errorMsg, "not found"),
+		strings.Contains(errorMsg, "method not allowed"):
+		return true
+
+	// gRPC patterns
+	case strings.Contains(errorMsg, "method not implemented"),
+		strings.Contains(errorMsg, "unimplemented"),
+		strings.Contains(errorMsg, "service not found"):
+		return true
+
+	// Check for JSON-RPC error code -32601 (Method not found) in the message
+	case strings.Contains(errorMsg, "-32601"):
+		return true
+
+	default:
+		return false
+	}
+}
+
+// IsUnsupportedMethodError checks if an error indicates an unsupported method
+func IsUnsupportedMethodError(nodeError error) bool {
+	if nodeError == nil {
+		return false
+	}
+
+	// First check the error message patterns
+	if IsUnsupportedMethodErrorMessage(nodeError.Error()) {
+		return true
+	}
+
+	// Check for HTTP status codes that indicate unsupported endpoints
+	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
+		return httpError.StatusCode == 404 || httpError.StatusCode == 405
+	}
+
+	// Check for gRPC status codes
+	if st, ok := status.FromError(nodeError); ok {
+		return st.Code() == codes.Unimplemented
+	}
+
+	// Try to recover JSON-RPC error from HTTP error
+	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
+		// JSON-RPC error code -32601 is "Method not found"
+		if jsonMsg.Error.Code == -32601 {
+			return true
+		}
+		// Check error message patterns in JSON-RPC error
+		if jsonMsg.Error.Message != "" {
+			return IsUnsupportedMethodErrorMessage(jsonMsg.Error.Message)
+		}
+	}
+
+	return false
+}
+
 type genericErrorHandler struct{}
 
 func (geh *genericErrorHandler) handleConnectionError(err error) error {
@@ -153,24 +260,40 @@ type RestErrorHandler struct{ genericErrorHandler }
 // Validating if the error is related to the provider connection or not
 // returning nil if its not one of the expected connectivity error types
 func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return rne.handleGenericErrors(ctx, nodeError)
 }
 
 type JsonRPCErrorHandler struct{ genericErrorHandler }
 
 func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return jeh.handleGenericErrors(ctx, nodeError)
 }
 
 type TendermintRPCErrorHandler struct{ genericErrorHandler }
 
 func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
 }
 
 type GRPCErrorHandler struct{ genericErrorHandler }
 
 func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	st, ok := status.FromError(nodeError)
 	if ok {
 		// Get the error message from the gRPC status

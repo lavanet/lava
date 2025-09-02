@@ -96,4 +96,4 @@ config/health_examples/health_template_gen.yml
 # Yarn
 .yarn/
 
-**/dist/
+**/dist/!/Compute Unit Model.md
