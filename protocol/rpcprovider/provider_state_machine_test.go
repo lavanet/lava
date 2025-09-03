@@ -2,6 +2,7 @@ package rpcprovider
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -31,6 +32,11 @@ func TestStateMachineHappyFlow(t *testing.T) {
 		EXPECT().
 		GetRawRequestHash().
 		Return([]byte{1, 2, 3}, nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApi().
+		Return(nil).
 		AnyTimes()
 	chainMsgMock.
 		EXPECT().
@@ -139,4 +145,64 @@ func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 	require.False(t, stateMachine.relayRetriesManager.CheckHashInCache(string(hash)))
+}
+
+type unsupportedMethodRelaySenderMock struct {
+	numberOfTimesHitSendNodeMsg int
+}
+
+func (rs *unsupportedMethodRelaySenderMock) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (relayReply *chainlib.RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
+	rs.numberOfTimesHitSendNodeMsg++
+	// Return a response that contains an unsupported method error
+	return &chainlib.RelayReplyWrapper{
+		RelayReply: &types.RelayReply{
+			Data: []byte(`{"error":{"code":-32601,"message":"method not found"},"id":1}`),
+		},
+		StatusCode: 200,
+	}, "", nil, common.NodeUrl{}, "", nil
+}
+
+func TestStateMachineUnsupportedMethodError(t *testing.T) {
+	relaySender := &unsupportedMethodRelaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors)
+	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
+
+	// Mock chain message behavior
+	chainMsgMock.
+		EXPECT().
+		GetRawRequestHash().
+		Return([]byte{1, 2, 3}, nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		CheckResponseError(gomock.Any(), gomock.Any()).
+		Return(true, "method not found").
+		AnyTimes()
+
+	// Execute the test
+	ctx := context.Background()
+	result, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
+		RelayData: &types.RelayPrivateData{Extensions: []string{}},
+		RelaySession: &types.RelaySession{
+			SessionId: 123,
+			RelayNum:  1,
+		},
+	})
+
+	// Verify that an error is returned for unsupported methods
+	require.Error(t, err)
+	require.Nil(t, result)
+
+	// Verify that the error is an UnsupportedMethodError
+	var unsupportedError *chainlib.UnsupportedMethodError
+	require.True(t, errors.As(err, &unsupportedError))
+	require.Contains(t, err.Error(), "unsupported method")
+
+	// Verify that we only hit the relay sender once (no retries for unsupported methods)
+	require.Equal(t, 1, relaySender.numberOfTimesHitSendNodeMsg)
 }

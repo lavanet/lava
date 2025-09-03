@@ -41,6 +41,7 @@ const (
 	// gRPC error patterns
 	GRPCMethodNotImplemented = "method not implemented"
 	GRPCUnimplemented        = "unimplemented"
+	GRPCNotImplemented       = "not implemented"
 	GRPCServiceNotFound      = "service not found"
 
 	// HTTP status codes for unsupported endpoints
@@ -73,6 +74,11 @@ func (e *UnsupportedMethodError) WithMethod(method string) *UnsupportedMethodErr
 	return e
 }
 
+// GetMethodName returns the method name associated with this error
+func (e *UnsupportedMethodError) GetMethodName() string {
+	return e.methodName
+}
+
 // NewUnsupportedMethodError creates a new UnsupportedMethodError with optional method name
 func NewUnsupportedMethodError(originalError error, methodName string) *UnsupportedMethodError {
 	return &UnsupportedMethodError{
@@ -103,6 +109,7 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 		"grpc": {
 			GRPCMethodNotImplemented,
 			GRPCUnimplemented,
+			GRPCNotImplemented,
 			GRPCServiceNotFound,
 		},
 	}
@@ -137,6 +144,7 @@ func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
 	// gRPC patterns
 	case strings.Contains(errorMsg, GRPCMethodNotImplemented),
 		strings.Contains(errorMsg, GRPCUnimplemented),
+		strings.Contains(errorMsg, GRPCNotImplemented),
 		strings.Contains(errorMsg, GRPCServiceNotFound):
 		return true
 

@@ -294,12 +294,25 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			}
 			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: %s", extraInfo)
 		}
-		err = utils.LavaFormatError("TryRelay Failed", err,
-			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-			utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
-			utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
-		)
+
+		// Check if this is an unsupported method error
+		var unsupportedMethodError *chainlib.UnsupportedMethodError
+		if errors.As(err, &unsupportedMethodError) {
+			utils.LavaFormatInfo("CU rolled back for unsupported method error returned to consumer",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("session_id", request.RelaySession.SessionId),
+				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+				utils.LogAttr("method", unsupportedMethodError.GetMethodName()),
+				utils.LogAttr("error", unsupportedMethodError.Error()),
+			)
+		} else {
+			err = utils.LavaFormatError("TryRelay Failed", err,
+				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+				utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
+				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
+			)
+		}
 		return err
 	}
 
@@ -307,7 +320,35 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	pairingEpoch := relaySession.PairingEpoch
 	sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
 	replyBlock := reply.LatestBlock
-	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
+
+	// Check if we need to rollback CU for unsupported method before unlocking the session
+	unsupportedMethodHandled := false
+	if sendRewards && replyWrapper != nil && replyWrapper.ShouldNotGeneratePayment {
+		// Rollback the CU that was reserved in PrepareSessionForUsage
+		// Since we're not generating payment, we should not charge the consumer for this relay
+		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+		if relayFailureError != nil {
+			utils.LavaFormatError("Failed to rollback CU for unsupported method", relayFailureError,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("session_id", request.RelaySession.SessionId),
+				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+			)
+		} else {
+			utils.LavaFormatInfo("CU rolled back for unsupported method",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("session_id", request.RelaySession.SessionId),
+				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+				utils.LogAttr("method", chainMessage.GetApi().Name),
+			)
+			unsupportedMethodHandled = true
+		}
+	}
+
+	// Skip OnSessionDone if we've already handled the session via OnSessionFailure for unsupported methods
+	var relayError error
+	if !unsupportedMethodHandled {
+		relayError = rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
+	}
 	if relayError != nil {
 		utils.LavaFormatError("OnSession Done failure: ", relayError)
 	} else if sendRewards && (replyWrapper == nil || !replyWrapper.ShouldNotGeneratePayment) {

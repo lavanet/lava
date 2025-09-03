@@ -2,6 +2,8 @@ package rpcprovider
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -73,11 +75,12 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			return replyWrapper, nil
 		}
 
-		// Check if this is an unsupported method error
-		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
-			// Don't retry, don't cache, and mark for no-payment
-			replyWrapper.ShouldNotGeneratePayment = true
-
+		// Check if this is an unsupported method error OR if we're using a default API and got an error
+		isDefaultApi := false
+		if chainMsg != nil && chainMsg.GetApi() != nil {
+			isDefaultApi = strings.HasPrefix(chainMsg.GetApi().Name, chainlib.DefaultApiName)
+		}
+		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
 			// Extract method name if available
 			methodName := ""
 			apiInterface := ""
@@ -89,7 +92,11 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			}
 
 			// Comprehensive structured logging
-			utils.LavaFormatInfo("unsupported method error detected - preventing payment generation",
+			logMessage := "unsupported method error detected - returning error to consumer"
+			if isDefaultApi && !chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
+				logMessage = "default API error detected - returning error to consumer"
+			}
+			utils.LavaFormatInfo(logMessage,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", errorMessage),
 				utils.LogAttr("method", methodName),
@@ -107,8 +114,12 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 				utils.LogAttr("retry_attempt", retryAttempt),
 				utils.LogAttr("request_data", string(request.RelayData.Data)),
 				utils.LogAttr("status_code", replyWrapper.StatusCode),
+				utils.LogAttr("is_default_api", isDefaultApi),
 			)
-			return replyWrapper, nil
+
+			// Return an UnsupportedMethodError to the consumer so they don't increment their CU counter
+			unsupportedError := chainlib.NewUnsupportedMethodError(errors.New(errorMessage), methodName)
+			return nil, unsupportedError
 		}
 
 		// On the first retry, check if this hash has already failed previously

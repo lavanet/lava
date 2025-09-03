@@ -41,6 +41,18 @@ func TestUnsupportedMethodError(t *testing.T) {
 
 		require.Equal(t, originalErr, err.Unwrap())
 	})
+
+	t.Run("GetMethodName returns method name", func(t *testing.T) {
+		originalErr := errors.New("original error")
+		err := NewUnsupportedMethodError(originalErr, "test-method")
+		require.Equal(t, "test-method", err.GetMethodName())
+	})
+
+	t.Run("GetMethodName returns empty string when no method name", func(t *testing.T) {
+		originalErr := errors.New("original error")
+		err := NewUnsupportedMethodError(originalErr, "")
+		require.Equal(t, "", err.GetMethodName())
+	})
 }
 
 func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
@@ -120,6 +132,11 @@ func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 		{
 			name:     "gRPC unimplemented",
 			message:  "UNIMPLEMENTED: unknown service",
+			expected: true,
+		},
+		{
+			name:     "gRPC not implemented capitalized",
+			message:  "Not Implemented",
 			expected: true,
 		},
 		{
