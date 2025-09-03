@@ -47,7 +47,7 @@
                 ]
             },
             {
-                "index": "HEDERATest",
+                "index": "HEDERAT",
                 "name": "hedera testnet",
                 "enabled": true,
                 "imports": [
