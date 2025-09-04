@@ -348,6 +348,16 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	var relayError error
 	if !unsupportedMethodHandled {
 		relayError = rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
+	} else {
+		// For unsupported methods, manually update the relay number since we skipped OnSessionDone
+		// This ensures the relay counter is properly incremented even when we skip OnSessionDone
+		relaySession.RelayNum = request.RelaySession.RelayNum
+		utils.LavaFormatDebug("Manually updated relay number for unsupported method",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("session_id", request.RelaySession.SessionId),
+			utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+			utils.LogAttr("method", chainMessage.GetApi().Name),
+		)
 	}
 	if relayError != nil {
 		utils.LavaFormatError("OnSession Done failure: ", relayError)
