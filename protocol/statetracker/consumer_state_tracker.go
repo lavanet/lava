@@ -55,7 +55,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	return cst, err
 }
 
-func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint) {
+func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint) {
 	// register this CSM to get the updated pairing list when a new epoch starts
 	pairingUpdater := updaters.NewPairingUpdater(cst.StateQuery, consumerSessionManager.RPCEndpoint().ChainID)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
@@ -64,7 +64,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
 	}
 
-	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager, staticProvidersList)
+	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 	if err != nil {
 		// if failed registering pairing, continue trying asynchronously
 		go func() {
@@ -72,7 +72,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 			for {
 				utils.LavaFormatError("Failed retry RegisterPairing", err, utils.LogAttr("attempt", numberOfAttempts), utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
 				time.Sleep(5 * time.Second) // sleep so we don't spam get pairing for no reason
-				err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager, staticProvidersList)
+				err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 				if err == nil {
 					break
 				}

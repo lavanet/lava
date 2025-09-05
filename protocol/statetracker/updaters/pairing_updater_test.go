@@ -188,8 +188,8 @@ func TestPairingUpdater(t *testing.T) {
 				3: {StaticProvider: true},
 			},
 		}
-		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher).Times(1).Return(nil)
-		err := pu.RegisterPairing(context.Background(), consumerSessionManager, staticProviders)
+		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher, gomock.Any()).Times(1).Return(nil)
+		err := pu.RegisterPairing(context.Background(), consumerSessionManager, staticProviders, nil)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -198,7 +198,7 @@ func TestPairingUpdater(t *testing.T) {
 			t.Errorf("Expected 1 consumer session manager, got %d", len(pu.consumerSessionManagersMap))
 		}
 
-		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher).Times(1).Return(nil)
+		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher, gomock.Any()).Times(1).Return(nil)
 		pu.Update(20)
 	})
 }

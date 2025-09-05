@@ -141,15 +141,15 @@ func (mr *MockConsumerSessionManagerInfMockRecorder) RPCEndpoint() *gomock.Call 
 }
 
 // UpdateAllProviders mocks base method.
-func (m *MockConsumerSessionManagerInf) UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider) error {
+func (m *MockConsumerSessionManagerInf) UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, backupProviderList map[uint64]*lavasession.ConsumerSessionsWithProvider) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAllProviders", epoch, pairingList)
+	ret := m.ctrl.Call(m, "UpdateAllProviders", epoch, pairingList, backupProviderList)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateAllProviders indicates an expected call of UpdateAllProviders.
-func (mr *MockConsumerSessionManagerInfMockRecorder) UpdateAllProviders(epoch, pairingList interface{}) *gomock.Call {
+func (mr *MockConsumerSessionManagerInfMockRecorder) UpdateAllProviders(epoch, pairingList, backupProviderList interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAllProviders", reflect.TypeOf((*MockConsumerSessionManagerInf)(nil).UpdateAllProviders), epoch, pairingList)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAllProviders", reflect.TypeOf((*MockConsumerSessionManagerInf)(nil).UpdateAllProviders), epoch, pairingList, backupProviderList)
 }
