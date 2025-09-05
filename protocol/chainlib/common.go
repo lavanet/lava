@@ -45,9 +45,8 @@ var (
 )
 
 type RelayReplyWrapper struct {
-	StatusCode               int
-	RelayReply               *pairingtypes.RelayReply
-	ShouldNotGeneratePayment bool
+	StatusCode int
+	RelayReply *pairingtypes.RelayReply
 }
 
 type VerificationKey struct {

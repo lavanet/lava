@@ -321,47 +321,11 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
 	replyBlock := reply.LatestBlock
 
-	// Check if we need to rollback CU for unsupported method before unlocking the session
-	unsupportedMethodHandled := false
-	if sendRewards && replyWrapper != nil && replyWrapper.ShouldNotGeneratePayment {
-		// Rollback the CU that was reserved in PrepareSessionForUsage
-		// Since we're not generating payment, we should not charge the consumer for this relay
-		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
-		if relayFailureError != nil {
-			utils.LavaFormatError("Failed to rollback CU for unsupported method", relayFailureError,
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("session_id", request.RelaySession.SessionId),
-				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-			)
-		} else {
-			utils.LavaFormatInfo("CU rolled back for unsupported method",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("session_id", request.RelaySession.SessionId),
-				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-				utils.LogAttr("method", chainMessage.GetApi().Name),
-			)
-			unsupportedMethodHandled = true
-		}
-	}
-
-	// Skip OnSessionDone if we've already handled the session via OnSessionFailure for unsupported methods
-	var relayError error
-	if !unsupportedMethodHandled {
-		relayError = rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
-	} else {
-		// For unsupported methods, manually update the relay number since we skipped OnSessionDone
-		// This ensures the relay counter is properly incremented even when we skip OnSessionDone
-		relaySession.RelayNum = request.RelaySession.RelayNum
-		utils.LavaFormatDebug("Manually updated relay number for unsupported method",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("session_id", request.RelaySession.SessionId),
-			utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-			utils.LogAttr("method", chainMessage.GetApi().Name),
-		)
-	}
+	// For successful relays, call OnSessionDone to update session state
+	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 	if relayError != nil {
 		utils.LavaFormatError("OnSession Done failure: ", relayError)
-	} else if sendRewards && (replyWrapper == nil || !replyWrapper.ShouldNotGeneratePayment) {
+	} else if sendRewards {
 		// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 		// Therefore the signature changes, so we need the original copy to extract the address from it.
 		// we want this code to run in parallel so it doesn't stop the flow
@@ -374,29 +338,6 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
 			utils.Attribute{Key: "replyBlock", Value: replyBlock},
 			utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
-		)
-	} else if sendRewards && replyWrapper != nil && replyWrapper.ShouldNotGeneratePayment {
-		// Comprehensive logging for payment prevention
-		apiInterface := ""
-		if chainMessage.GetApiCollection() != nil {
-			apiInterface = chainMessage.GetApiCollection().CollectionData.ApiInterface
-		}
-
-		utils.LavaFormatInfo("payment generation skipped - unsupported method",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("session_id", request.RelaySession.SessionId),
-			utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-			utils.LogAttr("method", chainMessage.GetApi().Name),
-			utils.LogAttr("api_interface", apiInterface),
-			utils.LogAttr("url", request.RelayData.ApiUrl),
-			utils.LogAttr("consumer", consumerAddress.String()),
-			utils.LogAttr("chain_id", request.RelaySession.SpecId),
-			utils.LogAttr("cu_sum", request.RelaySession.CuSum),
-			utils.LogAttr("epoch", request.RelaySession.Epoch),
-			utils.LogAttr("provider", rpcps.providerAddress.String()),
-			utils.LogAttr("timestamp", time.Now().UTC()),
-			utils.LogAttr("request_block", request.RelayData.RequestBlock),
-			utils.LogAttr("reply_block", replyBlock),
 		)
 	}
 	return nil
