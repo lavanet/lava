@@ -481,6 +481,11 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
 			}
 
+			// Check if the error message indicates an unsupported method
+			if IsUnsupportedMethodErrorMessage(err.Error()) {
+				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcMethodNotFoundError)
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
