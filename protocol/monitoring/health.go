@@ -33,15 +33,55 @@ import (
 var QueryRetries = uint64(3)
 
 const (
-	BasicQueryRetries = 3
-	QuerySleepTime    = 100 * time.Millisecond
-	NiceOutputLength  = 100
+	BasicQueryRetries                 = 3
+	QuerySleepTime                    = 100 * time.Millisecond
+	NiceOutputLength                  = 100
+	HealthProbeConnectionTimeout      = 3000 * time.Millisecond // 3 seconds for most chains
+	HealthProbeSlowChainTimeout       = 5000 * time.Millisecond // 5 seconds for slow chains
+	HealthProbeVerySlowChainTimeout   = 8000 * time.Millisecond // 8 seconds for very slow chains
 )
 
 type LavaEntity struct {
 	Address      string `json:"address"`
 	SpecId       string `json:"specId"`
 	ApiInterface string `json:"apiInterface"`
+}
+
+// getHealthProbeTimeout returns appropriate timeout for different chains
+func getHealthProbeTimeout(chainID string) time.Duration {
+	// Very slow chains that need maximum time
+	verySlowChains := map[string]bool{
+		"HYPERLIQUIDT": true, // HyperLiquid needs extra time due to network architecture
+	}
+	
+	// Known slow chains that need extra time
+	slowChains := map[string]bool{
+		"NEAR": true, // NEAR sharded architecture adds latency
+		"FVM":  true, // Filecoin can be slower
+	}
+	
+	if verySlowChains[chainID] {
+		return HealthProbeVerySlowChainTimeout
+	}
+	if slowChains[chainID] {
+		return HealthProbeSlowChainTimeout
+	}
+	return HealthProbeConnectionTimeout
+}
+
+// connectToProviderWithHealthTimeout connects to provider with chain-specific timeout
+func connectToProviderWithHealthTimeout(ctx context.Context, addr string, chainID string) (pairingtypes.RelayerClient, *grpc.ClientConn, error) {
+	timeout := getHealthProbeTimeout(chainID)
+	connectCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	
+	conn, err := lavasession.ConnectGRPCClient(connectCtx, addr, lavasession.AllowInsecureConnectionToProviders, false, lavasession.AllowGRPCCompressionForConsumerProviderCommunication)
+	if err != nil {
+		return nil, nil, err
+	}
+	
+	client := pairingtypes.NewRelayerClient(conn)
+	return client, conn, nil
 }
 
 func (le LavaEntity) MarshalText() ([]byte, error) {
@@ -77,6 +117,8 @@ func RunHealth(ctx context.Context,
 	consumerEndpoints []*HealthRPCEndpoint,
 	referenceEndpoints []*HealthRPCEndpoint,
 	prometheusListenAddr string,
+	resultsPostGUID string,
+	singleProviderSpecsInterfacesData map[string][]string,
 ) (*HealthResults, error) {
 	specQuerier := spectypes.NewQueryClient(clientCtx)
 	healthResults := &HealthResults{
@@ -89,6 +131,8 @@ func RunHealth(ctx context.Context,
 		UnhealthyProviders: map[LavaEntity]string{},
 		UnhealthyConsumers: map[LavaEntity]string{},
 		Specs:              map[string]*spectypes.Spec{},
+		ResultsPostGUID:    resultsPostGUID,
+		ProviderAddresses:  providerAddresses,
 	}
 	currentBlock := int64(0)
 	for i := 0; i < BasicQueryRetries; i++ {
@@ -125,12 +169,31 @@ func RunHealth(ctx context.Context,
 		getAllProviders = true
 	}
 
+	// we can limit the specs we are checking if those where given as arguments
+	var lookupSpecsFromArg []string
+
+	if singleProviderSpecsInterfacesData != nil {
+		lookupSpecsFromArg = make([]string, 0, len(singleProviderSpecsInterfacesData))
+		for k := range singleProviderSpecsInterfacesData {
+			k = strings.ToUpper(strings.TrimSpace(k))
+			if len(k) > 2 {
+				lookupSpecsFromArg = append(lookupSpecsFromArg, k)
+			}
+		}
+		if len(lookupSpecsFromArg) == 0 {
+			lookupSpecsFromArg = nil
+		}
+	} else {
+		lookupSpecsFromArg = nil
+	}
+
 	errCh := make(chan error, 1)
+
+	stakeEntries := map[LavaEntity]epochstoragetypes.StakeEntry{}
 
 	// get a list of all necessary specs for the test
 	epochstorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 	if getAllProviders {
-		// var specResp *spectypes.QueryGetSpecResponse
 		var specsResp *spectypes.QueryShowAllChainsResponse
 		for i := 0; i < BasicQueryRetries; i++ {
 			queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -150,6 +213,20 @@ func RunHealth(ctx context.Context,
 		for _, specInfo := range specsResp.ChainInfoList {
 			healthResults.setSpec(&spectypes.Spec{Index: specInfo.ChainID})
 		}
+	} else if len(singleProviderSpecsInterfacesData) > 0 && len(providerAddresses) > 1 {
+		for _, providerAddress := range providerAddresses {
+			for spec, apiInterfaces := range singleProviderSpecsInterfacesData {
+				healthResults.setSpec(&spectypes.Spec{Index: spec})
+				for _, apiInterface := range apiInterfaces {
+					healthResults.SetProviderData(LavaEntity{
+						Address:      providerAddress,
+						SpecId:       spec,
+						ApiInterface: apiInterface,
+					}, ReplyData{})
+				}
+			}
+		}
+
 	} else {
 		var wgproviders sync.WaitGroup
 		wgproviders.Add(len(providerAddresses))
@@ -190,6 +267,50 @@ func RunHealth(ctx context.Context,
 			go processProvider(providerAddress)
 		}
 		wgproviders.Wait()
+	}
+	
+	// Handle single provider with specific specs/interfaces
+	if len(singleProviderSpecsInterfacesData) > 0 && len(providerAddresses) == 1 {
+		var wgSingleProvider sync.WaitGroup
+		wgSingleProvider.Add(1)
+		processSingleProvider := func(providerAddress string) {
+			defer wgSingleProvider.Done()
+			for i := 0; i < BasicQueryRetries; i++ {
+				queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
+				response, err := pairingQuerier.Provider(queryCtx, &pairingtypes.QueryProviderRequest{
+					Address: providerAddress,
+				})
+				cancel()
+				if err != nil || response == nil || len(response.StakeEntries) == 0 {
+					if i == BasicQueryRetries-1 {
+						utils.LavaFormatWarning("Failed to get provider stake entries for single provider", err)
+					}
+					time.Sleep(QuerySleepTime)
+					continue
+				}
+
+				for _, stakeEntry := range response.StakeEntries {
+					for _, endpoint := range stakeEntry.Endpoints {
+						for _, apiInterface := range endpoint.ApiInterfaces {
+							providerWithSpecAndAPI := LavaEntity{
+								Address:      stakeEntry.Address,
+								SpecId:       stakeEntry.Chain,
+								ApiInterface: apiInterface,
+							}
+							if stakeEntry.StakeAppliedBlock > uint64(currentBlock) || stakeEntry.IsFrozen() {
+								healthResults.FreezeProvider(providerWithSpecAndAPI)
+							} else {
+								stakeEntries[providerWithSpecAndAPI] = stakeEntry
+							}
+						}
+					}
+				}
+				return
+			}
+		}
+		go processSingleProvider(providerAddresses[0])
+		wgSingleProvider.Wait()
 	}
 	for _, consumerEndpoint := range consumerEndpoints {
 		healthResults.setSpec(&spectypes.Spec{Index: consumerEndpoint.ChainID})
@@ -242,7 +363,6 @@ func RunHealth(ctx context.Context,
 	}
 	pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
 	utils.LavaFormatDebug("[+] getting provider entries")
-	stakeEntries := map[LavaEntity]epochstoragetypes.StakeEntry{}
 	var mutex sync.Mutex // Mutex to protect concurrent access to stakeEntries
 	wgspecs.Add(len(healthResults.getSpecs()))
 	processSpecProviders := func(specId string) {
@@ -307,6 +427,26 @@ func RunHealth(ctx context.Context,
 		go processSpecProviders(specId)
 	}
 	wgspecs.Wait()
+
+	// check for mismatches in the pairings query and the arguments
+
+	if len(providerAddresses) > 0 && len(singleProviderSpecsInterfacesData) > 0 {
+		for _, address := range providerAddresses {
+			for specId, apiInterfaces := range singleProviderSpecsInterfacesData {
+				for _, apiInterface := range apiInterfaces {
+					lookupKey := LavaEntity{
+						Address:      address,
+						SpecId:       specId,
+						ApiInterface: apiInterface,
+					}
+					if _, ok := stakeEntries[lookupKey]; !ok {
+						healthResults.SetUnhealthyProvider(lookupKey, "No stake entry found for provider-spec-api pair")
+					}
+				}
+			}
+		}
+	}
+
 	if len(errCh) > 0 {
 		return nil, utils.LavaFormatWarning("[-] processing providers entries", <-errCh)
 	}
@@ -542,8 +682,7 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		defer wg.Done()
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
-				cswp := lavasession.ConsumerSessionsWithProvider{}
-				relayerClient, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+				relayerClient, conn, err := connectToProviderWithHealthTimeout(ctx, endpoint.IPPORT, providerEntry.Chain)
 				if err != nil {
 					utils.LavaFormatDebug("failed connecting to provider endpoint", utils.LogAttr("error", err), utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					return 0, "", 0, err
