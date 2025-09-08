@@ -1485,25 +1485,61 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	}
 
 	metadataReply := []pairingtypes.Metadata{}
-	// add the provider that responded
 
-	providerAddress := relayResult.GetProvider()
-	if providerAddress == "" {
-		providerAddress = "Cached"
-	}
-	metadataReply = append(metadataReply,
-		pairingtypes.Metadata{
+	// Check if quorum feature is enabled
+	quorumParams := relayProcessor.GetQuorumParams()
+
+	if quorumParams.Enabled() {
+		// For quorum mode: show all participating providers instead of single provider
+		successResults, nodeErrors, _ := relayProcessor.GetResultsData()
+
+		allProvidersMap := make(map[string]bool)
+
+		// Add successful providers
+		for _, result := range successResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+			}
+		}
+
+		// Add providers that had node errors (they still participated)
+		for _, result := range nodeErrors {
+			if result.ProviderInfo.ProviderAddress != "" {
+				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+			}
+		}
+
+		// Convert to slice
+		allProvidersList := make([]string, 0, len(allProvidersMap))
+		for provider := range allProvidersMap {
+			allProvidersList = append(allProvidersList, provider)
+		}
+
+		if len(allProvidersList) > 0 {
+			allProvidersString := fmt.Sprintf("%v", allProvidersList)
+			metadataReply = append(metadataReply, pairingtypes.Metadata{
+				Name:  common.QUORUM_ALL_PROVIDERS_HEADER_NAME,
+				Value: allProvidersString,
+			})
+		}
+	} else {
+		// For non-quorum mode: keep existing single provider behavior
+		providerAddress := relayResult.GetProvider()
+		if providerAddress == "" {
+			providerAddress = "Cached"
+		}
+		metadataReply = append(metadataReply, pairingtypes.Metadata{
 			Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
 			Value: providerAddress,
 		})
 
-	// add the relay retried count
-	if protocolErrors > 0 {
-		metadataReply = append(metadataReply,
-			pairingtypes.Metadata{
+		// add the relay retried count
+		if protocolErrors > 0 {
+			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.RETRY_COUNT_HEADER_NAME,
 				Value: strconv.FormatUint(protocolErrors, 10),
 			})
+		}
 	}
 	if relayResult.Reply == nil {
 		relayResult.Reply = &pairingtypes.RelayReply{}
