@@ -52,12 +52,14 @@ func getHealthProbeTimeout(chainID string) time.Duration {
 	// Very slow chains that need maximum time
 	verySlowChains := map[string]bool{
 		"HYPERLIQUIDT": true, // HyperLiquid needs extra time due to network architecture
+		"HYPERLIQUID": true, // HyperLiquid needs extra time due to network architecture
+		"HEDERA": true, // Hedera also needs 8s timeout
 	}
 	
 	// Known slow chains that need extra time
 	slowChains := map[string]bool{
-		"NEAR": true, // NEAR sharded architecture adds latency
-		"FVM":  true, // Filecoin can be slower
+		"NEAR":   true, // NEAR sharded architecture adds latency
+		"FVM":    true, // Filecoin can be slower
 	}
 	
 	if verySlowChains[chainID] {
