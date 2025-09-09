@@ -4,8 +4,8 @@
         "description": "Adding new specification support for relaying union data on Lava",
         "specs": [
             {
-                "index": "UNIONT",
-                "name": "union testnet",
+                "index": "UNION",
+                "name": "union mainnet",
                 "enabled": true,
                 "imports": [
                     "COSMOSSDK"
@@ -32,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/tokenfactory.v1beta1/denoms/{denom}/authority_metadata",
+                                "name": "/feemarket/v1/gas_price/{denom}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -50,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/tokenfactory.v1beta1/denoms_from_creator/{creator}",
+                                "name": "/feemarket/v1/gas_prices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -68,7 +68,25 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/tokenfactory.v1beta1/params",
+                                "name": "/feemarket/v1/state",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/feemarket/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -94,7 +112,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "union-testnet-8"
+                                        "expected_value": "union-1"
                                     }
                                 ]
                             },
@@ -127,7 +145,7 @@
                         },
                         "apis": [
                             {
-                                "name": "tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+                                "name": "feemarket.feemarket.v1.Query/GasPrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -145,7 +163,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "tokenfactory.v1beta1.Query/DenomsFromCreator",
+                                "name": "feemarket.feemarket.v1.Query/GasPrices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -163,7 +181,25 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "tokenfactory.v1beta1.Query/Params",
+                                "name": "feemarket.feemarket.v1.Query/State",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "feemarket.feemarket.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -189,7 +225,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "union-testnet-8"
+                                        "expected_value": "union-1"
                                     }
                                 ]
                             },
@@ -229,7 +265,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "union-testnet-8"
+                                        "expected_value": "union-1"
                                     }
                                 ]
                             },
@@ -256,8 +292,106 @@
                             }
                         ]
                     }
-                ]
-            } 
+                ],
+                "contributor": [
+                    "lava@18rtt3ka0jc85qvvcnct0t7ayq6fva7692k9kvh"
+                ],
+                "contributor_percentage": "0.03"
+            },
+            {
+                "index": "UNIONT",
+                "name": "union testnet",
+                "enabled": true,
+                "imports": [
+                    "UNION"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 6000,
+                "allowed_block_lag_for_qos_sync": 2,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                 "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "union-testnet-10"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "union-testnet-10"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "union-testnet-10"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "contributor": [
+                    "lava@18rtt3ka0jc85qvvcnct0t7ayq6fva7692k9kvh"
+                ],
+                "contributor_percentage": "0.03"
+            }
         ]
     },
     "deposit": "10000000ulava"
