@@ -51,9 +51,10 @@ type LavaEntity struct {
 func getHealthProbeTimeout(chainID string) time.Duration {
 	// Very slow chains that need maximum time (25 seconds)
 	verySlowChains := map[string]bool{
-		"HYPERLIQUIDT": true, // HyperLiquid needs extra time due to network architecture
-		"HYPERLIQUID": true,  // HyperLiquid needs extra time due to network architecture
-		"HEDERA": true,       // Hedera needs extended timeout for distant providers
+		"HYPERLIQUIDT": true, // HyperLiquid testnet needs extra time due to network architecture
+		"HYPERLIQUID": true,  // HyperLiquid mainnet needs extra time due to network architecture
+		"HEDERA": true,       // Hedera mainnet needs extended timeout for distant providers
+		"HEDERAT": true,      // Hedera testnet needs extended timeout for distant providers
 		"NEAR": true,         // NEAR sharded architecture + high latency providers
 		"POLYGON": true,      // Polygon often has high latency
 		"MOVEMENT": true,     // Movement chain can be slow
@@ -707,7 +708,7 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 					// Special handling for chains with non-standard API architectures
 					// These chains use different consensus mechanisms or API translation layers that
 					// don't conform to standard blockchain JSON-RPC expectations, causing probe failures
-					if providerEntry.Chain == "HYPERLIQUID" || providerEntry.Chain == "HYPERLIQUIDT" {
+					if providerEntry.Chain == "HYPERLIQUID" || providerEntry.Chain == "HYPERLIQUIDT" || providerEntry.Chain == "HEDERAT" {
 						// HYPERLIQUID uses custom network architecture with non-standard API responses
 						// If it's a timeout, treat as real failure
 						if strings.Contains(err.Error(), "context deadline exceeded") {
@@ -762,12 +763,12 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 					return relayLatency, versions, blockNum, nil
 				}
 				
-				if providerEntry.Chain == "HEDERA" {
+				if providerEntry.Chain == "HEDERA" || providerEntry.Chain == "HEDERAT" {
 					// HEDERA uses Hashgraph consensus with 2-second record files as "blocks"
 					// Block numbers are deterministic groupings based on timestamps (HIP-415)
 					// Normalize any unusual block number formats to ensure health validation passes
 					if blockNum == 0 {
-						blockNum = 1 // Treat 0 as healthy for HEDERA
+						blockNum = 1 // Treat 0 as healthy for HEDERA/HEDERAT
 					}
 					return relayLatency, versions, blockNum, nil
 				}
