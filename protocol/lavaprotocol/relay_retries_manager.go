@@ -45,6 +45,8 @@ func (rrm *RelayRetriesManager) CheckHashInCache(hash string) bool {
 // Add hash to the retry cache.
 func (rrm *RelayRetriesManager) AddHashToCache(hash string) {
 	rrm.cache.SetWithTTL(hash, struct{}{}, 1, RetryEntryTTL)
+	// Force cache to process buffered writes for consistency
+	rrm.cache.Wait()
 }
 
 // Remove hash from cache if it exists
