@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -198,8 +199,50 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
+// hasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
+func (rp *RelayProcessor) hasUnsupportedMethodErrors() bool {
+	if rp == nil {
+		return false
+	}
+
+	// Get actual error data to check for unsupported method errors
+	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
+
+	// Check node errors
+	for _, nodeErrorResult := range nodeErrorResults {
+		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
+			// Check if this is an unsupported method error based on the reply
+			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {
+				return true
+			}
+		}
+	}
+
+	// Check protocol errors
+	for _, protocolError := range protocolErrors {
+		// Check if this is an unsupported method error
+		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
+			return true
+		}
+		// Also check if we shouldn't retry this error
+		if chainlib.ShouldRetryError(protocolError.GetError()) == false {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Deciding wether we should send a relay retry attempt based on the node error
 func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, specialNodeErrors int) bool {
+
+	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors))
+
+	// Never retry if we detect unsupported method errors
+	if rp.hasUnsupportedMethodErrors() {
+		return false
+	}
+
 	// Retries will be performed based on the following scenarios:
 	// 1. If relayCountOnNodeError > 0
 	// 2. If we have 0 successful relays and we have only node errors.

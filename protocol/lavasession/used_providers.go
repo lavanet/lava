@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -285,6 +286,50 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 	return unwantedProvidersToSend
 }
 
+// isUnsupportedMethodError checks if an error indicates an unsupported method
+// This is a local version to avoid import cycles with chainlib
+func isUnsupportedMethodError(err error) bool {
+	if err == nil {
+		return false
+	}
+	
+	errMsg := strings.ToLower(err.Error())
+	
+	// Check for common unsupported method error patterns
+	unsupportedPatterns := []string{
+		"method not found",
+		"method not supported", 
+		"unsupported method",  // Added this pattern specifically
+		"unknown method",
+		"method does not exist",
+		"invalid method",
+		"endpoint not found",
+		"route not found",
+		"path not found",
+		"not found",
+		"method not allowed",
+		"method not implemented",
+		"unimplemented",
+		"not implemented",
+		"service not found",
+		"-32601", // JSON-RPC method not found error code
+	}
+	
+	for _, pattern := range unsupportedPatterns {
+		if strings.Contains(errMsg, pattern) {
+			return true
+		}
+	}
+	
+	return false
+}
+
 func shouldRetryWithThisError(err error) bool {
+	// Never retry unsupported method errors
+	if isUnsupportedMethodError(err) {
+		return false
+	}
+	
+	// Allow retries for session sync loss errors
 	return IsSessionSyncLoss(err)
 }

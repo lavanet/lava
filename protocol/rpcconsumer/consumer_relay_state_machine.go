@@ -146,16 +146,46 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 // As well as the decision of changing the protocol message,
 // into different extensions or addons based on certain conditions
 func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bool {
+
 	batchNumber := crsm.usedProviders.BatchNumber()
 	shouldRetry := crsm.retryCondition(batchNumber)
 	if shouldRetry {
 		crsm.stateTransition(crsm.getLatestState(), numberOfNodeErrors)
 	}
+
+	utils.LavaFormatDebug("[StateMachine] shouldRetry called",
+		utils.LogAttr("GUID", crsm.ctx),
+		utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
+		utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()),
+		utils.LogAttr("selection", crsm.selection),
+		utils.LogAttr("shouldRetry", shouldRetry),
+	)
+
 	return shouldRetry
+}
+
+// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level
+func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
+	if crsm.resultsChecker == nil {
+		return false
+	}
+
+	// Check if the results checker has unsupported method errors
+	if relayProcessor, ok := crsm.resultsChecker.(*RelayProcessor); ok {
+		return relayProcessor.hasUnsupportedMethodErrors()
+	}
+
+	return false
 }
 
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
+
+	// Never retry if we detect unsupported method errors at state machine level
+	if crsm.hasUnsupportedMethodErrorsInStateMachine() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
+		return false
+	}
 
 	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
 		return false
