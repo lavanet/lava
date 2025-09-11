@@ -20,7 +20,11 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var DefaultApiName = "Default-"
+var (
+	SkipPolicyVerification    = false
+	SkipWebsocketVerification = false
+	DefaultApiName            = "Default-"
+)
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
@@ -85,10 +89,21 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 				// this header sets the latest requested block
 				overwriteRequestedBlock = header.Value
 			}
-		} else if headerDirective.Kind == spectypes.Header_pass_ignore {
-			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
+
+	// iterate over the headers defined in spec file to handle any nullified headers
+	for _, bcpHeader := range bcp.headers {
+		// handle nullified headers
+		if bcpHeader.Kind == spectypes.Header_pass_nullify {
+			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: ""})
+		}
+
+		if bcpHeader.Kind == spectypes.Header_pass_override {
+			retMetadata = append(retMetadata, pairingtypes.Metadata{Name: bcpHeader.Name, Value: bcpHeader.Value})
+		}
+	}
+
 	return retMetadata, overwriteRequestedBlock, ignoredMetadata
 }
 
@@ -98,12 +113,15 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension)
+	return bcp.extensionParser.AllowedExtension(extension, SkipPolicyVerification)
 }
 
 // use while bcp locked.
 func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
 	var addon string
+	if SkipPolicyVerification {
+		return nil
+	}
 	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
 		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
 			return utils.LavaFormatError("consumer policy does not allow addon", nil,

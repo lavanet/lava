@@ -126,7 +126,8 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatDebug("getSupportedApi jsonrpc failed",
+			utils.LavaFormatError("getSupportedApi jsonrpc failed",
+				err,
 				utils.LogAttr("method", msg.Method),
 				utils.LogAttr("connectionType", connectionType),
 				utils.LogAttr("internalPath", internalPath),
@@ -171,6 +172,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		parsedBlock := parsedInput.GetBlock()
 
 		if msg.Method == "eth_call" && uint64(parsedBlock) < extensionInfo.LatestBlock-126 {
+			utils.LavaFormatInfo("adding extension requirement to archive since block is 127 before lastest block")
 			// change to archive
 			extensionInfo.AdditionalExtensions = append(extensionInfo.AdditionalExtensions, extensionslib.ArchiveExtension)
 		}
@@ -430,6 +432,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		msgSeed := strconv.FormatUint(guid, 10)
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
@@ -446,11 +449,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		path := "/" + fiberCtx.Params("*")
-		utils.LavaFormatDebug("in <<<",
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new JSON-RPC with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr(utils.KEY_REQUEST_ID, ctx),
+			utils.LogAttr(utils.KEY_TASK_ID, ctx),
+			utils.LogAttr(utils.KEY_TRANSACTION_ID, ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("_msg", logFormattedMsg),
+			utils.LogAttr("body", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
@@ -647,7 +653,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		// this could be a batch message
 		batchMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcBatchMessage)
 		if !ok {
-			return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast JsonrpcMessage or JsonrpcBatchMessage from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+			return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast JsonrpcMessage or JsonrpcBatchMessage from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 		}
 		if ch != nil {
 			return nil, "", nil, utils.LavaFormatError("does not support subscribe in a batch", nil)
@@ -671,9 +677,13 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	// support setting headers
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			rpc.SetHeader(metadata.Name, metadata.Value)
-			// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
-			defer rpc.SetHeader(metadata.Name, "")
+			if metadata.Value == "" {
+				rpc.DelHeader(metadata.Name)
+			} else {
+				rpc.SetHeader(metadata.Name, metadata.Value)
+				// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
+				defer rpc.SetHeader(metadata.Name, "")
+			}
 		}
 	}
 	var nodeErr error
@@ -713,7 +723,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	replyMsg, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 	}
 	// validate result is valid
 	if replyMsg.Error == nil {
@@ -726,8 +736,8 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
-			utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
+			utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
+			utils.Attribute{Key: "nodeMessageRequestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
 			utils.Attribute{Key: "reply", Value: replyMsg},
 			utils.Attribute{Key: "request", Value: nodeMessage},
@@ -755,7 +765,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if common.IsQuoted(string(replyMsg.Result)) {
 			subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 			if err != nil {
-				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 			}
 		} else {
 			subscriptionID = string(replyMsg.Result)

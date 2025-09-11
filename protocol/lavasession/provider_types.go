@@ -31,6 +31,7 @@ type RPCProviderEndpoint struct {
 	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	Name           string             `yaml:"provider-name,omitempty" json:"provider-name,omitempty" mapstructure:"provider-name"`
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {
