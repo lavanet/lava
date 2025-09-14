@@ -1491,7 +1491,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 	if quorumParams.Enabled() {
 		// For quorum mode: show all participating providers instead of single provider
-		successResults, nodeErrors, _ := relayProcessor.GetResultsData()
+		successResults, nodeErrorsResults, protocolErrorsResults := relayProcessor.GetResultsData()
 
 		allProvidersMap := make(map[string]bool)
 
@@ -1503,7 +1503,14 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		}
 
 		// Add providers that had node errors (they still participated)
-		for _, result := range nodeErrors {
+		for _, result := range nodeErrorsResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+			}
+		}
+
+		// Add providers that had provider errors (they still participated)
+		for _, result := range protocolErrorsResults {
 			if result.ProviderInfo.ProviderAddress != "" {
 				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
 			}
