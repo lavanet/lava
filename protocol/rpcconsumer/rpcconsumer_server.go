@@ -1533,11 +1533,13 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			Value: providerAddress,
 		})
 
-		// add the relay retried count
-		if protocolErrors > 0 {
+		// add the relay retried count (including both node errors and protocol errors)
+		_, nodeErrors, _, _ := relayProcessor.GetResults()
+		totalRetries := protocolErrors + uint64(nodeErrors)
+		if totalRetries > 0 {
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.RETRY_COUNT_HEADER_NAME,
-				Value: strconv.FormatUint(protocolErrors, 10),
+				Value: strconv.FormatUint(totalRetries, 10),
 			})
 		}
 	}
