@@ -317,7 +317,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			}
 		} else {
 			// Quorum feature disabled: check if we have enough results for quorum
-			retryForQuorumNeeded = !(nodeErrors+resultsCount >= neededForQuorum)
+			retryForQuorumNeeded = !(resultsCount >= neededForQuorum)
 		}
 
 		if !retryForQuorumNeeded {
