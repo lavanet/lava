@@ -1541,47 +1541,51 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Name:  common.RETRY_COUNT_HEADER_NAME,
 				Value: strconv.FormatUint(totalRetries, 10),
 			})
-			
+
 			// When there are retries, show all attempted providers (similar to REST behavior)
 			allProvidersMap := make(map[string]bool)
-			
+
 			// Add the current provider (might be from successful result or last error)
 			if providerAddress != "Cached" && providerAddress != "" {
 				allProvidersMap[providerAddress] = true
 			}
-			
+
 			// Add providers from node errors
 			for _, result := range nodeErrorResults {
 				if result.ProviderInfo.ProviderAddress != "" {
 					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
 				}
 			}
-			
+
 			// Add providers from protocol errors
 			for _, result := range protocolErrorResults {
 				if result.ProviderInfo.ProviderAddress != "" {
 					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
 				}
 			}
-			
+
 			// Add providers from successful results (in case of partial success)
 			for _, result := range successResults {
 				if result.ProviderInfo.ProviderAddress != "" {
 					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
 				}
 			}
-			
-			// Convert to slice and add header if we have multiple providers
-			if len(allProvidersMap) > 1 {
+
+			// Convert to slice and update provider address header with all participating providers
+			if len(allProvidersMap) > 0 {
 				allProvidersList := make([]string, 0, len(allProvidersMap))
 				for provider := range allProvidersMap {
 					allProvidersList = append(allProvidersList, provider)
 				}
-				allProvidersString := fmt.Sprintf("%v", allProvidersList)
-				metadataReply = append(metadataReply, pairingtypes.Metadata{
-					Name:  common.QUORUM_ALL_PROVIDERS_HEADER_NAME,
-					Value: allProvidersString,
-				})
+				allProvidersString := strings.Join(allProvidersList, ",")
+
+				// Update the existing PROVIDER_ADDRESS_HEADER_NAME with all providers
+				for i, metadata := range metadataReply {
+					if metadata.Name == common.PROVIDER_ADDRESS_HEADER_NAME {
+						metadataReply[i].Value = allProvidersString
+						break
+					}
+				}
 			}
 		}
 	}

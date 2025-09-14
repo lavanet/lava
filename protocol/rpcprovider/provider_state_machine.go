@@ -183,9 +183,13 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 	} else if randValue < testResponse.SuccessProbability+testResponse.ErrorProbability {
 		responseData = testResponse.ErrorReply
 		statusCode = 500
-	} else {
+	} else if randValue < testResponse.SuccessProbability+testResponse.ErrorProbability+testResponse.RateLimitProbability {
 		responseData = testResponse.RateLimitReply
 		statusCode = 429
+	} else {
+		// Fallback to success if probabilities don't add up to 1.0
+		responseData = testResponse.SuccessReply
+		statusCode = 200
 	}
 
 	utils.LavaFormatDebug("Generated test response",
