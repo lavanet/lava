@@ -3,6 +3,7 @@ package rpcprovider
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -23,14 +24,16 @@ type ProviderStateMachine struct {
 	chainId             string
 	relaySender         ProviderRelaySender
 	numberOfRetries     int
+	testModeConfig      *TestModeConfig
 }
 
-func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int, testModeConfig *TestModeConfig) *ProviderStateMachine {
 	return &ProviderStateMachine{
 		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,
 		relaySender:         relaySender,
 		numberOfRetries:     numberOfRetries,
+		testModeConfig:      testModeConfig,
 	}
 }
 
@@ -48,7 +51,17 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 	var errorMessage string
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
-		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+
+		// Check if this is a test mode request
+		isTestMode, _ := ctx.Value(TestModeContextKey{}).(bool)
+		if isTestMode && psm.testModeConfig != nil && psm.testModeConfig.TestMode {
+			replyWrapper = psm.generateTestResponse(ctx, chainMsg, request)
+			err = nil // No error in test mode
+		} else {
+			// Original behavior - send to real node
+			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+		}
+
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
@@ -80,7 +93,9 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		if chainMsg != nil && chainMsg.GetApi() != nil {
 			isDefaultApi = strings.HasPrefix(chainMsg.GetApi().Name, chainlib.DefaultApiName)
 		}
-		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
+		//Anna - check with Avi
+		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
+			//if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
 			// Extract method name if available
 			methodName := ""
 			apiInterface := ""
@@ -135,4 +150,55 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
 	return replyWrapper, nil
+}
+
+// generateTestResponse generates a test response based on the configured probabilities
+func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) *chainlib.RelayReplyWrapper {
+	// Get the API method name
+	apiMethod := ""
+	if chainMsg != nil && chainMsg.GetApi() != nil {
+		apiMethod = chainMsg.GetApi().Name
+	}
+
+	// Get test response configuration for this method
+	testResponse, exists := psm.testModeConfig.Responses[apiMethod]
+	if !exists {
+		// Default response if method not configured
+		testResponse = TestResponse{
+			SuccessReply:       `{"jsonrpc":"2.0","id":1,"result":"default_success"}`,
+			ErrorReply:         `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Server error"}}`,
+			RateLimitReply:     `{"jsonrpc":"2.0","id":1,"error":{"code":429,"message":"Too many requests"}}`,
+			SuccessProbability: 1.0,
+		}
+	}
+
+	// Generate response based on probabilities
+	randValue := rand.Float64()
+	var responseData string
+	var statusCode int
+
+	if randValue < testResponse.SuccessProbability {
+		responseData = testResponse.SuccessReply
+		statusCode = 200
+	} else if randValue < testResponse.SuccessProbability+testResponse.ErrorProbability {
+		responseData = testResponse.ErrorReply
+		statusCode = 500
+	} else {
+		responseData = testResponse.RateLimitReply
+		statusCode = 429
+	}
+
+	utils.LavaFormatDebug("Generated test response",
+		utils.LogAttr("apiMethod", apiMethod),
+		utils.LogAttr("randValue", randValue),
+		utils.LogAttr("statusCode", statusCode),
+		utils.LogAttr("GUID", ctx))
+
+	return &chainlib.RelayReplyWrapper{
+		RelayReply: &pairingtypes.RelayReply{
+			Data:        []byte(responseData),
+			LatestBlock: 12345, // Mock block number
+		},
+		StatusCode: statusCode,
+	}
 }

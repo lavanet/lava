@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,6 +49,26 @@ var (
 	numberOfRetriesAllowedOnNodeErrors = 2
 )
 
+// TestModeConfig represents the configuration for test mode responses
+type TestModeConfig struct {
+	TestMode     bool                    `json:"test_mode"`
+	Responses    map[string]TestResponse `json:"responses"`
+	ResponseFile string                  `json:"response_file"`
+}
+
+// TestResponse represents a test response configuration for a specific API method
+type TestResponse struct {
+	SuccessReply         string  `json:"success_reply"`
+	ErrorReply           string  `json:"error_reply"`
+	RateLimitReply       string  `json:"rate_limit_reply"`
+	SuccessProbability   float64 `json:"success_probability"`
+	ErrorProbability     float64 `json:"error_probability"`
+	RateLimitProbability float64 `json:"rate_limit_probability"`
+}
+
+// TestModeContextKey is used to pass test mode context through the call chain
+type TestModeContextKey struct{}
+
 const (
 	RPCProviderAddressHeader = "Lava-Provider-Address"
 )
@@ -73,6 +94,7 @@ type RPCProviderServer struct {
 	providerStateMachine            *ProviderStateMachine
 	providerLoadManager             *ProviderLoadManager
 	verificationsStatusGetter       IVerificationsStatus
+	testModeConfig                  *TestModeConfig
 }
 
 type ReliabilityManagerInf interface {
@@ -121,6 +143,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerLoadManager *ProviderLoadManager,
 	verificationsStatusGetter IVerificationsStatus,
 	numberOfRetries int,
+	testModeConfig *TestModeConfig,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -142,7 +165,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries, testModeConfig)
 	rpcps.providerLoadManager = providerLoadManager
 	rpcps.verificationsStatusGetter = verificationsStatusGetter
 
@@ -945,6 +968,11 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if debugConsistency {
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}
+	// Add test mode context for user requests
+	if rpcps.testModeConfig != nil && rpcps.testModeConfig.TestMode {
+		ctx = context.WithValue(ctx, TestModeContextKey{}, true)
+	}
+
 	// use the provider state machine to send the messages
 	return rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
 }
@@ -1322,4 +1350,34 @@ func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (t
 
 func (rpcps *RPCProviderServer) IsHealthy() bool {
 	return rpcps.relaysMonitor.IsHealthy()
+}
+
+// loadTestModeConfig loads test mode configuration from a JSON file
+func (rpcps *RPCProviderServer) loadTestModeConfig(testMode bool, responseFile string) error {
+	if !testMode {
+		return nil
+	}
+
+	if responseFile == "" {
+		return errors.New("test_responses file is required when test_mode is enabled")
+	}
+
+	// Load test responses from JSON file
+	data, err := os.ReadFile(responseFile)
+	if err != nil {
+		return err
+	}
+
+	var config TestModeConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return err
+	}
+
+	config.TestMode = true
+	config.ResponseFile = responseFile
+	rpcps.testModeConfig = &config
+
+	utils.LavaFormatInfo("Test mode enabled", utils.LogAttr("responseFile", responseFile))
+	return nil
 }
