@@ -118,6 +118,8 @@ type rpcProviderStartOptions struct {
 	staticProvider            bool
 	staticSpecPath            string
 	relayLoadLimit            uint64
+	testMode                  bool
+	testResponsesFile         string
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -154,6 +156,8 @@ type RPCProvider struct {
 
 	verificationsResponseCache                          *ristretto.Cache[string, []*pairingtypes.Verification]
 	allChainsAndAPIInterfacesVerificationStatusFetchers []IVerificationsStatus
+	testMode                                            bool
+	testResponsesFile                                   string
 }
 
 func (rpcp *RPCProvider) AddVerificationStatusFetcher(fetcher IVerificationsStatus) {
@@ -577,7 +581,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors)
+	// Create test mode config if enabled
+	var testModeConfig *TestModeConfig
+	if rpcp.testMode {
+		testModeConfig = &TestModeConfig{
+			TestMode:     true,
+			ResponseFile: rpcp.testResponsesFile,
+		}
+		// Load test responses from file
+		err = rpcProviderServer.loadTestModeConfig(rpcp.testMode, rpcp.testResponsesFile)
+		if err != nil {
+			return utils.LavaFormatError("failed to load test mode configuration", err)
+		}
+		testModeConfig = rpcProviderServer.testModeConfig
+	}
+
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -824,6 +843,14 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
 			}
 
+			// Load test mode configuration
+			testMode := viper.GetBool("test_mode")
+			testResponsesFile := viper.GetString("test_responses")
+
+			if testMode && testResponsesFile == "" {
+				return utils.LavaFormatError("test_responses file is required when test_mode is enabled", nil)
+			}
+
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,
@@ -847,6 +874,8 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				staticProvider,
 				offlineSpecPath,
 				relayLoadLimit,
+				testMode,
+				testResponsesFile,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -859,7 +888,17 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if err != nil {
 				utils.LavaFormatFatal("failed setting up cache for verificationsResponseCache", err)
 			}
-			rpcProvider := RPCProvider{verificationsResponseCache: verificationsResponseCache}
+			rpcProvider := RPCProvider{
+				verificationsResponseCache: verificationsResponseCache,
+				testMode:                   testMode,
+				testResponsesFile:          testResponsesFile,
+			}
+
+			// Load test mode config if enabled
+			if testMode {
+				utils.LavaFormatInfo("Test mode enabled", utils.LogAttr("testResponsesFile", testResponsesFile))
+			}
+
 			err = rpcProvider.Start(&rpcProviderStartOptions)
 			return err
 		},
@@ -883,6 +922,8 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotThresholdFlagName, rewardserver.DefaultRewardsSnapshotThreshold, "the number of rewards to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().String(StickinessHeaderName, RPCProviderStickinessHeaderName, "the name of the header to be attached to requests for stickiness by consumer, used for consistency")
+	cmdRPCProvider.Flags().Bool("test_mode", false, "enable test mode - provider returns predefined responses instead of querying real nodes")
+	cmdRPCProvider.Flags().String("test_responses", "", "path to JSON file containing test responses for different API methods (required when test_mode is enabled)")
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
