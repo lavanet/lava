@@ -713,17 +713,24 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 		"%s/lavanet/lava/spec/spec",
 		"%s/cosmos/base/tendermint/v1beta1/blocks/1",
 	}
+	// APIs that are expected to return errors (due to unsupported method feature)
+	expectedErrorAPIs := map[string]bool{
+		"%s/lavanet/lava/pairing/clients/LAV1": true,
+	}
+
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for _, api := range mostImportantApisToTest {
 			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
-			if err != nil {
+			allowErrors := expectedErrorAPIs[api]
+
+			if err != nil && !allowErrors {
 				errors = append(errors, fmt.Sprintf("%s", err))
-			} else {
+			} else if err == nil {
 				var jsonReply map[string]interface{}
 				err = json.Unmarshal(reply, &jsonReply)
 				if err != nil {
 					errors = append(errors, fmt.Sprintf("%s", err))
-				} else if jsonReply != nil && jsonReply["error"] != nil {
+				} else if jsonReply != nil && jsonReply["error"] != nil && !allowErrors {
 					errors = append(errors, string(reply))
 				}
 			}
