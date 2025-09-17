@@ -64,7 +64,13 @@ var (
 )
 
 type lavaTest struct {
-	testFinishedProperly bool
+	// Thread-safety fields
+	testFinishedProperly atomic.Bool
+	logsMu               sync.RWMutex
+	commandsMu           sync.RWMutex
+	providerTypeMu       sync.RWMutex
+
+	// Original fields
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
 	protocolPath         string
@@ -92,9 +98,42 @@ func init() {
 	fmt.Println("Test Directory", dir)
 }
 
+// contextSleep performs a context-aware sleep
+func contextSleep(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+// waitForCondition waits for a condition to be true with context
+func waitForCondition(ctx context.Context, condition func() bool, checkInterval time.Duration, description string) error {
+	ticker := time.NewTicker(checkInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for %s: %w", description, ctx.Err())
+		case <-ticker.C:
+			if condition() {
+				return nil
+			}
+			utils.LavaFormatInfo("Waiting for condition", utils.LogAttr("description", description))
+		}
+	}
+}
+
 func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
 	utils.LavaFormatDebug("Executing command " + command)
+	lt.logsMu.Lock()
 	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logsMu.Unlock()
 
 	cmd := exec.CommandContext(ctx, "", "")
 	cmd.Args = strings.Fields(command)
@@ -107,21 +146,29 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 		panic(err)
 	}
 
+	lt.commandsMu.Lock()
 	lt.commands[logName] = cmd
+	lt.commandsMu.Unlock()
 	retries := 0 // Counter for retries
 	maxRetries := 2
 
+	lt.wg.Add(1)
 	go func() {
+		defer lt.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("Panic occurred:", r)
+				utils.LavaFormatError("Panic occurred", fmt.Errorf("%v", r),
+					utils.LogAttr("funcName", funcName),
+					utils.LogAttr("logName", logName))
 				if retries < maxRetries {
 					retries++
-
-					utils.LavaFormatInfo(fmt.Sprintln("Restarting goroutine for startJSONRPCProvider. Remaining retries: ", maxRetries-retries))
+					utils.LavaFormatInfo("Restarting goroutine",
+						utils.LogAttr("funcName", funcName),
+						utils.LogAttr("remainingRetries", maxRetries-retries))
 					go lt.execCommandWithRetry(ctx, funcName, logName, command)
 				} else {
-					panic(errors.New("maximum number of retries exceeded"))
+					lt.saveLogs()
+					panic(fmt.Errorf("maximum number of retries exceeded for %s", funcName))
 				}
 			}
 		}()
@@ -137,7 +184,9 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 		}
 	}()
 
+	lt.logsMu.Lock()
 	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logsMu.Unlock()
 
 	cmd := exec.CommandContext(ctx, "", "")
 	utils.LavaFormatInfo("Executing Command: " + command)
@@ -145,6 +194,14 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
+
+	// Ensure PATH includes the Go bin directory
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+	currentPath := os.Getenv("PATH")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s/bin:%s", gopath, currentPath))
 
 	err := cmd.Start()
 	if err != nil {
@@ -156,8 +213,20 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 			panic(funcName + " failed " + err.Error())
 		}
 	} else {
+		lt.commandsMu.Lock()
 		lt.commands[logName] = cmd
+		lt.commandsMu.Unlock()
+		lt.wg.Add(1)
 		go func() {
+			defer lt.wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					utils.LavaFormatError("Panic in command listener", fmt.Errorf("%v", r),
+						utils.LogAttr("funcName", funcName),
+						utils.LogAttr("logName", logName))
+					lt.saveLogs()
+				}
+			}()
 			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
 		}()
 	}
@@ -165,10 +234,10 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 
 func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
-	if err != nil && !lt.testFinishedProperly {
+	if err != nil && !lt.testFinishedProperly.Load() {
 		utils.LavaFormatError(functionName+" cmd wait err", err)
 	}
-	if lt.testFinishedProperly {
+	if lt.testFinishedProperly.Load() {
 		return
 	}
 	lt.saveLogs()
@@ -186,7 +255,7 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 	lt.execCommand(ctx, funcName, logName, initCommand, true)
 
 	// Now start the daemon in the background
-	startCommand := "lavad start"
+	startCommand := lt.lavadPath + " start"
 	logNameDaemon := "00_StartLava_Daemon"
 	funcNameDaemon := "startLavaDaemon"
 
@@ -202,7 +271,9 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err != nil && strings.Contains(err.Error(), "rpc error") {
 			utils.LavaFormatInfo("Waiting for Lava")
-			time.Sleep(time.Second * 10)
+			if err := contextSleep(context.Background(), time.Second*10); err != nil {
+				return
+			}
 		} else if err == nil {
 			return
 		} else {
@@ -241,12 +312,14 @@ func (lt *lavaTest) checkStakeLava(
 
 	// check if plans added exist
 	if len(planQueryRes.PlansInfo) != planCount {
-		panic("Staking Failed PLAN count" + fmt.Sprintf("expected %d, got %d", planCount, len(planQueryRes.PlansInfo)))
+		panic(fmt.Errorf("staking failed: plan count mismatch - expected %d plans, got %d plans\nPlans found: %+v",
+			planCount, len(planQueryRes.PlansInfo), planQueryRes.PlansInfo))
 	}
 
 	for _, plan := range planQueryRes.PlansInfo {
 		if !slices.Contains(checkedPlans, plan.Index) {
-			panic("Staking Failed PLAN names")
+			panic(fmt.Errorf("staking failed: unexpected plan found - got '%s', expected one of %v",
+				plan.Index, checkedPlans))
 		}
 	}
 
@@ -260,14 +333,16 @@ func (lt *lavaTest) checkStakeLava(
 
 	// check if subscriptions added exist
 	if len(subsQueryRes.SubsInfo) != subsCount {
-		panic("Staking Failed SUBSCRIPTION count")
+		panic(fmt.Errorf("staking failed: subscription count mismatch - expected %d subscriptions, got %d subscriptions\nSubscriptions found: %+v",
+			subsCount, len(subsQueryRes.SubsInfo), subsQueryRes.SubsInfo))
 	}
 
 	for _, key := range checkedSubscriptions {
 		subscriptionQueryClient := subscriptionTypes.NewQueryClient(lt.grpcConn)
 		_, err = subscriptionQueryClient.Current(context.Background(), &subscriptionTypes.QueryCurrentRequest{Consumer: lt.getKeyAddress(key)})
 		if err != nil {
-			panic("could not get the subscription of " + key)
+			panic(fmt.Errorf("staking failed: could not get subscription for user '%s' (address: %s): %w",
+				key, lt.getKeyAddress(key), err))
 		}
 	}
 
@@ -284,8 +359,12 @@ func (lt *lavaTest) checkStakeLava(
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
 	if len(specQueryRes.Spec) != specCount {
-		utils.LavaFormatError("Spec missing", nil, utils.LogAttr("have", len(specQueryRes.Spec)), utils.LogAttr("want", specCount))
-		panic("Staking Failed SPEC")
+		utils.LavaFormatError("Spec count mismatch", nil,
+			utils.LogAttr("expected", specCount),
+			utils.LogAttr("actual", len(specQueryRes.Spec)),
+			utils.LogAttr("specs", specQueryRes.Spec))
+		panic(fmt.Errorf("staking failed: spec count mismatch - expected %d specs, got %d specs",
+			specCount, len(specQueryRes.Spec)))
 	}
 	for _, spec := range specQueryRes.Spec {
 		if !slices.Contains(checkedSpecs, spec.Index) {
@@ -301,12 +380,19 @@ func (lt *lavaTest) checkStakeLava(
 			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) != providerCount {
-			fmt.Println("ProviderQueryRes: ", providerQueryRes.String())
-			panic(fmt.Errorf("staking Failed PROVIDER count %d, wanted %d", len(providerQueryRes.StakeEntry), providerCount))
+			utils.LavaFormatError("Provider count mismatch", nil,
+				utils.LogAttr("chainID", spec.GetIndex()),
+				utils.LogAttr("expected", providerCount),
+				utils.LogAttr("actual", len(providerQueryRes.StakeEntry)),
+				utils.LogAttr("providers", providerQueryRes.StakeEntry))
+			panic(fmt.Errorf("staking failed: provider count mismatch for chain %s - expected %d providers, got %d providers",
+				spec.GetIndex(), providerCount, len(providerQueryRes.StakeEntry)))
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
 			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
+			lt.providerTypeMu.Lock()
 			lt.providerType[providerStakeEntry.Address] = providerStakeEntry.Endpoints
+			lt.providerTypeMu.Unlock()
 		}
 	}
 	utils.LavaFormatInfo(successMessage)
@@ -827,9 +913,18 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
-	lt.testFinishedProperly = true
-	for _, cmd := range lt.commands { // kill all the project commands
-		cmd.Process.Kill()
+	lt.testFinishedProperly.Store(true)
+
+	lt.commandsMu.RLock()
+	defer lt.commandsMu.RUnlock()
+
+	for name, cmd := range lt.commands { // kill all the project commands
+		if cmd != nil && cmd.Process != nil {
+			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
+			if err := cmd.Process.Kill(); err != nil {
+				utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+			}
+		}
 	}
 }
 
@@ -843,7 +938,16 @@ func (lt *lavaTest) saveLogs() {
 	errorFound := false
 	errorFiles := []string{}
 	errorPrint := make(map[string]string)
-	for fileName, logBuffer := range lt.logs {
+
+	// Create a copy of logs to avoid holding the lock for too long
+	lt.logsMu.RLock()
+	logsCopy := make(map[string]*sdk.SafeBuffer)
+	for k, v := range lt.logs {
+		logsCopy[k] = v
+	}
+	lt.logsMu.RUnlock()
+
+	for fileName, logBuffer := range logsCopy {
 		reachedEmergencyModeLine := false
 		file, err := os.Create(lt.logPath + fileName + ".log")
 		if err != nil {
@@ -904,7 +1008,7 @@ func (lt *lavaTest) saveLogs() {
 				if !isAllowedError {
 					errorFound = true
 					errorLines = append(errorLines, line)
-				} else if !lt.testFinishedProperly {
+				} else if !lt.testFinishedProperly.Load() {
 					// Save allowed errors for debugging when test didn't finish properly, but don't treat them as failures
 					errorLines = append(errorLines, line+" [ALLOWED ERROR]")
 				}
@@ -991,7 +1095,9 @@ func (lt *lavaTest) checkQoS() error {
 		sequence = strconv.Itoa(int(sequenceInt))
 		//
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
+		lt.logsMu.Lock()
 		lt.logs[logName] = &sdk.SafeBuffer{}
+		lt.logsMu.Unlock()
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
 
@@ -1005,7 +1111,9 @@ func (lt *lavaTest) checkQoS() error {
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
+		lt.commandsMu.Lock()
 		lt.commands[logName] = cmd
+		lt.commandsMu.Unlock()
 		err = cmd.Wait()
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
@@ -1037,11 +1145,59 @@ func (lt *lavaTest) checkQoS() error {
 }
 
 func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit int) {
+	// We need to use the emergency mode script as it properly handles the config update
+	// The script modifies the timeout_commit in the existing config without re-initializing the chain
 	command := "./scripts/test/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
 	logName := "10_StartLavaInEmergencyMode"
 	funcName := "startLavaInEmergencyMode"
 
-	lt.execCommand(ctx, funcName, logName, command, true)
+	// Set up environment to ensure lavad is in PATH
+	cmd := exec.CommandContext(ctx, "/bin/bash", "-c", command)
+	lt.logsMu.Lock()
+	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logsMu.Unlock()
+	cmd.Stdout = lt.logs[logName]
+	cmd.Stderr = lt.logs[logName]
+
+	// Add GOPATH/bin to PATH so the script can find lavad
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s/bin:%s", gopath, os.Getenv("PATH")))
+
+	utils.LavaFormatInfo("Executing emergency mode script", utils.LogAttr("command", command))
+
+	err := cmd.Start()
+	if err != nil {
+		panic(fmt.Errorf("failed to start emergency mode: %w", err))
+	}
+
+	lt.commandsMu.Lock()
+	lt.commands[logName] = cmd
+	lt.commandsMu.Unlock()
+
+	// Monitor the command in background
+	lt.wg.Add(1)
+	go func() {
+		defer lt.wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				utils.LavaFormatError("Panic in emergency mode command", fmt.Errorf("%v", r))
+				lt.saveLogs()
+			}
+		}()
+
+		if err := cmd.Wait(); err != nil {
+			if lt.testFinishedProperly.Load() {
+				return
+			}
+			utils.LavaFormatError("Emergency mode process failed", err)
+			lt.saveLogs()
+			panic(fmt.Sprintf("Emergency mode process returned unexpectedly: %v", err))
+		}
+	}()
+
 	utils.LavaFormatInfo(funcName + " OK")
 }
 
@@ -1057,7 +1213,15 @@ func (lt *lavaTest) sleepUntilNextEpoch() {
 }
 
 func (lt *lavaTest) markEmergencyModeLogsStart() {
-	for log, buffer := range lt.logs {
+	// Create a copy of logs to avoid holding the lock for too long
+	lt.logsMu.RLock()
+	logsCopy := make(map[string]*sdk.SafeBuffer)
+	for k, v := range lt.logs {
+		logsCopy[k] = v
+	}
+	lt.logsMu.RUnlock()
+
+	for log, buffer := range logsCopy {
 		_, err := buffer.WriteString(EmergencyModeStartLine + "\n")
 		utils.LavaFormatInfo("Adding EmergencyMode Start Line to", utils.LogAttr("log_name", log))
 		if err != nil {
@@ -1091,7 +1255,15 @@ func (lt *lavaTest) markEmergencyModeLogsStart() {
 }
 
 func (lt *lavaTest) markEmergencyModeLogsEnd() {
-	for log, buffer := range lt.logs {
+	// Create a copy of logs to avoid holding the lock for too long
+	lt.logsMu.RLock()
+	logsCopy := make(map[string]*sdk.SafeBuffer)
+	for k, v := range lt.logs {
+		logsCopy[k] = v
+	}
+	lt.logsMu.RUnlock()
+
+	for log, buffer := range logsCopy {
 		utils.LavaFormatInfo("Adding EmergencyMode End Line to", utils.LogAttr("log_name", log))
 		_, err := buffer.WriteString(EmergencyModeEndLine + "\n")
 		if err != nil {
@@ -1117,7 +1289,7 @@ func (lt *lavaTest) stopLava() {
 }
 
 func (lt *lavaTest) getLatestBlockTime() time.Time {
-	cmd := exec.Command("lavad", "status")
+	cmd := exec.Command(lt.lavadPath, "status")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(err)
@@ -1455,11 +1627,34 @@ func runProtocolE2E(timeout time.Duration) {
 		consumerCacheAddress: "127.0.0.1:2778",
 		providerCacheAddress: "127.0.0.1:2777",
 	}
-	// use defer to save logs in case the tests fail
+
+	// Ensure cleanup happens
 	defer func() {
+		// Wait for all goroutines with timeout
+		done := make(chan struct{})
+		go func() {
+			lt.wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			utils.LavaFormatInfo("All goroutines finished cleanly")
+		case <-time.After(5 * time.Second):
+			utils.LavaFormatWarning("Some goroutines did not finish in time", nil)
+		}
+
+		// Close gRPC connection
+		if grpcConn != nil {
+			if err := grpcConn.Close(); err != nil {
+				utils.LavaFormatError("Failed to close gRPC connection", err)
+			}
+		}
+
+		// Save logs and handle panic
 		if r := recover(); r != nil {
 			lt.saveLogs()
-			panic("E2E Failed")
+			panic(fmt.Sprintf("E2E Failed: %v", r))
 		} else {
 			lt.saveLogs()
 		}
@@ -1509,7 +1704,9 @@ func runProtocolE2E(timeout time.Duration) {
 	// Start Lava provider
 	lt.startLavaProviders(ctx)
 	// Wait for providers to finish adding all chain routers.
-	time.Sleep(time.Second * 7)
+	if err := contextSleep(ctx, time.Second*7); err != nil {
+		utils.LavaFormatWarning("Context cancelled while waiting for providers", err)
+	}
 
 	lt.startJSONRPCConsumer(ctx)
 	repeat(1, func(n int) {
