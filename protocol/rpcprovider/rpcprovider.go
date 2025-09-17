@@ -664,6 +664,25 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return ParseEndpointsCustomName(viper_endpoints, common.EndpointsConfigName, geolocation)
 }
 
+// ParseStaticProviderEndpoints parses static provider configuration into extended endpoint types
+func ParseStaticProviderEndpoints(viper_endpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCStaticProviderEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(endpointsConfigName, &endpoints)
+	if err != nil {
+		utils.LavaFormatFatal("could not unmarshal extended endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
+	}
+	for _, endpoint := range endpoints {
+		endpoint.Geolocation = geolocation
+
+		// Validate that the provider name is not empty
+		if err := endpoint.Validate(); err != nil {
+			return nil, utils.LavaFormatError("invalid provider configuration", err,
+				utils.Attribute{Key: "chainID", Value: endpoint.ChainID},
+				utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
+		}
+	}
+	return
+}
+
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
 		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
