@@ -14,6 +14,9 @@ var allowedErrors = map[string]string{
 	"unsupported method":                                                               "This error is allowed because providers now return unsupported method errors for unimplemented APIs instead of retrying",
 	"unsupported method 'Default-/lavanet/lava/pairing/clients/LAV1': Not Implemented": "This error is allowed because the /lavanet/lava/pairing/clients API endpoint is not implemented in test providers",
 	"unsupported method 'Default-/lavanet/lava/conflict/params': test":                 "This error is allowed because the /lavanet/lava/conflict/params API endpoint is not implemented in test providers",
+	"failed processing responses from providers":                                       "This error is allowed because it can occur when providers return unsupported method errors",
+	"failed relay, insufficient results":                                               "This error is allowed because it can occur when providers return unsupported method errors",
+	"Error_GUID":                                                                        "This error is allowed because it's part of error responses that contain unsupported method errors",
 	"tx already exists in cache":                                                       "This error is allowed because it can occur when transactions are retried during the test",
 	"failed to create canonical form":                                                  "This error is allowed because it is caused by the relay processor not being able to create a canonical form",
 }
