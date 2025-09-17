@@ -24,6 +24,7 @@ type ProviderMetrics struct {
 	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
 	loadRateMetric            *prometheus.GaugeVec
+	providerLatencyMetric     *prometheus.GaugeVec
 }
 
 func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport) {
@@ -59,6 +60,15 @@ func (pm *ProviderMetrics) SetLoadRate(loadRate float64) {
 	pm.loadRateMetric.WithLabelValues(pm.specID).Set(loadRate)
 }
 
+func (pm *ProviderMetrics) SetLatency(latencyMs float64) {
+	if pm == nil {
+		return
+	}
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+	pm.providerLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(latencyMs)
+}
+
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
 	if pm == nil {
 		return
@@ -83,6 +93,7 @@ func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMe
 	totalErroredMetric *prometheus.CounterVec,
 	consumerQoSMetric *prometheus.GaugeVec,
 	loadRateMetric *prometheus.GaugeVec,
+	providerLatencyMetric *prometheus.GaugeVec,
 ) *ProviderMetrics {
 	pm := &ProviderMetrics{
 		specID:                    specID,
@@ -95,6 +106,7 @@ func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMe
 		totalErroredMetric:        totalErroredMetric,
 		consumerQoSMetric:         consumerQoSMetric,
 		loadRateMetric:            loadRateMetric,
+		providerLatencyMetric:     providerLatencyMetric,
 	}
 	return pm
 }
