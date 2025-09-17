@@ -178,11 +178,19 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 const OKstr = " OK"
 
 func (lt *lavaTest) startLava(ctx context.Context) {
-	command := "./scripts/start_env_dev.sh"
+	// First initialize the chain
+	initCommand := "./scripts/start_env_dev.sh"
 	logName := "00_StartLava"
 	funcName := "startLava"
 
-	lt.execCommand(ctx, funcName, logName, command, true)
+	lt.execCommand(ctx, funcName, logName, initCommand, true)
+
+	// Now start the daemon in the background
+	startCommand := "lavad start"
+	logNameDaemon := "00_StartLava_Daemon"
+	funcNameDaemon := "startLavaDaemon"
+
+	lt.execCommand(ctx, funcNameDaemon, logNameDaemon, startCommand, false)
 	utils.LavaFormatInfo(funcName + OKstr)
 }
 
