@@ -44,6 +44,7 @@ const (
 	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
 	QUORUM_HEADER_MAX                     = "lava-quorum-max"
 	QUORUM_HEADER_MIN                     = "lava-quorum-min"
+	QUORUM_ALL_PROVIDERS_HEADER_NAME      = "lava-quorum-all-providers"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH                                       = "/lava/health"
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
