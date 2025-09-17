@@ -37,4 +37,6 @@ var allowedErrorsPaymentE2E = map[string]string{
 	"conflict with is already open for this client": "This error is allowed because it's unrelated to payment E2E",
 	"could not get pairing":                         "This error is allowed because the test passes and then there's a random instance of this error. It's ok to allow it because if there was no pairing in a critical step of the test, the test would fail since it checks payments",
 	"block is too new":                              "This error is allowed because it's unrelated to payment E2E",
+	"Requested Epoch Is Too Old":                    "This error is allowed because it can occur during payment E2E test when epoch transitions happen during test execution",
+	"Failed to get a provider session":              "This error is allowed because it can occur during payment E2E test when epoch validation fails temporarily",
 }
