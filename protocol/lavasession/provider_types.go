@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,6 +32,26 @@ type RPCProviderEndpoint struct {
 	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+}
+
+// RPCStaticProviderEndpoint extends RPCProviderEndpoint with additional fields for static providers
+// This allows us to add functionality without modifying the original protobuf-derived type
+type RPCStaticProviderEndpoint struct {
+	RPCProviderEndpoint        // Embed the original struct
+	Name                string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name,omitempty"`
+}
+
+// ToBase returns the base RPCProviderEndpoint (for compatibility with existing code)
+func (ext *RPCStaticProviderEndpoint) ToBase() *RPCProviderEndpoint {
+	return &ext.RPCProviderEndpoint
+}
+
+// Validate checks if the RPCStaticProviderEndpoint has valid configuration
+func (ext *RPCStaticProviderEndpoint) Validate() error {
+	if ext.Name == "" {
+		return fmt.Errorf("provider name cannot be empty")
+	}
+	return nil
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {
