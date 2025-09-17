@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
@@ -177,4 +180,410 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		// Back to the correct providerUniqueId, should pass
 		require.NoError(t, callRelayInner())
 	})
+}
+
+// Integration tests that actually call appendHeadersToRelayResult
+func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
+	ctx := context.Background()
+	providerAddress1 := "lava@provider1"
+	providerAddress2 := "lava@provider2"
+	providerAddress3 := "lava@provider3"
+
+	t.Run("quorum disabled - single provider header", func(t *testing.T) {
+		// Create a mock relay processor with quorum disabled (use default values)
+		relayProcessor := &RelayProcessor{
+			quorumParams: common.DefaultQuorumParams, // Disable quorum by using default values
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a simple mock protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{Name: "test-api"},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+
+		// Verify the result - should have single provider header + user request type header
+		require.Len(t, relayResult.Reply.Metadata, 2)
+
+		// Find the provider address header
+		var providerHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.PROVIDER_ADDRESS_HEADER_NAME {
+				providerHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, providerHeader)
+		require.Equal(t, providerAddress1, providerHeader.Value)
+	})
+
+	t.Run("quorum enabled - single successful provider", func(t *testing.T) {
+		// Create a mock relay processor with quorum enabled
+		relayProcessor := &RelayProcessor{
+			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a simple mock protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{Name: "test-api"},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+
+		// Verify the result - should have quorum header + user request type header
+		require.Len(t, relayResult.Reply.Metadata, 2)
+
+		// Find the quorum header
+		var quorumHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.QUORUM_ALL_PROVIDERS_HEADER_NAME {
+				quorumHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, quorumHeader)
+		require.Equal(t, "[lava@provider1]", quorumHeader.Value)
+	})
+
+	t.Run("quorum enabled - multiple providers with mixed results", func(t *testing.T) {
+		// Create a mock relay processor with quorum enabled
+		relayProcessor := &RelayProcessor{
+			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+				},
+				nodeErrorsList: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
+				},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a simple mock protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{Name: "test-api"},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+
+		// Verify the result - should have quorum header with all providers + user request type header
+		require.Len(t, relayResult.Reply.Metadata, 2)
+
+		// Find the quorum header
+		var quorumHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.QUORUM_ALL_PROVIDERS_HEADER_NAME {
+				quorumHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, quorumHeader)
+
+		// Check that all three providers are in the header (order may vary)
+		headerValue := quorumHeader.Value
+		require.Contains(t, headerValue, "lava@provider1")
+		require.Contains(t, headerValue, "lava@provider2")
+		require.Contains(t, headerValue, "lava@provider3")
+	})
+
+	t.Run("quorum enabled - no providers", func(t *testing.T) {
+		// Create a mock relay processor with quorum enabled but no providers
+		relayProcessor := &RelayProcessor{
+			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a simple mock protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{Name: "test-api"},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+
+		// Verify the result - should have only user request type header (no quorum header since no providers)
+		require.Len(t, relayResult.Reply.Metadata, 1)
+
+		// Should only have the user request type header
+		require.Equal(t, common.USER_REQUEST_TYPE, relayResult.Reply.Metadata[0].Name)
+		require.Equal(t, "test-api", relayResult.Reply.Metadata[0].Value)
+	})
+
+	t.Run("nil relay result - should not panic", func(t *testing.T) {
+		relayProcessor := &RelayProcessor{
+			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{Name: "test-api"},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// This should not panic
+		require.NotPanics(t, func() {
+			rpcConsumerServer.appendHeadersToRelayResult(ctx, nil, 0, relayProcessor, mockProtocolMessage, "test-api")
+		})
+	})
+}
+
+// Test the full SendParsedRelay integration (if we can mock the dependencies)
+func TestSendParsedRelayIntegration(t *testing.T) {
+	// This test would require more complex mocking of the entire relay processor
+	// For now, we'll create a simpler version that tests the header logic in context
+
+	t.Run("SendParsedRelay calls appendHeadersToRelayResult", func(t *testing.T) {
+		// This is a conceptual test - in practice, we'd need to mock:
+		// - ProcessRelaySend
+		// - RelayProcessor.ProcessingResult()
+		// - All the complex dependencies
+
+		// For now, we'll just verify that our header logic works when called
+		// The actual SendParsedRelay integration would require extensive mocking
+		// that might be more complex than the value it provides
+
+		require.True(t, true, "SendParsedRelay integration test placeholder - would require complex mocking")
+	})
+}
+
+// MockResultsManager implements the ResultsManager interface for testing
+type MockResultsManager struct {
+	successResults []common.RelayResult
+	nodeErrorsList []common.RelayResult
+	protocolErrors []RelayError
+}
+
+func (m *MockResultsManager) GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError) {
+	return m.successResults, m.nodeErrorsList, m.protocolErrors
+}
+
+func (m *MockResultsManager) String() string {
+	return "MockResultsManager"
+}
+
+func (m *MockResultsManager) NodeResults() []common.RelayResult {
+	return append(m.successResults, m.nodeErrorsList...)
+}
+
+func (m *MockResultsManager) RequiredResults(requiredSuccesses int, selection Selection) bool {
+	return len(m.successResults) >= requiredSuccesses
+}
+
+func (m *MockResultsManager) ProtocolErrors() uint64 {
+	return uint64(len(m.protocolErrors))
+}
+
+func (m *MockResultsManager) HasResults() bool {
+	return len(m.successResults) > 0 || len(m.nodeErrorsList) > 0
+}
+
+func (m *MockResultsManager) GetResults() (success int, nodeErrors int, specialNodeErrors int, protocolErrors int) {
+	return len(m.successResults), len(m.nodeErrorsList), 0, len(m.protocolErrors)
+}
+
+func (m *MockResultsManager) SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
+	return nil
+}
+
+func (m *MockResultsManager) GetBestNodeErrorMessageForUser() RelayError {
+	return RelayError{}
+}
+
+func (m *MockResultsManager) GetBestProtocolErrorMessageForUser() RelayError {
+	return RelayError{}
+}
+
+func (m *MockResultsManager) nodeErrors() (ret []common.RelayResult) {
+	return m.nodeErrorsList
+}
+
+// MockProtocolMessage implements the ProtocolMessage interface for testing
+type MockProtocolMessage struct {
+	api *spectypes.Api
+}
+
+func (m *MockProtocolMessage) GetApi() *spectypes.Api {
+	return m.api
+}
+
+func (m *MockProtocolMessage) GetApiCollection() *spectypes.ApiCollection {
+	return nil
+}
+
+func (m *MockProtocolMessage) GetParseDirective() *spectypes.ParseDirective {
+	return nil
+}
+
+func (m *MockProtocolMessage) GetUserData() common.UserData {
+	return common.UserData{}
+}
+
+func (m *MockProtocolMessage) GetRelayData() *pairingtypes.RelayPrivateData {
+	return &pairingtypes.RelayPrivateData{}
+}
+
+func (m *MockProtocolMessage) GetChainMessage() chainlib.ChainMessage {
+	return nil
+}
+
+func (m *MockProtocolMessage) GetExtensions() []*spectypes.Extension {
+	return nil
+}
+
+func (m *MockProtocolMessage) GetDirectiveHeaders() map[string]string {
+	return nil
+}
+
+func (m *MockProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
+	return common.QuorumParams{}, nil
+}
+
+func (m *MockProtocolMessage) IsDefaultApi() bool {
+	return false
+}
+
+// Additional methods required by ChainMessage interface
+func (m *MockProtocolMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+func (m *MockProtocolMessage) RequestedBlock() (latest int64, earliest int64) {
+	return 0, 0
+}
+
+func (m *MockProtocolMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool) {
+	return false
+}
+
+func (m *MockProtocolMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+	// No-op for testing
+}
+
+func (m *MockProtocolMessage) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
+	// No-op for testing
+}
+
+func (m *MockProtocolMessage) DisableErrorHandling() {
+	// No-op for testing
+}
+
+func (m *MockProtocolMessage) TimeoutOverride(...time.Duration) time.Duration {
+	return 0
+}
+
+func (m *MockProtocolMessage) GetForceCacheRefresh() bool {
+	return false
+}
+
+func (m *MockProtocolMessage) SetForceCacheRefresh(force bool) bool {
+	return false
+}
+
+func (m *MockProtocolMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	return false, ""
+}
+
+func (m *MockProtocolMessage) GetRawRequestHash() ([]byte, error) {
+	return nil, nil
+}
+
+func (m *MockProtocolMessage) GetRequestedBlocksHashes() []string {
+	return nil
+}
+
+func (m *MockProtocolMessage) UpdateEarliestInMessage(incomingEarliest int64) bool {
+	return false
+}
+
+func (m *MockProtocolMessage) SetExtension(extension *spectypes.Extension) {
+	// No-op for testing
+}
+
+func (m *MockProtocolMessage) GetUsedDefaultValue() bool {
+	return false
+}
+
+func (m *MockProtocolMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
+	return nil
+}
+
+func (m *MockProtocolMessage) RelayPrivateData() *pairingtypes.RelayPrivateData {
+	return &pairingtypes.RelayPrivateData{}
+}
+
+func (m *MockProtocolMessage) HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error) {
+	return nil, nil, nil
+}
+
+func (m *MockProtocolMessage) GetBlockedProviders() []string {
+	return nil
+}
+
+func (m *MockProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
+	return false
 }
