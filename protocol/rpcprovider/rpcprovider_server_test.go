@@ -28,13 +28,12 @@ func testUnsupportedMethodErrorHandling(inputError error) error {
 	var unsupportedMethodError *chainlib.UnsupportedMethodError
 	if errors.As(inputError, &unsupportedMethodError) {
 		// In the actual code, this would log an info message
-		// For testing, we just return the original error
-		return inputError
-	} else {
-		// In the actual code, this would wrap the error with additional context
-		// For testing, we just return the original error
+		// For testing, we just return the original error without wrapping
 		return inputError
 	}
+	// In the actual code, this would wrap the error with additional context
+	// For testing, we just return the original error
+	return inputError
 }
 
 func (mct *MockChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
