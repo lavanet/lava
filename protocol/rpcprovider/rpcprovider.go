@@ -765,9 +765,31 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if err != nil {
 				utils.LavaFormatFatal("failed to read geolocation flag, required flag", err)
 			}
-			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
-			if err != nil || len(rpcProviderEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+
+			// Check if using static providers mode (requires provider names)
+			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
+			if staticProvider {
+				// In static provider mode, read from "endpoints" key but validate names
+				staticEndpoints, err := ParseStaticProviderEndpoints(viper.GetViper(), common.EndpointsConfigName, geolocation)
+				if err != nil || len(staticEndpoints) == 0 {
+					return utils.LavaFormatError("invalid endpoints definition in static provider mode, must include 'name' field for each provider", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				}
+				// Convert static endpoints to base endpoints for compatibility
+				rpcProviderEndpoints = make([]*lavasession.RPCProviderEndpoint, len(staticEndpoints))
+				for i, staticEndpoint := range staticEndpoints {
+					rpcProviderEndpoints[i] = staticEndpoint.ToBase()
+					rpcProviderEndpoints[i].Name = staticEndpoint.Name
+				}
+			} else {
+				// Use old endpoint parsing for backwards compatibility
+				rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
+				if err != nil || len(rpcProviderEndpoints) == 0 {
+					return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				}
+			}
+
+			if len(rpcProviderEndpoints) == 0 {
+				return utils.LavaFormatError("no endpoints defined", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
 			}
 			for _, endpoint := range rpcProviderEndpoints {
 				for _, nodeUrl := range endpoint.NodeUrls {
@@ -863,7 +885,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
-			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
 			if staticProvider {
