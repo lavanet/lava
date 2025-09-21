@@ -26,7 +26,7 @@ func (rs *relaySenderMock) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 func TestStateMachineHappyFlow(t *testing.T) {
 	relaySender := &relaySenderMock{}
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors)
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	chainMsgMock.
 		EXPECT().
@@ -56,7 +56,7 @@ func TestStateMachineHappyFlow(t *testing.T) {
 
 func TestStateMachineAllFailureFlows(t *testing.T) {
 	relaySender := &relaySenderMock{}
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors)
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	returnFalse := false
 	chainMsgMock.
@@ -98,7 +98,7 @@ func TestStateMachineAllFailureFlows(t *testing.T) {
 
 func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 	relaySender := &relaySenderMock{}
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors)
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	returnFalse := false
 	chainMsgMock.
@@ -164,7 +164,7 @@ func (rs *unsupportedMethodRelaySenderMock) SendNodeMsg(ctx context.Context, ch 
 
 func TestStateMachineUnsupportedMethodError(t *testing.T) {
 	relaySender := &unsupportedMethodRelaySenderMock{}
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors)
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 
 	// Mock chain message behavior
