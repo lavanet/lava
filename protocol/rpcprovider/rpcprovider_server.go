@@ -295,13 +295,21 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, err)
 	}
 
+	processingTime := time.Since(startTime)
+
+	// Set provider latency metric
+	if rpcps.metrics != nil && chainMessage != nil {
+		latencyMs := float64(processingTime.Nanoseconds()) / 1e6 // Convert to milliseconds
+		rpcps.metrics.SetLatency(latencyMs)
+	}
+
 	utils.LavaFormatDebug("Provider returned a relay response",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
-		utils.Attribute{Key: "timeTaken", Value: time.Since(startTime)},
+		utils.Attribute{Key: "timeTaken", Value: processingTime},
 	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
