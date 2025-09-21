@@ -225,7 +225,7 @@ func (rp *RelayProcessor) hasUnsupportedMethodErrors() bool {
 			return true
 		}
 		// Also check if we shouldn't retry this error
-		if chainlib.ShouldRetryError(protocolError.GetError()) == false {
+		if !chainlib.ShouldRetryError(protocolError.GetError()) {
 			return true
 		}
 	}

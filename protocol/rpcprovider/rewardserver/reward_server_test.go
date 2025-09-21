@@ -77,7 +77,7 @@ func paymentEventsToEventAttributes(attributesList []map[string]string) (eventAt
 			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: key, Value: val})
 		}
 	}
-	return
+	return eventAttrs
 }
 
 func deepCompareRewards(t *testing.T, expected map[uint64]*EpochRewards, actual map[uint64]*EpochRewards) {

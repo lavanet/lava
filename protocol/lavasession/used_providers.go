@@ -292,14 +292,14 @@ func isUnsupportedMethodError(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	errMsg := strings.ToLower(err.Error())
-	
+
 	// Check for common unsupported method error patterns
 	unsupportedPatterns := []string{
 		"method not found",
-		"method not supported", 
-		"unsupported method",  // Added this pattern specifically
+		"method not supported",
+		"unsupported method", // Added this pattern specifically
 		"unknown method",
 		"method does not exist",
 		"invalid method",
@@ -314,13 +314,13 @@ func isUnsupportedMethodError(err error) bool {
 		"service not found",
 		"-32601", // JSON-RPC method not found error code
 	}
-	
+
 	for _, pattern := range unsupportedPatterns {
 		if strings.Contains(errMsg, pattern) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -329,7 +329,7 @@ func shouldRetryWithThisError(err error) bool {
 	if isUnsupportedMethodError(err) {
 		return false
 	}
-	
+
 	// Allow retries for session sync loss errors
 	return IsSessionSyncLoss(err)
 }
