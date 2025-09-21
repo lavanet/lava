@@ -412,7 +412,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 
 func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extensions []string, chainMessage chainlib.ChainMessage) error {
 	// this validates all of the values are handled by chainParser
-	_, _, err := rpcps.chainParser.SeparateAddonsExtensions(append(extensions, addon))
+	_, _, err := rpcps.chainParser.SeparateAddonsExtensions(context.Background(), append(extensions, addon))
 	if err != nil {
 		return err
 	}

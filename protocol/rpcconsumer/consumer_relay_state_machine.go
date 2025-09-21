@@ -136,8 +136,15 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 	if relayState == nil { // initial state
 		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{})
 	} else {
-		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus.Copy())
-		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
+		// Get the appropriate protocol message (with archive upgrade if needed) BEFORE creating RelayState
+		protocolMessage := crsm.GetProtocolMessage()
+		archiveStatus := relayState.archiveStatus.Copy()
+
+		// Use static function to get upgraded protocol message without creating RelayState
+		upgradedProtocolMessage := upgradeToArchiveIfNeeded(crsm.ctx, protocolMessage, archiveStatus, crsm.relaySender, crsm.relayRetriesManager, batchNumber, numberOfNodeErrors)
+
+		// Create the final RelayState with the correct protocol message
+		nextState = NewRelayState(crsm.ctx, upgradedProtocolMessage, relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, archiveStatus)
 	}
 	crsm.appendRelayState(nextState)
 }

@@ -365,7 +365,12 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+	extensions := rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders)
+	utils.LavaFormatTrace("[Archive Debug] ParseRelay extensions",
+		utils.LogAttr("extensions", extensions),
+		utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("[Archive Debug] Calling chainParser.ParseMsg", utils.LogAttr("url", url), utils.LogAttr("req", req), utils.LogAttr("extensions", extensions), utils.LogAttr("chainParserType", fmt.Sprintf("%T", rpccs.chainParser)), utils.LogAttr("GUID", ctx))
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, extensions)
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +620,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
-	protocolMessage := relayState.GetProtocolMessage()
+	// Use the latest protocol message from the relay state machine to ensure we have any archive upgrades
+	protocolMessage := relayProcessor.GetProtocolMessage()
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
@@ -708,6 +714,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", protocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
+
+	// Debug: Check if the protocol message has the archive extension in its internal state
+	if relayPrivateData := protocolMessage.RelayPrivateData(); relayPrivateData != nil {
+		utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", relayPrivateData.Extensions), utils.LogAttr("GUID", ctx))
+	}
 	usedProviders := relayProcessor.GetUsedProviders()
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 
@@ -1438,15 +1450,20 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(directiveHeaders map[string]string) extensionslib.ExtensionInfo {
 	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
 	if ok {
+		utils.LavaFormatTrace("[Archive Debug] Found extension override header", utils.LogAttr("extensionsStr", extensionsStr))
 		extensions := strings.Split(extensionsStr, ",")
-		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(context.Background(), extensions)
+		utils.LavaFormatTrace("[Archive Debug] Processed extensions", utils.LogAttr("extensions", extensions))
 		if len(extensions) == 1 && extensions[0] == "none" {
 			// none eliminates existing extensions
 			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), ExtensionOverride: []string{}}
 		} else if len(extensions) > 0 {
+			// All extensions from headers use AdditionalExtensions (consistent behavior)
+			utils.LavaFormatTrace("[Archive Debug] Using AdditionalExtensions for all header extensions", utils.LogAttr("extensions", extensions))
 			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), AdditionalExtensions: extensions}
 		}
 	}
+	utils.LavaFormatTrace("[Archive Debug] No extension override header found")
 	return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock()}
 }
 

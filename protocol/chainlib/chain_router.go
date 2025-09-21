@@ -115,7 +115,7 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 		nodeUrl.Url = baseUrl + internalPath
 		routerKey.ApplyInternalPath(internalPath)
 
-		addons, _, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
+		addons, _, err := chainParser.SeparateAddonsExtensions(context.Background(), nodeUrl.Addons)
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func (cri *chainRouterImpl) autoGenerateMissingInternalPaths(isWs bool, nodeUrl 
 }
 
 // batch nodeUrls with the same addons together in a copy
-func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (map[string]lavasession.RPCProviderEndpoint, error) {
+func (cri *chainRouterImpl) BatchNodeUrlsByServices(ctx context.Context, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (map[string]lavasession.RPCProviderEndpoint, error) {
 	returnedBatch := map[string]lavasession.RPCProviderEndpoint{}
 	routesToCheck := map[string]bool{}
 	methodRoutes := map[string]int{}
@@ -245,12 +245,19 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 	}
 	requiredMap := map[string]struct{}{}     // key is requirement
 	supportedMap := map[string]requirement{} // key is requirement
-	rpcProviderEndpointBatch, err := cri.BatchNodeUrlsByServices(rpcProviderEndpoint, chainParser)
+	rpcProviderEndpointBatch, err := cri.BatchNodeUrlsByServices(ctx, rpcProviderEndpoint, chainParser)
 	if err != nil {
 		return nil, err
 	}
 	for _, rpcProviderEndpointEntry := range rpcProviderEndpointBatch {
-		addons, extensions, err := chainParser.SeparateAddonsExtensions(append(rpcProviderEndpointEntry.NodeUrls[0].Addons, ""))
+		if len(rpcProviderEndpointEntry.NodeUrls) == 0 {
+			utils.LavaFormatError("[ChainRouter] No NodeUrls found in endpoint entry", nil)
+			continue
+		}
+		firstNodeUrl := rpcProviderEndpointEntry.NodeUrls[0]
+		inputAddons := append(firstNodeUrl.Addons, "")
+		addons, extensions, err := chainParser.SeparateAddonsExtensions(ctx, inputAddons)
+
 		if err != nil {
 			return nil, err
 		}

@@ -192,8 +192,15 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 		statusCode = 200
 	}
 
+	// Get provider address from the request
+	providerAddress := ""
+	if request != nil && request.RelaySession != nil {
+		providerAddress = request.RelaySession.Provider
+	}
+
 	utils.LavaFormatDebug("Generated test response",
 		utils.LogAttr("apiMethod", apiMethod),
+		utils.LogAttr("providerAddress", providerAddress),
 		utils.LogAttr("randValue", randValue),
 		utils.LogAttr("statusCode", statusCode),
 		utils.LogAttr("GUID", ctx))

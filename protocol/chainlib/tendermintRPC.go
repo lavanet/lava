@@ -95,6 +95,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 
 // ParseMsg parses message data into chain message object
 func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error) {
+	utils.LavaFormatTrace("[Archive Debug] TendermintChainParser.ParseMsg called", utils.LogAttr("urlPath", urlPath), utils.LogAttr("extensionInfo", extensionInfo))
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -109,6 +110,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		var err error
 		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
+
 			return nil, err
 		}
 	} else {
@@ -252,6 +254,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 	}
 
+	utils.LavaFormatTrace("[Archive Debug] TendermintRPC ParseMsg calling ExtensionParsing", utils.LogAttr("addon", apiCollection.CollectionData.AddOn), utils.LogAttr("extensionInfo", extensionInfo), utils.LogAttr("urlPath", urlPath))
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }

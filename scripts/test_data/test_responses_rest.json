@@ -160,6 +160,14 @@
       "success_probability": 0.0,
       "error_probability": 0.0,
       "rate_limit_probability": 1.0
+    },
+    "Default-/cosmos/tx/v1beta1/unsupported_method": {
+      "success_reply": "{\"message\":\"This endpoint should not be reached\"}",
+      "error_reply": "{\"code\":404,\"message\":\"Not Found - Method not supported\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
     }
   }
 }
