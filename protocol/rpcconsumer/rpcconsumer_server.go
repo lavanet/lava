@@ -229,7 +229,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock := int64(0)
 	relay = lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
-	return
+	return true, relay, chainMessage, nil
 }
 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
@@ -405,8 +405,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
 		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
-
-
 		return nil, err
 	}
 
@@ -427,7 +425,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
 
@@ -445,7 +442,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 func (rpccs *RPCConsumerServer) GetChainIdAndApiInterface() (string, string) {
 	return rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
 }
-
 
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
