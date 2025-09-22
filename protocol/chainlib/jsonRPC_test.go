@@ -626,7 +626,7 @@ func TestJsonRPC_SpecUpdateWithExtensions(t *testing.T) {
 
 	extensionKey := extensionslib.ExtensionKey{
 		Extension:      "archive",
-		ConnectionType: "POST",
+		ConnectionType: "jsonrpc",
 		InternalPath:   "",
 		Addon:          "",
 	}

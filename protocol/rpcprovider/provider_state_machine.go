@@ -94,8 +94,8 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			isDefaultApi = strings.HasPrefix(chainMsg.GetApi().Name, chainlib.DefaultApiName)
 		}
 		//Anna - check with Avi
-		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
-			//if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
+		//if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
+		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
 			// Extract method name if available
 			methodName := ""
 			apiInterface := ""
