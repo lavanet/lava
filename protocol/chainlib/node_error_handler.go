@@ -216,17 +216,17 @@ func ShouldRetryError(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	// Never retry unsupported method errors
 	if IsUnsupportedMethodErrorType(err) {
 		return false
 	}
-	
+
 	// Never retry if the error message indicates an unsupported method
 	if IsUnsupportedMethodError(err) {
 		return false
 	}
-	
+
 	// For other errors, allow retry logic to decide
 	return true
 }

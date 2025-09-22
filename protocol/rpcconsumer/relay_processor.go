@@ -224,8 +224,13 @@ func (rp *RelayProcessor) hasUnsupportedMethodErrors() bool {
 		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
 			return true
 		}
+		// Check for epoch mismatch errors that should be retried
+		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+			// Epoch mismatch errors should be retried, not treated as unsupported
+			continue
+		}
 		// Also check if we shouldn't retry this error
-		if chainlib.ShouldRetryError(protocolError.GetError()) == false {
+		if !chainlib.ShouldRetryError(protocolError.GetError()) {
 			return true
 		}
 	}
@@ -243,10 +248,26 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 		return false
 	}
 
+	// Check if we have epoch mismatch errors that warrant retry
+	_, _, protocolErrors := rp.GetResultsData()
+	hasEpochMismatchError := false
+	for _, protocolError := range protocolErrors {
+		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+			hasEpochMismatchError = true
+			break
+		}
+	}
+
 	// Retries will be performed based on the following scenarios:
 	// 1. If relayCountOnNodeError > 0
 	// 2. If we have 0 successful relays and we have only node errors.
+	// 3. If we have epoch mismatch errors (temporary synchronization issues)
 	// 4. Number of retries < relayCountOnNodeError.
+	if hasEpochMismatchError && resultsCount == 0 {
+		// Allow retries for epoch mismatch errors even with higher tolerance
+		return true
+	}
+
 	if relayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
 		if nodeErrors <= relayCountOnNodeError && specialNodeErrors <= relayCountOnNodeError {
 			return true

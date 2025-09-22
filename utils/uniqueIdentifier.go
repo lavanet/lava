@@ -28,5 +28,5 @@ func GetUniqueIdentifier(ctx context.Context) (guid uint64, found bool) {
 	if !found {
 		return 0, false
 	}
-	return
+	return guid, found
 }

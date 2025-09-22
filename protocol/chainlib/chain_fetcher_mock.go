@@ -12,8 +12,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -55,6 +55,7 @@ func (m *MockChainFetcherIf) CustomMessage(ctx context.Context, path string, dat
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
+
 // FetchBlockHashByNum mocks base method.
 func (m *MockChainFetcherIf) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	m.ctrl.T.Helper()

@@ -22,5 +22,5 @@ func IdentityFormatter() (inputFormatter func([]byte) []byte, outputFormatter fu
 		return inpData
 	}
 	outputFormatter = inputFormatter
-	return
+	return inputFormatter, outputFormatter
 }

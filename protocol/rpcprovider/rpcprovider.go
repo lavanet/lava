@@ -584,10 +584,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// Create test mode config if enabled
 	var testModeConfig *TestModeConfig
 	if rpcp.testMode {
-		testModeConfig = &TestModeConfig{
-			TestMode:     true,
-			ResponseFile: rpcp.testResponsesFile,
-		}
 		// Load test responses from file
 		err = rpcProviderServer.loadTestModeConfig(rpcp.testMode, rpcp.testResponsesFile)
 		if err != nil {
@@ -650,7 +646,7 @@ func ParseEndpointsCustomName(viper_endpoints *viper.Viper, endpointsConfigName 
 	for _, endpoint := range endpoints {
 		endpoint.Geolocation = geolocation
 	}
-	return
+	return endpoints, err
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
