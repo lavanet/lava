@@ -153,7 +153,6 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 // As well as the decision of changing the protocol message,
 // into different extensions or addons based on certain conditions
 func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bool {
-
 	batchNumber := crsm.usedProviders.BatchNumber()
 	shouldRetry := crsm.retryCondition(batchNumber)
 	if shouldRetry {

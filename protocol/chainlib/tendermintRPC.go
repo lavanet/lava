@@ -110,7 +110,6 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		var err error
 		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
-
 			return nil, err
 		}
 	} else {

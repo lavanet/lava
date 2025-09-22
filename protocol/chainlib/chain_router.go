@@ -255,9 +255,8 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			continue
 		}
 		firstNodeUrl := rpcProviderEndpointEntry.NodeUrls[0]
-		inputAddons := append(firstNodeUrl.Addons, "")
+		inputAddons := append(append([]string(nil), firstNodeUrl.Addons...), "")
 		addons, extensions, err := chainParser.SeparateAddonsExtensions(ctx, inputAddons)
-
 		if err != nil {
 			return nil, err
 		}
