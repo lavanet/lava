@@ -229,7 +229,7 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(AmountFlagName, "", "modify the provider's staked amount")
 	cmd.Flags().String(ValidatorFlag, "", "the validator to delegate/bond to with dualstaking")
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
-	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
+	cmd.Flags().Uint64(types.FlagCommission, 75, "The provider's commission from the delegators (default 75)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
 	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
