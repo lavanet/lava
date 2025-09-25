@@ -309,9 +309,8 @@ func TestExtensions(t *testing.T) {
 	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 100})
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
-	require.Len(t, chainMessage.GetExtensions(), 1)
-	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
-	require.Equal(t, cuCostExt, chainMessage.GetApi().ComputeUnits)
+	require.Empty(t, chainMessage.GetExtensions())
+	require.Equal(t, cuCost, chainMessage.GetApi().ComputeUnits)
 }
 
 func TestJsonRpcBatchCall(t *testing.T) {
@@ -626,7 +625,7 @@ func TestJsonRPC_SpecUpdateWithExtensions(t *testing.T) {
 
 	extensionKey := extensionslib.ExtensionKey{
 		Extension:      "archive",
-		ConnectionType: "POST",
+		ConnectionType: "jsonrpc",
 		InternalPath:   "",
 		Addon:          "",
 	}

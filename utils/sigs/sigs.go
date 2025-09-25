@@ -152,7 +152,7 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 	PubKey := sk.PubKey()
 	addr = sdk.AccAddress(PubKey.Address())
 	secretKey, _ = btcSecp256k1.PrivKeyFromBytes(sk.Bytes())
-	return
+	return secretKey, addr
 }
 
 type ZeroReader struct {
@@ -197,5 +197,5 @@ func GenerateDeterministicFloatingKey(rand io.Reader) (acc Account) {
 	acc.ConsKey = ed25519.GenPrivKeyFromSecret(privkeySeed)
 	acc.SK, _ = btcSecp256k1.PrivKeyFromBytes(acc.sk.Bytes())
 
-	return
+	return acc
 }

@@ -229,7 +229,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock := int64(0)
 	relay = lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
-	return
+	return true, relay, chainMessage, nil
 }
 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
@@ -365,7 +365,12 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+	extensions := rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders)
+	utils.LavaFormatTrace("[Archive Debug] ParseRelay extensions",
+		utils.LogAttr("extensions", extensions),
+		utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("[Archive Debug] Calling chainParser.ParseMsg", utils.LogAttr("url", url), utils.LogAttr("req", req), utils.LogAttr("extensions", extensions), utils.LogAttr("chainParserType", fmt.Sprintf("%T", rpccs.chainParser)), utils.LogAttr("GUID", ctx))
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, extensions)
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +620,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
-	protocolMessage := relayState.GetProtocolMessage()
+	// Use the latest protocol message from the relay state machine to ensure we have any archive upgrades
+	protocolMessage := relayProcessor.GetProtocolMessage()
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
@@ -634,6 +640,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
 	if rpccs.cache.CacheActive() { // use cache only if its defined.
+		utils.LavaFormatDebug("Cache lookup attempt",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("cacheActive", true),
+			utils.LogAttr("reqBlock", reqBlock),
+			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
+		)
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
 			if reqBlock != spectypes.NOT_APPLICABLE { // don't use cache if requested block is not applicable
 				var cacheReply *pairingtypes.CacheRelayReply
@@ -641,6 +653,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				if err != nil {
 					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
 				} else {
+					utils.LavaFormatDebug("Cache lookup hash generated",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("hashKey", fmt.Sprintf("%x", hashKey)),
+						utils.LogAttr("apiUrl", protocolMessage.RelayPrivateData().ApiUrl),
+					)
 					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 						RequestHash:           hashKey,
@@ -694,7 +711,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					}
 				}
 			} else {
-				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: protocolMessage.GetApi().Name}, utils.LogAttr("GUID", ctx))
+				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.LogAttr("apiName", protocolMessage.GetApi().Name), utils.LogAttr("GUID", ctx))
 			}
 		}
 	}
@@ -708,6 +725,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", protocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
+
+	// Debug: Check if the protocol message has the archive extension in its internal state
+	if relayPrivateData := protocolMessage.RelayPrivateData(); relayPrivateData != nil {
+		utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", relayPrivateData.Extensions), utils.LogAttr("GUID", ctx))
+	}
 	usedProviders := relayProcessor.GetUsedProviders()
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 
@@ -928,6 +951,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
+
 					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
 
 					go func() {
@@ -966,6 +990,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
 						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 							RequestHash:           hashKey,
 							ChainId:               chainId,
@@ -1438,15 +1463,20 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(directiveHeaders map[string]string) extensionslib.ExtensionInfo {
 	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
 	if ok {
+		utils.LavaFormatTrace("[Archive Debug] Found extension override header", utils.LogAttr("extensionsStr", extensionsStr))
 		extensions := strings.Split(extensionsStr, ",")
-		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(context.Background(), extensions)
+		utils.LavaFormatTrace("[Archive Debug] Processed extensions", utils.LogAttr("extensions", extensions))
 		if len(extensions) == 1 && extensions[0] == "none" {
 			// none eliminates existing extensions
 			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), ExtensionOverride: []string{}}
 		} else if len(extensions) > 0 {
+			// All extensions from headers use AdditionalExtensions (consistent behavior)
+			utils.LavaFormatTrace("[Archive Debug] Using AdditionalExtensions for all header extensions", utils.LogAttr("extensions", extensions))
 			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), AdditionalExtensions: extensions}
 		}
 	}
+	utils.LavaFormatTrace("[Archive Debug] No extension override header found")
 	return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock()}
 }
 
@@ -1540,12 +1570,60 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			Value: providerAddress,
 		})
 
-		// add the relay retried count
-		if protocolErrors > 0 {
+		// add the relay retried count (including both node errors and protocol errors)
+		successResults, nodeErrorResults, protocolErrorResults := relayProcessor.GetResultsData()
+		totalRetries := protocolErrors + uint64(len(nodeErrorResults))
+		if totalRetries > 0 {
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.RETRY_COUNT_HEADER_NAME,
-				Value: strconv.FormatUint(protocolErrors, 10),
+				Value: strconv.FormatUint(totalRetries, 10),
 			})
+
+			// When there are retries, show all attempted providers (similar to REST behavior)
+			allProvidersMap := make(map[string]bool)
+
+			// Add the current provider (might be from successful result or last error)
+			if providerAddress != "Cached" && providerAddress != "" {
+				allProvidersMap[providerAddress] = true
+			}
+
+			// Add providers from node errors
+			for _, result := range nodeErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				}
+			}
+
+			// Add providers from protocol errors
+			for _, result := range protocolErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				}
+			}
+
+			// Add providers from successful results (in case of partial success)
+			for _, result := range successResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				}
+			}
+
+			// Convert to slice and update provider address header with all participating providers
+			if len(allProvidersMap) > 0 {
+				allProvidersList := make([]string, 0, len(allProvidersMap))
+				for provider := range allProvidersMap {
+					allProvidersList = append(allProvidersList, provider)
+				}
+				allProvidersString := strings.Join(allProvidersList, ",")
+
+				// Update the existing PROVIDER_ADDRESS_HEADER_NAME with all providers
+				for i, metadata := range metadataReply {
+					if metadata.Name == common.PROVIDER_ADDRESS_HEADER_NAME {
+						metadataReply[i].Value = allProvidersString
+						break
+					}
+				}
+			}
 		}
 	}
 	if relayResult.Reply == nil {

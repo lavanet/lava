@@ -148,7 +148,7 @@ func CreateChainLibMocks(
 		Geolocation:    1,
 		NodeUrls:       []common.NodeUrl{},
 	}
-	addons, extensions, err := chainParser.SeparateAddonsExtensions(services)
+	addons, extensions, err := chainParser.SeparateAddonsExtensions(context.Background(), services)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}

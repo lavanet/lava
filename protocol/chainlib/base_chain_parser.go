@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -160,7 +161,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 			if _, ok := policyInformation[extension.Name]; ok {
 				extensionKey := extensionslib.ExtensionKey{
 					Extension:      extension.Name,
-					ConnectionType: collectionKey.ConnectionType,
+					ConnectionType: apiCollection.CollectionData.ApiInterface,
 					InternalPath:   collectionKey.InternalPath,
 					Addon:          collectionKey.Addon,
 				}
@@ -186,7 +187,7 @@ func (bcp *BaseChainParser) SetPolicy(policy PolicyInf, chainId string, apiInter
 }
 
 // this function errors if it meets a value that is neither a n addon or an extension
-func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error) {
+func (bcp *BaseChainParser) SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error) {
 	checked := map[string]struct{}{}
 	for _, supportedToCheck := range supported {
 		// ignore repeated occurrences
@@ -201,7 +202,11 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			if supportedToCheck == "" {
 				continue
 			}
-			if bcp.isExtension(supportedToCheck) || supportedToCheck == WebSocketExtension {
+
+			isExtensionResult := bcp.isExtension(supportedToCheck)
+			isWebSocket := supportedToCheck == WebSocketExtension
+
+			if isExtensionResult || isWebSocket {
 				extensions = append(extensions, supportedToCheck)
 				continue
 			}
@@ -211,6 +216,7 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 				utils.Attribute{Key: "supported", Value: supportedToCheck})
 		}
 	}
+
 	return addons, extensions, err
 }
 
@@ -218,7 +224,7 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath string, apiInterface string) (retVerifications []VerificationContainer, err error) {
 	// addons will contains extensions and addons,
 	// extensions must exist in all verifications, addons must be split because they are separated
-	addons, extensions, err := bcp.SeparateAddonsExtensions(supported)
+	addons, extensions, err := bcp.SeparateAddonsExtensions(context.Background(), supported)
 	if err != nil {
 		return nil, err
 	}
@@ -315,15 +321,19 @@ func (bcp *BaseChainParser) IsInternalPathEnabled(internalPath string, apiInterf
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
+	utils.LavaFormatTrace("[Archive Debug] ExtensionParsing called", utils.LogAttr("addon", addon), utils.LogAttr("extensionInfo", extensionInfo))
 	if extensionInfo.ExtensionOverride == nil {
 		// consumer side extension parsing. to set the extension based on the latest block and the request
+		utils.LavaFormatTrace("[Archive Debug] Using extensionParsingInner", utils.LogAttr("latestBlock", extensionInfo.LatestBlock))
 		bcp.extensionParsingInner(addon, parsedMessageArg, extensionInfo.LatestBlock)
 	} else {
 		// this is used for provider parsing. as the provider needs to set the requested extension by the request.
+		utils.LavaFormatTrace("[Archive Debug] Using OverrideExtensions", utils.LogAttr("extensionOverride", extensionInfo.ExtensionOverride))
 		parsedMessageArg.OverrideExtensions(extensionInfo.ExtensionOverride, &bcp.extensionParser)
 	}
 	// in case we want to force extensions we can add additional extensions. this is used on consumer side with flags.
 	if extensionInfo.AdditionalExtensions != nil {
+		utils.LavaFormatTrace("[Archive Debug] Using AdditionalExtensions", utils.LogAttr("additionalExtensions", extensionInfo.AdditionalExtensions))
 		parsedMessageArg.OverrideExtensions(extensionInfo.AdditionalExtensions, &bcp.extensionParser)
 	}
 }

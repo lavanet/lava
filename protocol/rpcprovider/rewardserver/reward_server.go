@@ -66,7 +66,7 @@ func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes
 	for _, proof := range csrw.proofs {
 		retProofs = append(retProofs, proof)
 	}
-	return
+	return retProofs, errRet
 }
 
 type EpochRewards struct {
@@ -646,7 +646,7 @@ func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 func (rws *RewardServer) latestBlockReports(specs map[string]struct{}) (latestBlockReports []*pairingtypes.LatestBlockReport) {
 	latestBlockReports = []*pairingtypes.LatestBlockReport{}
 	if rws.chainTrackerSpecsInf == nil {
-		return
+		return latestBlockReports
 	}
 	for spec := range specs {
 		latestBlock := rws.chainTrackerSpecsInf.GetLatestBlockNumForSpec(spec)
@@ -659,7 +659,7 @@ func (rws *RewardServer) latestBlockReports(specs map[string]struct{}) (latestBl
 		}
 		latestBlockReports = append(latestBlockReports, blockReport)
 	}
-	return
+	return latestBlockReports
 }
 
 func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession) {
@@ -667,7 +667,7 @@ func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch u
 	defer rws.lock.Unlock()
 
 	if len(rws.failedRewardsPaymentRequests) == 0 {
-		return
+		return rewardsForClaim
 	}
 
 	var sessionsToDelete []uint64
@@ -684,7 +684,7 @@ func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch u
 		delete(rws.failedRewardsPaymentRequests, sessionId)
 	}
 
-	return
+	return rewardsForClaim
 }
 
 func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingtypes.RelaySession, success bool) {
