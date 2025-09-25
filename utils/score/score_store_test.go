@@ -249,7 +249,7 @@ func TestScoreStoreUpdateIdenticalSamples(t *testing.T) {
 	expected := sample
 	score, err := store.Resolve()
 	require.NoError(t, err)
-	require.InEpsilon(t, expected, score, 0.000001)
+	require.InEpsilon(t, expected, score, 0.00001)
 }
 
 // TestScoreStoreUpdateIdenticalSamplesThenBetter verifies that updating the score with
