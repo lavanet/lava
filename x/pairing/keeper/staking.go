@@ -16,9 +16,65 @@ import (
 )
 
 const (
-	MAX_CHANGE_RATE = 1
-	CHANGE_WINDOW   = time.Hour * 24
+	MAX_CHANGE_RATE   = 1
+	CHANGE_WINDOW     = time.Hour * 24
+	STAKE_MOVE_WINDOW = time.Hour * 24 // 24-hour cooldown for stake moves
 )
+
+// checkStakeMoveRateLimit checks rate limiting for stake moves
+// This method handles both individual and bulk operations (multiple stake moves in the same transaction)
+func (k Keeper) checkStakeMoveRateLimit(ctx sdk.Context, provider string) error {
+	// Check if this provider has already been rate-limited in this transaction
+	// by checking if we already have a pending timestamp update for this block
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		return utils.LavaFormatError("provider metadata not found", err,
+			utils.LogAttr("provider", provider),
+		)
+	}
+
+	currentBlockTime := uint64(ctx.BlockTime().UTC().Unix())
+
+	// If LastStakeMove is already set to current block time, this means
+	// we've already processed a stake move for this provider in this transaction
+	if metadata.LastStakeMove == currentBlockTime {
+		// Allow the operation - this is part of the same bulk transaction
+		return nil
+	}
+
+	// Otherwise, check normal rate limiting
+	if ctx.BlockTime().UTC().Unix()-int64(metadata.LastStakeMove) < int64(STAKE_MOVE_WINDOW.Seconds()) {
+		return utils.LavaFormatWarning(
+			fmt.Sprintf("provider must wait %s between stake moves", STAKE_MOVE_WINDOW),
+			nil,
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("last_move_time", metadata.LastStakeMove),
+		)
+	}
+
+	return nil
+}
+
+// updateStakeMoveTimestamp updates the provider's timestamp
+// This ensures bulk operations only update the timestamp once at the end of the transaction
+func (k Keeper) updateStakeMoveTimestamp(ctx sdk.Context, provider string) error {
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		return utils.LavaFormatError("provider metadata not found", err,
+			utils.LogAttr("provider", provider),
+		)
+	}
+
+	currentBlockTime := uint64(ctx.BlockTime().UTC().Unix())
+
+	// Only update if not already updated in this block (for bulk operations)
+	if metadata.LastStakeMove != currentBlockTime {
+		metadata.LastStakeMove = currentBlockTime
+		k.epochStorageKeeper.SetMetadata(ctx, metadata)
+	}
+
+	return nil
+}
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegationLimit sdk.Coin, delegationCommission uint64, provider string, description stakingtypes.Description) error {
 	logger := k.Logger(ctx)
