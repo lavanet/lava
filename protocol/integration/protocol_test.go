@@ -1311,7 +1311,15 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				require.NoError(t, err)
 
 				resp.Body.Close()
-				require.Equal(t, string(bodyBytes), play.expectedResult)
+				if play.name == "archive with 3 errored provider" {
+					// For this test, we need to check for the unsupported method error pattern
+					// since the GUID will be different each time
+					require.Contains(t, string(bodyBytes), "unsupported method 'Default-/lavanet/lava/conflict/params': test")
+					require.Contains(t, string(bodyBytes), "failed processing responses from providers")
+					require.Contains(t, string(bodyBytes), "Error_GUID")
+				} else {
+					require.Equal(t, play.expectedResult, string(bodyBytes))
+				}
 			}
 		})
 	}
@@ -2116,7 +2124,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			require.NoError(t, err)
 
 			resp.Body.Close()
-			require.Equal(t, string(bodyBytes), play.expectedResult)
+			require.Equal(t, play.expectedResult, string(bodyBytes))
 			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 
 			// Allow relay to hit cache.
@@ -2157,7 +2165,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			require.NoError(t, err)
 
 			resp.Body.Close()
-			require.Equal(t, string(bodyBytes), play.expectedResult)
+			require.Equal(t, play.expectedResult, string(bodyBytes))
 			require.Equal(t, 1, timesCalledProvidersOnSecondStage) // must go directly to archive as we have it in cache.
 			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 		})

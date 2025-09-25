@@ -466,6 +466,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
 			}
 
+			// Check if the error message indicates an unsupported method
+			if IsUnsupportedMethodErrorMessage(err.Error()) {
+				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcMethodNotFoundError)
+			}
+
 			if _, ok := err.(*json.SyntaxError); ok {
 				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcParseError)
 			}
