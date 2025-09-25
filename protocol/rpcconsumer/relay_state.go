@@ -156,6 +156,14 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 		return protocolMessage
 	}
 
+	// Check for context cancellation early to avoid expensive operations
+	select {
+	case <-ctx.Done():
+		utils.LavaFormatTrace("Context cancelled at start of archive upgrade", utils.LogAttr("GUID", ctx))
+		return protocolMessage
+	default:
+	}
+
 	hashes := protocolMessage.GetRequestedBlocksHashes()
 	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
 	if archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
