@@ -32,6 +32,11 @@ func (k Keeper) MoveProviderStake(ctx sdk.Context, creator, srcChain, dstChain s
 		)
 	}
 
+	// Rate limiting check using helper function
+	if err := k.checkStakeMoveRateLimit(ctx, creator); err != nil {
+		return err
+	}
+
 	srcEntry.Stake = srcEntry.Stake.Sub(amount)
 	dstEntry.Stake = dstEntry.Stake.Add(amount)
 
@@ -41,6 +46,11 @@ func (k Keeper) MoveProviderStake(ctx sdk.Context, creator, srcChain, dstChain s
 			utils.LogAttr("provider", creator),
 			utils.LogAttr("chain", srcChain),
 		)
+	}
+
+	// Update rate limiting timestamp after successful validation using helper function
+	if err := k.updateStakeMoveTimestamp(ctx, creator); err != nil {
+		return err
 	}
 
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, srcEntry)
