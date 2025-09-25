@@ -40,6 +40,11 @@ func TestStateMachineHappyFlow(t *testing.T) {
 		AnyTimes()
 	chainMsgMock.
 		EXPECT().
+		GetApiCollection().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
 		CheckResponseError(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(msg interface{}, msg2 interface{}) (interface{}, interface{}) {
 			if relaySender.numberOfTimesHitSendNodeMsg < numberOfRetriesAllowedOnNodeErrors {
@@ -67,6 +72,11 @@ func TestStateMachineAllFailureFlows(t *testing.T) {
 	chainMsgMock.
 		EXPECT().
 		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
 		Return(nil).
 		AnyTimes()
 	chainMsgMock.
@@ -109,6 +119,11 @@ func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 	chainMsgMock.
 		EXPECT().
 		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
 		Return(nil).
 		AnyTimes()
 	chainMsgMock.
@@ -176,6 +191,11 @@ func TestStateMachineUnsupportedMethodError(t *testing.T) {
 	chainMsgMock.
 		EXPECT().
 		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
 		Return(nil).
 		AnyTimes()
 	chainMsgMock.

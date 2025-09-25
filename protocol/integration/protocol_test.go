@@ -1311,15 +1311,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				require.NoError(t, err)
 
 				resp.Body.Close()
-				if play.name == "archive with 3 errored provider" {
-					// For this test, we need to check for the unsupported method error pattern
-					// since the GUID will be different each time
-					require.Contains(t, string(bodyBytes), "unsupported method 'Default-/lavanet/lava/conflict/params': test")
-					require.Contains(t, string(bodyBytes), "failed processing responses from providers")
-					require.Contains(t, string(bodyBytes), "Error_GUID")
-				} else {
-					require.Equal(t, play.expectedResult, string(bodyBytes))
-				}
+				require.Equal(t, play.expectedResult, string(bodyBytes))
 			}
 		})
 	}
