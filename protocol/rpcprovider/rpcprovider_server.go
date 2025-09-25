@@ -58,12 +58,14 @@ type TestModeConfig struct {
 
 // TestResponse represents a test response configuration for a specific API method
 type TestResponse struct {
-	SuccessReply         string  `json:"success_reply"`
-	ErrorReply           string  `json:"error_reply"`
-	RateLimitReply       string  `json:"rate_limit_reply"`
-	SuccessProbability   float64 `json:"success_probability"`
-	ErrorProbability     float64 `json:"error_probability"`
-	RateLimitProbability float64 `json:"rate_limit_probability"`
+	SuccessReply           string  `json:"success_reply"`
+	ErrorReply             string  `json:"error_reply"`
+	RateLimitReply         string  `json:"rate_limit_reply"`
+	UnsupportedMethodReply string  `json:"unsupported_method_reply"`
+	SuccessProbability     float64 `json:"success_probability"`
+	ErrorProbability       float64 `json:"error_probability"`
+	RateLimitProbability   float64 `json:"rate_limit_probability"`
+	UnsupportedProbability float64 `json:"unsupported_probability"`
 }
 
 // TestModeContextKey is used to pass test mode context through the call chain

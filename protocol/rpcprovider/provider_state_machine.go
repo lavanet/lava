@@ -3,6 +3,7 @@ package rpcprovider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -165,10 +166,14 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 	if !exists {
 		// Default response if method not configured
 		testResponse = TestResponse{
-			SuccessReply:       `{"jsonrpc":"2.0","id":1,"result":"default_success"}`,
-			ErrorReply:         `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Server error"}}`,
-			RateLimitReply:     `{"jsonrpc":"2.0","id":1,"error":{"code":429,"message":"Too many requests"}}`,
-			SuccessProbability: 1.0,
+			SuccessReply:           `{"jsonrpc":"2.0","id":1,"result":"default_success"}`,
+			ErrorReply:             `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Server error"}}`,
+			RateLimitReply:         `{"jsonrpc":"2.0","id":1,"error":{"code":429,"message":"Too many requests"}}`,
+			UnsupportedMethodReply: "", // Will be generated dynamically
+			SuccessProbability:     0.85,
+			ErrorProbability:       0.1,
+			RateLimitProbability:   0.03,
+			UnsupportedProbability: 0.02,
 		}
 	}
 
@@ -177,13 +182,17 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 	var responseData string
 	var statusCode int
 
-	if randValue < testResponse.SuccessProbability {
+	// ENHANCED: Add unsupported method simulation as the first check
+	if randValue < testResponse.UnsupportedProbability {
+		// Generate realistic unsupported method response based on API interface
+		responseData, statusCode = psm.generateUnsupportedMethodResponse(chainMsg, apiMethod, testResponse.UnsupportedMethodReply)
+	} else if randValue < testResponse.UnsupportedProbability+testResponse.SuccessProbability {
 		responseData = testResponse.SuccessReply
 		statusCode = 200
-	} else if randValue < testResponse.SuccessProbability+testResponse.ErrorProbability {
+	} else if randValue < testResponse.UnsupportedProbability+testResponse.SuccessProbability+testResponse.ErrorProbability {
 		responseData = testResponse.ErrorReply
 		statusCode = 500
-	} else if randValue < testResponse.SuccessProbability+testResponse.ErrorProbability+testResponse.RateLimitProbability {
+	} else if randValue < testResponse.UnsupportedProbability+testResponse.SuccessProbability+testResponse.ErrorProbability+testResponse.RateLimitProbability {
 		responseData = testResponse.RateLimitReply
 		statusCode = 429
 	} else {
@@ -211,5 +220,40 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 			LatestBlock: 12345, // Mock block number
 		},
 		StatusCode: statusCode,
+	}
+}
+
+// generateUnsupportedMethodResponse creates realistic unsupported method responses
+// based on the API interface type, ensuring consistency with production error detection
+func (psm *ProviderStateMachine) generateUnsupportedMethodResponse(chainMsg chainlib.ChainMessage, apiMethod string, configuredReply string) (string, int) {
+	// If a specific unsupported reply is configured, use it
+	if configuredReply != "" {
+		return configuredReply, 500
+	}
+
+	// Otherwise, generate API-appropriate unsupported method responses
+	if chainMsg == nil || chainMsg.GetApiCollection() == nil {
+		return `{"error":"method not supported"}`, 500
+	}
+
+	apiInterface := strings.ToLower(chainMsg.GetApiCollection().CollectionData.ApiInterface)
+
+	switch apiInterface {
+	case "jsonrpc", "tendermintrpc":
+		// Generate JSON-RPC method not found error (code -32601)
+		// This matches the pattern that chainlib.IsUnsupportedMethodErrorMessage() detects
+		return fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found: %s"}}`, apiMethod), 200
+
+	case "rest":
+		// Generate REST not found error that will trigger HTTP status code detection
+		return fmt.Sprintf(`{"error":"Endpoint not found: %s","message":"The requested endpoint does not exist"}`, apiMethod), 404
+
+	case "grpc":
+		// Generate gRPC unimplemented error
+		return fmt.Sprintf(`{"error":"Method not implemented: %s","code":12}`, apiMethod), 500
+
+	default:
+		// Generic unsupported method error with patterns that will be detected
+		return fmt.Sprintf(`{"error":"Method not supported: %s"}`, apiMethod), 500
 	}
 }
