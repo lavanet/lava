@@ -402,7 +402,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -1311,15 +1311,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				require.NoError(t, err)
 
 				resp.Body.Close()
-				if play.name == "archive with 3 errored provider" {
-					// For this test, we need to check for the unsupported method error pattern
-					// since the GUID will be different each time
-					require.Contains(t, string(bodyBytes), "unsupported method 'Default-/lavanet/lava/conflict/params': test")
-					require.Contains(t, string(bodyBytes), "failed processing responses from providers")
-					require.Contains(t, string(bodyBytes), "Error_GUID")
-				} else {
-					require.Equal(t, play.expectedResult, string(bodyBytes))
-				}
+				require.Equal(t, play.expectedResult, string(bodyBytes))
 			}
 		})
 	}

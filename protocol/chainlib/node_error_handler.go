@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -175,7 +176,14 @@ func IsUnsupportedMethodError(nodeError error) bool {
 
 	// Check for gRPC status codes
 	if st, ok := status.FromError(nodeError); ok {
-		return st.Code() == codes.Unimplemented
+		// Check for both Unimplemented and Unknown codes that might indicate unsupported methods
+		if st.Code() == codes.Unimplemented {
+			return true
+		}
+		// Also check Unknown code with unsupported method message
+		if st.Code() == codes.Unknown && IsUnsupportedMethodErrorMessage(st.Message()) {
+			return true
+		}
 	}
 
 	// Try to recover JSON-RPC error from HTTP error
@@ -191,6 +199,36 @@ func IsUnsupportedMethodError(nodeError error) bool {
 	}
 
 	return false
+}
+
+// IsUnsupportedMethodErrorType checks if an error is specifically an UnsupportedMethodError type
+func IsUnsupportedMethodErrorType(err error) bool {
+	if err == nil {
+		return false
+	}
+	var unsupportedMethodError *UnsupportedMethodError
+	return errors.As(err, &unsupportedMethodError)
+}
+
+// ShouldRetryError determines if an error should trigger retry attempts
+// Returns false for unsupported method errors to prevent unnecessary retries
+func ShouldRetryError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Never retry unsupported method errors
+	if IsUnsupportedMethodErrorType(err) {
+		return false
+	}
+
+	// Never retry if the error message indicates an unsupported method
+	if IsUnsupportedMethodError(err) {
+		return false
+	}
+
+	// For other errors, allow retry logic to decide
+	return true
 }
 
 type genericErrorHandler struct{}

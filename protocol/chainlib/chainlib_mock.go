@@ -206,9 +206,9 @@ func (mr *MockChainParserMockRecorder) ParseMsg(url, data, connectionType, metad
 }
 
 // SeparateAddonsExtensions mocks base method.
-func (m *MockChainParser) SeparateAddonsExtensions(supported []string) ([]string, []string, error) {
+func (m *MockChainParser) SeparateAddonsExtensions(ctx context.Context, supported []string) ([]string, []string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SeparateAddonsExtensions", supported)
+	ret := m.ctrl.Call(m, "SeparateAddonsExtensions", ctx, supported)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([]string)
 	ret2, _ := ret[2].(error)
@@ -216,9 +216,9 @@ func (m *MockChainParser) SeparateAddonsExtensions(supported []string) ([]string
 }
 
 // SeparateAddonsExtensions indicates an expected call of SeparateAddonsExtensions.
-func (mr *MockChainParserMockRecorder) SeparateAddonsExtensions(supported interface{}) *gomock.Call {
+func (mr *MockChainParserMockRecorder) SeparateAddonsExtensions(ctx, supported interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeparateAddonsExtensions", reflect.TypeOf((*MockChainParser)(nil).SeparateAddonsExtensions), supported)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeparateAddonsExtensions", reflect.TypeOf((*MockChainParser)(nil).SeparateAddonsExtensions), ctx, supported)
 }
 
 // SetPolicy mocks base method.

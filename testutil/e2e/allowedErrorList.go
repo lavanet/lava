@@ -39,4 +39,7 @@ var allowedErrorsPaymentE2E = map[string]string{
 	"block is too new":                              "This error is allowed because it's unrelated to payment E2E",
 	"Requested Epoch Is Too Old":                    "This error is allowed because it can occur during payment E2E test when epoch transitions happen during test execution",
 	"Failed to get a provider session":              "This error is allowed because it can occur during payment E2E test when epoch validation fails temporarily",
+	"Tried to Report to an older epoch":             "This error is allowed because it can occur during payment E2E test when there are temporary synchronization issues between providers and consumers during epoch transitions",
+	"provider lava block":                           "This error is allowed because it's part of epoch synchronization messages during payment E2E test",
+	"consumer lava block":                           "This error is allowed because it's part of epoch synchronization messages during payment E2E test",
 }

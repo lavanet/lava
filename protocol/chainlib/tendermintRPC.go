@@ -95,6 +95,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 
 // ParseMsg parses message data into chain message object
 func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error) {
+	utils.LavaFormatTrace("[Archive Debug] TendermintChainParser.ParseMsg called", utils.LogAttr("urlPath", urlPath), utils.LogAttr("extensionInfo", extensionInfo))
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -252,6 +253,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 	}
 
+	utils.LavaFormatTrace("[Archive Debug] TendermintRPC ParseMsg calling ExtensionParsing", utils.LogAttr("addon", apiCollection.CollectionData.AddOn), utils.LogAttr("extensionInfo", extensionInfo), utils.LogAttr("urlPath", urlPath))
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
@@ -478,7 +480,16 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
-				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
+				// Convert error to JSON string and add headers
+				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+			}
+
+			// Check if the error message indicates an unsupported method
+			if IsUnsupportedMethodErrorMessage(err.Error()) {
+				// Convert error to JSON string and add headers
+				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
 			}
 
 			// Check if the error message indicates an unsupported method
