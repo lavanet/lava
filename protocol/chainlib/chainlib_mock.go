@@ -282,7 +282,6 @@ func (m *MockChainMessage) EXPECT() *MockChainMessageMockRecorder {
 	return m.recorder
 }
 
-
 // GetUsedDefaultValue mocks base method.
 func (m *MockChainMessage) GetUsedDefaultValue() bool {
 	m.ctrl.T.Helper()
