@@ -166,11 +166,10 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 		// We know we have applied archive and failed.
 		// 1. We can remove the archive, return to the original protocol message,
 		// 2. Set all hashes as irrelevant for future queries.
-		if !archiveStatus.isHashCached.Load() {
+		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
 			for _, hash := range hashes {
 				cache.AddHashToCache(hash)
 			}
-			archiveStatus.isHashCached.Store(true)
 		}
 		return protocolMessage
 	}
