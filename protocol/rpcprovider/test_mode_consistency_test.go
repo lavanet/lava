@@ -19,30 +19,30 @@ func TestUnsupportedMethodResponseGeneration(t *testing.T) {
 	psm := NewProviderStateMachine("test", nil, nil, 0, nil)
 
 	testCases := []struct {
-		name         string
-		apiInterface string
-		methodName   string
+		name               string
+		apiInterface       string
+		methodName         string
 		expectedInResponse string
 		expectedStatusCode int
 	}{
 		{
-			name:         "JSON-RPC unsupported method",
-			apiInterface: "jsonrpc",
-			methodName:   "eth_unsupportedMethod",
+			name:               "JSON-RPC unsupported method",
+			apiInterface:       "jsonrpc",
+			methodName:         "eth_unsupportedMethod",
 			expectedInResponse: "-32601", // JSON-RPC method not found code
 			expectedStatusCode: 200,
 		},
 		{
-			name:         "REST unsupported endpoint",
-			apiInterface: "rest",
-			methodName:   "unknown_endpoint",
+			name:               "REST unsupported endpoint",
+			apiInterface:       "rest",
+			methodName:         "unknown_endpoint",
 			expectedInResponse: "Endpoint not found",
 			expectedStatusCode: 404,
 		},
 		{
-			name:         "gRPC unsupported method",
-			apiInterface: "grpc",
-			methodName:   "UnknownService",
+			name:               "gRPC unsupported method",
+			apiInterface:       "grpc",
+			methodName:         "UnknownService",
 			expectedInResponse: "Method not implemented",
 			expectedStatusCode: 500,
 		},
@@ -156,7 +156,7 @@ func TestTestModeUnsupportedMethodDetection(t *testing.T) {
 				// Should contain gRPC unimplemented patterns
 				require.True(t,
 					strings.Contains(responseData, "not implemented") ||
-					strings.Contains(responseData, "unimplemented"),
+						strings.Contains(responseData, "unimplemented"),
 					"gRPC response should contain unimplemented patterns")
 			}
 
