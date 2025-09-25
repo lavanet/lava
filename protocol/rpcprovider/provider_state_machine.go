@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 
@@ -88,14 +89,17 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			return replyWrapper, nil
 		}
 
-		// Check if this is an unsupported method error OR if we're using a default API and got an error
-		isDefaultApi := false
-		if chainMsg != nil && chainMsg.GetApi() != nil {
-			isDefaultApi = strings.HasPrefix(chainMsg.GetApi().Name, chainlib.DefaultApiName)
+		// Check if this is an unsupported method error based on known patterns/status codes
+		isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(errorMessage)
+		if !isUnsupported && chainMsg != nil && chainMsg.GetApiCollection() != nil {
+			if strings.EqualFold(chainMsg.GetApiCollection().CollectionData.ApiInterface, "rest") {
+				if replyWrapper.StatusCode == http.StatusNotFound || replyWrapper.StatusCode == http.StatusMethodNotAllowed {
+					isUnsupported = true
+				}
+			}
 		}
-		// Anna - check with Avi
-		// if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
-		if chainlib.IsUnsupportedMethodErrorMessage(errorMessage) || (isDefaultApi && isNodeError) {
+
+		if isUnsupported {
 			// Extract method name if available
 			methodName := ""
 			apiInterface := ""
@@ -108,9 +112,6 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 			// Comprehensive structured logging
 			logMessage := "unsupported method error detected - returning error to consumer"
-			if isDefaultApi && !chainlib.IsUnsupportedMethodErrorMessage(errorMessage) {
-				logMessage = "default API error detected - returning error to consumer"
-			}
 			utils.LavaFormatInfo(logMessage,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", errorMessage),
@@ -129,7 +130,6 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 				utils.LogAttr("retry_attempt", retryAttempt),
 				utils.LogAttr("request_data", string(request.RelayData.Data)),
 				utils.LogAttr("status_code", replyWrapper.StatusCode),
-				utils.LogAttr("is_default_api", isDefaultApi),
 			)
 
 			// Return an UnsupportedMethodError to the consumer so they don't increment their CU counter
