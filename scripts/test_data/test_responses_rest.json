@@ -1,0 +1,173 @@
+{
+  "test_mode": true,
+  "responses": {
+    "/cosmos/auth/v1beta1/account_info/{address}": {
+      "success_reply": "{\"account\":{\"@type\":\"/cosmos.auth.v1beta1.BaseAccount\",\"address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"pub_key\":null,\"account_number\":\"0\",\"sequence\":\"0\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/auth/v1beta1/accounts": {
+      "success_reply": "{\"accounts\":[{\"@type\":\"/cosmos.auth.v1beta1.BaseAccount\",\"address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"pub_key\":null,\"account_number\":\"0\",\"sequence\":\"0\"}]}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/auth/v1beta1/accounts/{address}": {
+      "success_reply": "{\"account\":{\"@type\":\"/cosmos.auth.v1beta1.BaseAccount\",\"address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"pub_key\":null,\"account_number\":\"0\",\"sequence\":\"0\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/auth/v1beta1/address_by_id/{id}": {
+      "success_reply": "{\"account_address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\"}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/auth/v1beta1/bech32": {
+      "success_reply": "{\"bech32_address\":\"lava1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\"}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/auth/v1beta1/bech32/{address_bytes}": {
+      "success_reply": "{\"bech32_address\":\"lava1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\"}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/base/tendermint/v1beta1/blocks/latest": {
+      "success_reply": "{\"block\":{\"header\":{\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/base/tendermint/v1beta1/blocks/{height}": {
+      "success_reply": "{\"block\":{\"header\":{\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/base/tendermint/v1beta1/node_info": {
+      "success_reply": "{\"default_node_info\":{\"protocol_version\":{\"p2p\":\"8\",\"block\":\"11\",\"app\":\"0\"},\"default_node_id\":\"abc123\",\"listen_addr\":\"tcp://0.0.0.0:26656\",\"network\":\"lava-testnet\",\"version\":\"v0.34.24\",\"channels\":\"4020212223303800\",\"moniker\":\"lava-node\",\"other\":{\"tx_index\":\"on\",\"rpc_address\":\"tcp://0.0.0.0:26657\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/bank/v1beta1/balances/{address}": {
+      "success_reply": "{\"balances\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000000000\"}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/bank/v1beta1/denoms_metadata": {
+      "success_reply": "{\"metadatas\":[{\"description\":\"The native token of Lava\",\"denom_units\":[{\"denom\":\"ulava\",\"exponent\":0},{\"denom\":\"lava\",\"exponent\":18}],\"base\":\"ulava\",\"display\":\"lava\",\"name\":\"Lava\",\"symbol\":\"LAVA\"}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/bank/v1beta1/supply": {
+      "success_reply": "{\"supply\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000000000000\"}]}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/bank/v1beta1/supply/{denom}": {
+      "success_reply": "{\"amount\":{\"denom\":\"ulava\",\"amount\":\"1000000000000000000000000000\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/staking/v1beta1/delegations/{delegator_addr}": {
+      "success_reply": "{\"delegation_responses\":[{\"delegation\":{\"delegator_address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"validator_address\":\"lava@1validator123\",\"shares\":\"1000000000000000000\"},\"balance\":{\"denom\":\"ulava\",\"amount\":\"1000000000000000000\"}}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/staking/v1beta1/validators": {
+      "success_reply": "{\"validators\":[{\"operator_address\":\"lava@1validator123\",\"consensus_pubkey\":{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"abc123\"},\"jailed\":false,\"status\":\"BOND_STATUS_BONDED\",\"tokens\":\"1000000000000000000\",\"delegator_shares\":\"1000000000000000000\",\"description\":{\"moniker\":\"lava-validator\",\"identity\":\"\",\"website\":\"\",\"security_contact\":\"\",\"details\":\"\"},\"unbonding_height\":\"0\",\"unbonding_time\":\"1970-01-01T00:00:00Z\",\"commission\":{\"commission_rates\":{\"rate\":\"0.100000000000000000\",\"max_rate\":\"0.200000000000000000\",\"max_change_rate\":\"0.010000000000000000\"},\"update_time\":\"2023-01-01T00:00:00Z\"},\"min_self_delegation\":\"1\"}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/staking/v1beta1/validators/{validator_addr}": {
+      "success_reply": "{\"validator\":{\"operator_address\":\"lava@1validator123\",\"consensus_pubkey\":{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"abc123\"},\"jailed\":false,\"status\":\"BOND_STATUS_BONDED\",\"tokens\":\"1000000000000000000\",\"delegator_shares\":\"1000000000000000000\",\"description\":{\"moniker\":\"lava-validator\",\"identity\":\"\",\"website\":\"\",\"security_contact\":\"\",\"details\":\"\"},\"unbonding_height\":\"0\",\"unbonding_time\":\"1970-01-01T00:00:00Z\",\"commission\":{\"commission_rates\":{\"rate\":\"0.100000000000000000\",\"max_rate\":\"0.200000000000000000\",\"max_change_rate\":\"0.010000000000000000\"},\"update_time\":\"2023-01-01T00:00:00Z\"},\"min_self_delegation\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/gov/v1beta1/proposals": {
+      "success_reply": "{\"proposals\":[{\"proposal_id\":\"1\",\"content\":{\"@type\":\"/cosmos.gov.v1beta1.TextProposal\",\"title\":\"Test Proposal\",\"description\":\"This is a test proposal\"},\"status\":\"PROPOSAL_STATUS_PASSED\",\"final_tally_result\":{\"yes\":\"1000000000000000000\",\"abstain\":\"0\",\"no\":\"0\",\"no_with_veto\":\"0\"},\"submit_time\":\"2023-01-01T00:00:00Z\",\"deposit_end_time\":\"2023-01-02T00:00:00Z\",\"total_deposit\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000\"}],\"voting_start_time\":\"2023-01-02T00:00:00Z\",\"voting_end_time\":\"2023-01-03T00:00:00Z\"}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/gov/v1beta1/proposals/{proposal_id}": {
+      "success_reply": "{\"proposal\":{\"proposal_id\":\"1\",\"content\":{\"@type\":\"/cosmos.gov.v1beta1.TextProposal\",\"title\":\"Test Proposal\",\"description\":\"This is a test proposal\"},\"status\":\"PROPOSAL_STATUS_PASSED\",\"final_tally_result\":{\"yes\":\"1000000000000000000\",\"abstain\":\"0\",\"no\":\"0\",\"no_with_veto\":\"0\"},\"submit_time\":\"2023-01-01T00:00:00Z\",\"deposit_end_time\":\"2023-01-02T00:00:00Z\",\"total_deposit\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000\"}],\"voting_start_time\":\"2023-01-02T00:00:00Z\",\"voting_end_time\":\"2023-01-03T00:00:00Z\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/tx/v1beta1/txs/{hash}": {
+      "success_reply": "{\"tx\":{\"body\":{\"messages\":[{\"@type\":\"/cosmos.bank.v1beta1.MsgSend\",\"from_address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"to_address\":\"lava@1recipient123\",\"amount\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000\"}]}],\"memo\":\"\",\"timeout_height\":\"0\",\"extension_options\":[],\"non_critical_extension_options\":[]},\"auth_info\":{\"signer_infos\":[{\"public_key\":{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"abc123\"},\"mode_info\":{\"single\":{\"mode\":\"SIGN_MODE_DIRECT\"}},\"sequence\":\"0\"}],\"fee\":{\"amount\":[{\"denom\":\"ulava\",\"amount\":\"1000000\"}],\"gas_limit\":\"200000\",\"payer\":\"\",\"granter\":\"\"}},\"signatures\":[\"abc123\"]},\"tx_response\":{\"height\":\"1234\",\"txhash\":\"abc123\",\"codespace\":\"\",\"code\":0,\"data\":\"\",\"raw_log\":\"\",\"logs\":[],\"info\":\"\",\"gas_wanted\":\"200000\",\"gas_used\":\"100000\",\"tx\":null,\"timestamp\":\"2023-01-01T00:00:00Z\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "/cosmos/tx/v1beta1/txs": {
+      "success_reply": "{\"txs\":[{\"body\":{\"messages\":[{\"@type\":\"/cosmos.bank.v1beta1.MsgSend\",\"from_address\":\"lava@1hgjh3vkkfapwmv2sm8g833j0833hac8k8495n7\",\"to_address\":\"lava@1recipient123\",\"amount\":[{\"denom\":\"ulava\",\"amount\":\"1000000000000000000\"}]}],\"memo\":\"\",\"timeout_height\":\"0\",\"extension_options\":[],\"non_critical_extension_options\":[]},\"auth_info\":{\"signer_infos\":[{\"public_key\":{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"abc123\"},\"mode_info\":{\"single\":{\"mode\":\"SIGN_MODE_DIRECT\"}},\"sequence\":\"0\"}],\"fee\":{\"amount\":[{\"denom\":\"ulava\",\"amount\":\"1000000\"}],\"gas_limit\":\"200000\",\"payer\":\"\",\"granter\":\"\"}},\"signatures\":[\"abc123\"]}],\"pagination\":{\"next_key\":null,\"total\":\"1\"}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 1.0
+    },
+    "Default-/cosmos/tx/v1beta1/unsupported_method": {
+      "success_reply": "{\"message\":\"This endpoint should not be reached\"}",
+      "error_reply": "{\"code\":404,\"message\":\"Not Found - Method not supported\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    }
+  }
+}

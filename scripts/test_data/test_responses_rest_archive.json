@@ -1,0 +1,13 @@
+{
+  "test_mode": true,
+  "responses": {
+    "/cosmos/base/tendermint/v1beta1/node_info": {
+      "success_reply": "{\"default_node_info\":{\"protocol_version\":{\"p2p\":\"8\",\"block\":\"11\",\"app\":\"0\"},\"default_node_id\":\"archive-node-123\",\"listen_addr\":\"tcp://0.0.0.0:26656\",\"network\":\"lava-testnet\",\"version\":\"v0.34.24\",\"channels\":\"4020212223303800\",\"moniker\":\"lava-archive-node\",\"other\":{\"tx_index\":\"on\",\"rpc_address\":\"tcp://0.0.0.0:26657\"}},\"application_version\":{\"name\":\"lava\",\"app_name\":\"lavad\",\"version\":\"1.0.0\",\"git_commit\":\"abc123\",\"build_tags\":\"archive,netgo\",\"go_version\":\"go1.19\",\"build_deps\":[],\"cosmos_sdk_version\":\"v0.47.0\"}}",
+      "error_reply": "{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 1.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 0.0
+    }
+  }
+}

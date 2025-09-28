@@ -218,7 +218,7 @@ func (m *Spec) GetShares() uint64 {
 func init() {
 }
 
-func init() { }
+func init() {}
 
 var fileDescriptor_789140b95c48dfce = []byte{
 	// 702 bytes of a gzipped FileDescriptorProto

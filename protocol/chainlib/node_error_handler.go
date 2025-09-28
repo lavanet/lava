@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +21,215 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/lavanet/lava/v5/utils"
 )
+
+// Error pattern constants for unsupported method detection
+const (
+	// JSON-RPC error patterns
+	JSONRPCMethodNotFound     = "method not found"
+	JSONRPCMethodNotSupported = "method not supported"
+	JSONRPCUnknownMethod      = "unknown method"
+	JSONRPCMethodDoesNotExist = "method does not exist"
+	JSONRPCInvalidMethod      = "invalid method"
+	JSONRPCErrorCode          = "-32601" // JSON-RPC 2.0 method not found error code
+
+	// REST API error patterns
+	RESTEndpointNotFound = "endpoint not found"
+	RESTRouteNotFound    = "route not found"
+	RESTPathNotFound     = "path not found"
+	RESTNotFound         = "not found"
+	RESTMethodNotAllowed = "method not allowed"
+
+	// gRPC error patterns
+	GRPCMethodNotImplemented = "method not implemented"
+	GRPCUnimplemented        = "unimplemented"
+	GRPCNotImplemented       = "not implemented"
+	GRPCServiceNotFound      = "service not found"
+
+	// HTTP status codes for unsupported endpoints
+	HTTPStatusNotFound         = 404
+	HTTPStatusMethodNotAllowed = 405
+
+	// JSON-RPC error code for method not found
+	JSONRPCMethodNotFoundCode = -32601
+)
+
+type UnsupportedMethodError struct {
+	originalError error
+	methodName    string
+}
+
+func (e *UnsupportedMethodError) Error() string {
+	if e.methodName != "" {
+		return fmt.Sprintf("unsupported method '%s': %v", e.methodName, e.originalError)
+	}
+	return fmt.Sprintf("unsupported method: %v", e.originalError)
+}
+
+func (e *UnsupportedMethodError) Unwrap() error {
+	return e.originalError
+}
+
+// WithMethod sets the method name for the error
+func (e *UnsupportedMethodError) WithMethod(method string) *UnsupportedMethodError {
+	e.methodName = method
+	return e
+}
+
+// GetMethodName returns the method name associated with this error
+func (e *UnsupportedMethodError) GetMethodName() string {
+	return e.methodName
+}
+
+// NewUnsupportedMethodError creates a new UnsupportedMethodError with optional method name
+func NewUnsupportedMethodError(originalError error, methodName string) *UnsupportedMethodError {
+	return &UnsupportedMethodError{
+		originalError: originalError,
+		methodName:    methodName,
+	}
+}
+
+// GetUnsupportedMethodPatterns returns all error patterns that indicate an unsupported method
+// This is useful for documentation and testing purposes
+func GetUnsupportedMethodPatterns() map[string][]string {
+	return map[string][]string{
+		"json-rpc": {
+			JSONRPCMethodNotFound,
+			JSONRPCMethodNotSupported,
+			JSONRPCUnknownMethod,
+			JSONRPCMethodDoesNotExist,
+			JSONRPCInvalidMethod,
+			JSONRPCErrorCode,
+		},
+		"rest": {
+			RESTEndpointNotFound,
+			RESTRouteNotFound,
+			RESTPathNotFound,
+			RESTNotFound,
+			RESTMethodNotAllowed,
+		},
+		"grpc": {
+			GRPCMethodNotImplemented,
+			GRPCUnimplemented,
+			GRPCNotImplemented,
+			GRPCServiceNotFound,
+		},
+	}
+}
+
+// IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
+// This is a convenience function that accepts a string directly
+func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
+	if errorMessage == "" {
+		return false
+	}
+
+	errorMsg := strings.ToLower(errorMessage)
+
+	switch {
+	// JSON-RPC method not found patterns
+	case strings.Contains(errorMsg, JSONRPCMethodNotFound),
+		strings.Contains(errorMsg, JSONRPCMethodNotSupported),
+		strings.Contains(errorMsg, JSONRPCUnknownMethod),
+		strings.Contains(errorMsg, JSONRPCMethodDoesNotExist),
+		strings.Contains(errorMsg, JSONRPCInvalidMethod):
+		return true
+
+	// REST API patterns
+	case strings.Contains(errorMsg, RESTEndpointNotFound),
+		strings.Contains(errorMsg, RESTRouteNotFound),
+		strings.Contains(errorMsg, RESTPathNotFound),
+		strings.Contains(errorMsg, RESTNotFound),
+		strings.Contains(errorMsg, RESTMethodNotAllowed):
+		return true
+
+	// gRPC patterns
+	case strings.Contains(errorMsg, GRPCMethodNotImplemented),
+		strings.Contains(errorMsg, GRPCUnimplemented),
+		strings.Contains(errorMsg, GRPCNotImplemented),
+		strings.Contains(errorMsg, GRPCServiceNotFound):
+		return true
+
+	// Check for JSON-RPC error code -32601 (Method not found) in the message
+	case strings.Contains(errorMsg, JSONRPCErrorCode):
+		return true
+
+	default:
+		return false
+	}
+}
+
+// IsUnsupportedMethodError checks if an error indicates an unsupported method
+func IsUnsupportedMethodError(nodeError error) bool {
+	if nodeError == nil {
+		return false
+	}
+
+	// First check the error message patterns
+	if IsUnsupportedMethodErrorMessage(nodeError.Error()) {
+		return true
+	}
+
+	// Check for HTTP status codes that indicate unsupported endpoints
+	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
+		return httpError.StatusCode == HTTPStatusNotFound || httpError.StatusCode == HTTPStatusMethodNotAllowed
+	}
+
+	// Check for gRPC status codes
+	if st, ok := status.FromError(nodeError); ok {
+		// Check for both Unimplemented and Unknown codes that might indicate unsupported methods
+		if st.Code() == codes.Unimplemented {
+			return true
+		}
+		// Also check Unknown code with unsupported method message
+		if st.Code() == codes.Unknown && IsUnsupportedMethodErrorMessage(st.Message()) {
+			return true
+		}
+	}
+
+	// Try to recover JSON-RPC error from HTTP error
+	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
+		// JSON-RPC error code -32601 is "Method not found"
+		if jsonMsg.Error.Code == JSONRPCMethodNotFoundCode {
+			return true
+		}
+		// Check error message patterns in JSON-RPC error
+		if jsonMsg.Error.Message != "" {
+			return IsUnsupportedMethodErrorMessage(jsonMsg.Error.Message)
+		}
+	}
+
+	return false
+}
+
+// IsUnsupportedMethodErrorType checks if an error is specifically an UnsupportedMethodError type
+func IsUnsupportedMethodErrorType(err error) bool {
+	if err == nil {
+		return false
+	}
+	var unsupportedMethodError *UnsupportedMethodError
+	return errors.As(err, &unsupportedMethodError)
+}
+
+// ShouldRetryError determines if an error should trigger retry attempts
+// Returns false for unsupported method errors to prevent unnecessary retries
+func ShouldRetryError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Never retry unsupported method errors
+	if IsUnsupportedMethodErrorType(err) {
+		return false
+	}
+
+	// Never retry if the error message indicates an unsupported method
+	if IsUnsupportedMethodError(err) {
+		return false
+	}
+
+	// For other errors, allow retry logic to decide
+	return true
+}
 
 type genericErrorHandler struct{}
 
@@ -153,24 +363,40 @@ type RestErrorHandler struct{ genericErrorHandler }
 // Validating if the error is related to the provider connection or not
 // returning nil if its not one of the expected connectivity error types
 func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return rne.handleGenericErrors(ctx, nodeError)
 }
 
 type JsonRPCErrorHandler struct{ genericErrorHandler }
 
 func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return jeh.handleGenericErrors(ctx, nodeError)
 }
 
 type TendermintRPCErrorHandler struct{ genericErrorHandler }
 
 func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
 }
 
 type GRPCErrorHandler struct{ genericErrorHandler }
 
 func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	if IsUnsupportedMethodError(nodeError) {
+		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
 	st, ok := status.FromError(nodeError)
 	if ok {
 		// Get the error message from the gRPC status
