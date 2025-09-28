@@ -936,10 +936,10 @@ func TestPairingWithAddons(t *testing.T) {
 			err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 			require.NoError(t, err)
 			time.Sleep(5 * time.Millisecond) // let probes finish
-			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil)}, utils.Attribute{Key: "addon", Value: addon})
-			require.NotEqual(t, 0, len(csm.getValidAddresses(addon, nil)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(addon, nil), csm.addonAddresses)
+			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil, ctx))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil, ctx)}, utils.Attribute{Key: "addon", Value: addon})
+			require.NotEqual(t, 0, len(csm.getValidAddresses(addon, nil, ctx)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(addon, nil, ctx), csm.addonAddresses)
 			// block all providers
-			initialProvidersLen := len(csm.getValidAddresses(addon, nil))
+			initialProvidersLen := len(csm.getValidAddresses(addon, nil, ctx))
 			for i := 0; i < initialProvidersLen; i++ {
 				css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0, "") // get a session
 				require.NoError(t, err, i)
@@ -947,11 +947,11 @@ func TestPairingWithAddons(t *testing.T) {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 					require.NoError(t, err)
 				}
-				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil)})
+				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil, ctx))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil, ctx)})
 			}
-			require.Equal(t, 0, len(csm.getValidAddresses(addon, nil)), csm.validAddresses)
+			require.Equal(t, 0, len(csm.getValidAddresses(addon, nil, ctx)), csm.validAddresses)
 			if addon != "" {
-				require.NotEqual(t, csm.getValidAddresses(addon, nil), csm.getValidAddresses("", nil))
+				require.NotEqual(t, csm.getValidAddresses(addon, nil, ctx), csm.getValidAddresses("", nil, ctx))
 			}
 			css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0, "") // get a session
 			require.NoError(t, err)
@@ -1004,8 +1004,8 @@ func TestPairingWithExtensions(t *testing.T) {
 			err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 			require.NoError(t, err)
 			time.Sleep(5 * time.Millisecond) // let probes finish
-			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)}, utils.Attribute{Key: "extensions", Value: extensionOpt.extensions}, utils.Attribute{Key: "addon", Value: extensionOpt.addon})
-			require.NotEqual(t, 0, len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions), csm.addonAddresses)
+			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx)}, utils.Attribute{Key: "extensions", Value: extensionOpt.extensions}, utils.Attribute{Key: "addon", Value: extensionOpt.addon})
+			require.NotEqual(t, 0, len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx), csm.addonAddresses)
 			// block all providers
 			extensionsList := []*spectypes.Extension{}
 			for _, extension := range extensionOpt.extensions {
@@ -1014,7 +1014,7 @@ func TestPairingWithExtensions(t *testing.T) {
 				}
 				extensionsList = append(extensionsList, ext)
 			}
-			initialProvidersLen := len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))
+			initialProvidersLen := len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx))
 			for i := 0; i < initialProvidersLen; i++ {
 				css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0, "") // get a session
 				require.NoError(t, err, i)
@@ -1022,11 +1022,11 @@ func TestPairingWithExtensions(t *testing.T) {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 					require.NoError(t, err)
 				}
-				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)})
+				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx)})
 			}
-			require.Equal(t, 0, len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions)), csm.validAddresses)
+			require.Equal(t, 0, len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx)), csm.validAddresses)
 			if len(extensionOpt.extensions) > 0 || extensionOpt.addon != "" {
-				require.NotEqual(t, csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions), csm.getValidAddresses("", nil))
+				require.NotEqual(t, csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions, ctx), csm.getValidAddresses("", nil, ctx))
 			}
 			css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0, "") // get a session
 			require.NoError(t, err)
@@ -1058,9 +1058,9 @@ func TestPairingWithStateful(t *testing.T) {
 		require.NoError(t, err)
 		addon := ""
 		time.Sleep(5 * time.Millisecond) // let probes finish
-		utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil)}, utils.Attribute{Key: "addon", Value: addon})
-		require.NotEqual(t, 0, len(csm.getValidAddresses(addon, nil)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(addon, nil), csm.addonAddresses)
-		providerAddresses := csm.getValidAddresses(addon, nil)
+		utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon, nil, ctx))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon, nil, ctx)}, utils.Attribute{Key: "addon", Value: addon})
+		require.NotEqual(t, 0, len(csm.getValidAddresses(addon, nil, ctx)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(addon, nil, ctx), csm.addonAddresses)
+		providerAddresses := csm.getValidAddresses(addon, nil, ctx)
 		allProviders := len(providerAddresses)
 		require.Equal(t, 10, allProviders)
 		css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0, "") // get a session

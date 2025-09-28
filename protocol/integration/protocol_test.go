@@ -402,7 +402,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -1311,7 +1311,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				require.NoError(t, err)
 
 				resp.Body.Close()
-				require.Equal(t, string(bodyBytes), play.expectedResult)
+				require.Equal(t, play.expectedResult, string(bodyBytes))
 			}
 		})
 	}
@@ -2116,7 +2116,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			require.NoError(t, err)
 
 			resp.Body.Close()
-			require.Equal(t, string(bodyBytes), play.expectedResult)
+			require.Equal(t, play.expectedResult, string(bodyBytes))
 			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 
 			// Allow relay to hit cache.
@@ -2157,7 +2157,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			require.NoError(t, err)
 
 			resp.Body.Close()
-			require.Equal(t, string(bodyBytes), play.expectedResult)
+			require.Equal(t, play.expectedResult, string(bodyBytes))
 			require.Equal(t, 1, timesCalledProvidersOnSecondStage) // must go directly to archive as we have it in cache.
 			fmt.Println("timesCalledProviders", timesCalledProvidersOnSecondStage)
 		})

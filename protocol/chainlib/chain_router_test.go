@@ -2188,7 +2188,7 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 
 			chainRouter := &chainRouterImpl{}
 
-			nodeUrlsByService, err := chainRouter.BatchNodeUrlsByServices(endpoint, chainParser)
+			nodeUrlsByService, err := chainRouter.BatchNodeUrlsByServices(context.Background(), endpoint, chainParser)
 			if play.expectedError {
 				require.Error(t, err)
 				return

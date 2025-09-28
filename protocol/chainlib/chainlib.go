@@ -74,7 +74,7 @@ type ChainParser interface {
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
-	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
+	SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error)
 	SetPolicy(policy PolicyInf, chainId string, apiInterface string) error
 	Active() bool
 	Activate()

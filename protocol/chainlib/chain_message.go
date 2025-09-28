@@ -144,11 +144,13 @@ func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock in
 }
 
 func (bcnc *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
+	utils.LavaFormatTrace("[Archive Debug] GetExtensions called", utils.LogAttr("extensions", len(bcnc.extensions)))
 	return bcnc.extensions
 }
 
 // adds the following extensions
 func (bcnc *baseChainMessageContainer) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
+	utils.LavaFormatTrace("[Archive Debug] OverrideExtensions called", utils.LogAttr("extensionNames", extensionNames), utils.LogAttr("existingExtensions", len(bcnc.extensions)))
 	existingExtensions := map[string]struct{}{}
 	for _, extension := range bcnc.extensions {
 		existingExtensions[extension.Name] = struct{}{}
@@ -158,17 +160,24 @@ func (bcnc *baseChainMessageContainer) OverrideExtensions(extensionNames []strin
 			existingExtensions[extensionName] = struct{}{}
 			extensionKey := extensionslib.ExtensionKey{
 				Extension:      extensionName,
-				ConnectionType: bcnc.apiCollection.CollectionData.Type,
+				ConnectionType: bcnc.apiCollection.CollectionData.ApiInterface,
 				InternalPath:   bcnc.apiCollection.CollectionData.InternalPath,
 				Addon:          bcnc.apiCollection.CollectionData.AddOn,
 			}
+			utils.LavaFormatTrace("[Archive Debug] Looking for extension", utils.LogAttr("extensionKey", extensionKey), utils.LogAttr("configuredExtensions", extensionParser.GetConfiguredExtensions()))
 			extension := extensionParser.GetExtension(extensionKey)
 			if extension != nil {
 				bcnc.extensions = append(bcnc.extensions, extension)
 				bcnc.updateCUForApi(extension)
+				utils.LavaFormatTrace("[Archive Debug] Extension added", utils.LogAttr("extensionName", extensionName), utils.LogAttr("totalExtensions", len(bcnc.extensions)))
+			} else {
+				utils.LavaFormatTrace("[Archive Debug] Extension not found", utils.LogAttr("extensionName", extensionName), utils.LogAttr("extensionKey", extensionKey))
 			}
+		} else {
+			utils.LavaFormatTrace("[Archive Debug] Extension already exists", utils.LogAttr("extensionName", extensionName))
 		}
 	}
+	utils.LavaFormatTrace("[Archive Debug] OverrideExtensions completed", utils.LogAttr("finalExtensions", len(bcnc.extensions)))
 }
 
 func (bcnc *baseChainMessageContainer) GetUsedDefaultValue() bool {

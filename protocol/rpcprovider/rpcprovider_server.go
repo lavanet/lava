@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,6 +49,28 @@ var (
 	numberOfRetriesAllowedOnNodeErrors = 2
 )
 
+// TestModeConfig represents the configuration for test mode responses
+type TestModeConfig struct {
+	TestMode     bool                    `json:"test_mode"`
+	Responses    map[string]TestResponse `json:"responses"`
+	ResponseFile string                  `json:"response_file"`
+}
+
+// TestResponse represents a test response configuration for a specific API method
+type TestResponse struct {
+	SuccessReply           string  `json:"success_reply"`
+	ErrorReply             string  `json:"error_reply"`
+	RateLimitReply         string  `json:"rate_limit_reply"`
+	UnsupportedMethodReply string  `json:"unsupported_method_reply"`
+	SuccessProbability     float64 `json:"success_probability"`
+	ErrorProbability       float64 `json:"error_probability"`
+	RateLimitProbability   float64 `json:"rate_limit_probability"`
+	UnsupportedProbability float64 `json:"unsupported_probability"`
+}
+
+// TestModeContextKey is used to pass test mode context through the call chain
+type TestModeContextKey struct{}
+
 const (
 	RPCProviderAddressHeader = "Lava-Provider-Address"
 )
@@ -73,6 +96,7 @@ type RPCProviderServer struct {
 	providerStateMachine            *ProviderStateMachine
 	providerLoadManager             *ProviderLoadManager
 	verificationsStatusGetter       IVerificationsStatus
+	testModeConfig                  *TestModeConfig
 }
 
 type ReliabilityManagerInf interface {
@@ -121,6 +145,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerLoadManager *ProviderLoadManager,
 	verificationsStatusGetter IVerificationsStatus,
 	numberOfRetries int,
+	testModeConfig *TestModeConfig,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -142,7 +167,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries)
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries, testModeConfig)
 	rpcps.providerLoadManager = providerLoadManager
 	rpcps.verificationsStatusGetter = verificationsStatusGetter
 
@@ -247,11 +272,14 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	var reply *pairingtypes.RelayReply
+	var replyWrapper *chainlib.RelayReplyWrapper
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 		reply, err = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
+		// For unsubscribe, we don't have a replyWrapper, so set to nil
+		replyWrapper = nil
 	} else {
 		// Try sending relay
-		reply, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
+		reply, replyWrapper, err = rpcps.TryRelayWithWrapper(ctx, request, consumerAddress, chainMessage)
 	}
 
 	isErroredRelay := err != nil || common.ContextOutOfTime(ctx)
@@ -266,7 +294,15 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	if !rpcps.StaticProvider {
-		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, err)
+		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, err)
+	}
+
+	processingTime := time.Since(startTime)
+
+	// Set provider latency metric
+	if rpcps.metrics != nil && chainMessage != nil {
+		latencyMs := float64(processingTime.Nanoseconds()) / 1e6 // Convert to milliseconds
+		rpcps.metrics.SetLatency(latencyMs)
 	}
 
 	utils.LavaFormatDebug("Provider returned a relay response",
@@ -275,12 +311,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
-		utils.Attribute{Key: "timeTaken", Value: time.Since(startTime)},
+		utils.Attribute{Key: "timeTaken", Value: processingTime},
 	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, err error) error {
+func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, replyWrapper *chainlib.RelayReplyWrapper, err error) error {
 	if isRelayError {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
@@ -291,12 +327,25 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 			}
 			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: %s", extraInfo)
 		}
-		err = utils.LavaFormatError("TryRelay Failed", err,
-			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-			utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
-			utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
-		)
+
+		// Check if this is an unsupported method error
+		var unsupportedMethodError *chainlib.UnsupportedMethodError
+		if errors.As(err, &unsupportedMethodError) {
+			utils.LavaFormatInfo("CU rolled back for unsupported method error returned to consumer",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("session_id", request.RelaySession.SessionId),
+				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
+				utils.LogAttr("method", unsupportedMethodError.GetMethodName()),
+				utils.LogAttr("error", unsupportedMethodError.Error()),
+			)
+		} else {
+			err = utils.LavaFormatError("TryRelay Failed", err,
+				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+				utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
+				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
+			)
+		}
 		return err
 	}
 
@@ -304,6 +353,8 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	pairingEpoch := relaySession.PairingEpoch
 	sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
 	replyBlock := reply.LatestBlock
+
+	// For successful relays, call OnSessionDone to update session state
 	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 	if relayError != nil {
 		utils.LavaFormatError("OnSession Done failure: ", relayError)
@@ -371,7 +422,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 
 func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extensions []string, chainMessage chainlib.ChainMessage) error {
 	// this validates all of the values are handled by chainParser
-	_, _, err := rpcps.chainParser.SeparateAddonsExtensions(append(extensions, addon))
+	_, _, err := rpcps.chainParser.SeparateAddonsExtensions(context.Background(), append(extensions, addon))
 	if err != nil {
 		return err
 	}
@@ -766,15 +817,15 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 	return err
 }
 
-func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
+func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, *chainlib.RelayReplyWrapper, error) {
 	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
 	if errV != nil {
-		return nil, errV
+		return nil, nil, errV
 	}
 
 	errV = rpcps.ValidateAddonsExtensions(request.RelayData.Addon, request.RelayData.Extensions, chainMsg)
 	if errV != nil {
-		return nil, errV
+		return nil, nil, errV
 	}
 
 	var latestBlock int64
@@ -793,7 +844,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		var err error
 		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -801,16 +852,17 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var reply *pairingtypes.RelayReply
 	var ignoredMetadata []pairingtypes.Metadata
 	var err error
+	var replyWrapper *chainlib.RelayReplyWrapper
+
 	if requestedBlockHash != nil || finalized { // try get reply from cache
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}
 
 	if err != nil || reply == nil {
 		// we need to send relay, cache miss or invalid
-		var replyWrapper *chainlib.RelayReplyWrapper
 		replyWrapper, err = rpcps.sendRelayMessageToNode(ctx, request, chainMsg, consumerAddr)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		reply = replyWrapper.RelayReply
@@ -828,20 +880,20 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	if dataReliabilityEnabled {
 		err := rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
 
 	// return reply to user
-	return reply, nil
+	return reply, replyWrapper, nil
 }
 
 func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, request *pairingtypes.RelayRequest, requestedBlockHash []byte, finalized bool) (*pairingtypes.RelayReply, []pairingtypes.Metadata, error) {
@@ -926,6 +978,11 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if debugConsistency {
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}
+	// Add test mode context for user requests
+	if rpcps.testModeConfig != nil && rpcps.testModeConfig.TestMode {
+		ctx = context.WithValue(ctx, TestModeContextKey{}, true)
+	}
+
 	// use the provider state machine to send the messages
 	return rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
 }
@@ -1303,4 +1360,34 @@ func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (t
 
 func (rpcps *RPCProviderServer) IsHealthy() bool {
 	return rpcps.relaysMonitor.IsHealthy()
+}
+
+// loadTestModeConfig loads test mode configuration from a JSON file
+func (rpcps *RPCProviderServer) loadTestModeConfig(testMode bool, responseFile string) error {
+	if !testMode {
+		return nil
+	}
+
+	if responseFile == "" {
+		return errors.New("test_responses file is required when test_mode is enabled")
+	}
+
+	// Load test responses from JSON file
+	data, err := os.ReadFile(responseFile)
+	if err != nil {
+		return err
+	}
+
+	var config TestModeConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return err
+	}
+
+	config.TestMode = true
+	config.ResponseFile = responseFile
+	rpcps.testModeConfig = &config
+
+	utils.LavaFormatInfo("Test mode enabled", utils.LogAttr("responseFile", responseFile))
+	return nil
 }

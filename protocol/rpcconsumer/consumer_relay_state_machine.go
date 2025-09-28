@@ -136,8 +136,15 @@ func (crsm *ConsumerRelayStateMachine) stateTransition(relayState *RelayState, n
 	if relayState == nil { // initial state
 		nextState = NewRelayState(crsm.ctx, crsm.protocolMessage, 0, crsm.relayRetriesManager, crsm.relaySender, &ArchiveStatus{})
 	} else {
-		nextState = NewRelayState(crsm.ctx, crsm.GetProtocolMessage(), relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, relayState.archiveStatus.Copy())
-		nextState.upgradeToArchiveIfNeeded(batchNumber, numberOfNodeErrors)
+		// Get the appropriate protocol message (with archive upgrade if needed) BEFORE creating RelayState
+		protocolMessage := crsm.GetProtocolMessage()
+		archiveStatus := relayState.archiveStatus.Copy()
+
+		// Use static function to get upgraded protocol message without creating RelayState
+		upgradedProtocolMessage := upgradeToArchiveIfNeeded(crsm.ctx, protocolMessage, archiveStatus, crsm.relaySender, crsm.relayRetriesManager, batchNumber, numberOfNodeErrors)
+
+		// Create the final RelayState with the correct protocol message
+		nextState = NewRelayState(crsm.ctx, upgradedProtocolMessage, relayState.GetStateNumber()+1, crsm.relayRetriesManager, crsm.relaySender, archiveStatus)
 	}
 	crsm.appendRelayState(nextState)
 }
@@ -151,11 +158,40 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 	if shouldRetry {
 		crsm.stateTransition(crsm.getLatestState(), numberOfNodeErrors)
 	}
+
+	utils.LavaFormatDebug("[StateMachine] shouldRetry called",
+		utils.LogAttr("GUID", crsm.ctx),
+		utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
+		utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()),
+		utils.LogAttr("selection", crsm.selection),
+		utils.LogAttr("shouldRetry", shouldRetry),
+	)
+
 	return shouldRetry
+}
+
+// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level
+func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
+	if crsm.resultsChecker == nil {
+		return false
+	}
+
+	// Check if the results checker has unsupported method errors
+	if relayProcessor, ok := crsm.resultsChecker.(*RelayProcessor); ok {
+		return relayProcessor.hasUnsupportedMethodErrors()
+	}
+
+	return false
 }
 
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
+
+	// Never retry if we detect unsupported method errors at state machine level
+	if crsm.hasUnsupportedMethodErrorsInStateMachine() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
+		return false
+	}
 
 	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
 		return false
