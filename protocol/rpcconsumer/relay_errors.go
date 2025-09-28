@@ -127,3 +127,8 @@ type RelayError struct {
 func (re RelayError) String() string {
 	return fmt.Sprintf("err: %s, ProviderInfo: %v, response: %v", re.err, re.ProviderInfo, re.response)
 }
+
+// GetError returns the underlying error
+func (re RelayError) GetError() error {
+	return re.err
+}

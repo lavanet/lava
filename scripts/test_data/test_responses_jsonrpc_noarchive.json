@@ -1,0 +1,109 @@
+{
+  "test_mode": true,
+  "responses": {
+    "abci_info": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"response\":{\"data\":\"lava\",\"version\":\"1.0.0\",\"last_block_height\":\"1234\",\"last_block_app_hash\":\"ABCDEF\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "abci_query": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"response\":{\"code\":0,\"log\":\"ok\",\"info\":\"\",\"index\":\"0\",\"key\":\"\",\"value\":\"\",\"proof_ops\":null,\"height\":\"1234\",\"codespace\":\"\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "blockchain": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"last_height\":\"1234\",\"block_metas\":[{\"block_id\":{\"hash\":\"ABCDEF\",\"parts\":{\"total\":1,\"hash\":\"ABCDEF\"}},\"block_size\":1000,\"header\":{\"version\":{\"block\":\"11\",\"app\":\"0\"},\"chain_id\":\"lava-testnet\",\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"},\"num_txs\":0}]}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "commit": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"signed_header\":{\"header\":{\"version\":{\"block\":\"11\",\"app\":\"0\"},\"chain_id\":\"lava-testnet\",\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"},\"commit\":{\"height\":\"1234\",\"round\":0,\"block_id\":{\"hash\":\"ABCDEF\",\"parts\":{\"total\":1,\"hash\":\"ABCDEF\"}}}},\"canonical\":true}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "consensus_params": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"block\":{\"max_bytes\":\"22020096\",\"max_gas\":\"-1\"},\"evidence\":{\"max_age_num_blocks\":\"100000\",\"max_age_duration\":\"172800000000000\",\"max_bytes\":\"1048576\"},\"validator\":{\"pub_key_types\":[\"ed25519\"]},\"version\":{\"app_version\":\"0\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "consensus_state": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"round_state\":{\"height\":\"1234\",\"round\":0,\"step\":3}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "genesis": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"genesis\":{\"genesis_time\":\"2023-01-01T00:00:00Z\",\"chain_id\":\"lava-testnet\",\"consensus_params\":{\"block\":{\"max_bytes\":\"22020096\",\"max_gas\":\"-1\"},\"evidence\":{\"max_age_num_blocks\":\"100000\",\"max_age_duration\":\"172800000000000\",\"max_bytes\":\"1048576\"},\"validator\":{\"pub_key_types\":[\"ed25519\"]},\"version\":{\"app_version\":\"0\"}}}}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "health": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "net_info": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"listening\":true,\"listeners\":[\"Listener(@)\"],\"n_peers\":\"0\",\"peers\":[]}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "tx": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"hash\":\"ABCDEF\",\"height\":\"1234\",\"index\":0,\"tx_result\":{\"code\":0,\"data\":\"\",\"log\":\"\",\"info\":\"\",\"gas_wanted\":\"200000\",\"gas_used\":\"200000\",\"events\":[],\"codespace\":\"\"},\"tx\":\"ABCDEF\"}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "validators": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"block_height\":\"1234\",\"validators\":[{\"address\":\"ABCDEF\",\"pub_key\":{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"ABCDEF\"},\"voting_power\":\"100\",\"proposer_priority\":\"0\"}],\"count\":\"1\",\"total\":\"1\"}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "header": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"header\":{\"version\":{\"block\":\"11\",\"app\":\"0\"},\"chain_id\":\"lava-testnet\",\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "header_by_hash": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"header\":{\"version\":{\"block\":\"11\",\"app\":\"0\"},\"chain_id\":\"lava-testnet\",\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"too old block doesn't exist in DB\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    }
+  }
+}

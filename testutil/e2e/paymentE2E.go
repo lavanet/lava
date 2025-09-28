@@ -217,7 +217,7 @@ func (lt *lavaTest) saveLogsForPayment() {
 				}
 
 				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
-				if !lt.testFinishedProperly || !isAllowedError {
+				if !lt.testFinishedProperly.Load() || !isAllowedError {
 					errorFound = true
 					errorLines = append(errorLines, line)
 				}
