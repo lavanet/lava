@@ -60,26 +60,22 @@ wait_next_block
 wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.00002ulava;
 
-screen -d -m -S cache_consumer bash -c "source ~/.bashrc; lavap cache \
-127.0.0.1:20100 --metrics_address 0.0.0.0:20200 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log" && sleep 0.25
-sleep 2;
-
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
-$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
-$PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider --test_mode --test_responses ./test_responses.json \
+$PROVIDER1_LISTENER LAV1 rest 'http://127.0.0.1:1317' \
+$PROVIDER1_LISTENER LAV1 tendermintrpc 'http://127.0.0.1:26657,ws://127.0.0.1:26657/websocket' \
+$PROVIDER1_LISTENER LAV1 grpc '127.0.0.1:9090' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7766" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \
-$PROVIDER2_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
-$PROVIDER2_LISTENER LAV1 grpc '$LAVA_GRPC' \
+screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider --test_mode --test_responses ./test_responses.json \
+$PROVIDER2_LISTENER LAV1 rest 'http://127.0.0.1:1317' \
+$PROVIDER2_LISTENER LAV1 tendermintrpc 'http://127.0.0.1:26657,ws://127.0.0.1:26657/websocket' \
+$PROVIDER2_LISTENER LAV1 grpc '127.0.0.1:9090' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --chain-id lava --metrics-listen-address ":7756" 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
-screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
-$PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
-$PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
+screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider --test_mode --test_responses ./test_responses.json \
+$PROVIDER3_LISTENER LAV1 rest 'http://127.0.0.1:1317' \
+$PROVIDER3_LISTENER LAV1 tendermintrpc 'http://127.0.0.1:26657,ws://127.0.0.1:26657/websocket' \
+$PROVIDER3_LISTENER LAV1 grpc '127.0.0.1:9090' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava --metrics-listen-address ":7746" 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 
@@ -87,7 +83,7 @@ wait_next_block
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --from user1 --chain-id lava --cache-be 127.0.0.1:20100 --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --debug-relays --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

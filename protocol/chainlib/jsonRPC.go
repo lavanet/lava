@@ -463,11 +463,27 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
-				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
+				// Convert error to JSON string and add headers
+				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+			}
+
+			// Check if the error message indicates an unsupported method
+			if IsUnsupportedMethodErrorMessage(err.Error()) {
+				// Convert error to JSON string and add headers
+				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+			}
+
+			// Check if the error message indicates an unsupported method
+			if IsUnsupportedMethodErrorMessage(err.Error()) {
+				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcMethodNotFoundError)
 			}
 
 			if _, ok := err.(*json.SyntaxError); ok {
-				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcParseError)
+				// Convert error to JSON string and add headers
+				errorResponse, _ := json.Marshal(common.JsonRpcParseError)
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
 			}
 
 			// Get unique GUID response

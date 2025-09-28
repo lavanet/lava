@@ -64,20 +64,20 @@ func (wbd *WantedBlocksData) IterationIndexes() (returnedIdxs []int) {
 			if wbd.rangeBlocks.startIndexFromEarliest < wbd.specificBlock.startIndexFromEarliest {
 				returnedIdxs = wbd.rangeBlocks.IterationIndexes()
 				returnedIdxs = append(returnedIdxs, wbd.specificBlock.IterationIndexes()...)
-				return
+				return returnedIdxs
 			}
 			returnedIdxs = wbd.specificBlock.IterationIndexes()
 			returnedIdxs = append(returnedIdxs, wbd.rangeBlocks.IterationIndexes()...)
-			return
+			return returnedIdxs
 		}
 		returnedIdxs = wbd.rangeBlocks.IterationIndexes()
-		return
+		return returnedIdxs
 	}
 	if wbd.specificBlock != nil {
 		return wbd.specificBlock.IterationIndexes()
 	}
 	// empty iteration indexes list
-	return
+	return returnedIdxs
 }
 
 func (wbd *WantedBlocksData) IsWanted(blockNum int64) bool {

@@ -6,21 +6,24 @@ package chaintracker
 import (
 	context "context"
 	fmt "fmt"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	io "io"
-	math "math"
-	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+var (
+	_ = proto.Marshal
+	_ = fmt.Errorf
+	_ = math.Inf
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -40,9 +43,11 @@ func (*LatestBlockData) ProtoMessage()    {}
 func (*LatestBlockData) Descriptor() ([]byte, []int) {
 	return fileDescriptor_73cb97df94e400fe, []int{0}
 }
+
 func (m *LatestBlockData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *LatestBlockData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_LatestBlockData.Marshal(b, m, deterministic)
@@ -55,12 +60,15 @@ func (m *LatestBlockData) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
+
 func (m *LatestBlockData) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_LatestBlockData.Merge(m, src)
 }
+
 func (m *LatestBlockData) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *LatestBlockData) XXX_DiscardUnknown() {
 	xxx_messageInfo_LatestBlockData.DiscardUnknown(m)
 }
@@ -99,9 +107,11 @@ func (*GetLatestBlockNumResponse) ProtoMessage()    {}
 func (*GetLatestBlockNumResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_73cb97df94e400fe, []int{1}
 }
+
 func (m *GetLatestBlockNumResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *GetLatestBlockNumResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_GetLatestBlockNumResponse.Marshal(b, m, deterministic)
@@ -114,12 +124,15 @@ func (m *GetLatestBlockNumResponse) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
+
 func (m *GetLatestBlockNumResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetLatestBlockNumResponse.Merge(m, src)
 }
+
 func (m *GetLatestBlockNumResponse) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *GetLatestBlockNumResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetLatestBlockNumResponse.DiscardUnknown(m)
 }
@@ -151,9 +164,11 @@ func (*LatestBlockDataResponse) ProtoMessage()    {}
 func (*LatestBlockDataResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_73cb97df94e400fe, []int{2}
 }
+
 func (m *LatestBlockDataResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *LatestBlockDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_LatestBlockDataResponse.Marshal(b, m, deterministic)
@@ -166,12 +181,15 @@ func (m *LatestBlockDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return b[:n], nil
 	}
 }
+
 func (m *LatestBlockDataResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_LatestBlockDataResponse.Merge(m, src)
 }
+
 func (m *LatestBlockDataResponse) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *LatestBlockDataResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_LatestBlockDataResponse.DiscardUnknown(m)
 }
@@ -203,9 +221,11 @@ func (*BlockStore) ProtoMessage()    {}
 func (*BlockStore) Descriptor() ([]byte, []int) {
 	return fileDescriptor_73cb97df94e400fe, []int{3}
 }
+
 func (m *BlockStore) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *BlockStore) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_BlockStore.Marshal(b, m, deterministic)
@@ -218,12 +238,15 @@ func (m *BlockStore) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *BlockStore) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_BlockStore.Merge(m, src)
 }
+
 func (m *BlockStore) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *BlockStore) XXX_DiscardUnknown() {
 	xxx_messageInfo_BlockStore.DiscardUnknown(m)
 }
@@ -281,8 +304,10 @@ var fileDescriptor_73cb97df94e400fe = []byte{
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
+var (
+	_ context.Context
+	_ grpc.ClientConn
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
@@ -329,12 +354,12 @@ type ChainTrackerServiceServer interface {
 }
 
 // UnimplementedChainTrackerServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedChainTrackerServiceServer struct {
-}
+type UnimplementedChainTrackerServiceServer struct{}
 
 func (*UnimplementedChainTrackerServiceServer) GetLatestBlockNum(ctx context.Context, req *emptypb.Empty) (*GetLatestBlockNumResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestBlockNum not implemented")
 }
+
 func (*UnimplementedChainTrackerServiceServer) GetLatestBlockData(ctx context.Context, req *LatestBlockData) (*LatestBlockDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestBlockData not implemented")
 }
@@ -555,6 +580,7 @@ func encodeVarintChainTracker(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+
 func (m *LatestBlockData) Size() (n int) {
 	if m == nil {
 		return 0
@@ -625,9 +651,11 @@ func (m *BlockStore) Size() (n int) {
 func sovChainTracker(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
+
 func sozChainTracker(x uint64) (n int) {
 	return sovChainTracker(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+
 func (m *LatestBlockData) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -735,6 +763,7 @@ func (m *LatestBlockData) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *GetLatestBlockNumResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -823,6 +852,7 @@ func (m *GetLatestBlockNumResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *LatestBlockDataResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -926,6 +956,7 @@ func (m *LatestBlockDataResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *BlockStore) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1027,6 +1058,7 @@ func (m *BlockStore) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func skipChainTracker(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
