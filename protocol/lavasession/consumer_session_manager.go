@@ -129,7 +129,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairingAddresses[idx] = provider.PublicLavaAddress
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
-	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
+	csm.setValidAddressesToDefaultValue("", nil, context.Background()) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
@@ -167,23 +167,58 @@ func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions
 }
 
 // csm is Rlocked
-func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, extensions []string) (supportingProviderAddresses []string) {
+func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, extensions []string, ctx context.Context) (supportingProviderAddresses []string) {
+	utils.LavaFormatTrace("[Archive Debug] CalculateAddonValidAddresses called",
+		utils.LogAttr("addon", addon),
+		utils.LogAttr("extensions", extensions),
+		utils.LogAttr("validAddresses", csm.validAddresses),
+		utils.LogAttr("GUID", ctx))
 	for _, providerAdress := range csm.validAddresses {
 		providerEntry := csm.pairing[providerAdress]
-		if providerEntry.IsSupportingAddon(addon) && providerEntry.IsSupportingExtensions(extensions) {
+		supportsAddon := providerEntry.IsSupportingAddon(addon)
+		supportsExtensions := providerEntry.IsSupportingExtensions(extensions, ctx)
+		utils.LavaFormatTrace("[Archive Debug] Provider extension check",
+			utils.LogAttr("providerAddress", providerAdress),
+			utils.LogAttr("supportsAddon", supportsAddon),
+			utils.LogAttr("supportsExtensions", supportsExtensions),
+			utils.LogAttr("GUID", ctx))
+		if supportsAddon && supportsExtensions {
 			supportingProviderAddresses = append(supportingProviderAddresses, providerAdress)
+			utils.LavaFormatTrace("[Archive Debug] Provider added to supporting list",
+				utils.LogAttr("providerAddress", providerAdress),
+				utils.LogAttr("GUID", ctx))
+		} else {
+			utils.LavaFormatTrace("[Archive Debug] Provider filtered out",
+				utils.LogAttr("providerAddress", providerAdress),
+				utils.LogAttr("reason", "does not support addon or extensions"),
+				utils.LogAttr("GUID", ctx))
 		}
 	}
+	utils.LavaFormatTrace("[Archive Debug] CalculateAddonValidAddresses result",
+		utils.LogAttr("supportingProviderAddresses", supportingProviderAddresses),
+		utils.LogAttr("GUID", ctx))
 	return supportingProviderAddresses
 }
 
 // assuming csm is Rlocked
-func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
+func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string, ctx context.Context) (addresses []string) {
+	utils.LavaFormatTrace("[Archive Debug] getValidAddresses called",
+		utils.LogAttr("addon", addon),
+		utils.LogAttr("extensions", extensions),
+		utils.LogAttr("GUID", ctx))
 	routerKey := NewRouterKey(append(extensions, addon))
 	routerKeyString := routerKey.String()
 	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
-		return csm.CalculateAddonValidAddresses(addon, extensions)
+		utils.LavaFormatTrace("[Archive Debug] Calling CalculateAddonValidAddresses",
+			utils.LogAttr("addon", addon),
+			utils.LogAttr("extensions", extensions),
+			utils.LogAttr("GUID", ctx))
+		return csm.CalculateAddonValidAddresses(addon, extensions, ctx)
 	}
+	utils.LavaFormatTrace("[Archive Debug] Using cached addonAddresses",
+		utils.LogAttr("routerKeyString", routerKeyString),
+		utils.LogAttr("cachedAddresses", csm.addonAddresses[routerKeyString]),
+		utils.LogAttr("GUID", ctx))
 	return csm.addonAddresses[routerKeyString]
 }
 
@@ -335,7 +370,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 }
 
 // csm needs to be locked here
-func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string, extensions []string) {
+func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string, extensions []string, ctx context.Context) {
 	csm.currentlyBlockedProviderAddresses = make([]string, 0) // reset currently blocked provider addresses
 	if addon == "" && len(extensions) == 0 {
 		csm.validAddresses = make([]string, len(csm.pairingAddresses))
@@ -348,7 +383,18 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string,
 		// check if one of the pairing addresses supports the addon
 	addingToValidAddresses:
 		for _, provider := range csm.pairingAddresses {
-			if csm.pairing[provider].IsSupportingAddon(addon) && csm.pairing[provider].IsSupportingExtensions(extensions) {
+			supportsAddon := csm.pairing[provider].IsSupportingAddon(addon)
+			supportsExtensions := csm.pairing[provider].IsSupportingExtensions(extensions, ctx)
+
+			utils.LavaFormatTrace("[Archive Debug] Provider filtering check",
+				utils.LogAttr("providerAddress", provider),
+				utils.LogAttr("addon", addon),
+				utils.LogAttr("extensions", extensions),
+				utils.LogAttr("supportsAddon", supportsAddon),
+				utils.LogAttr("supportsExtensions", supportsExtensions),
+				utils.LogAttr("GUID", ctx))
+
+			if supportsAddon && supportsExtensions {
 				for _, validAddress := range csm.validAddresses {
 					if validAddress == provider {
 						// it exists, no need to add it again
@@ -356,11 +402,19 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string,
 					}
 				}
 				// get here only it found a supporting provider that is not valid
+				utils.LavaFormatTrace("[Archive Debug] Adding provider to valid addresses",
+					utils.LogAttr("providerAddress", provider),
+					utils.LogAttr("GUID", ctx))
 				csm.validAddresses = append(csm.validAddresses, provider)
+			} else {
+				utils.LavaFormatTrace("[Archive Debug] Provider filtered out",
+					utils.LogAttr("providerAddress", provider),
+					utils.LogAttr("reason", "does not support addon or extensions"),
+					utils.LogAttr("GUID", ctx))
 			}
 		}
 		csm.RemoveAddonAddresses(addon, extensions) // refresh the list
-		csm.addonAddresses[NewRouterKey(append(extensions, addon)).String()] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[NewRouterKey(append(extensions, addon)).String()] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
 	}
 }
 
@@ -382,10 +436,10 @@ func (csm *ConsumerSessionManager) atomicReadNumberOfResets() (resets uint64) {
 func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions []string) uint64 {
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
-	if len(csm.getValidAddresses(addon, extensions)) == 0 { // re verify it didn't change while waiting for lock.
-		csm.setValidAddressesToDefaultValue(addon, extensions)
+	if len(csm.getValidAddresses(addon, extensions, context.Background())) == 0 { // re verify it didn't change while waiting for lock.
+		csm.setValidAddressesToDefaultValue(addon, extensions, context.Background())
 		// only if length is larger than 0 after reset we actually reset. otherwise we don't have any providers for addon or extension
-		if len(csm.getValidAddresses(addon, extensions)) != 0 {
+		if len(csm.getValidAddresses(addon, extensions, context.Background())) != 0 {
 			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		} else {
 			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
@@ -399,23 +453,23 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 	return csm.numberOfResets
 }
 
-func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string) []string {
+func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string, ctx context.Context) []string {
 	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
 	defer csm.lock.Unlock()
 	routerKey := NewRouterKey(append(extensions, addon))
 	routerKeyString := routerKey.String()
 	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
 		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions)
+		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
 	}
 	return csm.addonAddresses[routerKeyString]
 }
 
 // validating we still have providers, otherwise reset valid addresses list
 // also caches validAddresses for an addon to save on compute
-func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string) uint64 {
+func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string, ctx context.Context) uint64 {
 	numberOfResets := csm.atomicReadNumberOfResets()
-	validAddresses := csm.cacheAddonAddresses(addon, extensions)
+	validAddresses := csm.cacheAddonAddresses(addon, extensions, ctx)
 	if len(validAddresses) == 0 {
 		numberOfResets = csm.resetValidAddresses(addon, extensions)
 	}
@@ -476,8 +530,12 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend(routerKey)
 
 	extensionNames := common.GetExtensionNames(extensions)
+	utils.LavaFormatTrace("[Archive Debug] GetSessions extension conversion",
+		utils.LogAttr("originalExtensions", extensions),
+		utils.LogAttr("extensionNames", extensionNames),
+		utils.LogAttr("GUID", ctx))
 	// if pairing list is empty we reset the state.
-	numberOfResets := csm.validatePairingListNotEmpty(addon, extensionNames)
+	numberOfResets := csm.validatePairingListNotEmpty(addon, extensionNames, ctx)
 
 	// providers that we don't try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{
@@ -663,7 +721,7 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
 	ignoredProvidersListLength := len(ignoredProvidersList)
-	validAddresses := csm.getValidAddresses(addon, extensions)
+	validAddresses := csm.getValidAddresses(addon, extensions, ctx)
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 
@@ -726,6 +784,15 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		utils.LogAttr("stateful", stateful),
 		utils.LogAttr("GUID", ctx),
 	)
+
+	// Archive-specific debug logging
+	if len(extensions) > 0 {
+		utils.LavaFormatTrace("[Archive Debug] Final provider selection",
+			utils.LogAttr("validAddresses", validAddresses),
+			utils.LogAttr("extensions", extensions),
+			utils.LogAttr("chosenProviders", providers),
+			utils.LogAttr("GUID", ctx))
+	}
 
 	// make sure we have at least 1 valid provider
 	if len(providers) == 0 || providers[0] == "" {
@@ -793,7 +860,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 		}
 
 		// validate this provider supports the required extension or addon
-		if !consumerSessionsWithProvider.IsSupportingAddon(addon) || !consumerSessionsWithProvider.IsSupportingExtensions(extensions) {
+		if !consumerSessionsWithProvider.IsSupportingAddon(addon) || !consumerSessionsWithProvider.IsSupportingExtensions(extensions, ctx) {
 			utils.LavaFormatTrace("[continue] no addon or extensions", utils.LogAttr("providerAddress", providerAddress), utils.LogAttr("GUID", ctx))
 			continue
 		}
@@ -842,7 +909,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProviderFromBacku
 		}
 
 		// Validate backup provider supports required addons and extensions (simplified validation for emergency scenarios)
-		if !consumerSessionsWithProvider.IsSupportingAddon(addon) || !consumerSessionsWithProvider.IsSupportingExtensions(extensions) {
+		if !consumerSessionsWithProvider.IsSupportingAddon(addon) || !consumerSessionsWithProvider.IsSupportingExtensions(extensions, ctx) {
 			continue
 		}
 
@@ -926,7 +993,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx cont
 					utils.Attribute{Key: "pairing", Value: csm.pairing},
 					utils.Attribute{Key: "epochAtStart", Value: currentEpoch},
 					utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()},
-					utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon, extensions)},
+					utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon, extensions, ctx)},
 					utils.Attribute{Key: "wantedProviderNumber", Value: wantedProviderNumber},
 					utils.LogAttr("GUID", ctx),
 				)

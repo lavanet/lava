@@ -215,6 +215,8 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 
 // formatHashKey formats the hash key by adding latestBlock information.
 func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int64) []byte {
+	utils.LavaFormatDebug("formatHashKey", utils.Attribute{Key: "hash", Value: fmt.Sprintf("%x", hash)}, utils.Attribute{Key: "parsedRequestedBlock", Value: parsedRequestedBlock})
+
 	// Append the latestBlock and seenBlock directly to the hash using little-endian encoding
 	hash = binary.LittleEndian.AppendUint64(hash, uint64(parsedRequestedBlock))
 	return hash

@@ -270,20 +270,44 @@ func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
 	return false
 }
 
-func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string) bool {
+func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string, ctx context.Context) bool {
 	cswp.Lock.RLock()
 	defer cswp.Lock.RUnlock()
+
+	// Debug logging for archive extension filtering
+	if len(extensions) > 0 {
+		utils.LavaFormatTrace("[Archive Debug] Checking extensions support",
+			utils.LogAttr("providerAddress", cswp.PublicLavaAddress),
+			utils.LogAttr("requestedExtensions", extensions),
+			utils.LogAttr("endpointExtensions", cswp.Endpoints),
+			utils.LogAttr("GUID", ctx))
+	}
+
 endpointLoop:
 	for _, endpoint := range cswp.Endpoints {
 		for _, extension := range extensions {
 			if _, ok := endpoint.Extensions[extension]; !ok {
 				// doesn't support the extension required, continue to next endpoint
+				utils.LavaFormatTrace("[Archive Debug] Extension not supported",
+					utils.LogAttr("providerAddress", cswp.PublicLavaAddress),
+					utils.LogAttr("extension", extension),
+					utils.LogAttr("endpointExtensions", endpoint.Extensions),
+					utils.LogAttr("GUID", ctx))
 				continue endpointLoop
 			}
 		}
 		// get here only if all extensions are supported in the endpoint
+		utils.LavaFormatTrace("[Archive Debug] All extensions supported",
+			utils.LogAttr("providerAddress", cswp.PublicLavaAddress),
+			utils.LogAttr("extensions", extensions),
+			utils.LogAttr("GUID", ctx))
 		return true
 	}
+
+	utils.LavaFormatTrace("[Archive Debug] No endpoint supports all extensions",
+		utils.LogAttr("providerAddress", cswp.PublicLavaAddress),
+		utils.LogAttr("extensions", extensions),
+		utils.LogAttr("GUID", ctx))
 	return false
 }
 
