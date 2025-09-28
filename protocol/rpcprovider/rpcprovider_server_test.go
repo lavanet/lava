@@ -49,6 +49,10 @@ func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Tim
 	mct.changeTime = changeTime
 }
 
+func (mct *MockChainTracker) IsDummy() bool {
+	return false
+}
+
 func TestHandleConsistency(t *testing.T) {
 	plays := []struct {
 		seenBlock          int64
