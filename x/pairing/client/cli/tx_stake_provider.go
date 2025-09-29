@@ -150,7 +150,7 @@ func CmdStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
-	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
+	cmd.Flags().Uint64(types.FlagCommission, 75, "The provider's commission from the delegators (default 75)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
@@ -310,7 +310,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
-	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
+	cmd.Flags().Uint64(types.FlagCommission, 75, "The provider's commission from the delegators (default 75)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
