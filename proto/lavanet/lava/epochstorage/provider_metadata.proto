@@ -15,4 +15,5 @@ message ProviderMetadata {
   uint64 delegate_commission = 5; // delegation commission (precentage 0-100)
   uint64 last_change = 6;
   cosmos.staking.v1beta1.Description description = 7 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  uint64 last_stake_move = 8; // timestamp of last stake move operation for rate limiting
 }
