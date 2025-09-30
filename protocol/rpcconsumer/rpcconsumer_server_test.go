@@ -141,7 +141,11 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 	// Create single consumer session
 	singleConsumerSession := &lavasession.SingleConsumerSession{EndpointConnection: &lavasession.EndpointConnection{Client: relayerMock}}
-
+	singleConsumerSession.Parent = &lavasession.ConsumerSessionsWithProvider{
+		PublicLavaAddress: providerPublicAddress,
+		PairingEpoch:      100,
+		Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayerMock}}}},
+	}
 	// Create RelayResult
 	relayResult := &common.RelayResult{
 		ProviderInfo: common.ProviderInfo{
