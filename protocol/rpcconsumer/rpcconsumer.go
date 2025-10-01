@@ -72,6 +72,17 @@ var strategyNames = []string{
 
 var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.StrategyBalanced}
 
+// Weighted selection configuration variables
+var (
+	useWeightedSelection        bool
+	availabilityWeight          float64
+	latencyWeight               float64
+	syncWeight                  float64
+	stakeWeight                 float64
+	minSelectionChance          float64
+	weightedSelectorInitialized bool // Track if we've applied the config
+)
+
 func (s *strategyValue) String() string {
 	return strategyNames[int(s.Strategy)]
 }
@@ -357,6 +368,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		if !loaded {
 			// if this is a new optimizer, register it in the consumerOptimizerQoSClient
 			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
+			// Apply weighted selection configuration if enabled
+			applyWeightedSelectionConfig(optimizer)
 		}
 
 		// Create / Use existing Consistency
@@ -738,6 +751,14 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCConsumer.Flags().BoolVar(&provideroptimizer.AutoAdjustTiers, common.SetProviderOptimizerAutoAdjustTiers, provideroptimizer.AutoAdjustTiers, "optimizer enable auto adjust tiers, this flag will fix the tiers based on the number of providers in the pairing, defaults to (false)")
+	// weighted selection flags (new system)
+	defaultConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+	cmdRPCConsumer.Flags().BoolVar(&useWeightedSelection, common.UseWeightedSelection, true, "enable weighted random selection based on composite QoS scores instead of tier-based selection (default: true)")
+	cmdRPCConsumer.Flags().Float64Var(&availabilityWeight, common.ProviderOptimizerAvailabilityWeight, defaultConfig.AvailabilityWeight, "weight for availability score in provider selection (default: 0.4)")
+	cmdRPCConsumer.Flags().Float64Var(&latencyWeight, common.ProviderOptimizerLatencyWeight, defaultConfig.LatencyWeight, "weight for latency score in provider selection (default: 0.3)")
+	cmdRPCConsumer.Flags().Float64Var(&syncWeight, common.ProviderOptimizerSyncWeight, defaultConfig.SyncWeight, "weight for sync score in provider selection (default: 0.2)")
+	cmdRPCConsumer.Flags().Float64Var(&stakeWeight, common.ProviderOptimizerStakeWeight, defaultConfig.StakeWeight, "weight for provider stake in selection (default: 0.1)")
+	cmdRPCConsumer.Flags().Float64Var(&minSelectionChance, common.ProviderOptimizerMinSelectionChance, defaultConfig.MinSelectionChance, "minimum selection probability for any provider (default: 0.05)")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags
@@ -760,4 +781,37 @@ func testModeWarn(desc string) {
 	utils.LavaFormatWarning("------------------------------test mode --------------------------------\n\t\t\t"+
 		desc+"\n\t\t\t"+
 		"------------------------------test mode --------------------------------\n", nil)
+}
+
+// applyWeightedSelectionConfig applies the CLI-configured weighted selection settings to an optimizer
+func applyWeightedSelectionConfig(optimizer *provideroptimizer.ProviderOptimizer) {
+	if !weightedSelectorInitialized {
+		// Only log once
+		weightedSelectorInitialized = true
+		if useWeightedSelection {
+			utils.LavaFormatInfo("[WeightedSelection] enabled via CLI flags",
+				utils.LogAttr("availabilityWeight", availabilityWeight),
+				utils.LogAttr("latencyWeight", latencyWeight),
+				utils.LogAttr("syncWeight", syncWeight),
+				utils.LogAttr("stakeWeight", stakeWeight),
+				utils.LogAttr("minSelectionChance", minSelectionChance),
+			)
+		}
+	}
+
+	if useWeightedSelection {
+		// Enable weighted selection in the optimizer
+		optimizer.SetUseWeightedSelection(true)
+
+		// TODO: In future, allow updating weights dynamically via:
+		// config := provideroptimizer.WeightedSelectorConfig{
+		//     AvailabilityWeight: availabilityWeight,
+		//     LatencyWeight:      latencyWeight,
+		//     SyncWeight:         syncWeight,
+		//     StakeWeight:        stakeWeight,
+		//     MinSelectionChance: minSelectionChance,
+		//     Strategy:           optimizer's current strategy,
+		// }
+		// optimizer.UpdateWeightedSelectorConfig(config)
+	}
 }

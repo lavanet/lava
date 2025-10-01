@@ -70,6 +70,9 @@ type ProviderOptimizer struct {
 	OptimizerQoSSelectionEnabled    bool              // enables QoS-based selection within tiers instead of stake-based
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
+	// Weighted selection fields (new system replacing tiers)
+	useWeightedSelection bool             // Feature flag for gradual rollout
+	weightedSelector     *WeightedSelector // Weighted random selection based on composite QoS scores
 }
 
 // The exploration mechanism makes the optimizer return providers that were not talking
@@ -347,6 +350,12 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+	// Check if weighted selection is enabled
+	if po.useWeightedSelection {
+		return po.chooseProviderWeighted(allAddresses, ignoredProviders, cu, requestedBlock)
+	}
+
+	// Legacy tier-based selection
 	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock) // spliting to tiers by score
 	selectionTierScoresCount := selectionTier.ScoresCount()                                                                  // length of the selectionTier
 	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
@@ -386,8 +395,147 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	return returnedProviders, tier
 }
 
+// chooseProviderWeighted uses the weighted selector to choose a provider based on composite QoS scores
+// This is the new selection method that replaces tier-based selection
+func (po *ProviderOptimizer) chooseProviderWeighted(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+	if po.weightedSelector == nil {
+		utils.LavaFormatError("[Optimizer] weighted selector not initialized, falling back to tier selection", nil)
+		return po.ChooseProvider(allAddresses, ignoredProviders, cu, requestedBlock)
+	}
+
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
+		if qos == nil {
+			return nil, time.Time{}, false
+		}
+		return qos, lastUpdate, true
+	}
+
+	stakeGetter := func(addr string) int64 {
+		// Get stake from selection weighter
+		return po.selectionWeighter.Weight(addr)
+	}
+
+	// Calculate provider scores using weighted selector
+	providerScores, qosReports := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
+	)
+
+	if len(providerScores) == 0 {
+		// No providers to choose from
+		utils.LavaFormatWarning("[Optimizer] no providers available for weighted selection", nil)
+		return []string{}, -1
+	}
+
+	// Select provider using weighted random selection
+	selectedProvider := po.weightedSelector.SelectProvider(providerScores)
+	returnedProviders := []string{selectedProvider}
+
+	// Add exploration candidate if should explore
+	// Find the exploration candidate (provider not updated recently)
+	explorationCandidate := ""
+	oldestUpdateTime := time.Now()
+	for addr := range qosReports {
+		if _, ignored := ignoredProviders[addr]; ignored {
+			continue
+		}
+		if addr == selectedProvider {
+			continue // Don't add the same provider twice
+		}
+		_, lastUpdate, found := providerDataGetter(addr)
+		if found && lastUpdate.Add(10*time.Second).Before(time.Now()) && lastUpdate.Before(oldestUpdateTime) {
+			explorationCandidate = addr
+			oldestUpdateTime = lastUpdate
+		}
+	}
+
+	if explorationCandidate != "" && po.shouldExplore(1) {
+		returnedProviders = append(returnedProviders, explorationCandidate)
+	}
+
+	utils.LavaFormatTrace("[Optimizer] returned providers (weighted selection)",
+		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
+		utils.LogAttr("selectedScore", getProviderScore(selectedProvider, providerScores)),
+		utils.LogAttr("numScores", len(providerScores)),
+	)
+
+	// Return tier as -1 to indicate weighted selection (no tiers)
+	return returnedProviders, -1
+}
+
+// getProviderScore is a helper function to find a provider's score in the scores list
+func getProviderScore(address string, scores []ProviderScore) float64 {
+	for _, ps := range scores {
+		if ps.Address == address {
+			return ps.CompositeScore
+		}
+	}
+	return 0.0
+}
+
+// chooseProviderWeightedTopTier selects a single provider from the top tier using weighted selection
+// This is used for sticky sessions and other scenarios requiring a single high-quality provider
+func (po *ProviderOptimizer) chooseProviderWeightedTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	if po.weightedSelector == nil {
+		utils.LavaFormatError("[Optimizer] weighted selector not initialized for top tier, falling back to tier selection", nil)
+		// Fallback to legacy implementation
+		po.useWeightedSelection = false
+		result := po.ChooseProviderFromTopTier(allAddresses, ignoredProviders, cu, requestedBlock)
+		po.useWeightedSelection = true
+		return result
+	}
+
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
+		if qos == nil {
+			return nil, time.Time{}, false
+		}
+		return qos, lastUpdate, true
+	}
+
+	stakeGetter := func(addr string) int64 {
+		return po.selectionWeighter.Weight(addr)
+	}
+
+	// Calculate provider scores
+	providerScores, _ := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
+	)
+
+	if len(providerScores) == 0 {
+		utils.LavaFormatWarning("[Optimizer] no providers available for weighted top tier selection", nil)
+		return []string{}
+	}
+
+	// Select the single best provider using weighted random selection
+	// This gives higher probability to better providers while still allowing variety
+	selectedProvider := po.weightedSelector.SelectProvider(providerScores)
+
+	utils.LavaFormatTrace("[Optimizer] returned top tier provider (weighted selection)",
+		utils.LogAttr("provider", selectedProvider),
+		utils.LogAttr("score", getProviderScore(selectedProvider, providerScores)),
+		utils.LogAttr("numCandidates", len(providerScores)),
+	)
+
+	return []string{selectedProvider}
+}
+
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	// Check if weighted selection is enabled
+	if po.useWeightedSelection {
+		return po.chooseProviderWeightedTopTier(allAddresses, ignoredProviders, cu, requestedBlock)
+	}
+
+	// Legacy tier-based selection
 	selectionTier, _, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	selectionTierScoresCount := selectionTier.ScoresCount()
 	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
@@ -675,6 +823,12 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
+
+	// Initialize weighted selector with default configuration
+	weightedConfig := DefaultWeightedSelectorConfig()
+	weightedConfig.Strategy = strategy
+	weightedSelector := NewWeightedSelector(weightedConfig)
+
 	return &ProviderOptimizer{
 		strategy:                        strategy,
 		providersStorage:                cache,
@@ -687,6 +841,9 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		OptimizerQoSSelectionEnabled:    qosSelectionEnabled,
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
+		// Weighted selection (disabled by default, can be enabled via SetUseWeightedSelection)
+		useWeightedSelection: false,
+		weightedSelector:     weightedSelector,
 	}
 }
 
@@ -738,4 +895,38 @@ func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress stri
 	)
 
 	return report, providerData.Latency.GetLastUpdateTime()
+}
+
+// SetUseWeightedSelection enables or disables weighted selection
+// This method allows toggling between tier-based and weighted selection at runtime
+func (po *ProviderOptimizer) SetUseWeightedSelection(enable bool) {
+	po.useWeightedSelection = enable
+	utils.LavaFormatInfo("[Optimizer] weighted selection mode changed",
+		utils.LogAttr("enabled", enable),
+		utils.LogAttr("chainId", po.chainId),
+	)
+}
+
+// IsWeightedSelectionEnabled returns whether weighted selection is currently enabled
+func (po *ProviderOptimizer) IsWeightedSelectionEnabled() bool {
+	return po.useWeightedSelection
+}
+
+// UpdateWeightedSelectorStrategy updates the weighted selector's strategy
+// This should be called when the optimizer's strategy changes
+func (po *ProviderOptimizer) UpdateWeightedSelectorStrategy(strategy Strategy) {
+	if po.weightedSelector != nil {
+		po.weightedSelector.UpdateStrategy(strategy)
+		utils.LavaFormatTrace("[Optimizer] weighted selector strategy updated",
+			utils.LogAttr("strategy", strategy.String()),
+		)
+	}
+}
+
+// GetWeightedSelectorConfig returns the current weighted selector configuration
+func (po *ProviderOptimizer) GetWeightedSelectorConfig() WeightedSelectorConfig {
+	if po.weightedSelector != nil {
+		return po.weightedSelector.GetConfig()
+	}
+	return WeightedSelectorConfig{}
 }
