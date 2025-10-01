@@ -42,6 +42,14 @@ const (
 	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
 	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
 
+	// weighted selection flags (new system replacing tiers)
+	UseWeightedSelection                      = "use-weighted-provider-selection"                     // enable weighted random selection based on composite QoS scores
+	ProviderOptimizerAvailabilityWeight       = "provider-optimizer-availability-weight"              // weight for availability score (default: 0.4)
+	ProviderOptimizerLatencyWeight            = "provider-optimizer-latency-weight"                   // weight for latency score (default: 0.3)
+	ProviderOptimizerSyncWeight               = "provider-optimizer-sync-weight"                      // weight for sync score (default: 0.2)
+	ProviderOptimizerStakeWeight              = "provider-optimizer-stake-weight"                     // weight for stake (default: 0.1)
+	ProviderOptimizerMinSelectionChance       = "provider-optimizer-min-selection-chance"             // minimum selection probability for any provider (default: 0.01)
+
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
 	OptimizerQosListenFlag                 = "optimizer-qos-listen"            // enable listening for qos reports on metrics endpoint
