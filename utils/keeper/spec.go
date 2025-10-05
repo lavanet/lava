@@ -205,7 +205,11 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 }
 
 func GetSpecFromGit(url string, index string) (types.Spec, error) {
-	specs, err := getAllSpecs(url)
+	return GetSpecFromGitWithToken(url, index, "")
+}
+
+func GetSpecFromGitWithToken(url string, index string, githubToken string) (types.Spec, error) {
+	specs, err := getAllSpecsWithToken(url, githubToken)
 	if err != nil {
 		return types.Spec{}, err
 	}
@@ -339,6 +343,10 @@ func convertGitHubURLToRaw(input string) (string, error) {
 }
 
 func getAllSpecs(url string) (map[string]types.Spec, error) {
+	return getAllSpecsWithToken(url, "")
+}
+
+func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec, error) {
 	// First, get the list of files using GitHub API (only 1 API call)
 	githubAPIURL, err := convertGitHubURLToAPI(url)
 	if err != nil {
@@ -355,6 +363,11 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 		return nil, err
 	}
 
+	// Add GitHub token authentication if provided
+	if githubToken != "" {
+		req.Header.Set("Authorization", "token "+githubToken)
+	}
+
 	// Execute the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -362,7 +375,7 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch %s", githubAPIURL)
+		return nil, fmt.Errorf("failed to fetch %s (status: %d)", githubAPIURL, resp.StatusCode)
 	}
 
 	// Parse the GitHub API response
@@ -400,6 +413,11 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 		if err != nil {
 			cancel()
 			continue
+		}
+
+		// Add GitHub token authentication for raw URLs if provided
+		if githubToken != "" {
+			req.Header.Set("Authorization", "token "+githubToken)
 		}
 
 		resp, err := http.DefaultClient.Do(req)

@@ -33,6 +33,7 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
 
 	// optimizer flags
 	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
@@ -77,6 +78,7 @@ type ConsumerCmdFlags struct {
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
 	DebugRelays              bool          // enables debug mode for relays
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
+	GitHubToken              string        // GitHub personal access token for accessing private repositories
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

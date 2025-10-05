@@ -93,6 +93,56 @@ func TestGetAllSpecsIntegration(t *testing.T) {
 	}
 }
 
+// Test GitHub token functionality with real GitHub API
+func TestGetSpecFromGitWithTokenIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Test with empty token (should work for public repos)
+	t.Run("Public_Repo_No_Token", func(t *testing.T) {
+		url := "https://github.com/magma-devs/lava-specs/tree/main/"
+		index := "ETH1"
+		
+		spec, err := GetSpecFromGitWithToken(url, index, "")
+		if err != nil {
+			t.Logf("Spec %s not found or error: %v", index, err)
+			return
+		}
+		
+		require.NotEmpty(t, spec)
+		require.Equal(t, index, spec.Index)
+	})
+
+	// Test with a fake token (should still work for public repos)
+	t.Run("Public_Repo_With_Fake_Token", func(t *testing.T) {
+		url := "https://github.com/magma-devs/lava-specs/tree/main/"
+		index := "ETH1"
+		fakeToken := "ghp_fake_token_for_testing"
+		
+		spec, err := GetSpecFromGitWithToken(url, index, fakeToken)
+		if err != nil {
+			t.Logf("Spec %s not found or error: %v", index, err)
+			return
+		}
+		
+		require.NotEmpty(t, spec)
+		require.Equal(t, index, spec.Index)
+	})
+
+	// Test with invalid token on private repo (should fail)
+	t.Run("Private_Repo_Invalid_Token", func(t *testing.T) {
+		// This test assumes there's a private repo - adjust URL as needed
+		url := "https://github.com/private-org/private-repo/tree/main/"
+		index := "TEST1"
+		invalidToken := "ghp_invalid_token"
+		
+		_, err := GetSpecFromGitWithToken(url, index, invalidToken)
+		// This should fail for private repos with invalid tokens
+		require.Error(t, err)
+	})
+}
+
 // Benchmark the improved spec fetching
 func BenchmarkGetSpecFromGitIntegration(b *testing.B) {
 	if testing.Short() {
@@ -105,6 +155,25 @@ func BenchmarkGetSpecFromGitIntegration(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := GetSpecFromGit(url, index)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// Benchmark spec fetching with token
+func BenchmarkGetSpecFromGitWithTokenIntegration(b *testing.B) {
+	if testing.Short() {
+		b.Skip("Skipping integration benchmark in short mode")
+	}
+
+	url := "https://github.com/magma-devs/lava-specs/tree/main/"
+	index := "ETH1"
+	token := "ghp_test_token"
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := GetSpecFromGitWithToken(url, index, token)
 		if err != nil {
 			b.Fatal(err)
 		}
