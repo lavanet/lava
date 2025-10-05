@@ -265,22 +265,81 @@ func convertGitHubURLToAPI(input string) (string, error) {
 		return "", err
 	}
 
-	parts := strings.Split(parsedURL.Path, "/")
-
-	if parts[3] != "tree" || len(parts) <= 5 {
+	// Validate that this is a GitHub URL
+	if parsedURL.Host != "github.com" {
 		return "", fmt.Errorf("invalid GitHub folder URL")
 	}
 
-	owner := parts[1]
-	repo := parts[2]
-	branch := parts[4]
-	path := strings.Join(parts[5:], "/")
+	parts := strings.Split(parsedURL.Path, "/")
+
+	// Remove empty parts from the beginning
+	var cleanParts []string
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+
+	// Expected format: owner/repo/tree/branch/path...
+	if len(cleanParts) < 4 || cleanParts[2] != "tree" {
+		return "", fmt.Errorf("invalid GitHub folder URL")
+	}
+
+	owner := cleanParts[0]
+	repo := cleanParts[1]
+	branch := cleanParts[3]
+
+	var path string
+	if len(cleanParts) > 4 {
+		path = strings.Join(cleanParts[4:], "/")
+	}
 
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s", owner, repo, path, branch)
 	return apiURL, nil
 }
 
+func convertGitHubURLToRaw(input string) (string, error) {
+	parsedURL, err := url.Parse(input)
+	if err != nil {
+		return "", err
+	}
+
+	// Validate that this is a GitHub URL
+	if parsedURL.Host != "github.com" {
+		return "", fmt.Errorf("invalid GitHub folder URL")
+	}
+
+	parts := strings.Split(parsedURL.Path, "/")
+
+	// Remove empty parts from the beginning
+	var cleanParts []string
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+
+	// Expected format: owner/repo/tree/branch/path...
+	if len(cleanParts) < 4 || cleanParts[2] != "tree" {
+		return "", fmt.Errorf("invalid GitHub folder URL")
+	}
+
+	owner := cleanParts[0]
+	repo := cleanParts[1]
+	branch := cleanParts[3]
+
+	var path string
+	if len(cleanParts) > 4 {
+		path = strings.Join(cleanParts[4:], "/")
+	}
+
+	// Use raw.githubusercontent.com instead of GitHub API
+	rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path)
+	return rawURL, nil
+}
+
 func getAllSpecs(url string) (map[string]types.Spec, error) {
+	// First, get the list of files using GitHub API (only 1 API call)
 	githubAPIURL, err := convertGitHubURLToAPI(url)
 	if err != nil {
 		return nil, err
@@ -310,18 +369,22 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 	var files []struct {
 		Name string `json:"name"`
 		Type string `json:"type"`
-		Url  string `json:"download_url"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&files)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter for .json files
+	// Filter for .json files and convert to raw URLs
 	var specFiles []string
+	rawBaseURL, err := convertGitHubURLToRaw(url)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, file := range files {
 		if file.Type == "file" && strings.HasSuffix(file.Name, ".json") {
-			specFiles = append(specFiles, file.Url)
+			specFiles = append(specFiles, rawBaseURL+"/"+file.Name)
 		}
 	}
 	if len(specFiles) == 0 {
@@ -330,36 +393,37 @@ func getAllSpecs(url string) (map[string]types.Spec, error) {
 
 	specs := map[string]types.Spec{}
 
-	// Test reading each spec file
+	// Now fetch each spec file using raw URLs (no API calls)
 	for _, specFile := range specFiles {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, specFile, nil)
 		if err != nil {
-			return nil, err
+			cancel()
+			continue
 		}
 
 		resp, err := http.DefaultClient.Do(req)
+		cancel()
 		if err != nil {
-			return nil, err
+			continue // File doesn't exist or network error, skip
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("failed to fetch %s", specFile)
+			resp.Body.Close()
+			continue // File doesn't exist, skip
 		}
 
 		content, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		// Parse the JSON content into a spec proposal
 		var proposal utils.SpecAddProposalJSON
 		err = json.Unmarshal(content, &proposal)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		for _, spec := range proposal.Proposal.Specs {
