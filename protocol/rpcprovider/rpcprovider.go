@@ -152,6 +152,7 @@ type RPCProvider struct {
 	providerUniqueId             string
 	staticProvider               bool
 	staticSpecPath               string
+	githubToken                  string
 	relayLoadLimit               uint64
 	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
 
@@ -872,6 +873,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
 				offlineSpecPath,
+				githubToken,
 				relayLoadLimit,
 				testMode,
 				testResponsesFile,
