@@ -35,6 +35,10 @@ type ProviderMetricsManager struct {
 	totalCUServicedMetric                *prometheus.CounterVec
 	totalCUPaidMetric                    *prometheus.CounterVec
 	totalRelaysServicedMetric            *MappedLabelsCounterVec
+	totalRequestsPerFunctionMetric       *MappedLabelsCounterVec
+	totalErrorsPerFunctionMetric         *MappedLabelsCounterVec
+	inFlightPerFunctionMetric            *MappedLabelsGaugeVec
+	requestLatencyPerFunctionMetric      *MappedLabelsGaugeVec
 	totalErroredMetric                   *prometheus.CounterVec
 	consumerQoSMetric                    *prometheus.GaugeVec
 	blockMetric                          *MappedLabelsGaugeVec
@@ -77,6 +81,30 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name:   "lava_provider_total_relays_serviced",
 		Help:   "The total number of relays serviced by the provider over time.",
 		Labels: totalRelaysServicedLabels,
+	})
+
+	totalRequestsPerFunctionMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
+		Name:   "lava_provider_total_relays_serviced_per_function",
+		Help:   "The total number of relays serviced by the provider over time for a given function.",
+		Labels: []string{"spec", "apiInterface", "function"},
+	})
+
+	totalErrorsPerFunctionMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
+		Name:   "lava_provider_total_relays_errored_per_function",
+		Help:   "The total number of relays that ended in error over time for a given function.",
+		Labels: []string{"spec", "apiInterface", "function"},
+	})
+
+	totalInFlightPerFunctionMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_provider_requests_in_flight_per_function",
+		Help:   "The number of relays currently being handled for a given function.",
+		Labels: []string{"spec", "apiInterface", "function"},
+	})
+
+	requestLatencyPerFunctionMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_provider_request_latency_per_function",
+		Help:   "The latency of relays for a given function.",
+		Labels: []string{"spec", "apiInterface", "function"},
 	})
 
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
@@ -211,6 +239,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		totalCUServicedMetric:                totalCUServicedMetric,
 		totalCUPaidMetric:                    totalCUPaidMetric,
 		totalRelaysServicedMetric:            totalRelaysServicedMetric,
+		totalRequestsPerFunctionMetric:       totalRequestsPerFunctionMetric,
+		totalErrorsPerFunctionMetric:         totalErrorsPerFunctionMetric,
+		requestLatencyPerFunctionMetric:      requestLatencyPerFunctionMetric,
+		inFlightPerFunctionMetric:            totalInFlightPerFunctionMetric,
 		totalErroredMetric:                   totalErroredMetric,
 		consumerQoSMetric:                    consumerQoSMetric,
 		blockMetric:                          blockMetric,
@@ -279,7 +311,7 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface, prov
 	}
 
 	if pme.getProviderMetric(specID, apiInterface) == nil {
-		providerMetric := NewProviderMetrics(specID, apiInterface, providerEndpoint, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric, pme.providerLatencyMetric)
+		providerMetric := NewProviderMetrics(specID, apiInterface, providerEndpoint, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalRequestsPerFunctionMetric, pme.inFlightPerFunctionMetric, pme.totalErrorsPerFunctionMetric, pme.requestLatencyPerFunctionMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric)
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)
