@@ -138,7 +138,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 
 			// Return an UnsupportedMethodError to the consumer so they don't increment their CU counter
 			unsupportedError := chainlib.NewUnsupportedMethodError(errors.New(errorMessage), methodName)
-			return nil, unsupportedError
+			return nil, emptyTime, unsupportedError
 		}
 
 		// On the first retry, check if this hash has already failed previously
