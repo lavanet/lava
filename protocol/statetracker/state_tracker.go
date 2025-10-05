@@ -68,7 +68,8 @@ func RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx context.Context, chainPa
 		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
 
-	if strings.Contains(specPath, "git") {
+	// Check if specPath is a GitHub URL (not just contains "git" substring)
+	if strings.HasPrefix(specPath, "https://github.com") {
 		spec, err := specutils.GetSpecFromGitWithToken(specPath, rpcEndpoint.ChainID, githubToken)
 		if err != nil {
 			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
