@@ -374,6 +374,7 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch %s (status: %d)", githubAPIURL, resp.StatusCode)
 	}

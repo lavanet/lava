@@ -370,3 +370,7 @@ func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specif
 func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
 	return mrm.ReliabilityManager.GetLatestBlockNum()
 }
+
+func (mrm *MockReliabilityManager) IsDummy() bool {
+	return false
+}
