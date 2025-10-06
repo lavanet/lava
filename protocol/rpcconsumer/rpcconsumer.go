@@ -465,7 +465,7 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 			endpoint.HealthCheckPath = common.DEFAULT_HEALTH_PATH
 		}
 	}
-	return
+	return endpoints, err
 }
 
 func CreateRPCConsumerCobraCommand() *cobra.Command {

@@ -7,7 +7,7 @@ import (
 )
 
 func UpdateAllCustomContextFields(originCtx context.Context, ctx context.Context) context.Context {
-	var resCtx = ctx
+	resCtx := ctx
 	if taskId, found := GetTaskId(originCtx); found {
 		resCtx = AppendTaskId(resCtx, taskId)
 	}
@@ -36,7 +36,7 @@ func AppendRequestId(ctx context.Context, reqId string) context.Context {
 
 func GetRequestId(ctx context.Context) (reqId string, found bool) {
 	reqId, found = ctx.Value(request_id_ctx_key{}).(string)
-	return
+	return reqId, found
 }
 
 type task_id_ctx_key struct{}
@@ -54,7 +54,7 @@ func AppendTaskId(ctx context.Context, taskId string) context.Context {
 
 func GetTaskId(ctx context.Context) (taskId string, found bool) {
 	taskId, found = ctx.Value(task_id_ctx_key{}).(string)
-	return
+	return taskId, found
 }
 
 type tx_id_ctx_key struct{}
@@ -72,7 +72,7 @@ func AppendTxId(ctx context.Context, txId string) context.Context {
 
 func GetTxId(ctx context.Context) (txId string, found bool) {
 	txId, found = ctx.Value(tx_id_ctx_key{}).(string)
-	return
+	return txId, found
 }
 
 func ExtractWantedHeadersAndUpdateContext(fiberCtx *fiber.Ctx, ctx context.Context) context.Context {
