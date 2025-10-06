@@ -59,12 +59,18 @@ type SpecUpdaterInf interface {
 
 // Either register for spec updates or set spec for offline spec, used in both consumer and provider process
 func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf) error {
+	return RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, specPath, rpcEndpoint, specUpdaterInf, "")
+}
+
+// Either register for spec updates or set spec for offline spec with GitHub token support
+func RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf, githubToken string) error {
 	if specPath == "" {
 		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
 
-	if strings.Contains(specPath, "git") {
-		spec, err := specutils.GetSpecFromGit(specPath, rpcEndpoint.ChainID)
+	// Check if specPath is a GitHub URL (not just contains "git" substring)
+	if strings.HasPrefix(specPath, "https://github.com") {
+		spec, err := specutils.GetSpecFromGitWithToken(specPath, rpcEndpoint.ChainID, githubToken)
 		if err != nil {
 			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
 		}
