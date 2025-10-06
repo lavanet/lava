@@ -29,7 +29,7 @@ type ProviderMetrics struct {
 	totalErroredMetric              *prometheus.CounterVec
 	consumerQoSMetric               *prometheus.GaugeVec
 	loadRateMetric                  *prometheus.GaugeVec
-	providerLatencyMetric     *prometheus.GaugeVec
+	providerLatencyMetric           *prometheus.GaugeVec
 }
 
 func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport, function string) {
@@ -154,7 +154,7 @@ func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMe
 		totalErroredMetric:              totalErroredMetric,
 		consumerQoSMetric:               consumerQoSMetric,
 		loadRateMetric:                  loadRateMetric,
-		providerLatencyMetric:     providerLatencyMetric,
+		providerLatencyMetric:           providerLatencyMetric,
 	}
 	return pm
 }
