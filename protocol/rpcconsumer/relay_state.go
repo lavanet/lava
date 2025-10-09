@@ -164,30 +164,29 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 	default:
 	}
 
-	hashes := protocolMessage.GetRequestedBlocksHashes()
-	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
-	if archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
-		// Validate the following.
-		// 1. That we have applied archive
-		// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
-		// Now -
-		// We know we have applied archive and failed.
-		// 1. We can remove the archive, return to the original protocol message,
-		// 2. Set all hashes as irrelevant for future queries.
-		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
-			for _, hash := range hashes {
-				cache.AddHashToCache(hash)
-			}
-		}
-		return protocolMessage
-	}
-
 	relayRequestData := protocolMessage.RelayPrivateData()
 	if relayRequestData == nil {
 		utils.LavaFormatError("Relay request data is nil", nil, utils.LogAttr("GUID", ctx))
 		return protocolMessage
 	}
 	userData := protocolMessage.GetUserData()
+
+	// Cache hashes if we got upgraded and still got node errors (>= 2), meaning upgrade didn't work
+	hashes := protocolMessage.GetRequestedBlocksHashes()
+	if archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
+		// Validate the following.
+		// 1. That we have applied archive
+		// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
+		// Now we know we have applied archive and failed.
+		// Set all hashes as irrelevant for future queries.
+		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
+			for _, hash := range hashes {
+				cache.AddHashToCache(hash)
+			}
+		}
+		// Don't return here - continue to removal logic below
+	}
+
 	if !archiveStatus.isArchive.Load() && numberOfRetriesLaunched == 1 {
 		utils.LavaFormatTrace("Launching archive on first retry", utils.LogAttr("GUID", ctx))
 		// Launch archive only on the second retry attempt.
@@ -209,7 +208,7 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 		}
 	} else if archiveStatus.isUpgraded.Load() && numberOfRetriesLaunched == 2 {
 		utils.LavaFormatTrace("Removing archive on second retry", utils.LogAttr("GUID", ctx))
-		// Remove archive extension when on second retry
+		// Remove archive extension when on second retry (works for both node errors and protocol errors)
 		filteredExtensions := make([]string, 0, len(relayRequestData.Extensions))
 		for _, ext := range relayRequestData.Extensions {
 			if ext != extensionslib.ArchiveExtension {
@@ -224,6 +223,7 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 			return protocolMessage
 		} else {
 			archiveStatus.isArchive.Store(false)
+			utils.LavaFormatTrace("[Archive Debug] Archive extension removed successfully", utils.LogAttr("GUID", ctx))
 			return newProtocolMessage
 		}
 	}
