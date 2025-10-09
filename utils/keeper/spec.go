@@ -24,7 +24,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v5/x/spec/client/utils"
+	utils "github.com/lavanet/lava/v5/utils"
+	specutils "github.com/lavanet/lava/v5/x/spec/client/utils"
 	"github.com/lavanet/lava/v5/x/spec/keeper"
 	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -74,8 +75,8 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	return k, ctx, nil
 }
 
-func decodeProposal(path string) (utils.SpecAddProposalJSON, error) {
-	proposal := utils.SpecAddProposalJSON{}
+func decodeProposal(path string) (specutils.SpecAddProposalJSON, error) {
+	proposal := specutils.SpecAddProposalJSON{}
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return proposal, err
@@ -256,6 +257,18 @@ func GetSpecFromLocalDir(specPath string, index string) (types.Spec, error) {
 		return types.Spec{}, fmt.Errorf("multiple errors occurred: %v", errs)
 	}
 
+	// Log loaded specs for debugging
+	if len(specs) > 0 {
+		specIDs := make([]string, 0, len(specs))
+		for id := range specs {
+			specIDs = append(specIDs, id)
+		}
+		utils.LavaFormatInfo("Loaded specs from local directory",
+			utils.LogAttr("spec_count", len(specs)),
+			utils.LogAttr("directory", specPath),
+			utils.LogAttr("spec_ids", strings.Join(specIDs, ", ")))
+	}
+
 	spec, err := expandSpec(specs, index)
 	if err != nil {
 		return types.Spec{}, err
@@ -338,19 +351,30 @@ func convertGitHubURLToRaw(input string) (string, error) {
 	}
 
 	// Use raw.githubusercontent.com instead of GitHub API
-	rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path)
+	// Don't add trailing slash if path is empty to avoid double slashes when appending filenames
+	if path != "" {
+		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path)
+		return rawURL, nil
+	}
+	rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s", owner, repo, branch)
 	return rawURL, nil
-}
-
-func getAllSpecs(url string) (map[string]types.Spec, error) {
-	return getAllSpecsWithToken(url, "")
 }
 
 func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec, error) {
 	// First, get the list of files using GitHub API (only 1 API call)
 	githubAPIURL, err := convertGitHubURLToAPI(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert GitHub URL to API format: %w", err)
+	}
+
+	utils.LavaFormatInfo("Fetching spec file list from GitHub",
+		utils.LogAttr("url", githubAPIURL))
+	if githubToken != "" {
+		utils.LavaFormatInfo("Using GitHub token authentication",
+			utils.LogAttr("token_prefix", githubToken[:4]))
+	} else {
+		utils.LavaFormatInfo("Using unauthenticated GitHub access",
+			utils.LogAttr("rate_limit", "60 req/hour"))
 	}
 
 	// Create a context with timeout
@@ -360,7 +384,7 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 	// Create a new request with context
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPIURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	// Add GitHub token authentication if provided
@@ -371,11 +395,12 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 	// Execute the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch from GitHub API: %w (check network connectivity)", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch %s (status: %d)", githubAPIURL, resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API returned error (status: %d, url: %s, body: %s)", resp.StatusCode, githubAPIURL, string(body))
 	}
 
 	// Parse the GitHub API response
@@ -385,14 +410,14 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 	}
 	err = json.NewDecoder(resp.Body).Decode(&files)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse GitHub API response: %w", err)
 	}
 
 	// Filter for .json files and convert to raw URLs
 	var specFiles []string
 	rawBaseURL, err := convertGitHubURLToRaw(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert GitHub URL to raw format: %w", err)
 	}
 
 	for _, file := range files {
@@ -401,53 +426,114 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 		}
 	}
 	if len(specFiles) == 0 {
-		return nil, fmt.Errorf("no spec files found")
+		return nil, fmt.Errorf("no .json spec files found in repository")
 	}
 
-	specs := map[string]types.Spec{}
+	utils.LavaFormatInfo("Found spec files to fetch",
+		utils.LogAttr("file_count", len(specFiles)))
 
-	// Now fetch each spec file using raw URLs (no API calls)
+	// Fetch files in parallel with worker pool (10 concurrent workers)
+	type fetchResult struct {
+		specs  map[string]types.Spec
+		errors []string
+	}
+
+	resultChan := make(chan fetchResult, len(specFiles))
+	semaphore := make(chan struct{}, 10) // Limit concurrent requests
+
 	for _, specFile := range specFiles {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, specFile, nil)
-		if err != nil {
-			cancel()
-			continue
-		}
+		go func(url string) {
+			semaphore <- struct{}{}        // Acquire
+			defer func() { <-semaphore }() // Release
 
-		// Add GitHub token authentication for raw URLs if provided
-		if githubToken != "" {
-			req.Header.Set("Authorization", "token "+githubToken)
-		}
+			result := fetchResult{specs: map[string]types.Spec{}}
 
-		resp, err := http.DefaultClient.Do(req)
-		cancel()
-		if err != nil {
-			continue // File doesn't exist or network error, skip
-		}
+			var content []byte
 
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			continue // File doesn't exist, skip
-		}
+			// Single attempt with longer timeout (parallel fetching is faster overall)
+			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			defer cancel()
 
-		content, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			continue
-		}
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				result.errors = append(result.errors, fmt.Sprintf("%s: failed to create request: %v", url, err))
+				resultChan <- result
+				return
+			}
 
-		// Parse the JSON content into a spec proposal
-		var proposal utils.SpecAddProposalJSON
-		err = json.Unmarshal(content, &proposal)
-		if err != nil {
-			continue
-		}
+			// Add GitHub token authentication for raw URLs if provided
+			if githubToken != "" {
+				req.Header.Set("Authorization", "token "+githubToken)
+			}
 
-		for _, spec := range proposal.Proposal.Specs {
-			specs[spec.Index] = spec
-		}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				result.errors = append(result.errors, fmt.Sprintf("%s: %v", url, err))
+				resultChan <- result
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				result.errors = append(result.errors, fmt.Sprintf("%s: HTTP %d", url, resp.StatusCode))
+				resultChan <- result
+				return
+			}
+
+			content, err = io.ReadAll(resp.Body)
+			if err != nil {
+				result.errors = append(result.errors, fmt.Sprintf("%s: failed to read body: %v", url, err))
+				resultChan <- result
+				return
+			}
+
+			// Parse the JSON content into a spec proposal
+			var proposal specutils.SpecAddProposalJSON
+			err = json.Unmarshal(content, &proposal)
+			if err != nil {
+				result.errors = append(result.errors, fmt.Sprintf("%s: failed to parse JSON: %v", url, err))
+				resultChan <- result
+				return
+			}
+
+			for _, spec := range proposal.Proposal.Specs {
+				result.specs[spec.Index] = spec
+			}
+
+			resultChan <- result
+		}(specFile)
 	}
+
+	// Collect results
+	specs := map[string]types.Spec{}
+	var fetchErrors []string
+
+	for i := 0; i < len(specFiles); i++ {
+		result := <-resultChan
+		for k, v := range result.specs {
+			specs[k] = v
+		}
+		fetchErrors = append(fetchErrors, result.errors...)
+	}
+
+	// Log any fetch errors
+	if len(fetchErrors) > 0 {
+		utils.LavaFormatWarning("Errors occurred while fetching spec files", nil,
+			utils.LogAttr("error_count", len(fetchErrors)),
+			utils.LogAttr("errors", strings.Join(fetchErrors, "; ")))
+	}
+
+	// Log loaded specs for debugging
+	if len(specs) > 0 {
+		specIDs := make([]string, 0, len(specs))
+		for id := range specs {
+			specIDs = append(specIDs, id)
+		}
+		utils.LavaFormatInfo("Loaded specs from GitHub",
+			utils.LogAttr("spec_count", len(specs)),
+			utils.LogAttr("spec_ids", strings.Join(specIDs, ", ")))
+	}
+
 	return specs, nil
 }
 
@@ -458,7 +544,12 @@ func expandSpec(specs map[string]types.Spec, index string) (*types.Spec, error) 
 	}
 	spec, ok := specs[index]
 	if !ok {
-		return nil, fmt.Errorf("spec not found for chainId: %s", index)
+		// List available specs for better debugging
+		availableSpecs := make([]string, 0, len(specs))
+		for id := range specs {
+			availableSpecs = append(availableSpecs, id)
+		}
+		return nil, fmt.Errorf("spec not found for chainId: %s (available specs: %v)", index, availableSpecs)
 	}
 	depends := map[string]bool{index: true}
 	inherit := map[string]bool{}
