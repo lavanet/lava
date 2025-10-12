@@ -46,7 +46,7 @@ func TestStaticProviderUsesNameInMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pu := &PairingUpdater{}
-			
+
 			providers := []*lavasession.RPCStaticProviderEndpoint{
 				{
 					ChainID:      "ETH1",
@@ -73,10 +73,10 @@ func TestStaticProviderUsesNameInMetrics(t *testing.T) {
 			for _, session := range sessions {
 				// This is the key assertion: PublicLavaAddress should contain the provider name
 				require.Equal(t, tt.providerName, session.PublicLavaAddress, tt.description)
-				
+
 				// Verify it's marked as static
 				require.True(t, session.StaticProvider, "Should be marked as static provider")
-				
+
 				// The PublicLavaAddress should NOT be a blockchain address format
 				// (blockchain addresses start with "lava1" or similar prefixes)
 				require.NotContains(t, session.PublicLavaAddress, "lava1", "Should not be a blockchain address")
@@ -89,7 +89,7 @@ func TestStaticProviderUsesNameInMetrics(t *testing.T) {
 // will access the provider identifier through PublicLavaAddress
 func TestStaticProviderPublicAddressUsedInMetricsFlow(t *testing.T) {
 	pu := &PairingUpdater{}
-	
+
 	// Create static providers with different names
 	providers := []*lavasession.RPCStaticProviderEndpoint{
 		{
@@ -130,7 +130,7 @@ func TestStaticProviderPublicAddressUsedInMetricsFlow(t *testing.T) {
 	// Verify we got the provider names, not addresses
 	require.Contains(t, providerIdentifiers, "Ethereum-Provider-Primary", "Should contain first provider name")
 	require.Contains(t, providerIdentifiers, "Ethereum-Provider-Secondary", "Should contain second provider name")
-	
+
 	// Verify these are human-readable names, not addresses
 	for _, identifier := range providerIdentifiers {
 		require.NotEmpty(t, identifier, "Identifier should not be empty")
@@ -143,7 +143,7 @@ func TestStaticProviderPublicAddressUsedInMetricsFlow(t *testing.T) {
 // how static providers and regular providers appear in metrics
 func TestStaticProviderVsRegularProviderInMetrics(t *testing.T) {
 	pu := &PairingUpdater{}
-	
+
 	// Create a static provider
 	staticProviders := []*lavasession.RPCStaticProviderEndpoint{
 		{
@@ -174,8 +174,8 @@ func TestStaticProviderVsRegularProviderInMetrics(t *testing.T) {
 
 	// Verify static provider uses name
 	require.Equal(t, "Static-Provider-Name", staticIdentifier, "Static provider should use configured name")
-	
-	// Note: Regular providers would use NewConsumerSessionWithProvider(address, ...) 
+
+	// Note: Regular providers would use NewConsumerSessionWithProvider(address, ...)
 	// where address is a blockchain address like "lava1..."
 	// Static providers use NewConsumerSessionWithProvider(name, ...) where name is the configured name
 	require.NotContains(t, staticIdentifier, "lava1", "Static provider should not use blockchain address format")
@@ -184,7 +184,7 @@ func TestStaticProviderVsRegularProviderInMetrics(t *testing.T) {
 // TestConsumerMetricsKeyGeneration verifies how metrics keys are generated for static providers
 func TestConsumerMetricsKeyGeneration(t *testing.T) {
 	pu := &PairingUpdater{}
-	
+
 	providers := []*lavasession.RPCStaticProviderEndpoint{
 		{
 			ChainID:      "ETH1",
@@ -216,7 +216,7 @@ func TestConsumerMetricsKeyGeneration(t *testing.T) {
 		// For static provider, this key should contain the name
 		require.Equal(t, "MyProviderjsonrpc", metricsKey, "Metrics key should use provider name")
 		require.Contains(t, metricsKey, "MyProvider", "Metrics key should contain provider name")
-		
+
 		// Verify provider endpoint for liveness metrics
 		providerEndpoint := session.Endpoints[0].NetworkAddress
 		require.Equal(t, "https://example.com", providerEndpoint, "Should have correct endpoint")
@@ -242,7 +242,7 @@ func TestStaticProviderNamePreservationThroughFlow(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pu := &PairingUpdater{}
-			
+
 			providers := []*lavasession.RPCStaticProviderEndpoint{
 				{
 					ChainID:      "ETH1",
@@ -265,9 +265,9 @@ func TestStaticProviderNamePreservationThroughFlow(t *testing.T) {
 
 			for _, session := range sessions {
 				// The name should be exactly preserved
-				require.Equal(t, tc.providerName, session.PublicLavaAddress, 
+				require.Equal(t, tc.providerName, session.PublicLavaAddress,
 					"Provider name should be exactly preserved in PublicLavaAddress")
-				
+
 				// Verify it's accessible as the "provider address" for metrics
 				providerAddressForMetrics := session.PublicLavaAddress
 				require.Equal(t, tc.providerName, providerAddressForMetrics,
@@ -276,4 +276,3 @@ func TestStaticProviderNamePreservationThroughFlow(t *testing.T) {
 		})
 	}
 }
-

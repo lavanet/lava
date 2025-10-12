@@ -86,4 +86,3 @@ func TestParseStaticProviderEndpoints_RequiresName(t *testing.T) {
 		})
 	}
 }
-
