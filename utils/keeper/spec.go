@@ -31,6 +31,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	// GitHub API request timeout
+	githubAPIRequestTimeout = 5 * time.Second
+	// Individual spec file fetch timeout when fetching in parallel
+	specFileFetchTimeout = 45 * time.Second
+	// Maximum number of concurrent workers for parallel spec file fetching
+	maxConcurrentSpecFetches = 10
+)
+
 func SpecKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	keep, ctx, err := specKeeper()
 	require.NoError(t, err)
@@ -378,7 +387,7 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 	}
 
 	// Create a context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), githubAPIRequestTimeout)
 	defer cancel()
 
 	// Create a new request with context
@@ -440,19 +449,19 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 	}
 
 	resultChan := make(chan fetchResult, len(specFiles))
-	semaphore := make(chan struct{}, 10) // Limit concurrent requests
+	workerSemaphore := make(chan struct{}, maxConcurrentSpecFetches) // Limit concurrent requests
 
 	for _, specFile := range specFiles {
 		go func(url string) {
-			semaphore <- struct{}{}        // Acquire
-			defer func() { <-semaphore }() // Release
+			workerSemaphore <- struct{}{}        // Acquire
+			defer func() { <-workerSemaphore }() // Release
 
 			result := fetchResult{specs: map[string]types.Spec{}}
 
 			var content []byte
 
 			// Single attempt with longer timeout (parallel fetching is faster overall)
-			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), specFileFetchTimeout)
 			defer cancel()
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -515,6 +524,10 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 			specs[k] = v
 		}
 		fetchErrors = append(fetchErrors, result.errors...)
+	}
+
+	if len(specs) == 0 {
+		return nil, fmt.Errorf("no specs found")
 	}
 
 	// Log any fetch errors
