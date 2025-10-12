@@ -94,7 +94,7 @@ func (s *strategyValue) Type() string {
 
 type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
-	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint)
+	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -135,8 +135,8 @@ type rpcConsumerStartOptions struct {
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
 	refererData              *chainlib.RefererData
-	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
-	backupProvidersList      []*lavasession.RPCProviderEndpoint // define backup providers as emergency fallback when no providers available
+	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as backup to lava providers
+	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
 }
 
@@ -359,7 +359,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	}
 
 	// Filter the relevant static providers
-	relevantStaticProviderList := []*lavasession.RPCProviderEndpoint{}
+	relevantStaticProviderList := []*lavasession.RPCStaticProviderEndpoint{}
 	for _, staticProvider := range options.staticProvidersList {
 		if staticProvider.ChainID == rpcEndpoint.ChainID {
 			relevantStaticProviderList = append(relevantStaticProviderList, staticProvider)
@@ -613,28 +613,36 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				gasPricesStr = statetracker.DefaultGasPrice
 			}
 
-			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProvider function
-			var staticProviderEndpoints []*lavasession.RPCProviderEndpoint
+			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
+			var staticProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
 			if viper.IsSet(common.StaticProvidersConfigName) {
-				staticProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
+				staticProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
 				if err != nil {
 					return utils.LavaFormatError("invalid static providers definition", err)
 				}
 				for _, endpoint := range staticProviderEndpoints {
-					utils.LavaFormatInfo("Static Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
+					utils.LavaFormatInfo("Static Provider Endpoint:",
+						utils.Attribute{Key: "Name", Value: endpoint.Name},
+						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
+						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
+						utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
 				}
 			}
 
-			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseEndpointsCustomName function
-			var backupProviderEndpoints []*lavasession.RPCProviderEndpoint
+			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
+			var backupProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
 			if viper.IsSet(common.BackupProvidersConfigName) {
 				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
-				backupProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
+				backupProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
 				if err != nil {
 					return utils.LavaFormatError("invalid backup providers definition", err)
 				}
 				for _, endpoint := range backupProviderEndpoints {
-					utils.LavaFormatInfo("Backup Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
+					utils.LavaFormatInfo("Backup Provider Endpoint:",
+						utils.Attribute{Key: "Name", Value: endpoint.Name},
+						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
+						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
+						utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
 				}
 			}
 
