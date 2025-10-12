@@ -416,7 +416,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
-	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker)
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker, rpcp.githubToken)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
