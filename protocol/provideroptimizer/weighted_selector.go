@@ -49,11 +49,11 @@ type WeightedSelectorConfig struct {
 // DefaultWeightedSelectorConfig returns a configuration with balanced default weights
 func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 	return WeightedSelectorConfig{
-		AvailabilityWeight: 0.2, // Availability is most important
-		LatencyWeight:      0.2, // Latency is second priority
-		SyncWeight:         0.2, // Sync is third priority
-		StakeWeight:        0.4, // Stake provides small boost
-		MinSelectionChance: 0.05, // 5% minimum chance to ensure fairness
+		AvailabilityWeight: 0.4,  // Availability is most important (40%)
+		LatencyWeight:      0.3,  // Latency is second priority (30%)
+		SyncWeight:         0.2,  // Sync is third priority (20%)
+		StakeWeight:        0.1,  // Stake provides small boost (10%)
+		MinSelectionChance: 0.01, // 1% minimum chance to ensure fairness
 		Strategy:           StrategyBalanced,
 	}
 }
