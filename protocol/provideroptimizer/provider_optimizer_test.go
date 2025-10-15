@@ -285,8 +285,8 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
-	// Make sync difference more significant - 20 blocks behind
-	badSyncBlock := syncBlock - 20
+	// Make sync difference very significant - 50 blocks behind to ensure deterministic behavior
+	badSyncBlock := syncBlock - 50
 
 	// Give all providers the same latency, but vary sync to test sync weighting
 	// Three random providers get good sync, seven get significantly worse sync
@@ -302,14 +302,16 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		if len(threeOthers) < 3 {
 			threeOthers = append(threeOthers, i)
 		}
-		// Bad sync providers: 20 blocks behind with same latency
+		// Bad sync providers: 50 blocks behind with same latency
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, cu, badSyncBlock)
 	}
 
 	time.Sleep(4 * time.Millisecond)
 
 	// Weighted selection should favor providers with lower block error probability
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	// Use more iterations to reduce variance
+	iterations := 2000
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// With weighted selection, providers with better sync should get more selections
 	// But distribution is more even across all providers due to other QoS factors and minimum selection chance
@@ -320,11 +322,15 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 			sumBadSync += results[addr]
 		}
 	}
-	// Good sync providers should collectively get more than bad sync providers (3 vs 7 providers)
-	// Normalized by provider count: sumGoodSync/3 should be > sumBadSync/7
+	// Good sync providers should collectively get significantly more than bad sync providers (3 vs 7 providers)
+	// Normalized by provider count: sumGoodSync/3 should be significantly > sumBadSync/7
+	// Use a margin to account for probabilistic variance: avgGoodSync should be at least 10% higher
 	avgGoodSync := float64(sumGoodSync) / 3.0
 	avgBadSync := float64(sumBadSync) / 7.0
-	require.Greater(t, avgGoodSync, avgBadSync, "providers with good sync should be selected more on average")
+	minExpectedGood := avgBadSync * 1.10 // At least 10% higher average selection rate
+	require.Greater(t, avgGoodSync, minExpectedGood,
+		"providers with good sync should be selected significantly more on average (found good=%.1f, bad=%.1f, expected>%.1f)",
+		avgGoodSync, avgBadSync, minExpectedGood)
 }
 
 // TestProviderOptimizerUpdatingLatency tests checks that repeatedly adding better results
