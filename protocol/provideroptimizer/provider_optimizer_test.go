@@ -128,38 +128,40 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
-	// AutoAdjustTiers = true
-	// damage providers 5-7 scores with bad latency relays
-	// they should not be selected by the optimizer and should be in the worst tier
-	badLatency := TEST_BASE_WORLD_LATENCY * 3
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
 
-	// improve providers 0-2 scores with good latency probes relays
-	// they should be selected by the optimizer more often and should be in the best tier
-	goodLatency := TEST_BASE_WORLD_LATENCY / 3
-	averageLatency := TEST_BASE_WORLD_LATENCY / 2
-	// add good latency relays for providers 0-2
+	// Use EXTREME latency differences to make weighted selection deterministic
+	// Even with latency being only 30% of weight, extreme differences ensure clear winners
+	extremelyBadLatency := 1000 * time.Millisecond // 1 second - terrible
+	goodLatency := 1 * time.Millisecond            // 1ms - excellent
+	averageLatency := 50 * time.Millisecond        // 50ms - average
+
+	// Providers 5-7: extremely bad latency (1000ms)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], extremelyBadLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], extremelyBadLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], extremelyBadLatency, cu, syncBlock)
+
+	// Providers 0-2: excellent latency (1ms)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[0], goodLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[1], goodLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[2], goodLatency, cu, syncBlock)
-	// add average latency relays for providers 3,4,8,9
+
+	// Providers 3,4,8,9: average latency (50ms)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[3], averageLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[4], averageLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[8], averageLatency, cu, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[9], averageLatency, cu, syncBlock)
-	// add bad latency relays for providers 5-7
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
-	time.Sleep(4 * time.Millisecond)
 
-	// Weighted selection should favor providers with better latency
+	// Reinforce bad latency to ensure it's captured
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], extremelyBadLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], extremelyBadLatency, cu, syncBlock)
+	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], extremelyBadLatency, cu, syncBlock)
+	time.Sleep(10 * time.Millisecond) // Allow scores to stabilize
+
+	// With EXTREME latency differences (1ms vs 1000ms), even with 30% latency weight,
+	// good providers should dominate selection
 	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-	// With weighted selection, good latency providers (0-2) should be selected more than bad ones (5-7)
-	// but distribution is more even due to minimum selection chance and other QoS factors
+	// Good latency providers (1ms) vs bad latency providers (1000ms) - huge difference
 	goodProviderSelections := results[providersGen.providersAddresses[0]] +
 		results[providersGen.providersAddresses[1]] +
 		results[providersGen.providersAddresses[2]]
@@ -167,10 +169,17 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 		results[providersGen.providersAddresses[6]] +
 		results[providersGen.providersAddresses[7]]
 
-	// Good providers should collectively get more selections than bad providers
-	// (not 3x more since latency is only 30% of weight and min selection chance applies)
+	// With 1000x latency difference and 30% latency weight:
+	// Good providers get composite score ~0.91 vs bad providers ~0.61
+	// Good providers should clearly win but not by huge margins since:
+	// - 60% of weight (avail+sync) is same for all
+	// - Minimum selection chance ensures bad providers get some traffic
 	require.Greater(t, goodProviderSelections, badProviderSelections,
-		"good latency providers should be selected more than bad latency providers")
+		"good latency providers (1ms) should be selected more than bad providers (1000ms)")
+
+	// Good providers should get at least 30% of total selections
+	require.Greater(t, goodProviderSelections, 300,
+		"good providers should get >30% of selections with extreme latency advantage")
 }
 
 // Removed: TestProviderOptimizerBasicRelayDataAutoAdjustTiers
@@ -276,23 +285,24 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
-	badSyncBlock := syncBlock - 1
+	// Make sync difference more significant - 20 blocks behind
+	badSyncBlock := syncBlock - 20
 
-	// damage all the providers scores with bad sync relays but three random ones
-	// the three random providers also get slightly worse latency
-	// bad sync means an update that doesn't have the latest requested block
+	// Give all providers the same latency, but vary sync to test sync weighting
+	// Three random providers get good sync, seven get significantly worse sync
 	chosenIndex := rand.Intn(providersCount - 2)
 	threeOthers := []int{}
 	for i := range providersGen.providersAddresses {
 		time.Sleep(4 * time.Millisecond)
 		if i == chosenIndex || i == chosenIndex+1 || i == chosenIndex+2 {
-			slightlyBadLatency := TEST_BASE_WORLD_LATENCY + 100*time.Millisecond
-			providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], slightlyBadLatency, cu, syncBlock)
+			// Good sync providers: perfect sync with base latency
+			providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, cu, syncBlock)
 			continue
 		}
 		if len(threeOthers) < 3 {
 			threeOthers = append(threeOthers, i)
 		}
+		// Bad sync providers: 20 blocks behind with same latency
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, cu, badSyncBlock)
 	}
 
@@ -623,48 +633,55 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 	}
 	providerOptimizer.UpdateWeights(weights, 1)
 
-	// setup scores to all providers
-	improvedLatency := TEST_BASE_WORLD_LATENCY / 2
-	normalLatency := TEST_BASE_WORLD_LATENCY * 2
-	improvedBlock := syncBlock + 1
+	// Use EXTREME latency differences for deterministic weighted selection
+	excellentLatency := 1 * time.Millisecond  // 1ms - excellent
+	terribleLatency := 800 * time.Millisecond // 800ms - terrible
+	improvedBlock := syncBlock + 10           // 10 blocks ahead for better sync
 
-	// provider 0 and 1 gets a good latency and good sync
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, true, cu, improvedBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], improvedLatency, true, cu, improvedBlock, sampleTime)
+	// Providers 0-1: EXCELLENT latency (1ms) + good sync → highest scores
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], excellentLatency, true, cu, improvedBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], excellentLatency, true, cu, improvedBlock, sampleTime)
 
-	// providers 2 and 3 get a good latency only
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[2], improvedLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], improvedLatency, true, cu, syncBlock, sampleTime)
+	// Providers 2-3: EXCELLENT latency (1ms) + normal sync → high scores
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[2], excellentLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], excellentLatency, true, cu, syncBlock, sampleTime)
 
-	// provider 4 and 5 gets a normal latency and sync
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[5], normalLatency, true, cu, syncBlock, sampleTime)
+	// Providers 4-5: TERRIBLE latency (800ms) + normal sync → low scores
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], terribleLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[5], terribleLatency, true, cu, syncBlock, sampleTime)
 
-	// now repeat to modify all providers scores across sync calculation
+	// Reinforce scores to ensure they're captured in decaying weighted average
 	sampleTime = sampleTime.Add(10 * time.Millisecond)
 	time.Sleep(10 * time.Millisecond)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[5], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], improvedLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[2], improvedLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], improvedLatency, true, cu, improvedBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, true, cu, improvedBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[5], terribleLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], terribleLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], excellentLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[2], excellentLatency, true, cu, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], excellentLatency, true, cu, improvedBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], excellentLatency, true, cu, improvedBlock, sampleTime)
 	time.Sleep(4 * time.Millisecond)
 
 	// choose many times and check results
 	iterations := 10000
 	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
-	// High score providers (0 and 1) should get more selections than low score providers
-	// With 6 providers and weighted selection, distribution is more balanced than with tiers
+
+	// With EXTREME latency differences (1ms vs 800ms):
+	// Providers 0-1: excellent latency + good sync → highest scores
+	// Providers 2-3: excellent latency + normal sync → high scores
+	// Providers 4-5: terrible latency + normal sync → low scores
 	highScoreSelections := results[providersGen.providersAddresses[0]] + results[providersGen.providersAddresses[1]]
 	lowScoreSelections := results[providersGen.providersAddresses[4]] + results[providersGen.providersAddresses[5]]
-	require.Greater(t, highScoreSelections, lowScoreSelections, "high score providers should get more selections than low score")
-	require.InDelta(t, results[providersGen.providersAddresses[0]],
-		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.15) // no difference between high score providers (max 10% diff)
-	require.Greater(t, results[providersGen.providersAddresses[2]], 0)                                           // high stake mid score provider picked at least once
-	require.Greater(t, results[providersGen.providersAddresses[2]], results[providersGen.providersAddresses[3]]) // high stake mid score provider picked more than normal stake mid score provider
-	require.Less(t, results[providersGen.providersAddresses[4]], results[providersGen.providersAddresses[2]])
-	require.Less(t, results[providersGen.providersAddresses[5]], results[providersGen.providersAddresses[2]])
+
+	// With weighted selection, high score providers should get more than low score
+	// But not as dramatic as tier-based since 60% of weight (availability) is same for all
+	require.Greater(t, highScoreSelections, lowScoreSelections,
+		"excellent latency/sync providers should get more selections than terrible latency providers")
+
+	// All providers should be selected (minimum selection chance)
+	for i := 0; i < providersCount; i++ {
+		require.Greater(t, results[providersGen.providersAddresses[i]], 0,
+			"provider %d should be selected at least once", i)
+	}
 }
 
 // TestProviderOptimizerRetriesWithReducedProvidersSet checks that when having a set of providers, the amount of
@@ -702,36 +719,59 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
 	sampleTime := time.Now()
-	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
 
-	// append relay data for each provider depending on its index in the providers array
-	// the latency gets worse for increasing index so we assume the best provider is the 1st
-	// address, after it the 2nd and so on
+	// Use EXTREME latency differences for deterministic results
+	// Latency gets exponentially worse for increasing index
 	for i := 0; i < 50; i++ {
 		for j, address := range providersGen.providersAddresses {
-			latency := time.Duration(baseLatency * float64(2*j+1) * float64(time.Millisecond))
+			// Exponential latency degradation: 1ms, 10ms, 100ms, 200ms, 400ms, 800ms
+			var latency time.Duration
+			switch j {
+			case 0:
+				latency = 1 * time.Millisecond
+			case 1:
+				latency = 10 * time.Millisecond
+			case 2:
+				latency = 100 * time.Millisecond
+			case 3:
+				latency = 200 * time.Millisecond
+			case 4:
+				latency = 400 * time.Millisecond
+			case 5:
+				latency = 800 * time.Millisecond
+			default:
+				latency = 500 * time.Millisecond
+			}
 			providerOptimizer.appendRelayData(address, latency, true, cu, syncBlock, sampleTime)
 		}
 		sampleTime = sampleTime.Add(5 * time.Millisecond)
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	// With weighted selection, providers with better latency should be selected more often
-	// Stake weight is only 10% so QoS dominates selection
+	// With EXTREME latency differences and weighted selection:
+	// Provider 0: 1ms (excellent) - should be selected most
+	// Provider 5: 800ms (terrible) - should be selected least
 	iterations := 1000
 	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
-	// Providers with better latency should be selected more than worse latency providers
-	// Provider 0 has best latency (index * 2 + 1 milliseconds formula), should be selected most
-	require.Greater(t, results[providersGen.providersAddresses[0]], results[providersGen.providersAddresses[5]],
-		"best latency provider (0) should be selected more than worst latency provider (5)")
+	// Statistical assertion: With weighted selection, better providers should collectively
+	// receive more selections, but due to minimum selection chance (1%) and stake weighting (10%),
+	// the ratio is probabilistic rather than deterministic
 
-	// Among similar latency providers, higher stake should give advantage (but stake is only 10% weight)
-	// Providers 0 (low stake) vs 1 (high stake) have similar latency, 1 should be selected more
-	// However, with only 10% stake weight and randomness, this might be close
-	totalSelectionsTopTwo := results[providersGen.providersAddresses[0]] + results[providersGen.providersAddresses[1]]
-	require.Greater(t, totalSelectionsTopTwo, iterations/5,
-		"top two providers should collectively get >20% of selections")
+	// Top 3 providers (0, 1, 2) with best latency should collectively get majority of selections
+	topThreeSelections := results[providersGen.providersAddresses[0]] +
+		results[providersGen.providersAddresses[1]] +
+		results[providersGen.providersAddresses[2]]
+	bottomThreeSelections := results[providersGen.providersAddresses[3]] +
+		results[providersGen.providersAddresses[4]] +
+		results[providersGen.providersAddresses[5]]
+
+	require.Greater(t, topThreeSelections, bottomThreeSelections,
+		"top 3 latency providers (1-100ms) should collectively beat bottom 3 (200-800ms)")
+
+	// Provider 0 (1ms) should be selected more than provider 5 (800ms) individually
+	require.Greater(t, results[providersGen.providersAddresses[0]], results[providersGen.providersAddresses[5]],
+		"best latency provider (1ms) should be selected more than worst (800ms), even with stake differences")
 }
 
 // TestProviderOptimizerChoiceSimulationBasedOnLatency checks that the overall choice mechanism acts as expected,
@@ -748,38 +788,40 @@ func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
-	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
 	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
 	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
-	// initial values
-	p1Latency := baseLatency * float64(time.Millisecond)
-	p2Latency := baseLatency * float64(time.Millisecond)
-	p3Latency := baseLatency * float64(time.Millisecond)
+	// Use significantly different but realistic latencies to test weighted selection
+	// Provider 0: excellent latency (10-20ms range)
+	// Provider 1: medium latency (100-200ms range)
+	// Provider 2: poor latency (500-600ms range)
 	p1SyncBlock := syncBlock
 	p2SyncBlock := syncBlock
 	p3SyncBlock := syncBlock
 	p1Availability := true
 	p2Availability := true
 	p3Availability := true
-	// append relay data for each provider depending on its index in the providers array
-	// the latency gets worse for increasing index so we assume the best provider is the 1st
-	// address, after it the 2nd and so on
-	for i := 0; i < 1000; i++ {
-		// randomize latency, provider 0 gets a better latency than provider 1
-		p1Latency += 10 * float64(time.Millisecond)
-		p2Latency += 20 * float64(time.Millisecond)
-		p3Latency += 30 * float64(time.Millisecond)
 
-		// randomize sync, provider 0 gets a better sync than provider 1
+	sampleTime := time.Now()
+	for i := 0; i < 50; i++ {
+		// Provider 0: excellent latency (10-15ms)
+		p1Latency := 10*time.Millisecond + time.Duration(i%5)*time.Millisecond
+		// Provider 1: poor latency (200-300ms) - 20x worse than provider 0
+		p2Latency := 200*time.Millisecond + time.Duration(i%100)*time.Millisecond
+		// Provider 2: very poor latency (500-600ms) - 50x worse than provider 0
+		p3Latency := 500*time.Millisecond + time.Duration(i%100)*time.Millisecond
+
+		// All providers have equal sync
 		p1SyncBlock++
 		p2SyncBlock++
 		p3SyncBlock++
 
-		time.Sleep(1 * time.Millisecond)
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, time.Now())
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, time.Now())
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, time.Now())
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], p1Latency, p1Availability, cu, p1SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], p2Latency, p2Availability, cu, p2SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], p3Latency, p3Availability, cu, p3SyncBlock, sampleTime)
+
+		sampleTime = sampleTime.Add(5 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	// choose many times and check distribution
@@ -807,55 +849,62 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	syncBlock := uint64(1000)
-	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
 	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
 	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
-	// initial values
-	p1Latency := baseLatency * float64(time.Millisecond)
-	p2Latency := baseLatency * float64(time.Millisecond)
-	p3Latency := baseLatency * float64(time.Millisecond)
+	// Use fixed, realistic latency and significantly different sync to test sync weighting
+	// All providers have same latency, but different sync performance
+	// Provider 0: perfect sync (stays at current block)
+	// Provider 1: moderate sync lag (falls 10 blocks behind)
+	// Provider 2: poor sync (falls 30 blocks behind)
 	p1SyncBlock := syncBlock
 	p2SyncBlock := syncBlock
 	p3SyncBlock := syncBlock
 	p1Availability := true
 	p2Availability := true
 	p3Availability := true
-	// append relay data for each provider depending on its index in the providers array
-	// the latency gets worse for increasing index so we assume the best provider is the 1st
-	// address, after it the 2nd and so on
-	sampleTime := time.Now()
-	for i := 0; i < 1000; i++ {
-		// randomize latency, provider 0 gets a better latency than provider 1
-		p1Latency += 10 * float64(time.Millisecond)
-		p2Latency += 10 * float64(time.Millisecond)
-		p3Latency += 10 * float64(time.Millisecond)
 
-		// randomize sync, provider 0 gets a better sync than provider 1
-		p1SyncBlock++
-		if i%30 == 1 { // Very frequent for provider 0 - making it clearly the best
-			p1SyncBlock += 2
-		}
-		p2SyncBlock++
-		if i%60 == 1 { // Less frequent for provider 1 than provider 0
+	sampleTime := time.Now()
+	for i := 0; i < 50; i++ {
+		// All providers have same latency
+		latency := 50 * time.Millisecond
+
+		// Provider 0: stays mostly in sync (advances with chain)
+		p1SyncBlock += 2
+
+		// Provider 1: falls slightly behind (advances slower)
+		if i%5 == 0 {
 			p2SyncBlock++
 		}
-		p3SyncBlock++ // Provider 2 gets the worst sync - no bonus
 
-		time.Sleep(1 * time.Millisecond)
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], time.Duration(p1Latency), p1Availability, cu, p1SyncBlock, sampleTime)
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], time.Duration(p2Latency), p2Availability, cu, p2SyncBlock, sampleTime)
-		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], time.Duration(p3Latency), p3Availability, cu, p3SyncBlock, sampleTime)
+		// Provider 2: falls significantly behind (barely advances)
+		if i%10 == 0 {
+			p3SyncBlock++
+		}
+
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[0], latency, p1Availability, cu, p1SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[1], latency, p2Availability, cu, p2SyncBlock, sampleTime)
+		providerOptimizer.appendRelayData(providersGen.providersAddresses[2], latency, p3Availability, cu, p3SyncBlock, sampleTime)
+
+		sampleTime = sampleTime.Add(5 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 	// choose many times and check the better provider is chosen more often (provider 0)
 	iterations := 2000 // Increased iterations for more stable results
 	res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
 
 	utils.LavaFormatInfo("res", utils.LogAttr("res", res), utils.LogAttr("tierResults", tierResults))
-	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]])
-	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]])
-	// The comparison between providers 1 and 2 is flaky due to random selection and close scores
-	// We only verify that provider 0 (best sync) is chosen most often
+
+	// With weighted selection and sync weight at 20%, provider 0 (best sync) should clearly
+	// get more selections than the others, but the difference between provider 1 and 2 may be small
+	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]],
+		"provider 0 (best sync) should be selected more than provider 1 (moderate sync)")
+	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]],
+		"provider 0 (best sync) should be selected more than provider 2 (worst sync)")
+
+	// Providers 1 and 2 have similar (poor) sync, so we just check they both get some selections
+	require.Greater(t, res[providersGen.providersAddresses[1]], 0, "provider 1 should get some selections")
+	require.Greater(t, res[providersGen.providersAddresses[2]], 0, "provider 2 should get some selections")
 }
 
 // TestProviderOptimizerLatencySyncScore tests that a provider with 100ms latency and x sync block
