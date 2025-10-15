@@ -1,12 +1,9 @@
 package provideroptimizer
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
-
-	stdMath "math"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,29 +14,20 @@ import (
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/score"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
 // The provider optimizer is a mechanism within the consumer that is responsible for choosing
 // the optimal provider for the consumer.
 // The choice depends on the provider's QoS reputation metrics: latency, sync and availability.
-// Providers are picked by selection tiers that take into account their stake amount and QoS
-// reputation score.
+// Providers are selected using weighted random selection based on their composite QoS scores
+// and stake amounts.
 
 const (
 	CacheMaxCost             = 20000 // each item cost would be 1
 	CacheNumCounters         = 20000 // expect 2000 items
 	DefaultExplorationChance = 0.1
 	CostExplorationChance    = 0.01
-)
-
-var (
-	OptimizerNumTiers = 4 // number of tiers to use
-	MinimumEntries    = 5 // minimum number of entries in a tier to be considered for selection
-	ATierChance       = 0.75
-	LastTierChance    = 0.0
-	AutoAdjustTiers   = false
 )
 
 type ConcurrentBlockStore struct {
@@ -65,23 +53,9 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter // weights are the providers stake
-	OptimizerNumTiers               int               // number of tiers to use
-	OptimizerMinTierEntries         int               // minimum number of entries in a tier to be considered for selection
-	OptimizerQoSSelectionEnabled    bool              // enables QoS-based selection within tiers instead of stake-based
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
-	// Weighted selection fields (new system replacing tiers)
-	useWeightedSelection bool             // Feature flag for gradual rollout
-	weightedSelector     *WeightedSelector // Weighted random selection based on composite QoS scores
-}
-
-// The exploration mechanism makes the optimizer return providers that were not talking
-// to the consumer for a long time (a couple of seconds). This allows better distribution
-// of paired providers by avoiding returning the same best providers over and over.
-// The Exploration struct holds a provider address and last QoS metrics update time (ScoreStore)
-type Exploration struct {
-	address string
-	time    time.Time
+	weightedSelector                *WeightedSelector // Weighted random selection based on composite QoS scores
 }
 
 type ProviderData struct {
@@ -243,166 +217,43 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
+// CalculateQoSScoresForMetrics calculates QoS scores for all providers for metrics reporting
 func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
-	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	reports := []*metrics.OptimizerQoSReport{}
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
+		if qos == nil {
+			return nil, time.Time{}, false
+		}
+		return qos, lastUpdate, true
+	}
 
-	rawScores := selectionTier.GetRawScores()
-	tierChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, map[int]float64{0: ATierChance})
-	for idx, entry := range rawScores {
-		qosReport := providersScores[entry.Address]
-		qosReport.EntryIndex = idx
-		qosReport.TierChances = PrintTierChances(tierChances)
-		qosReport.Tier = po.GetProviderTier(entry.Address, selectionTier)
-		reports = append(reports, qosReport)
+	stakeGetter := func(addr string) int64 {
+		return po.selectionWeighter.Weight(addr)
+	}
+
+	// Calculate provider scores using weighted selector
+	_, qosReports := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
+	)
+
+	// Convert map to slice and add entry indices
+	reports := make([]*metrics.OptimizerQoSReport, 0, len(qosReports))
+	idx := 0
+	for _, report := range qosReports {
+		report.EntryIndex = idx
+		reports = append(reports, report)
+		idx++
 	}
 
 	return reports
 }
 
-func PrintTierChances(tierChances map[int]float64) string {
-	var tierChancesString string
-	for tier, chance := range tierChances {
-		tierChancesString += fmt.Sprintf("%d: %f, ", tier, chance)
-	}
-	return tierChancesString
-}
-
-func (po *ProviderOptimizer) GetProviderTier(providerAddress string, selectionTier SelectionTier) int {
-	selectionTierScoresCount := selectionTier.ScoresCount()
-	numTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	minTierEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-	for tier := 0; tier < numTiersWanted; tier++ {
-		tierProviders := selectionTier.GetTier(tier, numTiersWanted, minTierEntries)
-		for _, provider := range tierProviders {
-			if provider.Address == providerAddress {
-				return tier
-			}
-		}
-	}
-	return -1
-}
-
-func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
-	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
-	selectionTier := NewSelectionTier()
-	providerScores := make(map[string]*metrics.OptimizerQoSReport)
-	for _, providerAddress := range allAddresses {
-		if _, ok := ignoredProviders[providerAddress]; ok {
-			// ignored provider, skip it
-			continue
-		}
-
-		qos, lastUpdateTime := po.GetReputationReportForProvider(providerAddress)
-		if qos == nil {
-			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers",
-				fmt.Errorf("could not get QoS excellece report for provider"),
-				utils.LogAttr("provider", providerAddress),
-			)
-			return NewSelectionTier(), Exploration{}, nil
-		}
-
-		utils.LavaFormatTrace("[Optimizer] scores information",
-			utils.LogAttr("providerAddress", providerAddress),
-			utils.LogAttr("latencyScore", qos.Latency.String()),
-			utils.LogAttr("syncScore", qos.Sync.String()),
-			utils.LogAttr("availabilityScore", qos.Availability.String()),
-		)
-
-		opts := []pairingtypes.Option{pairingtypes.WithStrategyFactor(po.strategy.GetStrategyFactor())}
-		if requestedBlock >= 0 {
-			providerData, found := po.getProviderData(providerAddress)
-			if !found {
-				utils.LavaFormatTrace("[Optimizer] could not get provider data, using default", utils.LogAttr("provider", providerAddress))
-			}
-			// add block error probability config if the request block is positive
-			opts = append(opts, pairingtypes.WithBlockErrorProbability(po.CalculateProbabilityOfBlockError(requestedBlock, providerData)))
-		} else { // all negative blocks (latest/earliest/pending/safe/finalized) will be considered as latest
-			requestedBlock = spectypes.LATEST_BLOCK
-		}
-		score, err := qos.ComputeReputationFloat64(opts...)
-		if err != nil {
-			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers", err,
-				utils.LogAttr("provider", providerAddress),
-				utils.LogAttr("qos_report", qos.String()),
-			)
-			return NewSelectionTier(), Exploration{}, nil
-		}
-		latency, sync, availability := qos.GetScoresFloat64()
-		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
-			ProviderAddress:   providerAddress,
-			SyncScore:         sync,
-			AvailabilityScore: availability,
-			LatencyScore:      latency,
-			GenericScore:      score,
-		}
-
-		selectionTier.AddScore(providerAddress, score)
-
-		// check if candidate for exploration
-		if lastUpdateTime.Add(10*time.Second).Before(time.Now()) && lastUpdateTime.Before(explorationCandidate.time) {
-			// if the provider didn't update its data for 10 seconds, it is a candidate for exploration
-			explorationCandidate = Exploration{address: providerAddress, time: lastUpdateTime}
-		}
-	}
-	return selectionTier, explorationCandidate, providerScores
-}
-
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
+// ChooseProvider returns a subset of selected providers using weighted random selection based on QoS scores
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	// Check if weighted selection is enabled
-	if po.useWeightedSelection {
-		return po.chooseProviderWeighted(allAddresses, ignoredProviders, cu, requestedBlock)
-	}
-
-	// Legacy tier-based selection
-	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock) // spliting to tiers by score
-	selectionTierScoresCount := selectionTier.ScoresCount()                                                                  // length of the selectionTier
-	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-
-	if selectionTierScoresCount == 0 {
-		// no providers to choose from
-		return []string{}, -1
-	}
-	initialChances := map[int]float64{0: ATierChance}
-
-	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	if selectionTierScoresCount >= localMinimumEntries*2 {
-		// if we have more than 2*localMinimumEntries we set the LastTierChance configured
-		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
-	}
-	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
-	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
-	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
-	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, localMinimumEntries)
-	// TODO: add penalty if a provider is chosen too much
-	var selectedProvider string
-	if po.OptimizerQoSSelectionEnabled {
-		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
-	} else {
-		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
-	}
-	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && explorationCandidate.address != selectedProvider && po.shouldExplore(1) {
-		returnedProviders = append(returnedProviders, explorationCandidate.address)
-	}
-	utils.LavaFormatTrace("[Optimizer] returned providers",
-		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
-		utils.LogAttr("shiftedChances", shiftedChances),
-		utils.LogAttr("tier", tier),
-	)
-
-	return returnedProviders, tier
-}
-
-// chooseProviderWeighted uses the weighted selector to choose a provider based on composite QoS scores
-// This is the new selection method that replaces tier-based selection
-func (po *ProviderOptimizer) chooseProviderWeighted(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	if po.weightedSelector == nil {
-		utils.LavaFormatError("[Optimizer] weighted selector not initialized, falling back to tier selection", nil)
-		return po.ChooseProvider(allAddresses, ignoredProviders, cu, requestedBlock)
-	}
-
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -427,7 +278,7 @@ func (po *ProviderOptimizer) chooseProviderWeighted(allAddresses []string, ignor
 
 	if len(providerScores) == 0 {
 		// No providers to choose from
-		utils.LavaFormatWarning("[Optimizer] no providers available for weighted selection", nil)
+		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
 		return []string{}, -1
 	}
 
@@ -457,13 +308,13 @@ func (po *ProviderOptimizer) chooseProviderWeighted(allAddresses []string, ignor
 		returnedProviders = append(returnedProviders, explorationCandidate)
 	}
 
-	utils.LavaFormatTrace("[Optimizer] returned providers (weighted selection)",
+	utils.LavaFormatTrace("[Optimizer] returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
 		utils.LogAttr("selectedScore", getProviderScore(selectedProvider, providerScores)),
 		utils.LogAttr("numScores", len(providerScores)),
 	)
 
-	// Return tier as -1 to indicate weighted selection (no tiers)
+	// Return -1 for tier (no longer using tiers)
 	return returnedProviders, -1
 }
 
@@ -477,18 +328,9 @@ func getProviderScore(address string, scores []ProviderScore) float64 {
 	return 0.0
 }
 
-// chooseProviderWeightedTopTier selects a single provider from the top tier using weighted selection
-// This is used for sticky sessions and other scenarios requiring a single high-quality provider
-func (po *ProviderOptimizer) chooseProviderWeightedTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	if po.weightedSelector == nil {
-		utils.LavaFormatError("[Optimizer] weighted selector not initialized for top tier, falling back to tier selection", nil)
-		// Fallback to legacy implementation
-		po.useWeightedSelection = false
-		result := po.ChooseProviderFromTopTier(allAddresses, ignoredProviders, cu, requestedBlock)
-		po.useWeightedSelection = true
-		return result
-	}
-
+// ChooseProviderFromTopTier selects a single high-quality provider using weighted selection
+// This is used for sticky sessions and other scenarios requiring consistent provider selection
+func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -511,7 +353,7 @@ func (po *ProviderOptimizer) chooseProviderWeightedTopTier(allAddresses []string
 	)
 
 	if len(providerScores) == 0 {
-		utils.LavaFormatWarning("[Optimizer] no providers available for weighted top tier selection", nil)
+		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
 		return []string{}
 	}
 
@@ -519,75 +361,13 @@ func (po *ProviderOptimizer) chooseProviderWeightedTopTier(allAddresses []string
 	// This gives higher probability to better providers while still allowing variety
 	selectedProvider := po.weightedSelector.SelectProvider(providerScores)
 
-	utils.LavaFormatTrace("[Optimizer] returned top tier provider (weighted selection)",
+	utils.LavaFormatTrace("[Optimizer] returned provider",
 		utils.LogAttr("provider", selectedProvider),
 		utils.LogAttr("score", getProviderScore(selectedProvider, providerScores)),
 		utils.LogAttr("numCandidates", len(providerScores)),
 	)
 
 	return []string{selectedProvider}
-}
-
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	// Check if weighted selection is enabled
-	if po.useWeightedSelection {
-		return po.chooseProviderWeightedTopTier(allAddresses, ignoredProviders, cu, requestedBlock)
-	}
-
-	// Legacy tier-based selection
-	selectionTier, _, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	selectionTierScoresCount := selectionTier.ScoresCount()
-	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-
-	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
-	tierProviders := selectionTier.GetTier(0, numberOfTiersWanted, localMinimumEntries)
-	// TODO: add penalty if a provider is chosen too much
-	var selectedProvider string
-	if po.OptimizerQoSSelectionEnabled {
-		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
-	} else {
-		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
-	}
-	returnedProviders := []string{selectedProvider}
-
-	utils.LavaFormatTrace("[Optimizer] returned top tier provider",
-		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
-	)
-
-	return returnedProviders
-}
-
-// GetMinTierEntries gets minimum number of entries in a tier to be considered for selection
-// if AutoAdjustTiers global is true, the number of providers per tier is divided equally
-// between them
-func (po *ProviderOptimizer) GetMinTierEntries(selectionTier SelectionTier, selectionTierScoresCount int) int {
-	localMinimumEntries := po.OptimizerMinTierEntries
-	if AutoAdjustTiers {
-		adjustedProvidersPerTier := int(stdMath.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
-		if localMinimumEntries > adjustedProvidersPerTier {
-			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
-				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
-				utils.LogAttr("was_MinimumEntries", po.OptimizerMinTierEntries),
-				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
-				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
-			localMinimumEntries = adjustedProvidersPerTier
-		}
-	}
-	return localMinimumEntries
-}
-
-// GetNumTiersWanted returns the number of tiers wanted
-// if we have enough providers to create the tiers return the configured number of tiers wanted
-// if not, set the number of tiers to the number of providers we currently have
-func (po *ProviderOptimizer) GetNumTiersWanted(selectionTier SelectionTier, selectionTierScoresCount int) int {
-	numberOfTiersWanted := po.OptimizerNumTiers
-	if selectionTierScoresCount < po.OptimizerNumTiers {
-		numberOfTiersWanted = selectionTierScoresCount
-	}
-
-	return numberOfTiersWanted
 }
 
 // CalculateProbabilityOfBlockError calculates the probability that a provider doesn't a specific requested
@@ -836,14 +616,9 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
-		OptimizerNumTiers:               OptimizerNumTiers,
-		OptimizerMinTierEntries:         MinimumEntries,
-		OptimizerQoSSelectionEnabled:    qosSelectionEnabled,
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
-		// Weighted selection (disabled by default, can be enabled via SetUseWeightedSelection)
-		useWeightedSelection: false,
-		weightedSelector:     weightedSelector,
+		weightedSelector:                weightedSelector,
 	}
 }
 
@@ -895,21 +670,6 @@ func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress stri
 	)
 
 	return report, providerData.Latency.GetLastUpdateTime()
-}
-
-// SetUseWeightedSelection enables or disables weighted selection
-// This method allows toggling between tier-based and weighted selection at runtime
-func (po *ProviderOptimizer) SetUseWeightedSelection(enable bool) {
-	po.useWeightedSelection = enable
-	utils.LavaFormatInfo("[Optimizer] weighted selection mode changed",
-		utils.LogAttr("enabled", enable),
-		utils.LogAttr("chainId", po.chainId),
-	)
-}
-
-// IsWeightedSelectionEnabled returns whether weighted selection is currently enabled
-func (po *ProviderOptimizer) IsWeightedSelectionEnabled() bool {
-	return po.useWeightedSelection
 }
 
 // UpdateWeightedSelectorStrategy updates the weighted selector's strategy
