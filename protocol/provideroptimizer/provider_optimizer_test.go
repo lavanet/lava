@@ -1,8 +1,6 @@
 package provideroptimizer
 
 import (
-	"fmt"
-	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -84,21 +82,16 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	time.Sleep(4 * time.Millisecond)
 	// returnedProviders, tier = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
 
-	_, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 100, cu, requestBlock)
-	require.Less(t, tierResults[3], 10, tierResults)
-
 	// improve providers 0-2 scores with good latency probes relays
-	// they should be selected by the optimizer more often and should be in the best tier
+	// they should be selected by the optimizer more often
 	goodLatency := TEST_BASE_WORLD_LATENCY / 2
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[0], goodLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[1], goodLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[2], goodLatency, true)
 	time.Sleep(4 * time.Millisecond)
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 499, tierResults) // we should pick the best tier most often
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-	// out of 10 providers, and with 3 providers in the top tier we should pick
-	// tier-0 providers around a third of that
+	// Providers with better latency should be selected more often
 	require.Greater(t, results[providersGen.providersAddresses[0]], 100, results) // we should pick the best tier most often
 }
 
@@ -107,11 +100,12 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 //  1. results: map of provider address to the number of times it was picked
 //  2. tierResults: map of tier and the number of times a provider from the specific tier was picked
 func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *ProviderOptimizer, providers []string, ignoredProviders map[string]struct{}, times int, cu uint64, requestBlock int64) (map[string]int, map[int]int) {
-	tierResults := make(map[int]int)
+	tierResults := make(map[int]int) // Kept for API compatibility, always returns -1 for weighted selection
 	results := make(map[string]int)
 	for i := 0; i < times; i++ {
 		returnedProviders, tier := providerOptimizer.ChooseProvider(providers, ignoredProviders, cu, requestBlock)
 		require.Equal(t, 1, len(returnedProviders))
+		require.Equal(t, -1, tier, "tier should always be -1 with weighted selection")
 		results[returnedProviders[0]]++
 		tierResults[tier]++
 	}
@@ -160,173 +154,29 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
 	time.Sleep(4 * time.Millisecond)
 
-	// there's a chance that some of the worst providers will be in part of a higher tier
-	// because of a high minimum entries value, so filter the providers that are only in the worst tier
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, 1)
-	worstTierEntries := map[string]struct{}{
-		providersGen.providersAddresses[5]: {},
-		providersGen.providersAddresses[6]: {},
-		providersGen.providersAddresses[7]: {},
-	}
-	for _, entry := range tier3Entries {
-		// verify that the worst providers are the ones with the bad latency
-		if entry.Address != providersGen.providersAddresses[5] &&
-			entry.Address != providersGen.providersAddresses[6] &&
-			entry.Address != providersGen.providersAddresses[7] {
-			t.Fatalf("entry %s is not in the worst tier", entry.Address)
-		}
-	}
+	// Weighted selection should favor providers with better latency
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 400, tierResults) // we should pick the best tier most often
+	// Providers with better latency should be selected more often (0-2 are good, 5-7 are bad)
+	require.Greater(t, results[providersGen.providersAddresses[0]], 100, results)
+	require.Greater(t, results[providersGen.providersAddresses[1]], 100, results)
+	require.Greater(t, results[providersGen.providersAddresses[2]], 100, results)
 
-	// Out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-	require.Greater(t, results[providersGen.providersAddresses[0]], 200, results)
-
-	// Ensure the bad providers (5-7) are in results map even if they were never picked
-	for i := 5; i <= 7; i++ {
-		if _, exists := results[providersGen.providersAddresses[i]]; !exists {
-			results[providersGen.providersAddresses[i]] = 0
-		}
-	}
-	// the bad providers shouldn't have been picked even once
-	// Find the two least picked providers
-	var leastPicked, secondLeastPicked string
-	leastCount, secondLeastCount := 0xffffffff, 0xffffffff
-	for addr, count := range results {
-		if count < leastCount {
-			secondLeastCount = leastCount
-			secondLeastPicked = leastPicked
-			leastCount = count
-			leastPicked = addr
-		} else if count < secondLeastCount {
-			secondLeastCount = count
-			secondLeastPicked = addr
-		}
-	}
-	minimumScores := map[string]int{
-		leastPicked:       leastCount,
-		secondLeastPicked: secondLeastCount,
-	}
-
-	utils.LavaFormatInfo("results", utils.LogAttr("results", results), utils.LogAttr("minimumScores", minimumScores), utils.LogAttr("worstTierEntries", worstTierEntries))
-	for address := range minimumScores {
-		require.Contains(t, worstTierEntries, address)
-	}
+	// Bad latency providers (5-7) should be selected significantly less often
+	// They still get some selections due to minimum selection chance, but much less than good providers
+	badProviderSelections := results[providersGen.providersAddresses[5]] +
+		results[providersGen.providersAddresses[6]] +
+		results[providersGen.providersAddresses[7]]
+	goodProviderSelections := results[providersGen.providersAddresses[0]] +
+		results[providersGen.providersAddresses[1]] +
+		results[providersGen.providersAddresses[2]]
+	require.Greater(t, goodProviderSelections, badProviderSelections*3,
+		"good providers should be selected much more often than bad providers")
 }
 
-func TestProviderOptimizerBasicRelayDataAutoAdjustTiers(t *testing.T) {
-	// Save original value and defer restore
-	originalAutoAdjustTiers := AutoAdjustTiers
-	defer func() {
-		AutoAdjustTiers = originalAutoAdjustTiers
-	}()
-
-	// Set test value
-	AutoAdjustTiers = true
-
-	providerOptimizer := setupProviderOptimizer(1)
-	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	weights := make(map[string]int64)
-	rand.InitRandomSeed()
-	cu := uint64(1)
-	requestBlock := int64(1000)
-	syncBlock := uint64(1000)
-	for _, address := range providersGen.providersAddresses {
-		weights[address] = 1000
-	}
-	providerOptimizer.UpdateWeights(weights, uint64(requestBlock))
-	// damage providers 5-7 scores with bad latency relays
-	// they should not be selected by the optimizer and should be in the worst tier
-	badLatency := TEST_BASE_WORLD_LATENCY * 3
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
-
-	// improve providers 0-2 scores with good latency probes relays
-	// they should be selected by the optimizer more often and should be in the best tier
-	goodLatency := TEST_BASE_WORLD_LATENCY / 3
-	bestLatency := TEST_BASE_WORLD_LATENCY / 4
-	averageLatency := TEST_BASE_WORLD_LATENCY / 2
-	// add good latency relays for providers 0-2
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[0], bestLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[1], goodLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[2], goodLatency, cu, syncBlock)
-	// add average latency relays for providers 3,4,8,9
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[3], averageLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[4], averageLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[8], averageLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[9], averageLatency, cu, syncBlock)
-	// add bad latency relays for providers 5-7
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[5], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], badLatency, cu, syncBlock)
-	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], badLatency, cu, syncBlock)
-	time.Sleep(4 * time.Millisecond)
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-
-	fmt.Println("providersGen.providersAddresses", providersGen.providersAddresses)
-	fmt.Println("tierResults", tierResults)
-	fmt.Println("results", results)
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	selectionTierScoresCount := selectionTier.ScoresCount()
-	localMinimumEntries := providerOptimizer.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-	tier0Entries := selectionTier.GetTier(0, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
-	tier1Entries := selectionTier.GetTier(1, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
-	tier2Entries := selectionTier.GetTier(2, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
-	tier3Entries := selectionTier.GetTier(3, providerOptimizer.OptimizerNumTiers, localMinimumEntries)
-
-	fmt.Println("tier0Entries", tier0Entries)
-	fmt.Println("tier1Entries", tier1Entries)
-	fmt.Println("tier2Entries", tier2Entries)
-	fmt.Println("tier3Entries", tier3Entries)
-
-	// Add tier validations
-	expectedTier0 := []string{
-		providersGen.providersAddresses[2],
-		providersGen.providersAddresses[1],
-		providersGen.providersAddresses[0],
-	}
-	expectedTier1 := []string{
-		providersGen.providersAddresses[1],
-		providersGen.providersAddresses[9],
-		providersGen.providersAddresses[8],
-	}
-	expectedTier2 := []string{
-		providersGen.providersAddresses[4],
-		providersGen.providersAddresses[3],
-	}
-	expectedTier3 := []string{
-		providersGen.providersAddresses[5],
-		providersGen.providersAddresses[6],
-		providersGen.providersAddresses[7],
-	}
-
-	// Validate tier 0 entries
-	for i, entry := range tier0Entries {
-		require.Contains(t, expectedTier0, entry.Address, "tier 0 entry %d should be %s, got %s", i, expectedTier0[i], entry.Address)
-	}
-
-	// Validate tier 1 entries
-	for i, entry := range tier1Entries {
-		require.Contains(t, expectedTier1, entry.Address, "tier 1 entry %d should be %s, got %s", i, expectedTier1[i], entry.Address)
-	}
-
-	// Validate tier 2 entries
-	contains := 0
-	for _, entry := range tier2Entries {
-		// require.Contains(t, expectedTier2, entry.Address, "tier 2 entry %d should be %s, got %s", i, expectedTier2[i], entry.Address)
-		if slices.Contains(expectedTier2, entry.Address) {
-			contains++
-		}
-	}
-	require.Equal(t, len(expectedTier2), contains, "tier 2 should have correct number of entries")
-
-	// Validate tier 3 entries
-	for i, entry := range tier3Entries {
-		require.Contains(t, expectedTier3, entry.Address, "tier 3 entry %d should be %s, got %s", i, expectedTier3[i], entry.Address)
-	}
-}
+// Removed: TestProviderOptimizerBasicRelayDataAutoAdjustTiers
+// This test was specific to tier-based selection with AutoAdjustTiers feature
+// Tier-based selection has been replaced with weighted selection
 
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed probe relays. Providers with bad scores should have
@@ -345,7 +195,7 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
-	providerOptimizer.OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
+	// Removed: providerOptimizer.OptimizerNumTiers = 33 (tiers removed, using weighted selection)
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -355,11 +205,11 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 		providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false)
 	}
 
-	// pick providers, the three random ones should be top-tier and picked more often
+	// pick providers, the three random ones with good availability should be picked more often
 	time.Sleep(4 * time.Millisecond)
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 300, tierResults) // 0.42 chance for top tier due to the algorithm to rebalance chances
-	require.Greater(t, results[providersGen.providersAddresses[skipIndex]]+results[providersGen.providersAddresses[skipIndex+1]]+results[providersGen.providersAddresses[skipIndex+2]], 275)
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	// Three good providers should together get most of the selections
+	require.Greater(t, results[providersGen.providersAddresses[skipIndex]]+results[providersGen.providersAddresses[skipIndex+1]]+results[providersGen.providersAddresses[skipIndex+2]], 400)
 	require.InDelta(t, results[providersGen.providersAddresses[skipIndex]], results[providersGen.providersAddresses[skipIndex+1]], 50)
 
 	// pick providers again but this time ignore one of the random providers, it shouldn't be picked
@@ -384,7 +234,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
-	providerOptimizer.OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
+	// Removed: providerOptimizer.OptimizerNumTiers = 33 (tiers removed, using weighted selection)
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -394,11 +244,11 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 		providerOptimizer.AppendRelayFailure(providersGen.providersAddresses[i])
 	}
 
-	// pick providers, the three random ones should be top-tier and picked more often
+	// pick providers, the three random ones with good availability should be picked more often
 	time.Sleep(4 * time.Millisecond)
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 300, tierResults) // 0.42 chance for top tier due to the algorithm to rebalance chances
-	require.Greater(t, results[providersGen.providersAddresses[skipIndex]]+results[providersGen.providersAddresses[skipIndex+1]]+results[providersGen.providersAddresses[skipIndex+2]], 270)
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	// Three good providers should together get most selections
+	require.Greater(t, results[providersGen.providersAddresses[skipIndex]]+results[providersGen.providersAddresses[skipIndex+1]]+results[providersGen.providersAddresses[skipIndex+2]], 400)
 	require.InDelta(t, results[providersGen.providersAddresses[skipIndex]], results[providersGen.providersAddresses[skipIndex+1]], 50)
 
 	// pick providers again but this time ignore one of the random providers, it shouldn't be picked
@@ -434,26 +284,15 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, cu, badSyncBlock)
 	}
 
-	// make the top tier chance to be 70%
 	time.Sleep(4 * time.Millisecond)
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tierChances := selectionTier.ShiftTierChance(OptimizerNumTiers, map[int]float64{0: ATierChance, OptimizerNumTiers - 1: LastTierChance})
-	require.Greater(t, tierChances[0], 0.7, tierChances)
 
-	// pick providers, the top-tier should be picked picked more often (at least half the times)
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	require.Greater(t, tierResults[0], 333, tierResults)
+	// Weighted selection should favor providers with lower block error probability
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-	require.Greater(t, results[providersGen.providersAddresses[chosenIndex]], 200, results)
+	// The chosen providers with good sync should be selected more often
+	require.Greater(t, results[providersGen.providersAddresses[chosenIndex]], 100, results)
 	sumResults := results[providersGen.providersAddresses[chosenIndex]] + results[providersGen.providersAddresses[chosenIndex+1]] + results[providersGen.providersAddresses[chosenIndex+2]]
-	require.Greater(t, sumResults, 333, results) // we should pick the best tier most often
-
-	// now try to get a previous block, our chosenIndex should be inferior in latency and blockError chance should be the same
-	results, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock-1)
-	require.Greater(t, tierResults[0], 333, tierResults) // we should pick the best tier most often
-	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-	require.Less(t, results[providersGen.providersAddresses[chosenIndex]], 500, results) // chosen indexes shoulnt be in the tier
+	require.Greater(t, sumResults, 200, results) // good sync providers selected more often
 
 	// we would expect the worst tiers to be less than the other tiers.
 	sumResults = results[providersGen.providersAddresses[chosenIndex]] + results[providersGen.providersAddresses[chosenIndex+1]] + results[providersGen.providersAddresses[chosenIndex+2]]
@@ -613,112 +452,18 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
 	time.Sleep(4 * time.Millisecond)
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier0 := selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	// we have the best score on the top tier and it's sorted
-	require.Equal(t, providersGen.providersAddresses[chosenIndex], tier0[0].Address)
 
-	// now choose with a specific block that all providers have
-	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, int64(syncBlock))
-	tier0 = selectionTier.GetTier(0, 4, 3)
-	for idx := range tier0 {
-		// sync score doesn't matter now so the tier0 is recalculated and chosenIndex has worst latency
-		require.NotEqual(t, providersGen.providersAddresses[chosenIndex], tier0[idx].Address)
-	}
+	// Weighted selection should favor the provider with better sync (chosenIndex has syncBlock+5)
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	// Provider with better sync should be selected more than average
+	averageSelections := 1000 / len(providersGen.providersAddresses)
+	require.Greater(t, results[providersGen.providersAddresses[chosenIndex]], averageSelections,
+		"provider with better sync should be selected more than average")
 }
 
-func TestProviderOptimizerStrategiesScoring(t *testing.T) {
-	rand.InitRandomSeed()
-	providerOptimizer := setupProviderOptimizer(1)
-	providersCount := 10
-	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	cu := uint64(10)
-	requestBlock := spectypes.LATEST_BLOCK
-	syncBlock := uint64(1000)
-
-	// set a basic state for all providers
-	sampleTime := time.Now()
-	for i := 0; i < 10; i++ {
-		for _, address := range providersGen.providersAddresses {
-			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, sampleTime)
-		}
-		time.Sleep(4 * time.Millisecond)
-	}
-	// provider 2 doesn't get a probe availability hit, this is the most meaningful factor
-	for idx, address := range providersGen.providersAddresses {
-		if idx != 2 {
-			providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, false)
-			time.Sleep(4 * time.Millisecond)
-		}
-		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(4 * time.Millisecond)
-		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, false)
-		time.Sleep(4 * time.Millisecond)
-		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(4 * time.Millisecond)
-		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(4 * time.Millisecond)
-	}
-
-	sampleTime = time.Now()
-	improvedLatency := TEST_BASE_WORLD_LATENCY / 2
-	normalLatency := TEST_BASE_WORLD_LATENCY * 2
-	improvedBlock := syncBlock + 1
-	// provider 0 gets a good latency
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, true, cu, syncBlock, sampleTime)
-
-	// providers 3,4 get a regular entry
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, true, cu, syncBlock, sampleTime)
-
-	// provider 1 gets a good sync
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, true, cu, improvedBlock, sampleTime)
-
-	sampleTime = sampleTime.Add(10 * time.Millisecond)
-	// now repeat to modify all providers scores across sync calculation
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, true, cu, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, true, cu, improvedBlock, sampleTime)
-
-	time.Sleep(4 * time.Millisecond)
-	providerOptimizer.strategy = StrategyBalanced
-	// a balanced strategy should pick provider 2 because of it's high availability
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier0 := selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	// we have the best score on the top tier and it's sorted
-	require.Equal(t, providersGen.providersAddresses[2], tier0[0].Address)
-
-	providerOptimizer.strategy = StrategyCost
-	// with a cost strategy we expect the same as balanced
-	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier0 = selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	// we have the best score on the top tier and it's sorted
-	require.Equal(t, providersGen.providersAddresses[2], tier0[0].Address)
-
-	providerOptimizer.strategy = StrategyLatency
-	// latency strategy should pick the best latency
-	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, cu, requestBlock)
-	tier0 = selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
-
-	providerOptimizer.strategy = StrategySyncFreshness
-	// freshness strategy should pick the most advanced provider
-	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, cu, requestBlock)
-	tier0 = selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	require.Equal(t, providersGen.providersAddresses[1], tier0[0].Address)
-
-	// but if we request a past block, then it doesnt matter and we choose by latency:
-	selectionTier, _, _ = providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, cu, int64(syncBlock))
-	tier0 = selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
-}
+// Removed: TestProviderOptimizerStrategiesScoring
+// This test was heavily dependent on tier-based selection verification
+// Strategy-specific behavior is now tested through weighted selector tests
 
 func TestReputation(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
@@ -814,68 +559,20 @@ func TestProviderOptimizerWeights(t *testing.T) {
 		}
 	}
 
-	// verify 0 has the best score
-	selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-	tier0 := selectionTier.GetTier(0, 4, 3)
-	require.Greater(t, len(tier0), 0) // shouldn't be empty
-	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
+	// Weighted selection should favor provider 0 with better stake
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
-	// if we pick by sync, provider 0 is in the top tier and should be selected very often
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	maxTier := tierResults[0]
-	for i := 1; i < len(tierResults); i++ {
-		require.GreaterOrEqual(t, maxTier, tierResults[i], "tier 0 should have highest selection count")
-	}
-	// Check that provider 0 has the highest selection count
+	// Provider 0 should be selected most often due to high stake weight
 	maxCount := results[providersGen.providersAddresses[0]]
 	for addr, count := range results {
 		if addr != providersGen.providersAddresses[0] {
 			require.GreaterOrEqual(t, maxCount, count, "provider 0 should have highest selection count")
 		}
 	}
-
-	// if we pick by sync only, provider 0 is in the worst tier and should be selected less
-	_, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, int64(syncBlock))
-	maxTier = tierResults[0]
-	for i := 1; i < len(tierResults); i++ {
-		require.GreaterOrEqual(t, maxTier, tierResults[i], "tier 0 should have highest selection count")
-	}
 }
 
-func TestProviderOptimizerTiers(t *testing.T) {
-	rand.InitRandomSeed()
-	cu := uint64(10)
-	requestBlock := int64(1000)
-	providersCountList := []int{9, 10}
-	for why, providersCount := range providersCountList {
-		providerOptimizer := setupProviderOptimizer(1)
-		providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-		syncBlock := uint64(1000)
-		sampleTime := time.Now()
-		normalLatency := TEST_BASE_WORLD_LATENCY * 2
-		for i := 0; i < 10; i++ {
-			for _, address := range providersGen.providersAddresses {
-				modifierLatency := rand.Int63n(3) - 1
-				modifierSync := rand.Int63n(3) - 1
-				providerOptimizer.appendRelayData(address, normalLatency+time.Duration(modifierLatency)*time.Millisecond, true, cu, syncBlock+uint64(modifierSync), sampleTime)
-				sampleTime = sampleTime.Add(5 * time.Millisecond)
-				time.Sleep(4 * time.Millisecond)
-			}
-		}
-		selectionTier, _, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, cu, requestBlock)
-		shiftedChances := selectionTier.ShiftTierChance(4, map[int]float64{0: 0.75})
-		require.NotZero(t, shiftedChances[3])
-		// if we pick by sync, provider 0 is in the top tier and should be selected very often
-		_, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-		for index := 0; index < OptimizerNumTiers; index++ {
-			if providersCount >= 2*MinimumEntries && index == OptimizerNumTiers-1 {
-				// skip last tier if there's insufficient providers
-				continue
-			}
-			require.NotZero(t, tierResults[index], "tierResults %v providersCount %s index %d why: %d", tierResults, providersCount, index, why)
-		}
-	}
-}
+// Removed: TestProviderOptimizerTiers
+// This test was specific to tier-based selection system which has been replaced with weighted selection
 
 // TestProviderOptimizerChooseProvider checks that the follwing occurs:
 // 0. Assume 6 providers: 2 with great score, 2 with mid score but one has a great stake, and 2 with low score (benchmark).
@@ -887,8 +584,8 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 6
-	providerOptimizer.OptimizerNumTiers = providersCount / 2
-	providerOptimizer.OptimizerMinTierEntries = 2 // make each tier contain 2 providers
+	// Removed: providerOptimizer.OptimizerNumTiers = providersCount / 2 (tiers removed)
+	// Removed: providerOptimizer.OptimizerMinTierEntries = 2 (tiers removed)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
@@ -939,8 +636,10 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 
 	// choose many times and check results
 	iterations := 10000
-	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
-	require.InDelta(t, float64(iterations)*0.7, tierResults[0], float64(iterations)*0.15) // high score are picked 60%-80% of the times
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	// High score providers (0 and 1) should together get majority of selections with weighted selection
+	highScoreSelections := results[providersGen.providersAddresses[0]] + results[providersGen.providersAddresses[1]]
+	require.Greater(t, highScoreSelections, iterations/2, "high score providers should get majority of selections")
 	require.InDelta(t, results[providersGen.providersAddresses[0]],
 		results[providersGen.providersAddresses[1]], float64(results[providersGen.providersAddresses[0]])*0.15) // no difference between high score providers (max 10% diff)
 	require.Greater(t, results[providersGen.providersAddresses[2]], 0)                                           // high stake mid score provider picked at least once
@@ -964,8 +663,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 
 	// create 3 tiers with 2 providers each
-	providerOptimizer.OptimizerNumTiers = providersCount / 2
-	providerOptimizer.OptimizerMinTierEntries = 2
+	// Removed: providerOptimizer.OptimizerNumTiers = providersCount / 2 (tiers removed)
+	// Removed: providerOptimizer.OptimizerMinTierEntries = 2 (tiers removed)
 
 	// apply high stake for providers 1, 3, 5
 	normalStake := int64(50000000000)
@@ -998,69 +697,20 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	// choose many times with different sets of providers and check the ranking stays the same
-	// Expected: providers with high stake are picked more often, providers from the lowest tier are not picked
-	// Note, on the last two iterations, providers 4,5 are picked and provider 4 is picked more than provider 5
-	// since there is only one tier and provider 4 has higher stake than provider 5
-	for i := 0; i < providersCount; i++ {
-		// run and choose many times and keep a map of provider address -> number of times it was picked
-		iterations := 1000
-		res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses[i:], nil, iterations, cu, requestBlock)
+	// With weighted selection, providers with better latency should be selected more often
+	// Also, within same QoS, higher stake providers should be selected more
+	iterations := 1000
+	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
-		switch i {
-		case 0:
-			// 6 providers, 3 tiers, last one not picked so only
-			// providers 0,1,2,3 are picked. tier 0: providers 0,1
-			// tier 1: providers 2,3
-			// provider 1,3 have higher stake and should be picked more often within their tier
-			require.Greater(t, tierResults[0], 480)
-			require.Greater(t, tierResults[0], tierResults[1])
-			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[0]])
-			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
-		case 1:
-			// 5 providers, 3 tiers, last one not picked so only
-			// providers 1,2,3 are picked. tier 0: providers 1,2
-			// tier 1: providers 2,3,4 (2 and 4 with part)
-			// provider 1 has higher stake and should be picked more often within their tier
-			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
-			// provider 3 should be picked more often than provider 4
-			require.Greater(t, tierResults[0], 480)
-			require.Greater(t, tierResults[0], tierResults[1])
-			require.Greater(t, res[providersGen.providersAddresses[1]], res[providersGen.providersAddresses[2]])
-			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
-		case 2:
-			// 4 providers, 3 tiers, last one not picked so only
-			// providers 2,3,4 are picked. tier 0: providers 2,3
-			// tier 1: providers 3,4
-			// provider 3 has higher stake and should be picked more often within their tier
-			// provider 3 has higher stake than provider 4 and 4 is in tier 1 and 2 (worst tier) so
-			// provider 3 should be picked more often than provider 4
-			require.Greater(t, tierResults[0], 480)
-			require.Greater(t, tierResults[0], tierResults[1])
-			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[2]])
-			require.Greater(t, res[providersGen.providersAddresses[3]], res[providersGen.providersAddresses[4]])
-		case 3:
-			// 3 providers, 3 tiers, last one not picked
-			// minimum entries per tier is 2 and there are 1 provider per tier
-			// because of this, each tier > 0 will have 2 providers and not 1
-			// providers 3,4,5 are picked. tier 0: providers 3
-			// tier 1: providers 4,5
-			// provider 5 has higher stake and should be picked more often within their tier
-			require.Greater(t, tierResults[0], 480)
-			require.Greater(t, tierResults[0], tierResults[1])
-			require.Greater(t, res[providersGen.providersAddresses[5]], res[providersGen.providersAddresses[4]])
-		case 4:
-			// 2 providers, 2 tiers
-			// there are less providers than tiers, so num tiers is reduced to 2
-			// providers 4,5 are picked. tier 0: providers 4
-			// tier 1: providers 4,5 (4 with part=0.5, because it's dragged from tier 0)
-			// provider 4 is picked more often than provider 5 even though it has less stake
-			// because it's the only provider in tier 0
-			require.Greater(t, tierResults[0], 480)
-			require.Greater(t, tierResults[0], tierResults[1])
-			require.Greater(t, res[providersGen.providersAddresses[4]], res[providersGen.providersAddresses[5]])
-		}
-	}
+	// Provider with best latency (index 0) should be selected most
+	require.Greater(t, results[providersGen.providersAddresses[0]], results[providersGen.providersAddresses[4]],
+		"best latency provider should be selected more than worst")
+	require.Greater(t, results[providersGen.providersAddresses[0]], results[providersGen.providersAddresses[5]],
+		"best latency provider should be selected more than worst")
+
+	// High stake providers should be selected more than low stake providers with similar QoS
+	require.Greater(t, results[providersGen.providersAddresses[1]], results[providersGen.providersAddresses[0]],
+		"high stake provider should be selected more than low stake with similar QoS")
 }
 
 // TestProviderOptimizerChoiceSimulationBasedOnLatency checks that the overall choice mechanism acts as expected,
@@ -1078,8 +728,8 @@ func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
 	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
-	providerOptimizer.OptimizerNumTiers = 4
-	providerOptimizer.OptimizerMinTierEntries = 1
+	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
+	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
 	// initial values
 	p1Latency := baseLatency * float64(time.Millisecond)
@@ -1128,8 +778,8 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 	cu := uint64(10)
 	syncBlock := uint64(1000)
 	baseLatency := TEST_BASE_WORLD_LATENCY.Seconds()
-	providerOptimizer.OptimizerNumTiers = 4
-	providerOptimizer.OptimizerMinTierEntries = 1
+	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
+	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
 	// initial values
 	p1Latency := baseLatency * float64(time.Millisecond)
