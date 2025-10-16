@@ -244,6 +244,15 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		return false, err
 	}
 
+	// Validate that quorum min doesn't exceed available providers
+	if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return false, utils.LavaFormatError("requested quorum min exceeds available providers",
+			lavasession.PairingListEmptyError,
+			utils.LogAttr("quorumMin", quorumParams.Min),
+			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
+			utils.LogAttr("GUID", ctx))
+	}
+
 	relayProcessor := NewRelayProcessor(
 		ctx,
 		quorumParams,
@@ -456,6 +465,15 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	quorumParams, err := protocolMessage.GetQuorumParameters()
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate that quorum min doesn't exceed available providers
+	if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return nil, utils.LavaFormatError("requested quorum min exceeds available providers",
+			lavasession.PairingListEmptyError,
+			utils.LogAttr("quorumMin", quorumParams.Min),
+			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
+			utils.LogAttr("GUID", ctx))
 	}
 
 	relayProcessor := NewRelayProcessor(
@@ -1406,6 +1424,15 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
 		if err != nil {
 			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
+		}
+
+		// Validate that quorum min doesn't exceed available providers
+		if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+			return utils.LavaFormatError("requested quorum min exceeds available providers for data reliability",
+				lavasession.PairingListEmptyError,
+				utils.LogAttr("quorumMin", quorumParams.Min),
+				utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
+				utils.LogAttr("GUID", ctx))
 		}
 
 		relayProcessorDataReliability := NewRelayProcessor(
