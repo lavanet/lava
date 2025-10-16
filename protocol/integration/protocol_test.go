@@ -312,7 +312,7 @@ type rpcProviderOptions struct {
 }
 
 func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
-	replySetter := ReplySetter{
+	replySetter := &ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
 		handler:      nil,
@@ -410,7 +410,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
 	require.True(t, providerUp)
-	return rpcProviderServer, endpoint, &replySetter, mockChainFetcher, mockReliabilityManager
+	return rpcProviderServer, endpoint, replySetter, mockChainFetcher, mockReliabilityManager
 }
 
 func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
@@ -864,7 +864,14 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 					err := json.Unmarshal(req, &jsonRpcMessage)
 					require.NoError(t, err)
 
-					response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+					// Properly handle the ID field - preserve the exact raw JSON from request
+					idBytes := jsonRpcMessage.ID
+					if len(idBytes) == 0 {
+						// If ID is missing, use null
+						idBytes = []byte("null")
+					}
+					// Use the raw bytes directly to preserve the exact format
+					response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %s}`, string(idBytes))
 					return []byte(response), http.StatusOK
 				}
 				providers[i].replySetter.handler = handler
@@ -994,7 +1001,14 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 					err := json.Unmarshal(req, &jsonRpcMessage)
 					require.NoError(t, err)
 
-					response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+					// Properly handle the ID field - preserve the exact raw JSON from request
+					idBytes := jsonRpcMessage.ID
+					if len(idBytes) == 0 {
+						// If ID is missing, use null
+						idBytes = []byte("null")
+					}
+					// Use the raw bytes directly to preserve the exact format
+					response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %s}`, string(idBytes))
 					return []byte(response), http.StatusOK
 				}
 				providers[i].replySetter.handler = handler
