@@ -464,21 +464,10 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
-	var chainFetcher chainlib.IChainFetcher
-	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-		chainFetcher = chainlib.NewChainFetcher(
-			ctx,
-			&chainlib.ChainFetcherOptions{
-				ChainRouter: chainRouter,
-				ChainParser: chainParser,
-				Endpoint:    rpcProviderEndpoint,
-				Cache:       rpcp.cache,
-			},
-		)
-	} else {
-		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-	}
+	// Data Reliability removed - use verifications only chain fetcher
+	utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
+	chainFetcher := chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+	var chainFetcherInterface chainlib.IChainFetcher = chainFetcher
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
@@ -556,7 +545,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// Add the chain fetcher to the spec validator
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
 	if chainParser.ParseDirectiveEnabled() {
-		err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+		err = specValidator.AddChainFetcher(ctx, &chainFetcherInterface, chainID)
 		if err != nil {
 			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 		}
