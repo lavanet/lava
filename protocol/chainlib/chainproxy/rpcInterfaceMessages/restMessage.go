@@ -54,6 +54,7 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		if hasError, errMsg := checkCosmosTxError(data); hasError {
 			return hasError, errMsg
 		}
+		// HTTP status code is 2xx and no Cosmos SDK error, treat as success
 		return false, ""
 	}
 
