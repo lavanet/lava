@@ -584,6 +584,7 @@ func (rpccs *RPCConsumerServer) cacheUnsupportedMethodError(ctx context.Context,
 		utils.LavaFormatWarning("error caching unsupported method error", err2, utils.LogAttr("GUID", ctx))
 	}
 }
+
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
