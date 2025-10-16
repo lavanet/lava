@@ -37,9 +37,31 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	if httpStatusCode >= 200 && httpStatusCode <= 300 { // valid code
+	// First, try to parse as Cosmos SDK transaction response
+	// Cosmos SDK returns HTTP 200 for both success and error transactions
+	// We need to check the tx_response.code field to determine if it's an error
+	if httpStatusCode >= 200 && httpStatusCode <= 300 {
+		// Try to parse as Cosmos transaction response
+		type CosmosTxResponse struct {
+			TxResponse struct {
+				Code   int    `json:"code"`
+				RawLog string `json:"raw_log"`
+			} `json:"tx_response"`
+		}
+
+		var txResp CosmosTxResponse
+		if err := json.Unmarshal(data, &txResp); err == nil {
+			// If we successfully parsed a tx_response structure and it has an error
+			if txResp.TxResponse.Code != 0 {
+				// Non-zero code means error in Cosmos SDK
+				return true, txResp.TxResponse.RawLog
+			}
+		}
+		// If it's not a Cosmos tx response or code is 0 (success), continue with normal flow
 		return false, ""
 	}
+
+	// For non-2xx HTTP status codes, check for error in response body
 	result := make(map[string]interface{}, 0)
 	err := json.Unmarshal(data, &result)
 	if err != nil {
