@@ -5,23 +5,20 @@ package types
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = proto.Marshal
-	_ = fmt.Errorf
-	_ = math.Inf
-)
+var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -46,11 +43,9 @@ func (*ProviderMetadata) ProtoMessage()    {}
 func (*ProviderMetadata) Descriptor() ([]byte, []int) {
 	return fileDescriptor_eea88d8dbfad23fd, []int{0}
 }
-
 func (m *ProviderMetadata) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-
 func (m *ProviderMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ProviderMetadata.Marshal(b, m, deterministic)
@@ -63,15 +58,12 @@ func (m *ProviderMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-
 func (m *ProviderMetadata) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProviderMetadata.Merge(m, src)
 }
-
 func (m *ProviderMetadata) XXX_Size() int {
 	return m.Size()
 }
-
 func (m *ProviderMetadata) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProviderMetadata.DiscardUnknown(m)
 }
@@ -265,7 +257,6 @@ func encodeVarintProviderMetadata(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-
 func (m *ProviderMetadata) Size() (n int) {
 	if m == nil {
 		return 0
@@ -305,11 +296,9 @@ func (m *ProviderMetadata) Size() (n int) {
 func sovProviderMetadata(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
-
 func sozProviderMetadata(x uint64) (n int) {
 	return sovProviderMetadata(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-
 func (m *ProviderMetadata) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -579,7 +568,6 @@ func (m *ProviderMetadata) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-
 func skipProviderMetadata(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
