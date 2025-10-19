@@ -241,6 +241,11 @@ func (cs *CacheServer) GetTotalCacheSize() int64 {
 
 // periodicCacheSizeUpdate updates the cache size metric every 10 seconds
 func (cs *CacheServer) periodicCacheSizeUpdate(ctx context.Context) {
+	// Wait for caches to initialize
+    if cs.finalizedCache == nil || cs.tempCache == nil || cs.blocksHashesToHeightsCache == nil {
+        return
+    }
+	
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
