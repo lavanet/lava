@@ -14,13 +14,16 @@ const (
 	DisabledFlagOption = "disabled"
 	totalHitsKey       = "total_hits"
 	totalMissesKey     = "total_misses"
+	totalExpiredKey    = "total_expired"
 )
 
 type CacheMetrics struct {
-	lock         sync.RWMutex
-	totalHits    *prometheus.CounterVec
-	totalMisses  *prometheus.CounterVec
-	apiSpecifics *prometheus.GaugeVec
+	lock             sync.RWMutex
+	totalHits        *prometheus.CounterVec
+	totalMisses      *prometheus.CounterVec
+	totalExpired     *prometheus.CounterVec
+	currentCacheSize *prometheus.Gauge
+	apiSpecifics     *prometheus.GaugeVec
 }
 
 func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
@@ -38,6 +41,16 @@ func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
 		Help: "The total number of misses the cache server could not reply.",
 	}, []string{totalMissesKey})
 
+	totalExpired := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "cache_total_expired",
+		Help: "The total number of expired/evicted keys from the cache.",
+	}, []string{totalExpiredKey})
+
+	currentCacheSize := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "cache_current_size",
+		Help: "The current number of items in the cache.",
+	})
+
 	apiSpecificsLabelNames := []string{"requested_block", "chain_id", "result"}
 	apiSpecifics := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cache_api_specifics",
@@ -46,16 +59,25 @@ func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
 
 	prometheus.MustRegister(totalHits)
 	prometheus.MustRegister(totalMisses)
+	prometheus.MustRegister(totalExpired)
+	prometheus.MustRegister(currentCacheSize)
 	prometheus.MustRegister(apiSpecifics)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: listenAddress})
 		http.ListenAndServe(listenAddress, nil)
 	}()
+
+	// Initialize metrics to 0 so they appear immediately in /metrics endpoint
+	totalExpired.WithLabelValues(totalExpiredKey).Add(0)
+	currentCacheSize.Set(0)
+
 	return &CacheMetrics{
-		totalHits:    totalHits,
-		totalMisses:  totalMisses,
-		apiSpecifics: apiSpecifics,
+		totalHits:        totalHits,
+		totalMisses:      totalMisses,
+		totalExpired:     totalExpired,
+		currentCacheSize: &currentCacheSize,
+		apiSpecifics:     apiSpecifics,
 	}
 }
 
@@ -97,4 +119,18 @@ func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, hit bool) {
 
 func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, hitOrMiss string) {
 	c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" label
+}
+
+func (c *CacheMetrics) AddExpired() {
+	if c == nil {
+		return
+	}
+	c.totalExpired.WithLabelValues(totalExpiredKey).Add(1)
+}
+
+func (c *CacheMetrics) SetCacheSize(size int64) {
+	if c == nil {
+		return
+	}
+	(*c.currentCacheSize).Set(float64(size))
 }
