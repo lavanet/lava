@@ -74,14 +74,16 @@ func (cs *CacheServer) InitCache(
 	// initialize prometheus first so we can use it in OnEvict callbacks
 	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)
 
+	onEvictHandler := func(item *ristretto.Item[any]) {
+		cs.CacheMetrics.AddExpired()
+	}
+
 	cs.tempCache, err = ristretto.NewCache(&ristretto.Config[string, any]{
 		NumCounters: CacheNumCounters,
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: func(item *ristretto.Item[any]) {
-			cs.CacheMetrics.AddExpired()
-		},
+		OnEvict: 	 onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
@@ -92,9 +94,7 @@ func (cs *CacheServer) InitCache(
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: func(item *ristretto.Item[any]) {
-			cs.CacheMetrics.AddExpired()
-		},
+		OnEvict: 	 onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
@@ -105,9 +105,7 @@ func (cs *CacheServer) InitCache(
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: func(item *ristretto.Item[any]) {
-			cs.CacheMetrics.AddExpired()
-		},
+		OnEvict: 	 onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create blocks hashes to heights cache", err)
