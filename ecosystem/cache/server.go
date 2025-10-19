@@ -83,7 +83,7 @@ func (cs *CacheServer) InitCache(
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: 	 onEvictHandler,
+		OnEvict:     onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
@@ -94,7 +94,7 @@ func (cs *CacheServer) InitCache(
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: 	 onEvictHandler,
+		OnEvict:     onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
@@ -105,7 +105,7 @@ func (cs *CacheServer) InitCache(
 		MaxCost:     cs.CacheMaxCost,
 		BufferItems: 64,
 		Metrics:     true, // Enable built-in metrics
-		OnEvict: 	 onEvictHandler,
+		OnEvict:     onEvictHandler,
 	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create blocks hashes to heights cache", err)
@@ -242,10 +242,10 @@ func (cs *CacheServer) GetTotalCacheSize() int64 {
 // periodicCacheSizeUpdate updates the cache size metric every 10 seconds
 func (cs *CacheServer) periodicCacheSizeUpdate(ctx context.Context) {
 	// Wait for caches to initialize
-    if cs.finalizedCache == nil || cs.tempCache == nil || cs.blocksHashesToHeightsCache == nil {
-        return
-    }
-	
+	if cs.finalizedCache == nil || cs.tempCache == nil || cs.blocksHashesToHeightsCache == nil {
+		return
+	}
+
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
