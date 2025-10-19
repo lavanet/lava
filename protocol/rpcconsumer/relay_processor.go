@@ -67,6 +67,7 @@ type RelayProcessor struct {
 	availabilityDegrader      QoSAvailabilityDegrader
 	qourumMap                 map[string]int
 	currentQourumEqualResults int
+	contactedProviders        []string // stores all providers contacted for stateful APIs
 }
 
 func NewRelayProcessor(
@@ -129,6 +130,20 @@ func (rp *RelayProcessor) getSkipDataReliability() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.skipDataReliability
+}
+
+// SetContactedProviders stores the list of providers that were contacted for a stateful API
+func (rp *RelayProcessor) SetContactedProviders(providers []string) {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.contactedProviders = providers
+}
+
+// GetContactedProviders returns the list of providers that were contacted for a stateful API
+func (rp *RelayProcessor) GetContactedProviders() []string {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.contactedProviders
 }
 
 func (rp *RelayProcessor) String() string {
