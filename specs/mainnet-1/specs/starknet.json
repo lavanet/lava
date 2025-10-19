@@ -686,103 +686,6 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_5",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "HTTP-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_6",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "HTTP-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_6",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "/rpc/v0_6",
-                                "type": "POST",
-                                "add_on": ""
-                            },
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "WS-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_7",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "HTTP-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_7",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "inheritance_apis": [
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "/rpc/v0_7",
-                                "type": "POST",
-                                "add_on": ""
-                            },
-                            {
-                                "api_interface": "jsonrpc",
-                                "internal_path": "WS-ONLY",
-                                "type": "POST",
-                                "add_on": ""
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_8",
                             "type": "POST",
                             "add_on": ""
@@ -808,6 +711,46 @@
                             {
                                 "api_interface": "jsonrpc",
                                 "internal_path": "/rpc/v0_8",
+                                "type": "POST",
+                                "add_on": ""
+                            },
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "WS-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_9",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "HTTP-ONLY",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/ws/rpc/v0_9",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "/rpc/v0_9",
                                 "type": "POST",
                                 "add_on": ""
                             },
@@ -1047,7 +990,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_6",
+                            "internal_path": "/rpc/v0_9",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -1070,76 +1013,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_6",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_5",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_7",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_7",
+                            "internal_path": "/ws/rpc/v0_9",
                             "type": "POST",
                             "add_on": ""
                         },
