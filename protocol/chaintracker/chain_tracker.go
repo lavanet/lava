@@ -530,7 +530,7 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 			}
 			return pollingTime, true
 		} else {
-			utils.LavaFormatTrace("current stability measurement",
+			utils.LavaFormatDebug("current stability measurement",
 				utils.LogAttr("chainID", ct.endpoint.ChainID),
 				utils.LogAttr("stability", stability),
 			)
