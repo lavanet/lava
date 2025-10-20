@@ -764,11 +764,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// For stateful APIs, capture all providers that we're sending the relay to
 	// This must be done immediately after GetSessions while all providers are still in the sessions map
 	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		contactedProviders := make([]string, 0, len(sessions))
+		statefulRelayTargets := make([]string, 0, len(sessions))
 		for providerPublicAddress := range sessions {
-			contactedProviders = append(contactedProviders, providerPublicAddress)
+			statefulRelayTargets = append(statefulRelayTargets, providerPublicAddress)
 		}
-		relayProcessor.SetContactedProviders(contactedProviders)
+		relayProcessor.SetStatefulRelayTargets(statefulRelayTargets)
 	}
 
 	// making sure next get sessions wont use regular providers
@@ -1664,10 +1664,10 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: "true",
 			})
 
-		// add all providers that were contacted for the stateful API
-		contactedProviders := relayProcessor.GetContactedProviders()
-		if len(contactedProviders) > 0 {
-			allProvidersString := fmt.Sprintf("%v", contactedProviders)
+		// add all providers that received the stateful relay
+		statefulRelayTargets := relayProcessor.GetStatefulRelayTargets()
+		if len(statefulRelayTargets) > 0 {
+			allProvidersString := fmt.Sprintf("%v", statefulRelayTargets)
 			metadataReply = append(metadataReply,
 				pairingtypes.Metadata{
 					Name:  common.STATEFUL_ALL_PROVIDERS_HEADER_NAME,
