@@ -71,23 +71,48 @@ func (cs *CacheServer) InitCache(
 	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights))
 
 	var err error
-	cs.tempCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	// initialize prometheus first so we can use it in OnEvict callbacks
+	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)
+
+	onEvictHandler := func(item *ristretto.Item[any]) {
+		cs.CacheMetrics.AddExpired()
+	}
+
+	cs.tempCache, err = ristretto.NewCache(&ristretto.Config[string, any]{
+		NumCounters: CacheNumCounters,
+		MaxCost:     cs.CacheMaxCost,
+		BufferItems: 64,
+		Metrics:     true, // Enable built-in metrics
+		OnEvict:     onEvictHandler,
+	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
 	}
 
-	cs.finalizedCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	cs.finalizedCache, err = ristretto.NewCache(&ristretto.Config[string, any]{
+		NumCounters: CacheNumCounters,
+		MaxCost:     cs.CacheMaxCost,
+		BufferItems: 64,
+		Metrics:     true, // Enable built-in metrics
+		OnEvict:     onEvictHandler,
+	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
 	}
 
-	cs.blocksHashesToHeightsCache, err = ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	cs.blocksHashesToHeightsCache, err = ristretto.NewCache(&ristretto.Config[string, any]{
+		NumCounters: CacheNumCounters,
+		MaxCost:     cs.CacheMaxCost,
+		BufferItems: 64,
+		Metrics:     true, // Enable built-in metrics
+		OnEvict:     onEvictHandler,
+	})
 	if err != nil {
 		utils.LavaFormatFatal("could not create blocks hashes to heights cache", err)
 	}
 
-	// initialize prometheus
-	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)
+	// Start periodic cache size updates (every 10 seconds)
+	go cs.periodicCacheSizeUpdate(ctx)
 }
 
 func (cs *CacheServer) Serve(ctx context.Context,
@@ -184,6 +209,55 @@ func (cs *CacheServer) Serve(ctx context.Context,
 func (cs *CacheServer) ExpirationForChain(averageBlockTimeForChain time.Duration) time.Duration {
 	eighthBlock := averageBlockTimeForChain / 8
 	return lavaslices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}) // return the maximum TTL between an eighth block and expiration
+}
+
+// GetTotalCacheSize returns the current total number of items in all caches using Ristretto's built-in metrics
+func (cs *CacheServer) GetTotalCacheSize() int64 {
+	var total int64
+
+	// Use Ristretto's built-in metrics: current items = added - evicted
+	// Metrics are only available if enabled in cache config (Metrics: true)
+	if cs.finalizedCache != nil {
+		metrics := cs.finalizedCache.Metrics
+		if metrics != nil {
+			total += int64(metrics.KeysAdded() - metrics.KeysEvicted())
+		}
+	}
+	if cs.tempCache != nil {
+		metrics := cs.tempCache.Metrics
+		if metrics != nil {
+			total += int64(metrics.KeysAdded() - metrics.KeysEvicted())
+		}
+	}
+	if cs.blocksHashesToHeightsCache != nil {
+		metrics := cs.blocksHashesToHeightsCache.Metrics
+		if metrics != nil {
+			total += int64(metrics.KeysAdded() - metrics.KeysEvicted())
+		}
+	}
+
+	return total
+}
+
+// periodicCacheSizeUpdate updates the cache size metric every 10 seconds
+func (cs *CacheServer) periodicCacheSizeUpdate(ctx context.Context) {
+	// Wait for caches to initialize
+	if cs.finalizedCache == nil || cs.tempCache == nil || cs.blocksHashesToHeightsCache == nil {
+		return
+	}
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			size := cs.GetTotalCacheSize()
+			cs.CacheMetrics.SetCacheSize(size)
+		}
+	}
 }
 
 func Server(
