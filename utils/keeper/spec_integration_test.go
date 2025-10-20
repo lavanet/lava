@@ -81,7 +81,6 @@ func TestGetAllSpecsIntegration(t *testing.T) {
 	for _, specIndex := range knownSpecs {
 		t.Run("Fetch_"+specIndex, func(t *testing.T) {
 			spec, err := GetSpecFromGit(url, specIndex)
-
 			// Some specs might not exist, so we don't require success for all
 			if err != nil {
 				t.Logf("Spec %s not found or error: %v", specIndex, err)

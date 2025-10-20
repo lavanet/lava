@@ -29,7 +29,7 @@ func (r *RelayErrors) findMaxAppearances(input map[string][]int) (maxVal int, in
 	} else {
 		indexToReturn = -1
 	}
-	return
+	return maxVal, indexToReturn
 }
 
 func replacePattern(input, pattern, replacement string) string {
