@@ -52,7 +52,7 @@ type ProviderOptimizer struct {
 	averageBlockTime                time.Duration
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
-	selectionWeighter               SelectionWeighter // weights are the providers stake
+	stakeCache                      ProviderStakeCache // provider stake amounts used in weighted selection
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
 	weightedSelector                *WeightedSelector // Weighted random selection based on composite QoS scores
@@ -118,9 +118,9 @@ func (po *ProviderOptimizer) Strategy() Strategy {
 	return po.strategy
 }
 
-// UpdateWeights update the selection weighter weights
+// UpdateWeights updates provider stake amounts in the cache and metrics
 func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
-	po.selectionWeighter.SetWeights(weights)
+	po.stakeCache.UpdateStakes(weights)
 
 	// Update the stake map for metrics
 	if po.consumerOptimizerQoSClient != nil {
@@ -229,7 +229,7 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 	}
 
 	stakeGetter := func(addr string) int64 {
-		return po.selectionWeighter.Weight(addr)
+		return po.stakeCache.GetStake(addr)
 	}
 
 	// Calculate provider scores using weighted selector
@@ -264,8 +264,8 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	}
 
 	stakeGetter := func(addr string) int64 {
-		// Get stake from selection weighter
-		return po.selectionWeighter.Weight(addr)
+		// Get stake from provider stake cache
+		return po.stakeCache.GetStake(addr)
 	}
 
 	// Calculate provider scores using weighted selector
@@ -341,7 +341,7 @@ func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ig
 	}
 
 	stakeGetter := func(addr string) int64 {
-		return po.selectionWeighter.Weight(addr)
+		return po.stakeCache.GetStake(addr)
 	}
 
 	// Calculate provider scores
@@ -615,7 +615,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		averageBlockTime:                averageBlockTIme,
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
-		selectionWeighter:               NewSelectionWeighter(),
+		stakeCache:                      NewProviderStakeCache(),
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
 		weightedSelector:                weightedSelector,
