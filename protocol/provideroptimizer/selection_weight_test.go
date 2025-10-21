@@ -6,34 +6,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewSelectionWeighter(t *testing.T) {
-	sw := NewSelectionWeighter()
-	assert.NotNil(t, sw)
+func TestNewProviderStakeCache(t *testing.T) {
+	cache := NewProviderStakeCache()
+	assert.NotNil(t, cache)
 }
 
-func TestWeight(t *testing.T) {
-	sw := NewSelectionWeighter()
-	weights := map[string]int64{
+func TestGetStake(t *testing.T) {
+	cache := NewProviderStakeCache()
+	stakes := map[string]int64{
 		"address1": 10,
 		"address2": 20,
 	}
-	sw.SetWeights(weights)
+	cache.UpdateStakes(stakes)
 
-	assert.Equal(t, int64(10), sw.Weight("address1"))
-	assert.Equal(t, int64(20), sw.Weight("address2"))
-	assert.Equal(t, int64(1), sw.Weight("address3")) // address not set
+	assert.Equal(t, int64(10), cache.GetStake("address1"))
+	assert.Equal(t, int64(20), cache.GetStake("address2"))
+	assert.Equal(t, int64(1), cache.GetStake("address3")) // address not set, returns default
 
-	weights = map[string]int64{
+	// Update stakes
+	stakes = map[string]int64{
 		"address1": 25,
 		"address3": 30,
 	}
-	sw.SetWeights(weights)
+	cache.UpdateStakes(stakes)
 
-	assert.Equal(t, int64(25), sw.Weight("address1"))
-	assert.Equal(t, int64(20), sw.Weight("address2"))
-	assert.Equal(t, int64(30), sw.Weight("address3")) // address not set
+	assert.Equal(t, int64(25), cache.GetStake("address1"))
+	assert.Equal(t, int64(20), cache.GetStake("address2")) // not updated, retains previous value
+	assert.Equal(t, int64(30), cache.GetStake("address3"))
 }
 
-// Removed: TestWeightedChoice
-// WeightedChoice method was part of tier-based selection and has been removed
+// Note: WeightedChoice method was part of tier-based selection and has been removed.
 // Weighted selection is now handled by WeightedSelector in weighted_selector.go

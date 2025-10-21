@@ -4,43 +4,45 @@ import (
 	"sync"
 )
 
-// SelectionWeighter is a utility to select an address based on a weight.
-type SelectionWeighter interface {
-	Weight(address string) int64
-	SetWeights(weights map[string]int64)
+// ProviderStakeCache maintains provider stake amounts for use in selection algorithms.
+// It provides thread-safe access to stake values used by the weighted selector to
+// calculate provider selection probabilities.
+type ProviderStakeCache interface {
+	GetStake(address string) int64
+	UpdateStakes(stakes map[string]int64)
 }
 
-type selectionWeighterInst struct {
-	lock    sync.RWMutex
-	weights map[string]int64
+type providerStakeCacheInst struct {
+	lock   sync.RWMutex
+	stakes map[string]int64
 }
 
-func NewSelectionWeighter() SelectionWeighter {
-	return &selectionWeighterInst{
-		weights: make(map[string]int64),
+func NewProviderStakeCache() ProviderStakeCache {
+	return &providerStakeCacheInst{
+		stakes: make(map[string]int64),
 	}
 }
 
-func (sw *selectionWeighterInst) Weight(address string) int64 {
-	sw.lock.RLock()
-	defer sw.lock.RUnlock()
-	return sw.weightInner(address)
+func (psc *providerStakeCacheInst) GetStake(address string) int64 {
+	psc.lock.RLock()
+	defer psc.lock.RUnlock()
+	return psc.getStakeInner(address)
 }
 
 // assumes lock is held
-func (sw *selectionWeighterInst) weightInner(address string) int64 {
-	weight, ok := sw.weights[address]
+func (psc *providerStakeCacheInst) getStakeInner(address string) int64 {
+	stake, ok := psc.stakes[address]
 	if !ok {
-		// default weight is 1
+		// default stake is 1 to ensure all providers can be selected
 		return 1
 	}
-	return weight
+	return stake
 }
 
-func (sw *selectionWeighterInst) SetWeights(weights map[string]int64) {
-	sw.lock.Lock()
-	defer sw.lock.Unlock()
-	for address, weight := range weights {
-		sw.weights[address] = weight
+func (psc *providerStakeCacheInst) UpdateStakes(stakes map[string]int64) {
+	psc.lock.Lock()
+	defer psc.lock.Unlock()
+	for address, stake := range stakes {
+		psc.stakes[address] = stake
 	}
 }
