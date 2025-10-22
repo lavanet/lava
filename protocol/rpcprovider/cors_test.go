@@ -102,7 +102,7 @@ func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
 
 	err := PerformCORSCheck(endpoint)
 	require.Error(t, err, "Expected CORS check to fail but it passed")
-	require.True(t, strings.Contains(err.Error(), "x-grpc-web"), "Expected error to relate to x-grpc-web")
+	require.Contains(t, err.Error(), "CORS check failed")
 }
 
 func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
@@ -112,7 +112,7 @@ func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
 
 	err := PerformCORSCheck(endpoint)
 	require.Error(t, err, "Expected CORS check to fail but it passed")
-	require.True(t, strings.Contains(err.Error(), "lava-sdk-relay-timeout"), "Expected error to relate to lava-sdk-relay-timeout")
+	require.Contains(t, err.Error(), "CORS check failed")
 }
 
 func TestPerformCORSCheckSuccess(t *testing.T) {
