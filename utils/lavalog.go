@@ -2,8 +2,10 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -15,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
+	"google.golang.org/grpc/status"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -197,6 +200,8 @@ func StrValue(val interface{}) string {
 		st_val = strconv.FormatInt(value, 10)
 	case uint64:
 		st_val = strconv.FormatUint(value, 10)
+	case uint32:
+		st_val = strconv.FormatUint(uint64(value), 10)
 	case error:
 		st_val = value.Error()
 	case []error:
@@ -217,6 +222,61 @@ func StrValue(val interface{}) string {
 		st_val = fmt.Sprintf("%+v", value)
 	}
 	return st_val
+}
+
+// ExtractErrorStructure extracts structured information from errors for ELK-friendly logging.
+// It handles sdkerrors.Error types, gRPC status errors, and plain errors.
+func ExtractErrorStructure(err error) map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
+	result := make(map[string]interface{})
+
+	// Check if it's an sdkerrors.Error (direct or wrapped)
+	var sdkErr *sdkerrors.Error
+	if errors.As(err, &sdkErr) {
+		result["error_code"] = sdkErr.ABCICode()
+		result["error_codespace"] = sdkErr.Codespace()
+		result["error_description"] = sdkErr.Error()
+		return result
+	}
+
+	// Check if it's a gRPC status error
+	if st, ok := status.FromError(err); ok {
+		result["grpc_code"] = st.Code().String()
+		result["grpc_message"] = st.Message()
+
+		// Try to extract embedded error code from gRPC message
+		// Pattern: "code = Code(3370)" or "Code(3370)"
+		re := regexp.MustCompile(`[Cc]ode\((\d+)\)`)
+		if matches := re.FindStringSubmatch(st.Message()); len(matches) > 1 {
+			if code, parseErr := strconv.ParseUint(matches[1], 10, 32); parseErr == nil {
+				result["error_code"] = uint32(code)
+			}
+		}
+
+		// Try to extract description from gRPC message
+		// Pattern: "desc = <description>" (before ErrMsg or {)
+		reDesc := regexp.MustCompile(`desc = ([^:{\n]+)`)
+		if matches := reDesc.FindStringSubmatch(st.Message()); len(matches) > 1 {
+			result["error_description"] = strings.TrimSpace(matches[1])
+		}
+
+		// Try to extract ErrMsg from the message
+		// Pattern: "ErrMsg: <message>" (before {)
+		reErrMsg := regexp.MustCompile(`ErrMsg: ([^{]+)`)
+		if matches := reErrMsg.FindStringSubmatch(st.Message()); len(matches) > 1 {
+			result["error_message"] = strings.TrimSpace(matches[1])
+		}
+	}
+
+	// If we didn't extract anything structured, fallback to simple error message
+	if len(result) == 0 {
+		result["error_message"] = err.Error()
+	}
+
+	return result
 }
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
@@ -275,13 +335,25 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		rollingLoggerEvent = rollingLogLogger.Trace()
 		// prefix = "Trace:"
 	}
-	output := description
-	attrStrings := []string{}
+
+	// Handle error structurally - extract fields instead of concatenating strings
 	if err != nil {
-		logEvent = logEvent.Err(err)
-		rollingLoggerEvent = rollingLoggerEvent.Err(err)
-		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
+		structuredErr := ExtractErrorStructure(err)
+		if len(structuredErr) > 0 {
+			// Add each extracted error field as a separate structured field
+			for key, val := range structuredErr {
+				strVal := StrValue(val)
+				logEvent = logEvent.Str(key, strVal)
+				rollingLoggerEvent = rollingLoggerEvent.Str(key, strVal)
+			}
+		} else {
+			// Fallback: use standard error field if extraction fails
+			logEvent = logEvent.Err(err)
+			rollingLoggerEvent = rollingLoggerEvent.Err(err)
+		}
 	}
+
+	// Add attributes as structured fields (NO string concatenation)
 	if len(attributes) > 0 {
 		for idx, attr := range attributes {
 			key := attr.Key
@@ -289,17 +361,18 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			st_val := StrValueForLog(val, key, idx, attributes)
 			logEvent = logEvent.Str(key, st_val)
 			rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
-			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))
 		}
-		attributesStr := "{" + strings.Join(attrStrings, ",") + "}"
-		output = fmt.Sprintf("%s %+v", output, attributesStr)
 	}
+
+	// Emit clean message: ONLY the description, no concatenated error or attributes
 	logEvent.Msg(description)
 	rollingLoggerEvent.Msg(description)
-	// here we return the same type of the original error message, this handles nil case as well
-	errRet := sdkerrors.Wrap(err, output)
+
+	// Return wrapped error for backward compatibility with calling code
+	// The error object still contains full context for error handling
+	errRet := sdkerrors.Wrap(err, description)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
-		return fmt.Errorf("%s", output)
+		return fmt.Errorf("%s", description)
 	}
 	return errRet
 }
