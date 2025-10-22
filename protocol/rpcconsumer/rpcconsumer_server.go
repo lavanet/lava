@@ -661,13 +661,25 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
 	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
-	if rpccs.cache.CacheActive() { // use cache only if its defined.
+	quorumParams := relayProcessor.GetQuorumParams()
+	if rpccs.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		utils.LavaFormatDebug("Cache lookup attempt",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("cacheActive", true),
 			utils.LogAttr("reqBlock", reqBlock),
 			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
+			utils.LogAttr("quorumEnabled", false),
 		)
+	} else if rpccs.cache.CacheActive() && quorumParams.Enabled() {
+		utils.LavaFormatDebug("Cache bypassed due to quorum validation requirements",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("cacheActive", true),
+			utils.LogAttr("quorumEnabled", true),
+			utils.LogAttr("quorumMin", quorumParams.Min),
+			utils.LogAttr("reason", "quorum requires fresh provider validation, cache would defeat consensus verification"),
+		)
+	}
+	if rpccs.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
 			if reqBlock != spectypes.NOT_APPLICABLE { // don't use cache if requested block is not applicable
 				var cacheReply *pairingtypes.CacheRelayReply

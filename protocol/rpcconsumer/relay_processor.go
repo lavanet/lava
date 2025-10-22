@@ -627,9 +627,23 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}
 
-	// there are not enough successes, let's check if there are enough node errors
-	if successResultsCount+nodeErrorCount >= rp.quorumParams.Min {
+	// there are not enough successes, let's check if there are enough node errors and protocol errors
+	// Protocol errors (like consistency violations) should count as attempted responses
+	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
+	if totalResponses >= rp.quorumParams.Min {
 		if rp.selection == Quorum {
+			// When quorum is enabled, we need to ensure we have enough successful responses
+			// to actually meet quorum requirements, not just enough total attempts
+			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
+				// We have enough total responses, but not enough successful ones for quorum
+				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
+					nil,
+					utils.LogAttr("successResultsCount", successResultsCount),
+					utils.LogAttr("nodeErrorCount", nodeErrorCount),
+					utils.LogAttr("protocolErrorCount", protocolErrorCount),
+					utils.LogAttr("quorumMin", rp.quorumParams.Min),
+					utils.LogAttr("totalResponses", totalResponses))
+			}
 			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
