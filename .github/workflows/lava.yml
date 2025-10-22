@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - smart-router-v1.1
   pull_request:
     branches:
       - main
+      - smart-router-v1.1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

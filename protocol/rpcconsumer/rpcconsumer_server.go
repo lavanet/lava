@@ -975,6 +975,22 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
 
+					// ADD THIS DEBUG LOGGING:
+					utils.LavaFormatInfo("Cache storage attempt",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainId", chainId),
+						utils.LogAttr("requestedBlock", requestedBlock),
+						utils.LogAttr("metadata_count", len(localRelayResult.Request.RelayData.Metadata)),
+						utils.LogAttr("isStatic", singleConsumerSession.StaticProvider))
+
+					for i, md := range localRelayResult.Request.RelayData.Metadata {
+						utils.LavaFormatInfo("Metadata entry ",
+							utils.LogAttr("GUID", ctx),
+							utils.LogAttr("index", i),
+							utils.LogAttr("name", md.Name),
+							utils.LogAttr("value", md.Value))
+					}
+
 					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
 
 					go func() {
@@ -988,7 +1004,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							return
 						}
 						chainMessageRequestedBlock, _ := protocolMessage.RequestedBlock()
+						utils.LavaFormatInfo("Cache storage check",
+							utils.LogAttr("chainMessageRequestedBlock", chainMessageRequestedBlock),
+							utils.LogAttr("requestedBlock_from_relay", requestedBlock),
+							utils.LogAttr("isStatic", singleConsumerSession.StaticProvider),
+							utils.LogAttr("GUID", ctx))
 						if chainMessageRequestedBlock == spectypes.NOT_APPLICABLE {
+							utils.LavaFormatInfo("SKIPPING CACHE STORAGE - NOT_APPLICABLE", utils.LogAttr("GUID", ctx))
 							return
 						}
 
