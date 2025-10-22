@@ -95,7 +95,8 @@ func TestGetTendermintRPCError(t *testing.T) {
 				Message: "error message",
 				Data:    []int{1, 2, 3},
 			},
-			expectedErr: fmt.Errorf("(rpcMsg.Error.Data).(string) conversion failed {data:[1 2 3]}"),
+			// After structured logging changes, attributes are not concatenated into error message
+			expectedErr: fmt.Errorf("(rpcMsg.Error.Data).(string) conversion failed"),
 		},
 		{
 			name: "conversion succeeds",
@@ -287,7 +288,8 @@ func TestConvertTendermintMsg(t *testing.T) {
 			},
 			nil,
 			true,
-			"(rpcMsg.Error.Data).(string) conversion failed {data:[1 2 3]}",
+			// After structured logging changes, attributes are not concatenated into error message
+			"(rpcMsg.Error.Data).(string) conversion failed",
 		},
 		{
 			"error in IdFromRawMessage",
