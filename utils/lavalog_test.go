@@ -37,7 +37,8 @@ func TestExtractErrorStructure(t *testing.T) {
 			name: "plain error",
 			err:  fmt.Errorf("connection timeout"),
 			expected: map[string]interface{}{
-				"error_message": "connection timeout",
+				"error":             "connection timeout",
+				"error_description": "connection timeout",
 			},
 		},
 		{
@@ -46,15 +47,15 @@ func TestExtractErrorStructure(t *testing.T) {
 			expected: map[string]interface{}{
 				"error_code":        uint32(1234),
 				"error_codespace":   "TestError",
+				"error":             "test error description",
 				"error_description": "test error description",
 			},
 		},
 		{
-			name: "gRPC status error with code",
+			name: "gRPC status error with embedded code",
 			err:  status.Error(codes.Unknown, "rpc error: code = Code(3370) desc = relayReceiver is disabled"),
 			expected: map[string]interface{}{
-				"grpc_code":         "Unknown",
-				"grpc_message":      "rpc error: code = Code(3370) desc = relayReceiver is disabled",
+				"error":             "rpc error: code = Code(3370) desc = relayReceiver is disabled",
 				"error_code":        uint32(3370),
 				"error_description": "relayReceiver is disabled",
 			},
@@ -149,9 +150,9 @@ func TestStructuredLogging(t *testing.T) {
 	})
 
 	t.Run("real consumer log error - unhandled relay receiver", func(t *testing.T) {
-		// This is the exact error format from CONSUMERS.log line 309
-		// Step 1: Provider sends gRPC error
-		errorMsg := "rpc error: code = Code(3369) desc = got called with unhandled relay receiver ErrMsg: provider does not handle requested api interface and spec {requested_receiver:LAV1rest,handled_receivers:LAV1tendermintrpc,LAV1grpc}: provider does not handle requested api interface and spec"
+		// This is the ACTUAL error format from real CONSUMERS.log
+		// Step 1: Provider sends gRPC error with simple message (no "desc =" prefix)
+		errorMsg := "got called with unhandled relay receiver: provider does not handle requested api interface and spec"
 		grpcErr := status.Error(codes.Code(3369), errorMsg)
 
 		// Step 2: relay_processor wraps it with "failed relay, insufficient results"
@@ -194,18 +195,29 @@ func TestStructuredLogging(t *testing.T) {
 
 // TestFullErrorFlow simulates the exact error flow from CONSUMERS.log and prints output
 func TestFullErrorFlow(t *testing.T) {
-	// Enable JSON format
+	// Test in BOTH formats to show the difference
 	originalFormat := utils.JsonFormat
-	utils.JsonFormat = true
 	defer func() { utils.JsonFormat = originalFormat }()
 
+	// First show console format (what you see in logs)
+	utils.JsonFormat = false
 	t.Log("\n========================================")
-	t.Log("SIMULATING EXACT FLOW FROM CONSUMERS.LOG")
-	t.Log("========================================\n")
+	t.Log("CONSOLE FORMAT OUTPUT (current logs)")
+	t.Log("========================================")
+	testErrorFlow(t)
 
+	// Then show JSON format (what ELK receives)
+	utils.JsonFormat = true
+	t.Log("\n========================================")
+	t.Log("JSON FORMAT OUTPUT (ELK sees this)")
+	t.Log("========================================")
+	testErrorFlow(t)
+}
+
+func testErrorFlow(t *testing.T) {
 	// Step 1: Provider sends gRPC error (this happens in provider_listener.go)
-	t.Log("STEP 1: Provider sends gRPC error with code 3369")
-	providerErrorMsg := "rpc error: code = Code(3369) desc = got called with unhandled relay receiver ErrMsg: provider does not handle requested api interface and spec {requested_receiver:LAV1rest,handled_receivers:LAV1tendermintrpc,LAV1grpc}: provider does not handle requested api interface and spec"
+	t.Log("\nSTEP 1: Provider sends gRPC error with code 3369")
+	providerErrorMsg := "got called with unhandled relay receiver: provider does not handle requested api interface and spec"
 	grpcErr := status.Error(codes.Code(3369), providerErrorMsg)
 	t.Logf("Provider error: %v\n", grpcErr)
 
@@ -217,24 +229,14 @@ func TestFullErrorFlow(t *testing.T) {
 
 	// Step 3: rpcconsumer_server logs the wrapped error (rpcconsumer_server.go:305)
 	t.Log("\nSTEP 3: rpcconsumer_server logs with context (THIS IS WHAT YOU SEE IN CONSUMERS.LOG)")
-	t.Log("Expected JSON output:")
-	finalErr := utils.LavaFormatError(
+	_ = utils.LavaFormatError(
 		"[-] failed sending init relay",
 		wrappedErr,
 		utils.LogAttr("APIInterface", "rest"),
 		utils.LogAttr("chainID", "LAV1"),
-		utils.LogAttr("relayProcessor", "relayProcessor {resultsManager {success 0, nodeErrors:0, specialNodeErrors:0, protocolErrors:1}, unwantedAddresses: lava@1aqww4ckxxtrd05fp9f5202nv32r65xucdajaw0,currentlyUsedAddresses:}"),
+		utils.LogAttr("relayProcessor", "relayProcessor {resultsManager {success 0, nodeErrors:0, specialNodeErrors:0, protocolErrors:1}}"),
 	)
 	t.Log("")
-
-	t.Log("\n========================================")
-	t.Log("SUMMARY OF EXTRACTED FIELDS")
-	t.Log("========================================")
-	structured := utils.ExtractErrorStructure(finalErr)
-	for key, val := range structured {
-		t.Logf("%s: %v", key, val)
-	}
-	t.Log("\n========================================")
 }
 
 // BenchmarkExtractErrorStructure measures the performance impact of error extraction
