@@ -223,8 +223,7 @@ func StrValue(val interface{}) string {
 	return st_val
 }
 
-// ExtractErrorStructure extracts structured information from errors for ELK-friendly logging.
-// It uses a generic pattern-based approach to handle various error types.
+// ExtractErrorStructure extracts structured information from errors
 func ExtractErrorStructure(err error) map[string]interface{} {
 	if err == nil {
 		return nil
@@ -321,7 +320,6 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		// prefix = "Trace:"
 	}
 
-	// Handle error structurally - extract fields instead of concatenating strings
 	if err != nil {
 		structuredErr := ExtractErrorStructure(err)
 		if len(structuredErr) > 0 {
@@ -338,7 +336,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		}
 	}
 
-	// Add attributes as structured fields (NO string concatenation)
+	// Add attributes as structured fields
 	if len(attributes) > 0 {
 		for idx, attr := range attributes {
 			key := attr.Key
