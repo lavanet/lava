@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -15,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
+	"google.golang.org/grpc/status"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -197,6 +199,8 @@ func StrValue(val interface{}) string {
 		st_val = strconv.FormatInt(value, 10)
 	case uint64:
 		st_val = strconv.FormatUint(value, 10)
+	case uint32:
+		st_val = strconv.FormatUint(uint64(value), 10)
 	case error:
 		st_val = value.Error()
 	case []error:
@@ -217,6 +221,46 @@ func StrValue(val interface{}) string {
 		st_val = fmt.Sprintf("%+v", value)
 	}
 	return st_val
+}
+
+// ExtractErrorStructure extracts structured information from errors
+func ExtractErrorStructure(err error) map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
+	result := make(map[string]interface{})
+	errMsg := err.Error()
+
+	// Always include full raw error
+	result["error"] = errMsg
+
+	// Step 1: Check if it's an sdkerrors.Error (only works for direct, non-gRPC errors)
+	var sdkErr *sdkerrors.Error
+	if errors.As(err, &sdkErr) {
+		result["error_code"] = sdkErr.ABCICode()
+		result["error_message"] = sdkErr.Error()
+		return result
+	}
+
+	// Step 2: Check if it's a gRPC status error (most common case after network hop)
+	if st, ok := status.FromError(err); ok {
+		code := st.Code()
+		msg := st.Message()
+
+		// Extract error code if it's a custom code (>16)
+		if uint32(code) > 16 {
+			result["error_code"] = uint32(code)
+		}
+
+		result["error_message"] = msg
+		return result
+	}
+
+	// Step 3: Fallback for plain errors
+	result["error_message"] = errMsg
+
+	return result
 }
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
@@ -275,13 +319,24 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		rollingLoggerEvent = rollingLogLogger.Trace()
 		// prefix = "Trace:"
 	}
-	output := description
-	attrStrings := []string{}
+
 	if err != nil {
-		logEvent = logEvent.Err(err)
-		rollingLoggerEvent = rollingLoggerEvent.Err(err)
-		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
+		structuredErr := ExtractErrorStructure(err)
+		if len(structuredErr) > 0 {
+			// Add each extracted error field as a separate structured field
+			for key, val := range structuredErr {
+				strVal := StrValue(val)
+				logEvent = logEvent.Str(key, strVal)
+				rollingLoggerEvent = rollingLoggerEvent.Str(key, strVal)
+			}
+		} else {
+			// Fallback: use standard error field if extraction fails
+			logEvent = logEvent.Err(err)
+			rollingLoggerEvent = rollingLoggerEvent.Err(err)
+		}
 	}
+
+	// Add attributes as structured fields
 	if len(attributes) > 0 {
 		for idx, attr := range attributes {
 			key := attr.Key
@@ -289,17 +344,18 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			st_val := StrValueForLog(val, key, idx, attributes)
 			logEvent = logEvent.Str(key, st_val)
 			rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
-			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))
 		}
-		attributesStr := "{" + strings.Join(attrStrings, ",") + "}"
-		output = fmt.Sprintf("%s %+v", output, attributesStr)
 	}
+
+	// Emit clean message: ONLY the description, no concatenated error or attributes
 	logEvent.Msg(description)
 	rollingLoggerEvent.Msg(description)
-	// here we return the same type of the original error message, this handles nil case as well
-	errRet := sdkerrors.Wrap(err, output)
+
+	// Return wrapped error for backward compatibility with calling code
+	// The error object still contains full context for error handling
+	errRet := sdkerrors.Wrap(err, description)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
-		return fmt.Errorf("%s", output)
+		return fmt.Errorf("%s", description)
 	}
 	return errRet
 }
