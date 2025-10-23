@@ -54,7 +54,12 @@ const (
 	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	SkipPolicyVerificationFlag                   = "skip-policy-verification"
+	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
 	// specification default flags
+	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
+	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
+
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
