@@ -30,9 +30,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -64,7 +62,6 @@ type RPCConsumerServer struct {
 	rpcConsumerLogs                *metrics.RPCConsumerLogs
 	cache                          *performance.Cache
 	privKey                        *btcec.PrivateKey
-	consumerTxSender               ConsumerTxSender
 	requiredResponses              int
 	finalizationConsensus          finalizationconsensus.FinalizationConsensusInf
 	lavaChainID                    string
@@ -86,11 +83,7 @@ type relayResponse struct {
 	err         error
 }
 
-type ConsumerTxSender interface {
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error
-	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
-	GetLatestVirtualEpoch() uint64
-}
+// ConsumerTxSender interface removed - smart router doesn't interact with blockchain
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
@@ -114,7 +107,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
 	rpccs.cache = cache
-	rpccs.consumerTxSender = consumerStateTracker
+	// consumerTxSender removed - smart router doesn't send blockchain transactions
 	rpccs.requiredResponses = requiredResponses
 	rpccs.lavaChainID = lavaChainID
 	rpccs.rpcConsumerLogs = rpcConsumerLogs
@@ -932,8 +925,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// check whether we need a new protocol message with the new earliest block hash requested
 	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
 
-	// consumerEmergencyTracker always use latest virtual epoch
-	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
+	// Smart router with static providers doesn't use blockchain epochs
+	// Using constant epoch value since provider selection is static
+	virtualEpoch := uint64(0)
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", protocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
