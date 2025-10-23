@@ -210,17 +210,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		}
 	}
 
-	// spawn up ConsumerStateTracker
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager)
-	if err != nil {
-		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
-	}
+	// Use static state tracker - smart router doesn't connect to blockchain
+	consumerStateTracker := NewStaticStateTracker()
 	rpcc.consumerStateTracker = consumerStateTracker
 
-	lavaChainFetcher.FetchLatestBlockNum(ctx)
-
-	lavaChainID := options.clientCtx.ChainID
+	// Use a fixed chain ID for smart router (can be configured via environment/config)
+	lavaChainID := "lava-smartrouter"
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
@@ -238,17 +233,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	errCh := make(chan error)
 
-	// Register for updates
-	consumerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(consumerMetricsManager))
+	// Blockchain registration removed - smart router doesn't listen for blockchain updates
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + consumerAddr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
-
-	// check version
-	version, err := consumerStateTracker.GetProtocolVersion(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("failed fetching protocol version from node", err)
-	}
-	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := &common.SafeSyncMap[string, *updaters.PolicyUpdater]{}
 	for _, rpcEndpoint := range options.rpcEndpoints {
@@ -287,19 +274,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
-	for chainId := range chainMutexes {
-		policyUpdater, ok, err := policyUpdaters.Load(chainId)
-		if !ok || err != nil {
-			utils.LavaFormatError("could not load policy Updater for chain", err, utils.LogAttr("chain", chainId))
-			continue
-		}
-		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater, chainId)
-		emergencyTracker, ok := consumerStateTracker.ConsumerEmergencyTrackerInf.(*statetracker.EmergencyTracker)
-		if !ok {
-			utils.LavaFormatFatal("Failed converting consumerStateTracker.ConsumerEmergencyTrackerInf to *statetracker.EmergencyTracker", nil, utils.LogAttr("chain", chainId))
-		}
-		consumerStateTracker.RegisterForPairingUpdates(ctx, emergencyTracker, chainId)
-	}
+	// Pairing updates registration removed - smart router uses static providers
+	// No need to listen for provider pairing changes from blockchain
 
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
 
@@ -314,7 +290,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	rpcEndpoint *lavasession.RPCEndpoint,
 	errCh chan error,
 	consumerAddr sdk.AccAddress,
-	consumerStateTracker *statetracker.ConsumerStateTracker,
+	consumerStateTracker ConsumerStateTrackerInf,
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
 	consumerConsistencies *common.SafeSyncMap[string, *SmartRouterConsistency],
@@ -336,20 +312,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 	chainID := rpcEndpoint.ChainID
-	// create policyUpdaters per chain
-	newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
-	policyUpdater, ok, err := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater)
-	if err != nil {
-		errCh <- err
-		return nil, utils.LavaFormatError("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
-	}
-	if ok {
-		err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
-		if err != nil {
-			errCh <- err
-			return nil, utils.LavaFormatError("failed adding policy setter", err)
-		}
-	}
+	// Policy updaters removed - smart router doesn't query policies from blockchain
+	// Policies should be configured statically via configuration files
 
 	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker, options.cmdFlags.GitHubToken)
 	if err != nil {
