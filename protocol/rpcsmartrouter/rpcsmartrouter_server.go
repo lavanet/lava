@@ -24,16 +24,12 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
-	"github.com/lavanet/lava/v5/utils/rand"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
@@ -436,19 +432,8 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.getSkipDataReliability() {
-		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
-		// as data reliability happens in a go routine it will continue while the response returns.
-		guid, found := utils.GetUniqueIdentifier(ctx)
-		dataReliabilityContext := context.Background()
-		if found {
-			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
-		}
-		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
-	}
+	// Data reliability handling removed - smart router only works with static providers
+	// where protocol-level data reliability verification is not needed
 
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
@@ -1449,7 +1434,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
 	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
 	if !rpccs.chainParser.ParseDirectiveEnabled() {
 		isFinalized = false
@@ -1458,37 +1443,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
 
-	// check the signature on the reply
-	if !singleConsumerSession.StaticProvider {
-		err = lavaprotocol.VerifyRelayReply(ctx, reply, relayRequest, providerPublicAddress)
-		if err != nil {
-			return 0, err, false
-		}
-	}
+	// Signature verification removed - smart router only works with static providers
+	// where signature verification is not needed
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
-	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
-		// TODO: allow static providers to detect hash mismatches,
-		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
-		if err != nil {
-			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
-				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
-			}
-			return 0, err, false
-		}
+	// Finalization verification and conflict detection removed - smart router only works with
+	// static providers where these protocol-level verifications are not needed
 
-		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-		if err != nil {
-			if finalizationAccountabilityError != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
-			}
-			return 0, err, false
-		}
-	}
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
 }
@@ -1607,125 +1569,8 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
-	if statetracker.DisableDR {
-		return nil
-	}
-	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(protocolMessage)
-	// Wait another relayTimeout duration to maybe get additional relay results
-	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
-		time.Sleep(expectedRelayTimeout)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	specCategory := protocolMessage.GetApi().Category
-	if !specCategory.Deterministic {
-		return nil // disabled for this spec and requested block so no data reliability messages
-	}
-
-	if rand.Uint32() > dataReliabilityThreshold {
-		// decided not to do data reliability
-		return nil
-	}
-	// only need to send another relay if we don't have enough replies
-	results := []common.RelayResult{}
-	for _, result := range relayProcessor.NodeResults() {
-		if result.Finalized {
-			results = append(results, result)
-		}
-	}
-	if len(results) == 0 {
-		// nothing to check
-		return nil
-	}
-
-	reqBlock, _ := protocolMessage.RequestedBlock()
-	if reqBlock <= spectypes.NOT_APPLICABLE {
-		if reqBlock <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
-		}
-		// does not support sending data reliability requests on a block that is not specific
-		return nil
-	}
-	relayResult := results[0]
-	if len(results) < 2 {
-		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, protocolMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		userData := protocolMessage.GetUserData()
-		//  We create new protocol message from the old one, but with a new instance of relay request data.
-		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
-
-		// Get quorum parameters from the data reliability protocol message
-		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
-		if err != nil {
-			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
-		}
-
-		// Validate that quorum min doesn't exceed available providers
-		if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-			return utils.LavaFormatError("requested quorum min exceeds available providers for data reliability",
-				lavasession.PairingListEmptyError,
-				utils.LogAttr("quorumMin", quorumParams.Min),
-				utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
-				utils.LogAttr("GUID", ctx))
-		}
-
-		relayProcessorDataReliability := NewRelayProcessor(
-			ctx,
-			quorumParams,
-			rpccs.consumerConsistency,
-			rpccs.rpcConsumerLogs,
-			rpccs,
-			rpccs.relayRetriesManager,
-			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
-			rpccs.consumerSessionManager.GetQoSManager(),
-		)
-		err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
-		if err != nil {
-			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
-		}
-
-		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-		defer cancel()
-		err = relayProcessorDataReliability.WaitForResults(processingCtx)
-		if err != nil {
-			return utils.LavaFormatWarning("failed sending data reliability relays", err, utils.Attribute{Key: "relayProcessorDataReliability", Value: relayProcessorDataReliability})
-		}
-		relayResultsDataReliability := relayProcessorDataReliability.NodeResults()
-		resultsDataReliability := []common.RelayResult{}
-		for _, result := range relayResultsDataReliability {
-			if result.Finalized {
-				resultsDataReliability = append(resultsDataReliability, result)
-			}
-		}
-		if len(resultsDataReliability) == 0 {
-			utils.LavaFormatDebug("skipping data reliability check since responses from second batch was not finalized", utils.Attribute{Key: "results", Value: relayResultsDataReliability})
-			return nil
-		}
-		results = append(results, resultsDataReliability...)
-	}
-	for i := 0; i < len(results)-1; i++ {
-		relayResult := results[i]
-		relayResultDataReliability := results[i+1]
-		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpccs.chainParser)
-		if conflict != nil {
-			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
-			if len(protocolMessage.GetExtensions()) == 0 {
-				err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, relayResultDataReliability.ConflictHandler)
-				if err != nil {
-					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
-				}
-				if rpccs.reporter != nil {
-					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
-					rpccs.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
-				}
-			}
-		} else {
-			utils.LavaFormatDebug("[+] verified relay successfully with data reliability", utils.LogAttr("api", protocolMessage.GetApi().Name))
-		}
-	}
-	return nil
-}
+// sendDataReliabilityRelayIfApplicable function removed - smart router only works with static providers
+// where protocol-level data reliability verification and conflict detection are not needed
 
 func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
