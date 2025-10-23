@@ -32,7 +32,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
@@ -205,7 +205,7 @@ type rpcConsumerOptions struct {
 }
 
 type rpcConsumerOut struct {
-	rpcConsumerServer        *rpcconsumer.RPCConsumerServer
+	rpcConsumerServer        *rpcsmartrouter.RPCConsumerServer
 	mockConsumerStateTracker *mockConsumerStateTracker
 	cache                    *performance.Cache
 }
@@ -220,7 +220,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 
-	rpcConsumerServer := &rpcconsumer.RPCConsumerServer{}
+	rpcConsumerServer := &rpcsmartrouter.RPCConsumerServer{}
 	rpcEndpoint := &lavasession.RPCEndpoint{
 		NetworkAddress:  rpcConsumerOptions.consumerListenAddress,
 		ChainID:         rpcConsumerOptions.specId,
@@ -274,7 +274,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		}
 	}
 
-	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
+	consumerConsistency := rpcsmartrouter.NewSmartRouterConsistency(rpcConsumerOptions.specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)

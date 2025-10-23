@@ -19,7 +19,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/monitoring"
 	"github.com/lavanet/lava/v5/protocol/performance/connection"
 	validators "github.com/lavanet/lava/v5/protocol/performance/validators"
-	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -37,7 +37,7 @@ func main() {
 	// version cobra command
 	cmdVersion := versionCommand()
 	// rpc consumer cobra command
-	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
+	cmdRPCConsumer := rpcsmartrouter.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
 	// badge generator cobra command
@@ -66,7 +66,7 @@ func main() {
 		Short: "Test commands for protocol network",
 	}
 	rootCmd.AddCommand(testCmd)
-	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
+	testCmd.AddCommand(rpcsmartrouter.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 	testCmd.AddCommand(statetracker.CreateRelayPaymentCSVCobraCommand())

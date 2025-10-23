@@ -12,7 +12,7 @@ import (
 	cmdcommon "github.com/lavanet/lava/v5/cmd/common"
 	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v5/protocol/badgegenerator"
-	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	utilscli "github.com/lavanet/lava/v5/utils/cli"
@@ -28,7 +28,7 @@ func main() {
 	rootCmd, _ := cmd.NewRootCmd()
 
 	// rpc consumer cobra command
-	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
+	cmdRPCConsumer := rpcsmartrouter.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
 	// badge generator cobra command
@@ -47,7 +47,7 @@ func main() {
 		Short: "Test commands for protocol network",
 	}
 	rootCmd.AddCommand(testCmd)
-	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
+	testCmd.AddCommand(rpcsmartrouter.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 	testCmd.AddCommand(utilscli.NewMultiSendTxCmd())
