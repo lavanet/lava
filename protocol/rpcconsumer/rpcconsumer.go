@@ -27,7 +27,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -135,8 +134,7 @@ type rpcConsumerStartOptions struct {
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
 	refererData              *chainlib.RefererData
-	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as backup to lava providers
-	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
+	// staticProvidersList and backupProvidersList removed - use rpcsmartrouter for static providers
 	geoLocation              uint64
 }
 
@@ -358,14 +356,9 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 
-	// Filter the relevant static providers
-	relevantStaticProviderList := []*lavasession.RPCStaticProviderEndpoint{}
-	for _, staticProvider := range options.staticProvidersList {
-		if staticProvider.ChainID == rpcEndpoint.ChainID {
-			relevantStaticProviderList = append(relevantStaticProviderList, staticProvider)
-		}
-	}
-	staticProvidersActive := len(relevantStaticProviderList) > 0
+	// Static providers removed - rpcconsumer only works with blockchain-paired providers
+	// For static providers, use rpcsmartrouter instead
+	staticProvidersActive := false
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
@@ -426,8 +419,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	if lavasession.PeriodicProbeProviders {
 		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}
-	// Register For Updates
-	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList, options.backupProvidersList)
+	// Register For Updates - rpcconsumer only uses blockchain-paired providers (no static providers)
+	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, nil, nil)
 
 	var relaysMonitor *metrics.RelaysMonitor
 	if options.cmdFlags.RelaysHealthEnableFlag {
@@ -613,37 +606,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				gasPricesStr = statetracker.DefaultGasPrice
 			}
 
-			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var staticProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.StaticProvidersConfigName) {
-				staticProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
-				if err != nil {
-					return utils.LavaFormatError("invalid static providers definition", err)
-				}
-				for _, endpoint := range staticProviderEndpoints {
-					utils.LavaFormatInfo("Static Provider Endpoint:",
-						utils.Attribute{Key: "Name", Value: endpoint.Name},
-						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
-						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
-						utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
-				}
-			}
-
-			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var backupProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.BackupProvidersConfigName) {
-				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
-				backupProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
-				if err != nil {
-					return utils.LavaFormatError("invalid backup providers definition", err)
-				}
-				for _, endpoint := range backupProviderEndpoints {
-					utils.LavaFormatInfo("Backup Provider Endpoint:",
-						utils.Attribute{Key: "Name", Value: endpoint.Name},
-						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
-						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
-						utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
-				}
+			// Static providers removed - rpcconsumer only works with blockchain-paired providers
+			// For static providers, use rpcsmartrouter instead
+			if viper.IsSet(common.StaticProvidersConfigName) || viper.IsSet(common.BackupProvidersConfigName) {
+				utils.LavaFormatWarning("Static providers configuration detected but ignored. rpcconsumer only works with blockchain-paired providers. Please use rpcsmartrouter for static provider configurations.", nil)
 			}
 
 			// set up the txFactory with gas adjustments and gas
@@ -759,8 +725,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				consumerPropagatedFlags,
 				rpcConsumerSharedState,
 				refererData,
-				staticProviderEndpoints,
-				backupProviderEndpoints,
 				geolocation,
 			})
 			return err
