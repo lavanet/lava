@@ -396,6 +396,315 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	})
 }
 
+// TestStatefulRelayTargetsHeader tests the stateful API header functionality
+func TestStatefulRelayTargetsHeader(t *testing.T) {
+	ctx := context.Background()
+	providerAddress1 := "lava@provider1"
+	providerAddress2 := "lava@provider2"
+	providerAddress3 := "lava@provider3"
+
+	t.Run("stateful API - all providers header included", func(t *testing.T) {
+		// Create a mock relay processor with stateful relay targets
+		relayProcessor := &RelayProcessor{
+			quorumParams:         common.DefaultQuorumParams,
+			statefulRelayTargets: []string{providerAddress1, providerAddress2, providerAddress3},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a stateful API protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{
+				Name: "eth_sendTransaction",
+				Category: spectypes.SpecCategory{
+					Stateful: common.CONSISTENCY_SELECT_ALL_PROVIDERS,
+				},
+			},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+
+		// Verify the result - should have:
+		// 1. Single provider header (winning provider)
+		// 2. Stateful API header
+		// 3. Stateful all providers header
+		// 4. User request type header
+		require.Len(t, relayResult.Reply.Metadata, 4)
+
+		// Find and verify the stateful API header
+		var statefulHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.STATEFUL_API_HEADER {
+				statefulHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, statefulHeader)
+		require.Equal(t, "true", statefulHeader.Value)
+
+		// Find and verify the stateful all providers header
+		var allProvidersHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.STATEFUL_ALL_PROVIDERS_HEADER_NAME {
+				allProvidersHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, allProvidersHeader)
+
+		// Verify all three providers are in the header
+		headerValue := allProvidersHeader.Value
+		require.Contains(t, headerValue, providerAddress1)
+		require.Contains(t, headerValue, providerAddress2)
+		require.Contains(t, headerValue, providerAddress3)
+	})
+
+	t.Run("stateful API - single provider in targets", func(t *testing.T) {
+		// Create a mock relay processor with only one stateful relay target
+		relayProcessor := &RelayProcessor{
+			quorumParams:         common.DefaultQuorumParams,
+			statefulRelayTargets: []string{providerAddress1},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a stateful API protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{
+				Name: "eth_sendRawTransaction",
+				Category: spectypes.SpecCategory{
+					Stateful: common.CONSISTENCY_SELECT_ALL_PROVIDERS,
+				},
+			},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction")
+
+		// Verify the result
+		require.Len(t, relayResult.Reply.Metadata, 4)
+
+		// Find and verify the stateful all providers header
+		var allProvidersHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.STATEFUL_ALL_PROVIDERS_HEADER_NAME {
+				allProvidersHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, allProvidersHeader)
+		require.Contains(t, allProvidersHeader.Value, providerAddress1)
+	})
+
+	t.Run("stateful API - empty targets list", func(t *testing.T) {
+		// Create a mock relay processor with empty stateful relay targets
+		relayProcessor := &RelayProcessor{
+			quorumParams:         common.DefaultQuorumParams,
+			statefulRelayTargets: []string{},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a stateful API protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{
+				Name: "eth_sendTransaction",
+				Category: spectypes.SpecCategory{
+					Stateful: common.CONSISTENCY_SELECT_ALL_PROVIDERS,
+				},
+			},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+
+		// Verify the result - should NOT have stateful all providers header (empty list)
+		// Should have: single provider header, stateful API header, user request type header
+		require.Len(t, relayResult.Reply.Metadata, 3)
+
+		// Verify stateful all providers header is NOT present
+		for _, meta := range relayResult.Reply.Metadata {
+			require.NotEqual(t, common.STATEFUL_ALL_PROVIDERS_HEADER_NAME, meta.Name)
+		}
+
+		// Verify stateful API header IS present
+		var statefulHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.STATEFUL_API_HEADER {
+				statefulHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, statefulHeader)
+		require.Equal(t, "true", statefulHeader.Value)
+	})
+
+	t.Run("non-stateful API - no stateful headers", func(t *testing.T) {
+		// Create a mock relay processor without stateful relay targets
+		relayProcessor := &RelayProcessor{
+			quorumParams:         common.DefaultQuorumParams,
+			statefulRelayTargets: nil, // No stateful targets
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a non-stateful API protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{
+				Name: "eth_getBlockByNumber",
+				Category: spectypes.SpecCategory{
+					Stateful: 0, // Not stateful
+				},
+			},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber")
+
+		// Verify the result - should only have: single provider header + user request type header
+		require.Len(t, relayResult.Reply.Metadata, 2)
+
+		// Verify NO stateful headers are present
+		for _, meta := range relayResult.Reply.Metadata {
+			require.NotEqual(t, common.STATEFUL_API_HEADER, meta.Name)
+			require.NotEqual(t, common.STATEFUL_ALL_PROVIDERS_HEADER_NAME, meta.Name)
+		}
+
+		// Verify single provider header is present
+		var providerHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			if meta.Name == common.PROVIDER_ADDRESS_HEADER_NAME {
+				providerHeader = &meta
+				break
+			}
+		}
+		require.NotNil(t, providerHeader)
+		require.Equal(t, providerAddress1, providerHeader.Value)
+	})
+
+	t.Run("stateful API with quorum enabled - both headers present", func(t *testing.T) {
+		// This is an edge case - stateful API shouldn't use quorum, but let's test the behavior
+		relayProcessor := &RelayProcessor{
+			quorumParams:         common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			statefulRelayTargets: []string{providerAddress1, providerAddress2},
+			ResultsManager: &MockResultsManager{
+				successResults: []common.RelayResult{
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+				},
+				nodeErrorsList: []common.RelayResult{},
+			},
+		}
+
+		// Create a relay result
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			Reply: &pairingtypes.RelayReply{
+				Metadata: []pairingtypes.Metadata{},
+			},
+		}
+
+		// Create a stateful API protocol message
+		mockProtocolMessage := &MockProtocolMessage{
+			api: &spectypes.Api{
+				Name: "eth_sendTransaction",
+				Category: spectypes.SpecCategory{
+					Stateful: common.CONSISTENCY_SELECT_ALL_PROVIDERS,
+				},
+			},
+		}
+
+		// Create RPC consumer server
+		rpcConsumerServer := &RPCConsumerServer{}
+
+		// Call the function
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+
+		// Verify both quorum and stateful headers are present
+		// (even though this is an unusual scenario)
+		var quorumHeader, statefulHeader, allProvidersHeader *pairingtypes.Metadata
+		for _, meta := range relayResult.Reply.Metadata {
+			switch meta.Name {
+			case common.QUORUM_ALL_PROVIDERS_HEADER_NAME:
+				quorumHeader = &meta
+			case common.STATEFUL_API_HEADER:
+				statefulHeader = &meta
+			case common.STATEFUL_ALL_PROVIDERS_HEADER_NAME:
+				allProvidersHeader = &meta
+			}
+		}
+
+		// Verify stateful headers are present
+		require.NotNil(t, statefulHeader)
+		require.Equal(t, "true", statefulHeader.Value)
+		require.NotNil(t, allProvidersHeader)
+
+		// Quorum header would also be present if quorum is enabled
+		require.NotNil(t, quorumHeader)
+	})
+}
+
 // Test the full SendParsedRelay integration (if we can mock the dependencies)
 func TestSendParsedRelayIntegration(t *testing.T) {
 	// This test would require more complex mocking of the entire relay processor
