@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -801,6 +802,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			defer func() {
+				// Recover from any panics to prevent consumer crash
+				if r := recover(); r != nil {
+					errResponse = utils.LavaFormatError("Panic recovered in sendRelayToProvider goroutine", fmt.Errorf("%v", r), utils.LogAttr("provider", providerPublicAddress), utils.LogAttr("GUID", goroutineCtx), utils.LogAttr("stack", string(debug.Stack())))
+				}
+
 				// Return response
 				relayProcessor.SetResponse(&relayResponse{
 					relayResult: *localRelayResult,
@@ -811,7 +817,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				goroutineCtxCancel()
 			}()
 
-			localRelayRequestData := *protocolMessage.RelayPrivateData()
+			relayPrivateData := protocolMessage.RelayPrivateData()
+			if relayPrivateData == nil {
+				errResponse = utils.LavaFormatError("RelayPrivateData is nil", nil, utils.LogAttr("GUID", goroutineCtx))
+				return
+			}
+			localRelayRequestData := *relayPrivateData
 
 			// Extract fields from the sessionInfo
 			singleConsumerSession := sessionInfo.Session
