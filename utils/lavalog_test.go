@@ -37,27 +37,26 @@ func TestExtractErrorStructure(t *testing.T) {
 			name: "plain error",
 			err:  fmt.Errorf("connection timeout"),
 			expected: map[string]interface{}{
-				"error":             "connection timeout",
-				"error_description": "connection timeout",
+				"error":         "connection timeout",
+				"error_message": "connection timeout",
 			},
 		},
 		{
 			name: "sdkerrors.Error",
 			err:  sdkerrors.New("TestError", 1234, "test error description"),
 			expected: map[string]interface{}{
-				"error_code":        uint32(1234),
-				"error_codespace":   "TestError",
-				"error":             "test error description",
-				"error_description": "test error description",
+				"error_code":    uint32(1234),
+				"error":         "test error description",
+				"error_message": "test error description",
 			},
 		},
 		{
 			name: "gRPC status error with embedded code",
-			err:  status.Error(codes.Unknown, "rpc error: code = Code(3370) desc = relayReceiver is disabled"),
+			err:  status.Error(codes.Code(3370), "relayReceiver is disabled"),
 			expected: map[string]interface{}{
-				"error":             "rpc error: code = Code(3370) desc = relayReceiver is disabled",
-				"error_code":        uint32(3370),
-				"error_description": "relayReceiver is disabled",
+				"error":         "rpc error: code = Code(3370) desc = relayReceiver is disabled",
+				"error_code":    uint32(3370),
+				"error_message": "relayReceiver is disabled",
 			},
 		},
 	}
@@ -171,10 +170,10 @@ func TestStructuredLogging(t *testing.T) {
 			t.Errorf("expected error_code 3369, got %v", code)
 		}
 
-		if desc, exists := structured["error_description"]; !exists {
-			t.Error("expected error_description to be extracted")
+		if desc, exists := structured["error_message"]; !exists {
+			t.Error("expected error_message to be extracted")
 		} else if desc == "" {
-			t.Error("expected non-empty error_description")
+			t.Error("expected non-empty error_message")
 		}
 
 		// Step 3: rpcconsumer_server logs the wrapped error with more context

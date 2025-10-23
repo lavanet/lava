@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -17,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -235,13 +233,14 @@ func ExtractErrorStructure(err error) map[string]interface{} {
 	result := make(map[string]interface{})
 	errMsg := err.Error()
 
+	// Always include full raw error
+	result["error"] = errMsg
+
 	// Step 1: Check if it's an sdkerrors.Error (only works for direct, non-gRPC errors)
 	var sdkErr *sdkerrors.Error
 	if errors.As(err, &sdkErr) {
 		result["error_code"] = sdkErr.ABCICode()
-		result["error_codespace"] = sdkErr.Codespace()
-		result["error"] = errMsg
-		result["error_description"] = parseErrorDescription(errMsg)
+		result["error_message"] = sdkErr.Error()
 		return result
 	}
 
@@ -250,115 +249,19 @@ func ExtractErrorStructure(err error) map[string]interface{} {
 		code := st.Code()
 		msg := st.Message()
 
-		// Extract error code - try multiple sources
-		if errorCode := extractErrorCode(code, msg); errorCode > 0 {
-			result["error_code"] = errorCode
-		} else if uint32(code) <= 16 {
-			// Standard gRPC codes: use meaningful name
-			result["grpc_code"] = code.String()
+		// Extract error code if it's a custom code (>16)
+		if uint32(code) > 16 {
+			result["error_code"] = uint32(code)
 		}
 
-		result["error"] = msg
-		result["error_description"] = parseErrorDescription(msg)
-
-		// Extract additional details if available
-		if details := parseErrorDetails(msg); details != "" {
-			result["error_details"] = details
-		}
-
+		result["error_message"] = msg
 		return result
 	}
 
-	// Step 3: Fallback for plain errors - parse generically
-	result["error"] = errMsg
-	result["error_description"] = parseErrorDescription(errMsg)
-
-	if details := parseErrorDetails(errMsg); details != "" {
-		result["error_details"] = details
-	}
+	// Step 3: Fallback for plain errors
+	result["error_message"] = errMsg
 
 	return result
-}
-
-// extractErrorCode attempts to extract a numeric error code from various sources
-func extractErrorCode(grpcCode codes.Code, message string) uint32 {
-	// First, check if gRPC code itself is a custom code (>16)
-	if uint32(grpcCode) > 16 {
-		return uint32(grpcCode)
-	}
-
-	// Try to find embedded code in message: "Code(3369)" or "code = Code(3369)"
-	re := regexp.MustCompile(`[Cc]ode\((\d+)\)`)
-	if matches := re.FindStringSubmatch(message); len(matches) > 1 {
-		if code, err := strconv.ParseUint(matches[1], 10, 32); err == nil {
-			return uint32(code)
-		}
-	}
-
-	return 0
-}
-
-// parseErrorDescription extracts a high-level description from error message
-// Generic pattern: takes text before first colon or "ErrMsg"
-func parseErrorDescription(message string) string {
-	// Remove common prefixes
-	msg := strings.TrimPrefix(message, "rpc error: ")
-	msg = strings.TrimPrefix(msg, "code = ")
-
-	// Pattern 1: "desc = <description>: ..." or "desc = <description>"
-	if idx := strings.Index(msg, "desc = "); idx >= 0 {
-		msg = msg[idx+7:] // Skip "desc = "
-	}
-
-	// Pattern 2: Take text before first colon (description: details)
-	if idx := strings.Index(msg, ":"); idx > 0 {
-		return strings.TrimSpace(msg[:idx])
-	}
-
-	// Pattern 3: Take text before "ErrMsg"
-	if idx := strings.Index(msg, " ErrMsg"); idx > 0 {
-		return strings.TrimSpace(msg[:idx])
-	}
-
-	// No clear pattern - return first 100 chars as description
-	if len(msg) > 100 {
-		return strings.TrimSpace(msg[:100])
-	}
-
-	return strings.TrimSpace(msg)
-}
-
-// parseErrorDetails extracts detailed information from error message
-// Generic pattern: takes text after first colon
-func parseErrorDetails(message string) string {
-	// Skip common prefixes
-	msg := strings.TrimPrefix(message, "rpc error: ")
-	msg = strings.TrimPrefix(msg, "code = ")
-	if idx := strings.Index(msg, "desc = "); idx >= 0 {
-		msg = msg[idx+7:]
-	}
-
-	// Pattern 1: Text after "ErrMsg: "
-	if idx := strings.Index(msg, "ErrMsg: "); idx >= 0 {
-		details := msg[idx+8:]
-		// Remove trailing error chain parts
-		if endIdx := strings.Index(details, "{"); endIdx > 0 {
-			details = details[:endIdx]
-		}
-		return strings.TrimSpace(details)
-	}
-
-	// Pattern 2: Text after first colon
-	if idx := strings.Index(msg, ":"); idx > 0 && idx < len(msg)-1 {
-		details := msg[idx+1:]
-		// Take only the first segment (before next colon)
-		if nextIdx := strings.Index(details, ":"); nextIdx > 0 {
-			details = details[:nextIdx]
-		}
-		return strings.TrimSpace(details)
-	}
-
-	return ""
 }
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
