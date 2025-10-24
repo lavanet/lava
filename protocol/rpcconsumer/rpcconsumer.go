@@ -351,7 +351,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		}
 	}
 
-	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker)
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker, options.cmdFlags.GitHubToken)
 	if err != nil {
 		err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -462,7 +462,7 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 			endpoint.HealthCheckPath = common.DEFAULT_HEALTH_PATH
 		}
 	}
-	return
+	return endpoints, err
 }
 
 func CreateRPCConsumerCobraCommand() *cobra.Command {
@@ -695,6 +695,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
+				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 			}
 
 			if viper.GetBool(LavaOverLavaBackupFlagName) {

@@ -184,7 +184,7 @@ type RPCEndpoint struct {
 
 func (endpoint *RPCEndpoint) String() (retStr string) {
 	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
+	return retStr
 }
 
 func (rpce *RPCEndpoint) New(address, chainID, apiInterface string, geolocation uint64) *RPCEndpoint {
