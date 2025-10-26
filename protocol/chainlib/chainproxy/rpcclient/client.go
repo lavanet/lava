@@ -383,7 +383,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 		case map[string]interface{}:
 			msg, err = c.newMessageMapWithID(elem.Method, elem.ID, args)
 		case nil:
-			msg, err = c.newMessageArray(elem.Method) // in case of nil, we will send it as an empty array.
+			msg, err = c.newMessageArrayWithID(elem.Method, elem.ID, nil)
 		default:
 			return fmt.Errorf("invalid args type in message %t", args)
 		}
