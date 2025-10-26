@@ -14,17 +14,18 @@ const (
 )
 
 type ProviderMetrics struct {
-	specID                    string
-	apiInterface              string
-	endpoint                  string
-	lock                      sync.Mutex
-	totalCUServicedMetric     *prometheus.CounterVec
-	totalCUPaidMetric         *prometheus.CounterVec
-	totalRelaysServicedMetric *MappedLabelsCounterVec
-	totalErroredMetric        *prometheus.CounterVec
-	consumerQoSMetric         *prometheus.GaugeVec
-	loadRateMetric            *prometheus.GaugeVec
-	providerLatencyMetric     *prometheus.GaugeVec
+	specID                        string
+	apiInterface                  string
+	endpoint                      string
+	lock                          sync.Mutex
+	totalCUServicedMetric         *prometheus.CounterVec
+	totalCUPaidMetric             *prometheus.CounterVec
+	totalRelaysServicedMetric     *MappedLabelsCounterVec
+	totalErroredMetric            *prometheus.CounterVec
+	consumerQoSMetric             *prometheus.GaugeVec
+	loadRateMetric                *prometheus.GaugeVec
+	providerLatencyMetric         *prometheus.GaugeVec
+	providerEndToEndLatencyMetric *prometheus.GaugeVec
 }
 
 func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport) {
@@ -69,6 +70,15 @@ func (pm *ProviderMetrics) SetLatency(latencyMs float64) {
 	pm.providerLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(latencyMs)
 }
 
+func (pm *ProviderMetrics) SetEndToEndLatency(latencyMs float64) {
+	if pm == nil {
+		return
+	}
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+	pm.providerEndToEndLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(latencyMs)
+}
+
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
 	if pm == nil {
 		return
@@ -94,19 +104,21 @@ func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMe
 	consumerQoSMetric *prometheus.GaugeVec,
 	loadRateMetric *prometheus.GaugeVec,
 	providerLatencyMetric *prometheus.GaugeVec,
+	providerEndToEndLatencyMetric *prometheus.GaugeVec,
 ) *ProviderMetrics {
 	pm := &ProviderMetrics{
-		specID:                    specID,
-		apiInterface:              apiInterface,
-		endpoint:                  endpoint,
-		lock:                      sync.Mutex{},
-		totalCUServicedMetric:     totalCUServicedMetric,
-		totalCUPaidMetric:         totalCUPaidMetric,
-		totalRelaysServicedMetric: totalRelaysServicedMetric,
-		totalErroredMetric:        totalErroredMetric,
-		consumerQoSMetric:         consumerQoSMetric,
-		loadRateMetric:            loadRateMetric,
-		providerLatencyMetric:     providerLatencyMetric,
+		specID:                        specID,
+		apiInterface:                  apiInterface,
+		endpoint:                      endpoint,
+		lock:                          sync.Mutex{},
+		totalCUServicedMetric:         totalCUServicedMetric,
+		totalCUPaidMetric:             totalCUPaidMetric,
+		totalRelaysServicedMetric:     totalRelaysServicedMetric,
+		totalErroredMetric:            totalErroredMetric,
+		consumerQoSMetric:             consumerQoSMetric,
+		loadRateMetric:                loadRateMetric,
+		providerLatencyMetric:         providerLatencyMetric,
+		providerEndToEndLatencyMetric: providerEndToEndLatencyMetric,
 	}
 	return pm
 }
