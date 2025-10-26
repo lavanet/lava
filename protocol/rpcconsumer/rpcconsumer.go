@@ -379,7 +379,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var err error
 
 		// Create / Use existing optimizer
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		qosSelectionEnabled := viper.GetBool(common.SetProviderOptimizerQosSelectionInTierFlag)
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, qosSelectionEnabled)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
 			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -821,6 +822,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCConsumer.Flags().BoolVar(&provideroptimizer.AutoAdjustTiers, common.SetProviderOptimizerAutoAdjustTiers, provideroptimizer.AutoAdjustTiers, "optimizer enable auto adjust tiers, this flag will fix the tiers based on the number of providers in the pairing, defaults to (false)")
+	cmdRPCConsumer.Flags().Bool(common.SetProviderOptimizerQosSelectionInTierFlag, false, "enable QoS-based selection within tiers instead of stake-based selection, defaults to (false)")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags
