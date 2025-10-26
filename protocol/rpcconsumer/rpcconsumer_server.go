@@ -991,8 +991,39 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// in case the error is a node error we don't want to cache
-				if !isNodeError {
+
+				// Check if this is an unsupported method error specifically
+				replyDataStr := string(localRelayResult.Reply.Data)
+				// Check for unsupported method errors in both node errors AND successful responses with error content
+				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessage(replyDataStr)
+
+				utils.LavaFormatDebug("Checking for unsupported method error",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("isNodeError", isNodeError),
+					utils.LogAttr("replyData", replyDataStr),
+					utils.LogAttr("isUnsupportedMethodError", isUnsupportedMethodError),
+					utils.LogAttr("quorumEnabled", quorumParams.Enabled()),
+				)
+
+				// Determine if we should cache this response
+				// - Always cache unsupported method errors (deterministic, quorum doesn't add value)
+				// - Only cache successful responses when quorum is disabled
+				shouldCache := false
+				if isUnsupportedMethodError {
+					shouldCache = true // Always cache unsupported method errors
+				} else if !quorumParams.Enabled() {
+					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
+				} else {
+					// Quorum is enabled and this is not an unsupported method error
+					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("quorumEnabled", true),
+						utils.LogAttr("isNodeError", isNodeError),
+						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
+					)
+				}
+
+				if shouldCache {
 					// copy reply data so if it changes it doesn't panic mid async send
 					copyReply := &pairingtypes.RelayReply{}
 					copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)

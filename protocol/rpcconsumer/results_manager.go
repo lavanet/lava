@@ -202,15 +202,7 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
 		return true
 	}
-	if selection == Quorum {
-		// we need a quorum of all node results
-		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
-		if nodeErrors+resultsCount >= requiredSuccesses {
-			// we have enough node results for our quorum
-			utils.LavaFormatDebug("Reached RequiredResults with errors", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("requiredSuccesses", requiredSuccesses))
-			return true
-		}
-	}
+	// Only count successful results for quorum validation
 	return false
 }
 
