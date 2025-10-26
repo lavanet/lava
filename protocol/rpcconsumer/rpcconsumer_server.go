@@ -1178,10 +1178,28 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.LogAttr("isNodeError", isNodeError),
 					utils.LogAttr("replyData", replyDataStr),
 					utils.LogAttr("isUnsupportedMethodError", isUnsupportedMethodError),
+					utils.LogAttr("quorumEnabled", quorumParams.Enabled()),
 				)
 
-				// Cache successful responses AND unsupported method errors (with shorter TTL)
-				if !isNodeError || isUnsupportedMethodError {
+				// Determine if we should cache this response
+				// - Always cache unsupported method errors (deterministic, quorum doesn't add value)
+				// - Only cache successful responses when quorum is disabled
+				shouldCache := false
+				if isUnsupportedMethodError {
+					shouldCache = true // Always cache unsupported method errors
+				} else if !quorumParams.Enabled() {
+					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
+				} else {
+					// Quorum is enabled and this is not an unsupported method error
+					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("quorumEnabled", true),
+						utils.LogAttr("isNodeError", isNodeError),
+						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
+					)
+				}
+
+				if shouldCache {
 					// copy reply data so if it changes it doesn't panic mid async send
 					copyReply := &pairingtypes.RelayReply{}
 					copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)

@@ -322,8 +322,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 
 		if rp.quorumParams.Enabled() {
 			// Quorum feature enabled: check if quorum is still mathematically possible and quorum is not yet reached
-			maxRemainingProviders := rp.quorumParams.Max - (nodeErrors + resultsCount)
-			// The following line checks if, after accounting for the maximum possible additional responses (maxRemainingProviders)
+			// Only count successful results for quorum calculation
+			maxRemainingProviders := rp.quorumParams.Max - resultsCount
+			// The following line checks if, after accounting for the maximum possible additional successful responses (maxRemainingProviders)
 			// and the current highest number of matching responses (rp.currentQourumEqualResults), it is still mathematically possible
 			// to reach the required quorum threshold (calculated as quorum rate * max providers).
 			// If not, then retrying is not needed because quorum cannot be achieved anymore.
@@ -586,15 +587,23 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}()
 
+	// Calculate the required quorum size
+	var requiredQuorumSize int
+	if rp.quorumParams.Enabled() {
+		requiredQuorumSize = rp.getActualQuorumSize(successResultsCount)
+	} else {
+		requiredQuorumSize = rp.quorumParams.Min
+	}
+
 	if rp.debugRelay {
-		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min))
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
 	}
 	// there are enough successes
-	if successResultsCount >= rp.quorumParams.Min {
+	if successResultsCount >= requiredQuorumSize {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
 		}
-		return rp.responsesQuorum(successResults, rp.quorumParams.Min)
+		return rp.responsesQuorum(successResults, requiredQuorumSize)
 	}
 
 	if rp.debugRelay {
@@ -612,38 +621,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}
 
-	// there are not enough successes, let's check if there are enough node errors and protocol errors
-	// Protocol errors (like consistency violations) should count as attempted responses
-	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
-	if totalResponses >= rp.quorumParams.Min {
-		if rp.selection == Quorum {
-			// When quorum is enabled, we need to ensure we have enough successful responses
-			// to actually meet quorum requirements, not just enough total attempts
-			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
-				// We have enough total responses, but not enough successful ones for quorum
-				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
-					nil,
-					utils.LogAttr("successResultsCount", successResultsCount),
-					utils.LogAttr("nodeErrorCount", nodeErrorCount),
-					utils.LogAttr("protocolErrorCount", protocolErrorCount),
-					utils.LogAttr("quorumMin", rp.quorumParams.Min),
-					utils.LogAttr("totalResponses", totalResponses))
-			}
-			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
-			nodeResults = append(nodeResults, successResults...)
-			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, rp.quorumParams.Min)
-		} else if rp.selection == BestResult && successResultsCount > nodeErrorCount {
-			// we have more than half succeeded, and we are success oriented
-			return rp.responsesQuorum(successResults, (rp.quorumParams.Min+1)/2)
-		}
-	}
-	// we don't have enough for a quorum, prefer a node error on protocol errors
-	if nodeErrorCount >= rp.quorumParams.Min { // if we have node errors, we prefer returning them over protocol errors.
-		nodeErr := rp.GetBestNodeErrorMessageForUser()
-		return &nodeErr.response.relayResult, nil
-	}
-
+	// Not enough successful results - continue waiting for more responses
 	// if we got here we trigger a protocol error
 	returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	if nodeErrorCount > 0 { // if we have node errors, we prefer returning them over protocol errors, even if it's just the one
