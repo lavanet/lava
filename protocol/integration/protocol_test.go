@@ -1325,22 +1325,22 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				require.NoError(t, err)
 
 				resp.Body.Close()
-				
+
 				// For the error case, check that the response contains the error
 				if play.name == "archive with 3 errored provider" {
 					// Log the actual response for debugging
 					t.Logf("Actual response: %s", string(bodyBytes))
-					
+
 					// The response is double-wrapped: {"error": "{\"Error_GUID\":\"...\",\"Error\":\"...\"}"}
 					var outerResp map[string]interface{}
 					err := json.Unmarshal(bodyBytes, &outerResp)
 					require.NoError(t, err)
 					require.Contains(t, outerResp, "error")
-					
+
 					// Now parse the inner error string
 					errorStr, ok := outerResp["error"].(string)
 					require.True(t, ok, "Error field is not a string: %T", outerResp["error"])
-					
+
 					// Try to parse as JSON first
 					var innerError map[string]interface{}
 					err = json.Unmarshal([]byte(errorStr), &innerError)
