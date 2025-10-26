@@ -52,6 +52,7 @@ type ConsumerMetricsManager struct {
 	totalWebSocketConnectionsActive             *prometheus.GaugeVec
 	blockMetric                                 *prometheus.GaugeVec
 	latencyMetric                               *prometheus.GaugeVec
+	endToEndLatencyMetric                       *prometheus.GaugeVec
 	qosMetric                                   *MappedLabelsGaugeVec
 	providerReputationMetric                    *MappedLabelsGaugeVec
 	LatestBlockMetric                           *MappedLabelsGaugeVec
@@ -173,6 +174,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: blockedProviderMetricLabels,
 	})
 
+	endToEndLatencyMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_end_to_end_latency_milliseconds",
+		Help: "The full end-to-end latency from user request arrival to response sent in milliseconds",
+	}, []string{"spec", "apiInterface"})
+
 	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
@@ -286,6 +292,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(blockMetric)
 	prometheus.MustRegister(latencyMetric)
 	prometheus.MustRegister(providerLivenessMetric)
+	prometheus.MustRegister(endToEndLatencyMetric)
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
@@ -321,6 +328,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		totalErroredMetric:                          totalErroredMetric,
 		blockMetric:                                 blockMetric,
 		latencyMetric:                               latencyMetric,
+		endToEndLatencyMetric:                       endToEndLatencyMetric,
 		qosMetric:                                   qosMetric,
 		providerReputationMetric:                    providerReputationMetric,
 		LatestBlockMetric:                           latestBlockMetric,
@@ -452,6 +460,13 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	if !relayMetric.Success {
 		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
 	}
+}
+
+func (pme *ConsumerMetricsManager) SetEndToEndLatency(chainId string, apiInterface string, latency time.Duration) {
+	if pme == nil {
+		return
+	}
+	pme.endToEndLatencyMetric.WithLabelValues(chainId, apiInterface).Set(float64(latency.Milliseconds()))
 }
 
 func (pme *ConsumerMetricsManager) SetRelayProcessingLatencyBeforeProvider(latency time.Duration, chainId string, apiInterface string) {
