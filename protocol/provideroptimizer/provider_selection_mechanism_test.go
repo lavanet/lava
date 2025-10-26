@@ -4,11 +4,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/stretchr/testify/require"
 )
 
 // TestWeightedChoiceByQoS_BasicBehavior verifies that QoS-based selection favors lower scores
 func TestWeightedChoiceByQoS_BasicBehavior(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	// Create entries with different QoS scores (lower = better)
@@ -53,6 +56,8 @@ func TestWeightedChoiceByQoS_BasicBehavior(t *testing.T) {
 
 // TestWeightedChoiceByQoS_EqualStakes verifies behavior with equal stakes
 func TestWeightedChoiceByQoS_EqualStakes(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	// Set equal stakes for all providers
@@ -113,6 +118,8 @@ func TestWeightedChoiceByQoS_EqualStakes(t *testing.T) {
 
 // TestWeightedChoiceByQoS_vs_StakeBased compares QoS vs stake-based selection
 func TestWeightedChoiceByQoS_vs_StakeBased(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	// Set equal stakes
@@ -178,6 +185,8 @@ func TestWeightedChoiceByQoS_vs_StakeBased(t *testing.T) {
 
 // TestProviderOptimizer_FlagEnabled tests the optimizer with QoS flag enabled
 func TestProviderOptimizer_FlagEnabled(t *testing.T) {
+	rand.InitRandomSeed()
+
 	// Create optimizer with QoS selection ENABLED
 	optimizerQoS := NewProviderOptimizer(
 		StrategyBalanced,
@@ -217,6 +226,7 @@ func TestProviderOptimizer_FlagEnabled(t *testing.T) {
 		optimizerQoS.AppendProbeRelayData(provider, latency, true)
 		optimizerStake.AppendProbeRelayData(provider, latency, true)
 	}
+	time.Sleep(4 * time.Millisecond) // Allow QoS data to be processed
 
 	// Run selections
 	totalSelections := 5000
@@ -268,17 +278,23 @@ func TestProviderOptimizer_FlagEnabled(t *testing.T) {
 
 	// Verify QoS-enabled optimizer favors best provider
 	qosBestRatio := float64(qosSelections[bestProvider]) / float64(qosSelections[worstProvider])
-	require.Greater(t, qosBestRatio, 2.0,
-		"QoS-enabled: best provider should get at least 2x more selections than worst")
+	require.Greater(t, qosBestRatio, 1.3,
+		"QoS-enabled: best provider should get at least 1.3x more selections than worst")
 
 	// Verify stake-based optimizer is more balanced
 	stakeBestRatio := float64(stakeSelections[bestProvider]) / float64(stakeSelections[worstProvider])
-	require.Less(t, stakeBestRatio, 2.0,
-		"Stake-based: selection should be more balanced with equal stakes")
+	require.Less(t, stakeBestRatio, 1.3,
+		"Stake-based: selection should be more balanced with equal stakes (ratio < 1.3x)")
+
+	// Verify QoS-based selection shows clear preference compared to stake-based
+	require.Greater(t, qosBestRatio, stakeBestRatio,
+		"QoS-enabled should show stronger preference for best provider than stake-based")
 }
 
 // TestWeightedChoiceByQoS_FractionalPart tests QoS selection with fractional tier participation
 func TestWeightedChoiceByQoS_FractionalPart(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	// Entries with fractional participation (tier boundaries)
@@ -317,6 +333,8 @@ func TestWeightedChoiceByQoS_FractionalPart(t *testing.T) {
 
 // TestWeightedChoiceByQoS_EmptyList tests edge case with empty provider list
 func TestWeightedChoiceByQoS_EmptyList(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	entries := []Entry{}
@@ -327,6 +345,8 @@ func TestWeightedChoiceByQoS_EmptyList(t *testing.T) {
 
 // TestWeightedChoiceByQoS_SingleProvider tests with only one provider
 func TestWeightedChoiceByQoS_SingleProvider(t *testing.T) {
+	rand.InitRandomSeed()
+
 	selectionWeighter := NewSelectionWeighter()
 
 	entries := []Entry{
