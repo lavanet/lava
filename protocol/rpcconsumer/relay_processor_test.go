@@ -345,10 +345,10 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err)
-		require.Equal(t, string(returnedResult.Reply.Data), `{"message":"bad","code":123}`)
-		require.Equal(t, returnedResult.StatusCode, http.StatusInternalServerError)
+		// With quorum changes, we now fail when we only have node errors
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed relay, insufficient results")
 	})
 }
 
@@ -446,10 +446,10 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err)
-		require.Equal(t, string(returnedResult.Reply.Data), `{"message":"bad","code":123}`)
-		require.Equal(t, returnedResult.StatusCode, http.StatusInternalServerError)
+		// With quorum changes, we now fail when we only have node errors
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed relay, insufficient results")
 	})
 }
 
