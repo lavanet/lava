@@ -636,12 +636,20 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 	originalSalt := relayData.Salt
 	originalRequestedBlock := relayData.RequestBlock
 	originalSeenBlock := relayData.SeenBlock
+
+	originalRequestId := relayData.RequestId
+	originalTaskId := relayData.XTaskId
+	originalTxId := relayData.XTxId
 	defer func() {
 		// return all information back to the object on defer (in any case)
 		relayData.Data = originalData
 		relayData.Salt = originalSalt
 		relayData.RequestBlock = originalRequestedBlock
 		relayData.SeenBlock = originalSeenBlock
+
+		relayData.RequestId = originalRequestId
+		relayData.XTaskId = originalTaskId
+		relayData.XTxId = originalTxId
 	}()
 
 	// we need to remove some data from the request so the cache will hit properly.
@@ -649,6 +657,9 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
 	relayData.Salt = nil                            // remove salt
 	relayData.SeenBlock = 0                         // remove seen block
+	relayData.RequestId = ""                        // remove request id (unique per request)
+	relayData.XTaskId = nil                         // remove task id (unique per request)
+	relayData.XTxId = nil                           // remove tx id (unique per request)
 	// we remove the discrepancy of requested block from the hash, and add it on the cache side instead
 	// this is due to the fact that we don't know the latest seen block at this moment, as on shared state
 	// only the cache has this information. we make sure the hashing at this stage does not include the requested block.
