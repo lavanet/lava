@@ -23,7 +23,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -52,7 +51,7 @@ const (
 	initRelaysConsumerIp                     = ""
 )
 
-var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
+var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 786, "timeout occurred while waiting for providers responses")
 
 type CancelableContextHolder struct {
 	Ctx        context.Context
@@ -68,9 +67,9 @@ type RPCConsumerServer struct {
 	rpcConsumerLogs                *metrics.RPCConsumerLogs
 	cache                          *performance.Cache
 	privKey                        *btcec.PrivateKey
-	consumerTxSender               ConsumerTxSender
+	consumerTxSender               interface{} // Smart router doesn't use blockchain sender
 	requiredResponses              int
-	finalizationConsensus          finalizationconsensus.FinalizationConsensusInf
+	finalizationConsensus          interface{} // Smart router doesn't use finalization consensus
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            *ConsumerConsistency
@@ -97,9 +96,9 @@ type ConsumerTxSender interface {
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
-	consumerStateTracker ConsumerStateTrackerInf,
+	consumerStateTracker interface{}, // Smart router doesn't use state tracker
 	chainParser chainlib.ChainParser,
-	finalizationConsensus finalizationconsensus.FinalizationConsensusInf,
+	finalizationConsensus interface{}, // Smart router doesn't use finalization consensus
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -338,11 +337,8 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	latestKnownBlock, numProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
-	if numProviders > 0 && latestKnownBlock > 0 {
-		return uint64(latestKnownBlock)
-	}
-	utils.LavaFormatWarning("no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
+	// Smart router doesn't track expected block height
+	// Return 0 to use default behavior
 	return 0
 }
 
@@ -947,8 +943,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// check whether we need a new protocol message with the new earliest block hash requested
 	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
 
-	// consumerEmergencyTracker always use latest virtual epoch
-	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
+	// Smart router doesn't track epochs, use fixed value
+	virtualEpoch := uint64(0)
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", protocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
@@ -1138,10 +1134,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// get here only if performed a regular relay successfully
-			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
-			if !rpccs.chainParser.ParseDirectiveEnabled() {
-				expectedBH = int64(math.MaxInt64)
-			}
+			// Smart router doesn't track expected block height
+			expectedBH := int64(math.MaxInt64)
+			numOfProviders := 1 // Smart router always has static providers
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			if expectedBH-latestBlock > 1000 {
@@ -1501,7 +1496,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
 		// TODO: allow static providers to detect hash mismatches,
 		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
+		_, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
 			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
 				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
@@ -1509,12 +1504,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			return 0, err, false
 		}
 
-		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-		if err != nil {
-			if finalizationAccountabilityError != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
-			}
-			return 0, err, false
+		// Smart router doesn't track finalization consensus
+		if rpccs.finalizationConsensus != nil {
+			// This should not happen in smart router mode
+			utils.LavaFormatWarning("Unexpected finalization consensus in smart router mode", nil)
 		}
 	}
 	relayResult.Finalized = isFinalized
@@ -1739,10 +1732,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if conflict != nil {
 			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
 			if len(protocolMessage.GetExtensions()) == 0 {
-				err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, relayResultDataReliability.ConflictHandler)
-				if err != nil {
-					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
-				}
+				// Smart router doesn't report conflicts to blockchain
+				utils.LavaFormatWarning("Data reliability conflict detected in smart router mode", nil,
+					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "conflict", Value: conflict})
 				if rpccs.reporter != nil {
 					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
 					rpccs.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))

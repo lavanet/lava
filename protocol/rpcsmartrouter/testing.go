@@ -95,12 +95,12 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 	return nil
 }
 
-func CreateTestRPCConsumerCobraCommand() *cobra.Command {
-	cmdTestRPCConsumer := &cobra.Command{
-		Use:     `rpcconsumer {listen-ip:listen-port spec-chain-id api-interface} ... `,
-		Short:   `test an rpc consumer by making calls in the chain api interface requested`,
-		Long:    `sets up a client that requests for blocks in the requested api on the listen port to perform tests on an rpcconsumer that is active`,
-		Example: `rpcconsumer "http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3334 LAV1 rest 127.0.0.1:3334 LAV1 grpc"`,
+func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
+	cmdTestRPCSmartRouter := &cobra.Command{
+		Use:     `rpcsmartrouter {listen-ip:listen-port spec-chain-id api-interface} ... `,
+		Short:   `test an rpc smart router by making calls in the chain api interface requested`,
+		Long:    `sets up a client that requests for blocks in the requested api on the listen port to perform tests on an rpcsmartrouter that is active`,
+		Example: `rpcsmartrouter "http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3334 LAV1 rest 127.0.0.1:3334 LAV1 grpc"`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			argLen := len(args)
 			if argLen == 0 || argLen%len(Yaml_config_properties) != 0 {
@@ -169,9 +169,9 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 	}
 
 	// RPCConsumer command flags
-	flags.AddTxFlagsToCmd(cmdTestRPCConsumer)
-	cmdTestRPCConsumer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
-	cmdTestRPCConsumer.Flags().Bool(chainproxy.GRPCAllowInsecureConnection, false, "used to test grpc, to allow insecure (self signed cert).")
-	cmdTestRPCConsumer.Flags().Bool(chainproxy.GRPCUseTls, true, "use tls configuration for grpc connections to your consumer")
-	return cmdTestRPCConsumer
+	flags.AddTxFlagsToCmd(cmdTestRPCSmartRouter)
+	cmdTestRPCSmartRouter.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCAllowInsecureConnection, false, "used to test grpc, to allow insecure (self signed cert).")
+	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCUseTls, true, "use tls configuration for grpc connections to your consumer")
+	return cmdTestRPCSmartRouter
 }
