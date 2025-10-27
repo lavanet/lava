@@ -56,6 +56,7 @@ type ProviderMetricsManager struct {
 	jailedCountMetric                    *prometheus.GaugeVec
 	loadRateMetric                       *prometheus.GaugeVec
 	providerLatencyMetric                *prometheus.GaugeVec
+	providerEndToEndLatencyMetric        *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -144,6 +145,12 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "The actual latency of provider responses in milliseconds",
 	}, []string{"spec", "apiInterface"})
 
+	// Add provider end-to-end latency metric
+	providerEndToEndLatencyMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_end_to_end_latency_milliseconds",
+		Help: "The full end-to-end latency of provider processing including gRPC overhead in milliseconds",
+	}, []string{"spec", "apiInterface"})
+
 	fetchBlockSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_block_success",
 		Help: "The total number of get specific block queries that succeeded by chainfetcher",
@@ -205,6 +212,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(jailedCountMetric)
 	prometheus.MustRegister(loadRateMetric)
 	prometheus.MustRegister(providerLatencyMetric)
+	prometheus.MustRegister(providerEndToEndLatencyMetric)
 
 	providerMetricsManager := &ProviderMetricsManager{
 		providerMetrics:                      map[string]*ProviderMetrics{},
@@ -231,6 +239,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		jailedCountMetric:                    jailedCountMetric,
 		loadRateMetric:                       loadRateMetric,
 		providerLatencyMetric:                providerLatencyMetric,
+		providerEndToEndLatencyMetric:        providerEndToEndLatencyMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -279,7 +288,7 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface, prov
 	}
 
 	if pme.getProviderMetric(specID, apiInterface) == nil {
-		providerMetric := NewProviderMetrics(specID, apiInterface, providerEndpoint, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric, pme.providerLatencyMetric)
+		providerMetric := NewProviderMetrics(specID, apiInterface, providerEndpoint, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric, pme.providerLatencyMetric, pme.providerEndToEndLatencyMetric)
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)
@@ -469,5 +478,16 @@ func (pme *ProviderMetricsManager) SetProviderLatency(specID, apiInterface strin
 	providerMetric := pme.getProviderMetric(specID, apiInterface)
 	if providerMetric != nil {
 		providerMetric.SetLatency(latencyMs)
+	}
+}
+
+func (pme *ProviderMetricsManager) SetProviderEndToEndLatency(specID, apiInterface string, latencyMs float64) {
+	if pme == nil {
+		return
+	}
+
+	providerMetric := pme.getProviderMetric(specID, apiInterface)
+	if providerMetric != nil {
+		providerMetric.SetEndToEndLatency(latencyMs)
 	}
 }
