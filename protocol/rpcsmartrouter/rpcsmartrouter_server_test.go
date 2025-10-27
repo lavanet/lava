@@ -72,7 +72,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	}
 	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser
@@ -130,9 +130,9 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		}).
 		AnyTimes()
 
-	// Create the RPC consumer server
-	rpcConsumerServer, chainParser := createRpcConsumer(t, ctrl, context.Background(), consumeSK, consumerAccount, providerPublicAddress, relayerMock, "LAV1", spectypes.APIInterfaceTendermintRPC, 100, 1, "lava")
-	require.NotNil(t, rpcConsumerServer)
+	// Create the RPC smart router server
+	rpcSmartRouterServer, chainParser := createRpcSmartRouter(t, ctrl, context.Background(), consumeSK, consumerAccount, providerPublicAddress, relayerMock, "LAV1", spectypes.APIInterfaceTendermintRPC, 100, 1, "lava")
+	require.NotNil(t, rpcSmartRouterServer)
 	require.NotNil(t, chainParser)
 
 	// Create a chain message
