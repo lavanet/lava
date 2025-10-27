@@ -93,11 +93,11 @@ type AnalyticsServerAddresses struct {
 	OptimizerQoSAddress      string
 	OptimizerQoSListen       bool
 }
-type RPCConsumer struct {
+type RPCSmartRouter struct {
 	// Smart router doesn't need blockchain state tracking
 }
 
-type rpcConsumerStartOptions struct {
+type rpcSmartRouterStartOptions struct {
 	rpcEndpoints             []*lavasession.RPCEndpoint
 	requiredResponses        int
 	cache                    *performance.Cache
@@ -113,36 +113,36 @@ type rpcConsumerStartOptions struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOptions) (err error) {
+func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
 	}
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
-	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
+	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	// Smart router doesn't need consumer address from blockchain
 	// Using a static identifier for metrics and logging
-	consumerIdentifier := "smart-router-" + strconv.FormatUint(rand.Uint64(), 10)
+	smartRouterIdentifier := "smart-router-" + strconv.FormatUint(rand.Uint64(), 10)
 
-	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                                                                                                                                                                                                     // start up relay server reporting
-	consumerKafkaClient := metrics.NewConsumerKafkaClient(options.analyticsServerAddresses.RelayKafkaAddress, options.analyticsServerAddresses.RelayKafkaTopic, options.analyticsServerAddresses.RelayKafkaUsername, options.analyticsServerAddresses.RelayKafkaPassword, options.analyticsServerAddresses.RelayKafkaMechanism, options.analyticsServerAddresses.RelayKafkaTLSEnabled, options.analyticsServerAddresses.RelayKafkaTLSInsecure) // start up kafka client
-	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
+	smartRouterUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                                                                                                                                                                                                     // start up relay server reporting
+	smartRouterKafkaClient := metrics.NewConsumerKafkaClient(options.analyticsServerAddresses.RelayKafkaAddress, options.analyticsServerAddresses.RelayKafkaTopic, options.analyticsServerAddresses.RelayKafkaUsername, options.analyticsServerAddresses.RelayKafkaPassword, options.analyticsServerAddresses.RelayKafkaMechanism, options.analyticsServerAddresses.RelayKafkaTLSEnabled, options.analyticsServerAddresses.RelayKafkaTLSInsecure) // start up kafka client
+	var smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerIdentifier, options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
+		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
+	smartRouterMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
 		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
 		AddMethodsApiGauge:         options.analyticsServerAddresses.AddApiMethodCallsMetrics,
 		EnableQoSListener:          options.analyticsServerAddresses.OptimizerQoSListen,
-		ConsumerOptimizerQoSClient: consumerOptimizerQoSClient,
+		ConsumerOptimizerQoSClient: smartRouterOptimizerQoSClient,
 	}) // start up prometheus metrics
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerKafkaClient, consumerOptimizerQoSClient)
+	rpcSmartRouterMetrics, err := metrics.NewRPCConsumerLogs(smartRouterMetricsManager, smartRouterUsageServeManager, smartRouterKafkaClient, smartRouterOptimizerQoSClient)
 	if err != nil {
-		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
+		utils.LavaFormatFatal("failed creating RPCSmartRouter logs", err)
 	}
 
-	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
@@ -151,7 +151,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	consumerConsistencies := &common.SafeSyncMap[string, *ConsumerConsistency]{}
+	smartRouterConsistencies := &common.SafeSyncMap[string, *SmartRouterConsistency]{}
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -159,17 +159,17 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	errCh := make(chan error)
 
-	utils.LavaFormatInfo("RPCSmartRouter identifier: " + consumerIdentifier)
+	utils.LavaFormatInfo("RPCSmartRouter identifier: " + smartRouterIdentifier)
 	utils.LavaFormatInfo("RPCSmartRouter setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 
-	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
+	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, smartRouterMetricsManager)
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
-			err := rpcc.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
-				optimizers, consumerConsistencies, chainMutexes,
-				options, consumerIdentifier, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
-				consumerMetricsManager, relaysMonitorAggregator)
+			err := rpsr.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
+				optimizers, smartRouterConsistencies, chainMutexes,
+				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterReportsManager, smartRouterOptimizerQoSClient,
+				smartRouterMetricsManager, relaysMonitorAggregator)
 			return err
 		}(rpcEndpoint)
 	}
@@ -191,19 +191,19 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	return nil
 }
 
-func (rpcc *RPCConsumer) CreateSmartRouterEndpoint(
+func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	ctx context.Context,
 	rpcEndpoint *lavasession.RPCEndpoint,
 	errCh chan error,
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	consumerConsistencies *common.SafeSyncMap[string, *ConsumerConsistency],
+	smartRouterConsistencies *common.SafeSyncMap[string, *SmartRouterConsistency],
 	chainMutexes map[string]*sync.Mutex,
-	options *rpcConsumerStartOptions,
-	consumerIdentifier string,
-	rpcConsumerMetrics *metrics.RPCConsumerLogs,
-	consumerReportsManager *metrics.ConsumerReportsClient,
-	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
-	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	options *rpcSmartRouterStartOptions,
+	smartRouterIdentifier string,
+	rpcSmartRouterMetrics *metrics.RPCConsumerLogs,
+	smartRouterReportsManager *metrics.ConsumerReportsClient,
+	smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
+	smartRouterMetricsManager *metrics.ConsumerMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
 ) error {
 	chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
@@ -237,28 +237,28 @@ func (rpcc *RPCConsumer) CreateSmartRouterEndpoint(
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var consumerConsistency *ConsumerConsistency
+	var smartRouterConsistency *SmartRouterConsistency
 
 	// Create chain assets with mutex protection
 	chainMutexes[chainID].Lock()
 	defer chainMutexes[chainID].Unlock()
 
 	// Create / Use existing optimizer
-	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID)
 	optimizer, loaded, err := optimizers.LoadOrStore(chainID, newOptimizer)
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 	}
 
-	if !loaded && consumerOptimizerQoSClient != nil {
-		// if this is a new optimizer, register it in the consumerOptimizerQoSClient
-		consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
+	if !loaded && smartRouterOptimizerQoSClient != nil {
+		// if this is a new optimizer, register it in the smartRouterOptimizerQoSClient
+		smartRouterOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 	}
 
-	// Create / Use existing ConsumerConsistency
-	newConsumerConsistency := NewConsumerConsistency(chainID)
-	consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
+	// Create / Use existing SmartRouterConsistency
+	newSmartRouterConsistency := NewSmartRouterConsistency(chainID)
+	smartRouterConsistency, _, err = smartRouterConsistencies.LoadOrStore(chainID, newSmartRouterConsistency)
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -266,9 +266,9 @@ func (rpcc *RPCConsumer) CreateSmartRouterEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerIdentifier, activeSubscriptionProvidersStorage)
+	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterReportsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
 	if lavasession.PeriodicProbeProviders {
-		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
+		go sessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}
 
 	// Smart router only uses static providers, no blockchain pairing updates
@@ -312,7 +312,7 @@ func (rpcc *RPCConsumer) CreateSmartRouterEndpoint(
 	}
 
 	// Update the session manager with static providers only (no backup providers for now)
-	err = consumerSessionManager.UpdateAllProviders(1, providerSessions, nil)
+	err = sessionManager.UpdateAllProviders(1, providerSessions, nil)
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed updating static providers", err)
@@ -324,19 +324,19 @@ func (rpcc *RPCConsumer) CreateSmartRouterEndpoint(
 		relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
 	}
 
-	rpcConsumerServer := &RPCConsumerServer{}
+	rpcSmartRouterServer := &RPCSmartRouterServer{}
 
-	var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
+	var wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
 	var specMethodType string
 	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		specMethodType = http.MethodPost
 	}
-	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
+	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	// Convert consumerIdentifier string to empty sdk.AccAddress for smart router
+	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
 	emptyConsumerAddr := []byte{}
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, nil, chainParser, nil, consumerSessionManager, options.requiredResponses, nil, "", options.cache, rpcConsumerMetrics, emptyConsumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, nil, chainParser, nil, sessionManager, options.requiredResponses, nil, "", options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, smartRouterReportsManager, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -517,7 +517,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			rpcConsumer := RPCConsumer{}
+			rpcSmartRouter := RPCSmartRouter{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
@@ -576,8 +576,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 			}
 
-			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
+			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
+			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
 				requiredResponses:        requiredResponses,
 				cache:                    cache,
@@ -585,7 +585,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				maxConcurrentProviders:   maxConcurrentProviders,
 				analyticsServerAddresses: analyticsServerAddresses,
 				cmdFlags:                 consumerPropagatedFlags,
-				stateShare:               rpcConsumerSharedState,
+				stateShare:               rpcSmartRouterSharedState,
 				refererData:              refererData,
 				staticProvidersList:      staticProviderEndpoints,
 				backupProvidersList:      backupProviderEndpoints,

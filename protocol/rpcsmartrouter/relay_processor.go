@@ -55,7 +55,7 @@ type RelayProcessor struct {
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
-	consumerConsistency          *ConsumerConsistency
+	smartRouterConsistency       *SmartRouterConsistency
 	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
@@ -73,7 +73,7 @@ type RelayProcessor struct {
 func NewRelayProcessor(
 	ctx context.Context,
 	quorumParams common.QuorumParams,
-	consumerConsistency *ConsumerConsistency,
+	smartRouterConsistency *SmartRouterConsistency,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
@@ -89,7 +89,7 @@ func NewRelayProcessor(
 		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		ResultsManager:               NewResultsManager(guid),
 		guid:                         guid,
-		consumerConsistency:          consumerConsistency,
+		smartRouterConsistency:       smartRouterConsistency,
 		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
@@ -413,7 +413,7 @@ func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 		if response.relayResult.GetReply().GetLatestBlock() > 0 {
 			// set consumer consistency when possible
 			blockSeen := response.relayResult.GetReply().GetLatestBlock()
-			rp.consumerConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
+			rp.smartRouterConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
 		}
 	}
 }

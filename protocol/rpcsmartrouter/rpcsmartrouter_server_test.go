@@ -27,7 +27,7 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Context, consumeSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress, providerPublicAddress string, relayer pairingtypes.RelayerClient, specId string, apiInterface string, epoch uint64, requiredResponses int, lavaChainID string) (*RPCConsumerServer, chainlib.ChainParser) {
+func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Context, consumeSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress, providerPublicAddress string, relayer pairingtypes.RelayerClient, specId string, apiInterface string, epoch uint64, requiredResponses int, lavaChainID string) (*RPCSmartRouterServer, chainlib.ChainParser) {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
@@ -37,7 +37,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 
-	rpcConsumerServer := &RPCConsumerServer{}
+	rpcSmartRouterServer := &RPCSmartRouterServer{}
 	rpcEndpoint := &lavasession.RPCEndpoint{
 		NetworkAddress:  "127.0.0.1:54321",
 		ChainID:         specId,
@@ -47,7 +47,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		Geolocation:     1,
 	}
 
-	consumerStateTracker := NewMockConsumerStateTrackerInf(ctrl)
+	consumerStateTracker := NewMockMinimalStateTrackerInf(ctrl)
 	consumerStateTracker.
 		EXPECT().
 		GetLatestVirtualEpoch().
@@ -66,16 +66,16 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		},
 	}, nil)
 
-	consumerConsistency := NewConsumerConsistency(specId)
+	smartRouterConsistency := NewSmartRouterConsistency(specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{
 		RelaysHealthEnableFlag: false,
 	}
 	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
-	return rpcConsumerServer, chainParser
+	return rpcSmartRouterServer, chainParser
 }
 
 func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress) *pairingtypes.RelayReply {
@@ -162,7 +162,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 	}
 
 	callRelayInner := func() error {
-		_, err, _ := rpcConsumerServer.relayInner(context.Background(), singleConsumerSession, relayResult, 1, chainMsg, "", nil)
+		_, err, _ := rpcSmartRouterServer.relayInner(context.Background(), singleConsumerSession, relayResult, 1, chainMsg, "", nil)
 		return err
 	}
 
@@ -217,10 +217,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
 		// Verify the result - should have single provider header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -263,10 +263,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
 		// Verify the result - should have quorum header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -312,10 +312,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
 		// Verify the result - should have quorum header with all providers + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -361,10 +361,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
 		// Verify the result - should have only user request type header (no quorum header since no providers)
 		require.Len(t, relayResult.Reply.Metadata, 1)
@@ -387,11 +387,11 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 			api: &spectypes.Api{Name: "test-api"},
 		}
 
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// This should not panic
 		require.NotPanics(t, func() {
-			rpcConsumerServer.appendHeadersToRelayResult(ctx, nil, 0, relayProcessor, mockProtocolMessage, "test-api")
+			rpcSmartRouterServer.appendHeadersToRelayResult(ctx, nil, 0, relayProcessor, mockProtocolMessage, "test-api")
 		})
 	})
 }
@@ -435,10 +435,10 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
 
 		// Verify the result - should have:
 		// 1. Single provider header (winning provider)
@@ -507,10 +507,10 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction")
 
 		// Verify the result
 		require.Len(t, relayResult.Reply.Metadata, 4)
@@ -559,10 +559,10 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
 
 		// Verify the result - should NOT have stateful all providers header (empty list)
 		// Should have: single provider header, stateful API header, user request type header
@@ -617,10 +617,10 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber")
 
 		// Verify the result - should only have: single provider header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -676,10 +676,10 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		}
 
 		// Create RPC consumer server
-		rpcConsumerServer := &RPCConsumerServer{}
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
 
 		// Verify both quorum and stateful headers are present
 		// (even though this is an unusual scenario)

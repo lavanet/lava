@@ -42,23 +42,23 @@ func (a PolicySt) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointSe
 	return ret, nil
 }
 
-type ConsumerRelaySenderMock struct {
+type SmartRouterRelaySenderMock struct {
 	retValue    error
 	tickerValue time.Duration
 }
 
-func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
-	if crsm.tickerValue != 0 {
-		return time.Second * 50000, crsm.tickerValue
+func (srsm *SmartRouterRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+	if srsm.tickerValue != 0 {
+		return time.Second * 50000, srsm.tickerValue
 	}
 	return time.Second * 50000, 100 * time.Millisecond
 }
 
-func (crsm *ConsumerRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
+func (srsm *SmartRouterRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
 	return "testUno", "testDos"
 }
 
-func (crsm *ConsumerRelaySenderMock) ParseRelay(
+func (srsm *SmartRouterRelaySenderMock) ParseRelay(
 	ctx context.Context,
 	url string,
 	req string,
@@ -113,9 +113,9 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := NewSmartRouterConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -184,9 +184,9 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := NewSmartRouterConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -252,7 +252,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 
 		relayRequestData := lavaprotocol.NewRelayData(ctx, http.MethodPost, "", jsonData, seenBlock, reqBlock, spectypes.APIInterfaceJsonRPC, chainMsg.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMsg), common.GetExtensionNames(chainMsg.GetExtensions()))
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := NewSmartRouterConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		relayProcessor := NewRelayProcessor(
 			ctx,
@@ -261,10 +261,10 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			relayProcessorMetrics,
 			relayProcessorMetrics,
 			relayRetriesManagerInstance,
-			NewRelayStateMachine(
+			NewSmartRouterRelayStateMachine(
 				ctx,
 				usedProviders,
-				&ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second},
+				&SmartRouterRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second},
 				protocolMessage,
 				nil,
 				false,

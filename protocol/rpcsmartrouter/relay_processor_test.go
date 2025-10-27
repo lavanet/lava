@@ -167,9 +167,9 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := NewSmartRouterConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -225,7 +225,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -278,7 +278,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -323,7 +323,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -369,7 +369,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -424,7 +424,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -470,7 +470,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -621,7 +621,7 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 				relayProcessorMetrics,
 				relayProcessorMetrics,
 				relayRetriesManagerInstance,
-				NewRelayStateMachine(ctx, lavasession.NewUsedProviders(nil), &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics),
+				NewSmartRouterRelayStateMachine(ctx, lavasession.NewUsedProviders(nil), &RPCSmartRouterServer{}, protocolMessage, nil, false, relayProcessorMetrics),
 				qos.NewQoSManager(),
 			)
 
