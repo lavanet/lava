@@ -1,3 +1,32 @@
+// Package rpcsmartrouter provides a centralized RPC routing solution for the Lava protocol.
+//
+// # Architecture Overview
+//
+// The smart router is designed for centralized deployments where providers are statically
+// configured rather than dynamically discovered through blockchain pairing. This is useful for:
+//   - Enterprise deployments with known provider infrastructure
+//   - Testing and development environments
+//   - Use cases requiring predictable provider routing
+//
+// # Key Differences from rpcconsumer
+//
+// rpcsmartrouter (centralized):
+//   - Uses pre-configured static providers from configuration files
+//   - No blockchain state tracking required
+//   - Provider selection based on configured weights (static providers get 10x multiplier)
+//   - No epoch management or on-chain pairing updates
+//
+// rpcconsumer (decentralized):
+//   - Discovers providers dynamically through blockchain pairing
+//   - Tracks blockchain state, epochs, and provider stake
+//   - Provider selection weighted by actual on-chain stake
+//   - Includes conflict detection and finalization consensus
+//
+// # Provider Selection
+//
+// Static providers are configured in YAML files and automatically receive a 10x weight
+// multiplier compared to blockchain providers. This ensures static providers are preferred
+// in routing decisions. See StaticProviderDummyCoin for implementation details.
 package rpcsmartrouter
 
 import (
@@ -42,6 +71,12 @@ var (
 	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
 	RelaysHealthEnableFlagDefault  = true
 	RelayHealthIntervalFlagDefault = 5 * time.Minute
+
+	// StaticProviderDummyCoin is used for type compatibility in provider sessions.
+	// Static providers don't use blockchain stake for selection; they automatically
+	// receive a 10x weight multiplier in CalcWeightsByStake (see lavasession package).
+	// The coin value is ignored but the object must exist to avoid nil pointer errors.
+	StaticProviderDummyCoin = sdk.NewCoin("ulava", sdk.NewInt(1))
 )
 
 type strategyValue struct {
@@ -298,14 +333,13 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		}
 
 		// Create provider session with static configuration
-		// Use a dummy coin for smart router (no blockchain stake required)
-		dummyCoin := sdk.NewCoin("ulava", sdk.NewInt(1000000))
+		// Static providers get 10x weight multiplier automatically (see CalcWeightsByStake)
 		providerEntry := lavasession.NewConsumerSessionWithProvider(
 			provider.Name,
 			endpoints,
-			999999999, // High compute units for availability
-			1,         // Fixed epoch for smart router
-			dummyCoin, // Dummy coin for smart router
+			999999999,              // High compute units for availability
+			1,                      // Fixed epoch (smart router doesn't track blockchain epochs)
+			StaticProviderDummyCoin, // Placeholder coin (value ignored, object required for type safety)
 		)
 		providerEntry.StaticProvider = true
 		providerSessions[uint64(idx)] = providerEntry
@@ -369,11 +403,11 @@ func CreateRPCSmartRouterCobraCommand() *cobra.Command {
 		if no arguments are passed, assumes default config file: ` + DefaultRPCSmartRouterFileName + `
 		if one argument is passed, its assumed the config file name
 		`,
-		Example: `required flags: --geolocation 1 --from alice --static-providers ...
+		Example: `required flags: --geolocation 1 --static-providers ...
 rpcsmartrouter <flags>
 rpcsmartrouter rpcsmartrouter_conf <flags>
 rpcsmartrouter 127.0.0.1:3333 OSMOSIS tendermintrpc 127.0.0.1:3334 OSMOSIS rest <flags>
-rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127.0.0.1:7778" --geolocation 1 [--debug-relays] --log_level <debug|warn|...> --from <wallet> --chain-id <lava-chain>`,
+rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127.0.0.1:7778" --geolocation 1 [--debug-relays] --log_level <debug|warn|...>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
