@@ -594,6 +594,9 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		retArr := make([]interface{}, 0)
 		retArr = append(retArr, blockInterfaceToString(block))
 		return retArr, nil
+	case nil:
+		// Handle nil params as "no parameters set"
+		return nil, ValueNotSetError
 	default:
 		// Parse by arg can be only list as we don't have the name of the height property.
 		return nil, fmt.Errorf("parse type unsupported in parse by arg, only list parameters are currently supported. param=%s request=%s", rpcInput.GetParams(), unmarshaledDataTyped)
@@ -629,6 +632,20 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		}
 		blockContainer := unmarshalledDataTyped[param_index]
 		for _, key := range input[1:] {
+			// Check if blockContainer is an array and key is a numeric index
+			if blockContainerArray, ok := blockContainer.([]interface{}); ok {
+				arrayIndex, err := strconv.ParseUint(key, 10, 32)
+				if err != nil {
+					return nil, fmt.Errorf("invalid parser input format, expected numeric array index but got: %s, error: %s", key, err)
+				}
+				if uint64(len(blockContainerArray)) <= arrayIndex {
+					return nil, ValueNotSetError.Wrapf("invalid parser input format, array index out of bounds. "+
+						"params=%v method=%v arrayLength=%d index=%d", rpcInput.GetParams(), rpcInput.GetMethod(), len(blockContainerArray), arrayIndex)
+				}
+				blockContainer = blockContainerArray[arrayIndex]
+				continue
+			}
+
 			// type assertion for blockContainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
 				return nil, ValueNotSetError.Wrapf("invalid parser input format, blockContainer is not map[string]interface{}. "+
@@ -655,7 +672,8 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		} else {
 			relevantInput = input
 		}
-		for idx, key := range relevantInput {
+		for idx := 0; idx < len(relevantInput); idx++ {
+			key := relevantInput[idx]
 			if val, ok := unmarshalledDataTyped[key]; ok {
 				if idx == (len(relevantInput) - 1) {
 					retArr := make([]interface{}, 0)
@@ -666,6 +684,34 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				switch v := val.(type) {
 				case map[string]interface{}:
 					unmarshalledDataTyped = v
+				case []interface{}:
+					// Handle array indexing in the middle of the path
+					if idx+1 >= len(relevantInput) {
+						return nil, fmt.Errorf("array found but no index provided in path")
+					}
+					nextKey := relevantInput[idx+1]
+					arrayIndex, err := strconv.ParseUint(nextKey, 10, 32)
+					if err != nil {
+						return nil, fmt.Errorf("invalid parser input format, expected numeric array index but got: %s, error: %s", nextKey, err)
+					}
+					if uint64(len(v)) <= arrayIndex {
+						return nil, ValueNotSetError.Wrapf("invalid parser input format, array index out of bounds. arrayLength=%d index=%d", len(v), arrayIndex)
+					}
+					// Get the element from array and check if it's the last element
+					arrayElement := v[arrayIndex]
+					if idx+1 == (len(relevantInput) - 1) {
+						retArr := make([]interface{}, 0)
+						retArr = append(retArr, blockInterfaceToString(arrayElement))
+						return retArr, nil
+					}
+					// Continue with the array element as a map
+					if mapElement, ok := arrayElement.(map[string]interface{}); ok {
+						unmarshalledDataTyped = mapElement
+						// Skip the next key since we already processed the array index
+						idx++
+					} else {
+						return nil, fmt.Errorf("failed to parse, array element is not of type map[string]interface{}")
+					}
 				default:
 					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
 				}
@@ -675,6 +721,9 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		}
 	case string:
 		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
+	case nil:
+		// Handle nil params as "no parameters set"
+		return nil, ValueNotSetError
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
 		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshalledDataTyped)
@@ -722,6 +771,9 @@ func parseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		return nil, ValueNotSetError
 	case string:
 		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
+	case nil:
+		// Handle nil params as "no parameters set"
+		return nil, ValueNotSetError
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}
@@ -794,6 +846,9 @@ func parseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		return nil, ValueNotSetError
 	case string:
 		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
+	case nil:
+		// Handle nil params as "no parameters set"
+		return nil, ValueNotSetError
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}
