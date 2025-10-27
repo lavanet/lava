@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,6 +32,37 @@ type RPCProviderEndpoint struct {
 	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	Name           string             `yaml:"provider-name,omitempty" json:"provider-name,omitempty" mapstructure:"provider-name"`
+}
+
+// RPCStaticProviderEndpoint extends RPCProviderEndpoint with additional fields for static providers
+// This allows us to add functionality without modifying the original protobuf-derived type
+type RPCStaticProviderEndpoint struct {
+	NetworkAddress NetworkAddressData `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"`
+	ChainID        string             `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"` // spec chain identifier
+	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	Name           string             `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name,omitempty"`
+}
+
+// ToBase returns the base RPCProviderEndpoint (for compatibility with existing code)
+func (ext *RPCStaticProviderEndpoint) ToBase() *RPCProviderEndpoint {
+	return &RPCProviderEndpoint{
+		NetworkAddress: ext.NetworkAddress,
+		ChainID:        ext.ChainID,
+		ApiInterface:   ext.ApiInterface,
+		Geolocation:    ext.Geolocation,
+		NodeUrls:       ext.NodeUrls,
+	}
+}
+
+// Validate checks if the RPCStaticProviderEndpoint has valid configuration
+func (ext *RPCStaticProviderEndpoint) Validate() error {
+	if ext.Name == "" {
+		return fmt.Errorf("provider name cannot be empty")
+	}
+	return nil
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {

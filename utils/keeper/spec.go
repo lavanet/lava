@@ -407,6 +407,7 @@ func getAllSpecsWithToken(url string, githubToken string) (map[string]types.Spec
 		return nil, fmt.Errorf("failed to fetch from GitHub API: %w (check network connectivity)", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("GitHub API returned error (status: %d, url: %s, body: %s)", resp.StatusCode, githubAPIURL, string(body))

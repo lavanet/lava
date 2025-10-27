@@ -206,7 +206,7 @@ func TestStateMachineUnsupportedMethodError(t *testing.T) {
 
 	// Execute the test
 	ctx := context.Background()
-	result, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
+	result, _, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
 		RelayData: &types.RelayPrivateData{Extensions: []string{}},
 		RelaySession: &types.RelaySession{
 			SessionId: 123,

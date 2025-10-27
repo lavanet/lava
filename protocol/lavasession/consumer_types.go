@@ -553,7 +553,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),
 						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
-						utils.LogAttr("provider address", cswp.PublicLavaAddress),
+						utils.LogAttr("providerName", cswp.PublicLavaAddress),
 						utils.LogAttr("endpoint", endpoint),
 						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
 						utils.LogAttr("GUID", ctx),
@@ -610,7 +610,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	if allDisabled {
 		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
 			utils.LogAttr("provider endpoints", cswp.Endpoints),
-			utils.LogAttr("provider address", cswp.PublicLavaAddress),
+			utils.LogAttr("providerName", cswp.PublicLavaAddress),
 			utils.LogAttr("GUID", ctx),
 		)
 		// report provider.

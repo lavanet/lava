@@ -2,7 +2,6 @@ package updaters
 
 import (
 	"math"
-	"strconv"
 	"sync"
 	"time"
 
@@ -39,15 +38,15 @@ type PairingUpdater struct {
 	stateQuery                 ConsumerStateQueryInf
 	pairingUpdatables          []*PairingUpdatable
 	specId                     string
-	staticProviders            []*lavasession.RPCProviderEndpoint
-	backupProviders            []*lavasession.RPCProviderEndpoint
+	staticProviders            []*lavasession.RPCStaticProviderEndpoint
+	backupProviders            []*lavasession.RPCStaticProviderEndpoint
 }
 
 func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]ConsumerSessionManagerInf{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCProviderEndpoint{}}
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]ConsumerSessionManagerInf{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCStaticProviderEndpoint{}}
 }
 
-func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCProviderEndpoint) int {
+func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCStaticProviderEndpoint) int {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	if len(staticProviders) > 0 && len(pu.staticProviders) == 0 {
@@ -61,7 +60,7 @@ func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.R
 	return len(pu.staticProviders)
 }
 
-func (pu *PairingUpdater) updateBackupProviders(backupProviders []*lavasession.RPCProviderEndpoint) {
+func (pu *PairingUpdater) updateBackupProviders(backupProviders []*lavasession.RPCStaticProviderEndpoint) {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	utils.LavaFormatInfo("Updating backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
@@ -81,7 +80,7 @@ func (pu *PairingUpdater) getNumberOfStaticProviders() int {
 	return len(pu.staticProviders)
 }
 
-func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint, backupProviders []*lavasession.RPCProviderEndpoint) error {
+func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCStaticProviderEndpoint, backupProviders []*lavasession.RPCStaticProviderEndpoint) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -222,7 +221,7 @@ func (pu *PairingUpdater) parseBackupProviders(pairingList map[uint64]*lavasessi
 // into ConsumerSessionsWithProvider objects. It handles both static and backup providers by creating
 // the appropriate session objects with proper indexing to avoid conflicts with existing providers.
 func (pu *PairingUpdater) createProviderSessionsFromConfig(
-	providers []*lavasession.RPCProviderEndpoint,
+	providers []*lavasession.RPCStaticProviderEndpoint,
 	rpcEndpoint lavasession.RPCEndpoint,
 	epoch uint64,
 	existingProviders map[uint64]*lavasession.ConsumerSessionsWithProvider,
@@ -264,7 +263,7 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 
 		// Create provider entry with high compute units and stake for availability
 		providerEntry := lavasession.NewConsumerSessionWithProvider(
-			providerNamePrefix+strconv.Itoa(idx),
+			provider.Name,
 			endpoints,
 			math.MaxUint64/2, // High compute units for availability
 			epoch,
