@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
@@ -48,14 +47,6 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 		Geolocation:     1,
 	}
 
-	consumerStateTracker := NewMockMinimalStateTrackerInf(ctrl)
-	consumerStateTracker.
-		EXPECT().
-		GetLatestVirtualEpoch().
-		Return(uint64(0)).
-		AnyTimes()
-
-	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
@@ -71,9 +62,10 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	consumerCmdFlags := common.ConsumerCmdFlags{
 		RelaysHealthEnableFlag: false,
 	}
-	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
+	rpcSmartRouterLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	// Smart router signature: no consumerStateTracker, no finalizationConsensus
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser
