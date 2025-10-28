@@ -150,9 +150,9 @@ type rpcSmartRouterStartOptions struct {
 	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as primary providers
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
-	clientCtx                client.Context           // Blockchain client context for querying specs
-	privKey                  *btcec.PrivateKey        // Private key for signing relay requests
-	lavaChainID              string                   // Lava blockchain chain ID
+	clientCtx                client.Context    // Blockchain client context for querying specs
+	privKey                  *btcec.PrivateKey // Private key for signing relay requests
+	lavaChainID              string            // Lava blockchain chain ID
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -333,47 +333,70 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		go sessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}
 
-	// Smart router only uses static providers, no blockchain pairing updates
-	// Convert static providers to ConsumerSessionsWithProvider format
-	providerSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
-	for idx, provider := range relevantStaticProviderList {
-		// Only process providers matching this endpoint's API interface
-		if provider.ApiInterface != rpcEndpoint.ApiInterface || provider.ChainID != rpcEndpoint.ChainID {
-			continue
-		}
-
-		endpoints := []*lavasession.Endpoint{}
-		for _, url := range provider.NodeUrls {
-			extensions := map[string]struct{}{}
-			for _, extension := range url.Addons {
-				extensions[extension] = struct{}{}
+	// Helper function to convert provider endpoints to sessions
+	convertProvidersToSessions := func(providerList []*lavasession.RPCStaticProviderEndpoint) map[uint64]*lavasession.ConsumerSessionsWithProvider {
+		sessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
+		for idx, provider := range providerList {
+			// Only process providers matching this endpoint's API interface
+			if provider.ApiInterface != rpcEndpoint.ApiInterface || provider.ChainID != rpcEndpoint.ChainID {
+				continue
 			}
 
-			endpoint := &lavasession.Endpoint{
-				NetworkAddress: url.Url,
-				Enabled:        true,
-				Addons:         extensions,
-				Extensions:     extensions,
-				Connections:    []*lavasession.EndpointConnection{},
-			}
-			endpoints = append(endpoints, endpoint)
-		}
+			endpoints := []*lavasession.Endpoint{}
+			for _, url := range provider.NodeUrls {
+				extensions := map[string]struct{}{}
+				for _, extension := range url.Addons {
+					extensions[extension] = struct{}{}
+				}
 
-		// Create provider session with static configuration
-		// Static providers get 10x weight multiplier automatically (see CalcWeightsByStake)
-		providerEntry := lavasession.NewConsumerSessionWithProvider(
-			provider.Name,
-			endpoints,
-			999999999,              // High compute units for availability
-			1,                      // Fixed epoch (smart router doesn't track blockchain epochs)
-			StaticProviderDummyCoin, // Placeholder coin (value ignored, object required for type safety)
-		)
-		providerEntry.StaticProvider = true
-		providerSessions[uint64(idx)] = providerEntry
+				endpoint := &lavasession.Endpoint{
+					NetworkAddress: url.Url,
+					Enabled:        true,
+					Addons:         extensions,
+					Extensions:     extensions,
+					Connections:    []*lavasession.EndpointConnection{},
+				}
+				endpoints = append(endpoints, endpoint)
+			}
+
+			// Create provider session with static configuration
+			// Static providers get 10x weight multiplier automatically (see CalcWeightsByStake)
+			providerEntry := lavasession.NewConsumerSessionWithProvider(
+				provider.Name,
+				endpoints,
+				999999999,               // High compute units for availability
+				1,                       // Fixed epoch (smart router doesn't track blockchain epochs)
+				StaticProviderDummyCoin, // Placeholder coin (value ignored, object required for type safety)
+			)
+			providerEntry.StaticProvider = true
+			sessions[uint64(idx)] = providerEntry
+		}
+		return sessions
 	}
 
-	// Update the session manager with static providers only (no backup providers for now)
-	err = sessionManager.UpdateAllProviders(1, providerSessions, nil)
+	// Convert static providers to ConsumerSessionsWithProvider format
+	providerSessions := convertProvidersToSessions(relevantStaticProviderList)
+
+	// Filter and convert backup providers for this endpoint
+	relevantBackupProviderList := []*lavasession.RPCStaticProviderEndpoint{}
+	for _, backupProvider := range options.backupProvidersList {
+		if backupProvider.ChainID == rpcEndpoint.ChainID {
+			relevantBackupProviderList = append(relevantBackupProviderList, backupProvider)
+		}
+	}
+
+	// Convert backup providers to sessions (can be empty if none configured)
+	var backupProviderSessions map[uint64]*lavasession.ConsumerSessionsWithProvider
+	if len(relevantBackupProviderList) > 0 {
+		backupProviderSessions = convertProvidersToSessions(relevantBackupProviderList)
+		utils.LavaFormatInfo("Configured backup providers for endpoint",
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface},
+			utils.Attribute{Key: "backupCount", Value: len(backupProviderSessions)})
+	}
+
+	// Update the session manager with static providers and backup providers
+	err = sessionManager.UpdateAllProviders(1, providerSessions, backupProviderSessions)
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed updating static providers", err)
@@ -397,7 +420,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
 	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, nil, chainParser, nil, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, smartRouterReportsManager, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err

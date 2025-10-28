@@ -67,7 +67,6 @@ type RPCSmartRouterServer struct {
 	cache                          *performance.Cache
 	privKey                        *btcec.PrivateKey
 	requiredResponses              int
-	finalizationConsensus          interface{} // Smart router doesn't use finalization consensus
 	lavaChainID                    string
 	SmartRouterAddress             sdk.AccAddress
 	smartRouterConsistency         relaycore.Consistency
@@ -83,15 +82,15 @@ type RPCSmartRouterServer struct {
 }
 
 
-func (rpcss *RPCSmartRouterServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
-	consumerStateTracker interface{}, // Smart router doesn't use state tracker
+func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
+	ctx context.Context,
+	listenEndpoint *lavasession.RPCEndpoint,
 	chainParser chainlib.ChainParser,
-	finalizationConsensus interface{}, // Smart router doesn't use finalization consensus
 	sessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
 	lavaChainID string,
-	cache *performance.Cache, // optional
+	cache *performance.Cache,
 	rpcSmartRouterLogs *metrics.RPCConsumerLogs,
 	smartRouterAddress sdk.AccAddress,
 	smartRouterConsistency relaycore.Consistency,
@@ -110,7 +109,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(ctx context.Context, listenE
 	rpcss.rpcSmartRouterLogs = rpcSmartRouterLogs
 	rpcss.privKey = privKey
 	rpcss.chainParser = chainParser
-	rpcss.finalizationConsensus = finalizationConsensus
 	rpcss.SmartRouterAddress = smartRouterAddress
 	rpcss.smartRouterConsistency = smartRouterConsistency
 	rpcss.sharedState = sharedState
@@ -1491,11 +1489,7 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 			return 0, err, false
 		}
 
-		// Smart router doesn't track finalization consensus
-		if rpcss.finalizationConsensus != nil {
-			// This should not happen in smart router mode
-			utils.LavaFormatWarning("Unexpected finalization consensus in smart router mode", nil)
-		}
+		// Smart router doesn't track finalization consensus - no special handling needed
 	}
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false

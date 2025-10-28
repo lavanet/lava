@@ -35,6 +35,10 @@ lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 
 sleep 4
 
+screen -d -m -S cache_consumer bash -c "source ~/.bashrc; lavap cache \
+127.0.0.1:20100 --metrics_address 0.0.0.0:20200 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log" && sleep 0.25
+sleep 2;
+
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
 
@@ -55,7 +59,7 @@ screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider provider_
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcsmartrouter consumer_examples/lava_consumer_static_with_backup.yml \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --allow-insecure-provider-dialing --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --cache-be 127.0.0.1:20100 --allow-insecure-provider-dialing --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls
