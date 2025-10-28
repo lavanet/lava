@@ -603,6 +603,38 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
+			if len(staticProviderEndpoints) == 0 {
+				return utils.LavaFormatError(
+					"smart router requires static providers configuration", 
+					nil,
+					utils.Attribute{Key: "hint", Value: "add 'static-providers' section to config file"},
+				)
+			}
+
+			// After parsing both endpoints and providers:
+			for _, endpoint := range rpcEndpoints {
+				hasProvider := false
+				for _, provider := range staticProviderEndpoints {
+					if provider.ChainID == endpoint.ChainID && 
+					provider.ApiInterface == endpoint.ApiInterface {
+						hasProvider = true
+						break
+					}
+				}
+				
+				if !hasProvider {
+					return utils.LavaFormatError(
+						"no static providers configured for endpoint",
+						nil,
+						utils.Attribute{Key: "chainID", Value: endpoint.ChainID},
+						utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface},
+						utils.Attribute{Key: "hint", Value: "add provider in 'static-providers' section"},
+					)
+				}
+			}
+
+			
+
 			rpcSmartRouter := RPCSmartRouter{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)

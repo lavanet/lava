@@ -50,7 +50,8 @@ const (
 	initRelaysSmartRouterIp                  = ""
 )
 
-var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
+// NoResponseTimeout is imported from protocolerrors to avoid duplicate error code registration
+var NoResponseTimeout = protocolerrors.NoResponseTimeout
 
 type CancelableContextHolder struct {
 	Ctx        context.Context
