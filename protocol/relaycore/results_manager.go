@@ -1,4 +1,4 @@
-package rpcsmartrouter
+package relaycore
 
 import (
 	"fmt"
@@ -19,10 +19,10 @@ type ResultsManager interface {
 	HasResults() bool
 	GetResults() (success int, nodeErrors int, specialNodeErrors int, protocolErrors int)
 	GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError)
-	SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error)
+	SetResponse(response *RelayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error)
 	GetBestNodeErrorMessageForUser() RelayError
 	GetBestProtocolErrorMessageForUser() RelayError
-	nodeErrors() (ret []common.RelayResult)
+	NodeErrors() (ret []common.RelayResult)
 }
 
 type ResultsManagerInst struct {
@@ -36,44 +36,44 @@ type ResultsManagerInst struct {
 func NewResultsManager(guid uint64) ResultsManager {
 	return &ResultsManagerInst{
 		guid:                   guid,
-		nodeResponseErrors:     RelayErrors{relayErrors: []RelayError{}},
-		protocolResponseErrors: RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
+		nodeResponseErrors:     RelayErrors{RelayErrors: []RelayError{}},
+		protocolResponseErrors: RelayErrors{RelayErrors: []RelayError{}, OnFailureMergeAll: true},
 	}
 }
 
-func (rp *ResultsManagerInst) setErrorResponse(response *relayResponse) {
+func (rp *ResultsManagerInst) setErrorResponse(response *RelayResponse) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: rp.guid}, utils.Attribute{Key: "provider", Value: response.relayResult.ProviderInfo.ProviderAddress}, utils.Attribute{Key: "error", Value: response.err.Error()})
+	utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: rp.guid}, utils.Attribute{Key: "provider", Value: response.RelayResult.ProviderInfo.ProviderAddress}, utils.Attribute{Key: "error", Value: response.Err.Error()})
 	utils.LavaFormatError(
 		"could not send relay to provider",
-		response.err,
+		response.Err,
 		utils.Attribute{Key: "GUID", Value: rp.guid},
-		utils.Attribute{Key: "provider", Value: response.relayResult.ProviderInfo.ProviderAddress},
-		utils.Attribute{Key: "statusCode", Value: response.relayResult.StatusCode},
-		utils.Attribute{Key: "providerTrailer", Value: response.relayResult.ProviderTrailer},
+		utils.Attribute{Key: "provider", Value: response.RelayResult.ProviderInfo.ProviderAddress},
+		utils.Attribute{Key: "statusCode", Value: response.RelayResult.StatusCode},
+		utils.Attribute{Key: "providerTrailer", Value: response.RelayResult.ProviderTrailer},
 	)
-	rp.protocolResponseErrors.relayErrors = append(rp.protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+	rp.protocolResponseErrors.AddError(RelayError{Err: response.Err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
 }
 
 // only when locked
 func (rp *ResultsManagerInst) nodeResultsInner() []common.RelayResult {
 	// start with results and add to them node results
 	nodeResults := rp.successResults
-	nodeResults = append(nodeResults, rp.nodeErrors()...)
+	nodeResults = append(nodeResults, rp.NodeErrors()...)
 	return nodeResults
 }
 
 // only when locked
-func (rp *ResultsManagerInst) nodeErrors() (ret []common.RelayResult) {
-	for _, relayError := range rp.nodeResponseErrors.relayErrors {
-		ret = append(ret, relayError.response.relayResult)
+func (rp *ResultsManagerInst) NodeErrors() (ret []common.RelayResult) {
+	for _, relayError := range rp.nodeResponseErrors.RelayErrors {
+		ret = append(ret, relayError.Response.RelayResult)
 	}
 	return ret
 }
 
 // returns an error if and only if it was a parsed node error
-func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
+func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
 
@@ -82,31 +82,31 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 	reqBlock, _ := protocolMessage.RequestedBlock()
 	if reqBlock == spectypes.LATEST_BLOCK {
 		// TODO: when we turn on dataReliability on latest call UpdateLatest, until then we turn it off always
-		// modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.relayResult.Reply.LatestBlock, false)
+		// modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.RelayResult.Reply.LatestBlock, false)
 		// if !modifiedOnLatestReq {
-		response.relayResult.Finalized = false // shut down data reliability
+		response.RelayResult.Finalized = false // shut down data reliability
 		// }
 	}
 
-	if response.relayResult.Reply == nil {
+	if response.RelayResult.Reply == nil {
 		utils.LavaFormatError("got to setValidResponse with nil Reply",
-			response.err,
-			utils.LogAttr("ProviderInfo", response.relayResult.ProviderInfo),
-			utils.LogAttr("StatusCode", response.relayResult.StatusCode),
-			utils.LogAttr("Finalized", response.relayResult.Finalized),
-			utils.LogAttr("Quorum", response.relayResult.Quorum),
+			response.Err,
+			utils.LogAttr("ProviderInfo", response.RelayResult.ProviderInfo),
+			utils.LogAttr("StatusCode", response.RelayResult.StatusCode),
+			utils.LogAttr("Finalized", response.RelayResult.Finalized),
+			utils.LogAttr("Quorum", response.RelayResult.Quorum),
 		)
 		return nil
 	}
 
 	// on subscribe results, we just append to successful results instead of parsing results because we already have a validation.
 	if chainlib.IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-		rp.successResults = append(rp.successResults, response.relayResult)
+		rp.successResults = append(rp.successResults, response.RelayResult)
 		return nil
 	}
 
 	// check response error
-	foundError, errorMessage := protocolMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
+	foundError, errorMessage := protocolMessage.CheckResponseError(response.RelayResult.Reply.Data, response.RelayResult.StatusCode)
 	if foundError {
 		// this is a node error, meaning we still didn't get a good response.
 		// we may choose to wait until there will be a response or timeout happens
@@ -116,9 +116,9 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 		// also log the original request payload and request headers if available
 		reqPayload := ""
 		var reqHeaders interface{}
-		if response.relayResult.Request != nil && response.relayResult.Request.RelayData != nil {
-			reqPayload = string(response.relayResult.Request.RelayData.Data)
-			reqHeaders = response.relayResult.Request.RelayData.Metadata
+		if response.RelayResult.Request != nil && response.RelayResult.Request.RelayData != nil {
+			reqPayload = string(response.RelayResult.Request.RelayData.Data)
+			reqHeaders = response.RelayResult.Request.RelayData.Metadata
 		}
 		// Get request URL safely
 		requestUrl := ""
@@ -130,19 +130,19 @@ func (rp *ResultsManagerInst) setValidResponse(response *relayResponse, protocol
 			"received node error reply from provider",
 			err,
 			utils.LogAttr("GUID", rp.guid),
-			utils.LogAttr("provider", response.relayResult.ProviderInfo),
-			utils.LogAttr("statusCode", response.relayResult.StatusCode),
+			utils.LogAttr("provider", response.RelayResult.ProviderInfo),
+			utils.LogAttr("statusCode", response.RelayResult.StatusCode),
 			utils.LogAttr("api", protocolMessage.GetApi().Name),
 			utils.LogAttr("requestUrl", requestUrl),
-			utils.LogAttr("payload", string(response.relayResult.Reply.Data)),
-			utils.LogAttr("headers", response.relayResult.Reply.Metadata),
+			utils.LogAttr("payload", string(response.RelayResult.Reply.Data)),
+			utils.LogAttr("headers", response.RelayResult.Reply.Metadata),
 			utils.LogAttr("requestPayload", reqPayload),
 			utils.LogAttr("requestHeaders", reqHeaders),
 		)
-		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
 		return err
 	}
-	rp.successResults = append(rp.successResults, response.relayResult)
+	rp.successResults = append(rp.successResults, response.RelayResult)
 	return nil
 }
 
@@ -151,17 +151,17 @@ func (rm *ResultsManagerInst) GetResults() (success int, nodeErrors int, special
 	defer rm.lock.RUnlock()
 
 	specialErrorPatterns := []string{"The node does not track the shard ID"}
-	for _, err := range rm.nodeResponseErrors.relayErrors {
-		if err.response != nil && err.response.relayResult.Reply != nil && err.response.relayResult.Reply.Data != nil {
+	for _, err := range rm.nodeResponseErrors.RelayErrors {
+		if err.Response != nil && err.Response.RelayResult.Reply != nil && err.Response.RelayResult.Reply.Data != nil {
 			for _, specialErrorPattern := range specialErrorPatterns {
-				if strings.Contains(string(err.response.relayResult.Reply.Data), specialErrorPattern) {
+				if strings.Contains(string(err.Response.RelayResult.Reply.Data), specialErrorPattern) {
 					specialNodeErrors++
 				}
 			}
 		}
 	}
-	nodeErrors = len(rm.nodeResponseErrors.relayErrors) - specialNodeErrors
-	protocolErrors = len(rm.protocolResponseErrors.relayErrors)
+	nodeErrors = len(rm.nodeResponseErrors.RelayErrors) - specialNodeErrors
+	protocolErrors = len(rm.protocolResponseErrors.RelayErrors)
 	success = len(rm.successResults)
 	return success, nodeErrors, specialNodeErrors, protocolErrors
 }
@@ -187,7 +187,7 @@ func (rp *ResultsManagerInst) ProtocolErrors() uint64 {
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	return uint64(len(rp.protocolResponseErrors.relayErrors))
+	return uint64(len(rp.protocolResponseErrors.RelayErrors))
 }
 
 func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection Selection) bool {
@@ -214,16 +214,16 @@ func (rp *ResultsManagerInst) HasResults() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	resultsCount := len(rp.successResults)
-	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
-	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
+	nodeErrors := len(rp.nodeResponseErrors.RelayErrors)
+	protocolErrors := len(rp.protocolResponseErrors.RelayErrors)
 	return resultsCount+nodeErrors+protocolErrors > 0
 }
 
-func (rp *ResultsManagerInst) SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
+func (rp *ResultsManagerInst) SetResponse(response *RelayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
 	if response == nil {
 		return nil
 	}
-	if response.err != nil {
+	if response.Err != nil {
 		rp.setErrorResponse(response)
 	} else {
 		return rp.setValidResponse(response, protocolMessage)
@@ -234,7 +234,7 @@ func (rp *ResultsManagerInst) SetResponse(response *relayResponse, protocolMessa
 func (rp *ResultsManagerInst) GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError) {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	return rp.successResults, rp.nodeErrors(), rp.protocolResponseErrors.relayErrors
+	return rp.successResults, rp.NodeErrors(), rp.protocolResponseErrors.RelayErrors
 }
 
 func (rp *ResultsManagerInst) GetBestNodeErrorMessageForUser() RelayError {

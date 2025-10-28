@@ -1,4 +1,4 @@
-package rpcsmartrouter
+package relaycore
 
 import (
 	"context"
@@ -140,6 +140,13 @@ func (rs *RelayState) GetProtocolMessage() chainlib.ProtocolMessage {
 	return rs.protocolMessage
 }
 
+func (rs *RelayState) GetArchiveStatus() *ArchiveStatus {
+	if rs == nil || rs.archiveStatus == nil {
+		return nil
+	}
+	return rs.archiveStatus.Copy()
+}
+
 func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessage) {
 	if rs == nil {
 		return
@@ -151,7 +158,7 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 
 // Static function to determine if archive upgrade is needed and return the appropriate protocol message
 // This doesn't require a RelayState object, avoiding the need to create it twice
-func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, relayParser RelayParserInf, cache RetryHashCacheInf, numberOfRetriesLaunched int, numberOfNodeErrors uint64) chainlib.ProtocolMessage {
+func UpgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, relayParser RelayParserInf, cache RetryHashCacheInf, numberOfRetriesLaunched int, numberOfNodeErrors uint64) chainlib.ProtocolMessage {
 	if archiveStatus == nil {
 		return protocolMessage
 	}
@@ -231,13 +238,13 @@ func upgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 }
 
 // Legacy method wrapper for backward compatibility
-func (rs *RelayState) upgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
+func (rs *RelayState) UpgradeToArchiveIfNeeded(numberOfRetriesLaunched int, numberOfNodeErrors uint64) {
 	if rs == nil || rs.archiveStatus == nil {
 		return
 	}
 
 	// Use the static function to get the upgraded protocol message
-	upgradedProtocolMessage := upgradeToArchiveIfNeeded(rs.ctx, rs.GetProtocolMessage(), rs.archiveStatus, rs.relayParser, rs.cache, numberOfRetriesLaunched, numberOfNodeErrors)
+	upgradedProtocolMessage := UpgradeToArchiveIfNeeded(rs.ctx, rs.GetProtocolMessage(), rs.archiveStatus, rs.relayParser, rs.cache, numberOfRetriesLaunched, numberOfNodeErrors)
 
 	// Update the RelayState with the new protocol message
 	rs.SetProtocolMessage(upgradedProtocolMessage)

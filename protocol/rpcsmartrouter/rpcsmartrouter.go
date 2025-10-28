@@ -51,6 +51,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -193,7 +194,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	smartRouterConsistencies := &common.SafeSyncMap[string, *SmartRouterConsistency]{}
+	smartRouterConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -238,7 +239,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	rpcEndpoint *lavasession.RPCEndpoint,
 	errCh chan error,
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	smartRouterConsistencies *common.SafeSyncMap[string, *SmartRouterConsistency],
+	smartRouterConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcSmartRouterStartOptions,
 	smartRouterIdentifier string,
@@ -298,7 +299,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var smartRouterConsistency *SmartRouterConsistency
+	var smartRouterConsistency relaycore.Consistency
 
 	// Create chain assets with mutex protection
 	chainMutexes[chainID].Lock()
@@ -317,8 +318,8 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		smartRouterOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 	}
 
-	// Create / Use existing SmartRouterConsistency
-	newSmartRouterConsistency := NewSmartRouterConsistency(chainID)
+	// Create / Use existing Consistency
+	newSmartRouterConsistency := relaycore.NewConsistency(chainID)
 	smartRouterConsistency, _, err = smartRouterConsistencies.LoadOrStore(chainID, newSmartRouterConsistency)
 	if err != nil {
 		errCh <- err
@@ -725,7 +726,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
-	cmdRPCSmartRouter.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	// optimizer metrics
 	cmdRPCSmartRouter.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCSmartRouter.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, provideroptimizer.LastTierChance, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")

@@ -25,6 +25,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -213,7 +214,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	consumerConsistencies := &common.SafeSyncMap[string, *ConsumerConsistency]{}
+	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
 	finalizationConsensuses := &common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus]{}
 
 	var wg sync.WaitGroup
@@ -286,7 +287,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerStateTracker *statetracker.ConsumerStateTracker,
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	consumerConsistencies *common.SafeSyncMap[string, *ConsumerConsistency],
+	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
 	finalizationConsensuses *common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
@@ -329,7 +330,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var consumerConsistency *ConsumerConsistency
+	var consumerConsistency relaycore.Consistency
 	var finalizationConsensus *finalizationconsensus.FinalizationConsensus
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
@@ -350,8 +351,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 		}
 
-		// Create / Use existing ConsumerConsistency
-		newConsumerConsistency := NewConsumerConsistency(chainID)
+		// Create / Use existing Consistency
+		newConsumerConsistency := relaycore.NewConsistency(chainID)
 		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
 		if err != nil {
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -699,7 +700,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
-	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	// optimizer metrics
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, provideroptimizer.LastTierChance, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")

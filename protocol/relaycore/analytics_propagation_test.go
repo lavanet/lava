@@ -1,4 +1,4 @@
-package rpcsmartrouter
+package relaycore
 
 import (
 	"testing"

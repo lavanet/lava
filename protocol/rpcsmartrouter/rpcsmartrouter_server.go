@@ -28,6 +28,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -69,7 +70,7 @@ type RPCSmartRouterServer struct {
 	finalizationConsensus          interface{} // Smart router doesn't use finalization consensus
 	lavaChainID                    string
 	SmartRouterAddress             sdk.AccAddress
-	smartRouterConsistency         *SmartRouterConsistency
+	smartRouterConsistency         relaycore.Consistency
 	sharedState                    bool // using the cache backend to sync the latest seen block
 	relaysMonitor                  *metrics.RelaysMonitor
 	reporter                       metrics.Reporter
@@ -81,10 +82,6 @@ type RPCSmartRouterServer struct {
 	initialized                    atomic.Bool
 }
 
-type relayResponse struct {
-	relayResult common.RelayResult
-	err         error
-}
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker interface{}, // Smart router doesn't use state tracker
@@ -97,7 +94,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(ctx context.Context, listenE
 	cache *performance.Cache, // optional
 	rpcSmartRouterLogs *metrics.RPCConsumerLogs,
 	smartRouterAddress sdk.AccAddress,
-	smartRouterConsistency *SmartRouterConsistency,
+	smartRouterConsistency relaycore.Consistency,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
@@ -242,7 +239,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 			utils.LogAttr("GUID", ctx))
 	}
 
-	relayProcessor := NewRelayProcessor(
+	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		quorumParams,
 		rpcss.smartRouterConsistency,
@@ -261,11 +258,11 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpcss.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpcss.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+			err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpcss.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpcss.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -425,7 +422,7 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
 	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.getSkipDataReliability() {
+	if enabled && !relayProcessor.GetSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -584,7 +581,7 @@ func (rpcss *RPCSmartRouterServer) cacheUnsupportedMethodError(ctx context.Conte
 	}
 }
 
-func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*RelayProcessor, error) {
+func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -604,7 +601,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 			utils.LogAttr("GUID", ctx))
 	}
 
-	relayProcessor := NewRelayProcessor(
+	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		quorumParams,
 		rpcss.smartRouterConsistency,
@@ -621,10 +618,10 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	}
 	for task := range relayTaskChannel {
 		if task.IsDone() {
-			return relayProcessor, task.err
+			return relayProcessor, task.Err
 		}
-		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.numOfProviders))
-		err := rpcss.sendRelayToProvider(ctx, task.numOfProviders, task.relayState, relayProcessor, task.analytics)
+		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
+		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
 		relayProcessor.UpdateBatch(err)
 	}
 
@@ -685,7 +682,7 @@ func (rpcss *RPCSmartRouterServer) resolveRequestedBlock(reqBlock int64, seenBlo
 	return reqBlock
 }
 
-func (rpcss *RPCSmartRouterServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool, relayState *RelayState) ([]*pairingtypes.BlockHashToHeight, bool) {
+func (rpcss *RPCSmartRouterServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64, finalized bool, relayState *relaycore.RelayState) ([]*pairingtypes.BlockHashToHeight, bool) {
 	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
 	// 1. The current extension is archive.
 	// 2. The user requested a single block hash.
@@ -755,8 +752,8 @@ func (rpcss *RPCSmartRouterServer) newBlocksHashesToHeightsSliceFromFinalization
 func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	ctx context.Context,
 	numOfProviders int,
-	relayState *RelayState,
-	relayProcessor *RelayProcessor,
+	relayState *relaycore.RelayState,
+	relayProcessor *relaycore.RelayProcessor,
 	analytics *metrics.RelayMetrics,
 ) (errRet error) {
 	// get a session for the relay from the ConsumerSessionManager
@@ -905,9 +902,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 							StatusCode:   200,
 							ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
 						}
-						relayProcessor.SetResponse(&relayResponse{
-							relayResult: relayResult,
-							err:         nil,
+						relayProcessor.SetResponse(&relaycore.RelayResponse{
+							RelayResult: relayResult,
+							Err:         nil,
 						})
 						return nil
 					}
@@ -962,7 +959,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				if err != nil {
 					return err
 				}
-				relayProcessor.setSkipDataReliability(true)                // disabling data reliability when disabling extensions.
+				relayProcessor.SetSkipDataReliability(true)                // disabling data reliability when disabling extensions.
 				protocolMessage.RelayPrivateData().Extensions = []string{} // reset request data extensions
 				extensions = []*spectypes.Extension{}                      // reset extensions too so we wont hit SetDisallowDegradation
 			} else {
@@ -1024,9 +1021,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			defer func() {
 				// Return response
-				relayProcessor.SetResponse(&relayResponse{
-					relayResult: *localRelayResult,
-					err:         errResponse,
+				relayProcessor.SetResponse(&relaycore.RelayResponse{
+					RelayResult: *localRelayResult,
+					Err:         errResponse,
 				})
 
 				// Close context
@@ -1618,13 +1615,13 @@ func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context
 	return &reply, nil
 }
 
-func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *relaycore.RelayProcessor) error {
 	if statetracker.DisableDR {
 		return nil
 	}
 	processingTimeout, expectedRelayTimeout := rpcss.getProcessingTimeout(protocolMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
-	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
+	if relayProcessor.GetUsedProviders().CurrentlyUsed() > 0 {
 		time.Sleep(expectedRelayTimeout)
 	}
 
@@ -1681,17 +1678,17 @@ func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx cont
 				utils.LogAttr("GUID", ctx))
 		}
 
-		relayProcessorDataReliability := NewRelayProcessor(
+		relayProcessorDataReliability := relaycore.NewRelayProcessor(
 			ctx,
 			quorumParams,
 			rpcss.smartRouterConsistency,
 			rpcss.rpcSmartRouterLogs,
 			rpcss,
 			rpcss.relayRetriesManager,
-			NewSmartRouterRelayStateMachine(ctx, relayProcessor.usedProviders, rpcss, dataReliabilityProtocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
+			NewSmartRouterRelayStateMachine(ctx, relayProcessor.GetUsedProviders(), rpcss, dataReliabilityProtocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
 			rpcss.sessionManager.GetQoSManager(),
 		)
-		err = rpcss.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
+		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
@@ -1808,7 +1805,16 @@ func (rpcss *RPCSmartRouterServer) getMetadataFromRelayTrailer(metadataHeaders [
 	}
 }
 
-func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, protocolMessage chainlib.ProtocolMessage, apiName string) {
+// RelayProcessorForHeaders interface for methods used by appendHeadersToRelayResult
+type RelayProcessorForHeaders interface {
+	GetQuorumParams() common.QuorumParams
+	GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError)
+	GetStatefulRelayTargets() []string
+	GetUsedProviders() *lavasession.UsedProviders
+	NodeErrors() (ret []common.RelayResult)
+}
+
+func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string) {
 	if relayResult == nil {
 		return
 	}
@@ -2003,7 +2009,7 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, erroredProvidersMD)
 		}
 
-		nodeErrors := relayProcessor.nodeErrors()
+		nodeErrors := relayProcessor.NodeErrors()
 		if len(nodeErrors) > 0 {
 			nodeErrorHeaderString := ""
 			for _, nodeError := range nodeErrors {
@@ -2074,7 +2080,7 @@ func (rpcss *RPCSmartRouterServer) RoundTrip(req *http.Request) (*http.Response,
 
 func (rpcss *RPCSmartRouterServer) updateProtocolMessageIfNeededWithNewEarliestData(
 	ctx context.Context,
-	relayState *RelayState,
+	relayState *relaycore.RelayState,
 	protocolMessage chainlib.ProtocolMessage,
 	earliestBlockHashRequested int64,
 	addon string,

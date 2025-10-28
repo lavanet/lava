@@ -13,25 +13,13 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/utils"
 )
 
-type RelayStateMachine interface {
-	GetProtocolMessage() chainlib.ProtocolMessage
-	GetDebugState() bool
-	GetRelayTaskChannel() (chan RelayStateSendInstructions, error)
-	UpdateBatch(err error)
-	GetSelection() Selection
-	GetUsedProviders() *lavasession.UsedProviders
-	SetResultsChecker(resultsChecker ResultsCheckerInf)
-	SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager)
-}
-
-type ResultsCheckerInf interface {
-	WaitForResults(ctx context.Context) error
-	HasRequiredNodeResults(tries int) (bool, int)
-	GetQuorumParams() common.QuorumParams
-}
+// Using interfaces from relaycore
+type RelayStateMachine = relaycore.RelayStateMachine
+type ResultsCheckerInf = relaycore.ResultsCheckerInf
 
 type SmartRouterRelaySender interface {
 	getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
@@ -56,13 +44,13 @@ type SmartRouterRelayStateMachine struct {
 	relaySender         SmartRouterRelaySender
 	resultsChecker      ResultsCheckerInf
 	analytics           *metrics.RelayMetrics // first relay metrics
-	selection           Selection
+	selection           relaycore.Selection
 	debugRelays         bool
 	tickerMetricSetter  tickerMetricSetterInf
 	batchUpdate         chan error
 	usedProviders       *lavasession.UsedProviders
 	relayRetriesManager *lavaprotocol.RelayRetriesManager
-	relayState          []*RelayState
+	relayState          []*relaycore.RelayState
 	protocolMessage     chainlib.ProtocolMessage
 	relayStateLock      sync.RWMutex
 }
@@ -76,9 +64,9 @@ func NewSmartRouterRelayStateMachine(
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
 ) RelayStateMachine {
-	selection := Quorum // select the majority of node responses
+	selection := relaycore.Quorum // select the majority of node responses
 	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		selection = BestResult // select the majority of node successes
+		selection = relaycore.BestResult // select the majority of node successes
 	}
 
 	return &SmartRouterRelayStateMachine{
@@ -91,7 +79,7 @@ func NewSmartRouterRelayStateMachine(
 		debugRelays:        debugRelays,
 		tickerMetricSetter: tickerMetricSetter,
 		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
-		relayState:         make([]*RelayState, 0),
+		relayState:         make([]*relaycore.RelayState, 0),
 	}
 }
 
@@ -111,17 +99,17 @@ func (srsm *SmartRouterRelayStateMachine) GetUsedProviders() *lavasession.UsedPr
 	return srsm.usedProviders
 }
 
-func (srsm *SmartRouterRelayStateMachine) GetSelection() Selection {
+func (srsm *SmartRouterRelayStateMachine) GetSelection() relaycore.Selection {
 	return srsm.selection
 }
 
-func (srsm *SmartRouterRelayStateMachine) appendRelayState(nextState *RelayState) {
+func (srsm *SmartRouterRelayStateMachine) appendRelayState(nextState *relaycore.RelayState) {
 	srsm.relayStateLock.Lock()
 	defer srsm.relayStateLock.Unlock()
 	srsm.relayState = append(srsm.relayState, nextState)
 }
 
-func (srsm *SmartRouterRelayStateMachine) getLatestState() *RelayState {
+func (srsm *SmartRouterRelayStateMachine) getLatestState() *relaycore.RelayState {
 	srsm.relayStateLock.RLock()
 	defer srsm.relayStateLock.RUnlock()
 	if len(srsm.relayState) == 0 {
@@ -130,21 +118,21 @@ func (srsm *SmartRouterRelayStateMachine) getLatestState() *RelayState {
 	return srsm.relayState[len(srsm.relayState)-1]
 }
 
-func (srsm *SmartRouterRelayStateMachine) stateTransition(relayState *RelayState, numberOfNodeErrors uint64) {
+func (srsm *SmartRouterRelayStateMachine) stateTransition(relayState *relaycore.RelayState, numberOfNodeErrors uint64) {
 	batchNumber := srsm.usedProviders.BatchNumber()
-	var nextState *RelayState
+	var nextState *relaycore.RelayState
 	if relayState == nil { // initial state
-		nextState = NewRelayState(srsm.ctx, srsm.protocolMessage, 0, srsm.relayRetriesManager, srsm.relaySender, &ArchiveStatus{})
+		nextState = relaycore.NewRelayState(srsm.ctx, srsm.protocolMessage, 0, srsm.relayRetriesManager, srsm.relaySender, &relaycore.ArchiveStatus{})
 	} else {
 		// Get the appropriate protocol message (with archive upgrade if needed) BEFORE creating RelayState
 		protocolMessage := srsm.GetProtocolMessage()
-		archiveStatus := relayState.archiveStatus.Copy()
+		archiveStatus := relayState.GetArchiveStatus()
 
 		// Use static function to get upgraded protocol message without creating RelayState
-		upgradedProtocolMessage := upgradeToArchiveIfNeeded(srsm.ctx, protocolMessage, archiveStatus, srsm.relaySender, srsm.relayRetriesManager, batchNumber, numberOfNodeErrors)
+		upgradedProtocolMessage := relaycore.UpgradeToArchiveIfNeeded(srsm.ctx, protocolMessage, archiveStatus, srsm.relaySender, srsm.relayRetriesManager, batchNumber, numberOfNodeErrors)
 
 		// Create the final RelayState with the correct protocol message
-		nextState = NewRelayState(srsm.ctx, upgradedProtocolMessage, relayState.GetStateNumber()+1, srsm.relayRetriesManager, srsm.relaySender, archiveStatus)
+		nextState = relaycore.NewRelayState(srsm.ctx, upgradedProtocolMessage, relayState.GetStateNumber()+1, srsm.relayRetriesManager, srsm.relaySender, archiveStatus)
 	}
 	srsm.appendRelayState(nextState)
 }
@@ -177,8 +165,8 @@ func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachi
 	}
 
 	// Check if the results checker has unsupported method errors
-	if relayProcessor, ok := srsm.resultsChecker.(*RelayProcessor); ok {
-		return relayProcessor.hasUnsupportedMethodErrors()
+	if relayProcessor, ok := srsm.resultsChecker.(*relaycore.RelayProcessor); ok {
+		return relayProcessor.HasUnsupportedMethodErrors()
 	}
 
 	return false
@@ -199,7 +187,7 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 	// best result sends to top 10 providers anyway.
-	return srsm.selection != BestResult
+	return srsm.selection != relaycore.BestResult
 }
 
 func (srsm *SmartRouterRelayStateMachine) GetDebugState() bool {
@@ -214,17 +202,8 @@ func (srsm *SmartRouterRelayStateMachine) GetProtocolMessage() chainlib.Protocol
 	return latestState.GetProtocolMessage()
 }
 
-type RelayStateSendInstructions struct {
-	analytics      *metrics.RelayMetrics
-	err            error
-	done           bool
-	relayState     *RelayState
-	numOfProviders int
-}
-
-func (rssi *RelayStateSendInstructions) IsDone() bool {
-	return rssi.done || rssi.err != nil
-}
+// Using RelayStateSendInstructions from relaycore
+type RelayStateSendInstructions = relaycore.RelayStateSendInstructions
 
 func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
 	if !srsm.Initialized() {
@@ -269,9 +248,9 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		srsm.stateTransition(nil, 0)
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
-			analytics:      srsm.analytics,
-			relayState:     srsm.getLatestState(),
-			numOfProviders: srsm.resultsChecker.GetQuorumParams().Min,
+			Analytics:      srsm.analytics,
+			RelayState:     srsm.getLatestState(),
+			NumOfProviders: srsm.resultsChecker.GetQuorumParams().Min,
 		}
 
 		// Initialize parameters
@@ -295,7 +274,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					} else {
 						utils.LavaFormatTrace("[StateMachine] batchUpdate - err != nil - batch fail retry attempt", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", srsm.ctx))
 						// Failed sending message, but we still want to attempt sending more.
-						relayTaskChannel <- RelayStateSendInstructions{relayState: srsm.getLatestState(), numOfProviders: 1}
+						relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 					}
 					continue
 				}
@@ -308,13 +287,13 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				// Or we are done sending relays, and we have no other relays pending results.
 				if success { // Check wether we can return the valid results or we need to send another relay
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", srsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{done: true}
+					relayTaskChannel <- RelayStateSendInstructions{Done: true}
 					return
 				}
 				// If should retry == true, send a new batch. (success == false)
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - srsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{relayState: srsm.getLatestState(), numOfProviders: 1}
+					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
 				}
@@ -323,7 +302,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{relayState: srsm.getLatestState(), numOfProviders: 1}
+					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 					// Add ticker launch metrics
 					go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
 				}
@@ -336,7 +315,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				// sending first relay -> waiting -> sending second relay -> getting an error on the second relay (not returning yet) ->
 				// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
 				// by releasing the case we allow the channel to be chosen again by the successful case.
-				relayTaskChannel <- RelayStateSendInstructions{err: returnErr, done: true}
+				relayTaskChannel <- RelayStateSendInstructions{Err: returnErr, Done: true}
 				return
 			case <-processingCtx.Done():
 				// In case we got a processing timeout we return context deadline exceeded to the user.
@@ -351,7 +330,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
 				)
 				// returning the context error
-				relayTaskChannel <- RelayStateSendInstructions{err: processingCtx.Err(), done: true}
+				relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
 				return
 			}
 		}
