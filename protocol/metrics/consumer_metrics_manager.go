@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -286,37 +287,50 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, []string{"spec", "provider_address"})
 
 	// Register the metrics with the Prometheus registry.
-	prometheus.MustRegister(totalCURequestedMetric)
-	prometheus.MustRegister(totalRelaysRequestedMetric)
-	prometheus.MustRegister(totalErroredMetric)
-	prometheus.MustRegister(blockMetric)
-	prometheus.MustRegister(latencyMetric)
-	prometheus.MustRegister(endToEndLatencyMetric)
-	prometheus.MustRegister(providerLivenessMetric)
-	prometheus.MustRegister(blockedProviderMetric)
-	prometheus.MustRegister(latestProviderRelay)
-	prometheus.MustRegister(virtualEpochMetric)
-	prometheus.MustRegister(endpointsHealthChecksOkMetric)
-	prometheus.MustRegister(endpointsHealthChecksBreakdownMetric)
-	prometheus.MustRegister(protocolVersionMetric)
-	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
-	prometheus.MustRegister(totalWebSocketConnectionsActive)
-	prometheus.MustRegister(apiSpecificsMetric)
-	prometheus.MustRegister(averageLatencyMetric)
-	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
-	prometheus.MustRegister(totalNodeErroredMetric)
-	prometheus.MustRegister(totalNodeErroredRecoveredSuccessfullyMetric)
-	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
-	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
-	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
-	prometheus.MustRegister(totalWsSubscriptionRequestsMetric)
-	prometheus.MustRegister(totalFailedWsSubscriptionRequestsMetric)
-	prometheus.MustRegister(totalDuplicatedWsSubscriptionRequestsMetric)
-	prometheus.MustRegister(totalWsSubscriptionDisconnectMetric)
-	prometheus.MustRegister(totalLoLSuccessMetric)
-	prometheus.MustRegister(totalLoLErrorsMetric)
-	prometheus.MustRegister(requestsPerProviderMetric)
-	prometheus.MustRegister(protocolErrorsPerProviderMetric)
+	// Use a helper function to handle AlreadyRegisteredError gracefully
+	registerMetric := func(c prometheus.Collector) {
+		if err := prometheus.Register(c); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if !errors.As(err, are) {
+				// Only panic if it's not an "already registered" error
+				panic(err)
+			}
+			// Metric already registered, which can happen on restart - this is fine
+			utils.LavaFormatDebug("Prometheus metric already registered, reusing existing collector", utils.LogAttr("error", err))
+		}
+	}
+
+	registerMetric(totalCURequestedMetric)
+	registerMetric(totalRelaysRequestedMetric)
+	registerMetric(totalErroredMetric)
+	registerMetric(blockMetric)
+	registerMetric(latencyMetric)
+	registerMetric(endToEndLatencyMetric)
+	registerMetric(providerLivenessMetric)
+	registerMetric(blockedProviderMetric)
+	registerMetric(latestProviderRelay)
+	registerMetric(virtualEpochMetric)
+	registerMetric(endpointsHealthChecksOkMetric)
+	registerMetric(endpointsHealthChecksBreakdownMetric)
+	registerMetric(protocolVersionMetric)
+	registerMetric(totalRelaysSentByNewBatchTickerMetric)
+	registerMetric(totalWebSocketConnectionsActive)
+	registerMetric(apiSpecificsMetric)
+	registerMetric(averageLatencyMetric)
+	registerMetric(totalRelaysSentToProvidersMetric)
+	registerMetric(totalNodeErroredMetric)
+	registerMetric(totalNodeErroredRecoveredSuccessfullyMetric)
+	registerMetric(totalNodeErroredRecoveryAttemptsMetric)
+	registerMetric(relayProcessingLatencyBeforeProvider)
+	registerMetric(relayProcessingLatencyAfterProvider)
+	registerMetric(totalWsSubscriptionRequestsMetric)
+	registerMetric(totalFailedWsSubscriptionRequestsMetric)
+	registerMetric(totalDuplicatedWsSubscriptionRequestsMetric)
+	registerMetric(totalWsSubscriptionDisconnectMetric)
+	registerMetric(totalLoLSuccessMetric)
+	registerMetric(totalLoLErrorsMetric)
+	registerMetric(requestsPerProviderMetric)
+	registerMetric(protocolErrorsPerProviderMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,

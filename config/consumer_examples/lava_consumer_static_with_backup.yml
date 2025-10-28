@@ -9,53 +9,65 @@ endpoints:
       api-interface: grpc
       network-address: 127.0.0.1:3362
 static-providers:
-  - api-interface: tendermintrpc
+  - name: primary-5550-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5550
-  - api-interface: grpc
+  - name: primary-5550-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5550
-  - api-interface: rest
+  - name: primary-5550-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5550
-  - api-interface: tendermintrpc
+  - name: primary-5551-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5551
-  - api-interface: grpc
+  - name: primary-5551-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5551
-  - api-interface: rest
+  - name: primary-5551-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:5551
 
 backup-providers:
-  - api-interface: tendermintrpc
+  - name: backup-2220-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: grpc
+  - name: backup-2220-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: rest
+  - name: backup-2220-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: tendermintrpc
+  - name: backup-2221-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: grpc
+  - name: backup-2221-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: rest
+  - name: backup-2221-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
