@@ -9,36 +9,36 @@ endpoints:
       api-interface: grpc
       network-address: 127.0.0.1:3362
 static-providers:
-  - name: primary-5550-tendermintrpc
+  - name: primary-2220-tendermintrpc
     api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - name: primary-5550-grpc
+      - url: 127.0.0.1:2220
+  - name: primary-2220-grpc
     api-interface: grpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - name: primary-5550-rest
+      - url: 127.0.0.1:2220
+  - name: primary-2220-rest
     api-interface: rest
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - name: primary-5551-tendermintrpc
+      - url: 127.0.0.1:2220
+  - name: primary-2221-tendermintrpc
     api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
-  - name: primary-5551-grpc
+      - url: 127.0.0.1:2221
+  - name: primary-2221-grpc
     api-interface: grpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
-  - name: primary-5551-rest
+      - url: 127.0.0.1:2221
+  - name: primary-2221-rest
     api-interface: rest
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
+      - url: 127.0.0.1:2221
 
 backup-providers:
   - name: backup-2220-tendermintrpc
