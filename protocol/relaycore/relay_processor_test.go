@@ -23,6 +23,7 @@ type mockRelayStateMachine struct {
 	protocolMessage chainlib.ProtocolMessage
 	usedProviders   *lavasession.UsedProviders
 	debugState      bool
+	selection       Selection
 }
 
 func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders) *mockRelayStateMachine {
@@ -30,6 +31,16 @@ func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProv
 		protocolMessage: protocolMessage,
 		usedProviders:   usedProviders,
 		debugState:      false,
+		selection:       BestResult, // Default to BestResult for backward compatibility
+	}
+}
+
+func newMockRelayStateMachineWithSelection(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders, selection Selection) *mockRelayStateMachine {
+	return &mockRelayStateMachine{
+		protocolMessage: protocolMessage,
+		usedProviders:   usedProviders,
+		debugState:      false,
+		selection:       selection,
 	}
 }
 
@@ -49,7 +60,7 @@ func (m *mockRelayStateMachine) UpdateBatch(err error) {
 }
 
 func (m *mockRelayStateMachine) GetSelection() Selection {
-	return BestResult
+	return m.selection
 }
 
 func (m *mockRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
@@ -61,6 +72,7 @@ func (m *mockRelayStateMachine) SetResultsChecker(resultsChecker ResultsCheckerI
 
 func (m *mockRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
 }
+
 func TestRelayProcessorHappyFlow(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		ctx := context.Background()
@@ -532,7 +544,7 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
-				newMockRelayStateMachine(protocolMessage, usedProviders),
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
 				qos.NewQoSManager(),
 			)
 
@@ -586,4 +598,3 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 		})
 	}
 }
-
