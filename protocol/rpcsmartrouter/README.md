@@ -2,7 +2,6 @@
 
 The RPC Smart Router is Lava's **centralized** RPC gateway designed for enterprises with known provider infrastructure. It routes requests to pre-configured static and backup providers without requiring blockchain pairing, making it ideal for controlled environments.
 
-**Trusted by:** Fireblocks, Movement, Arbitrum, NEAR, Filecoin, Cosmos, and many more enterprise teams.
 
 ## When to Use RPC Smart Router
 
