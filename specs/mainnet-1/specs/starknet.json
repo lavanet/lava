@@ -990,7 +990,7 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
-                            "internal_path": "",
+                            "internal_path": "HTTP-ONLY",
                             "type": "POST",
                             "add_on": ""
                         },
@@ -1001,118 +1001,18 @@
                         "verifications": [
                             {
                                 "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_8",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "pending-block-support",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxs\",\"params\":[\"pending\"],\"id\":1}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
-                                            "0",
-                                            "parent_hash"
+                                            "0"
                                         ],
-                                        "parser_func": "PARSE_CANONICAL"
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
                                     },
-                                    "api_name": "starknet_getBlockWithTxs"
+                                    "api_name": "starknet_chainId"
                                 },
-                                "values": [
-                                    {
-                                        "expected_value": "*"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_8",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/rpc/v0_9",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x534e5f5345504f4c4941"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "/ws/rpc/v0_9",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
                                 "values": [
                                     {
                                         "expected_value": "0x534e5f5345504f4c4941"
