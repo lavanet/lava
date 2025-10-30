@@ -431,7 +431,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	}
 	// force go's test timeout to 0, otherwise the default is 10m; our timeout
 	// will be enforced by the given ctx.
-	command := fmt.Sprintf("%s test ./testutil/e2e/proxy/. -v -timeout 0 -args -host=eth", goExecutablePath)
+	command := fmt.Sprintf("%s test ./testutil/e2e/proxy/. -v -timeout 0 -args -host eth", goExecutablePath)
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
