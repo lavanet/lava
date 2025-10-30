@@ -374,7 +374,7 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	}
 
 	if response != nil {
-		canonicalForm, err := types.CreateCanonicalJSON(response.RelayResult.GetReply().GetData())
+		canonicalForm, err := types.CreateCanonicalForm(response.RelayResult.GetReply().GetData())
 		if err == nil {
 			rp.qourumMap[canonicalForm]++
 			if rp.qourumMap[canonicalForm] > rp.currentQourumEqualResults {
@@ -460,10 +460,11 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
-			// Create canonical form for comparison
-			canonicalForm, err := types.CreateCanonicalJSON(result.Reply.Data)
+			// Create canonical form for comparison (handles both JSON and binary data)
+			canonicalForm, err := types.CreateCanonicalForm(result.Reply.Data)
 			if err != nil {
 				utils.LavaFormatError("failed to create canonical form", err, utils.LogAttr("result", result.Reply.Data))
+				continue
 			}
 
 			if count, exists := countMap[canonicalForm]; exists {
