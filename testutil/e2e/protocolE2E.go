@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
@@ -141,6 +142,9 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
 
+	// Set process group ID so we can kill the entire process tree
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -194,6 +198,10 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
+
+	// Set process group ID so we can kill the entire process tree
+	// This ensures child processes (like proxy.test spawned by go test) are also killed
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// Ensure PATH includes the Go bin directory
 	gopath := os.Getenv("GOPATH")
@@ -423,7 +431,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	}
 	// force go's test timeout to 0, otherwise the default is 10m; our timeout
 	// will be enforced by the given ctx.
-	command := goExecutablePath + " test ./testutil/e2e/proxy/. -v -timeout 0 eth"
+	command := fmt.Sprintf("%s test ./testutil/e2e/proxy/. -v -timeout 0 -args -host=eth", goExecutablePath)
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
@@ -921,8 +929,25 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	for name, cmd := range lt.commands { // kill all the project commands
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
-			if err := cmd.Process.Kill(); err != nil {
-				utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+
+			// Kill the entire process group to ensure child processes are also terminated
+			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
+			pgid, err := syscall.Getpgid(cmd.Process.Pid)
+			if err == nil {
+				// Kill the process group (negative PID kills the group)
+				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
+						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
+					// Fallback to killing just the process
+					if err := cmd.Process.Kill(); err != nil {
+						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+					}
+				}
+			} else {
+				// If we can't get the process group, just kill the process
+				if err := cmd.Process.Kill(); err != nil {
+					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+				}
 			}
 		}
 	}
@@ -1630,6 +1655,36 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// Ensure cleanup happens
 	defer func() {
+		// Kill all processes first (before waiting for goroutines)
+		// This ensures orphan processes like proxy.test are cleaned up
+		// even if the test panics or fails before reaching finishTestSuccessfully()
+		lt.commandsMu.RLock()
+		for name, cmd := range lt.commands {
+			if cmd != nil && cmd.Process != nil {
+				utils.LavaFormatInfo("Cleanup: Killing process", utils.LogAttr("name", name))
+
+				// Kill the entire process group to ensure child processes are also terminated
+				pgid, err := syscall.Getpgid(cmd.Process.Pid)
+				if err == nil {
+					// Kill the process group (negative PID kills the group)
+					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+						utils.LavaFormatWarning("Cleanup: Failed to kill process group, falling back to single process", err,
+							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
+						// Fallback to killing just the process
+						if err := cmd.Process.Kill(); err != nil {
+							utils.LavaFormatError("Cleanup: Failed to kill process", err, utils.LogAttr("name", name))
+						}
+					}
+				} else {
+					// If we can't get the process group, just kill the process
+					if err := cmd.Process.Kill(); err != nil {
+						utils.LavaFormatError("Cleanup: Failed to kill process", err, utils.LogAttr("name", name))
+					}
+				}
+			}
+		}
+		lt.commandsMu.RUnlock()
+
 		// Wait for all goroutines with timeout
 		done := make(chan struct{})
 		go func() {
