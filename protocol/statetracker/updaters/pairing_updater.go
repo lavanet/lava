@@ -201,7 +201,7 @@ func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pair
 		backupProviders = pu.parseBackupProviders(pairingListForThisCSM, consumerSessionManager.RPCEndpoint(), epoch)
 	}
 	err = consumerSessionManager.UpdateAllProviders(epoch, pairingListForThisCSM, backupProviders)
-	return
+	return err
 }
 
 func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) map[uint64]*lavasession.ConsumerSessionsWithProvider {

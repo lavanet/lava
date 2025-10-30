@@ -87,7 +87,6 @@ type RPCConsumerServer struct {
 	initialized                    atomic.Bool
 }
 
-
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)

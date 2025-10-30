@@ -18,8 +18,10 @@ import (
 )
 
 // Using interfaces from relaycore
-type RelayStateMachine = relaycore.RelayStateMachine
-type ResultsCheckerInf = relaycore.ResultsCheckerInf
+type (
+	RelayStateMachine = relaycore.RelayStateMachine
+	ResultsCheckerInf = relaycore.ResultsCheckerInf
+)
 
 type SmartRouterRelaySender interface {
 	getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)

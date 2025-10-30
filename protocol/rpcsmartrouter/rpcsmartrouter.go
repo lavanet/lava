@@ -606,7 +606,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 
 			if len(staticProviderEndpoints) == 0 {
 				return utils.LavaFormatError(
-					"smart router requires static providers configuration", 
+					"smart router requires static providers configuration",
 					nil,
 					utils.Attribute{Key: "hint", Value: "add 'static-providers' section to config file"},
 				)
@@ -616,13 +616,13 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			for _, endpoint := range rpcEndpoints {
 				hasProvider := false
 				for _, provider := range staticProviderEndpoints {
-					if provider.ChainID == endpoint.ChainID && 
-					provider.ApiInterface == endpoint.ApiInterface {
+					if provider.ChainID == endpoint.ChainID &&
+						provider.ApiInterface == endpoint.ApiInterface {
 						hasProvider = true
 						break
 					}
 				}
-				
+
 				if !hasProvider {
 					return utils.LavaFormatError(
 						"no static providers configured for endpoint",
@@ -633,8 +633,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 					)
 				}
 			}
-
-			
 
 			rpcSmartRouter := RPCSmartRouter{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers

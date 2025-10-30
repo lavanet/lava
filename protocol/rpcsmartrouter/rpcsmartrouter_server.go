@@ -82,7 +82,6 @@ type RPCSmartRouterServer struct {
 	initialized                    atomic.Bool
 }
 
-
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,

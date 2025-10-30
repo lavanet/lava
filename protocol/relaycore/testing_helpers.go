@@ -141,4 +141,3 @@ func SendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay
 	}
 	relayProcessor.SetResponse(response)
 }
-

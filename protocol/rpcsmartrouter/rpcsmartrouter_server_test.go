@@ -183,7 +183,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 type MockRelayProcessorForHeaders struct {
 	quorumParams         common.QuorumParams
 	successResults       []common.RelayResult
-	nodeErrors           []common.RelayResult  
+	nodeErrors           []common.RelayResult
 	protocolErrors       []relaycore.RelayError
 	statefulRelayTargets []string
 }
@@ -261,9 +261,9 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Create a mock relay processor with quorum enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 
@@ -305,13 +305,13 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Create a mock relay processor with quorum enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
-				},
-				nodeErrors: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
-				},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+			},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
+			},
 		}
 
 		// Create a relay result
@@ -356,9 +356,9 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	t.Run("quorum enabled - no providers", func(t *testing.T) {
 		// Create a mock relay processor with quorum enabled but no providers
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-				successResults: []common.RelayResult{},
-			nodeErrors: []common.RelayResult{},
+			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -390,9 +390,9 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("nil relay result - should not panic", func(t *testing.T) {
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-				successResults: []common.RelayResult{},
-			nodeErrors: []common.RelayResult{},
+			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
 		}
 
 		mockProtocolMessage := &MockProtocolMessage{
@@ -421,8 +421,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{providerAddress1, providerAddress2, providerAddress3},
 			successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 
@@ -491,8 +491,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{providerAddress1},
 			successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 
@@ -541,8 +541,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{},
 			successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 
@@ -597,8 +597,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: nil, // No stateful targets
 			successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 
@@ -653,9 +653,9 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 			quorumParams:         common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
 			statefulRelayTargets: []string{providerAddress1, providerAddress2},
 			successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
-				},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+			},
 			nodeErrors: []common.RelayResult{},
 		}
 

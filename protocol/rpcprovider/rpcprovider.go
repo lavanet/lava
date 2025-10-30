@@ -680,7 +680,7 @@ func ParseStaticProviderEndpoints(viper_endpoints *viper.Viper, endpointsConfigN
 				utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
 		}
 	}
-	return
+	return endpoints, err
 }
 
 func CreateRPCProviderCobraCommand() *cobra.Command {

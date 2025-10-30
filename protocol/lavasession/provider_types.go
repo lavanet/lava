@@ -63,14 +63,14 @@ func (ext *RPCStaticProviderEndpoint) Validate() error {
 		return fmt.Errorf("provider name cannot be empty")
 	}
 	if len(ext.NodeUrls) == 0 {
-        return fmt.Errorf("provider must have at least one node URL")
-    }
-    if ext.ChainID == "" {
-        return fmt.Errorf("provider chain-id cannot be empty")
-    }
-    if ext.ApiInterface == "" {
-        return fmt.Errorf("provider api-interface cannot be empty")
-    }
+		return fmt.Errorf("provider must have at least one node URL")
+	}
+	if ext.ChainID == "" {
+		return fmt.Errorf("provider chain-id cannot be empty")
+	}
+	if ext.ApiInterface == "" {
+		return fmt.Errorf("provider api-interface cannot be empty")
+	}
 	return nil
 }
 

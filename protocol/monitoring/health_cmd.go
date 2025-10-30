@@ -61,7 +61,7 @@ func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*
 	if err != nil {
 		utils.LavaFormatError("could not unmarshal key to endpoints", err, utils.LogAttr("key", keyName), utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
-	return
+	return endpoints, err
 }
 
 func CreateHealthCobraCommand() *cobra.Command {

@@ -14,7 +14,8 @@ func setupConsistency() Consistency {
 }
 
 func TestSetGet(t *testing.T) {
-	consistency := setupConsistency().(*ConsistencyImpl)
+	consistency, ok := setupConsistency().(*ConsistencyImpl)
+	require.True(t, ok, "setupConsistency should return *ConsistencyImpl")
 	const BLOCKVALUE = int64(5)
 	for i := 0; i < 100; i++ {
 		consistency.SetLatestBlock(strconv.Itoa(i), BLOCKVALUE)
@@ -57,4 +58,3 @@ func TestBasic(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, int64(5), block)
 }
-
