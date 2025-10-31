@@ -108,6 +108,7 @@ jobs:
 
       - name: tail -n 1000 Lavad Logs
         if: always()
+        continue-on-error: true
         run: tail -n 1000 testutil/e2e/protocolLogs/00_StartLava.log
 
       - name: Print all warnings and errors from lavad
@@ -117,6 +118,7 @@ jobs:
 
       - name: Stake Lava All Logs
         if: always()
+        continue-on-error: true
         run: cat testutil/e2e/protocolLogs/01_stakeLava.log
 
       - name: Stake Lava Error Only Logs
@@ -126,10 +128,12 @@ jobs:
 
       - name: head -n 300 JSON Proxy Logs
         if: always()
+        continue-on-error: true
         run: head -n 300 testutil/e2e/protocolLogs/02_jsonProxy.log
 
       - name: tail -n 300 JSON Proxy Logs
         if: always()
+        continue-on-error: true
         run: tail -n 300 testutil/e2e/protocolLogs/02_jsonProxy.log
 
       - name: JSON Proxy Error Only Logs
@@ -139,6 +143,7 @@ jobs:
 
       - name: JSON Provider All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/03_EthProvider* --exclude="*errors*"
 
       - name: JSON Provider Error Only Logs
@@ -148,6 +153,7 @@ jobs:
 
       - name: JSON Consumer All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/04_jsonConsumer* --exclude="*errors*"
 
       - name: JSON Consumer Error Only Logs
@@ -157,6 +163,7 @@ jobs:
 
       - name: Lava Provider All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/05_LavaProvider* --exclude="*errors*"
 
       - name: Lava Provider Error Only Logs
@@ -166,6 +173,7 @@ jobs:
 
       - name: Lava over Lava All Logs
         if: always()
+        continue-on-error: true
         run: cat testutil/e2e/protocolLogs/07_lavaOverLava.log
 
       - name: Lava over Lava Error Only Logs
@@ -175,6 +183,7 @@ jobs:
 
       - name: RPCConsumer Consumer All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --exclude="*errors*"
 
       - name: RPCConsumer Consumer Error Only Logs
@@ -374,10 +383,12 @@ jobs:
 
       - name: Lavad Logs
         if: always()
+        continue-on-error: true
         run: grep 'err\|lava_' testutil/e2e/protocolLogs/00_StartLava.log
 
       - name: Stake Lava All Logs
         if: always()
+        continue-on-error: true
         run: cat testutil/e2e/protocolLogs/01_stakeLavaForPayment.log
 
       - name: Stake Lava Error Only Logs
@@ -387,6 +398,7 @@ jobs:
 
       - name: Lava Provider All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/05_LavaProvider* --exclude="*errors*"
 
       - name: Lava Provider Error Only Logs
@@ -396,6 +408,7 @@ jobs:
 
       - name: RPCConsumer Consumer All Logs
         if: always()
+        continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --exclude="*errors*"
 
       - name: RPCConsumer Consumer Error Only Logs
