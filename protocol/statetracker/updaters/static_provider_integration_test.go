@@ -2,6 +2,7 @@ package updaters
 
 import (
 	"math"
+	"sort"
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -108,19 +109,39 @@ func TestCreateProviderSessionsFromConfig_WithStaticProviders(t *testing.T) {
 				sessionSlice = append(sessionSlice, session)
 			}
 
+			// Sort by PublicLavaAddress to ensure deterministic order for comparison
+			sort.Slice(sessionSlice, func(i, j int) bool {
+				return sessionSlice[i].PublicLavaAddress < sessionSlice[j].PublicLavaAddress
+			})
+
+			// Sort expected names to match the sorted session order
+			expectedNamesSorted := make([]string, len(tt.expectedNames))
+			copy(expectedNamesSorted, tt.expectedNames)
+			sort.Strings(expectedNamesSorted)
+
+			// Create a map from provider names to their config for easier lookup
+			providerMap := make(map[string]*lavasession.RPCStaticProviderEndpoint)
+			for _, provider := range tt.providers {
+				providerMap[provider.Name] = provider
+			}
+
 			for i, session := range sessionSlice {
-				require.Equal(t, tt.expectedNames[i], session.PublicLavaAddress)
+				require.Equal(t, expectedNamesSorted[i], session.PublicLavaAddress)
 				require.True(t, session.StaticProvider, "Should be marked as static provider")
 				require.Equal(t, uint64(math.MaxUint64/2), session.MaxComputeUnits)
 				require.Equal(t, tt.epoch, session.PairingEpoch)
 
+				// Find the matching provider config by name
+				provider := providerMap[session.PublicLavaAddress]
+				require.NotNil(t, provider, "Provider config should exist for %s", session.PublicLavaAddress)
+
 				// Verify endpoints were created correctly
 				endpoints := session.Endpoints
-				require.Len(t, endpoints, len(tt.providers[i].NodeUrls))
+				require.Len(t, endpoints, len(provider.NodeUrls))
 
 				// Verify each endpoint has the correct configuration
 				for j, endpoint := range endpoints {
-					require.Equal(t, tt.providers[i].NodeUrls[j].Url, endpoint.NetworkAddress)
+					require.Equal(t, provider.NodeUrls[j].Url, endpoint.NetworkAddress)
 				}
 			}
 		})
