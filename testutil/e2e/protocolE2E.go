@@ -131,6 +131,14 @@ func waitForCondition(ctx context.Context, condition func() bool, checkInterval 
 }
 
 func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+	// Check if context is already canceled before starting
+	if ctx.Err() != nil {
+		utils.LavaFormatError("Context already canceled, skipping command", ctx.Err(),
+			utils.LogAttr("funcName", funcName),
+			utils.LogAttr("command", command))
+		return
+	}
+
 	utils.LavaFormatDebug("Executing command " + command)
 	lt.logsMu.Lock()
 	lt.logs[logName] = &sdk.SafeBuffer{}
@@ -161,6 +169,14 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 		defer lt.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
+				// Check if context is canceled before retrying
+				if ctx.Err() != nil {
+					utils.LavaFormatError("Context canceled, not retrying", ctx.Err(),
+						utils.LogAttr("funcName", funcName),
+						utils.LogAttr("logName", logName))
+					return
+				}
+
 				utils.LavaFormatError("Panic occurred", fmt.Errorf("%v", r),
 					utils.LogAttr("funcName", funcName),
 					utils.LogAttr("logName", logName))
