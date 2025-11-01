@@ -25,6 +25,8 @@ sleep_until_next_epoch() {
 wait_next_block() {
   current=$( lavad q block | jq .block.header.height)
   echo "waiting for next block $current"
+  local max_attempts=60  # 60 seconds max
+  local attempt=0
   while true; do
     display_ticker
     new=$( lavad q block | jq .block.header.height)
@@ -32,7 +34,72 @@ wait_next_block() {
       echo "finished waiting at block $new"
       break
     fi
+    attempt=$((attempt + 1))
+    if [ $attempt -ge $max_attempts ]; then
+      echo "ERROR: Timeout waiting for next block after $max_attempts seconds"
+      return 1
+    fi
+    sleep 1
   done
+}
+
+# Wait for transaction to be included and successful
+wait_for_tx() {
+  local tx_hash=$1
+  local max_attempts=${2:-30}
+  local attempt=0
+  
+  echo "Waiting for transaction $tx_hash to be included..."
+  
+  while [ $attempt -lt $max_attempts ]; do
+    # Query transaction and check if it exists and succeeded
+    local tx_result=$(lavad q tx $tx_hash --output json 2>/dev/null)
+    local tx_code=$(echo "$tx_result" | jq -r '.code // "null"' 2>/dev/null)
+    
+    if [ "$tx_code" = "0" ]; then
+      echo "Transaction $tx_hash succeeded"
+      return 0
+    elif [ "$tx_code" != "null" ] && [ "$tx_code" != "" ]; then
+      echo "ERROR: Transaction $tx_hash failed with code $tx_code"
+      local raw_log=$(echo "$tx_result" | jq -r '.raw_log // ""' 2>/dev/null)
+      echo "Error details: $raw_log"
+      return 1
+    fi
+    
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+  
+  echo "ERROR: Timeout waiting for transaction $tx_hash after $max_attempts seconds"
+  return 1
+}
+
+# Extract transaction hash from lavad tx command output
+extract_tx_hash() {
+  local output="$1"
+  echo "$output" | grep -o 'txhash: [A-F0-9]*' | cut -d' ' -f2
+}
+
+# Wait for next block AND ensure a transaction is included (if tx_hash provided)
+wait_next_block_and_tx() {
+  local tx_output="$1"
+  
+  # First wait for next block
+  if ! wait_next_block; then
+    return 1
+  fi
+  
+  # If transaction output was provided, verify it was included
+  if [ -n "$tx_output" ]; then
+    local tx_hash=$(extract_tx_hash "$tx_output")
+    if [ -n "$tx_hash" ]; then
+      if ! wait_for_tx "$tx_hash"; then
+        return 1
+      fi
+    fi
+  fi
+  
+  return 0
 }
 
 current_block() {

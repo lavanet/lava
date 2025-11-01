@@ -407,21 +407,42 @@ func (lt *lavaTest) checkStakeLava(
 }
 
 func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerAddr string, timeout time.Duration) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting for Badge Server " + badgeServerAddr)
-		nctx, cancel := context.WithTimeout(ctx, time.Second)
-
-		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			cancel()
-			time.Sleep(time.Second)
-			continue
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting for Badge Server "+badgeServerAddr,
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
 		}
+		
+		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
+		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		cancel()
-		grpcClient.Close()
-		return
+		
+		if err == nil {
+			grpcClient.Close()
+			utils.LavaFormatInfo("Badge Server is responsive "+badgeServerAddr,
+				utils.LogAttr("attempts", attemptCount))
+			return
+		}
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkBadgeServerResponsive: Check Failed. Badge server didn't respond on " + badgeServerAddr)
+	
+	panic(fmt.Sprintf("checkBadgeServerResponsive: Badge server didn't respond after %d attempts: %s", attemptCount, badgeServerAddr))
 }
 
 func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
@@ -473,42 +494,95 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 
 // If after timeout and the check does not return it means it failed
 func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, message string) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting JSONRPC Consumer")
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting JSONRPC Consumer",
+				utils.LogAttr("url", rpcURL),
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
+		}
+		
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
+			time.Sleep(currentDelay)
+			currentDelay = time.Duration(float64(currentDelay) * 1.5)
+			if currentDelay > maxDelay {
+				currentDelay = maxDelay
+			}
 			continue
 		}
+		
 		res, err := client.BlockNumber(context.Background())
+		client.Close()
+		
 		if err == nil {
 			utils.LavaFormatInfo(message)
-			utils.LavaFormatInfo("Validated proxy is alive got response", utils.Attribute{Key: "res", Value: res})
+			utils.LavaFormatInfo("Validated proxy is alive got response", 
+				utils.Attribute{Key: "res", Value: res},
+				utils.LogAttr("attempts", attemptCount))
 			return
 		}
-		time.Sleep(time.Second)
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkJSONRPCConsumer: JSONRPC Check Failed Consumer didn't respond")
+	
+	panic(fmt.Sprintf("checkJSONRPCConsumer: Consumer didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
 func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, timeout time.Duration) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting Provider " + rpcURL)
-		nctx, cancel := context.WithTimeout(ctx, time.Second)
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting Provider "+rpcURL, 
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
+		}
+		
+		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
 		var tlsConf tls.Config
 		tlsConf.InsecureSkipVerify = true // skip CA validation
 		credentials := credentials.NewTLS(&tlsConf)
 		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
-		if err != nil {
-			// utils.LavaFormatInfo(fmt.Sprintf("Provider is still intializing %s", err), nil)
-			cancel()
-			time.Sleep(time.Second)
-			continue
-		}
 		cancel()
-		grpcClient.Close()
-		return
+		
+		if err == nil {
+			grpcClient.Close()
+			utils.LavaFormatInfo("Provider is responsive "+rpcURL, 
+				utils.LogAttr("attempts", attemptCount))
+			return
+		}
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkProviderResponsive: Check Failed Provider didn't respond" + rpcURL)
+	
+	panic(fmt.Sprintf("checkProviderResponsive: Provider didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
