@@ -92,7 +92,7 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) GetProtocolVersion(ctx any) *
 }
 
 // RegisterConsumerSessionManagerForPairingUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint) {
+func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }

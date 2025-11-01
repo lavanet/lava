@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
@@ -141,6 +142,9 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
 
+	// Set process group ID so we can kill the entire process tree
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -194,6 +198,10 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
+
+	// Set process group ID so we can kill the entire process tree
+	// This ensures child processes (like proxy.test spawned by go test) are also killed
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// Ensure PATH includes the Go bin directory
 	gopath := os.Getenv("GOPATH")
@@ -399,21 +407,42 @@ func (lt *lavaTest) checkStakeLava(
 }
 
 func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerAddr string, timeout time.Duration) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting for Badge Server " + badgeServerAddr)
-		nctx, cancel := context.WithTimeout(ctx, time.Second)
-
-		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			cancel()
-			time.Sleep(time.Second)
-			continue
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting for Badge Server "+badgeServerAddr,
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
 		}
+		
+		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
+		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		cancel()
-		grpcClient.Close()
-		return
+		
+		if err == nil {
+			grpcClient.Close()
+			utils.LavaFormatInfo("Badge Server is responsive "+badgeServerAddr,
+				utils.LogAttr("attempts", attemptCount))
+			return
+		}
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkBadgeServerResponsive: Check Failed. Badge server didn't respond on " + badgeServerAddr)
+	
+	panic(fmt.Sprintf("checkBadgeServerResponsive: Badge server didn't respond after %d attempts: %s", attemptCount, badgeServerAddr))
 }
 
 func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
@@ -423,7 +452,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	}
 	// force go's test timeout to 0, otherwise the default is 10m; our timeout
 	// will be enforced by the given ctx.
-	command := goExecutablePath + " test ./testutil/e2e/proxy/. -v -timeout 0 eth"
+	command := fmt.Sprintf("%s test ./testutil/e2e/proxy/. -v -timeout 0 -args -host eth", goExecutablePath)
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
@@ -465,42 +494,95 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 
 // If after timeout and the check does not return it means it failed
 func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, message string) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting JSONRPC Consumer")
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting JSONRPC Consumer",
+				utils.LogAttr("url", rpcURL),
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
+		}
+		
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
+			time.Sleep(currentDelay)
+			currentDelay = time.Duration(float64(currentDelay) * 1.5)
+			if currentDelay > maxDelay {
+				currentDelay = maxDelay
+			}
 			continue
 		}
+		
 		res, err := client.BlockNumber(context.Background())
+		client.Close()
+		
 		if err == nil {
 			utils.LavaFormatInfo(message)
-			utils.LavaFormatInfo("Validated proxy is alive got response", utils.Attribute{Key: "res", Value: res})
+			utils.LavaFormatInfo("Validated proxy is alive got response", 
+				utils.Attribute{Key: "res", Value: res},
+				utils.LogAttr("attempts", attemptCount))
 			return
 		}
-		time.Sleep(time.Second)
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkJSONRPCConsumer: JSONRPC Check Failed Consumer didn't respond")
+	
+	panic(fmt.Sprintf("checkJSONRPCConsumer: Consumer didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
 func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, timeout time.Duration) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting Provider " + rpcURL)
-		nctx, cancel := context.WithTimeout(ctx, time.Second)
+	// Use exponential backoff for more efficient waiting
+	initialDelay := 500 * time.Millisecond
+	maxDelay := 5 * time.Second
+	currentDelay := initialDelay
+	
+	deadline := time.Now().Add(timeout)
+	attemptCount := 0
+	
+	for time.Now().Before(deadline) {
+		attemptCount++
+		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
+			utils.LavaFormatInfo("Waiting Provider "+rpcURL, 
+				utils.LogAttr("attempt", attemptCount),
+				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
+		}
+		
+		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
 		var tlsConf tls.Config
 		tlsConf.InsecureSkipVerify = true // skip CA validation
 		credentials := credentials.NewTLS(&tlsConf)
 		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
-		if err != nil {
-			// utils.LavaFormatInfo(fmt.Sprintf("Provider is still intializing %s", err), nil)
-			cancel()
-			time.Sleep(time.Second)
-			continue
-		}
 		cancel()
-		grpcClient.Close()
-		return
+		
+		if err == nil {
+			grpcClient.Close()
+			utils.LavaFormatInfo("Provider is responsive "+rpcURL, 
+				utils.LogAttr("attempts", attemptCount))
+			return
+		}
+		
+		// Exponential backoff with cap
+		time.Sleep(currentDelay)
+		currentDelay = time.Duration(float64(currentDelay) * 1.5)
+		if currentDelay > maxDelay {
+			currentDelay = maxDelay
+		}
 	}
-	panic("checkProviderResponsive: Check Failed Provider didn't respond" + rpcURL)
+	
+	panic(fmt.Sprintf("checkProviderResponsive: Provider didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
@@ -921,8 +1003,25 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	for name, cmd := range lt.commands { // kill all the project commands
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
-			if err := cmd.Process.Kill(); err != nil {
-				utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+
+			// Kill the entire process group to ensure child processes are also terminated
+			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
+			pgid, err := syscall.Getpgid(cmd.Process.Pid)
+			if err == nil {
+				// Kill the process group (negative PID kills the group)
+				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
+						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
+					// Fallback to killing just the process
+					if err := cmd.Process.Kill(); err != nil {
+						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+					}
+				}
+			} else {
+				// If we can't get the process group, just kill the process
+				if err := cmd.Process.Kill(); err != nil {
+					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+				}
 			}
 		}
 	}
@@ -1630,6 +1729,36 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// Ensure cleanup happens
 	defer func() {
+		// Kill all processes first (before waiting for goroutines)
+		// This ensures orphan processes like proxy.test are cleaned up
+		// even if the test panics or fails before reaching finishTestSuccessfully()
+		lt.commandsMu.RLock()
+		for name, cmd := range lt.commands {
+			if cmd != nil && cmd.Process != nil {
+				utils.LavaFormatInfo("Cleanup: Killing process", utils.LogAttr("name", name))
+
+				// Kill the entire process group to ensure child processes are also terminated
+				pgid, err := syscall.Getpgid(cmd.Process.Pid)
+				if err == nil {
+					// Kill the process group (negative PID kills the group)
+					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+						utils.LavaFormatWarning("Cleanup: Failed to kill process group, falling back to single process", err,
+							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
+						// Fallback to killing just the process
+						if err := cmd.Process.Kill(); err != nil {
+							utils.LavaFormatError("Cleanup: Failed to kill process", err, utils.LogAttr("name", name))
+						}
+					}
+				} else {
+					// If we can't get the process group, just kill the process
+					if err := cmd.Process.Kill(); err != nil {
+						utils.LavaFormatError("Cleanup: Failed to kill process", err, utils.LogAttr("name", name))
+					}
+				}
+			}
+		}
+		lt.commandsMu.RUnlock()
+
 		// Wait for all goroutines with timeout
 		done := make(chan struct{})
 		go func() {
