@@ -411,10 +411,10 @@ func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerA
 	initialDelay := 500 * time.Millisecond
 	maxDelay := 5 * time.Second
 	currentDelay := initialDelay
-	
+
 	deadline := time.Now().Add(timeout)
 	attemptCount := 0
-	
+
 	for time.Now().Before(deadline) {
 		attemptCount++
 		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
@@ -422,18 +422,18 @@ func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerA
 				utils.LogAttr("attempt", attemptCount),
 				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
 		}
-		
+
 		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
 		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		cancel()
-		
+
 		if err == nil {
 			grpcClient.Close()
 			utils.LavaFormatInfo("Badge Server is responsive "+badgeServerAddr,
 				utils.LogAttr("attempts", attemptCount))
 			return
 		}
-		
+
 		// Exponential backoff with cap
 		time.Sleep(currentDelay)
 		currentDelay = time.Duration(float64(currentDelay) * 1.5)
@@ -441,7 +441,7 @@ func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerA
 			currentDelay = maxDelay
 		}
 	}
-	
+
 	panic(fmt.Sprintf("checkBadgeServerResponsive: Badge server didn't respond after %d attempts: %s", attemptCount, badgeServerAddr))
 }
 
@@ -498,10 +498,10 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 	initialDelay := 500 * time.Millisecond
 	maxDelay := 5 * time.Second
 	currentDelay := initialDelay
-	
+
 	deadline := time.Now().Add(timeout)
 	attemptCount := 0
-	
+
 	for time.Now().Before(deadline) {
 		attemptCount++
 		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
@@ -510,7 +510,7 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 				utils.LogAttr("attempt", attemptCount),
 				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
 		}
-		
+
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
 			time.Sleep(currentDelay)
@@ -520,18 +520,18 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 			}
 			continue
 		}
-		
+
 		res, err := client.BlockNumber(context.Background())
 		client.Close()
-		
+
 		if err == nil {
 			utils.LavaFormatInfo(message)
-			utils.LavaFormatInfo("Validated proxy is alive got response", 
+			utils.LavaFormatInfo("Validated proxy is alive got response",
 				utils.Attribute{Key: "res", Value: res},
 				utils.LogAttr("attempts", attemptCount))
 			return
 		}
-		
+
 		// Exponential backoff with cap
 		time.Sleep(currentDelay)
 		currentDelay = time.Duration(float64(currentDelay) * 1.5)
@@ -539,7 +539,7 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 			currentDelay = maxDelay
 		}
 	}
-	
+
 	panic(fmt.Sprintf("checkJSONRPCConsumer: Consumer didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
@@ -548,32 +548,32 @@ func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, 
 	initialDelay := 500 * time.Millisecond
 	maxDelay := 5 * time.Second
 	currentDelay := initialDelay
-	
+
 	deadline := time.Now().Add(timeout)
 	attemptCount := 0
-	
+
 	for time.Now().Before(deadline) {
 		attemptCount++
 		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
-			utils.LavaFormatInfo("Waiting Provider "+rpcURL, 
+			utils.LavaFormatInfo("Waiting Provider "+rpcURL,
 				utils.LogAttr("attempt", attemptCount),
 				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
 		}
-		
+
 		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
 		var tlsConf tls.Config
 		tlsConf.InsecureSkipVerify = true // skip CA validation
 		credentials := credentials.NewTLS(&tlsConf)
 		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 		cancel()
-		
+
 		if err == nil {
 			grpcClient.Close()
-			utils.LavaFormatInfo("Provider is responsive "+rpcURL, 
+			utils.LavaFormatInfo("Provider is responsive "+rpcURL,
 				utils.LogAttr("attempts", attemptCount))
 			return
 		}
-		
+
 		// Exponential backoff with cap
 		time.Sleep(currentDelay)
 		currentDelay = time.Duration(float64(currentDelay) * 1.5)
@@ -581,7 +581,7 @@ func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, 
 			currentDelay = maxDelay
 		}
 	}
-	
+
 	panic(fmt.Sprintf("checkProviderResponsive: Provider didn't respond after %d attempts: %s", attemptCount, rpcURL))
 }
 
