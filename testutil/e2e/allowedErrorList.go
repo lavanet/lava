@@ -17,6 +17,8 @@ var allowedErrors = map[string]string{
 	"unsupported method 'Default-/lavanet/lava/conflict/params': test":                 "This error is allowed because the /lavanet/lava/conflict/params API endpoint is not implemented in test providers",
 	"failed processing responses from providers":                                       "This error is allowed because it can occur when providers return unsupported method errors",
 	"failed relay, insufficient results":                                               "This error is allowed because it can occur when providers return unsupported method errors",
+	"could not send relay to provider":                                                 "This error is allowed because it can occur when providers return unsupported method errors during emergency mode",
+	"UniqueGuidResponseForError":                                                       "This error is allowed because it's part of error responses that contain unsupported method errors",
 	"Error_GUID":                                                                       "This error is allowed because it's part of error responses that contain unsupported method errors",
 	"{\"Error_GUID\":":                                                                 "This error is allowed because it's a JSON error response containing unsupported method errors",
 	"endpoint:LAV1rest":                                                                "This error is allowed because it's part of LAV1 REST endpoint error responses",
