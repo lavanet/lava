@@ -216,6 +216,7 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	endToEndStartTime := time.Now()
 	// get the number of simultaneous relay calls
 	currentLoad := rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
 	defer func() {
@@ -303,6 +304,11 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if rpcps.metrics != nil && chainMessage != nil {
 		latencyMs := float64(processingTime.Nanoseconds()) / 1e6 // Convert to milliseconds
 		rpcps.metrics.SetLatency(latencyMs)
+
+		// Set provider end-to-end latency metric
+		endToEndProcessingTime := time.Since(endToEndStartTime)
+		endToEndLatencyMs := float64(endToEndProcessingTime.Nanoseconds()) / 1e6
+		rpcps.metrics.SetEndToEndLatency(endToEndLatencyMs)
 	}
 
 	utils.LavaFormatDebug("Provider returned a relay response",

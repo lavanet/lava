@@ -298,7 +298,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
 	case nil:
-		msg, err = c.newMessageArrayWithID(method, id, (make([]interface{}, 0))) // in case of nil, we will send it as an empty array.
+		msg, err = c.newMessageArrayWithID(method, id, nil) // pass nil to let omitempty tag handle field omission
 	default:
 		return nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -367,7 +367,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 		case map[string]interface{}:
 			msg, err = c.newMessageMapWithID(elem.Method, elem.ID, args)
 		case nil:
-			msg, err = c.newMessageArray(elem.Method) // in case of nil, we will send it as an empty array.
+			msg, err = c.newMessageArrayWithID(elem.Method, elem.ID, nil)
 		default:
 			return fmt.Errorf("invalid args type in message %t", args)
 		}

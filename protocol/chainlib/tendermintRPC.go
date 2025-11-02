@@ -516,6 +516,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -589,6 +590,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
