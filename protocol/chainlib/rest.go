@@ -321,11 +321,16 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
-			// Get unique GUID response
+			// Get unique GUID response for all errors (for log correlation)
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
-			// Log request and response
+			// Log request and response for all error paths
 			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err)
+
+			// Check for method not found errors (API not supported or unsupported method)
+			if common.APINotSupportedError.Is(err) || IsUnsupportedMethodErrorMessage(err.Error()) {
+				return apil.createMethodNotFoundError(fiberCtx)
+			}
 
 			// Set status to internal error\
 			if relayResult.GetStatusCode() != 0 {
@@ -390,15 +395,16 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
-			if common.APINotSupportedError.Is(err) {
-				return common.CreateRestMethodNotFoundError(fiberCtx, chainID)
-			}
-
-			// Get unique GUID response
+			// Get unique GUID response for all errors (for log correlation)
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
-			// Log request and response
+			// Log request and response for all error paths
 			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
+
+			// Check for method not found errors (API not supported or unsupported method)
+			if common.APINotSupportedError.Is(err) || IsUnsupportedMethodErrorMessage(err.Error()) {
+				return apil.createMethodNotFoundError(fiberCtx)
+			}
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -407,8 +413,8 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
-			// Construct json response
-			response := convertToJsonError(errMasking)
+			// Construct json response with proper API format
+			response := formatErrorForAPIInterface(errMasking, "rest", nil, chainID)
 
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
@@ -447,6 +453,21 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 func (apil *RestChainListener) GetListeningAddress() string {
 	return apil.listeningAddress
+}
+
+// createMethodNotFoundError creates and sends a method-not-found error response
+// based on the chain type. Different chains may have different error formats.
+func (apil *RestChainListener) createMethodNotFoundError(fiberCtx *fiber.Ctx) error {
+	chainID := apil.endpoint.ChainID
+
+	switch chainID {
+	case "APT1":
+		// Aptos node returns a different error body than the rest of the chains
+		// This solution is temporary until we change the spec to state how the error looks like
+		return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestAptosMethodNotFoundError)
+	default:
+		return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestMethodNotFoundError)
+	}
 }
 
 type RestChainProxy struct {

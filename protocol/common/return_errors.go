@@ -1,7 +1,5 @@
 package common
 
-import "github.com/gofiber/fiber/v2"
-
 // #######
 // JsonRPC
 // #######
@@ -86,15 +84,4 @@ var RestAptosMethodNotFoundError = RestAptosError{
 	Message:     "not found",
 	ErrorCode:   "web_framework_error",
 	VmErrorCode: nil,
-}
-
-func CreateRestMethodNotFoundError(fiberCtx *fiber.Ctx, chainId string) error {
-	switch chainId {
-	case "APT1":
-		// Aptos node returns a different error body than the rest of the chains
-		// This solution is temporary until we change the spec to state how the error looks like
-		return fiberCtx.Status(fiber.StatusNotImplemented).JSON(RestAptosMethodNotFoundError)
-	default:
-		return fiberCtx.Status(fiber.StatusNotImplemented).JSON(RestMethodNotFoundError)
-	}
 }

@@ -45,6 +45,11 @@ const (
 	GRPCNotImplemented       = "not implemented"
 	GRPCServiceNotFound      = "service not found"
 
+	// Provider/relay error patterns for unsupported API interfaces
+	ProviderDoesNotHandleAPI = "provider does not handle requested api interface"
+	UnhandledRelayReceiver   = "unhandled relay receiver"
+	UnsupportedMethod        = "unsupported method"
+
 	// HTTP status codes for unsupported endpoints
 	HTTPStatusNotFound         = 404
 	HTTPStatusMethodNotAllowed = 405
@@ -147,6 +152,12 @@ func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
 		strings.Contains(errorMsg, GRPCUnimplemented),
 		strings.Contains(errorMsg, GRPCNotImplemented),
 		strings.Contains(errorMsg, GRPCServiceNotFound):
+		return true
+
+	// Provider/relay patterns for unsupported API interfaces
+	case strings.Contains(errorMsg, ProviderDoesNotHandleAPI),
+		strings.Contains(errorMsg, UnhandledRelayReceiver),
+		strings.Contains(errorMsg, UnsupportedMethod):
 		return true
 
 	// Check for JSON-RPC error code -32601 (Method not found) in the message

@@ -462,22 +462,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
-			if common.APINotSupportedError.Is(err) {
-				// Convert error to JSON string and add headers
-				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
-			}
+			// Extract request ID early for all error cases
+			requestID := extractRequestIDFromJsonRpcMessage([]byte(msg))
 
-			// Check if the error message indicates an unsupported method
-			if IsUnsupportedMethodErrorMessage(err.Error()) {
-				// Convert error to JSON string and add headers
-				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
-			}
-
-			// Check if the error message indicates an unsupported method
-			if IsUnsupportedMethodErrorMessage(err.Error()) {
-				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcMethodNotFoundError)
+			// Check for method not found errors (API not supported or unsupported method)
+			if common.APINotSupportedError.Is(err) || IsUnsupportedMethodErrorMessage(err.Error()) {
+				// Use our formatter with actual request ID and error details
+				methodNotFoundResponse := formatMethodNotFoundError(requestID, err.Error())
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), methodNotFoundResponse)
 			}
 
 			if _, ok := err.(*json.SyntaxError); ok {
@@ -499,8 +491,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
-			// Construct json response
-			response := convertToJsonError(errMasking)
+			// Construct json response with proper API format (requestID already extracted above)
+			response := formatErrorForAPIInterface(errMasking, "jsonrpc", requestID, chainID)
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}

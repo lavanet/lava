@@ -152,15 +152,32 @@ func (rpccl *RPCConsumerLogs) SetProtocolError(chainId string, providerAddress s
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	type ErrorData struct {
-		Error_GUID string `json:"Error_GUID"`
-		Error      string `json:"Error,omitempty"`
+		Error_GUID    string `json:"Error_GUID"`
+		Error         string `json:"Error,omitempty"`
+		Error_Code    string `json:"Error_Code,omitempty"`    // Extracted error code (e.g., "3370")
+		Error_Message string `json:"Error_Message,omitempty"` // Clean error message without gRPC artifacts
 	}
 
 	data := ErrorData{
 		Error_GUID: msgSeed,
 	}
+
 	if ReturnMaskedErrors == "false" {
 		data.Error = responseError.Error()
+
+		// Extract structured error information using the same logic as logs
+		errorStructure := utils.ExtractErrorStructure(responseError)
+		if errorStructure != nil {
+			// Extract error code if available
+			if errorCode, ok := errorStructure["error_code"].(uint32); ok {
+				data.Error_Code = fmt.Sprintf("%d", errorCode)
+			}
+
+			// Extract clean error message if available
+			if errorMessage, ok := errorStructure["error_message"].(string); ok {
+				data.Error_Message = errorMessage
+			}
+		}
 	}
 
 	utils.LavaFormatError("UniqueGuidResponseForError", responseError, utils.Attribute{Key: "msgSeed", Value: msgSeed})

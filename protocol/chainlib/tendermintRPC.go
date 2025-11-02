@@ -479,22 +479,14 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
-			if common.APINotSupportedError.Is(err) {
-				// Convert error to JSON string and add headers
-				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
-			}
+			// Extract request ID early for all error cases
+			requestID := extractRequestIDFromJsonRpcMessage([]byte(msg))
 
-			// Check if the error message indicates an unsupported method
-			if IsUnsupportedMethodErrorMessage(err.Error()) {
-				// Convert error to JSON string and add headers
-				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
-			}
-
-			// Check if the error message indicates an unsupported method
-			if IsUnsupportedMethodErrorMessage(err.Error()) {
-				return fiberCtx.Status(fiber.StatusBadRequest).JSON(common.JsonRpcMethodNotFoundError)
+			// Check for method not found errors (API not supported or unsupported method)
+			if common.APINotSupportedError.Is(err) || IsUnsupportedMethodErrorMessage(err.Error()) {
+				// Use our formatter with actual request ID and error details
+				methodNotFoundResponse := formatMethodNotFoundError(requestID, err.Error())
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), methodNotFoundResponse)
 			}
 
 			// Get unique GUID response
@@ -510,8 +502,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
-			// Construct json response
-			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, fiberCtx.Body())
+			// Construct json response with proper API format (requestID already extracted above)
+			response := formatErrorForAPIInterface(errMasking, "tendermintrpc", requestID, chainID)
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
@@ -578,8 +570,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
 			}
 
-			// Construct json response
-			response := convertToJsonError(errMasking)
+			// TendermintRPC GET requests don't have request IDs in standard format
+			// Use -1 as conventional placeholder for GET errors per TendermintRPC conventions
+			requestID := json.RawMessage("-1")
+
+			// Construct json response with proper API format (TendermintRPC uses JSON-RPC 2.0)
+			response := formatErrorForAPIInterface(errMasking, "tendermintrpc", requestID, chainID)
 
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)

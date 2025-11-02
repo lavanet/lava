@@ -134,6 +134,231 @@ func TestConvertToJsonError(t *testing.T) {
 	}
 }
 
+func TestFormatErrorForAPIInterface(t *testing.T) {
+	t.Parallel()
+
+	testTable := []struct {
+		name           string
+		errMasking     string
+		apiInterface   string
+		requestID      json.RawMessage
+		chainID        string
+		expectedOutput map[string]interface{} // Use map for flexible JSON comparison
+	}{
+		{
+			name:         "JSON-RPC with numeric ID",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage("1"),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relay failed",
+					"data":    "GUID:abc123",
+				},
+				"id": float64(1),
+			},
+		},
+		{
+			name:         "JSON-RPC with string ID",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage(`"req-123"`),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relay failed",
+					"data":    "GUID:abc123",
+				},
+				"id": "req-123",
+			},
+		},
+		{
+			name:         "JSON-RPC with null ID",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage("null"),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relay failed",
+					"data":    "GUID:abc123",
+				},
+				"id": nil,
+			},
+		},
+		{
+			name:         "JSON-RPC with nil request ID",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "jsonrpc",
+			requestID:    nil,
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relay failed",
+					"data":    "GUID:abc123",
+				},
+				"id": nil,
+			},
+		},
+		{
+			name:         "REST standard chain",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "rest",
+			requestID:    nil,
+			chainID:      "LAV1",
+			expectedOutput: map[string]interface{}{
+				"code":    float64(13),
+				"message": "relay failed",
+				"details": []interface{}{
+					map[string]interface{}{
+						"@type": RestErrorDetailsType,
+						"guid":  "abc123",
+					},
+				},
+			},
+		},
+		{
+			name:         "REST Aptos chain",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "rest",
+			requestID:    nil,
+			chainID:      "APT1",
+			expectedOutput: map[string]interface{}{
+				"message":       "relay failed",
+				"error_code":    "internal_error",
+				"vm_error_code": nil,
+				"guid":          "abc123",
+			},
+		},
+		{
+			name:         "TendermintRPC (uses JSON-RPC 2.0 format)",
+			errMasking:   `{"Error_GUID":"abc123","Error":"relay failed"}`,
+			apiInterface: "tendermintrpc",
+			requestID:    json.RawMessage("-1"),
+			chainID:      "LAV1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relay failed",
+					"data":    "GUID:abc123",
+				},
+				"id": float64(-1),
+			},
+		},
+		{
+			name:         "JSON-RPC without Error field (masked errors)",
+			errMasking:   `{"Error_GUID":"abc123"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage("1"),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "Internal error",
+					"data":    "GUID:abc123",
+				},
+				"id": float64(1),
+			},
+		},
+		{
+			name:         "JSON-RPC with detailed error message",
+			errMasking:   `{"Error_GUID":"xyz789","Error":"failed relay, insufficient results: rpc error: code = Unknown desc = did not pass relay validation"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage("42"),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "failed relay, insufficient results: rpc error: code = Unknown desc = did not pass relay validation",
+					"data":    "GUID:xyz789",
+				},
+				"id": float64(42),
+			},
+		},
+		{
+			name:         "JSON-RPC with structured error (code and clean message)",
+			errMasking:   `{"Error_GUID":"abc123","Error":"rpc error: code = Code(3370) desc = relayReceiver is disabled","Error_Code":"3370","Error_Message":"relayReceiver is disabled"}`,
+			apiInterface: "jsonrpc",
+			requestID:    json.RawMessage("1"),
+			chainID:      "ETH1",
+			expectedOutput: map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    float64(-32603),
+					"message": "relayReceiver is disabled", // Clean message used
+					"data":    "GUID:abc123|Code:3370",     // Error code included
+				},
+				"id": float64(1),
+			},
+		},
+		{
+			name:         "REST with structured error (code and clean message)",
+			errMasking:   `{"Error_GUID":"def456","Error":"rpc error: code = Code(3370) desc = relayReceiver is disabled","Error_Code":"3370","Error_Message":"relayReceiver is disabled"}`,
+			apiInterface: "rest",
+			requestID:    nil,
+			chainID:      "LAV1",
+			expectedOutput: map[string]interface{}{
+				"code":    float64(13),
+				"message": "relayReceiver is disabled", // Clean message used
+				"details": []interface{}{
+					map[string]interface{}{
+						"@type":      RestErrorDetailsType,
+						"guid":       "def456",
+						"error_code": "3370", // Error code included
+					},
+				},
+			},
+		},
+		{
+			name:         "REST Aptos with structured error",
+			errMasking:   `{"Error_GUID":"ghi789","Error":"rpc error: code = Code(4001) desc = insufficient funds","Error_Code":"4001","Error_Message":"insufficient funds"}`,
+			apiInterface: "rest",
+			requestID:    nil,
+			chainID:      "APT1",
+			expectedOutput: map[string]interface{}{
+				"message":         "insufficient funds", // Clean message used
+				"error_code":      "internal_error",
+				"vm_error_code":   nil,
+				"lava_error_code": "4001", // Lava error code included
+				"guid":            "ghi789",
+			},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := formatErrorForAPIInterface(
+				testCase.errMasking,
+				testCase.apiInterface,
+				testCase.requestID,
+				testCase.chainID,
+			)
+
+			// Validate JSON structure
+			var resultJSON interface{}
+			err := json.Unmarshal([]byte(result), &resultJSON)
+			require.NoError(t, err, "Result should be valid JSON")
+
+			// Compare as maps for flexible comparison
+			require.Equal(t, testCase.expectedOutput, resultJSON)
+		})
+	}
+}
+
 func TestAddAttributeToError(t *testing.T) {
 	t.Parallel()
 

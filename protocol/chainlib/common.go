@@ -216,6 +216,221 @@ func convertToJsonError(errorMsg string) string {
 	return string(jsonResponse)
 }
 
+const (
+	// Error codes for API responses
+	JSONRPCInternalErrorCode    = -32603 // JSON-RPC 2.0 Internal error
+	GRPCInternalErrorCode       = 13     // gRPC Internal error (maps to codes.Internal)
+	RestInternalErrorCode       = 13     // REST uses gRPC error codes
+	AptosInternalErrorCodeValue = "internal_error"
+
+	// REST error details type identifier (gRPC convention for structured error details)
+	// This is a type URL string, not an actual URL - no network calls are made
+	RestErrorDetailsType = "type.googleapis.com/lava.error.v1.ErrorInfo"
+)
+
+// extractRequestIDFromJsonRpcMessage extracts the request ID from a JSON-RPC message.
+// Returns the ID as json.RawMessage to preserve its type (number, string, or null).
+// Returns nil if the message cannot be parsed, which will result in a null ID in the error response.
+// This is safe behavior as JSON-RPC 2.0 allows null IDs for notifications or parse errors.
+func extractRequestIDFromJsonRpcMessage(data []byte) json.RawMessage {
+	// Simple struct to extract just the ID field
+	var msg struct {
+		ID json.RawMessage `json:"id"`
+	}
+
+	// Try to parse the message
+	if err := json.Unmarshal(data, &msg); err != nil {
+		// If parsing fails, return nil (will result in null ID in error response)
+		return nil
+	}
+
+	// Return the ID (could be number, string, or null)
+	return msg.ID
+}
+
+// formatMethodNotFoundError formats a "Method not found" error with preserved request ID.
+// This function produces JSON-RPC 2.0 format errors, used by both JSON-RPC and TendermintRPC interfaces.
+// Parameters:
+//   - requestID: The request ID to preserve (can be number, string, or null)
+//   - errorDetails: Optional additional error details to include in the data field
+//
+// Returns: JSON-RPC 2.0 formatted error string with code -32601 (Method not found)
+func formatMethodNotFoundError(requestID json.RawMessage, errorDetails string) string {
+	// Handle request ID - can be number, string, or null
+	var id interface{}
+	if len(requestID) > 0 {
+		// Try to unmarshal to get proper type (number, string, or null)
+		if err := json.Unmarshal(requestID, &id); err != nil {
+			// If unmarshal fails, use null
+			id = nil
+		}
+	} else {
+		id = nil
+	}
+
+	// Prepare data field - include error details if available
+	dataField := ""
+	if errorDetails != "" {
+		dataField = errorDetails
+	}
+
+	errorResponse := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"error": map[string]interface{}{
+			"code":    JSONRPCMethodNotFoundCode,
+			"message": "Method not found",
+			"data":    dataField,
+		},
+		"id": id,
+	}
+
+	jsonBytes, err := json.Marshal(errorResponse)
+	if err != nil {
+		utils.LavaFormatWarning("Failed to marshal method not found error", err)
+		// Fallback to static error
+		return `{"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":null}`
+	}
+	return string(jsonBytes)
+}
+
+// formatErrorForAPIInterface formats relay/infrastructure errors according to API specifications
+// This function handles the consumer-to-end-user error presentation layer
+// Parameters:
+//   - errMasking: JSON string from GetUniqueGuidResponseForError containing Error_GUID and optional Error
+//   - apiInterface: The API interface type ("jsonrpc", "rest", "tendermintrpc")
+//   - requestID: The request ID (for JSON-RPC/TendermintRPC), can be nil
+//   - chainID: Chain identifier (for chain-specific handling like Aptos)
+//
+// Returns: Properly formatted JSON error string according to API specification
+//
+// Note: gRPC interface is not handled here as it uses native Go error returns via status.Error(),
+// not JSON formatting. See grpc.go for gRPC-specific error handling.
+func formatErrorForAPIInterface(errMasking string, apiInterface string, requestID json.RawMessage, chainID string) string {
+	// Parse the error masking data to extract GUID and structured error information
+	type ErrorData struct {
+		GUID         string `json:"Error_GUID"` // Matches JSON key from GetUniqueGuidResponseForError
+		Error        string `json:"Error,omitempty"`
+		ErrorCode    string `json:"Error_Code,omitempty"`    // Extracted error code (e.g., "3370")
+		ErrorMessage string `json:"Error_Message,omitempty"` // Clean error message without gRPC artifacts
+	}
+
+	var errData ErrorData
+	if err := json.Unmarshal([]byte(errMasking), &errData); err != nil {
+		// Fallback to old behavior if parsing fails
+		utils.LavaFormatWarning("Failed to parse error masking data", err, utils.Attribute{Key: "errMasking", Value: errMasking})
+		return convertToJsonError(errMasking)
+	}
+
+	// Prepare error message and data
+	// Use extracted clean message if available, otherwise use raw error, otherwise use generic message
+	errorMessage := "Internal error"
+	if errData.ErrorMessage != "" {
+		// Use clean extracted message (preferred)
+		errorMessage = errData.ErrorMessage
+	} else if errData.Error != "" {
+		// Fallback to raw error message
+		errorMessage = errData.Error
+	}
+
+	// Format GUID for data field - include error code if available
+	guidData := "GUID:" + errData.GUID
+	if errData.ErrorCode != "" {
+		guidData = guidData + "|Code:" + errData.ErrorCode
+	}
+
+	switch apiInterface {
+	case "jsonrpc", "tendermintrpc":
+		// JSON-RPC 2.0 format
+		// Handle request ID - can be number, string, or null
+		var id interface{}
+		if len(requestID) > 0 {
+			// Try to unmarshal to get proper type (number, string, or null)
+			if err := json.Unmarshal(requestID, &id); err != nil {
+				// If unmarshal fails, use null
+				id = nil
+			}
+		} else {
+			id = nil
+		}
+
+		errorResponse := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"error": map[string]interface{}{
+				"code":    JSONRPCInternalErrorCode,
+				"message": errorMessage,
+				"data":    guidData,
+			},
+			"id": id,
+		}
+
+		jsonBytes, err := json.Marshal(errorResponse)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to marshal JSON-RPC error response", err)
+			return convertToJsonError(errMasking)
+		}
+		return string(jsonBytes)
+
+	case "rest":
+		// REST error format - check for chain-specific handling
+		if chainID == "APT1" {
+			// Aptos-specific REST error format
+			errorResponse := map[string]interface{}{
+				"message":       errorMessage,
+				"error_code":    AptosInternalErrorCodeValue,
+				"vm_error_code": nil,
+			}
+
+			// Add structured error information if available
+			if errData.ErrorCode != "" {
+				errorResponse["lava_error_code"] = errData.ErrorCode
+			}
+			if errData.GUID != "" {
+				errorResponse["guid"] = errData.GUID
+			}
+
+			jsonBytes, err := json.Marshal(errorResponse)
+			if err != nil {
+				utils.LavaFormatWarning("Failed to marshal REST Aptos error response", err)
+				return convertToJsonError(errMasking)
+			}
+			return string(jsonBytes)
+		}
+
+		// Standard REST error format
+		errorResponse := map[string]interface{}{
+			"code":    RestInternalErrorCode,
+			"message": errorMessage,
+			"details": []interface{}{},
+		}
+
+		// Add structured error details if available
+		if errData.GUID != "" || errData.ErrorCode != "" {
+			errorInfo := map[string]interface{}{
+				"@type": RestErrorDetailsType,
+			}
+			if errData.GUID != "" {
+				errorInfo["guid"] = errData.GUID
+			}
+			if errData.ErrorCode != "" {
+				errorInfo["error_code"] = errData.ErrorCode
+			}
+			errorResponse["details"] = []interface{}{errorInfo}
+		}
+
+		jsonBytes, err := json.Marshal(errorResponse)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to marshal REST error response", err)
+			return convertToJsonError(errMasking)
+		}
+		return string(jsonBytes)
+
+	default:
+		// For unknown interfaces or gRPC, fall back to old format
+		utils.LavaFormatWarning("Unknown API interface, using fallback error format", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+		return convertToJsonError(errMasking)
+	}
+}
+
 func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
