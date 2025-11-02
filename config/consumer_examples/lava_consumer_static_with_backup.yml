@@ -14,6 +14,9 @@ static-providers:
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
+        addons:
+          - archive
+          - debug
   - name: primary-2220-grpc
     api-interface: grpc
     chain-id: LAV1

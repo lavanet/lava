@@ -58,6 +58,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -83,6 +84,30 @@ var (
 	// The coin value is ignored but the object must exist to avoid nil pointer errors.
 	StaticProviderDummyCoin = sdk.NewCoin("ulava", sdk.NewInt(1))
 )
+
+// staticPolicy is a simple implementation of chainlib.PolicyInf
+// used to configure the chain parser with allowed extensions and addons
+// derived from static provider configurations.
+type staticPolicy struct {
+	addons       []string
+	extensions   []string
+	apiInterface string
+}
+
+func (p staticPolicy) GetSupportedAddons(string) ([]string, error) {
+	return p.addons, nil
+}
+
+func (p staticPolicy) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointService, error) {
+	services := make([]epochstoragetypes.EndpointService, 0, len(p.extensions))
+	for _, ext := range p.extensions {
+		services = append(services, epochstoragetypes.EndpointService{
+			Extension:    ext,
+			ApiInterface: p.apiInterface,
+		})
+	}
+	return services, nil
+}
 
 type strategyValue struct {
 	provideroptimizer.Strategy
@@ -290,11 +315,87 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		}
 	}
 
-	if len(relevantStaticProviderList) == 0 {
-		err = utils.LavaFormatError("no static providers configured for chain", nil,
+	// Filter backup providers for this chain (needed for policy derivation)
+	relevantBackupProviderList := []*lavasession.RPCStaticProviderEndpoint{}
+	for _, backupProvider := range options.backupProvidersList {
+		if backupProvider.ChainID == rpcEndpoint.ChainID {
+			relevantBackupProviderList = append(relevantBackupProviderList, backupProvider)
+		}
+	}
+
+	if len(relevantStaticProviderList) == 0 && len(relevantBackupProviderList) == 0 {
+		err = utils.LavaFormatError("no static or backup providers configured for chain", nil,
 			utils.Attribute{Key: "chainID", Value: chainID})
 		errCh <- err
 		return err
+	}
+
+	// Auto-derive policy from BOTH static and backup providers' addons
+	// This configures the extension parser and allowed addons based on what ALL providers support
+	addonsMap := make(map[string]struct{})
+	extensionsMap := make(map[string]struct{})
+
+	// IMPORTANT: Always allow the default addon (empty string) for standard APIs
+	// Without this, all standard requests without explicit addons will fail validation
+	addonsMap[""] = struct{}{}
+
+	// Scan static providers for addons
+	for _, staticProvider := range relevantStaticProviderList {
+		for _, nodeUrl := range staticProvider.NodeUrls {
+			for _, addon := range nodeUrl.Addons {
+				// Add the addon itself to policy
+				addonsMap[addon] = struct{}{}
+				// If provider has "archive" addon, also allow "archive" extension
+				// This enables the archive retry mechanism to work correctly
+				if addon == "archive" {
+					extensionsMap["archive"] = struct{}{}
+				}
+				// Future addon->extension mappings can be added here
+			}
+		}
+	}
+
+	// Scan backup providers for addons (same logic as static providers)
+	for _, backupProvider := range relevantBackupProviderList {
+		for _, nodeUrl := range backupProvider.NodeUrls {
+			for _, addon := range nodeUrl.Addons {
+				addonsMap[addon] = struct{}{}
+				if addon == "archive" {
+					extensionsMap["archive"] = struct{}{}
+				}
+			}
+		}
+	}
+
+	// Convert maps to slices for the policy struct
+	addons := make([]string, 0, len(addonsMap))
+	for addon := range addonsMap {
+		addons = append(addons, addon)
+	}
+	extensions := make([]string, 0, len(extensionsMap))
+	for ext := range extensionsMap {
+		extensions = append(extensions, ext)
+	}
+
+	// Apply the derived policy to the chain parser if we found any addons or extensions
+	if len(addons) > 0 || len(extensions) > 0 {
+		policy := staticPolicy{
+			addons:       addons,
+			extensions:   extensions,
+			apiInterface: rpcEndpoint.ApiInterface,
+		}
+		err = chainParser.SetPolicy(policy, chainID, rpcEndpoint.ApiInterface)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to set auto-derived policy", err,
+				utils.Attribute{Key: "chainID", Value: chainID},
+				utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface})
+		} else {
+			utils.LavaFormatInfo("Auto-derived policy from static providers",
+				utils.Attribute{Key: "chainID", Value: chainID},
+				utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface},
+				utils.Attribute{Key: "addons", Value: addons},
+				utils.Attribute{Key: "extensions", Value: extensions})
+		}
 	}
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
@@ -378,15 +479,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	// Convert static providers to ConsumerSessionsWithProvider format
 	providerSessions := convertProvidersToSessions(relevantStaticProviderList)
 
-	// Filter and convert backup providers for this endpoint
-	relevantBackupProviderList := []*lavasession.RPCStaticProviderEndpoint{}
-	for _, backupProvider := range options.backupProvidersList {
-		if backupProvider.ChainID == rpcEndpoint.ChainID {
-			relevantBackupProviderList = append(relevantBackupProviderList, backupProvider)
-		}
-	}
-
-	// Convert backup providers to sessions (can be empty if none configured)
+	// Convert backup providers to sessions (already filtered above during policy derivation)
 	var backupProviderSessions map[uint64]*lavasession.ConsumerSessionsWithProvider
 	if len(relevantBackupProviderList) > 0 {
 		backupProviderSessions = convertProvidersToSessions(relevantBackupProviderList)
