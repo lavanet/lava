@@ -60,8 +60,9 @@ lavad tx subscription buy "EmergencyModePlan" -y --from user5 --gas-adjustment "
 echo ---- Subscription plan upgrade ----
 wait_next_block
 # test we have the plan active.
-plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
-if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
+user1addr=$(lavad keys show user1 -a)
+plan_index=$(lavad q subscription current $user1addr | yq .sub.plan_index)
+if [ "$plan_index" != "EmergencyModePlan" ]; then echo "subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
 # buy the upgraded subscription
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
@@ -69,8 +70,8 @@ lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" -
 wait_next_block # wait block is here in case 1 block before epoch change we commit but the effect happens only on the epoch change meaning we didn't really wait an epoch for the changes to take effect.
 sleep_until_next_epoch
 # validate the new subscription is the default plan and not emergency mode plan.
-plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
-if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
+plan_index=$(lavad q subscription current $user1addr | yq .sub.plan_index)
+if [ "$plan_index" != "DefaultPlan" ]; then echo "subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
 
 user3addr=$(lavad keys show user3 -a)
 # add debug addons and archive 
@@ -83,7 +84,7 @@ lavad tx subscription add-project "myproject" --policy-file ./cookbook/projects/
 wait_next_block
 
 count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
-if [ "$count" -ne 3 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 3"; exit 1; fi
+if [ "$count" -ne 3 ]; then echo "subscription ${user3addr}: wrong project count $count instead of 3"; exit 1; fi
 
 lavad tx project add-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
 wait_next_block
@@ -94,7 +95,7 @@ lavad tx subscription del-project myproject -y --from user3 --gas-adjustment "1.
 sleep_until_next_epoch
 
 count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
-if [ "$count" -ne 2 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 2"; exit 1; fi
+if [ "$count" -ne 2 ]; then echo "subscription ${user3addr}: wrong project count $count instead of 2"; exit 1; fi
 
 
 # validate deleted plan is removed. 
