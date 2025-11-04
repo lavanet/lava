@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -139,7 +138,7 @@ type RPCProvider struct {
 	// all of the following members need to be concurrency proof
 	providerMetricsManager       *metrics.ProviderMetricsManager
 	rewardServer                 *rewardserver.RewardServer
-	privKey                      *btcec.PrivateKey
+	privKey                      *btcSecp256k1.PrivateKey
 	lavaChainID                  string
 	addr                         sdk.AccAddress
 	blockMemorySize              uint64
