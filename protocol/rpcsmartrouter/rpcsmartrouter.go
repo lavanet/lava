@@ -160,6 +160,10 @@ type AnalyticsServerAddresses struct {
 }
 type RPCSmartRouter struct {
 	// Smart router doesn't need blockchain state tracking
+	epochTimer             *common.EpochTimer
+	sessionManagers        map[string]*lavasession.ConsumerSessionManager                  // key: chainID-apiInterface
+	providerSessions       map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
+	backupProviderSessions map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
 }
 
 type rpcSmartRouterStartOptions struct {
@@ -185,6 +189,29 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
 	}
+
+	// Initialize session managers and provider sessions maps for epoch timer callbacks
+	rpsr.sessionManagers = make(map[string]*lavasession.ConsumerSessionManager)
+	rpsr.providerSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
+	rpsr.backupProviderSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
+
+	// RPCSmartRouter always runs in standalone mode with time-based epochs
+	epochDuration := options.cmdFlags.EpochDuration
+	if epochDuration == 0 {
+		epochDuration = common.StandaloneEpochDuration // 15 minutes default for standalone
+	}
+
+	rpsr.epochTimer = common.NewEpochTimer(epochDuration)
+	currentEpoch := rpsr.epochTimer.GetCurrentEpoch()
+	timeUntilNext := rpsr.epochTimer.GetTimeUntilNextEpoch()
+
+	utils.LavaFormatInfo("RPCSmartRouter: using time-based epochs (standalone mode)",
+		utils.LogAttr("epochDuration", epochDuration),
+		utils.LogAttr("currentEpoch", currentEpoch),
+		utils.LogAttr("timeUntilNextEpoch", timeUntilNext),
+		utils.LogAttr("nextEpochTime", time.Now().Add(timeUntilNext).Format("15:04:05 MST")),
+	)
+
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
@@ -248,6 +275,40 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	for err := range errCh {
 		return err
 	}
+
+	// Start epoch timer after all endpoints are set up
+	// Register all session managers for epoch updates
+	for chainKey, sm := range rpsr.sessionManagers {
+		sessionManager := sm // Capture for closure
+		chainKeyLog := chainKey
+		providerSessions := rpsr.providerSessions[chainKey]
+		backupSessions := rpsr.backupProviderSessions[chainKey]
+
+		rpsr.epochTimer.RegisterCallback(func(epoch uint64) {
+			utils.LavaFormatInfo("ConsumerSessionManager: Epoch update triggered",
+				utils.LogAttr("epoch", epoch),
+				utils.LogAttr("chainKey", chainKeyLog),
+				utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
+			)
+
+			// Update session manager with current pairing (static in standalone mode)
+			// The pairing doesn't change, but this triggers cleanup and provider unblocking
+			err := sessionManager.UpdateAllProviders(epoch, providerSessions, backupSessions)
+			if err != nil {
+				utils.LavaFormatError("Failed to update providers on epoch change", err,
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("chainKey", chainKeyLog),
+				)
+			}
+		})
+
+		utils.LavaFormatInfo("RPCSmartRouter: Registered session manager for epoch updates",
+			utils.LogAttr("chainKey", chainKey),
+		)
+	}
+
+	// Start the epoch timer
+	rpsr.epochTimer.Start(ctx)
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
@@ -431,6 +492,14 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterReportsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
+
+	// Store session manager in router for epoch timer callbacks (thread-safe via CreateSmartRouterEndpoint mutex)
+	sessionManagerKey := rpcEndpoint.Key() // chainID-apiInterface
+	if rpsr.sessionManagers == nil {
+		rpsr.sessionManagers = make(map[string]*lavasession.ConsumerSessionManager)
+	}
+	rpsr.sessionManagers[sessionManagerKey] = sessionManager
+
 	if lavasession.PeriodicProbeProviders {
 		go sessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}
@@ -494,6 +563,12 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed updating static providers", err)
+	}
+
+	// Store provider sessions for epoch updates
+	rpsr.providerSessions[sessionManagerKey] = providerSessions
+	if len(backupProviderSessions) > 0 {
+		rpsr.backupProviderSessions[sessionManagerKey] = backupProviderSessions
 	}
 
 	var relaysMonitor *metrics.RelaysMonitor
@@ -773,6 +848,16 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
+
+			// RPCSmartRouter always runs in standalone mode
+			epochDuration := viper.GetDuration(common.EpochDurationFlag)
+			if epochDuration == 0 {
+				epochDuration = common.StandaloneEpochDuration // 15 minutes default for standalone
+				utils.LavaFormatInfo("RPCSmartRouter: using default epoch duration for standalone mode",
+					utils.LogAttr("epochDuration", epochDuration),
+				)
+			}
+
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -784,6 +869,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
+				EpochDuration:            epochDuration,
 			}
 
 			// Get private key for signing relay requests
@@ -873,6 +959,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
+	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	// optimizer metrics
 	cmdRPCSmartRouter.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
