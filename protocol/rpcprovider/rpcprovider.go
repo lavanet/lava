@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v5/app"
@@ -121,6 +123,7 @@ type rpcProviderStartOptions struct {
 	relayLoadLimit            uint64
 	testMode                  bool
 	testResponsesFile         string
+	epochDuration             time.Duration
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -150,6 +153,9 @@ type RPCProvider struct {
 	relaysHealthCheckInterval    time.Duration
 	grpcHealthCheckEndpoint      string
 	providerUniqueId             string
+	epochTimer                   *common.EpochTimer
+	sessionManagers              map[string]*lavasession.ProviderSessionManager // key: chainID-apiInterface
+	sessionManagersLock          sync.RWMutex                                   // protects sessionManagers map
 	staticProvider               bool
 	staticSpecPath               string
 	githubToken                  string
@@ -197,15 +203,58 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.githubToken = options.githubToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
 	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
+
+	// Initialize session managers map for epoch timer callbacks
+	rpcp.sessionManagers = make(map[string]*lavasession.ProviderSessionManager)
+
+	// Create time-based epoch timer for static providers (standalone mode)
+	if options.staticProvider {
+		// Static providers ALWAYS run with epoch timer
+		epochDuration := options.epochDuration
+		if epochDuration == 0 {
+			epochDuration = common.StandaloneEpochDuration // 15 minutes default for standalone
+		}
+
+		rpcp.epochTimer = common.NewEpochTimer(epochDuration)
+		currentEpoch := rpcp.epochTimer.GetCurrentEpoch()
+		timeUntilNext := rpcp.epochTimer.GetTimeUntilNextEpoch()
+
+		utils.LavaFormatInfo("Static provider: using time-based epochs (standalone mode)",
+			utils.LogAttr("epochDuration", epochDuration),
+			utils.LogAttr("currentEpoch", currentEpoch),
+			utils.LogAttr("timeUntilNextEpoch", timeUntilNext),
+			utils.LogAttr("nextEpochTime", time.Now().Add(timeUntilNext).Format("15:04:05 MST")),
+		)
+	}
+
 	// single state tracker
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
-	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
-	if err != nil {
-		return err
+	var providerStateTracker ProviderStateTrackerInf
+	if !options.staticProvider {
+		// Regular provider: connect to Lava blockchain
+		lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
+		pst, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
+		if err != nil {
+			return err
+		}
+		providerStateTracker = pst
+	} else {
+		// Static provider: use standalone state tracker (no blockchain connection)
+		utils.LavaFormatInfo("Static provider mode: using standalone state tracker (no Lava blockchain connection)")
+		// Pass 0 to use default LAV1 block time (15s)
+		// This is for the Lava blockchain itself, not for serviced chains
+		providerStateTracker = statetracker.NewStandaloneStateTracker(rpcp.epochTimer, 0)
 	}
 
 	rpcp.providerStateTracker = providerStateTracker
-	providerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(rpcp.providerMetricsManager))
+
+	// Register metrics updater (only for non-standalone, as RegisterForUpdates is not in the interface)
+	if !options.staticProvider {
+		// Type assert to access RegisterForUpdates method
+		if pst, ok := providerStateTracker.(*statetracker.ProviderStateTracker); ok {
+			pst.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(rpcp.providerMetricsManager))
+		}
+	}
+
 	// check version
 	version, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
@@ -221,31 +270,57 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 	}
 
-	keyName, err := sigs.GetKeyName(options.clientCtx)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
-	}
-	privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
-	}
-	rpcp.privKey = privKey
-	clientKey, _ := options.clientCtx.Keyring.Key(keyName)
-	rpcp.lavaChainID = options.clientCtx.ChainID
+	// Get private key and address - only needed for regular providers
+	if !options.staticProvider {
+		// Regular provider: Load key from keyring
+		keyName, err := sigs.GetKeyName(options.clientCtx)
+		if err != nil {
+			utils.LavaFormatFatal("failed getting key name from clientCtx", err)
+		}
+		privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
+		if err != nil {
+			utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
+		}
+		rpcp.privKey = privKey
+		clientKey, _ := options.clientCtx.Keyring.Key(keyName)
+		rpcp.lavaChainID = options.clientCtx.ChainID
 
-	pubKey, err := clientKey.GetPubKey()
-	if err != nil {
-		return err
+		pubKey, err := clientKey.GetPubKey()
+		if err != nil {
+			return err
+		}
+
+		err = rpcp.addr.Unmarshal(pubKey.Address())
+		if err != nil {
+			utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
+		}
+
+		utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
+	} else {
+		// Static provider: Generate ephemeral key (not used for signing transactions)
+		utils.LavaFormatInfo("Static provider mode: generating ephemeral key for address identification")
+
+		// Generate a new secp256k1 private key
+		cosmosPrivKey := secp256k1.GenPrivKey()
+
+		// Convert cosmos SDK key to btcec format
+		privKey, _ := btcSecp256k1.PrivKeyFromBytes(cosmosPrivKey.Bytes())
+		rpcp.privKey = privKey
+
+		// Derive address from the ephemeral key
+		pubKey := cosmosPrivKey.PubKey()
+		err := rpcp.addr.Unmarshal(pubKey.Address())
+		if err != nil {
+			utils.LavaFormatFatal("failed unmarshaling ephemeral public address", err)
+		}
+
+		// Use a generic chain ID for static providers
+		rpcp.lavaChainID = "standalone"
+
+		utils.LavaFormatInfo("RPCProvider using ephemeral address: " + rpcp.addr.String())
 	}
 
-	err = rpcp.addr.Unmarshal(pubKey.Address())
-	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
-	}
-
-	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
-
-	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker.StateQuery.StateQuery, rpcp.addr.String())
+	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker, rpcp.addr.String(), options.staticProvider)
 
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
 
@@ -268,6 +343,41 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
 	rpcp.relaysMonitorAggregator.StartMonitoring(ctx)
 	specValidator.Start(ctx)
+
+	// Start epoch timer after all endpoints are set up (only for static providers)
+	if rpcp.staticProvider && rpcp.epochTimer != nil {
+		// Register all session managers for epoch updates
+		rpcp.sessionManagersLock.RLock()
+		sessionManagersCopy := make(map[string]*lavasession.ProviderSessionManager, len(rpcp.sessionManagers))
+		for k, v := range rpcp.sessionManagers {
+			sessionManagersCopy[k] = v
+		}
+		rpcp.sessionManagersLock.RUnlock()
+
+		for chainKey, sm := range sessionManagersCopy {
+			sessionManager := sm // Capture for closure
+			chainKeyLog := chainKey
+
+			rpcp.epochTimer.RegisterCallback(func(epoch uint64) {
+				utils.LavaFormatInfo("ProviderSessionManager: Epoch update triggered",
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("chainKey", chainKeyLog),
+					utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
+				)
+
+				// Update session manager to trigger cleanup
+				sessionManager.UpdateEpoch(epoch)
+			})
+
+			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates",
+				utils.LogAttr("chainKey", chainKey),
+			)
+		}
+
+		// Start the epoch timer
+		rpcp.epochTimer.Start(ctx)
+	}
+
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
@@ -304,9 +414,26 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	return nil
 }
 
-func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, stateQuery *updaters.StateQuery, publicAddress string) {
-	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, providerStateTracker ProviderStateTrackerInf, publicAddress string, staticProvider bool) {
+	if staticProvider {
+		// Static providers don't need freeze/jail monitoring
+		utils.LavaFormatDebug("Static provider mode: skipping freeze/jail updater registration")
+		return
+	}
+
+	// Regular providers: monitor freeze/jail status on blockchain
+	// Access StateQuery from ProviderStateTracker (only available for non-standalone tracker)
+	type stateQueryAccessor interface {
+		GetStateQuery() *updaters.StateQuery
+	}
+
+	if pst, ok := providerStateTracker.(stateQueryAccessor); ok {
+		stateQuery := pst.GetStateQuery()
+		if stateQuery != nil {
+			freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
+			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
+		}
+	}
 }
 
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
@@ -409,6 +536,13 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	chainID := rpcProviderEndpoint.ChainID
 	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
+
+	// Store session manager for epoch timer callbacks
+	sessionManagerKey := chainID + "-" + apiInterface
+	rpcp.sessionManagersLock.Lock()
+	rpcp.sessionManagers[sessionManagerKey] = providerSessionManager
+	rpcp.sessionManagersLock.Unlock()
+
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 	chainParser, err := chainlib.NewChainParser(apiInterface)
 	if err != nil {
@@ -710,6 +844,16 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			}
 			return nil
 		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate --from flag: required ONLY when NOT using --static-providers
+			staticProvider, _ := cmd.Flags().GetBool(common.StaticProvidersConfigName)
+			fromFlag := cmd.Flags().Lookup(flags.FlagFrom)
+
+			if !staticProvider && (fromFlag == nil || !fromFlag.Changed) {
+				return fmt.Errorf("required flag \"%s\" not set (not required with --static-providers)", flags.FlagFrom)
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo(common.ProcessStartLogText)
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -887,8 +1031,12 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
+			epochDuration := viper.GetDuration(common.EpochDurationFlag)
+
+			// If running with --static-providers, enable standalone mode
 			if staticProvider {
-				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
+				utils.LavaFormatWarning("Running in static provider mode (standalone, no Lava blockchain connection)", nil)
+				// Note: Epoch duration will default to 15 minutes (StandaloneEpochDuration) if not specified
 			}
 
 			// Load test mode configuration
@@ -925,6 +1073,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				relayLoadLimit,
 				testMode,
 				testResponsesFile,
+				epochDuration,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -955,7 +1104,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
-	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	// Note: --from is validated in PreRunE (required only when NOT using --static-providers)
 	cmdRPCProvider.Flags().Bool(common.StaticProvidersConfigName, false, "set the provider as static, allowing it to get requests from anyone, and skipping rewards, can be used for local tests")
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
@@ -983,6 +1132,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/evmos.json")
 	cmdRPCProvider.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
+	cmdRPCProvider.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
