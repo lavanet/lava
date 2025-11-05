@@ -1,29 +1,35 @@
 endpoints:
-    - api-interface: tendermintrpc
+    - name: provider-2222-tendermintrpc
+      api-interface: tendermintrpc
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2222"
       node-urls:
-        - url: ws://127.0.0.1:26657/websocket
-        - url: http://127.0.0.1:26657
-        - url: http://127.0.0.1:26657
+        - url: wss://lav1.tendermintrpc.lava.build/websocket
+        - url: https://lav1.tendermintrpc.lava.build:443
+        - url: https://lav1.tendermintrpc.lava.build:443
           addons:
             - archive
-    - api-interface: grpc
-      chain-id: LAV1
-      network-address:
-        address: "127.0.0.1:2222"
-      node-urls:
-        - url: 127.0.0.1:9090
-        - url: 127.0.0.1:9090
+        - url: wss://lav1.tendermintrpc.lava.build/websocket
           addons:
             - archive
-    - api-interface: rest
+    - name: provider-2222-rest
+      api-interface: rest
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2222"
       node-urls: 
-        - url: http://127.0.0.1:1317
-        - url: http://127.0.0.1:1317
+        - url: https://lav1.rest.lava.build:443
+        - url: https://lav1.rest.lava.build:443
+          addons:
+            - archive
+    - name: provider-2222-grpc
+      api-interface: grpc
+      chain-id: LAV1
+      network-address:
+        address: "127.0.0.1:2222"
+      node-urls:
+        - url: lav1.grpc.lava.build:443
+        - url: lav1.grpc.lava.build:443
           addons:
             - archive
