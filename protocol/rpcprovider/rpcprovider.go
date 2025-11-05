@@ -209,6 +209,17 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 
 	// Create time-based epoch timer for static providers (standalone mode)
 	if options.staticProvider {
+		// Validate that static providers have a spec path configured
+		// Standalone mode cannot fetch specs from the blockchain, so specs must be provided
+		if options.staticSpecPath == "" {
+			return utils.LavaFormatError(
+				"--static-spec-path is required when using --static-providers",
+				nil,
+				utils.LogAttr("static-providers", true),
+				utils.LogAttr("static-spec-path", "empty"),
+			)
+		}
+
 		// Static providers ALWAYS run with epoch timer
 		epochDuration := options.epochDuration
 		if epochDuration == 0 {
