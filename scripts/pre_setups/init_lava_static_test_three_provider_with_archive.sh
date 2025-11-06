@@ -64,7 +64,7 @@ sleep 2
 
 # Start consumer (rpcsmartrouter - standalone mode, works with static providers)
 echo "[Test Setup] starting consumer (rpcsmartrouter with cache, standalone mode)"
-screen -d -m -S consumer bash -c "cd /Users/anna/go/lava && source ~/.bashrc; lavap rpcsmartrouter \
+screen -d -m -S consumer bash -c "source ~/.bashrc; lavap rpcsmartrouter \
 config/consumer_examples/lava_consumer_static_peers.yml \
 --geolocation 1 --log_level trace --debug-relays \
 --cache-be 127.0.0.1:20100 \

@@ -18,6 +18,14 @@ static-providers:
         addons:
           - debug
           - archive
+  - name: primary-2222-jsonrpc
+    api-interface: jsonrpc
+    chain-id: ETH1
+    node-urls:
+      - url: 127.0.0.1:2222
+        addons:
+          - debug
+          - archive
 
 backup-providers:
   - name: backup-2220-jsonrpc
@@ -32,6 +40,14 @@ backup-providers:
     chain-id: ETH1
     node-urls:
       - url: 127.0.0.1:2221
+        addons:
+          - debug
+          - archive
+  - name: backup-2222-jsonrpc
+    api-interface: jsonrpc
+    chain-id: ETH1
+    node-urls:
+      - url: 127.0.0.1:2222
         addons:
           - debug
           - archive
