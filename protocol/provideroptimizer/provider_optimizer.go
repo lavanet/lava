@@ -374,7 +374,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
 	}
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1) {
+	if explorationCandidate.address != "" && explorationCandidate.address != selectedProvider && po.shouldExplore(1) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",

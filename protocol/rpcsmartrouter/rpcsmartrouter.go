@@ -291,6 +291,19 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 				utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
 			)
 
+			// Update PairingEpoch for all static provider sessions
+			// This is critical to prevent epoch mismatch errors during session creation
+			for _, providerSession := range providerSessions {
+				providerSession.Lock.Lock()
+				providerSession.PairingEpoch = epoch
+				providerSession.Lock.Unlock()
+			}
+			for _, backupSession := range backupSessions {
+				backupSession.Lock.Lock()
+				backupSession.PairingEpoch = epoch
+				backupSession.Lock.Unlock()
+			}
+
 			// Update session manager with current pairing (static in standalone mode)
 			// The pairing doesn't change, but this triggers cleanup and provider unblocking
 			err := sessionManager.UpdateAllProviders(epoch, providerSessions, backupSessions)
@@ -558,8 +571,23 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			utils.Attribute{Key: "backupCount", Value: len(backupProviderSessions)})
 	}
 
+	// Get current epoch for initial provider session setup
+	currentEpoch := rpsr.epochTimer.GetCurrentEpoch()
+
+	// Update PairingEpoch for all provider sessions to current epoch
+	for _, providerSession := range providerSessions {
+		providerSession.Lock.Lock()
+		providerSession.PairingEpoch = currentEpoch
+		providerSession.Lock.Unlock()
+	}
+	for _, backupSession := range backupProviderSessions {
+		backupSession.Lock.Lock()
+		backupSession.PairingEpoch = currentEpoch
+		backupSession.Lock.Unlock()
+	}
+
 	// Update the session manager with static providers and backup providers
-	err = sessionManager.UpdateAllProviders(1, providerSessions, backupProviderSessions)
+	err = sessionManager.UpdateAllProviders(currentEpoch, providerSessions, backupProviderSessions)
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed updating static providers", err)
