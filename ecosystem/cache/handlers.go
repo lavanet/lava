@@ -2,9 +2,11 @@ package cache
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"sync"
@@ -31,6 +33,8 @@ var (
 const (
 	DbValueConfirmationAttempts = 5
 	SEP                         = ";"
+	// Compress responses larger than 1KB to save memory
+	CompressionThreshold = 1024 * 1024 // 1MB
 )
 
 type RelayerCacheServer struct {
@@ -45,17 +49,30 @@ type CacheValue struct {
 	Hash             []byte
 	OptionalMetadata []pairingtypes.Metadata
 	SeenBlock        int64
+	IsCompressed     bool // Track if Response.Data is gzip compressed
 }
 
 func (cv *CacheValue) ToCacheReply() *pairingtypes.CacheRelayReply {
+	response := cv.Response
+	// Decompress data if it was compressed
+	if cv.IsCompressed && len(response.Data) > 0 {
+		decompressed, err := decompressData(response.Data)
+		if err != nil {
+			utils.LavaFormatError("Failed to decompress cache data", err)
+			// Return original data on decompression error
+		} else {
+			response.Data = decompressed
+		}
+	}
 	return &pairingtypes.CacheRelayReply{
-		Reply:            &cv.Response,
+		Reply:            &response,
 		OptionalMetadata: cv.OptionalMetadata,
 		SeenBlock:        cv.SeenBlock,
 	}
 }
 
 func (cv *CacheValue) Cost() int64 {
+	// Cost is based on actual stored size (compressed if applicable)
 	return int64(len(cv.Response.Data))
 }
 
@@ -469,8 +486,58 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey []byte) (r
 	return CacheValue{}, "", false
 }
 
+// compressData compresses data using gzip
+func compressData(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	_, err := gzipWriter.Write(data)
+	if err != nil {
+		gzipWriter.Close()
+		return nil, err
+	}
+
+	err = gzipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// decompressData decompresses gzip data
+func decompressData(data []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(data)
+	gzipReader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+	defer gzipReader.Close()
+
+	decompressed, err := io.ReadAll(gzipReader)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressed, nil
+}
+
 func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata, seenBlock int64) CacheValue {
 	response.Sig = []byte{} // make sure we return a signed value, as the output was modified by our outputParser
+
+	// Compress large responses to save memory (JSON typically compresses 70-90%)
+	isCompressed := false
+	originalSize := len(response.Data)
+	if originalSize > CompressionThreshold {
+		compressed, err := compressData(response.Data)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to compress cache data, storing uncompressed", err)
+		} else {
+			response.Data = compressed
+			isCompressed = true
+		}
+	}
+
 	if !finalized {
 		// hash value is only used on non finalized entries to check for forks
 		return CacheValue{
@@ -478,6 +545,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 			Hash:             hash,
 			OptionalMetadata: optionalMetadata,
 			SeenBlock:        seenBlock,
+			IsCompressed:     isCompressed,
 		}
 	}
 	// no need to store the hash value for finalized entries
@@ -486,6 +554,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 		Hash:             nil,
 		OptionalMetadata: optionalMetadata,
 		SeenBlock:        seenBlock,
+		IsCompressed:     isCompressed,
 	}
 }
 
