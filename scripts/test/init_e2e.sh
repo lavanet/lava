@@ -32,10 +32,13 @@ lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/tempor
 wait_next_block
 wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+wait_next_block
 
 STAKE="500000000000ulava"
 
 # Get operator address and ensure it's available
+# Wait a bit to ensure validators are queryable
+wait_next_block
 OPERATOR_ADDRESS=$(operator_address)
 if [ $? -ne 0 ] || [ -z "$OPERATOR_ADDRESS" ]; then
     echo "ERROR: Failed to get operator address"
