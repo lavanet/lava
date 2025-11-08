@@ -39,6 +39,8 @@ STAKE="500000000000ulava"
 # Get operator address and ensure it's available
 # Wait a bit to ensure validators are queryable
 wait_next_block
+wait_next_block
+wait_next_block
 OPERATOR_ADDRESS=$(operator_address)
 if [ $? -ne 0 ] || [ -z "$OPERATOR_ADDRESS" ]; then
     echo "ERROR: Failed to get operator address"

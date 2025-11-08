@@ -1184,13 +1184,11 @@ func addMissingInternalPaths(rpcProviderEndpoint *lavasession.RPCProviderEndpoin
 				newUrl.Url += missingPath
 				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
 			}
-		} else {
-			if httpRootUrl != nil {
-				newUrl := *httpRootUrl // Create copy of root URL
-				newUrl.InternalPath = missingPath
-				newUrl.Url += missingPath
-				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
-			}
+		} else if httpRootUrl != nil {
+			newUrl := *httpRootUrl // Create copy of root URL
+			newUrl.InternalPath = missingPath
+			newUrl.Url += missingPath
+			rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
 		}
 	}
 
