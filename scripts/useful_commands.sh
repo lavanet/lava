@@ -207,7 +207,23 @@ wait_for_lava_node_to_start() {
 }
 
 operator_address() {
-    lavad q staking validators -o json | jq -r '.validators[0].operator_address'
+    local max_attempts=30
+    local attempt=0
+    
+    while [ $attempt -lt $max_attempts ]; do
+        local result=$(lavad q staking validators -o json 2>/dev/null | jq -r '.validators[0].operator_address // empty' 2>/dev/null)
+        
+        if [ -n "$result" ] && [ "$result" != "null" ]; then
+            echo "$result"
+            return 0
+        fi
+        
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+    
+    echo "ERROR: Failed to get operator address after $max_attempts attempts" >&2
+    return 1
 }
 
 
