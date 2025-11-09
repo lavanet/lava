@@ -74,7 +74,7 @@ type ConsumerSessionManager struct {
 	qosManager *qos.QoSManager
 
 	// getLavaBlockHeight returns the current Lava blockchain block height
-	// This is used to populate RelaySession.Epoch which providers validate
+	// This is NOT used for RelaySession.Epoch (which must be the pairing epoch start block)
 	getLavaBlockHeight func() int64
 }
 
@@ -678,13 +678,13 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 					utils.LogAttr("GUID", ctx),
 				)
 
-			// If no error, add provider session map
-			sessionInfo := &SessionInfo{
-				StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
-				Session:           consumerSession,
-				Epoch:             sessionEpoch, // Must use pairing epoch (epoch start block) for provider validation
-				ReportedProviders: reportedProviders,
-			}
+				// If no error, add provider session map
+				sessionInfo := &SessionInfo{
+					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
+					Session:           consumerSession,
+					Epoch:             sessionEpoch, // Must use pairing epoch (epoch start block) for provider validation
+					ReportedProviders: reportedProviders,
+				}
 
 				// adding qos summary for error parsing.
 				// consumer session is locked here so its ok to read the qos report.
