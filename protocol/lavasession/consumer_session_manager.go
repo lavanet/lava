@@ -678,13 +678,13 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 					utils.LogAttr("GUID", ctx),
 				)
 
-				// If no error, add provider session map
-				sessionInfo := &SessionInfo{
-					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
-					Session:           consumerSession,
-					Epoch:             uint64(csm.getLavaBlockHeight()), // Use Lava blockchain block height, not pairing epoch
-					ReportedProviders: reportedProviders,
-				}
+			// If no error, add provider session map
+			sessionInfo := &SessionInfo{
+				StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
+				Session:           consumerSession,
+				Epoch:             sessionEpoch, // Must use pairing epoch (epoch start block) for provider validation
+				ReportedProviders: reportedProviders,
+			}
 
 				// adding qos summary for error parsing.
 				// consumer session is locked here so its ok to read the qos report.
