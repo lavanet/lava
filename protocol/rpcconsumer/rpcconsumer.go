@@ -99,6 +99,7 @@ type ConsumerStateTrackerInf interface {
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
+	LatestBlock() int64
 }
 
 type AnalyticsServerAddresses struct {
@@ -385,6 +386,12 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+
+	// Set callback to get Lava blockchain block height for RelaySession.Epoch
+	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
+		return rpcc.consumerStateTracker.LatestBlock()
+	})
+
 	if lavasession.PeriodicProbeProviders {
 		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}

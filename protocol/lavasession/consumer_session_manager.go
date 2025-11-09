@@ -72,6 +72,10 @@ type ConsumerSessionManager struct {
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 
 	qosManager *qos.QoSManager
+
+	// getLavaBlockHeight returns the current Lava blockchain block height
+	// This is used to populate RelaySession.Epoch which providers validate
+	getLavaBlockHeight func() int64
 }
 
 func (csm *ConsumerSessionManager) GetQoSManager() *qos.QoSManager {
@@ -678,7 +682,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 				sessionInfo := &SessionInfo{
 					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
 					Session:           consumerSession,
-					Epoch:             sessionEpoch,
+					Epoch:             uint64(csm.getLavaBlockHeight()), // Use Lava blockchain block height, not pairing epoch
 					ReportedProviders: reportedProviders,
 				}
 
@@ -1419,10 +1423,17 @@ func NewConsumerSessionManager(
 		consumerMetricsManager: consumerMetricsManager,
 		consumerPublicAddress:  consumerPublicAddress,
 		qosManager:             qos.NewQoSManager(),
+		getLavaBlockHeight:     func() int64 { return 0 }, // default to 0, should be set by caller
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	csm.stickySessions = NewStickySessionStore()
 	return csm
+}
+
+// SetLavaBlockHeightCallback sets the callback function to get current Lava blockchain block height
+// This must be called after creating the ConsumerSessionManager
+func (csm *ConsumerSessionManager) SetLavaBlockHeightCallback(getLavaBlockHeight func() int64) {
+	csm.getLavaBlockHeight = getLavaBlockHeight
 }
