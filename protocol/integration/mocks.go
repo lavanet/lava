@@ -77,6 +77,10 @@ func (m *mockConsumerStateTracker) GetLatestVirtualEpoch() uint64 {
 	return 0
 }
 
+func (m *mockConsumerStateTracker) LatestBlock() int64 {
+	return 1000
+}
+
 type ReplySetter struct {
 	status       int
 	replyDataBuf []byte
