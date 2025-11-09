@@ -14,8 +14,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 4,
+                "average_block_time": 750,
+                "allowed_block_lag_for_qos_sync": 14,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -59,8 +59,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 4,
+                "average_block_time": 750,
+                "allowed_block_lag_for_qos_sync": 14,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
