@@ -23,20 +23,40 @@ sleep_until_next_epoch() {
 
 # Function to wait until next block
 wait_next_block() {
-  current=$( lavad q block | jq .block.header.height)
-  echo "waiting for next block $current"
   local max_attempts=60  # 60 seconds max
   local attempt=0
+  
+  # First, ensure we can query the blockchain
+  while [ $attempt -lt $max_attempts ]; do
+    current=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+    if [ -n "$current" ] && [ "$current" != "null" ]; then
+      break
+    fi
+    if [ $((attempt % 10)) -eq 0 ] && [ $attempt -gt 0 ]; then
+      echo "Waiting for blockchain to be queryable (attempt $attempt/$max_attempts)..."
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+  
+  if [ -z "$current" ] || [ "$current" == "null" ]; then
+    echo "ERROR: Blockchain not responding after $max_attempts seconds"
+    return 1
+  fi
+  
+  echo "waiting for next block $current"
+  attempt=0
+  
   while true; do
     display_ticker
-    new=$( lavad q block | jq .block.header.height)
-    if [ "$current" != "$new" ]; then
+    new=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+    if [ -n "$new" ] && [ "$new" != "null" ] && [ "$current" != "$new" ]; then
       echo "finished waiting at block $new"
       break
     fi
     attempt=$((attempt + 1))
     if [ $attempt -ge $max_attempts ]; then
-      echo "ERROR: Timeout waiting for next block after $max_attempts seconds"
+      echo "ERROR: Timeout waiting for next block after $max_attempts seconds (stuck at $current)"
       return 1
     fi
     sleep 1
@@ -103,8 +123,12 @@ wait_next_block_and_tx() {
 }
 
 current_block() {
-  current=$(lavad q block | jq -r .block.header.height)
-  echo $current
+  current=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+  if [ -z "$current" ] || [ "$current" == "null" ]; then
+    echo "0"
+  else
+    echo $current
+  fi
 }
 
 # function to wait until count ($1) blocks complete
