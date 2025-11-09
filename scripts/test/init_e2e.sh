@@ -1,6 +1,9 @@
-#!/bin/bash 
+#!/bin/bash
 killall lavap
 set -e
+
+# Trap errors and show which command failed
+trap 'echo "ERROR: Command failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
@@ -9,6 +12,9 @@ GASPRICE="0.00002ulava"
 
 # Specs proposal
 echo ---- Specs proposal ----
+echo "Waiting for blockchain to be ready for transactions..."
+wait_next_block
+wait_next_block
 lavad tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 wait_next_block
