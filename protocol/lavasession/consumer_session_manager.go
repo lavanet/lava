@@ -117,13 +117,16 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	if epoch < previousEpoch { // sentry shouldn't update an old epoch
 		return utils.LavaFormatError("trying to update provider list for older epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()})
 	}
+
 	// Allow updating with the same epoch (idempotent) - this can happen when multiple callbacks trigger for the same epoch
-	if epoch == previousEpoch {
-		// Already on this epoch, but we'll update the provider list anyway (idempotent operation)
-		return nil
+	// We DON'T return early because we need to reset blocked providers and clean state even for same-epoch updates
+	// This is critical for standalone mode where epoch updates trigger provider unblocking
+	skipEpochWrite := (epoch == previousEpoch)
+
+	// Update Epoch (only if it's different)
+	if !skipEpochWrite {
+		csm.atomicWriteCurrentEpoch(epoch)
 	}
-	// Update Epoch.
-	csm.atomicWriteCurrentEpoch(epoch)
 
 	// Reset States
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
