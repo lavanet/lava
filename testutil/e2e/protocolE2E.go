@@ -1983,23 +1983,33 @@ func runProtocolE2E(timeout time.Duration) {
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
+		utils.LavaFormatInfo(fmt.Sprintf("Waiting for virtual epoch signal %d/3", m))
 		<-signalChannel
+		utils.LavaFormatInfo(fmt.Sprintf("Received virtual epoch signal %d/3", m))
 	})
 
+	utils.LavaFormatInfo("All virtual epoch signals received")
+	
 	utils.LavaFormatInfo("Virtual epochs completed, starting REST relay tests",
 		utils.LogAttr("url", url),
 		utils.LogAttr("totalTests", 10))
 
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
+	testStartTime := time.Now()
 	repeat(10, func(m int) {
-		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10", m+1))
+		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m+1, time.Since(testStartTime)))
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m+1), err)
 			panic(err)
 		}
 		// Small delay between requests to avoid overwhelming the system
 		time.Sleep(100 * time.Millisecond)
+		
+		// Safety check - if we've been running too long, something is wrong
+		if time.Since(testStartTime) > 5*time.Minute {
+			panic(fmt.Sprintf("REST relay tests taking too long - %s elapsed", time.Since(testStartTime)))
+		}
 	})
 
 	utils.LavaFormatInfo("All 10 REST relay tests completed successfully")
