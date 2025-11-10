@@ -9,43 +9,12 @@ killall lavap 2>/dev/null || true
 echo "Killed existing lavap processes"
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-echo "Sourcing useful_commands.sh from $__dir"
 source $__dir/../useful_commands.sh
 
 GASPRICE="0.00002ulava"
 
-# Wait for lavad to be fully operational
-echo "Checking if lavad is responding..."
-max_wait=60
-waited=0
-while [ $waited -lt $max_wait ]; do
-    if lavad status &>/dev/null; then
-        echo "lavad is responding"
-        break
-    fi
-    echo "Waiting for lavad to start... ($waited/$max_wait)"
-    sleep 2
-    waited=$((waited + 2))
-done
-
-if [ $waited -ge $max_wait ]; then
-    echo "ERROR: lavad did not start within $max_wait seconds" >&2
-    exit 1
-fi
-
 # Specs proposal
-echo "==== Specs proposal ===="
-echo "Waiting for blockchain to be ready for transactions..."
-if ! wait_next_block; then
-    echo "ERROR: Failed to wait for first block" >&2
-    exit 1
-fi
-echo "First block ready"
-if ! wait_next_block; then
-    echo "ERROR: Failed to wait for second block" >&2
-    exit 1
-fi
-echo "Second block ready, submitting spec proposal..."
+echo "---- Specs proposal ----"
 lavad tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 wait_next_block
@@ -74,10 +43,6 @@ wait_next_block
 STAKE="500000000000ulava"
 
 # Get operator address and ensure it's available
-# Wait a bit to ensure validators are queryable
-wait_next_block
-wait_next_block
-wait_next_block
 OPERATOR_ADDRESS=$(operator_address)
 if [ $? -ne 0 ] || [ -z "$OPERATOR_ADDRESS" ]; then
     echo "ERROR: Failed to get operator address"
@@ -161,7 +126,9 @@ else
     echo "Index 'to_delete_plan' was removed successfully validation passed."
 fi
 
-
+# Give lavad a moment to stabilize after all the transactions
+echo "Waiting for lavad to stabilize..."
+sleep 3
 
 # the end
 

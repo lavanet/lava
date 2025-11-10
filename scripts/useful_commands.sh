@@ -23,24 +23,21 @@ sleep_until_next_epoch() {
 
 # Function to wait until next block
 wait_next_block() {
-  local max_attempts=60  # 60 seconds max
+  local max_attempts=30  # 30 seconds max
   local attempt=0
   
-  # First, ensure we can query the blockchain
-  while [ $attempt -lt $max_attempts ]; do
+  # Get current block height (with retry logic)
+  while [ $attempt -lt 10 ]; do
     current=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
     if [ -n "$current" ] && [ "$current" != "null" ]; then
       break
-    fi
-    if [ $((attempt % 10)) -eq 0 ] && [ $attempt -gt 0 ]; then
-      echo "Waiting for blockchain to be queryable (attempt $attempt/$max_attempts)..."
     fi
     attempt=$((attempt + 1))
     sleep 1
   done
   
   if [ -z "$current" ] || [ "$current" == "null" ]; then
-    echo "ERROR: Blockchain not responding after $max_attempts seconds"
+    echo "ERROR: Cannot query blockchain after 10 seconds"
     return 1
   fi
   
@@ -231,31 +228,15 @@ wait_for_lava_node_to_start() {
 }
 
 operator_address() {
-    local max_attempts=60
+    local max_attempts=30
     local attempt=0
     
-    echo "Attempting to get operator address..." >&2
-    
     while [ $attempt -lt $max_attempts ]; do
-        # Try to query validators with error output
-        local query_result=$(lavad q staking validators -o json 2>&1)
-        local query_exit_code=$?
+        local result=$(lavad q staking validators -o json 2>/dev/null | jq -r '.validators[0].operator_address // empty' 2>/dev/null)
         
-        if [ $query_exit_code -ne 0 ]; then
-            if [ $((attempt % 10)) -eq 0 ]; then
-                echo "Query failed (attempt $attempt/$max_attempts): $query_result" >&2
-            fi
-        else
-            # Parse the result
-            local result=$(echo "$query_result" | jq -r '.validators[0].operator_address // empty' 2>/dev/null)
-            
-            if [ -n "$result" ] && [ "$result" != "null" ]; then
-                echo "Successfully got operator address: $result" >&2
-                echo "$result"
-                return 0
-            elif [ $((attempt % 10)) -eq 0 ]; then
-                echo "Validators not ready yet (attempt $attempt/$max_attempts)" >&2
-            fi
+        if [ -n "$result" ] && [ "$result" != "null" ]; then
+            echo "$result"
+            return 0
         fi
         
         attempt=$((attempt + 1))
@@ -263,7 +244,6 @@ operator_address() {
     done
     
     echo "ERROR: Failed to get operator address after $max_attempts attempts" >&2
-    echo "Last query result: $query_result" >&2
     return 1
 }
 
