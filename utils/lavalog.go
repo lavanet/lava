@@ -60,6 +60,14 @@ func LogAttr(key string, value interface{}) Attribute {
 }
 
 func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
+	LogLavaEventWithLevel(ctx, logger, name, attributes, description, LAVA_LOG_INFO)
+}
+
+func LogLavaEventDebug(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
+	LogLavaEventWithLevel(ctx, logger, name, attributes, description, LAVA_LOG_DEBUG)
+}
+
+func LogLavaEventWithLevel(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string, level uint) {
 	attributes_str := ""
 	eventAttrs := []sdk.Attribute{}
 	for key, val := range attributes {
@@ -69,7 +77,17 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 	sort.Slice(eventAttrs, func(i, j int) bool {
 		return eventAttrs[i].Key < eventAttrs[j].Key
 	})
-	logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+
+	switch level {
+	case LAVA_LOG_DEBUG:
+		logger.Debug(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+	case LAVA_LOG_INFO:
+		logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+	case LAVA_LOG_ERROR:
+		logger.Error(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+	default:
+		logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+	}
 	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
 
