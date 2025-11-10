@@ -881,8 +881,9 @@ func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
+	// Updating with the same epoch should be idempotent (no error)
 	err = csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
-	require.Error(t, err)
+	require.NoError(t, err)
 	// perform same validations as normal usage
 	require.Equal(t, len(csm.validAddresses), numberOfProviders) // checking there are 2 valid addresses
 	require.Equal(t, len(csm.pairingAddresses), numberOfProviders)
