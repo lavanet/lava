@@ -188,19 +188,19 @@ reference_endpoints:
 				if err != nil {
 					utils.LavaFormatError("[-] invalid health run", err)
 					healthMetrics.SetFailedRun(identifier)
-				} else {
-					if resultsPostAddress != "" {
-						jsonData, err := json.Marshal(healthResult)
-						if err == nil {
-							resp, err := http.Post(resultsPostAddress, "application/json", bytes.NewBuffer(jsonData))
-							if err != nil {
-								utils.LavaFormatError("[-] failed posting health results", err, utils.LogAttr("address", resultsPostAddress))
-							}
-							defer resp.Body.Close()
-						} else {
-							utils.LavaFormatError("[-] failed marshaling results", err)
+				} else if resultsPostAddress != "" {
+					jsonData, err := json.Marshal(healthResult)
+					if err == nil {
+						resp, err := http.Post(resultsPostAddress, "application/json", bytes.NewBuffer(jsonData))
+						if err != nil {
+							utils.LavaFormatError("[-] failed posting health results", err, utils.LogAttr("address", resultsPostAddress))
 						}
+						defer resp.Body.Close()
+					} else {
+						utils.LavaFormatError("[-] failed marshaling results", err)
 					}
+				}
+				if err == nil {
 					utils.LavaFormatInfo("[+] completed health run")
 					healthMetrics.SetLatestBlockData(identifier, healthResult.FormatForLatestBlock())
 					alerting.CheckHealthResults(healthResult)

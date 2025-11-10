@@ -54,6 +54,11 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		GetLatestVirtualEpoch().
 		Return(uint64(0)).
 		AnyTimes()
+	consumerStateTracker.
+		EXPECT().
+		LatestBlock().
+		Return(int64(1000)).
+		AnyTimes()
 
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()

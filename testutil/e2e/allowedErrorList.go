@@ -29,11 +29,16 @@ var allowedErrors = map[string]string{
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
-	"connection refused":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"Connection refused":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"connection reset by peer":     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"Failed Querying EpochDetails": "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"http://[IP_ADDRESS]:26657":    "This error is allowed because it can happen when EOF error happens when we shut down the node in emergency mode",
+	"connection refused":                     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"Connection refused":                     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"connection reset by peer":               "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"Failed Querying EpochDetails":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"http://[IP_ADDRESS]:26657":              "This error is allowed because it can happen when EOF error happens when we shut down the node in emergency mode",
+	"http://[IP_ADDRESS]:1111":               "This error is allowed because it can happen when EOF error happens when providers try to send messages during emergency mode shutdown",
+	"transport is closing":                   "This error is allowed because it happens when gRPC connections are closing during emergency mode shutdown",
+	"srv.Send()":                             "This error is allowed because it can occur when trying to send on a closing connection during emergency mode",
+	"Provider Side Failed Sending Message":   "This error is allowed because providers may fail to send messages when the node is shutting down during emergency mode",
+	"Post \"http://[IP_ADDRESS]:1111\": EOF": "This error is allowed because HTTP connections fail with EOF when the node is shutting down during emergency mode",
 }
 
 var allowedErrorsPaymentE2E = map[string]string{

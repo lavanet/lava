@@ -506,6 +506,17 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterReportsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
 
+	// Set callback to get Lava blockchain block height for RelaySession.Epoch
+	// Smart router doesn't connect to blockchain, so calculate approximate block height from epoch
+	// Epoch duration is 15 minutes (900 seconds), and Lava block time is ~15 seconds
+	// So each epoch is approximately 60 blocks (900 / 15)
+	sessionManager.SetLavaBlockHeightCallback(func() int64 {
+		currentEpoch := rpsr.epochTimer.GetCurrentEpoch()
+		// Approximate blocks per epoch: epochDuration / averageBlockTime
+		blocksPerEpoch := int64(rpsr.epochTimer.GetEpochDuration().Seconds() / 15) // 15 second Lava block time
+		return int64(currentEpoch) * blocksPerEpoch
+	})
+
 	// Store session manager in router for epoch timer callbacks (thread-safe via CreateSmartRouterEndpoint mutex)
 	sessionManagerKey := rpcEndpoint.Key() // chainID-apiInterface
 	if rpsr.sessionManagers == nil {
@@ -716,11 +727,9 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				} else {
 					utils.LavaFormatInfo("created new config file", utils.Attribute{Key: "file_name", Value: DefaultRPCSmartRouterFileName})
 				}
+			} else if err = viper.ReadInConfig(); err != nil {
+				utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			} else {
-				err = viper.ReadInConfig()
-				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
-				}
 				utils.LavaFormatInfo("read config file successfully", utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)

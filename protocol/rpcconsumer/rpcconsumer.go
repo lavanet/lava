@@ -99,6 +99,7 @@ type ConsumerStateTrackerInf interface {
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
+	LatestBlock() int64
 }
 
 type AnalyticsServerAddresses struct {
@@ -385,6 +386,12 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+
+	// Set callback to get Lava blockchain block height for RelaySession.Epoch
+	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
+		return rpcc.consumerStateTracker.LatestBlock()
+	})
+
 	if lavasession.PeriodicProbeProviders {
 		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
 	}
@@ -507,11 +514,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				} else {
 					utils.LavaFormatInfo("created new config file", utils.Attribute{Key: "file_name", Value: DefaultRPCConsumerFileName})
 				}
+			} else if err = viper.ReadInConfig(); err != nil {
+				utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			} else {
-				err = viper.ReadInConfig()
-				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
-				}
 				utils.LavaFormatInfo("read config file successfully", utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)

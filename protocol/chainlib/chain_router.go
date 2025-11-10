@@ -299,13 +299,11 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 		if chainRouterEntries, ok := chainProxyRouter[routerKeyStr]; !ok {
 			chainProxyRouter[routerKeyStr] = []chainRouterEntry{chainRouterEntryInst}
+		} else if len(methodsRouted) > 0 {
+			// if there are routed methods we want this in the beginning to intercept them
+			chainProxyRouter[routerKeyStr] = append([]chainRouterEntry{chainRouterEntryInst}, chainRouterEntries...)
 		} else {
-			if len(methodsRouted) > 0 {
-				// if there are routed methods we want this in the beginning to intercept them
-				chainProxyRouter[routerKeyStr] = append([]chainRouterEntry{chainRouterEntryInst}, chainRouterEntries...)
-			} else {
-				chainProxyRouter[routerKeyStr] = append(chainRouterEntries, chainRouterEntryInst)
-			}
+			chainProxyRouter[routerKeyStr] = append(chainRouterEntries, chainRouterEntryInst)
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {

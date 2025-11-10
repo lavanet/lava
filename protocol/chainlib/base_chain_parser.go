@@ -216,11 +216,9 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(ctx context.Context, suppor
 
 		if bcp.isAddon(supportedToCheck) {
 			addons = append(addons, supportedToCheck)
+		} else if supportedToCheck == "" {
+			continue
 		} else {
-			if supportedToCheck == "" {
-				continue
-			}
-
 			isExtensionResult := bcp.isExtension(supportedToCheck)
 			isWebSocket := supportedToCheck == WebSocketExtension
 
