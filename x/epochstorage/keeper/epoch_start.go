@@ -77,7 +77,7 @@ func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 		return
 	}
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.EarliestEpochEventName,
+	utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.EarliestEpochEventName,
 		map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)},
 		"updated earliest epoch block")
 
