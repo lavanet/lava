@@ -945,7 +945,12 @@ func restRelayTest(rpcURL string) error {
 }
 
 func getRequest(url string) ([]byte, error) {
-	res, err := http.Get(url)
+	// Create HTTP client with timeout to prevent hanging
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	
+	res, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -1981,13 +1986,22 @@ func runProtocolE2E(timeout time.Duration) {
 		<-signalChannel
 	})
 
+	utils.LavaFormatInfo("Virtual epochs completed, starting REST relay tests",
+		utils.LogAttr("url", url),
+		utils.LogAttr("totalTests", 70))
+
 	// check that there was an increase CU due to virtual epochs
 	repeat(70, func(m int) {
+		if m%10 == 0 {
+			utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/70", m))
+		}
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
 			panic(err)
 		}
 	})
+
+	utils.LavaFormatInfo("All 70 REST relay tests completed successfully")
 
 	lt.markEmergencyModeLogsEnd()
 
