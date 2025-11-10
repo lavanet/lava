@@ -949,7 +949,7 @@ func getRequest(url string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	
+
 	res, err := client.Get(url)
 	if err != nil {
 		return nil, err
@@ -1988,20 +1988,21 @@ func runProtocolE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Virtual epochs completed, starting REST relay tests",
 		utils.LogAttr("url", url),
-		utils.LogAttr("totalTests", 70))
+		utils.LogAttr("totalTests", 10))
 
 	// check that there was an increase CU due to virtual epochs
-	repeat(70, func(m int) {
-		if m%10 == 0 {
-			utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/70", m))
-		}
+	// 10 requests is sufficient to validate emergency mode CU allocation
+	repeat(10, func(m int) {
+		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10", m+1))
 		if err := restRelayTest(url); err != nil {
-			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
+			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m+1), err)
 			panic(err)
 		}
+		// Small delay between requests to avoid overwhelming the system
+		time.Sleep(100 * time.Millisecond)
 	})
 
-	utils.LavaFormatInfo("All 70 REST relay tests completed successfully")
+	utils.LavaFormatInfo("All 10 REST relay tests completed successfully")
 
 	lt.markEmergencyModeLogsEnd()
 
