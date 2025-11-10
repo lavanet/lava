@@ -250,8 +250,13 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	if epoch <= psm.blockedEpochHeight || epoch <= psm.currentEpoch {
-		// this shouldn't happen, but nothing to do
+	if epoch < psm.blockedEpochHeight || epoch < psm.currentEpoch {
+		// Reject truly old epochs (going backwards in time)
+		return
+	}
+	// Allow same-epoch updates (idempotent) - this can happen when multiple callbacks trigger
+	if epoch == psm.currentEpoch {
+		// Already on this epoch, nothing to update
 		return
 	}
 	if epoch > psm.blockDistanceForEpochValidity {

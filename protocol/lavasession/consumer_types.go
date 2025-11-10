@@ -464,6 +464,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
 	cswp.Sessions[consumerSession.SessionId] = consumerSession // applying the session to the pool of sessions.
+	utils.LavaFormatTrace("GetConsumerSessionInstanceFromEndpoint returning session", utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("pairingEpoch", cswp.PairingEpoch), utils.LogAttr("sessionId", consumerSession.SessionId))
 	return consumerSession, cswp.PairingEpoch, nil
 }
 

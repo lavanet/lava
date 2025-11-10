@@ -277,14 +277,16 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	// Start epoch timer after all endpoints are set up
-	// Register all session managers for epoch updates
-	for chainKey, sm := range rpsr.sessionManagers {
-		sessionManager := sm // Capture for closure
-		chainKeyLog := chainKey
-		providerSessions := rpsr.providerSessions[chainKey]
-		backupSessions := rpsr.backupProviderSessions[chainKey]
+	// Register ONE global epoch callback that updates ALL session managers
+	// This prevents multiple UpdateAllProviders calls with the same epoch to the same session manager
+	rpsr.epochTimer.RegisterCallback(func(epoch uint64) {
+		// Update all session managers for this epoch
+		for chainKey, sm := range rpsr.sessionManagers {
+			sessionManager := sm
+			chainKeyLog := chainKey
+			providerSessions := rpsr.providerSessions[chainKey]
+			backupSessions := rpsr.backupProviderSessions[chainKey]
 
-		rpsr.epochTimer.RegisterCallback(func(epoch uint64) {
 			utils.LavaFormatInfo("ConsumerSessionManager: Epoch update triggered",
 				utils.LogAttr("epoch", epoch),
 				utils.LogAttr("chainKey", chainKeyLog),
@@ -295,13 +297,17 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 			// This is critical to prevent epoch mismatch errors during session creation
 			for _, providerSession := range providerSessions {
 				providerSession.Lock.Lock()
+				oldEpoch := providerSession.PairingEpoch
 				providerSession.PairingEpoch = epoch
 				providerSession.Lock.Unlock()
+				utils.LavaFormatInfo("Updated provider PairingEpoch", utils.LogAttr("provider", providerSession.PublicLavaAddress), utils.LogAttr("oldEpoch", oldEpoch), utils.LogAttr("newEpoch", epoch), utils.LogAttr("chainKey", chainKeyLog))
 			}
 			for _, backupSession := range backupSessions {
 				backupSession.Lock.Lock()
+				oldEpoch := backupSession.PairingEpoch
 				backupSession.PairingEpoch = epoch
 				backupSession.Lock.Unlock()
+				utils.LavaFormatInfo("Updated backup provider PairingEpoch", utils.LogAttr("provider", backupSession.PublicLavaAddress), utils.LogAttr("oldEpoch", oldEpoch), utils.LogAttr("newEpoch", epoch), utils.LogAttr("chainKey", chainKeyLog))
 			}
 
 			// Update session manager with current pairing (static in standalone mode)
@@ -313,12 +319,13 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 					utils.LogAttr("chainKey", chainKeyLog),
 				)
 			}
-		})
+		}
+	})
 
-		utils.LavaFormatInfo("RPCSmartRouter: Registered session manager for epoch updates",
-			utils.LogAttr("chainKey", chainKey),
-		)
-	}
+	// Log that epoch timer is configured for all session managers
+	utils.LavaFormatInfo("RPCSmartRouter: Registered epoch timer callback for all session managers",
+		utils.LogAttr("sessionManagerCount", len(rpsr.sessionManagers)),
+	)
 
 	// Start the epoch timer
 	rpsr.epochTimer.Start(ctx)

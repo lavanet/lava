@@ -118,17 +118,22 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		return utils.LavaFormatError("trying to update provider list for older epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()})
 	}
 
-	// Allow updating with the same epoch (idempotent) - this can happen when multiple callbacks trigger for the same epoch
-	// We DON'T return early because we need to reset blocked providers and clean state even for same-epoch updates
-	// This is critical for standalone mode where epoch updates trigger provider unblocking
+	// For same-epoch updates, we still need to proceed with the update
+	// because each ConsumerSessionManager has its own state (validAddresses, reportedProviders, etc.)
+	// that needs to be reset. We just skip the epoch write to avoid redundant atomic operations.
 	skipEpochWrite := (epoch == previousEpoch)
+	if skipEpochWrite {
+		utils.LavaFormatDebug("UpdateAllProviders called with same epoch, updating state anyway",
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
+	}
 
 	// Update Epoch (only if it's different)
 	if !skipEpochWrite {
 		csm.atomicWriteCurrentEpoch(epoch)
 	}
 
-	// Reset States
+	// Reset States - MUST run even for same-epoch updates because each CSM has its own state
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make(map[uint64]string, pairingListLength)
 	csm.secondChanceGivenToAddresses = make(map[string]struct{})
@@ -190,11 +195,7 @@ func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions
 
 // csm is Rlocked
 func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, extensions []string, ctx context.Context) (supportingProviderAddresses []string) {
-	utils.LavaFormatTrace("[Archive Debug] CalculateAddonValidAddresses called",
-		utils.LogAttr("addon", addon),
-		utils.LogAttr("extensions", extensions),
-		utils.LogAttr("validAddresses", csm.validAddresses),
-		utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("🔎 CALCULATING VALID ADDRESSES", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("totalValidAddresses", len(csm.validAddresses)), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
 	for _, providerAdress := range csm.validAddresses {
 		providerEntry := csm.pairing[providerAdress]
 		supportsAddon := providerEntry.IsSupportingAddon(addon)
@@ -216,9 +217,7 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 				utils.LogAttr("GUID", ctx))
 		}
 	}
-	utils.LavaFormatTrace("[Archive Debug] CalculateAddonValidAddresses result",
-		utils.LogAttr("supportingProviderAddresses", supportingProviderAddresses),
-		utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("✅ CALCULATION RESULT", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("supportingProviderCount", len(supportingProviderAddresses)), utils.LogAttr("supportingProviders", supportingProviderAddresses), utils.LogAttr("GUID", ctx))
 	return supportingProviderAddresses
 }
 
@@ -409,7 +408,9 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 
 // csm needs to be locked here
 func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string, extensions []string, ctx context.Context) {
+	utils.LavaFormatInfo("Resetting blocked provider list", utils.LogAttr("blockedProvidersBeforeReset", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 	csm.currentlyBlockedProviderAddresses = make([]string, 0) // reset currently blocked provider addresses
+	utils.LavaFormatInfo("Blocked provider list reset complete", utils.LogAttr("blockedProvidersAfterReset", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 	if addon == "" && len(extensions) == 0 {
 		csm.validAddresses = make([]string, len(csm.pairingAddresses))
 		index := 0
@@ -508,8 +509,11 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string, ctx context.Context) uint64 {
 	numberOfResets := csm.atomicReadNumberOfResets()
 	validAddresses := csm.cacheAddonAddresses(addon, extensions, ctx)
+	utils.LavaFormatInfo("🔍 VALIDATING PROVIDERS", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("validAddressesCount", len(validAddresses)), utils.LogAttr("validAddresses", validAddresses), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
 	if len(validAddresses) == 0 {
+		utils.LavaFormatWarning("🚨 NO VALID PROVIDERS - TRIGGERING RESET", nil, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 		numberOfResets = csm.resetValidAddresses(addon, extensions)
+		utils.LavaFormatInfo("🔄 RESET COMPLETED", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("newValidAddressesCount", len(csm.cacheAddonAddresses(addon, extensions, ctx))), utils.LogAttr("GUID", ctx))
 	}
 	return numberOfResets
 }
@@ -1093,6 +1097,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 			csm.RemoveAddonAddresses("", nil)
 			// add the address to our block provider list.
 			csm.currentlyBlockedProviderAddresses = append(csm.currentlyBlockedProviderAddresses, address)
+			utils.LavaFormatInfo("➕ ADDED TO BLOCKED LIST", utils.LogAttr("address", address), utils.LogAttr("newBlockedCount", len(csm.currentlyBlockedProviderAddresses)))
 			// sort the blocked provider list by cu served
 			csm.sortBlockedProviderListByCuServed()
 			provider, ok := csm.pairing[addr]
@@ -1111,7 +1116,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
 // Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
 func (csm *ConsumerSessionManager) blockProvider(ctx context.Context, address string, reportProvider bool, sessionEpoch uint64, disconnections uint64, errors uint64, allowSecondChance bool, reconnectCallback func() error, errorsForReport []error) error {
-	utils.LavaFormatDebug("CSM Blocking provider", utils.LogAttr("address", address), utils.LogAttr("errorsForReport", errorsForReport), utils.LogAttr("allowing_second_chance", allowSecondChance), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("🔒 BLOCKING PROVIDER", utils.LogAttr("address", address), utils.LogAttr("currentBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("errorsForReport", errorsForReport), utils.LogAttr("GUID", ctx))
 
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
