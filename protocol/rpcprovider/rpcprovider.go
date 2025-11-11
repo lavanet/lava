@@ -126,7 +126,8 @@ type rpcProviderStartOptions struct {
 type rpcProviderHealthCheckMetricsOptions struct {
 	relaysHealthEnableFlag   bool          // enables relay health check
 	relaysHealthIntervalFlag time.Duration // interval for relay health check
-	grpcHealthCheckEndpoint  string
+	grpcHealthCheckEndpoint  string        // URL path for health check (e.g., "/lava/health")
+	grpcHealthCheckPort      string        // Port for health check server (e.g., ":8081")
 }
 
 type RPCProvider struct {
@@ -149,6 +150,7 @@ type RPCProvider struct {
 	relaysHealthCheckEnabled     bool
 	relaysHealthCheckInterval    time.Duration
 	grpcHealthCheckEndpoint      string
+	grpcHealthCheckPort          string
 	providerUniqueId             string
 	staticProvider               bool
 	staticSpecPath               string
@@ -192,6 +194,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysHealthCheckInterval = options.healthCheckMetricsOptions.relaysHealthIntervalFlag
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
+	rpcp.grpcHealthCheckPort = options.healthCheckMetricsOptions.grpcHealthCheckPort
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
 	rpcp.githubToken = options.githubToken
@@ -605,7 +608,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
 		if !ok {
 			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
-			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, rpcp.grpcHealthCheckEndpoint)
+			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, rpcp.grpcHealthCheckEndpoint, rpcp.grpcHealthCheckPort)
 			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
@@ -836,6 +839,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
+			healthCheckPort := viper.GetString(HealthCheckPortFlagName)
 			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
@@ -855,6 +859,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				enableRelaysHealth,
 				relaysHealthInterval,
 				healthCheckURLPath,
+				healthCheckPort,
 			}
 
 			rpcProviderStartOptions := rpcProviderStartOptions{
@@ -931,6 +936,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")
 	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
+	cmdRPCProvider.Flags().String(HealthCheckPortFlagName, HealthCheckPortFlagDefault, "the port for the provider's health check server (separate from main gRPC server)")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/evmos.json")

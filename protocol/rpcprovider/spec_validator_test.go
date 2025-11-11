@@ -23,7 +23,7 @@ func TestSetSpecWithoutChainFetchersNorProviderListenerNoErrors(t *testing.T) {
 func TestSetSpecWithoutRelayReceiversNoErrors(t *testing.T) {
 	spec := testcommon.CreateMockSpec()
 
-	providerListener := NewProviderListener(context.Background(), lavasession.NetworkAddressData{}, "")
+	providerListener := NewProviderListener(context.Background(), lavasession.NetworkAddressData{}, "", "")
 	providerListener.RegisterReceiver(&RPCProviderServer{}, &lavasession.RPCProviderEndpoint{})
 
 	specValidator := NewSpecValidator()
@@ -124,7 +124,7 @@ func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) 
 	secondCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Return(errors.New(""))
 
 	addressData := lavasession.NetworkAddressData{}
-	providerListener := NewProviderListener(context.Background(), addressData, "")
+	providerListener := NewProviderListener(context.Background(), addressData, "", "")
 
 	relayReceiver := NewMockRelayReceiver(ctrl)
 	rpcProviderEndpoint := &lavasession.RPCProviderEndpoint{}
