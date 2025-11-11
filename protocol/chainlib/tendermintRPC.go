@@ -691,9 +691,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 
 	if cp.httpClient == nil {
-		cp.httpClient = &http.Client{
-			Timeout: 5 * time.Minute, // we are doing a timeout by request
-		}
+		cp.httpClient = common.OptimizedHttpClient()
 	}
 
 	httpClient := cp.httpClient
