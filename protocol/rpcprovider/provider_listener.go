@@ -25,12 +25,15 @@ import (
 const (
 	HealthCheckURLPathFlagName    = "health-check-url-path"
 	HealthCheckURLPathFlagDefault = "/lava/health"
+	HealthCheckPortFlagName       = "health-check-port"
+	HealthCheckPortFlagDefault    = ":8081"
 )
 
 type ProviderListener struct {
-	networkAddress string
-	relayServer    *relayServer
-	httpServer     http.Server
+	networkAddress    string
+	relayServer       *relayServer
+	httpServer        http.Server
+	healthCheckServer *http.Server // Separate health check server
 }
 
 func (pl *ProviderListener) Key() string {
@@ -52,14 +55,44 @@ func (pl *ProviderListener) RegisterReceiver(existingReceiver RelayReceiver, end
 }
 
 func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
+	// Shutdown health check server first (it's simpler)
+	if pl.healthCheckServer != nil {
+		if err := pl.healthCheckServer.Shutdown(shutdownCtx); err != nil {
+			utils.LavaFormatWarning("Health check server failed to shutdown gracefully", err)
+		}
+	}
+
+	// Shutdown main server
 	if err := pl.httpServer.Shutdown(shutdownCtx); err != nil {
 		utils.LavaFormatFatal("Provider failed to shutdown", err)
 	}
 	return nil
 }
 
-func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData, healthCheckPath string) *ProviderListener {
+func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData, healthCheckPath string, healthCheckPort string) *ProviderListener {
 	pl := &ProviderListener{networkAddress: networkAddress.Address}
+
+	// Start dedicated health check server on a separate port
+	// This ensures health checks ALWAYS respond, even under heavy load
+	healthCheckMux := http.NewServeMux()
+	healthCheckMux.HandleFunc(healthCheckPath, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Healthy"))
+	})
+
+	pl.healthCheckServer = &http.Server{
+		Addr:    healthCheckPort,
+		Handler: healthCheckMux,
+	}
+
+	go func() {
+		utils.LavaFormatInfo("Health check server listening",
+			utils.Attribute{Key: "address", Value: healthCheckPort},
+			utils.Attribute{Key: "path", Value: healthCheckPath})
+		if err := pl.healthCheckServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			utils.LavaFormatWarning("Health check server failed", err)
+		}
+	}()
 
 	// GRPC
 	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress.Address)
@@ -73,11 +106,8 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", fmt.Sprintf("Content-Type, x-grpc-web, lava-sdk-relay-timeout, %s", common.LAVA_CONSUMER_PROCESS_GUID))
 
-		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
-			resp.WriteHeader(http.StatusOK)
-			resp.Write([]byte("Healthy"))
-			return
-		}
+		// Health check is now on a separate server, so we removed it from here
+		// This handler now only processes relay requests
 
 		wrappedServer.ServeHTTP(resp, req)
 	}
