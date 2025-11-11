@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -64,7 +65,7 @@ func (c *CacheConfig) UnmarshalJSON(data []byte) error {
 
 // executeRequest handles a single request execution with its own ticker
 func executeRequest(config CacheConfig, request Request) {
-	client := &http.Client{}
+	client := common.OptimizedHttpClient()
 	ticker := time.NewTicker(config.Interval)
 	defer ticker.Stop()
 	for range ticker.C {
