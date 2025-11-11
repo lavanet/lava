@@ -1989,7 +1989,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	utils.LavaFormatInfo("All virtual epoch signals received")
-	
+
 	utils.LavaFormatInfo("Virtual epochs completed, starting REST relay tests",
 		utils.LogAttr("url", url),
 		utils.LogAttr("totalTests", 10))
@@ -2005,7 +2005,7 @@ func runProtocolE2E(timeout time.Duration) {
 		}
 		// Small delay between requests to avoid overwhelming the system
 		time.Sleep(100 * time.Millisecond)
-		
+
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
 			panic(fmt.Sprintf("REST relay tests taking too long - %s elapsed", time.Since(testStartTime)))
