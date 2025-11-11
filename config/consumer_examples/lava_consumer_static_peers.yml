@@ -9,27 +9,54 @@ endpoints:
       api-interface: grpc
       network-address: 127.0.0.1:3362
 static-providers:
-  - api-interface: tendermintrpc
+  - name: provider-2220-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: grpc
+  - name: provider-2220-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: rest
+  - name: provider-2220-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: tendermintrpc
+  - name: provider-2221-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: grpc
+  - name: provider-2221-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: rest
+  - name: provider-2221-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
+  - name: provider-2222-tendermintrpc
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2222
+        addons:
+          - archive
+  - name: provider-2222-grpc
+    api-interface: grpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2222
+        addons:
+          - archive
+  - name: provider-2222-rest
+    api-interface: rest
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2222
+        addons:
+          - archive

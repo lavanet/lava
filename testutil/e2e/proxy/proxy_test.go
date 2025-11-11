@@ -7,10 +7,12 @@ import (
 	"testing"
 )
 
-func TestStart(t *testing.T) {
-	log.Println("Proxy Start", os.Args[len(os.Args)-1])
+var (
+	hostFlag = flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n\t$ go run proxy.go http://google.com/")
+	portFlag = flag.String("p", "1111", "PORT")
+)
 
-	host := &os.Args[len(os.Args)-1] // flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
-	port := flag.String("p", "1111", "PORT")
-	main(host, port)
+func TestStart(t *testing.T) {
+	log.Println("Proxy Start args", os.Args[1:])
+	main(hostFlag, portFlag)
 }

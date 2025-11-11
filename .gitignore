@@ -31,6 +31,11 @@ scripts/vars/
 rpcprovider.yml
 rpcconsumer.yml
 
+# Environment variables and generated configs (secrets should not be committed)
+.env
+.env.local
+provider*_eth.yml
+
 # Node modules
 **/node_modules
 
@@ -100,3 +105,7 @@ config/health_examples/health_template_gen.yml
 
 docs/
 agent_docs/
+readme-docs/
+mock-node-server/
+.claude/
+Claude.md

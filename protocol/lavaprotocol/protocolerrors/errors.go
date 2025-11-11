@@ -11,4 +11,5 @@ var (
 	ConsistencyError                            = sdkerrors.New("Consistency Error", 3368, "does not meet consistency requirements")
 	UnhandledRelayReceiverError                 = sdkerrors.New("UnhandledRelayReceiver Error", 3369, "provider does not handle requested api interface and spec")
 	DisabledRelayReceiverError                  = sdkerrors.New("DisabledRelayReceiverError Error", 3370, "provider does not pass verification and disabled this interface and spec")
+	NoResponseTimeout                           = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
 )

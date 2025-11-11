@@ -1,4 +1,4 @@
-package rpcconsumer
+package relaycore
 
 import (
 	"fmt"
@@ -18,38 +18,38 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test stake majority error reply",
 			relayErrors: RelayErrors{
-				onFailureMergeAll: true,
-				relayErrors: []RelayError{
+				OnFailureMergeAll: true,
+				RelayErrors: []RelayError{
 					{
-						err: fmt.Errorf("test1"),
+						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test2"),
+						Err: fmt.Errorf("test2"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
 						},
 					},
 					{
-						err: fmt.Errorf("test3"),
+						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
 						},
 					},
 					{
-						err: fmt.Errorf("test4"),
+						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 50),
@@ -61,52 +61,52 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test qos majority error reply",
 			relayErrors: RelayErrors{
-				onFailureMergeAll: true,
-				relayErrors: []RelayError{
+				OnFailureMergeAll: true,
+				RelayErrors: []RelayError{
 					{
-						err: fmt.Errorf("test1"),
+						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.5"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test1"),
+						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.25"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test3"),
+						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.6"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test3"),
+						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test4"),
+						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("test4"),
+						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.MustNewDecFromStr("0.8"),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
@@ -118,38 +118,38 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test text majority over score majority",
 			relayErrors: RelayErrors{
-				onFailureMergeAll: true,
-				relayErrors: []RelayError{
+				OnFailureMergeAll: true,
+				RelayErrors: []RelayError{
 					{
-						err: fmt.Errorf("test1"),
+						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 1000),
 						},
 					},
 					{
-						err: fmt.Errorf("test2"),
+						Err: fmt.Errorf("test2"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 1000),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.ZeroDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.ZeroDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.ZeroDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
@@ -161,38 +161,38 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test majority of error body",
 			relayErrors: RelayErrors{
-				onFailureMergeAll: true,
-				relayErrors: []RelayError{
+				OnFailureMergeAll: true,
+				RelayErrors: []RelayError{
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
 						},
 					},
 					{
-						err: fmt.Errorf("test3"),
+						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
 						},
 					},
 					{
-						err: fmt.Errorf("test4"),
+						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
@@ -204,38 +204,38 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test no majority and no dec",
 			relayErrors: RelayErrors{
-				onFailureMergeAll: true,
-				relayErrors: []RelayError{
+				OnFailureMergeAll: true,
+				RelayErrors: []RelayError{
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
 						},
 					},
 					{
-						err: fmt.Errorf("test3"),
+						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
 						},
 					},
 					{
-						err: fmt.Errorf("test4"),
+						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
 						},
 					},
 					{
-						err: fmt.Errorf("%s", expectedValue),
+						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderReputationSummary: sdk.OneDec(),
 							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
@@ -248,7 +248,7 @@ func TestRelayError(t *testing.T) {
 	for _, te := range testStruct {
 		t.Run(te.name, func(t *testing.T) {
 			result := te.relayErrors.GetBestErrorMessageForUser()
-			require.Equal(t, result.err.Error(), expectedValue)
+			require.Equal(t, result.Err.Error(), expectedValue)
 		})
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
@@ -53,10 +54,15 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		GetLatestVirtualEpoch().
 		Return(uint64(0)).
 		AnyTimes()
+	consumerStateTracker.
+		EXPECT().
+		LatestBlock().
+		Return(int64(1000)).
+		AnyTimes()
 
 	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", false)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(epoch, map[uint64]*lavasession.ConsumerSessionsWithProvider{
 		epoch: {
@@ -66,7 +72,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		},
 	}, nil)
 
-	consumerConsistency := NewConsumerConsistency(specId)
+	consumerConsistency := relaycore.NewConsistency(specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{
 		RelaysHealthEnableFlag: false,
 	}
@@ -141,7 +147,11 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 	// Create single consumer session
 	singleConsumerSession := &lavasession.SingleConsumerSession{EndpointConnection: &lavasession.EndpointConnection{Client: relayerMock}}
-
+	singleConsumerSession.Parent = &lavasession.ConsumerSessionsWithProvider{
+		PublicLavaAddress: providerPublicAddress,
+		PairingEpoch:      100,
+		Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayerMock}}}},
+	}
 	// Create RelayResult
 	relayResult := &common.RelayResult{
 		ProviderInfo: common.ProviderInfo{
@@ -182,6 +192,35 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 	})
 }
 
+// Mock interface for RelayProcessor that only implements the methods we need for testing
+type MockRelayProcessorForHeaders struct {
+	quorumParams         common.QuorumParams
+	successResults       []common.RelayResult
+	nodeErrors           []common.RelayResult
+	protocolErrors       []relaycore.RelayError
+	statefulRelayTargets []string
+}
+
+func (m *MockRelayProcessorForHeaders) GetQuorumParams() common.QuorumParams {
+	return m.quorumParams
+}
+
+func (m *MockRelayProcessorForHeaders) GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError) {
+	return m.successResults, m.nodeErrors, m.protocolErrors
+}
+
+func (m *MockRelayProcessorForHeaders) GetStatefulRelayTargets() []string {
+	return m.statefulRelayTargets
+}
+
+func (m *MockRelayProcessorForHeaders) GetUsedProviders() *lavasession.UsedProviders {
+	return lavasession.NewUsedProviders(nil)
+}
+
+func (m *MockRelayProcessorForHeaders) NodeErrors() (ret []common.RelayResult) {
+	return m.nodeErrors
+}
+
 // Integration tests that actually call appendHeadersToRelayResult
 func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	ctx := context.Background()
@@ -191,12 +230,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("quorum disabled - single provider header", func(t *testing.T) {
 		// Create a mock relay processor with quorum disabled (use default values)
-		relayProcessor := &RelayProcessor{
-			quorumParams: common.DefaultQuorumParams, // Disable quorum by using default values
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{},
-				nodeErrorsList: []common.RelayResult{},
-			},
+		relayProcessor := &MockRelayProcessorForHeaders{
+			quorumParams:   common.DefaultQuorumParams, // Disable quorum by using default values
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -235,14 +272,12 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("quorum enabled - single successful provider", func(t *testing.T) {
 		// Create a mock relay processor with quorum enabled
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -281,16 +316,14 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("quorum enabled - multiple providers with mixed results", func(t *testing.T) {
 		// Create a mock relay processor with quorum enabled
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
-				},
-				nodeErrorsList: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
-				},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+			},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
 			},
 		}
 
@@ -335,12 +368,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("quorum enabled - no providers", func(t *testing.T) {
 		// Create a mock relay processor with quorum enabled but no providers
-		relayProcessor := &RelayProcessor{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{},
-				nodeErrorsList: []common.RelayResult{},
-			},
+		relayProcessor := &MockRelayProcessorForHeaders{
+			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -371,12 +402,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	})
 
 	t.Run("nil relay result - should not panic", func(t *testing.T) {
-		relayProcessor := &RelayProcessor{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{},
-				nodeErrorsList: []common.RelayResult{},
-			},
+		relayProcessor := &MockRelayProcessorForHeaders{
+			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
 		}
 
 		mockProtocolMessage := &MockProtocolMessage{
@@ -401,15 +430,13 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 
 	t.Run("stateful API - all providers header included", func(t *testing.T) {
 		// Create a mock relay processor with stateful relay targets
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{providerAddress1, providerAddress2, providerAddress3},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -473,15 +500,13 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 
 	t.Run("stateful API - single provider in targets", func(t *testing.T) {
 		// Create a mock relay processor with only one stateful relay target
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{providerAddress1},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -525,15 +550,13 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 
 	t.Run("stateful API - empty targets list", func(t *testing.T) {
 		// Create a mock relay processor with empty stateful relay targets
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: []string{},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -583,15 +606,13 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 
 	t.Run("non-stateful API - no stateful headers", func(t *testing.T) {
 		// Create a mock relay processor without stateful relay targets
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams:         common.DefaultQuorumParams,
 			statefulRelayTargets: nil, // No stateful targets
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -641,16 +662,14 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 
 	t.Run("stateful API with quorum enabled - both headers present", func(t *testing.T) {
 		// This is an edge case - stateful API shouldn't use quorum, but let's test the behavior
-		relayProcessor := &RelayProcessor{
+		relayProcessor := &MockRelayProcessorForHeaders{
 			quorumParams:         common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
 			statefulRelayTargets: []string{providerAddress1, providerAddress2},
-			ResultsManager: &MockResultsManager{
-				successResults: []common.RelayResult{
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-					{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
-				},
-				nodeErrorsList: []common.RelayResult{},
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
 			},
+			nodeErrors: []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -720,14 +739,14 @@ func TestSendParsedRelayIntegration(t *testing.T) {
 	})
 }
 
-// MockResultsManager implements the ResultsManager interface for testing
+// MockResultsManager implements the relaycore.ResultsManager interface for testing
 type MockResultsManager struct {
 	successResults []common.RelayResult
 	nodeErrorsList []common.RelayResult
-	protocolErrors []RelayError
+	protocolErrors []relaycore.RelayError
 }
 
-func (m *MockResultsManager) GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError) {
+func (m *MockResultsManager) GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []relaycore.RelayError) {
 	return m.successResults, m.nodeErrorsList, m.protocolErrors
 }
 
@@ -739,7 +758,7 @@ func (m *MockResultsManager) NodeResults() []common.RelayResult {
 	return append(m.successResults, m.nodeErrorsList...)
 }
 
-func (m *MockResultsManager) RequiredResults(requiredSuccesses int, selection Selection) bool {
+func (m *MockResultsManager) RequiredResults(requiredSuccesses int, selection relaycore.Selection) bool {
 	return len(m.successResults) >= requiredSuccesses
 }
 
@@ -755,19 +774,19 @@ func (m *MockResultsManager) GetResults() (success int, nodeErrors int, specialN
 	return len(m.successResults), len(m.nodeErrorsList), 0, len(m.protocolErrors)
 }
 
-func (m *MockResultsManager) SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
+func (m *MockResultsManager) SetResponse(response *relaycore.RelayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error) {
 	return nil
 }
 
-func (m *MockResultsManager) GetBestNodeErrorMessageForUser() RelayError {
-	return RelayError{}
+func (m *MockResultsManager) GetBestNodeErrorMessageForUser() relaycore.RelayError {
+	return relaycore.RelayError{}
 }
 
-func (m *MockResultsManager) GetBestProtocolErrorMessageForUser() RelayError {
-	return RelayError{}
+func (m *MockResultsManager) GetBestProtocolErrorMessageForUser() relaycore.RelayError {
+	return relaycore.RelayError{}
 }
 
-func (m *MockResultsManager) nodeErrors() (ret []common.RelayResult) {
+func (m *MockResultsManager) NodeErrors() (ret []common.RelayResult) {
 	return m.nodeErrorsList
 }
 
