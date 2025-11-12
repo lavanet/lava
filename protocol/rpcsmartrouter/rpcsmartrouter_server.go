@@ -825,7 +825,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 						seenBlockForCache = 0      // Also use 0 for seen block in method-based caching
 					}
 
-					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
+					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout*6)
 
 					// For unsupported method errors, we store them as finalized, so we should look for them as finalized too
 					// This ensures we prioritize the finalized cache where unsupported method errors are stored
