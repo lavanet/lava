@@ -1,0 +1,39 @@
+name: Build and Package
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build_docker:
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        binary: [lavap]
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-delete-later
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
