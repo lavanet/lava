@@ -1,10 +1,10 @@
 #!/bin/bash
-# Script to test v5.5.0 upgrade locally
-# Usage: ./scripts/test_upgrade_5_5_0.sh <upgrade_height>
+# Script to test v5.5.1 upgrade locally
+# Usage: ./scripts/test-upgrade-5.5.1.sh <upgrade_height>
 
 set -e
 
-UPGRADE_VERSION="v5.5.0"
+UPGRADE_VERSION="v5.5.1"
 UPGRADE_HEIGHT=${1:-200}  # Default to block 200 if not specified
 
 echo "================================================"
