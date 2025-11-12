@@ -22,7 +22,7 @@ const (
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
-	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
+	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", false)
 }
 
 type providersGenerator struct {

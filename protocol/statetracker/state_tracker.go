@@ -76,22 +76,18 @@ func RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx context.Context, chainPa
 		}
 		chainParser.SetSpec(spec)
 	} else {
-		// Check if specPath is a directory
+		// Try to check if it's a directory (os.Stat will fail for comma-separated strings, which is OK)
 		fileInfo, err := os.Stat(specPath)
-		if err != nil {
-			return utils.LavaFormatError("failed accessing spec path", err, utils.LogAttr("spec_path", specPath))
-		}
 
-		if fileInfo.IsDir() {
+		if err == nil && fileInfo.IsDir() {
 			// Directory mode - load all spec files from the directory
 			spec, err := specutils.GetSpecFromLocalDir(specPath, rpcEndpoint.ChainID)
 			if err != nil {
 				return utils.LavaFormatError("failed loading local spec directory", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", rpcEndpoint.ChainID))
 			}
-
 			chainParser.SetSpec(spec)
 		} else {
-			// Single file mode - existing logic
+			// Single file or comma-separated files mode
 			parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
 			if err != nil {
 				return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))

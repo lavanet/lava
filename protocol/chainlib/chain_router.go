@@ -299,13 +299,11 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 		if chainRouterEntries, ok := chainProxyRouter[routerKeyStr]; !ok {
 			chainProxyRouter[routerKeyStr] = []chainRouterEntry{chainRouterEntryInst}
+		} else if len(methodsRouted) > 0 {
+			// if there are routed methods we want this in the beginning to intercept them
+			chainProxyRouter[routerKeyStr] = append([]chainRouterEntry{chainRouterEntryInst}, chainRouterEntries...)
 		} else {
-			if len(methodsRouted) > 0 {
-				// if there are routed methods we want this in the beginning to intercept them
-				chainProxyRouter[routerKeyStr] = append([]chainRouterEntry{chainRouterEntryInst}, chainRouterEntries...)
-			} else {
-				chainProxyRouter[routerKeyStr] = append(chainRouterEntries, chainRouterEntryInst)
-			}
+			chainProxyRouter[routerKeyStr] = append(chainRouterEntries, chainRouterEntryInst)
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {
@@ -328,7 +326,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			break
 		}
 	}
-	if !IgnoreWsEnforcementForTestCommands && hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
+	if !IgnoreWsEnforcementForTestCommands && hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported && !SkipWebsocketVerification {
 		return nil, utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
 			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
 			utils.LogAttr("supportedMap", supportedMap),

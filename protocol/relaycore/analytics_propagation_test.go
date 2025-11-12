@@ -1,4 +1,4 @@
-package rpcconsumer
+package relaycore
 
 import (
 	"testing"

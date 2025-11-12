@@ -1,0 +1,15 @@
+endpoints:
+    - name: provider-archive
+      api-interface: jsonrpc
+      chain-id: ETH1
+      network-address:
+        address: "127.0.0.1:2220"
+      node-urls:
+        - url: https://mainnet.infura.io/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        - url: wss://mainnet.infura.io/ws/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        - url: https://mainnet.infura.io/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          addons:
+            - archive
+        - url: wss://mainnet.infura.io/ws/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          addons:
+            - archive
