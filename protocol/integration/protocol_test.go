@@ -1216,7 +1216,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			archiveProviders:   3,
 			nodeErrorProviders: 3,
 			expectedResult:     "",  // Will be checked separately due to Error_GUID format
-			statusCode:         555, // Status code from the node error
+			statusCode:         500, // Status code from the node error
 		},
 	}
 	for _, play := range playbook {
@@ -1271,7 +1271,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				providers[i].replySetter.replyDataBuf = []byte(`{"result": "success"}`)
 				if i+1 <= play.nodeErrorProviders {
 					providers[i].replySetter.replyDataBuf = []byte(`{"error": "failure", "message": "test", "code": "-32132"}`)
-					providers[i].replySetter.status = 555
+					providers[i].replySetter.status = 500
 				}
 			}
 

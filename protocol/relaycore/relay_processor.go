@@ -626,10 +626,14 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 					utils.LogAttr("quorumMin", rp.quorumParams.Min),
 					utils.LogAttr("totalResponses", totalResponses))
 			}
-			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
-			nodeResults = append(nodeResults, successResults...)
-			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, requiredQuorumSize)
+			// Only use responsesQuorum if we have at least some successful results
+			// If we only have node errors, fall through to error handling below
+			if successResultsCount > 0 {
+				nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
+				nodeResults = append(nodeResults, successResults...)
+				nodeResults = append(nodeResults, nodeErrors...)
+				return rp.responsesQuorum(nodeResults, requiredQuorumSize)
+			}
 		}
 	}
 
