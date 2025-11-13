@@ -29,10 +29,14 @@ rm -f $PROJECT_ROOT/provider*_eth.yml 2>/dev/null || true
 echo "[Test Setup] installing all binaries"
 make install-all 
 
-# Start cache service (no blockchain needed for standalone)
-echo "[Test Setup] starting cache service"
+# Start cache services (no blockchain needed for standalone)
+echo "[Test Setup] starting consumer cache service"
 screen -d -m -S cache bash -c "source ~/.bashrc; lavap cache \
 127.0.0.1:20100 --metrics_address 0.0.0.0:20200 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE.log" && sleep 0.25
+
+echo "[Test Setup] starting provider cache service"
+screen -d -m -S provider_cache bash -c "source ~/.bashrc; lavap cache \
+127.0.0.1:20101 --metrics_address 0.0.0.0:20201 --log_level debug 2>&1 | tee $LOGS_DIR/PROVIDER_CACHE.log" && sleep 0.25
 
 sleep 2
 
@@ -216,6 +220,7 @@ provider1_eth \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
+--cache-be \"127.0.0.1:20101\" \
 --geolocation 1 --log_level debug --metrics-listen-address ':7777' 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 echo "Waiting 3 seconds for Provider 1 to complete validation before starting Provider 2..."
@@ -228,6 +233,7 @@ provider2_eth \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
+--cache-be \"127.0.0.1:20101\" \
 --geolocation 1 --log_level debug --metrics-listen-address ':7766' 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
 echo "Waiting 3 seconds for Provider 2 to complete validation before starting Provider 3..."
@@ -240,6 +246,7 @@ provider3_eth \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
+--cache-be \"127.0.0.1:20101\" \
 --geolocation 1 --log_level debug --metrics-listen-address ':7756' 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 sleep 2
@@ -277,11 +284,12 @@ echo ""
 echo "============================================"
 echo "Test Setup Complete (Fully Standalone Mode)"
 echo "============================================"
-echo "Cache:      127.0.0.1:20100"
-echo "Provider 1: $PROVIDER1_LISTENER (Infura HTTP + Infura WS, archive)"
-echo "Provider 2: $PROVIDER2_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
-echo "Provider 3: $PROVIDER3_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
-echo "Consumer:   rpcsmartrouter (fully standalone, cache-enabled)"
+echo "Consumer Cache:  127.0.0.1:20100 (metrics: 20200)"
+echo "Provider Cache:  127.0.0.1:20101 (metrics: 20201)"
+echo "Provider 1:      $PROVIDER1_LISTENER (Infura HTTP + Infura WS, archive)"
+echo "Provider 2:      $PROVIDER2_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
+echo "Provider 3:      $PROVIDER3_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
+echo "Consumer:        rpcsmartrouter (fully standalone, cache-enabled)"
 echo ""
 echo "All components disconnected from Lava blockchain!"
 echo "Using static specs: $SPECS_DIR"
@@ -291,4 +299,8 @@ echo "Endpoint Strategy:"
 echo "  - All WebSocket: Infura (avoids QuickNode's 2 WS limit)"
 echo "  - HTTP: Provider 1 uses Infura, Providers 2&3 use QuickNode (load distribution)"
 echo "  - Parallel connections: 1 per URL (avoids overwhelming endpoints)"
+echo ""
+echo "Cache Configuration:"
+echo "  - Consumer uses cache at 127.0.0.1:20100"
+echo "  - All providers share cache at 127.0.0.1:20101"
 echo "============================================"
