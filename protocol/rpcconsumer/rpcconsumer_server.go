@@ -415,19 +415,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		// we can't send anymore, and we don't have any responses
 		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
 
-		// Check if this is an unsupported method error and cache it
-		utils.LavaFormatDebug("SendParsedRelay error path",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("error", err.Error()),
-			utils.LogAttr("cacheActive", rpccs.cache.CacheActive()),
-			utils.LogAttr("isUnsupportedMethodError", chainlib.IsUnsupportedMethodError(err)),
-		)
-
-		if rpccs.cache.CacheActive() && chainlib.IsUnsupportedMethodError(err) {
-			// Try to cache the unsupported method error for future requests
-			rpccs.cacheUnsupportedMethodError(ctx, protocolMessage, err)
-		}
-
 		return nil, err
 	}
 
@@ -448,25 +435,16 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-		// Always log to debug what's happening
-		utils.LavaFormatInfo("ProcessingResult error check",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("error", err.Error()),
-			utils.LogAttr("cacheActive", rpccs.cache.CacheActive()),
-			utils.LogAttr("isUnsupportedMethodError", chainlib.IsUnsupportedMethodError(err)),
-			utils.LogAttr("errorContainsMethodNotFound", strings.Contains(strings.ToLower(err.Error()), "method not found")),
-		)
-
-		// Check if this is an unsupported method error from all providers failing
+		// Check if this is an unsupported method error from the error message
+		// This catches cases where the provider returns a gRPC error instead of response data
 		if rpccs.cache.CacheActive() && chainlib.IsUnsupportedMethodError(err) {
-			utils.LavaFormatInfo("ProcessingResult returned unsupported method error - attempting to cache",
+			utils.LavaFormatDebug("ProcessingResult returned unsupported method error - caching",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", err.Error()),
 			)
-			// Try to cache the unsupported method error for future requests
-			rpccs.cacheUnsupportedMethodError(ctx, protocolMessage, err)
+			// Cache the unsupported method error for future requests
+			go rpccs.cacheUnsupportedMethodErrorResponse(ctx, protocolMessage, returnedResult)
 		}
-
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
 
@@ -485,111 +463,78 @@ func (rpccs *RPCConsumerServer) GetChainIdAndApiInterface() (string, string) {
 	return rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
 }
 
-// cacheUnsupportedMethodError caches an unsupported method error response
-func (rpccs *RPCConsumerServer) cacheUnsupportedMethodError(ctx context.Context, protocolMessage chainlib.ProtocolMessage, err error) {
-	chainId, _ := rpccs.GetChainIdAndApiInterface()
-
-	// Create a mock error response that looks like what providers would return
-	errorMessage := err.Error()
-	errorReply := &pairingtypes.RelayReply{
-		Data:        []byte(fmt.Sprintf(`{"error":{"code":-32601,"message":"Method not found","data":"%s"}}`, errorMessage)),
-		LatestBlock: 0,
+// cacheUnsupportedMethodErrorResponse caches an unsupported method error like a regular response
+// This is called when the provider returns a gRPC error instead of response data
+func (rpccs *RPCConsumerServer) cacheUnsupportedMethodErrorResponse(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayResult *common.RelayResult) {
+	if relayResult == nil {
+		return
 	}
 
-	// Create relay data for cache key generation
+	chainId, _ := rpccs.GetChainIdAndApiInterface()
 	relayData := protocolMessage.RelayPrivateData()
 	if relayData == nil {
-		utils.LavaFormatWarning("cannot cache unsupported method error - no relay data", nil, utils.LogAttr("GUID", ctx))
 		return
 	}
 
-	// Get the request block and transform it for caching
-	requestedBlock := relayData.RequestBlock
-	requestedBlockForCache := requestedBlock
-	if requestedBlock == spectypes.NOT_APPLICABLE || requestedBlock == spectypes.LATEST_BLOCK {
-		requestedBlockForCache = 0 // Use block 0 for method-based error caching
+	// Create error response with placeholder GUID
+	// Note: When retrieved from cache, the actual request GUID will be different
+	// We use "CACHED_ERROR" as a marker to indicate this is a cached unsupported method error
+	errorData := `{"Error_GUID":"CACHED_ERROR","error":{"code":-32601,"message":"Method not found"}}`
+	errorReply := &pairingtypes.RelayReply{
+		Data:        []byte(errorData),
+		LatestBlock: relayResult.Reply.GetLatestBlock(),
 	}
 
-	// Generate cache key using the standard hash function
-	// This ensures we use the same hash that will be generated during cache lookup
+	// Get the resolved block for caching
+	// relayData.RequestBlock may still be negative (-2 for LATEST_BLOCK)
+	// Use seenBlock as the resolved block for caching
+	requestedBlock := relayData.SeenBlock
+	if requestedBlock <= 0 {
+		// Fallback to 0 if seenBlock is also not set
+		requestedBlock = 0
+	}
+	seenBlock := relayData.SeenBlock
+
 	hashKey, _, hashErr := chainlib.HashCacheRequest(relayData, chainId)
 	if hashErr != nil {
-		utils.LavaFormatWarning("failed to generate hash for caching unsupported method error", hashErr, utils.LogAttr("GUID", ctx))
 		return
 	}
 
-	// Prepare metadata for unsupported method error
-	optionalMetadata := []pairingtypes.Metadata{
-		{
-			Name:  "error_type",
-			Value: "UNSUPPORTED_METHOD",
-		},
-		{
-			Name:  "cached_at",
-			Value: fmt.Sprintf("%d", time.Now().Unix()),
-		},
-		{
-			Name:  "error_source",
-			Value: "ALL_PROVIDERS_FAILED",
-		},
+	// Determine if finalized based on block age (like regular responses)
+	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
+	var latestBlock int64
+	if relayResult.Reply != nil {
+		latestBlock = relayResult.Reply.LatestBlock
 	}
+	finalized := spectypes.IsFinalizedBlock(requestedBlock, latestBlock, int64(blockDistanceForFinalizedData))
 
-	// Set shorter TTL for error responses (1 hour)
-	// Note: AverageBlockTime is expected in milliseconds
-	cacheTTL := int64(3600 * 1000) // 1 hour in milliseconds
-
-	// Generate the actual cache key that will be used by the cache backend
-	actualCacheKey := make([]byte, len(hashKey))
-	copy(actualCacheKey, hashKey)
-	actualCacheKey = binary.LittleEndian.AppendUint64(actualCacheKey, uint64(requestedBlockForCache))
-
-	utils.LavaFormatInfo("Caching unsupported method error (all providers failed)",
-		utils.LogAttr("GUID", ctx),
-		utils.LogAttr("apiUrl", relayData.ApiUrl),
-		utils.LogAttr("errorMessage", errorMessage),
-		utils.LogAttr("cacheTTL", cacheTTL),
-		utils.LogAttr("requestedBlock", requestedBlock),
-		utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-		utils.LogAttr("hashKeyHex", fmt.Sprintf("%x", hashKey)),
-		utils.LogAttr("actualCacheKeyHex", fmt.Sprintf("%x", actualCacheKey)),
-	)
-
-	// Cache the error response
 	cacheCtx, cancel := context.WithTimeout(context.Background(), common.DataReliabilityTimeoutIncrease)
 	defer cancel()
+	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 
-	// For method-based caching, use 0 for both requested block and seen block
-	seenBlockForCache := relayData.SeenBlock
-	if requestedBlock == spectypes.NOT_APPLICABLE || requestedBlock == spectypes.LATEST_BLOCK {
-		seenBlockForCache = 0 // Use 0 for method-based caching
-	}
-
-	utils.LavaFormatDebug("Cache storage configuration",
-		utils.LogAttr("GUID", ctx),
-		utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-		utils.LogAttr("seenBlockForCache", seenBlockForCache),
-		utils.LogAttr("storageFinalized", true),
-		utils.LogAttr("IsNodeError", false),
-		utils.LogAttr("cacheTTL", cacheTTL),
-	)
-
-	err2 := rpccs.cache.SetEntry(cacheCtx, &pairingtypes.RelayCacheSet{
+	err := rpccs.cache.SetEntry(cacheCtx, &pairingtypes.RelayCacheSet{
 		RequestHash:           hashKey,
 		ChainId:               chainId,
-		RequestedBlock:        requestedBlockForCache,
-		SeenBlock:             seenBlockForCache,
+		RequestedBlock:        requestedBlock,
+		SeenBlock:             seenBlock,
 		BlockHash:             nil,
 		Response:              errorReply,
-		Finalized:             true, // Set to true so unsupported method errors go to finalized cache with longer TTL
-		OptionalMetadata:      optionalMetadata,
+		Finalized:             finalized,
+		OptionalMetadata:      nil,
 		SharedStateId:         "",
-		AverageBlockTime:      cacheTTL,
-		IsNodeError:           false, // Unsupported method errors are not node errors, they're method unavailability
+		AverageBlockTime:      int64(averageBlockTime),
+		IsNodeError:           false,
 		BlocksHashesToHeights: nil,
 	})
 
-	if err2 != nil {
-		utils.LavaFormatWarning("error caching unsupported method error", err2, utils.LogAttr("GUID", ctx))
+	if err != nil {
+		utils.LavaFormatWarning("error caching unsupported method error response", err, utils.LogAttr("GUID", ctx))
+	} else {
+		utils.LavaFormatDebug("Successfully cached unsupported method error",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("requestedBlock", requestedBlock),
+			utils.LogAttr("finalized", finalized),
+		)
 	}
 }
 
@@ -832,31 +777,33 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("hashKey", fmt.Sprintf("%x", hashKey)),
 						utils.LogAttr("apiUrl", protocolMessage.RelayPrivateData().ApiUrl),
 					)
-					// Use block 0 for method-based caching when no specific block is requested
-					// This includes both NOT_APPLICABLE (-1) and LATEST_BLOCK (-2) for unsupported methods
+
+					// Resolve the requested block for cache lookup
+					// The cache server doesn't accept negative blocks
 					requestedBlockForCache := reqBlock
-					seenBlockForCache := protocolMessage.RelayPrivateData().SeenBlock
-					if reqBlock == spectypes.NOT_APPLICABLE || reqBlock == spectypes.LATEST_BLOCK {
-						requestedBlockForCache = 0 // Use block 0 for method-based error caching
-						seenBlockForCache = 0      // Also use 0 for seen block in method-based caching
+					if reqBlock == spectypes.LATEST_BLOCK {
+						// For LATEST_BLOCK, use seen block (will be resolved to actual block number)
+						if protocolMessage.RelayPrivateData().SeenBlock != 0 {
+							requestedBlockForCache = protocolMessage.RelayPrivateData().SeenBlock
+						} else {
+							requestedBlockForCache = 0 // Fallback to 0 if no seen block
+						}
+					} else if reqBlock == spectypes.NOT_APPLICABLE {
+						requestedBlockForCache = 0 // NOT_APPLICABLE maps to 0
 					}
+
+					// Always use finalized=false for lookups
+					// The cache will search both tempCache and finalizedCache, finding data in either
+					lookupFinalized := false
 
 					cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
 
-					// For unsupported method errors, we store them as finalized, so we should look for them as finalized too
-					// This ensures we prioritize the finalized cache where unsupported method errors are stored
-					lookupFinalized := false
-					if requestedBlockForCache == 0 && seenBlockForCache == 0 {
-						// This looks like a method-based cache lookup (block 0), likely for unsupported method errors
-						lookupFinalized = true
-					}
-
 					utils.LavaFormatDebug("Cache lookup configuration",
 						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("reqBlock", reqBlock),
 						utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-						utils.LogAttr("seenBlockForCache", seenBlockForCache),
+						utils.LogAttr("seenBlock", protocolMessage.RelayPrivateData().SeenBlock),
 						utils.LogAttr("lookupFinalized", lookupFinalized),
-						utils.LogAttr("condition", requestedBlockForCache == 0 && seenBlockForCache == 0),
 					)
 
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
@@ -866,7 +813,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						BlockHash:             nil,
 						Finalized:             lookupFinalized,
 						SharedStateId:         sharedStateId,
-						SeenBlock:             seenBlockForCache,
+						SeenBlock:             protocolMessage.RelayPrivateData().SeenBlock,
 						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
@@ -882,10 +829,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("actualLookupCacheKeyHex", fmt.Sprintf("%x", actualLookupCacheKey)),
 						utils.LogAttr("reqBlock", reqBlock),
 						utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-						utils.LogAttr("seenBlockForCache", seenBlockForCache),
+						utils.LogAttr("seenBlock", protocolMessage.RelayPrivateData().SeenBlock),
 						utils.LogAttr("cacheError", cacheError),
 						utils.LogAttr("replyFound", cacheReply != nil && cacheReply.GetReply() != nil),
-						utils.LogAttr("methodBasedCache", reqBlock == spectypes.NOT_APPLICABLE || reqBlock == spectypes.LATEST_BLOCK),
 					)
 					reply := cacheReply.GetReply()
 
@@ -900,26 +846,39 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
 
-					// handle cache reply
-					if cacheError == nil && reply != nil {
-						// Info was fetched from cache, so we don't need to change the state
-						// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-						reply.Data = outputFormatter(reply.Data)
-						relayResult := common.RelayResult{
-							Reply: reply,
-							Request: &pairingtypes.RelayRequest{
-								RelayData: protocolMessage.RelayPrivateData(),
-							},
-							Finalized:    false, // set false to skip data reliability
-							StatusCode:   200,
-							ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+				// handle cache reply
+				if cacheError == nil && reply != nil {
+					// Info was fetched from cache, so we don't need to change the state
+					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+					reply.Data = outputFormatter(reply.Data)
+					
+					// If this is a cached error response with placeholder GUID, replace it with current request GUID
+					replyDataStr := string(reply.Data)
+					if strings.Contains(replyDataStr, `"Error_GUID":"CACHED_ERROR"`) {
+						guid, guidOk := utils.GetUniqueIdentifier(ctx)
+						if guidOk {
+							guidStr := strconv.FormatUint(guid, 10)
+							// Replace the placeholder GUID with the actual request GUID
+							replyDataStr = strings.Replace(replyDataStr, `"Error_GUID":"CACHED_ERROR"`, `"Error_GUID":"`+guidStr+`"`, 1)
+							reply.Data = []byte(replyDataStr)
 						}
-						relayProcessor.SetResponse(&relaycore.RelayResponse{
-							RelayResult: relayResult,
-							Err:         nil,
-						})
-						return nil
 					}
+					
+					relayResult := common.RelayResult{
+						Reply: reply,
+						Request: &pairingtypes.RelayRequest{
+							RelayData: protocolMessage.RelayPrivateData(),
+						},
+						Finalized:    false, // set false to skip data reliability
+						StatusCode:   200,
+						ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+					}
+					relayProcessor.SetResponse(&relaycore.RelayResponse{
+						RelayResult: relayResult,
+						Err:         nil,
+					})
+					return nil
+				}
 					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
 					// cache failed, move on to regular relay
@@ -1173,25 +1132,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// Check if this is an unsupported method error specifically
+				// Check if this is an unsupported method error
 				replyDataStr := string(localRelayResult.Reply.Data)
-				// Check for unsupported method errors in both node errors AND successful responses with error content
 				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessage(replyDataStr)
 
-				utils.LavaFormatDebug("Checking for unsupported method error",
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("isNodeError", isNodeError),
-					utils.LogAttr("replyData", replyDataStr),
-					utils.LogAttr("isUnsupportedMethodError", isUnsupportedMethodError),
-					utils.LogAttr("quorumEnabled", quorumParams.Enabled()),
-				)
-
 				// Determine if we should cache this response
-				// - Always cache unsupported method errors (deterministic, quorum doesn't add value)
+				// - Always cache unsupported method errors (treat like regular API responses based on block)
 				// - Only cache successful responses when quorum is disabled
 				shouldCache := false
 				if isUnsupportedMethodError {
-					shouldCache = true // Always cache unsupported method errors
+					// Cache unsupported method errors like regular responses
+					// This allows latest block errors to use tempCache and historical to use finalizedCache
+					shouldCache = true
 				} else if !quorumParams.Enabled() {
 					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
 				} else {
@@ -1212,15 +1164,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
-
-					// Use same block transformation for cache consistency
-					// This includes both NOT_APPLICABLE (-1) and LATEST_BLOCK (-2) for unsupported methods
-					requestedBlockForCache := requestedBlock
-					seenBlockForCache := seenBlock
-					if requestedBlock == spectypes.NOT_APPLICABLE || requestedBlock == spectypes.LATEST_BLOCK {
-						requestedBlockForCache = 0 // Use block 0 for method-based error caching
-						seenBlockForCache = 0      // Also use 0 for seen block in method-based caching
-					}
 					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
 
 					go func() {
@@ -1253,11 +1196,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						}
 						var finalized bool
 						blockHashesToHeights, finalized = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
-
-						// Force finalized=true for unsupported method errors so they go to finalized cache with longer TTL
-						if isUnsupportedMethodError {
-							finalized = true
-						}
 						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights), utils.LogAttr("GUID", ctx))
 
 						new_ctx := context.Background()
@@ -1265,45 +1203,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						defer cancel()
 						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 
-						// Prepare metadata and TTL for unsupported method errors
-						var optionalMetadata []pairingtypes.Metadata
-						cacheTTL := int64(averageBlockTime) // default TTL
-
-						if isUnsupportedMethodError {
-							// Add metadata to mark this as an unsupported method error
-							optionalMetadata = []pairingtypes.Metadata{
-								{
-									Name:  "error_type",
-									Value: "UNSUPPORTED_METHOD",
-								},
-								{
-									Name:  "cached_at",
-									Value: fmt.Sprintf("%d", time.Now().Unix()),
-								},
-							}
-							// Use shorter TTL for error responses (1 hour instead of hours)
-							cacheTTL = 3600 // 1 hour in seconds
-
-							utils.LavaFormatDebug("Caching unsupported method error",
-								utils.LogAttr("GUID", ctx),
-								utils.LogAttr("apiUrl", localRelayRequestData.ApiUrl),
-								utils.LogAttr("replyData", string(localRelayResult.Reply.Data)),
-								utils.LogAttr("cacheTTL", cacheTTL),
-								utils.LogAttr("providerAddr", providerPublicAddress),
-							)
-						}
-
 						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 							RequestHash:           hashKey,
 							ChainId:               chainId,
-							RequestedBlock:        requestedBlockForCache,
-							SeenBlock:             seenBlockForCache,
+							RequestedBlock:        requestedBlock,
+							SeenBlock:             seenBlock,
 							BlockHash:             nil, // consumer cache doesn't care about block hashes
 							Response:              copyReply,
 							Finalized:             finalized,
-							OptionalMetadata:      optionalMetadata,
+							OptionalMetadata:      nil,
 							SharedStateId:         sharedStateId,
-							AverageBlockTime:      cacheTTL, // Use custom TTL for unsupported method errors
+							AverageBlockTime:      int64(averageBlockTime),
 							IsNodeError:           isNodeError,
 							BlocksHashesToHeights: blockHashesToHeights,
 						})
