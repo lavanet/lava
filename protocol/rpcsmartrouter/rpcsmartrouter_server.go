@@ -830,39 +830,39 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 						rpcss.smartRouterConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
 
-				// handle cache reply
-				if cacheError == nil && reply != nil {
-					// Info was fetched from cache, so we don't need to change the state
-					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-					reply.Data = outputFormatter(reply.Data)
-					
-					// If this is a cached error response with placeholder GUID, replace it with current request GUID
-					replyDataStr := string(reply.Data)
-					if strings.Contains(replyDataStr, `"Error_GUID":"CACHED_ERROR"`) {
-						guid, guidOk := utils.GetUniqueIdentifier(ctx)
-						if guidOk {
-							guidStr := strconv.FormatUint(guid, 10)
-							// Replace the placeholder GUID with the actual request GUID
-							replyDataStr = strings.Replace(replyDataStr, `"Error_GUID":"CACHED_ERROR"`, `"Error_GUID":"`+guidStr+`"`, 1)
-							reply.Data = []byte(replyDataStr)
+					// handle cache reply
+					if cacheError == nil && reply != nil {
+						// Info was fetched from cache, so we don't need to change the state
+						// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+						reply.Data = outputFormatter(reply.Data)
+
+						// If this is a cached error response with placeholder GUID, replace it with current request GUID
+						replyDataStr := string(reply.Data)
+						if strings.Contains(replyDataStr, `"Error_GUID":"CACHED_ERROR"`) {
+							guid, guidOk := utils.GetUniqueIdentifier(ctx)
+							if guidOk {
+								guidStr := strconv.FormatUint(guid, 10)
+								// Replace the placeholder GUID with the actual request GUID
+								replyDataStr = strings.Replace(replyDataStr, `"Error_GUID":"CACHED_ERROR"`, `"Error_GUID":"`+guidStr+`"`, 1)
+								reply.Data = []byte(replyDataStr)
+							}
 						}
+
+						relayResult := common.RelayResult{
+							Reply: reply,
+							Request: &pairingtypes.RelayRequest{
+								RelayData: protocolMessage.RelayPrivateData(),
+							},
+							Finalized:    false, // set false to skip data reliability
+							StatusCode:   200,
+							ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+						}
+						relayProcessor.SetResponse(&relaycore.RelayResponse{
+							RelayResult: relayResult,
+							Err:         nil,
+						})
+						return nil
 					}
-					
-					relayResult := common.RelayResult{
-						Reply: reply,
-						Request: &pairingtypes.RelayRequest{
-							RelayData: protocolMessage.RelayPrivateData(),
-						},
-						Finalized:    false, // set false to skip data reliability
-						StatusCode:   200,
-						ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
-					}
-					relayProcessor.SetResponse(&relaycore.RelayResponse{
-						RelayResult: relayResult,
-						Err:         nil,
-					})
-					return nil
-				}
 					latestBlockHashRequested, earliestBlockHashRequested = rpcss.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
 					// cache failed, move on to regular relay
