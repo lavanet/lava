@@ -46,8 +46,9 @@ func CreateTestConnectionServerCobraCommand() *cobra.Command {
 
 			// GRPC
 			lis := chainlib.GetListenerWithRetryGrpc("tcp", listenAddr)
-			serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(1024 * 1024 * 32) // setting receive size to 32mb instead of 4mb default
-			grpcServer := grpc.NewServer(serverReceiveMaxMessageSize)
+			serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(1024 * 1024 * 512) // setting receive size to 512mb for large debug responses
+			serverSendMaxMessageSize := grpc.MaxSendMsgSize(1024 * 1024 * 512)    // setting send size to 512mb for large debug responses
+			grpcServer := grpc.NewServer(serverReceiveMaxMessageSize, serverSendMaxMessageSize)
 
 			wrappedServer := grpcweb.WrapServer(grpcServer)
 			handler := func(resp http.ResponseWriter, req *http.Request) {

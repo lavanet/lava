@@ -36,6 +36,7 @@ type TxSender interface {
 type ChainTrackerInf interface {
 	GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error)
 	GetLatestBlockNum() (int64, time.Time)
+	IsDummy() bool
 }
 
 type ReliabilityManager struct {
@@ -46,6 +47,10 @@ type ReliabilityManager struct {
 	publicAddress string
 	chainRouter   chainlib.ChainRouter
 	chainParser   chainlib.ChainParser
+}
+
+func (rm *ReliabilityManager) IsDummy() bool {
+	return rm.chainTracker.IsDummy()
 }
 
 func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uint64) error {
