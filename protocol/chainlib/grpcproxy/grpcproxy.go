@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const MaxCallRecvMsgSize = 1024 * 1024 * 32
+const MaxCallRecvMsgSize = 1024 * 1024 * 512 // 512MB for large debug responses
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 

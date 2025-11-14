@@ -1,4 +1,4 @@
-package rpcconsumer
+package relaycore
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 )
 
 type RelayErrors struct {
-	relayErrors       []RelayError
-	onFailureMergeAll bool
+	RelayErrors       []RelayError
+	OnFailureMergeAll bool
 }
 
 // checking the errors that appeared the most and returning the number of errors that were the same and the index of one of them
@@ -48,12 +48,17 @@ func (r *RelayErrors) sanitizeError(err error) string {
 	return errMsg
 }
 
+// AddError adds a new error to the RelayErrors collection
+func (r *RelayErrors) AddError(err RelayError) {
+	r.RelayErrors = append(r.RelayErrors, err)
+}
+
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
 	errorMap := make(map[string][]int)
-	for idx, relayError := range r.relayErrors {
-		errorMessage := r.sanitizeError(relayError.err)
+	for idx, relayError := range r.RelayErrors {
+		errorMessage := r.sanitizeError(relayError.Err)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
 		if relayError.ProviderInfo.ProviderReputationSummary.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
@@ -66,40 +71,40 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	}
 
 	errorCount, index := r.findMaxAppearances(errorMap)
-	if index >= 0 && errorCount >= (len(r.relayErrors)/2) {
+	if index >= 0 && errorCount >= (len(r.RelayErrors)/2) {
 		// we have majority of errors we can return this error.
-		if r.relayErrors[index].response != nil {
-			r.relayErrors[index].response.relayResult.Quorum = errorCount
+		if r.RelayErrors[index].Response != nil {
+			r.RelayErrors[index].Response.RelayResult.Quorum = errorCount
 		}
-		return r.relayErrors[index]
+		return r.RelayErrors[index]
 	}
 
 	if bestIndex != -1 {
 		// Return the chosen error.
 		// Print info for the consumer to know which errors happened
 		utils.LavaFormatDebug("Failed all relays", utils.LogAttr("error_map", errorMap))
-		return r.relayErrors[bestIndex]
+		return r.RelayErrors[bestIndex]
 	}
 	// if we didn't manage to find any index return all.
-	utils.LavaFormatError("Failed finding the best error index in GetErrorMessageForUser", nil, utils.LogAttr("relayErrors", r.relayErrors))
-	if r.onFailureMergeAll {
-		return RelayError{err: r.mergeAllErrors()}
+	utils.LavaFormatError("Failed finding the best error index in GetErrorMessageForUser", nil, utils.LogAttr("relayErrors", r.RelayErrors))
+	if r.OnFailureMergeAll {
+		return RelayError{Err: r.mergeAllErrors()}
 	}
 	// otherwise return the first element of the RelayErrors
-	return r.relayErrors[0]
+	return r.RelayErrors[0]
 }
 
 func (r *RelayErrors) getAllUniqueErrors() []error {
 	allErrors := []error{}
 	repeatingErrors := make(map[string]struct{})
-	for _, relayError := range r.relayErrors {
-		errString := r.sanitizeError(relayError.err) // using strings to filter repeating errors
+	for _, relayError := range r.RelayErrors {
+		errString := r.sanitizeError(relayError.Err) // using strings to filter repeating errors
 		_, ok := repeatingErrors[errString]
 		if ok {
 			continue
 		}
 		repeatingErrors[errString] = struct{}{}
-		allErrors = append(allErrors, relayError.err)
+		allErrors = append(allErrors, relayError.Err)
 	}
 	return allErrors
 }
@@ -117,18 +122,24 @@ func (r *RelayErrors) mergeAllErrors() error {
 	return fmt.Errorf("%s", mergedMessage)
 }
 
-// TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse
+// RelayResponse represents a response from a relay operation
+type RelayResponse struct {
+	RelayResult common.RelayResult
+	Err         error
+}
+
+// TODO: there's no need to save error twice and provider info twice, this can just be a RelayResponse
 type RelayError struct {
-	err          error
+	Err          error
 	ProviderInfo common.ProviderInfo
-	response     *relayResponse
+	Response     *RelayResponse
 }
 
 func (re RelayError) String() string {
-	return fmt.Sprintf("err: %s, ProviderInfo: %v, response: %v", re.err, re.ProviderInfo, re.response)
+	return fmt.Sprintf("err: %s, ProviderInfo: %v, response: %v", re.Err, re.ProviderInfo, re.Response)
 }
 
 // GetError returns the underlying error
 func (re RelayError) GetError() error {
-	return re.err
+	return re.Err
 }

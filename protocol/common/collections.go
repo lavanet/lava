@@ -13,5 +13,5 @@ func GetExtensionNames(extensionCollection []*spectypes.Extension) (extensions [
 	for _, extension := range extensionCollection {
 		extensions = append(extensions, extension.Name)
 	}
-	return
+	return extensions
 }

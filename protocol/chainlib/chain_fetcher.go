@@ -96,13 +96,14 @@ func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer, 
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
+		utils.LavaFormatInfo(fmt.Sprintf("starting validation for url %s", url.String()))
 		addons := url.Addons
 		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
 		if len(verifications) == 0 {
-			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
+			utils.LavaFormatWarning(fmt.Sprintf("no verifications for url %s", url.String()), nil)
 		}
 
 		var latestBlock int64
@@ -120,6 +121,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 				}
 			}
 			if err != nil {
+				utils.LavaFormatError("failed to fetch latest block number", err)
 				return err
 			}
 		}
@@ -127,7 +129,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		defer cf.invalidateVerificationsCache()
 		for _, verification := range verifications {
 			if slices.Contains(url.SkipVerifications, verification.Name) {
-				utils.LavaFormatDebug("Skipping Verification", utils.LogAttr("verification", verification.Name))
+				utils.LavaFormatInfo("Skipping Verification due to provider configuration (skip-verifications setting)", utils.LogAttr("verification", verification.Name))
 				continue
 			}
 			// we give several chances for starting up
@@ -140,6 +142,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			}
 			if err != nil {
 				cf.verificationsStatus.Store(cf.getVerificationsKey(verification, cf.endpoint.ApiInterface, cf.endpoint.ChainID), false)
+				utils.LavaFormatWarning(fmt.Sprintf("failed verification %s on provider startup", verification.Name), err)
 				if verification.Severity == spectypes.ParseValue_Fail {
 					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
@@ -192,7 +195,7 @@ func getExtensionsForVerification(verification VerificationContainer, chainParse
 		ConnectionType: verification.ConnectionType,
 	}
 
-	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) {
+	if chainParser.IsTagInCollection(spectypes.FUNCTION_TAG_SUBSCRIBE, collectionKey) && !SkipWebsocketVerification {
 		if verification.Extension == "" {
 			extensions = []string{WebSocketExtension}
 		} else {
@@ -633,12 +636,20 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 	originalSalt := relayData.Salt
 	originalRequestedBlock := relayData.RequestBlock
 	originalSeenBlock := relayData.SeenBlock
+
+	originalRequestId := relayData.RequestId
+	originalTaskId := relayData.XTaskId
+	originalTxId := relayData.XTxId
 	defer func() {
 		// return all information back to the object on defer (in any case)
 		relayData.Data = originalData
 		relayData.Salt = originalSalt
 		relayData.RequestBlock = originalRequestedBlock
 		relayData.SeenBlock = originalSeenBlock
+
+		relayData.RequestId = originalRequestId
+		relayData.XTaskId = originalTaskId
+		relayData.XTxId = originalTxId
 	}()
 
 	// we need to remove some data from the request so the cache will hit properly.
@@ -646,6 +657,9 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
 	relayData.Salt = nil                            // remove salt
 	relayData.SeenBlock = 0                         // remove seen block
+	relayData.RequestId = ""                        // remove request id (unique per request)
+	relayData.XTaskId = nil                         // remove task id (unique per request)
+	relayData.XTxId = nil                           // remove tx id (unique per request)
 	// we remove the discrepancy of requested block from the hash, and add it on the cache side instead
 	// this is due to the fact that we don't know the latest seen block at this moment, as on shared state
 	// only the cache has this information. we make sure the hashing at this stage does not include the requested block.

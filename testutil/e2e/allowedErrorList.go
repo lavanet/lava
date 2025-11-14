@@ -17,6 +17,8 @@ var allowedErrors = map[string]string{
 	"unsupported method 'Default-/lavanet/lava/conflict/params': test":                 "This error is allowed because the /lavanet/lava/conflict/params API endpoint is not implemented in test providers",
 	"failed processing responses from providers":                                       "This error is allowed because it can occur when providers return unsupported method errors",
 	"failed relay, insufficient results":                                               "This error is allowed because it can occur when providers return unsupported method errors",
+	"could not send relay to provider":                                                 "This error is allowed because it can occur when providers return unsupported method errors during emergency mode",
+	"UniqueGuidResponseForError":                                                       "This error is allowed because it's part of error responses that contain unsupported method errors",
 	"Error_GUID":                                                                       "This error is allowed because it's part of error responses that contain unsupported method errors",
 	"{\"Error_GUID\":":                                                                 "This error is allowed because it's a JSON error response containing unsupported method errors",
 	"endpoint:LAV1rest":                                                                "This error is allowed because it's part of LAV1 REST endpoint error responses",
@@ -27,11 +29,16 @@ var allowedErrors = map[string]string{
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
-	"connection refused":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"Connection refused":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"connection reset by peer":     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"Failed Querying EpochDetails": "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
-	"http://[IP_ADDRESS]:26657":    "This error is allowed because it can happen when EOF error happens when we shut down the node in emergency mode",
+	"connection refused":                     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"Connection refused":                     "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"connection reset by peer":               "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"Failed Querying EpochDetails":           "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+	"http://[IP_ADDRESS]:26657":              "This error is allowed because it can happen when EOF error happens when we shut down the node in emergency mode",
+	"http://[IP_ADDRESS]:1111":               "This error is allowed because it can happen when EOF error happens when providers try to send messages during emergency mode shutdown",
+	"transport is closing":                   "This error is allowed because it happens when gRPC connections are closing during emergency mode shutdown",
+	"srv.Send()":                             "This error is allowed because it can occur when trying to send on a closing connection during emergency mode",
+	"Provider Side Failed Sending Message":   "This error is allowed because providers may fail to send messages when the node is shutting down during emergency mode",
+	"Post \"http://[IP_ADDRESS]:1111\": EOF": "This error is allowed because HTTP connections fail with EOF when the node is shutting down during emergency mode",
 }
 
 var allowedErrorsPaymentE2E = map[string]string{

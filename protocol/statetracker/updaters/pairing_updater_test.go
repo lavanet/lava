@@ -93,7 +93,7 @@ func TestPairingUpdater(t *testing.T) {
 
 	t.Run("UpdateStaticProviders", func(t *testing.T) {
 		pu := NewPairingUpdater(stateQuery, specID)
-		staticProviders := []*lavasession.RPCProviderEndpoint{
+		staticProviders := []*lavasession.RPCStaticProviderEndpoint{
 			{
 				ChainID:      specID,
 				ApiInterface: apiInterface,
@@ -103,6 +103,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "0123",
 					},
 				},
+				Name: "TestProvider1",
 			},
 			{
 				ChainID:      "banana",
@@ -113,6 +114,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "01234",
 					},
 				},
+				Name: "TestProvider2",
 			},
 			{
 				ChainID:      "specID",
@@ -123,6 +125,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "01235",
 					},
 				},
+				Name: "TestProvider3",
 			},
 		}
 
@@ -131,7 +134,7 @@ func TestPairingUpdater(t *testing.T) {
 		// only one of the specs is relevant
 		require.Len(t, pu.staticProviders, 1)
 
-		staticProviders = []*lavasession.RPCProviderEndpoint{
+		staticProviders = []*lavasession.RPCStaticProviderEndpoint{
 			{
 				ChainID:      specID,
 				ApiInterface: apiInterface,
@@ -141,6 +144,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "01236",
 					},
 				},
+				Name: "TestProvider4",
 			},
 			{
 				ChainID:      "banana",
@@ -151,6 +155,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "01237",
 					},
 				},
+				Name: "TestProvider5",
 			},
 		}
 
@@ -169,7 +174,7 @@ func TestPairingUpdater(t *testing.T) {
 			Geolocation:  0,
 		}).AnyTimes()
 
-		staticProviders := []*lavasession.RPCProviderEndpoint{
+		staticProviders := []*lavasession.RPCStaticProviderEndpoint{
 			{
 				ChainID:      specID,
 				ApiInterface: apiInterface,
@@ -179,6 +184,7 @@ func TestPairingUpdater(t *testing.T) {
 						Url: "00123",
 					},
 				},
+				Name: "TestStaticProvider",
 			},
 		}
 		pairingMatcher := matcher{
