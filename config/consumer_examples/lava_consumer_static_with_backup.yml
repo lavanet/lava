@@ -9,53 +9,68 @@ endpoints:
       api-interface: grpc
       network-address: 127.0.0.1:3362
 static-providers:
-  - api-interface: tendermintrpc
+  - name: primary-2220-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - api-interface: grpc
+      - url: 127.0.0.1:2220
+        addons:
+          - archive
+          - debug
+  - name: primary-2220-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - api-interface: rest
+      - url: 127.0.0.1:2220
+  - name: primary-2220-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5550
-  - api-interface: tendermintrpc
+      - url: 127.0.0.1:2220
+  - name: primary-2221-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
-  - api-interface: grpc
+      - url: 127.0.0.1:2221
+  - name: primary-2221-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
-  - api-interface: rest
+      - url: 127.0.0.1:2221
+  - name: primary-2221-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
-      - url: 127.0.0.1:5551
+      - url: 127.0.0.1:2221
 
 backup-providers:
-  - api-interface: tendermintrpc
+  - name: backup-2220-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: grpc
+  - name: backup-2220-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: rest
+  - name: backup-2220-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
-  - api-interface: tendermintrpc
+  - name: backup-2221-tendermintrpc
+    api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: grpc
+  - name: backup-2221-grpc
+    api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
-  - api-interface: rest
+  - name: backup-2221-rest
+    api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221

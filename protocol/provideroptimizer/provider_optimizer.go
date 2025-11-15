@@ -67,6 +67,7 @@ type ProviderOptimizer struct {
 	selectionWeighter               SelectionWeighter // weights are the providers stake
 	OptimizerNumTiers               int               // number of tiers to use
 	OptimizerMinTierEntries         int               // minimum number of entries in a tier to be considered for selection
+	OptimizerQoSSelectionEnabled    bool              // enables QoS-based selection within tiers instead of stake-based
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
 }
@@ -366,9 +367,14 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
 	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, localMinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
-	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
+	var selectedProvider string
+	if po.OptimizerQoSSelectionEnabled {
+		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
+	} else {
+		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
+	}
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1) {
+	if explorationCandidate.address != "" && explorationCandidate.address != selectedProvider && po.shouldExplore(1) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",
@@ -390,7 +396,12 @@ func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ig
 	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
 	tierProviders := selectionTier.GetTier(0, numberOfTiersWanted, localMinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
-	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
+	var selectedProvider string
+	if po.OptimizerQoSSelectionEnabled {
+		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
+	} else {
+		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
+	}
 	returnedProviders := []string{selectedProvider}
 
 	utils.LavaFormatTrace("[Optimizer] returned top tier provider",
@@ -651,7 +662,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, qosSelectionEnabled bool) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -673,6 +684,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers,
 		OptimizerMinTierEntries:         MinimumEntries,
+		OptimizerQoSSelectionEnabled:    qosSelectionEnabled,
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
 	}

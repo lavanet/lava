@@ -191,3 +191,84 @@ func TestCreateCanonicalJSONWithLargeInput(t *testing.T) {
 		lastIndex = currentIndex
 	}
 }
+
+func TestCreateCanonicalForm(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   []byte
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Valid JSON input",
+			input:   []byte(`{"b": 2, "a": 1}`),
+			want:    `{"a":1,"b":2}`,
+			wantErr: false,
+		},
+		{
+			name:    "Binary data (protobuf-like)",
+			input:   []byte{0x0a, 0x48, 0x0a, 0x20, 0x72, 0x39},
+			want:    "0a480a207239", // hex encoding of the binary data
+			wantErr: false,
+		},
+		{
+			name:    "Empty binary data",
+			input:   []byte{},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "Mixed control characters (non-JSON)",
+			input:   []byte{0x00, 0x01, 0x02, 0xff},
+			want:    "000102ff", // hex encoding
+			wantErr: false,
+		},
+		{
+			name:    "Complex nested JSON",
+			input:   []byte(`{"z": [{"b": 2, "a": 1}], "y": {"inner2": true, "inner1": false}}`),
+			want:    `{"y":{"inner1":false,"inner2":true},"z":[{"a":1,"b":2}]}`,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := types.CreateCanonicalForm(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateCanonicalForm() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("CreateCanonicalForm()\ngot  = %v\nwant = %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCreateCanonicalFormConsistency tests that the same data always produces the same canonical form
+func TestCreateCanonicalFormConsistency(t *testing.T) {
+	testCases := [][]byte{
+		[]byte(`{"b": 2, "a": 1, "c": 3}`),
+		{0x0a, 0x48, 0x0a, 0x20, 0x72, 0x39, 0xf6, 0x46, 0x2e, 0xdb, 0xaa},
+		[]byte("simple text"),
+	}
+
+	for i, testData := range testCases {
+		t.Run(string(rune('A'+i)), func(t *testing.T) {
+			// Call multiple times and ensure we get the same result
+			result1, err1 := types.CreateCanonicalForm(testData)
+			result2, err2 := types.CreateCanonicalForm(testData)
+			result3, err3 := types.CreateCanonicalForm(testData)
+
+			if err1 != nil || err2 != nil || err3 != nil {
+				t.Errorf("CreateCanonicalForm() returned unexpected errors: %v, %v, %v", err1, err2, err3)
+				return
+			}
+
+			if result1 != result2 || result2 != result3 {
+				t.Errorf("CreateCanonicalForm() not consistent: %v, %v, %v", result1, result2, result3)
+			}
+		})
+	}
+}
