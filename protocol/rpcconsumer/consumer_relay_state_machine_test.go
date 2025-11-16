@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/qos"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -113,9 +114,9 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -135,22 +136,22 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendProtocolError(relayProcessor, "lava@test", time.Millisecond*1, fmt.Errorf("bad"))
+				relaycore.SendProtocolError(relayProcessor, "lava@test", time.Millisecond*1, fmt.Errorf("bad"))
 			case 1:
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
+				relaycore.SendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 2:
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
+				relaycore.SendNodeError(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 3:
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
+				relaycore.SendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
 				results, _ := relayProcessor.HasRequiredNodeResults(1)
@@ -184,9 +185,9 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -206,7 +207,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 				relayProcessor.UpdateBatch(fmt.Errorf("failed sending message"))
 			case 4:
 				require.True(t, task.IsDone())
-				require.Error(t, task.err)
+				require.Error(t, task.Err)
 				return
 			}
 			taskNumber++
@@ -252,15 +253,15 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 
 		relayRequestData := lavaprotocol.NewRelayData(ctx, http.MethodPost, "", jsonData, seenBlock, reqBlock, spectypes.APIInterfaceJsonRPC, chainMsg.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMsg), common.GetExtensionNames(chainMsg.GetExtensions()))
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(
+		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
 			common.DefaultQuorumParams,
 			consistency,
-			relayProcessorMetrics,
-			relayProcessorMetrics,
-			relayRetriesManagerInstance,
+			relaycore.RelayProcessorMetrics,
+			relaycore.RelayProcessorMetrics,
+			relaycore.RelayRetriesManagerInstance,
 			NewRelayStateMachine(
 				ctx,
 				usedProviders,
@@ -268,7 +269,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				protocolMessage,
 				nil,
 				false,
-				relayProcessorMetrics,
+				relaycore.RelayProcessorMetrics,
 			),
 			qos.NewQoSManager(),
 		)
@@ -291,17 +292,17 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1)
+				relaycore.SendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1)
 			case 1:
 				require.False(t, task.IsDone())
 				require.True(t,
 					lavaslices.ContainsPredicate(
-						task.relayState.GetProtocolMessage().GetExtensions(),
+						task.RelayState.GetProtocolMessage().GetExtensions(),
 						func(predicate *spectypes.Extension) bool { return predicate.Name == "archive" }),
 				)
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				sendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
+				relaycore.SendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
 				results, _ := relayProcessor.HasRequiredNodeResults(1)

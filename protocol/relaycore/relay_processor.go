@@ -1,4 +1,4 @@
-package rpcconsumer
+package relaycore
 
 import (
 	"context"
@@ -20,47 +20,19 @@ import (
 	"github.com/lavanet/lava/v5/utils/common/types"
 )
 
-type Selection int
-
-const (
-	MaxCallsPerRelay = 50
-)
-
-var relayCountOnNodeError = 2
-
-// selection Enum, do not add other const
-const (
-	Quorum     Selection = iota // get the majority out of requiredSuccesses
-	BestResult                  // get the best result, even if it means waiting
-)
-
-type QoSAvailabilityDegrader interface {
-	DegradeAvailability(epoch uint64, sessionId int64)
-}
-
-type MetricsInterface interface {
-	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
-	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
-	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
-}
-
-type chainIdAndApiInterfaceGetter interface {
-	GetChainIdAndApiInterface() (string, string)
-}
-
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
-	responses                    chan *relayResponse
+	responses                    chan *RelayResponse
 	quorumParams                 common.QuorumParams
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
-	consumerConsistency          *ConsumerConsistency
+	consistency                  Consistency
 	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
-	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
+	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
@@ -73,9 +45,9 @@ type RelayProcessor struct {
 func NewRelayProcessor(
 	ctx context.Context,
 	quorumParams common.QuorumParams,
-	consumerConsistency *ConsumerConsistency,
+	consistency Consistency,
 	metricsInf MetricsInterface,
-	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
+	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 	relayStateMachine RelayStateMachine,
 	availabilityDegrader QoSAvailabilityDegrader,
@@ -86,10 +58,10 @@ func NewRelayProcessor(
 	}
 	relayProcessor := &RelayProcessor{
 		quorumParams:                 quorumParams,
-		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
+		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		ResultsManager:               NewResultsManager(guid),
 		guid:                         guid,
-		consumerConsistency:          consumerConsistency,
+		consistency:                  consistency,
 		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
@@ -120,13 +92,13 @@ func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
 }
 
-func (rp *RelayProcessor) setSkipDataReliability(val bool) {
+func (rp *RelayProcessor) SetSkipDataReliability(val bool) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
 	rp.skipDataReliability = val
 }
 
-func (rp *RelayProcessor) getSkipDataReliability() bool {
+func (rp *RelayProcessor) GetSkipDataReliability() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.skipDataReliability
@@ -178,7 +150,7 @@ func (rp *RelayProcessor) NodeResults() []common.RelayResult {
 	return rp.ResultsManager.NodeResults()
 }
 
-func (rp *RelayProcessor) SetResponse(response *relayResponse) {
+func (rp *RelayProcessor) SetResponse(response *RelayResponse) {
 	if rp == nil {
 		return
 	}
@@ -214,8 +186,8 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-// hasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
-func (rp *RelayProcessor) hasUnsupportedMethodErrors() bool {
+// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
+func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	if rp == nil {
 		return false
 	}
@@ -258,7 +230,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors))
 
 	// Never retry if we detect unsupported method errors
-	if rp.hasUnsupportedMethodErrors() {
+	if rp.HasUnsupportedMethodErrors() {
 		return false
 	}
 
@@ -273,17 +245,17 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	}
 
 	// Retries will be performed based on the following scenarios:
-	// 1. If relayCountOnNodeError > 0
+	// 1. If RelayCountOnNodeError > 0
 	// 2. If we have 0 successful relays and we have only node errors.
 	// 3. If we have epoch mismatch errors (temporary synchronization issues)
-	// 4. Number of retries < relayCountOnNodeError.
+	// 4. Number of retries < RelayCountOnNodeError.
 	if hasEpochMismatchError && resultsCount == 0 {
 		// Allow retries for epoch mismatch errors even with higher tolerance
 		return true
 	}
 
-	if relayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
-		if nodeErrors <= relayCountOnNodeError && specialNodeErrors <= relayCountOnNodeError {
+	if RelayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
+		if nodeErrors <= RelayCountOnNodeError && specialNodeErrors <= RelayCountOnNodeError {
 			return true
 		}
 	}
@@ -337,8 +309,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 
 		if rp.quorumParams.Enabled() {
 			// Quorum feature enabled: check if quorum is still mathematically possible and quorum is not yet reached
-			maxRemainingProviders := rp.quorumParams.Max - (nodeErrors + resultsCount)
-			// The following line checks if, after accounting for the maximum possible additional responses (maxRemainingProviders)
+			// Only count successful results for quorum calculation
+			maxRemainingProviders := rp.quorumParams.Max - resultsCount
+			// The following line checks if, after accounting for the maximum possible additional successful responses (maxRemainingProviders)
 			// and the current highest number of matching responses (rp.currentQourumEqualResults), it is still mathematically possible
 			// to reach the required quorum threshold (calculated as quorum rate * max providers).
 			// If not, then retrying is not needed because quorum cannot be achieved anymore.
@@ -390,18 +363,18 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	return false, nodeErrors
 }
 
-func (rp *RelayProcessor) handleResponse(response *relayResponse) {
+func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
 	if nodeError != nil && rp.selection != BestResult {
 		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-		go rp.metricsInf.SetRelayNodeErrorMetric(response.relayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
-		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
+		go rp.metricsInf.SetRelayNodeErrorMetric(response.RelayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
+		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
 	if response != nil {
-		canonicalForm, err := types.CreateCanonicalJSON(response.relayResult.GetReply().GetData())
+		canonicalForm, err := types.CreateCanonicalForm(response.RelayResult.GetReply().GetData())
 		if err == nil {
 			rp.qourumMap[canonicalForm]++
 			if rp.qourumMap[canonicalForm] > rp.currentQourumEqualResults {
@@ -409,10 +382,10 @@ func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 			}
 		}
 
-		if response.relayResult.GetReply().GetLatestBlock() > 0 {
-			// set consumer consistency when possible
-			blockSeen := response.relayResult.GetReply().GetLatestBlock()
-			rp.consumerConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
+		if rp.consistency != nil && response.RelayResult.Reply != nil && response.RelayResult.Reply.LatestBlock > 0 {
+			// set consistency when possible
+			blockSeen := response.RelayResult.Reply.LatestBlock
+			rp.consistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
 		}
 	}
 }
@@ -487,10 +460,11 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
-			// Create canonical form for comparison
-			canonicalForm, err := types.CreateCanonicalJSON(result.Reply.Data)
+			// Create canonical form for comparison (handles both JSON and binary data)
+			canonicalForm, err := types.CreateCanonicalForm(result.Reply.Data)
 			if err != nil {
 				utils.LavaFormatError("failed to create canonical form", err, utils.LogAttr("result", result.Reply.Data))
+				continue
 			}
 
 			if count, exists := countMap[canonicalForm]; exists {
@@ -601,15 +575,23 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}()
 
+	// Calculate the required quorum size
+	var requiredQuorumSize int
+	if rp.quorumParams.Enabled() {
+		requiredQuorumSize = rp.getActualQuorumSize(successResultsCount)
+	} else {
+		requiredQuorumSize = rp.quorumParams.Min
+	}
+
 	if rp.debugRelay {
-		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min))
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
 	}
 	// there are enough successes
-	if successResultsCount >= rp.quorumParams.Min {
+	if successResultsCount >= requiredQuorumSize {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
 		}
-		return rp.responsesQuorum(successResults, rp.quorumParams.Min)
+		return rp.responsesQuorum(successResults, requiredQuorumSize)
 	}
 
 	if rp.debugRelay {
@@ -627,39 +609,50 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}
 
-	// there are not enough successes, let's check if there are enough node errors
-	if successResultsCount+nodeErrorCount >= rp.quorumParams.Min {
+	// there are not enough successes, let's check if there are enough node errors and protocol errors
+	// Protocol errors (like consistency violations) should count as attempted responses
+	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
+	if totalResponses >= rp.quorumParams.Min {
 		if rp.selection == Quorum {
-			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
-			nodeResults = append(nodeResults, successResults...)
-			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, rp.quorumParams.Min)
-		} else if rp.selection == BestResult && successResultsCount > nodeErrorCount {
-			// we have more than half succeeded, and we are success oriented
-			return rp.responsesQuorum(successResults, (rp.quorumParams.Min+1)/2)
+			// When quorum is enabled, we need to ensure we have enough successful responses
+			// to actually meet quorum requirements, not just enough total attempts
+			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
+				// We have enough total responses, but not enough successful ones for quorum
+				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
+					nil,
+					utils.LogAttr("successResultsCount", successResultsCount),
+					utils.LogAttr("nodeErrorCount", nodeErrorCount),
+					utils.LogAttr("protocolErrorCount", protocolErrorCount),
+					utils.LogAttr("quorumMin", rp.quorumParams.Min),
+					utils.LogAttr("totalResponses", totalResponses))
+			}
+			// Only use responsesQuorum if we have at least some successful results
+			// If we only have node errors, fall through to error handling below
+			if successResultsCount > 0 {
+				nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
+				nodeResults = append(nodeResults, successResults...)
+				nodeResults = append(nodeResults, nodeErrors...)
+				return rp.responsesQuorum(nodeResults, requiredQuorumSize)
+			}
 		}
 	}
-	// we don't have enough for a quorum, prefer a node error on protocol errors
-	if nodeErrorCount >= rp.quorumParams.Min { // if we have node errors, we prefer returning them over protocol errors.
-		nodeErr := rp.GetBestNodeErrorMessageForUser()
-		return &nodeErr.response.relayResult, nil
-	}
 
+	// Not enough successful results - continue waiting for more responses
 	// if we got here we trigger a protocol error
 	returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	if nodeErrorCount > 0 { // if we have node errors, we prefer returning them over protocol errors, even if it's just the one
 		nodeErr := rp.GetBestNodeErrorMessageForUser()
-		processingError = nodeErr.err
-		errorResponse := nodeErr.response
+		processingError = nodeErr.Err
+		errorResponse := nodeErr.Response
 		if errorResponse != nil {
-			returnedResult = &errorResponse.relayResult
+			returnedResult = &errorResponse.RelayResult
 		}
 	} else if protocolErrorCount > 0 {
 		protocolErr := rp.GetBestProtocolErrorMessageForUser()
-		processingError = protocolErr.err
-		errorResponse := protocolErr.response
+		processingError = protocolErr.Err
+		errorResponse := protocolErr.Response
 		if errorResponse != nil {
-			returnedResult = &errorResponse.relayResult
+			returnedResult = &errorResponse.RelayResult
 		}
 	}
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")

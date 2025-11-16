@@ -91,8 +91,22 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) GetProtocolVersion(ctx any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProtocolVersion", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).GetProtocolVersion), ctx)
 }
 
+// LatestBlock mocks base method.
+func (m *MockConsumerStateTrackerInf) LatestBlock() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LatestBlock")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// LatestBlock indicates an expected call of LatestBlock.
+func (mr *MockConsumerStateTrackerInfMockRecorder) LatestBlock() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LatestBlock", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).LatestBlock))
+}
+
 // RegisterConsumerSessionManagerForPairingUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint) {
+func (m *MockConsumerStateTrackerInf) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList, backupProvidersList []*lavasession.RPCStaticProviderEndpoint) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "RegisterConsumerSessionManagerForPairingUpdates", ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }

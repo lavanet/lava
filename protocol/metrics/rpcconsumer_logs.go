@@ -229,6 +229,13 @@ func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analyti
 	}
 }
 
+func (rpccl *RPCConsumerLogs) SetEndToEndLatency(chainId string, apiInterface string, latency time.Duration) {
+	if rpccl == nil {
+		return
+	}
+	go rpccl.consumerMetricsManager.SetEndToEndLatency(chainId, apiInterface, latency)
+}
+
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
