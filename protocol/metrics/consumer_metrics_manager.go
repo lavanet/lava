@@ -179,7 +179,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help:   "Is provider blocked. 1-blocked, 0-not blocked",
 		Labels: blockedProviderMetricLabels,
 	})
-
 	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")

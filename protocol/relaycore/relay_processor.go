@@ -636,7 +636,6 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 			}
 		}
 	}
-
 	// Not enough successful results - continue waiting for more responses
 	// if we got here we trigger a protocol error
 	returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}

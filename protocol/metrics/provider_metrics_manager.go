@@ -320,7 +320,23 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface, prov
 	}
 
 	if pme.getProviderMetric(specID, apiInterface) == nil {
-		providerMetric := NewProviderMetrics(specID, apiInterface, providerEndpoint, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalRequestsPerFunctionMetric, pme.inFlightPerFunctionMetric, pme.totalErrorsPerFunctionMetric, pme.requestLatencyPerFunctionMetric, pme.totalErroredMetric, pme.consumerQoSMetric, pme.loadRateMetric, pme.providerLatencyMetric, pme.providerEndToEndLatencyMetric)
+		providerMetric := NewProviderMetrics(
+			specID,
+			apiInterface,
+			providerEndpoint,
+			pme.totalCUServicedMetric,
+			pme.totalCUPaidMetric,
+			pme.totalRelaysServicedMetric,
+			pme.totalRequestsPerFunctionMetric,
+			pme.inFlightPerFunctionMetric,
+			pme.totalErrorsPerFunctionMetric,
+			pme.requestLatencyPerFunctionMetric,
+			pme.totalErroredMetric,
+			pme.consumerQoSMetric,
+			pme.loadRateMetric,
+			pme.providerLatencyMetric,
+			pme.providerEndToEndLatencyMetric,
+		)
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)

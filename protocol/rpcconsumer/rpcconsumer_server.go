@@ -298,10 +298,19 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 					if !initialRelays {
 						break
 					}
+<<<<<<< HEAD
 				} else if err != nil {
 					utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				} else {
 					utils.LavaFormatError("[-] failed sending init relay - nil result", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+=======
+				} else {
+					if err != nil {
+						utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+					} else {
+						utils.LavaFormatError("[-] failed sending init relay - nil result", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+					}
+>>>>>>> origin/main
 				}
 			}
 		}
@@ -1136,6 +1145,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				replyDataStr := string(localRelayResult.Reply.Data)
 				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessage(replyDataStr)
 
+<<<<<<< HEAD
 				// Determine if we should cache this response
 				// - Always cache unsupported method errors (treat like regular API responses based on block)
 				// - Only cache successful responses when quorum is disabled
@@ -1156,6 +1166,34 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					)
 				}
 
+=======
+				utils.LavaFormatDebug("Checking for unsupported method error",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("isNodeError", isNodeError),
+					utils.LogAttr("replyData", replyDataStr),
+					utils.LogAttr("isUnsupportedMethodError", isUnsupportedMethodError),
+					utils.LogAttr("quorumEnabled", quorumParams.Enabled()),
+				)
+
+				// Determine if we should cache this response
+				// - Always cache unsupported method errors (deterministic, quorum doesn't add value)
+				// - Only cache successful responses when quorum is disabled
+				shouldCache := false
+				if isUnsupportedMethodError {
+					shouldCache = true // Always cache unsupported method errors
+				} else if !quorumParams.Enabled() {
+					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
+				} else {
+					// Quorum is enabled and this is not an unsupported method error
+					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("quorumEnabled", true),
+						utils.LogAttr("isNodeError", isNodeError),
+						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
+					)
+				}
+
+>>>>>>> origin/main
 				if shouldCache {
 					// copy reply data so if it changes it doesn't panic mid async send
 					copyReply := &pairingtypes.RelayReply{}
