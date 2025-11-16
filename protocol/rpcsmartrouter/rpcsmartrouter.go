@@ -488,8 +488,8 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	defer chainMutexes[chainID].Unlock()
 
 	// Create / Use existing optimizer
-	// QoS selection is disabled by default (false) - can be enabled via command flag in the future
-	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, false)
+	qosSelectionEnabled := viper.GetBool(common.SetProviderOptimizerQosSelectionInTierFlag)
+	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, qosSelectionEnabled)
 	optimizer, loaded, err := optimizers.LoadOrStore(chainID, newOptimizer)
 	if err != nil {
 		errCh <- err
@@ -1016,6 +1016,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	cmdRPCSmartRouter.Flags().BoolVar(&provideroptimizer.AutoAdjustTiers, common.SetProviderOptimizerAutoAdjustTiers, provideroptimizer.AutoAdjustTiers, "optimizer enable auto adjust tiers, this flag will fix the tiers based on the number of providers in the pairing, defaults to (false)")
+	cmdRPCSmartRouter.Flags().Bool(common.SetProviderOptimizerQosSelectionInTierFlag, false, "enable QoS-based selection within tiers instead of stake-based selection, defaults to (false)")
 	// metrics
 	cmdRPCSmartRouter.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags
