@@ -286,7 +286,7 @@ export function IsFinalizedBlock(
       if (requestedBlock < 0) {
         return false;
       }
-      if (requestedBlock < latestBlock - finalizationCriteria) {
+      if (requestedBlock <= latestBlock - finalizationCriteria) {
         return true;
       }
   }
