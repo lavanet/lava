@@ -633,10 +633,14 @@ func (rpcss *RPCSmartRouterServer) updateBlocksHashesToHeightsIfNeeded(extension
 	// It is safe to assume in most cases this hash should be used with archive.
 	// And if it is not, it will only increase archive load but wont result in user errors.
 	// After the finalized cache duration it will be reset until next time.
+
 	if relayState == nil {
 		return blockHashesToHeights, finalized
 	}
-	if !relayState.GetIsUpgraded() {
+
+	isUpgraded := relayState.GetIsUpgraded()
+
+	if !isUpgraded {
 		if relayState.GetIsEarliestUsed() && relayState.GetIsArchive() && chainMessage.GetUsedDefaultValue() {
 			finalized = true
 		}
@@ -747,7 +751,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	}
 	if rpcss.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		if !protocolMessage.GetForceCacheRefresh() {
-			
+
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
@@ -1369,10 +1373,19 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 	relayResult.Reply = reply
 
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
+	originalRequestBlock := relayRequest.RelayData.RequestBlock
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
 	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpcss.chainParser.ChainBlockStats()
-	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
+
+	// Use original request block for finalization check to avoid converting LATEST_BLOCK to actual block numbers
+	isFinalized := spectypes.IsFinalizedBlock(originalRequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
+
+	utils.LavaFormatTrace("[Finalized Debug] After IsFinalizedBlock",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("isFinalized", isFinalized),
+		utils.LogAttr("method", chainMessage.GetApi().Name))
+
 	if !rpcss.chainParser.ParseDirectiveEnabled() {
 		isFinalized = false
 	}
