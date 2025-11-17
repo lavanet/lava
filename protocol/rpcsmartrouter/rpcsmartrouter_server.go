@@ -751,7 +751,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	}
 	if rpcss.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		if !protocolMessage.GetForceCacheRefresh() {
-
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
