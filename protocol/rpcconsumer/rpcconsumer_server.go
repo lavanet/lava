@@ -763,8 +763,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	if rpccs.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
-			// Allow cache lookup for all requests (including method-based caching for unsupported method errors)
-			allowCacheLookup := true
+			// Skip cache for NOT_APPLICABLE requests as they are never cached on the write side
+			// (see line ~1180 where NOT_APPLICABLE requests skip caching)
+			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
 				var cacheReply *pairingtypes.CacheRelayReply
@@ -782,14 +783,20 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// The cache server doesn't accept negative blocks
 					requestedBlockForCache := reqBlock
 					if reqBlock == spectypes.LATEST_BLOCK {
-						// For LATEST_BLOCK, use seen block (will be resolved to actual block number)
-						if protocolMessage.RelayPrivateData().SeenBlock != 0 {
+						// For LATEST_BLOCK queries, use the latest known block from consumerConsistency
+						// This ensures methods like eth_blockNumber use the actual current block for caching,
+						// not the potentially stale seenBlock from when this request started.
+						// The consistency cache is updated immediately after each successful response,
+						// so it reflects the most recent block across all requests for this user.
+						latestKnownBlock, found := rpccs.consumerConsistency.GetSeenBlock(userData)
+						if found && latestKnownBlock > 0 {
+							requestedBlockForCache = latestKnownBlock
+						} else if protocolMessage.RelayPrivateData().SeenBlock != 0 {
+							// Fallback to seen block from the protocol message
 							requestedBlockForCache = protocolMessage.RelayPrivateData().SeenBlock
 						} else {
-							requestedBlockForCache = 0 // Fallback to 0 if no seen block
+							requestedBlockForCache = 0 // Final fallback
 						}
-					} else if reqBlock == spectypes.NOT_APPLICABLE {
-						requestedBlockForCache = 0 // NOT_APPLICABLE maps to 0
 					}
 
 					// Always use finalized=false for lookups
