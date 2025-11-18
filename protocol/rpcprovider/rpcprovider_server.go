@@ -362,7 +362,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		}
 	}
 
-	utils.LavaFormatDebug("Provider returned a relay response",
+	utils.LavaFormatInfo("Done handling relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
 		utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
