@@ -125,12 +125,13 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		EXPECT().
 		Relay(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, in *pairingtypes.RelayRequest, opts ...grpc.CallOption) (*pairingtypes.RelayReply, error) {
-			if len(opts) == 1 {
-				trailerCallOption, ok := opts[0].(grpc.TrailerCallOption)
-				require.True(t, ok)
-				require.NotNil(t, trailerCallOption)
-
-				trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
+			// Find the TrailerCallOption among the options (could be 1 or 2 options now)
+			for _, opt := range opts {
+				trailerCallOption, ok := opt.(grpc.TrailerCallOption)
+				if ok {
+					trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
+					break
+				}
 			}
 			return handleRelay(t, in, providerSK, consumerAccount), nil
 		}).
