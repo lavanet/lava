@@ -20,7 +20,7 @@ const (
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
-	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", false)
+	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
 }
 
 type providersGenerator struct {
@@ -63,24 +63,23 @@ func TestProviderOptimizerProviderDataSetGet(t *testing.T) {
 // to be picked (and vice versa).
 // Scenario:
 //  0. There are 10 providers, the optimizer is configured to pick a single provider
-//  1. Choose between 10 identical providers -> none should be in the worst tier
-//  2. Append bad probe relay data for providers 5-7 and pick providers -> should not be 6-8
-//  3. Append good probe relay data for providers 0-2 and pick providers -> should often be 0-2
+//  1. Choose between 10 identical providers using weighted selection
+//  2. Append bad probe relay data for providers 5-7 - they should be selected less often
+//  3. Append good probe relay data for providers 0-2 - they should be selected more often
 func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := int64(1000)
 
 	// damage providers 5-7 scores with bad latency probes relays
-	// they should not be selected by the optimizer and should be in the worst tier
+	// they should be selected less often due to lower weighted scores
 	badLatency := TEST_BASE_WORLD_LATENCY * 3
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[5], badLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[6], badLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[7], badLatency, true)
 	time.Sleep(4 * time.Millisecond)
-	// returnedProviders, tier = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
 
 	// improve providers 0-2 scores with good latency probes relays
 	// they should be selected by the optimizer more often
@@ -89,7 +88,7 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[1], goodLatency, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[2], goodLatency, true)
 	time.Sleep(4 * time.Millisecond)
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
 	// With weighted selection, good latency providers should collectively get more selections
 	goodProviderSelections := results[providersGen.providersAddresses[0]] + results[providersGen.providersAddresses[1]] + results[providersGen.providersAddresses[2]]
@@ -97,20 +96,16 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 }
 
 // runChooseManyTimesAndReturnResults uses the given optimizer and providers addresses
-// to pick providers <times> times and return two results maps:
-//  1. results: map of provider address to the number of times it was picked
-//  2. tierResults: map of tier and the number of times a provider from the specific tier was picked
-func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *ProviderOptimizer, providers []string, ignoredProviders map[string]struct{}, times int, cu uint64, requestBlock int64) (map[string]int, map[int]int) {
-	tierResults := make(map[int]int) // Kept for API compatibility, always returns -1 for weighted selection
+// to pick providers <times> times and return the results map:
+//  - results: map of provider address to the number of times it was picked
+func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *ProviderOptimizer, providers []string, ignoredProviders map[string]struct{}, times int, cu uint64, requestBlock int64) map[string]int {
 	results := make(map[string]int)
 	for i := 0; i < times; i++ {
-		returnedProviders, tier := providerOptimizer.ChooseProvider(providers, ignoredProviders, cu, requestBlock)
+		returnedProviders := providerOptimizer.ChooseProvider(providers, ignoredProviders, cu, requestBlock)
 		require.Equal(t, 1, len(returnedProviders))
-		require.Equal(t, -1, tier, "tier should always be -1 with weighted selection")
 		results[returnedProviders[0]]++
-		tierResults[tier]++
 	}
-	return results, tierResults
+	return results
 }
 
 // TestProviderOptimizerBasicRelayData tests the basic provider optimizer operation
@@ -118,13 +113,13 @@ func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *Provide
 // to be picked (and vice versa).
 // Scenario:
 //  0. There are 10 providers, the optimizer is configured to pick a single provider
-//  1. Choose between 10 identical providers -> none should be in the worst tier
-//  2. Append bad relay data for providers 5-7 and pick providers -> should not be 6-8
-//  3. Append good relay data for providers 0-2 and pick providers -> should often be 0-2
+//  1. Choose between 10 identical providers using weighted selection
+//  2. Append bad relay data for providers 5-7 - they should be selected less often
+//  3. Append good relay data for providers 0-2 - they should be selected more often
 func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
@@ -159,7 +154,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 
 	// With EXTREME latency differences (1ms vs 1000ms), even with 30% latency weight,
 	// good providers should dominate selection
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
 	// Good latency providers (1ms) vs bad latency providers (1000ms) - huge difference
 	goodProviderSelections := results[providersGen.providersAddresses[0]] +
@@ -182,9 +177,6 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 		"good providers should get >30% of selections with extreme latency advantage")
 }
 
-// Removed: TestProviderOptimizerBasicRelayDataAutoAdjustTiers
-// This test was specific to tier-based selection with AutoAdjustTiers feature
-// Tier-based selection has been replaced with weighted selection
 
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed probe relays. Providers with bad scores should have
@@ -199,11 +191,10 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
-	// Removed: providerOptimizer.OptimizerNumTiers = 33 (tiers removed, using weighted selection)
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -215,7 +206,7 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 
 	// pick providers, the three random ones with good availability should be picked more often
 	time.Sleep(4 * time.Millisecond)
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 	// With weighted selection and minimum selection chance, good providers get more but not overwhelming majority
 	// Each of the 3 good providers should get more than average (1000/100 = 10 per provider average)
 	averageSelections := 1000 / len(providersGen.providersAddresses)
@@ -228,7 +219,7 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 	require.InDelta(t, results[providersGen.providersAddresses[skipIndex]], results[providersGen.providersAddresses[skipIndex+1]], 50)
 
 	// pick providers again but this time ignore one of the random providers, it shouldn't be picked
-	results, _ = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[skipIndex]: {}}, 1000, cu, requestBlock)
+	results = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[skipIndex]: {}}, 1000, cu, requestBlock)
 	require.Zero(t, results[providersGen.providersAddresses[skipIndex]])
 }
 
@@ -245,11 +236,10 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
-	// Removed: providerOptimizer.OptimizerNumTiers = 33 (tiers removed, using weighted selection)
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -261,7 +251,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 
 	// pick providers, the three random ones with good availability should be picked more often
 	time.Sleep(4 * time.Millisecond)
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 	// With weighted selection, good availability providers should get more than average
 	averageSelections := 1000 / len(providersGen.providersAddresses)
 	require.Greater(t, results[providersGen.providersAddresses[skipIndex]], averageSelections,
@@ -273,7 +263,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 	require.InDelta(t, results[providersGen.providersAddresses[skipIndex]], results[providersGen.providersAddresses[skipIndex+1]], float64(averageSelections)*2)
 
 	// pick providers again but this time ignore one of the random providers, it shouldn't be picked
-	results, _ = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[skipIndex]: {}}, 1000, cu, requestBlock)
+	results = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[skipIndex]: {}}, 1000, cu, requestBlock)
 	require.Zero(t, results[providersGen.providersAddresses[skipIndex]])
 }
 
@@ -281,7 +271,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
@@ -317,7 +307,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	//   - With 10,000 iterations, std dev of ratio is ~0.020
 	//   - For 99.9% confidence: tolerance = 3.29 * 0.020 = 0.065
 	iterations := 10000
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// Calculate average selections per provider
 	sumGoodSync := results[providersGen.providersAddresses[chosenIndex]] + results[providersGen.providersAddresses[chosenIndex+1]] + results[providersGen.providersAddresses[chosenIndex+2]]
@@ -431,13 +421,13 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
 
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	// start with a disabled chosen index
 	chosenIndex := -1
 	testProvidersExploration := func(iterations int) float64 {
 		exploration := 0.0
 		for i := 0; i < iterations; i++ {
-			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
+			returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
 			if len(returnedProviders) > 1 {
 				exploration++
 				// check if we have a specific chosen index
@@ -493,7 +483,7 @@ func TestProviderOptimizerExploration(t *testing.T) {
 func TestProviderOptimizerSyncScore(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
 
@@ -518,7 +508,7 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 	// Weighted selection should favor the provider with better sync (chosenIndex has syncBlock+5)
 	// Use larger sample size for statistical reliability
 	iterations := 5000
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// Statistical validation: provider with better sync should be selected more than uniform distribution
 	// With 10 providers and weighted selection:
@@ -554,9 +544,6 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		actualSelections, iterations, percentAboveUniform, uniformExpectation)
 }
 
-// Removed: TestProviderOptimizerStrategiesScoring
-// This test was heavily dependent on tier-based selection verification
-// Strategy-specific behavior is now tested through weighted selector tests
 
 func TestReputation(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
@@ -583,7 +570,7 @@ func TestReputation(t *testing.T) {
 
 // test low providers count 0-9
 func TestProviderOptimizerProvidersCount(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
@@ -614,7 +601,7 @@ func TestProviderOptimizerProvidersCount(t *testing.T) {
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
 			for i := 0; i < 10; i++ {
-				returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, cu, requestBlock)
+				returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, cu, requestBlock)
 				require.Greater(t, len(returnedProviders), 0)
 			}
 		})
@@ -622,7 +609,7 @@ func TestProviderOptimizerProvidersCount(t *testing.T) {
 }
 
 func TestProviderOptimizerWeights(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
@@ -653,7 +640,7 @@ func TestProviderOptimizerWeights(t *testing.T) {
 	}
 
 	// Weighted selection should favor provider 0 with better stake
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
 	// Provider 0 should be selected most often due to high stake weight
 	maxCount := results[providersGen.providersAddresses[0]]
@@ -664,8 +651,6 @@ func TestProviderOptimizerWeights(t *testing.T) {
 	}
 }
 
-// Removed: TestProviderOptimizerTiers
-// This test was specific to tier-based selection system which has been replaced with weighted selection
 
 // TestProviderOptimizerChooseProvider checks that the follwing occurs:
 // 0. Assume 6 providers: 2 with great score, 2 with mid score but one has a great stake, and 2 with low score (benchmark).
@@ -674,11 +659,9 @@ func TestProviderOptimizerWeights(t *testing.T) {
 // 2. high stake mid score is picked more than 0 times and picked more than mid score with average stake
 // 3. low score are not selected
 func TestProviderOptimizerChooseProvider(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 6
-	// Removed: providerOptimizer.OptimizerNumTiers = providersCount / 2 (tiers removed)
-	// Removed: providerOptimizer.OptimizerMinTierEntries = 2 (tiers removed)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
@@ -729,7 +712,7 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 
 	// choose many times and check results
 	iterations := 10000
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// With EXTREME latency differences (1ms vs 800ms):
 	// Providers 0-1: excellent latency + good sync → highest scores
@@ -739,7 +722,7 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 	lowScoreSelections := results[providersGen.providersAddresses[4]] + results[providersGen.providersAddresses[5]]
 
 	// With weighted selection, high score providers should get more than low score
-	// But not as dramatic as tier-based since 60% of weight (availability) is same for all
+	// With weighted selection, advantage is moderated since 60% of weight (availability) is same for all
 	require.Greater(t, highScoreSelections, lowScoreSelections,
 		"excellent latency/sync providers should get more selections than terrible latency providers")
 
@@ -757,16 +740,14 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 // last iteration is removed from the providers set. We check the ranking of providers stays the same.
 // 2. Do step 1 many times.
 // Expected: the ranking of providers stays the same, providers with high stake are picked more often,
-// providers from the lowest tier are not picked
+// providers with worst scores are selected less often
 func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 6
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 
-	// create 3 tiers with 2 providers each
-	// Removed: providerOptimizer.OptimizerNumTiers = providersCount / 2 (tiers removed)
-	// Removed: providerOptimizer.OptimizerMinTierEntries = 2 (tiers removed)
+	// Create 6 providers with different performance characteristics
 
 	// apply high stake for providers 1, 3, 5
 	normalStake := int64(50000000000)
@@ -818,7 +799,7 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	// Provider 0: 1ms (excellent) - should be selected most
 	// Provider 5: 800ms (terrible) - should be selected least
 	iterations := 1000
-	results, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// Statistical assertion: With weighted selection, better providers should collectively
 	// receive more selections, but due to minimum selection chance (1%) and stake weighting (10%),
@@ -847,15 +828,13 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 // sample with a better range (for example, the better one gets latency of 10-30ms and the bad one gets 25-40ms)
 // 2. Choose between them and verify the better one is chosen more.
 func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 3
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
-	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
-	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
 	// Use significantly different but realistic latencies to test weighted selection
 	// Provider 0: excellent latency (10-20ms range)
@@ -892,15 +871,18 @@ func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 
 	// choose many times and check distribution
 	// With weighted selection, latency weight is 30%, so differences should be noticeable but not extreme
-	iterations := 1000
-	res, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	// Use more iterations to reduce statistical variance
+	iterations := 5000
+	res := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
 
 	// With weighted selection and equal availability, latency differences should result in
 	// provider 0 (best latency) getting more selections than provider 2 (worst latency)
-	// But due to randomness and other factors, the ordering might not be strict
-	require.Greater(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[2]],
-		"best latency provider should be selected more than worst latency provider")
+	// Due to minimum selection chance (1%) and weighted selection, the difference is moderated
+	bestSelections := res[providersGen.providersAddresses[0]]
+	worstSelections := res[providersGen.providersAddresses[2]]
+	require.Greater(t, bestSelections, worstSelections,
+		"best latency provider should get more selections than worst latency provider")
 
 	// All providers should get some selections (minimum selection chance ensures this)
 	for i := 0; i < 3; i++ {
@@ -909,14 +891,12 @@ func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 }
 
 func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 3
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
 	syncBlock := uint64(1000)
-	// Removed: providerOptimizer.OptimizerNumTiers = 4 (tiers removed)
-	// Removed: providerOptimizer.OptimizerMinTierEntries = 1 (tiers removed)
 
 	// Use fixed, realistic latency and significantly different sync to test sync weighting
 	// All providers have same latency, but different sync performance
@@ -957,9 +937,9 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 	}
 	// choose many times and check the better provider is chosen more often (provider 0)
 	iterations := 2000 // Increased iterations for more stable results
-	res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
+	res := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
 
-	utils.LavaFormatInfo("res", utils.LogAttr("res", res), utils.LogAttr("tierResults", tierResults))
+	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
 
 	// With weighted selection and sync weight at 20%, provider 0 (best sync) should clearly
 	// get more selections than the others, but the difference between provider 1 and 2 may be small
@@ -979,7 +959,7 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 // score_good_latency = latency + sync_factor * sync_lag + ... = 0.01 + 0.3 * 10 + ... = 3.01 + ...
 // score_good_sync = latency + sync_factor * sync_lag + ... = 3.01 + 0.3 * 0 + ... = 3.01 + ...
 func TestProviderOptimizerLatencySyncScore(t *testing.T) {
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 2
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
@@ -1023,6 +1003,6 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 
 	// choose many times - since their scores should be the same, they should be picked in a similar amount
 	iterations := 1000
-	res, _ := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
+	res := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 	require.InDelta(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]], float64(iterations)*0.1)
 }

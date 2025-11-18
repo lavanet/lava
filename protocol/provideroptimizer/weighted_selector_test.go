@@ -13,7 +13,7 @@ import (
 
 func init() {
 	// Initialize random seed for testing
-	rand.InitRandomSeed()
+	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 }
 
 // Helper function to create a QoS report

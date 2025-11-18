@@ -253,7 +253,7 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 }
 
 // ChooseProvider returns a subset of selected providers using weighted random selection based on QoS scores
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -279,7 +279,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	if len(providerScores) == 0 {
 		// No providers to choose from
 		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
-		return []string{}, -1
+		return []string{}
 	}
 
 	// Select provider using weighted random selection
@@ -314,8 +314,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("numScores", len(providerScores)),
 	)
 
-	// Return -1 for tier (no longer using tiers)
-	return returnedProviders, -1
+	return returnedProviders
 }
 
 // getProviderScore is a helper function to find a provider's score in the scores list
@@ -328,9 +327,9 @@ func getProviderScore(address string, scores []ProviderScore) float64 {
 	return 0.0
 }
 
-// ChooseProviderFromTopTier selects a single high-quality provider using weighted selection
+// ChooseBestProvider selects a single high-quality provider using weighted selection
 // This is used for sticky sessions and other scenarios requiring consistent provider selection
-func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -590,7 +589,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, qosSelectionEnabled bool) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
