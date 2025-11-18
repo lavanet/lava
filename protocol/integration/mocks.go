@@ -32,7 +32,7 @@ type mockConsumerStateTracker struct {
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }
 
-func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCProviderEndpoint, backupProviders []*lavasession.RPCProviderEndpoint) {
+func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCStaticProviderEndpoint, backupProviders []*lavasession.RPCStaticProviderEndpoint) {
 }
 
 func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
@@ -75,6 +75,10 @@ func (m *mockConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*upd
 
 func (m *mockConsumerStateTracker) GetLatestVirtualEpoch() uint64 {
 	return 0
+}
+
+func (m *mockConsumerStateTracker) LatestBlock() int64 {
+	return 1000
 }
 
 type ReplySetter struct {
@@ -369,4 +373,8 @@ func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specif
 
 func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
 	return mrm.ReliabilityManager.GetLatestBlockNum()
+}
+
+func (mrm *MockReliabilityManager) IsDummy() bool {
+	return false
 }
