@@ -1,4 +1,4 @@
-package rpcconsumer
+package relaycore
 
 import (
 	"context"
@@ -7,9 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
-	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -20,133 +18,59 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type relayProcessorMetricsMock struct{}
-
-func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
+// Mock RelayStateMachine for testing
+type mockRelayStateMachine struct {
+	protocolMessage chainlib.ProtocolMessage
+	usedProviders   *lavasession.UsedProviders
+	debugState      bool
+	selection       Selection
 }
 
-func (romm *relayProcessorMetricsMock) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
-}
-
-func (romm *relayProcessorMetricsMock) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
-}
-
-func (romm *relayProcessorMetricsMock) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
-}
-
-func (romm *relayProcessorMetricsMock) GetChainIdAndApiInterface() (string, string) {
-	return "testId", "testInterface"
-}
-
-var (
-	relayRetriesManagerInstance = lavaprotocol.NewRelayRetriesManager()
-	relayProcessorMetrics       = &relayProcessorMetricsMock{}
-)
-
-func sendSuccessRespJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
-	time.Sleep(delay)
-	id, _ := json.Marshal(1)
-	resultBody, _ := json.Marshal(map[string]string{"result": "success"})
-	res := rpcclient.JsonrpcMessage{
-		Version: "2.0",
-		ID:      id,
-		Result:  resultBody,
+func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders) *mockRelayStateMachine {
+	return &mockRelayStateMachine{
+		protocolMessage: protocolMessage,
+		usedProviders:   usedProviders,
+		debugState:      false,
+		selection:       BestResult, // Default to BestResult for backward compatibility
 	}
-	resBytes, _ := json.Marshal(res)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &relayResponse{
-		relayResult: common.RelayResult{
-			Request: &pairingtypes.RelayRequest{
-				RelaySession: &pairingtypes.RelaySession{},
-				RelayData:    &pairingtypes.RelayPrivateData{},
-			},
-			Reply:        &pairingtypes.RelayReply{Data: resBytes, LatestBlock: 1},
-			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
-			StatusCode:   http.StatusOK,
-		},
-		err: nil,
-	}
-	relayProcessor.SetResponse(response)
 }
 
-func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
-	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &relayResponse{
-		relayResult: common.RelayResult{
-			Request: &pairingtypes.RelayRequest{
-				RelaySession: &pairingtypes.RelaySession{},
-				RelayData:    &pairingtypes.RelayPrivateData{},
-			},
-			Reply:        &pairingtypes.RelayReply{Data: []byte("ok"), LatestBlock: 1},
-			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
-			StatusCode:   http.StatusOK,
-		},
-		err: nil,
+func newMockRelayStateMachineWithSelection(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders, selection Selection) *mockRelayStateMachine {
+	return &mockRelayStateMachine{
+		protocolMessage: protocolMessage,
+		usedProviders:   usedProviders,
+		debugState:      false,
+		selection:       selection,
 	}
-	relayProcessor.SetResponse(response)
 }
 
-func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
-	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), err)
-	response := &relayResponse{
-		relayResult: common.RelayResult{
-			Request: &pairingtypes.RelayRequest{
-				RelaySession: &pairingtypes.RelaySession{},
-				RelayData:    &pairingtypes.RelayPrivateData{},
-			},
-			Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message":"bad","code":123}`)},
-			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
-			StatusCode:   0,
-		},
-		err: err,
-	}
-	relayProcessor.SetResponse(response)
+func (m *mockRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMessage {
+	return m.protocolMessage
 }
 
-func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
-	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &relayResponse{
-		relayResult: common.RelayResult{
-			Request: &pairingtypes.RelayRequest{
-				RelaySession: &pairingtypes.RelaySession{},
-				RelayData:    &pairingtypes.RelayPrivateData{},
-			},
-			Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message":"bad","code":123}`)},
-			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
-			StatusCode:   http.StatusInternalServerError,
-		},
-		err: nil,
-	}
-	relayProcessor.SetResponse(response)
+func (m *mockRelayStateMachine) GetDebugState() bool {
+	return m.debugState
 }
 
-func sendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
-	time.Sleep(delay)
-	id, _ := json.Marshal(1)
-	res := rpcclient.JsonrpcMessage{
-		Version: "2.0",
-		ID:      id,
-		Error:   &rpcclient.JsonError{Code: 1, Message: "test"},
-	}
-	resBytes, _ := json.Marshal(res)
+func (m *mockRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
+	return make(chan RelayStateSendInstructions), nil
+}
 
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &relayResponse{
-		relayResult: common.RelayResult{
-			Request: &pairingtypes.RelayRequest{
-				RelaySession: &pairingtypes.RelaySession{},
-				RelayData:    &pairingtypes.RelayPrivateData{},
-			},
-			Reply:        &pairingtypes.RelayReply{Data: resBytes},
-			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
-			StatusCode:   http.StatusInternalServerError,
-		},
-		err: nil,
-	}
-	relayProcessor.SetResponse(response)
+func (m *mockRelayStateMachine) UpdateBatch(err error) {
+}
+
+func (m *mockRelayStateMachine) GetSelection() Selection {
+	return m.selection
+}
+
+func (m *mockRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
+	return m.usedProviders
+}
+
+func (m *mockRelayStateMachine) SetResultsChecker(resultsChecker ResultsCheckerInf) {
+}
+
+func (m *mockRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
 }
 
 func TestRelayProcessorHappyFlow(t *testing.T) {
@@ -167,9 +91,9 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsumerConsistency(specId)
+		consistency := NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -182,7 +106,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
-		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*5)
+		go SendSuccessResp(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 		resultsOk := relayProcessor.HasResults()
@@ -225,7 +149,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -246,7 +170,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test3": &lavasession.SessionInfo{}, "lava@test4": &lavasession.SessionInfo{}}
 			usedProviders.AddUsed(consumerSessionsMap, nil)
 		}()
-		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*20)
+		go SendSuccessResp(relayProcessor, "lava@test", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
@@ -278,7 +202,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -290,8 +214,8 @@ func TestRelayProcessorRetry(t *testing.T) {
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
-		go sendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
+		go SendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go SendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
@@ -323,7 +247,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -335,8 +259,8 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
-		go sendNodeError(relayProcessor, "lava@test2", time.Millisecond*20)
+		go SendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go SendNodeError(relayProcessor, "lava@test2", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
@@ -345,10 +269,10 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err)
-		require.Equal(t, string(returnedResult.Reply.Data), `{"message":"bad","code":123}`)
-		require.Equal(t, returnedResult.StatusCode, http.StatusInternalServerError)
+		// With quorum changes, we now fail when we only have node errors
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed relay, insufficient results")
 	})
 }
 
@@ -369,7 +293,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -379,10 +303,10 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
-		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
-		go sendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
-		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
-		go sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*100)
+		go SendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go SendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
+		go SendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
+		go SendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*100)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*300)
 		defer cancel()
 		for i := 0; i < 10; i++ {
@@ -424,7 +348,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -434,9 +358,9 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
-		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
-		go sendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
-		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
+		go SendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go SendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
+		go SendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
 		for i := 0; i < 2; i++ {
@@ -446,10 +370,10 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err)
-		require.Equal(t, string(returnedResult.Reply.Data), `{"message":"bad","code":123}`)
-		require.Equal(t, returnedResult.StatusCode, http.StatusInternalServerError)
+		// With quorum changes, we now fail when we only have node errors
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed relay, insufficient results")
 	})
 }
 
@@ -470,7 +394,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -482,8 +406,8 @@ func TestRelayProcessorLatest(t *testing.T) {
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
-		go sendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
+		go SendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go SendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
@@ -495,15 +419,13 @@ func TestRelayProcessorLatest(t *testing.T) {
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err)
 		require.Equal(t, string(returnedResult.Reply.Data), "ok")
-		// reqBlock, _ := chainMsg.RequestedBlock()
-		// require.NotEqual(t, spectypes.LATEST_BLOCK, reqBlock) // disabled until we enable requested block modification again
 	})
 }
 
 // Helper function to create mock relay responses with different data
-func createMockRelayResponseWithData(providerAddr string, data []byte, err error) *relayResponse {
-	return &relayResponse{
-		relayResult: common.RelayResult{
+func createMockRelayResponseWithData(providerAddr string, data []byte, err error) *RelayResponse {
+	return &RelayResponse{
+		RelayResult: common.RelayResult{
 			Reply: &pairingtypes.RelayReply{
 				Data: data,
 			},
@@ -511,7 +433,7 @@ func createMockRelayResponseWithData(providerAddr string, data []byte, err error
 				ProviderAddress: providerAddr,
 			},
 		},
-		err: err,
+		Err: err,
 	}
 }
 
@@ -613,15 +535,16 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+			usedProviders := lavasession.NewUsedProviders(nil)
 
 			relayProcessor := NewRelayProcessor(
 				ctx,
 				tt.quorumParams,
 				nil,
-				relayProcessorMetrics,
-				relayProcessorMetrics,
-				relayRetriesManagerInstance,
-				NewRelayStateMachine(ctx, lavasession.NewUsedProviders(nil), &RPCConsumerServer{}, protocolMessage, nil, false, relayProcessorMetrics),
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
 				qos.NewQoSManager(),
 			)
 

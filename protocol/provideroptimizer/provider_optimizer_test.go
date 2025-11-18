@@ -20,7 +20,7 @@ const (
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
-	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
+	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", false)
 }
 
 type providersGenerator struct {
@@ -956,7 +956,7 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	// choose many times and check the better provider is chosen more often (provider 0)
-	iterations := 1000
+	iterations := 2000 // Increased iterations for more stable results
 	res, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
 
 	utils.LavaFormatInfo("res", utils.LogAttr("res", res), utils.LogAttr("tierResults", tierResults))

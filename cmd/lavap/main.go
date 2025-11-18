@@ -21,6 +21,7 @@ import (
 	validators "github.com/lavanet/lava/v5/protocol/performance/validators"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/spf13/cobra"
@@ -36,8 +37,10 @@ func main() {
 
 	// version cobra command
 	cmdVersion := versionCommand()
-	// rpc consumer cobra command
+	// rpc consumer cobra command (decentralized)
 	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
+	// rpc smart router cobra command (centralized)
+	cmdRPCSmartRouter := rpcsmartrouter.CreateRPCSmartRouterCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
 	// badge generator cobra command
@@ -51,6 +54,8 @@ func main() {
 	rootCmd.AddCommand(cmdVersion)
 	// Add RPC Consumer Command
 	rootCmd.AddCommand(cmdRPCConsumer)
+	// Add RPC Smart Router Command
+	rootCmd.AddCommand(cmdRPCSmartRouter)
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdRPCProvider)
 	// Add Badge Generator Command
@@ -67,6 +72,7 @@ func main() {
 	}
 	rootCmd.AddCommand(testCmd)
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
+	testCmd.AddCommand(rpcsmartrouter.CreateTestRPCSmartRouterCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 	testCmd.AddCommand(statetracker.CreateRelayPaymentCSVCobraCommand())

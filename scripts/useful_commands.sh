@@ -23,21 +23,109 @@ sleep_until_next_epoch() {
 
 # Function to wait until next block
 wait_next_block() {
-  current=$( lavad q block | jq .block.header.height)
+  local max_attempts=30  # 30 seconds max
+  local attempt=0
+  
+  # Get current block height (with retry logic)
+  while [ $attempt -lt 10 ]; do
+    current=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+    if [ -n "$current" ] && [ "$current" != "null" ]; then
+      break
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+  
+  if [ -z "$current" ] || [ "$current" == "null" ]; then
+    echo "ERROR: Cannot query blockchain after 10 seconds"
+    return 1
+  fi
+  
   echo "waiting for next block $current"
+  attempt=0
+  
   while true; do
     display_ticker
-    new=$( lavad q block | jq .block.header.height)
-    if [ "$current" != "$new" ]; then
+    new=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+    if [ -n "$new" ] && [ "$new" != "null" ] && [ "$current" != "$new" ]; then
       echo "finished waiting at block $new"
       break
     fi
+    attempt=$((attempt + 1))
+    if [ $attempt -ge $max_attempts ]; then
+      echo "ERROR: Timeout waiting for next block after $max_attempts seconds (stuck at $current)"
+      return 1
+    fi
+    sleep 1
   done
 }
 
+# Wait for transaction to be included and successful
+wait_for_tx() {
+  local tx_hash=$1
+  local max_attempts=${2:-30}
+  local attempt=0
+  
+  echo "Waiting for transaction $tx_hash to be included..."
+  
+  while [ $attempt -lt $max_attempts ]; do
+    # Query transaction and check if it exists and succeeded
+    local tx_result=$(lavad q tx $tx_hash --output json 2>/dev/null)
+    local tx_code=$(echo "$tx_result" | jq -r '.code // "null"' 2>/dev/null)
+    
+    if [ "$tx_code" = "0" ]; then
+      echo "Transaction $tx_hash succeeded"
+      return 0
+    elif [ "$tx_code" != "null" ] && [ "$tx_code" != "" ]; then
+      echo "ERROR: Transaction $tx_hash failed with code $tx_code"
+      local raw_log=$(echo "$tx_result" | jq -r '.raw_log // ""' 2>/dev/null)
+      echo "Error details: $raw_log"
+      return 1
+    fi
+    
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+  
+  echo "ERROR: Timeout waiting for transaction $tx_hash after $max_attempts seconds"
+  return 1
+}
+
+# Extract transaction hash from lavad tx command output
+extract_tx_hash() {
+  local output="$1"
+  echo "$output" | grep -o 'txhash: [A-F0-9]*' | cut -d' ' -f2
+}
+
+# Wait for next block AND ensure a transaction is included (if tx_hash provided)
+wait_next_block_and_tx() {
+  local tx_output="$1"
+  
+  # First wait for next block
+  if ! wait_next_block; then
+    return 1
+  fi
+  
+  # If transaction output was provided, verify it was included
+  if [ -n "$tx_output" ]; then
+    local tx_hash=$(extract_tx_hash "$tx_output")
+    if [ -n "$tx_hash" ]; then
+      if ! wait_for_tx "$tx_hash"; then
+        return 1
+      fi
+    fi
+  fi
+  
+  return 0
+}
+
 current_block() {
-  current=$(lavad q block | jq -r .block.header.height)
-  echo $current
+  current=$(lavad q block 2>/dev/null | jq -r '.block.header.height // empty' 2>/dev/null)
+  if [ -z "$current" ] || [ "$current" == "null" ]; then
+    echo "0"
+  else
+    echo $current
+  fi
 }
 
 # function to wait until count ($1) blocks complete
@@ -62,9 +150,12 @@ check_go_version() {
 
   go_version=$(go version)
   go_version_major_full=$(echo "$go_version" | awk '{print $3}')
-  go_version_major=${go_version_major_full:2}
-  result=$(echo "${go_version_major}-$GO_VERSION" | bc -l)
-  if [ "$result" -ge 0 ]; then
+  go_version_major_minor_patch=${go_version_major_full:2}
+  IFS='.' read -r major minor patch <<< "$go_version_major_minor_patch"
+  go_version_major="$major.$minor"
+
+  result=$(echo "${go_version_major}-$GO_VERSION > 0" | bc -l)
+  if [ "$result" -eq 1 ]; then
     return 0
   fi
 
@@ -137,7 +228,23 @@ wait_for_lava_node_to_start() {
 }
 
 operator_address() {
-    lavad q staking validators -o json | jq -r '.validators[0].operator_address'
+    local max_attempts=30
+    local attempt=0
+    
+    while [ $attempt -lt $max_attempts ]; do
+        local result=$(lavad q staking validators -o json 2>/dev/null | jq -r '.validators[0].operator_address // empty' 2>/dev/null)
+        
+        if [ -n "$result" ] && [ "$result" != "null" ]; then
+            echo "$result"
+            return 0
+        fi
+        
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+    
+    echo "ERROR: Failed to get operator address after $max_attempts attempts" >&2
+    return 1
 }
 
 

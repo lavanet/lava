@@ -30,6 +30,13 @@ const (
 	CostExplorationChance    = 0.01
 )
 
+var (
+	OptimizerNumTiers = 4    // number of tiers to use
+	MinimumEntries    = 5    // minimum number of entries in a tier to be considered for selection
+	ATierChance       = 0.75 // chance to pick from best tier
+	LastTierChance    = 0.0  // chance to pick from worst tier
+)
+
 type ConcurrentBlockStore struct {
 	Lock  sync.Mutex
 	Time  time.Time
@@ -53,6 +60,10 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	stakeCache                      ProviderStakeCache // provider stake amounts used in weighted selection
+	selectionWeighter               SelectionWeighter  // weights are the providers stake (tier-based)
+	OptimizerNumTiers               int                // number of tiers to use
+	OptimizerMinTierEntries         int                // minimum number of entries in a tier to be considered for selection
+	OptimizerQoSSelectionEnabled    bool               // enables QoS-based selection within tiers instead of stake-based
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
 	weightedSelector                *WeightedSelector // Weighted random selection based on composite QoS scores
@@ -130,6 +141,7 @@ func (po *ProviderOptimizer) Strategy() Strategy {
 // UpdateWeights updates provider stake amounts in the cache and metrics
 func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
 	po.stakeCache.UpdateStakes(weights)
+	po.selectionWeighter.SetWeights(weights)
 
 	// Update the stake map for metrics
 	if po.consumerOptimizerQoSClient != nil {
@@ -599,7 +611,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, qosSelectionEnabled bool) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -625,6 +637,10 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		stakeCache:                      NewProviderStakeCache(),
+		selectionWeighter:               NewSelectionWeighter(),
+		OptimizerNumTiers:               OptimizerNumTiers,
+		OptimizerMinTierEntries:         MinimumEntries,
+		OptimizerQoSSelectionEnabled:    qosSelectionEnabled,
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
 		weightedSelector:                weightedSelector,

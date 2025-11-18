@@ -363,8 +363,8 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}]` // call same id
 	const responseExpected = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":1,"result":"0x1"}]`         // response is expected to be like the user asked
 	// we are sending and receiving something else
-	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":3,"result":"0x1"}]`                     // response of the server is to the different ids
-	sentBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"}]` // what is being sent is different ids
+	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":2,"result":"0x1"}]`                     // response of the server is to the different ids
+	sentBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_chainId"}]` // what is being sent is different ids
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCalled = true
 		data := make([]byte, len([]byte(batchCallData)))

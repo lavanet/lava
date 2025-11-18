@@ -13,6 +13,18 @@ import (
 	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
+const (
+	cosmosSDKSuccessCode = 0 // Cosmos SDK uses 0 for success, non-zero for errors
+)
+
+// cosmosTxResponse represents Cosmos SDK transaction broadcast response structure
+type cosmosTxResponse struct {
+	TxResponse struct {
+		Code   int    `json:"code"`
+		RawLog string `json:"raw_log"`
+	} `json:"tx_response"`
+}
+
 type RestMessage struct {
 	Msg      []byte
 	Path     string
@@ -37,22 +49,52 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	if httpStatusCode >= 200 && httpStatusCode <= 300 { // valid code
+	// Check Cosmos SDK transaction errors (HTTP 2xx with error code in JSON)
+	if httpStatusCode >= 200 && httpStatusCode < 300 {
+		if hasError, errMsg := checkCosmosTxError(data); hasError {
+			return hasError, errMsg
+		}
+		// HTTP status code is 2xx and no Cosmos SDK error, treat as success
 		return false, ""
 	}
-	result := make(map[string]interface{}, 0)
-	err := json.Unmarshal(data, &result)
-	if err != nil {
-		utils.LavaFormatWarning("Failed unmarshalling RestMessage CheckResponseError", err, utils.LogAttr("data", string(data)))
+
+	// Check generic REST errors (non-2xx HTTP status)
+	return checkGenericRESTError(data)
+}
+
+// checkCosmosTxError detects errors in Cosmos SDK transaction responses
+// Cosmos returns HTTP 200 for both success and failed txs - must check tx_response.code
+func checkCosmosTxError(data []byte) (bool, string) {
+	var txResp cosmosTxResponse
+	if err := json.Unmarshal(data, &txResp); err != nil {
+		return false, "" // Not a Cosmos tx response, treat as success
+	}
+
+	// Non-zero code indicates error in Cosmos SDK
+	if txResp.TxResponse.Code != cosmosSDKSuccessCode {
+		return true, txResp.TxResponse.RawLog
+	}
+
+	return false, ""
+}
+
+// checkGenericRESTError detects errors in generic REST API responses
+// Expects format: {"message": "error text", "code": <error_code>}
+func checkGenericRESTError(data []byte) (bool, string) {
+	result := make(map[string]interface{})
+	if err := json.Unmarshal(data, &result); err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling REST error response", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	// make sure we have both message and code for an error message.
-	if errMsg, okMessage := result["message"].(string); okMessage {
-		if _, okCode := result["code"]; okCode {
+
+	// Valid error requires both message and code fields
+	if errMsg, ok := result["message"].(string); ok {
+		if _, hasCode := result["code"]; hasCode {
 			return true, errMsg
 		}
-		utils.LavaFormatWarning("found only message without code in returned result", nil, utils.LogAttr("result", result))
+		utils.LavaFormatWarning("found message without code in REST response", nil, utils.LogAttr("result", result))
 	}
+
 	return false, ""
 }
 

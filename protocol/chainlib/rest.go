@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -294,6 +295,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
@@ -303,17 +305,21 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatDebug("in <<<",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("_path", path),
-			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("msgSeed", msgSeed),
-			utils.LogAttr("headers", restHeaders),
-		)
 		analytics.SetProcessingTimestampBeforeRelay(startTime)
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr(utils.KEY_REQUEST_ID, ctx),
+			utils.LogAttr(utils.KEY_TASK_ID, ctx),
+			utils.LogAttr(utils.KEY_TRANSACTION_ID, ctx),
+			utils.LogAttr("path", path),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("msgSeed", msgSeed),
+			utils.LogAttr("body", requestBody),
+			utils.LogAttr("headers", restHeaders),
+		)
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, userIp, analytics, restHeaders)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
@@ -348,6 +354,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// Return json response and add metric for after provider processing
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -369,18 +376,23 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatDebug("in <<<",
+		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST non-POST with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("_path", path),
+			utils.LogAttr(utils.KEY_REQUEST_ID, ctx),
+			utils.LogAttr(utils.KEY_TASK_ID, ctx),
+			utils.LogAttr(utils.KEY_TRANSACTION_ID, ctx),
+			utils.LogAttr("path", path),
+			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
@@ -391,6 +403,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
+				utils.LavaFormatError("api method is not supported", err, utils.LogAttr("GUID", ctx))
 				return common.CreateRestMethodNotFoundError(fiberCtx, chainID)
 			}
 
@@ -422,6 +435,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -487,7 +501,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
@@ -514,13 +528,17 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			req.Header.Set(metadata.Name, metadata.Value)
+			if metadata.Value == "" {
+				req.Header.Del(metadata.Name)
+			} else {
+				req.Header.Set(metadata.Name, metadata.Value)
+			}
 		}
 	}
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	utils.LavaFormatTrace("provider sending node message",
+	utils.LavaFormatInfo("Sending request to node from provider",
 		utils.LogAttr("_method", nodeMessage.Path),
 		utils.LogAttr("headers", req.Header),
 		utils.LogAttr("apiInterface", "rest"),

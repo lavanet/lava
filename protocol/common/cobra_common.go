@@ -33,6 +33,10 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
+	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration         = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration      = 15 * time.Minute  // default epoch duration for standalone/static provider mode
 
 	// weighted selection flags (provider optimizer)
 	ProviderOptimizerAvailabilityWeight = "provider-optimizer-availability-weight"  // weight for availability score (default: 0.4)
@@ -40,6 +44,15 @@ const (
 	ProviderOptimizerSyncWeight         = "provider-optimizer-sync-weight"          // weight for sync score (default: 0.2)
 	ProviderOptimizerStakeWeight        = "provider-optimizer-stake-weight"         // weight for stake (default: 0.1)
 	ProviderOptimizerMinSelectionChance = "provider-optimizer-min-selection-chance" // minimum selection probability for any provider (default: 0.01)
+
+	// optimizer flags (tier-based)
+	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
+	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
+	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
+	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
+	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
+	SetProviderOptimizerAutoAdjustTiers        = "enable-provider-optimizer-auto-adjustment-of-tiers"     // will auto adjust the tiers based on the number of providers in pairing
+	SetProviderOptimizerQosSelectionInTierFlag = "set-provider-optimizer-qos-based-selection-within-tier" // enables QoS-based selection within tiers instead of stake-based selection
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
@@ -52,7 +65,12 @@ const (
 	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
 	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
+	SkipPolicyVerificationFlag                   = "skip-policy-verification"
+	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
 	// specification default flags
+	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
+	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
+
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 )
 
@@ -76,6 +94,8 @@ type ConsumerCmdFlags struct {
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
 	DebugRelays              bool          // enables debug mode for relays
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
+	GitHubToken              string        // GitHub personal access token for accessing private repositories
+	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

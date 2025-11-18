@@ -524,6 +524,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -593,6 +594,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -720,7 +722,11 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
-			req.Header.Set(metadata.Name, metadata.Value)
+			if metadata.Value == "" {
+				req.Header.Del(metadata.Name)
+			} else {
+				req.Header.Set(metadata.Name, metadata.Value)
+			}
 		}
 	}
 
@@ -852,6 +858,9 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
+			utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
+			utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
 			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
 		)

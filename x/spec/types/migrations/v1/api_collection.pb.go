@@ -6,17 +6,20 @@ package v1
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
-	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+var (
+	_ = proto.Marshal
+	_ = fmt.Errorf
+	_ = math.Inf
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -200,9 +203,11 @@ func (*ApiCollection) ProtoMessage()    {}
 func (*ApiCollection) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{0}
 }
+
 func (m *ApiCollection) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *ApiCollection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ApiCollection.Marshal(b, m, deterministic)
@@ -215,12 +220,15 @@ func (m *ApiCollection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
+
 func (m *ApiCollection) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ApiCollection.Merge(m, src)
 }
+
 func (m *ApiCollection) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *ApiCollection) XXX_DiscardUnknown() {
 	xxx_messageInfo_ApiCollection.DiscardUnknown(m)
 }
@@ -295,9 +303,11 @@ func (*Extension) ProtoMessage()    {}
 func (*Extension) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{1}
 }
+
 func (m *Extension) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *Extension) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Extension.Marshal(b, m, deterministic)
@@ -310,12 +320,15 @@ func (m *Extension) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *Extension) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Extension.Merge(m, src)
 }
+
 func (m *Extension) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *Extension) XXX_DiscardUnknown() {
 	xxx_messageInfo_Extension.DiscardUnknown(m)
 }
@@ -353,9 +366,11 @@ func (*Rule) ProtoMessage()    {}
 func (*Rule) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{2}
 }
+
 func (m *Rule) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *Rule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Rule.Marshal(b, m, deterministic)
@@ -368,12 +383,15 @@ func (m *Rule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *Rule) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Rule.Merge(m, src)
 }
+
 func (m *Rule) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *Rule) XXX_DiscardUnknown() {
 	xxx_messageInfo_Rule.DiscardUnknown(m)
 }
@@ -399,9 +417,11 @@ func (*Verification) ProtoMessage()    {}
 func (*Verification) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{3}
 }
+
 func (m *Verification) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *Verification) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Verification.Marshal(b, m, deterministic)
@@ -414,12 +434,15 @@ func (m *Verification) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
+
 func (m *Verification) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Verification.Merge(m, src)
 }
+
 func (m *Verification) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *Verification) XXX_DiscardUnknown() {
 	xxx_messageInfo_Verification.DiscardUnknown(m)
 }
@@ -460,9 +483,11 @@ func (*ParseValue) ProtoMessage()    {}
 func (*ParseValue) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{4}
 }
+
 func (m *ParseValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *ParseValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ParseValue.Marshal(b, m, deterministic)
@@ -475,12 +500,15 @@ func (m *ParseValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *ParseValue) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ParseValue.Merge(m, src)
 }
+
 func (m *ParseValue) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *ParseValue) XXX_DiscardUnknown() {
 	xxx_messageInfo_ParseValue.DiscardUnknown(m)
 }
@@ -528,9 +556,11 @@ func (*CollectionData) ProtoMessage()    {}
 func (*CollectionData) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{5}
 }
+
 func (m *CollectionData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *CollectionData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_CollectionData.Marshal(b, m, deterministic)
@@ -543,12 +573,15 @@ func (m *CollectionData) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
+
 func (m *CollectionData) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CollectionData.Merge(m, src)
 }
+
 func (m *CollectionData) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *CollectionData) XXX_DiscardUnknown() {
 	xxx_messageInfo_CollectionData.DiscardUnknown(m)
 }
@@ -595,9 +628,11 @@ func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{6}
 }
+
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *Header) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Header.Marshal(b, m, deterministic)
@@ -610,12 +645,15 @@ func (m *Header) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *Header) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Header.Merge(m, src)
 }
+
 func (m *Header) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *Header) XXX_DiscardUnknown() {
 	xxx_messageInfo_Header.DiscardUnknown(m)
 }
@@ -659,9 +697,11 @@ func (*Api) ProtoMessage()    {}
 func (*Api) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{7}
 }
+
 func (m *Api) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *Api) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Api.Marshal(b, m, deterministic)
@@ -674,12 +714,15 @@ func (m *Api) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *Api) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Api.Merge(m, src)
 }
+
 func (m *Api) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *Api) XXX_DiscardUnknown() {
 	xxx_messageInfo_Api.DiscardUnknown(m)
 }
@@ -748,9 +791,11 @@ func (*ParseDirective) ProtoMessage()    {}
 func (*ParseDirective) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{8}
 }
+
 func (m *ParseDirective) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *ParseDirective) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ParseDirective.Marshal(b, m, deterministic)
@@ -763,12 +808,15 @@ func (m *ParseDirective) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
+
 func (m *ParseDirective) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ParseDirective.Merge(m, src)
 }
+
 func (m *ParseDirective) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *ParseDirective) XXX_DiscardUnknown() {
 	xxx_messageInfo_ParseDirective.DiscardUnknown(m)
 }
@@ -816,9 +864,11 @@ func (*BlockParser) ProtoMessage()    {}
 func (*BlockParser) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{9}
 }
+
 func (m *BlockParser) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *BlockParser) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_BlockParser.Marshal(b, m, deterministic)
@@ -831,12 +881,15 @@ func (m *BlockParser) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return b[:n], nil
 	}
 }
+
 func (m *BlockParser) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_BlockParser.Merge(m, src)
 }
+
 func (m *BlockParser) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *BlockParser) XXX_DiscardUnknown() {
 	xxx_messageInfo_BlockParser.DiscardUnknown(m)
 }
@@ -885,9 +938,11 @@ func (*SpecCategory) ProtoMessage()    {}
 func (*SpecCategory) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c9f7567a181f534f, []int{10}
 }
+
 func (m *SpecCategory) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *SpecCategory) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_SpecCategory.Marshal(b, m, deterministic)
@@ -900,12 +955,15 @@ func (m *SpecCategory) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
+
 func (m *SpecCategory) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SpecCategory.Merge(m, src)
 }
+
 func (m *SpecCategory) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *SpecCategory) XXX_DiscardUnknown() {
 	xxx_messageInfo_SpecCategory.DiscardUnknown(m)
 }
@@ -951,7 +1009,6 @@ func init() {
 }
 
 func init() {
-
 }
 
 var fileDescriptor_c9f7567a181f534f = []byte{
@@ -1122,6 +1179,7 @@ func (this *ApiCollection) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *Extension) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1152,6 +1210,7 @@ func (this *Extension) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *Rule) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1176,6 +1235,7 @@ func (this *Rule) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *Verification) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1211,6 +1271,7 @@ func (this *Verification) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *ParseValue) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1244,6 +1305,7 @@ func (this *ParseValue) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *CollectionData) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1277,6 +1339,7 @@ func (this *CollectionData) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *Header) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1307,6 +1370,7 @@ func (this *Header) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *Api) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1349,6 +1413,7 @@ func (this *Api) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *ParseDirective) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1382,6 +1447,7 @@ func (this *ParseDirective) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *BlockParser) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1420,6 +1486,7 @@ func (this *BlockParser) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *SpecCategory) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1456,6 +1523,7 @@ func (this *SpecCategory) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (m *ApiCollection) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2110,6 +2178,7 @@ func encodeVarintApiCollection(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+
 func (m *ApiCollection) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2386,9 +2455,11 @@ func (m *SpecCategory) Size() (n int) {
 func sovApiCollection(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
+
 func sozApiCollection(x uint64) (n int) {
 	return sovApiCollection(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+
 func (m *ApiCollection) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2696,6 +2767,7 @@ func (m *ApiCollection) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *Extension) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2825,6 +2897,7 @@ func (m *Extension) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *Rule) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2894,6 +2967,7 @@ func (m *Rule) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *Verification) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3046,6 +3120,7 @@ func (m *Verification) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *ParseValue) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3198,6 +3273,7 @@ func (m *ParseValue) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *CollectionData) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3376,6 +3452,7 @@ func (m *CollectionData) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *Header) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3496,6 +3573,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *Api) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3721,6 +3799,7 @@ func (m *Api) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *ParseDirective) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3887,6 +3966,7 @@ func (m *ParseDirective) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *BlockParser) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4052,6 +4132,7 @@ func (m *BlockParser) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *SpecCategory) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4201,6 +4282,7 @@ func (m *SpecCategory) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func skipApiCollection(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0

@@ -55,7 +55,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	return cst, err
 }
 
-func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint) {
+func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint) {
 	// register this CSM to get the updated pairing list when a new epoch starts
 	pairingUpdater := updaters.NewPairingUpdater(cst.StateQuery, consumerSessionManager.RPCEndpoint().ChainID)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)

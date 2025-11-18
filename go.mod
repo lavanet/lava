@@ -36,7 +36,7 @@ require (
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/dgraph-io/badger/v4 v4.1.0
-	github.com/dgraph-io/ristretto/v2 v2.0.1
+	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/goccy/go-json v0.10.2
 	github.com/gogo/status v1.1.0
@@ -179,7 +179,7 @@ require (
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
 	github.com/dgraph-io/ristretto v0.2.0 // indirect
-	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/dgryski/go-farm v0.0.0-20240924180020-3414d57e47da // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/fasthttp/websocket v1.5.0 // indirect
@@ -249,7 +249,7 @@ require (
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/net v0.39.0
 	golang.org/x/sync v0.13.0
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.31.0
 	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

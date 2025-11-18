@@ -1,0 +1,23 @@
+endpoints:
+  - name: provider-2221-tendermintrpc
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    network-address:
+      address: "127.0.0.1:2221"
+    node-urls:
+      - url: wss://lav1.tendermintrpc.lava.build:443/websocket
+      - url: https://lav1.tendermintrpc.lava.build:443
+  - name: provider-2221-grpc
+    api-interface: grpc
+    chain-id: LAV1
+    network-address:
+      address: "127.0.0.1:2221"
+    node-urls:
+      - url: lav1.grpc.lava.build:443
+  - name: provider-2221-rest
+    api-interface: rest
+    chain-id: LAV1
+    network-address:
+      address: "127.0.0.1:2221"
+    node-urls:
+      - url: https://lav1.rest.lava.build:443

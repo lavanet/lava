@@ -184,7 +184,7 @@ type RPCEndpoint struct {
 
 func (endpoint *RPCEndpoint) String() (retStr string) {
 	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
+	return retStr
 }
 
 func (rpce *RPCEndpoint) New(address, chainID, apiInterface string, geolocation uint64) *RPCEndpoint {
@@ -464,6 +464,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
 	cswp.Sessions[consumerSession.SessionId] = consumerSession // applying the session to the pool of sessions.
+	utils.LavaFormatTrace("GetConsumerSessionInstanceFromEndpoint returning session", utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("pairingEpoch", cswp.PairingEpoch), utils.LogAttr("sessionId", consumerSession.SessionId))
 	return consumerSession, cswp.PairingEpoch, nil
 }
 
@@ -553,7 +554,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),
 						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
-						utils.LogAttr("provider address", cswp.PublicLavaAddress),
+						utils.LogAttr("providerName", cswp.PublicLavaAddress),
 						utils.LogAttr("endpoint", endpoint),
 						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
 						utils.LogAttr("GUID", ctx),
@@ -610,7 +611,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	if allDisabled {
 		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
 			utils.LogAttr("provider endpoints", cswp.Endpoints),
-			utils.LogAttr("provider address", cswp.PublicLavaAddress),
+			utils.LogAttr("providerName", cswp.PublicLavaAddress),
 			utils.LogAttr("GUID", ctx),
 		)
 		// report provider.
