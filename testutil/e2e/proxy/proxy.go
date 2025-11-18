@@ -80,21 +80,32 @@ func main(host, port *string) {
 	noSave := flag.Bool("no-save", true, "NO-SAVE (optional) will not store any data from proxy")
 
 	flag.Parse()
-	if *help || (*host == "" && flag.NArg() == 0) {
+	if *help {
 		fmt.Println("go run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict")
-		fmt.Println("	Usage Example:")
-		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache ")
+		fmt.Println("\tUsage Example:")
+		fmt.Println("\t$ go run proxy.go -host google.com/ -p 1111 -cache ")
 		flag.Usage()
-	} else if *host == "" {
-		if len(os.Args) > 0 {
-			if os.Args[1] != "-host" {
-				*host = os.Args[1]
-				flag.CommandLine.Parse(append([]string{"-host"}, os.Args[1:]...))
-			} else {
-				*host = os.Args[1]
+		return
+	}
+
+	if *host == "" {
+		for i := 0; i < flag.NArg(); i++ {
+			arg := flag.Arg(i)
+			if strings.HasPrefix(arg, "-") {
+				continue
 			}
+			*host = arg
+			break
 		}
 	}
+
+	if *host == "" {
+		println()
+		println(" [host] is required. Exiting")
+		os.Exit(1)
+	}
+
+	log.Println("Proxy Start", *host)
 	println()
 
 	domain := getDomain(*host)
@@ -108,11 +119,6 @@ func main(host, port *string) {
 	mockfile := mockFolder + domain + ".json"
 	if *alt != "" {
 		mockfile = mockFolder + *alt
-	}
-
-	if *host == "" {
-		println("\n [host] is required. Exiting")
-		os.Exit(1)
 	}
 	malicious := false // default
 
@@ -335,7 +341,8 @@ func (p proxyProcess) LavaTestProxy(responseWriter http.ResponseWriter, request 
 	println(dotsStr+p.port+dotsStr+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
 
 	var respmsg rpcclient.JsonrpcMessage
-	if err := json.NewDecoder(request.Body).Decode(&respmsg); err != nil {
+	// Decode from rawBody instead of reading request.Body again
+	if err := json.Unmarshal(rawBody, &respmsg); err != nil {
 		println(err.Error())
 	}
 	replyMessage, err := rpcInterfaceMessages.ConvertJsonRPCMsg(&respmsg)

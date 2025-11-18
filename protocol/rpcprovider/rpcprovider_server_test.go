@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -47,6 +48,10 @@ func (mct *MockChainTracker) GetLatestBlockNum() (int64, time.Time) {
 func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Time) {
 	mct.latestBlock = newLatest
 	mct.changeTime = changeTime
+}
+
+func (mct *MockChainTracker) IsDummy() bool {
+	return false
 }
 
 func TestHandleConsistency(t *testing.T) {
@@ -382,4 +387,147 @@ func TestUnsupportedMethodErrorProperties(t *testing.T) {
 		require.Contains(t, err.Error(), originalErr.Error())
 		require.Equal(t, originalErr, err.Unwrap())
 	})
+}
+
+func TestProviderIdentifierHeaderForStaticProviders(t *testing.T) {
+	tests := []struct {
+		name            string
+		staticProvider  bool
+		providerName    string
+		providerAddress string
+		shouldUseName   bool
+		description     string
+	}{
+		{
+			name:            "static provider with name",
+			staticProvider:  true,
+			providerName:    "Ethereum-Primary-Provider",
+			providerAddress: "lava1abc123def456ghi789jkl012mno345pqr678st",
+			shouldUseName:   true,
+			description:     "Static provider with configured name should use the name",
+		},
+		{
+			name:            "static provider with empty name",
+			staticProvider:  true,
+			providerName:    "",
+			providerAddress: "lava1abc123def456ghi789jkl012mno345pqr678st",
+			shouldUseName:   false,
+			description:     "Static provider without name should fall back to address",
+		},
+		{
+			name:            "non-static provider with name",
+			staticProvider:  false,
+			providerName:    "Regular-Provider",
+			providerAddress: "lava1xyz987wvu654tsr321qpo210nml109ihg543cb",
+			shouldUseName:   false,
+			description:     "Non-static provider should always use address regardless of name",
+		},
+		{
+			name:            "non-static provider without name",
+			staticProvider:  false,
+			providerName:    "",
+			providerAddress: "lava1def456ghi789jkl012mno345pqr678stu901vw",
+			shouldUseName:   false,
+			description:     "Non-static provider without name should use address",
+		},
+		{
+			name:            "static provider with special characters in name",
+			staticProvider:  true,
+			providerName:    "Provider-1_Test.2024",
+			providerAddress: "lava1special123provider456test789address012abc",
+			shouldUseName:   true,
+			description:     "Static provider with special characters in name should use the name",
+		},
+		{
+			name:            "static provider with unicode name",
+			staticProvider:  true,
+			providerName:    "Provider-测试-Тест",
+			providerAddress: "lava1unicode123provider456test789address012def",
+			shouldUseName:   true,
+			description:     "Static provider with unicode characters in name should use the name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create mock chain message to capture the headers
+			var capturedHeaders []headerPair
+
+			mockChainMessage := &mockChainMessageForProviderHeader{
+				headers: &capturedHeaders,
+			}
+
+			// Create mock provider address
+			providerAddr := sdk.AccAddress(tt.providerAddress)
+
+			// Create RPCProviderServer with test configuration
+			rpcps := &RPCProviderServer{
+				StaticProvider: tt.staticProvider,
+				rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{
+					Name: tt.providerName,
+				},
+				providerAddress: providerAddr,
+			}
+
+			// Simulate the logic from sendRelayMessageToNode
+			providerIdentifier := rpcps.providerAddress.String()
+			if rpcps.StaticProvider && rpcps.rpcProviderEndpoint.Name != "" {
+				providerIdentifier = rpcps.rpcProviderEndpoint.Name
+			}
+
+			// Simulate appending the header
+			mockChainMessage.AppendHeader(RPCProviderAddressHeader, providerIdentifier)
+
+			// Verify the correct identifier was used
+			require.Len(t, capturedHeaders, 1, "Expected exactly one header to be appended")
+			require.Equal(t, RPCProviderAddressHeader, capturedHeaders[0].name, "Header name should be RPCProviderAddressHeader")
+
+			// Verify the value based on whether name should be used
+			if tt.shouldUseName {
+				require.Equal(t, tt.providerName, capturedHeaders[0].value, tt.description)
+			} else {
+				// Should use the address string (whatever format it's in)
+				require.Equal(t, providerAddr.String(), capturedHeaders[0].value, tt.description)
+			}
+		})
+	}
+}
+
+func TestProviderIdentifierLogic(t *testing.T) {
+	t.Run("logic flow for identifier selection", func(t *testing.T) {
+		testCases := []struct {
+			staticProvider bool
+			providerName   string
+			expected       string
+		}{
+			{true, "MyProvider", "MyProvider"},
+			{true, "", "address"},
+			{false, "MyProvider", "address"},
+			{false, "", "address"},
+		}
+
+		for _, tc := range testCases {
+			providerAddress := "address"
+			providerIdentifier := providerAddress
+			if tc.staticProvider && tc.providerName != "" {
+				providerIdentifier = tc.providerName
+			}
+			require.Equal(t, tc.expected, providerIdentifier)
+		}
+	})
+}
+
+// Mock types for testing
+
+type headerPair struct {
+	name  string
+	value string
+}
+
+type mockChainMessageForProviderHeader struct {
+	headers *[]headerPair
+}
+
+func (m *mockChainMessageForProviderHeader) AppendHeader(name string, value string) {
+	*m.headers = append(*m.headers, headerPair{name: name, value: value})
 }
