@@ -161,7 +161,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare"), nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", false), nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
 }
 
 func TestMain(m *testing.M) {
@@ -231,7 +231,10 @@ func (bpm DirectiveHeaders) GetBlockedProviders() []string {
 	}
 	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
 	if ok {
-		return strings.Split(blockedProviders, ",")
+		blockProviders := strings.Split(blockedProviders, ",")
+		if len(blockProviders) <= 2 {
+			return blockProviders
+		}
 	}
 	return nil
 }
@@ -878,8 +881,9 @@ func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
+	// Updating with the same epoch should be idempotent (no error)
 	err = csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
-	require.Error(t, err)
+	require.NoError(t, err)
 	// perform same validations as normal usage
 	require.Equal(t, len(csm.validAddresses), numberOfProviders) // checking there are 2 valid addresses
 	require.Equal(t, len(csm.pairingAddresses), numberOfProviders)

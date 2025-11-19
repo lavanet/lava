@@ -33,7 +33,7 @@ const (
 	GRPCUseTls                                 = "use-tls"
 	GRPCAllowInsecureConnection                = "allow-insecure-connection"
 	MaximumNumberOfParallelConnectionsAttempts = 10
-	MaxCallRecvMsgSize                         = 1024 * 1024 * 32 // setting receive size to 32mb instead of 4mb default
+	MaxCallRecvMsgSize                         = 1024 * 1024 * 512 // setting receive size to 512mb for large debug responses
 )
 
 var NumberOfParallelConnections uint = 10
