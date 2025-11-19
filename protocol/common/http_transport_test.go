@@ -221,8 +221,14 @@ func TestMultipleClientsShareTransportSettings(t *testing.T) {
 	}
 
 	// Verify transports are also independent instances
-	transport1 := client1.Transport.(*http.Transport)
-	transport2 := client2.Transport.(*http.Transport)
+	transport1, ok := client1.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("Client1 Transport is not *http.Transport, got %T", client1.Transport)
+	}
+	transport2, ok := client2.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("Client2 Transport is not *http.Transport, got %T", client2.Transport)
+	}
 
 	if transport1 == transport2 {
 		t.Error("OptimizedHttpClient should create new transport instances")

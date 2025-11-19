@@ -23,7 +23,7 @@ const (
 	// MaxConnsPerHost limits the total number of connections per host, including those in active use.
 	// This prevents overwhelming a single blockchain node with too many connections.
 	// Go default: 0 (unlimited - can cause node overload)
-	DefaultMaxConnsPerHost = 0
+	DefaultMaxConnsPerHost = 100
 
 	// IdleConnTimeout is the maximum amount of time an idle connection will remain idle before closing.
 	// Keeps connections alive for reuse but eventually closes them to avoid resource leaks.
