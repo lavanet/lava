@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v5/app"
@@ -121,6 +122,7 @@ type rpcProviderStartOptions struct {
 	relayLoadLimit            uint64
 	testMode                  bool
 	testResponsesFile         string
+	epochDuration             time.Duration
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -136,7 +138,7 @@ type RPCProvider struct {
 	// all of the following members need to be concurrency proof
 	providerMetricsManager       *metrics.ProviderMetricsManager
 	rewardServer                 *rewardserver.RewardServer
-	privKey                      *btcec.PrivateKey
+	privKey                      *btcSecp256k1.PrivateKey
 	lavaChainID                  string
 	addr                         sdk.AccAddress
 	blockMemorySize              uint64
@@ -150,6 +152,9 @@ type RPCProvider struct {
 	relaysHealthCheckInterval    time.Duration
 	grpcHealthCheckEndpoint      string
 	providerUniqueId             string
+	epochTimer                   *common.EpochTimer
+	sessionManagers              map[string]*lavasession.ProviderSessionManager // key: chainID-apiInterface
+	sessionManagersLock          sync.RWMutex                                   // protects sessionManagers map
 	staticProvider               bool
 	staticSpecPath               string
 	githubToken                  string
@@ -197,15 +202,69 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.githubToken = options.githubToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
 	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
+
+	// Initialize session managers map for epoch timer callbacks
+	rpcp.sessionManagers = make(map[string]*lavasession.ProviderSessionManager)
+
+	// Create time-based epoch timer for static providers (standalone mode)
+	if options.staticProvider {
+		// Validate that static providers have a spec path configured
+		// Standalone mode cannot fetch specs from the blockchain, so specs must be provided
+		if options.staticSpecPath == "" {
+			return utils.LavaFormatError(
+				"--static-spec-path is required when using --static-providers",
+				nil,
+				utils.LogAttr("static-providers", true),
+				utils.LogAttr("static-spec-path", "empty"),
+			)
+		}
+
+		// Static providers ALWAYS run with epoch timer
+		epochDuration := options.epochDuration
+		if epochDuration == 0 {
+			epochDuration = common.StandaloneEpochDuration // 15 minutes default for standalone
+		}
+
+		rpcp.epochTimer = common.NewEpochTimer(epochDuration)
+		currentEpoch := rpcp.epochTimer.GetCurrentEpoch()
+		timeUntilNext := rpcp.epochTimer.GetTimeUntilNextEpoch()
+
+		utils.LavaFormatInfo("Static provider: using time-based epochs (standalone mode)",
+			utils.LogAttr("epochDuration", epochDuration),
+			utils.LogAttr("currentEpoch", currentEpoch),
+			utils.LogAttr("timeUntilNextEpoch", timeUntilNext),
+			utils.LogAttr("nextEpochTime", time.Now().Add(timeUntilNext).Format("15:04:05 MST")),
+		)
+	}
+
 	// single state tracker
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
-	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
-	if err != nil {
-		return err
+	var providerStateTracker ProviderStateTrackerInf
+	if !options.staticProvider {
+		// Regular provider: connect to Lava blockchain
+		lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
+		pst, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
+		if err != nil {
+			return err
+		}
+		providerStateTracker = pst
+	} else {
+		// Static provider: use standalone state tracker (no blockchain connection)
+		utils.LavaFormatInfo("Static provider mode: using standalone state tracker (no Lava blockchain connection)")
+		// Pass 0 to use default LAV1 block time (15s)
+		// This is for the Lava blockchain itself, not for serviced chains
+		providerStateTracker = statetracker.NewStandaloneStateTracker(rpcp.epochTimer, 0)
 	}
 
 	rpcp.providerStateTracker = providerStateTracker
-	providerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(rpcp.providerMetricsManager))
+
+	// Register metrics updater (only for non-standalone, as RegisterForUpdates is not in the interface)
+	if !options.staticProvider {
+		// Type assert to access RegisterForUpdates method
+		if pst, ok := providerStateTracker.(*statetracker.ProviderStateTracker); ok {
+			pst.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(rpcp.providerMetricsManager))
+		}
+	}
+
 	// check version
 	version, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
@@ -221,31 +280,57 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 	}
 
-	keyName, err := sigs.GetKeyName(options.clientCtx)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
-	}
-	privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
-	if err != nil {
-		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
-	}
-	rpcp.privKey = privKey
-	clientKey, _ := options.clientCtx.Keyring.Key(keyName)
-	rpcp.lavaChainID = options.clientCtx.ChainID
+	// Get private key and address - only needed for regular providers
+	if !options.staticProvider {
+		// Regular provider: Load key from keyring
+		keyName, err := sigs.GetKeyName(options.clientCtx)
+		if err != nil {
+			utils.LavaFormatFatal("failed getting key name from clientCtx", err)
+		}
+		privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
+		if err != nil {
+			utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
+		}
+		rpcp.privKey = privKey
+		clientKey, _ := options.clientCtx.Keyring.Key(keyName)
+		rpcp.lavaChainID = options.clientCtx.ChainID
 
-	pubKey, err := clientKey.GetPubKey()
-	if err != nil {
-		return err
+		pubKey, err := clientKey.GetPubKey()
+		if err != nil {
+			return err
+		}
+
+		err = rpcp.addr.Unmarshal(pubKey.Address())
+		if err != nil {
+			utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
+		}
+
+		utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
+	} else {
+		// Static provider: Generate ephemeral key (not used for signing transactions)
+		utils.LavaFormatInfo("Static provider mode: generating ephemeral key for address identification")
+
+		// Generate a new secp256k1 private key
+		cosmosPrivKey := secp256k1.GenPrivKey()
+
+		// Convert cosmos SDK key to btcec format
+		privKey, _ := btcSecp256k1.PrivKeyFromBytes(cosmosPrivKey.Bytes())
+		rpcp.privKey = privKey
+
+		// Derive address from the ephemeral key
+		pubKey := cosmosPrivKey.PubKey()
+		err := rpcp.addr.Unmarshal(pubKey.Address())
+		if err != nil {
+			utils.LavaFormatFatal("failed unmarshaling ephemeral public address", err)
+		}
+
+		// Use a generic chain ID for static providers
+		rpcp.lavaChainID = "standalone"
+
+		utils.LavaFormatInfo("RPCProvider using ephemeral address: " + rpcp.addr.String())
 	}
 
-	err = rpcp.addr.Unmarshal(pubKey.Address())
-	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
-	}
-
-	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
-
-	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker.StateQuery.StateQuery, rpcp.addr.String())
+	rpcp.createAndRegisterFreezeUpdatersByOptions(ctx, providerStateTracker, rpcp.addr.String(), options.staticProvider)
 
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
 
@@ -264,10 +349,45 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	}
 
 	specValidator := NewSpecValidator()
-	utils.LavaFormatTrace("Running setup for RPCProvider endpoints", utils.LogAttr("endpoints", options.rpcProviderEndpoints))
+	utils.LavaFormatInfo("Running setup for RPCProvider endpoints", utils.LogAttr("endpoints", options.rpcProviderEndpoints))
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
 	rpcp.relaysMonitorAggregator.StartMonitoring(ctx)
 	specValidator.Start(ctx)
+
+	// Start epoch timer after all endpoints are set up (only for static providers)
+	if rpcp.staticProvider && rpcp.epochTimer != nil {
+		// Register all session managers for epoch updates
+		rpcp.sessionManagersLock.RLock()
+		sessionManagersCopy := make(map[string]*lavasession.ProviderSessionManager, len(rpcp.sessionManagers))
+		for k, v := range rpcp.sessionManagers {
+			sessionManagersCopy[k] = v
+		}
+		rpcp.sessionManagersLock.RUnlock()
+
+		for chainKey, sm := range sessionManagersCopy {
+			sessionManager := sm // Capture for closure
+			chainKeyLog := chainKey
+
+			rpcp.epochTimer.RegisterCallback(func(epoch uint64) {
+				utils.LavaFormatInfo("ProviderSessionManager: Epoch update triggered",
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("chainKey", chainKeyLog),
+					utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
+				)
+
+				// Update session manager to trigger cleanup
+				sessionManager.UpdateEpoch(epoch)
+			})
+
+			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates",
+				utils.LogAttr("chainKey", chainKey),
+			)
+		}
+
+		// Start the epoch timer
+		rpcp.epochTimer.Start(ctx)
+	}
+
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
@@ -304,9 +424,26 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	return nil
 }
 
-func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, stateQuery *updaters.StateQuery, publicAddress string) {
-	freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
+func (rpcp *RPCProvider) createAndRegisterFreezeUpdatersByOptions(ctx context.Context, providerStateTracker ProviderStateTrackerInf, publicAddress string, staticProvider bool) {
+	if staticProvider {
+		// Static providers don't need freeze/jail monitoring
+		utils.LavaFormatDebug("Static provider mode: skipping freeze/jail updater registration")
+		return
+	}
+
+	// Regular providers: monitor freeze/jail status on blockchain
+	// Access StateQuery from ProviderStateTracker (only available for non-standalone tracker)
+	type stateQueryAccessor interface {
+		GetStateQuery() *updaters.StateQuery
+	}
+
+	if pst, ok := providerStateTracker.(stateQueryAccessor); ok {
+		stateQuery := pst.GetStateQuery()
+		if stateQuery != nil {
+			freezeJailUpdater := updaters.NewProviderFreezeJailUpdater(stateQuery, publicAddress, rpcp.providerMetricsManager)
+			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, freezeJailUpdater)
+		}
+	}
 }
 
 func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
@@ -409,6 +546,13 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	chainID := rpcProviderEndpoint.ChainID
 	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
+
+	// Store session manager for epoch timer callbacks
+	sessionManagerKey := chainID + "-" + apiInterface
+	rpcp.sessionManagersLock.Lock()
+	rpcp.sessionManagers[sessionManagerKey] = providerSessionManager
+	rpcp.sessionManagersLock.Unlock()
+
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 	chainParser, err := chainlib.NewChainParser(apiInterface)
 	if err != nil {
@@ -446,10 +590,11 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
 	providerPolicy := GetAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls)
-	utils.LavaFormatDebug("supported services for provider",
+	utils.LavaFormatInfo("supported services for provider",
 		utils.LogAttr("specId", rpcProviderEndpoint.ChainID),
 		utils.LogAttr("apiInterface", apiInterface),
-		utils.LogAttr("supportedServices", providerPolicy.addons))
+		utils.LogAttr("supportedServices", providerPolicy.addons),
+		utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 	chainParser.SetPolicy(providerPolicy, rpcProviderEndpoint.ChainID, apiInterface)
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
@@ -476,18 +621,23 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			},
 		)
 	} else {
-		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
+		utils.LavaFormatInfo("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
 		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	}
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
 	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
+	utils.LavaFormatInfo("validating ChainFetcher for spec",
+		utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
+		utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID})
 	err = chainFetcher.Validate(ctx)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
-			utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			utils.Attribute{Key: "apiInterface", Value: apiInterface},
+			utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
+		)
 	}
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
@@ -502,6 +652,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				utils.Attribute{Key: "newBlock", Value: newBlock},
 				utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 				utils.Attribute{Key: "apiInterface", Value: apiInterface},
+				utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
 			)
 		}
 		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
@@ -518,26 +669,26 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 		chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 		}
 
 		if !chainTracker.IsDummy() {
 			chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
 			if err != nil {
-				utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID))
+				utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 			}
 
 			if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
 				chainTracker.StartAndServe(ctx)
-				utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
+				utils.LavaFormatInfo("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 				// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
 				err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
 				if err != nil {
-					return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+					return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 				}
 			} else { // loaded an existing chain tracker. use the same one instead
 				chainTracker = chainTrackerLoaded
-				utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+				utils.LavaFormatInfo("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 			}
 		}
 
@@ -550,6 +701,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	err = chainCommonSetup()
 	if err != nil {
+		utils.LavaFormatError("failed to run chain common setup", err, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 		return err
 	}
 
@@ -580,7 +732,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
+		utils.LavaFormatInfo("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
@@ -604,7 +756,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		var ok bool
 		listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
 		if !ok {
-			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
+			utils.LavaFormatInfo("creating new gRPC listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
 			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, rpcp.grpcHealthCheckEndpoint)
 			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
@@ -620,7 +772,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LavaFormatError("error in register receiver", err)
 	}
 
-	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
+	utils.LavaFormatInfo("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 	// prevents these objects form being overrun later
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
@@ -656,6 +808,25 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return ParseEndpointsCustomName(viper_endpoints, common.EndpointsConfigName, geolocation)
 }
 
+// ParseStaticProviderEndpoints parses static provider configuration into extended endpoint types
+func ParseStaticProviderEndpoints(viper_endpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCStaticProviderEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(endpointsConfigName, &endpoints)
+	if err != nil {
+		utils.LavaFormatFatal("could not unmarshal extended endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
+	}
+	for _, endpoint := range endpoints {
+		endpoint.Geolocation = geolocation
+
+		// Validate that the provider name is not empty
+		if err := endpoint.Validate(); err != nil {
+			return nil, utils.LavaFormatError("invalid provider configuration", err,
+				utils.Attribute{Key: "chainID", Value: endpoint.ChainID},
+				utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
+		}
+	}
+	return endpoints, err
+}
+
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
 		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
@@ -680,6 +851,16 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			}
 			if len(args)%len(Yaml_config_properties) != 0 {
 				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 4 HOST:PORT chain-id api-interface [node_url,node_url_2], arg count: %d", len(args))
+			}
+			return nil
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate --from flag: required ONLY when NOT using --static-providers
+			staticProvider, _ := cmd.Flags().GetBool(common.StaticProvidersConfigName)
+			fromFlag := cmd.Flags().Lookup(flags.FlagFrom)
+
+			if !staticProvider && (fromFlag == nil || !fromFlag.Changed) {
+				return fmt.Errorf("required flag \"%s\" not set (not required with --static-providers)", flags.FlagFrom)
 			}
 			return nil
 		},
@@ -727,20 +908,40 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 						utils.LavaFormatInfo("created new config file", utils.Attribute{Key: "file_name", Value: DefaultRPCProviderFileName})
 					}
 				}
+			} else if err = viper.ReadInConfig(); err != nil {
+				utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			} else {
-				err = viper.ReadInConfig()
-				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
-				}
 				utils.LavaFormatInfo("read config file successfully", utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read geolocation flag, required flag", err)
 			}
-			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
-			if err != nil || len(rpcProviderEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+
+			// Check if using static providers mode (requires provider names)
+			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
+			if staticProvider {
+				// In static provider mode, read from "endpoints" key but validate names
+				staticEndpoints, err := ParseStaticProviderEndpoints(viper.GetViper(), common.EndpointsConfigName, geolocation)
+				if err != nil || len(staticEndpoints) == 0 {
+					return utils.LavaFormatError("invalid endpoints definition in static provider mode, must include 'name' field for each provider", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				}
+				// Convert static endpoints to base endpoints for compatibility
+				rpcProviderEndpoints = make([]*lavasession.RPCProviderEndpoint, len(staticEndpoints))
+				for i, staticEndpoint := range staticEndpoints {
+					rpcProviderEndpoints[i] = staticEndpoint.ToBase()
+					rpcProviderEndpoints[i].Name = staticEndpoint.Name
+				}
+			} else {
+				// Use old endpoint parsing for backwards compatibility
+				rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
+				if err != nil || len(rpcProviderEndpoints) == 0 {
+					return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				}
+			}
+
+			if len(rpcProviderEndpoints) == 0 {
+				return utils.LavaFormatError("no endpoints defined", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
 			}
 			for _, endpoint := range rpcProviderEndpoints {
 				for _, nodeUrl := range endpoint.NodeUrls {
@@ -836,11 +1037,14 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
-			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
+			epochDuration := viper.GetDuration(common.EpochDurationFlag)
+
+			// If running with --static-providers, enable standalone mode
 			if staticProvider {
-				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
+				utils.LavaFormatWarning("Running in static provider mode (standalone, no Lava blockchain connection)", nil)
+				// Note: Epoch duration will default to 15 minutes (StandaloneEpochDuration) if not specified
 			}
 
 			// Load test mode configuration
@@ -877,6 +1081,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				relayLoadLimit,
 				testMode,
 				testResponsesFile,
+				epochDuration,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -907,7 +1112,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
-	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	// Note: --from is validated in PreRunE (required only when NOT using --static-providers)
 	cmdRPCProvider.Flags().Bool(common.StaticProvidersConfigName, false, "set the provider as static, allowing it to get requests from anyone, and skipping rewards, can be used for local tests")
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
@@ -935,7 +1140,9 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/evmos.json")
 	cmdRPCProvider.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
+	cmdRPCProvider.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
+	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
@@ -977,13 +1184,11 @@ func addMissingInternalPaths(rpcProviderEndpoint *lavasession.RPCProviderEndpoin
 				newUrl.Url += missingPath
 				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
 			}
-		} else {
-			if httpRootUrl != nil {
-				newUrl := *httpRootUrl // Create copy of root URL
-				newUrl.InternalPath = missingPath
-				newUrl.Url += missingPath
-				rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
-			}
+		} else if httpRootUrl != nil {
+			newUrl := *httpRootUrl // Create copy of root URL
+			newUrl.InternalPath = missingPath
+			newUrl.Url += missingPath
+			rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, newUrl)
 		}
 	}
 

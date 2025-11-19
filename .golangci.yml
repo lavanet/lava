@@ -70,6 +70,9 @@ issues:
 linters-settings:
   dogsled:
     max-blank-identifiers: 5
+  gocritic:
+    disabled-checks:
+      - elseif
   nolintlint:
     allow-unused: false
     require-explanation: false
