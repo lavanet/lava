@@ -64,7 +64,8 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	// GRPC
 	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress.Address)
 	opts := []grpc.ServerOption{
-		grpc.MaxRecvMsgSize(1024 * 1024 * 32), // setting receive size to 32mb instead of 4mb default
+		grpc.MaxRecvMsgSize(1024 * 1024 * 512), // setting receive size to 512mb for large debug responses
+		grpc.MaxSendMsgSize(1024 * 1024 * 512), // setting send size to 512mb for large debug responses
 	}
 	grpcServer := grpc.NewServer(opts...)
 	wrappedServer := grpcweb.WrapServer(grpcServer)

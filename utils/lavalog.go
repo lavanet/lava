@@ -34,6 +34,12 @@ const (
 	NoColor = true
 )
 
+const (
+	KEY_REQUEST_ID     = "request_id"
+	KEY_TASK_ID        = "task_id"
+	KEY_TRANSACTION_ID = "tx_id"
+)
+
 var (
 	JsonFormat = false
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
@@ -184,6 +190,30 @@ func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute
 				attributes[idx] = Attribute{Key: key, Value: guid}
 			} else {
 				attributes[idx] = Attribute{Key: key, Value: "no-guid"}
+			}
+		case KEY_REQUEST_ID:
+			reqId, found := GetRequestId(value)
+			if found {
+				st_val = reqId
+				attributes[idx] = Attribute{Key: key, Value: reqId}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: ""}
+			}
+		case KEY_TASK_ID:
+			taskId, found := GetTaskId(value)
+			if found {
+				st_val = taskId
+				attributes[idx] = Attribute{Key: key, Value: taskId}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: ""}
+			}
+		case KEY_TRANSACTION_ID:
+			txId, found := GetTxId(value)
+			if found {
+				st_val = txId
+				attributes[idx] = Attribute{Key: key, Value: txId}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: ""}
 			}
 		default:
 			attributes[idx] = Attribute{Key: key, Value: "context-masked"}

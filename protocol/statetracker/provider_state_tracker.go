@@ -25,6 +25,14 @@ type ProviderStateTracker struct {
 	*EmergencyTracker
 }
 
+// GetStateQuery returns the StateQuery for accessing blockchain state
+func (pst *ProviderStateTracker) GetStateQuery() *updaters.StateQuery {
+	if pst.StateQuery != nil {
+		return pst.StateQuery.StateQuery
+	}
+	return nil
+}
+
 func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateQuery := updaters.NewProviderStateQuery(ctx, updaters.NewStateQueryAccessInst(clientCtx))

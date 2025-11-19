@@ -1,20 +1,23 @@
 endpoints:
-    - api-interface: tendermintrpc
+    - name: provider3-tendermintrpc
+      api-interface: tendermintrpc
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: ws://127.0.0.1:26657/websocket
         - url: http://127.0.0.1:26657
-    - api-interface: grpc
+    - name: provider3-grpc
+      api-interface: grpc
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
-      node-urls: 
+      node-urls:
         - url: 127.0.0.1:9090
-    - api-interface: rest
+    - name: provider3-rest
+      api-interface: rest
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
-      node-urls: 
+      node-urls:
         - url: http://127.0.0.1:1317

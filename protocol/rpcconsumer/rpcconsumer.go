@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -27,7 +25,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
@@ -49,7 +47,6 @@ const (
 	refererBackendAddressFlagName = "referer-be-address"
 	refererMarkerFlagName         = "referer-marker"
 	reportsSendBEAddress          = "reports-be-address"
-	LavaOverLavaBackupFlagName    = "use-lava-over-lava-backup"
 )
 
 var (
@@ -94,7 +91,7 @@ func (s *strategyValue) Type() string {
 
 type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
-	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint, backupProvidersList []*lavasession.RPCProviderEndpoint)
+	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -102,6 +99,7 @@ type ConsumerStateTrackerInf interface {
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
+	LatestBlock() int64
 }
 
 type AnalyticsServerAddresses struct {
@@ -135,8 +133,6 @@ type rpcConsumerStartOptions struct {
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
 	refererData              *chainlib.RefererData
-	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
-	backupProvidersList      []*lavasession.RPCProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
 }
 
@@ -199,16 +195,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
-	var customLavaTransport *CustomLavaTransport
-	httpClient, err := jsonrpcclient.DefaultHTTPClient(options.clientCtx.NodeURI)
-	if err == nil {
-		customLavaTransport = NewCustomLavaTransport(httpClient.Transport, nil)
-		httpClient.Transport = customLavaTransport
-		client, err := rpchttp.NewWithClient(options.clientCtx.NodeURI, "/websocket", httpClient)
-		if err == nil {
-			options.clientCtx = options.clientCtx.WithClient(client)
-		}
-	}
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -229,7 +215,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	consumerConsistencies := &common.SafeSyncMap[string, *ConsumerConsistency]{}
+	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
 	finalizationConsensuses := &common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus]{}
 
 	var wg sync.WaitGroup
@@ -254,25 +240,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
-			rpcConsumerServer, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
+			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
 				policyUpdaters, optimizers, consumerConsistencies, finalizationConsensuses, chainMutexes,
 				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
-			if err == nil {
-				if customLavaTransport != nil && statetracker.IsLavaNativeSpec(rpcEndpoint.ChainID) && rpcEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC {
-					// we can add lava over lava to the custom transport as a secondary source
-					go func() {
-						ticker := time.NewTicker(100 * time.Millisecond)
-						defer ticker.Stop()
-						for range ticker.C {
-							if rpcConsumerServer.IsInitialized() {
-								customLavaTransport.SetSecondaryTransport(rpcConsumerServer)
-								return
-							}
-						}
-					}()
-				}
-			}
 			return err
 		}(rpcEndpoint)
 	}
@@ -317,7 +288,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerStateTracker *statetracker.ConsumerStateTracker,
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	consumerConsistencies *common.SafeSyncMap[string, *ConsumerConsistency],
+	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
 	finalizationConsensuses *common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
@@ -358,18 +329,9 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 
-	// Filter the relevant static providers
-	relevantStaticProviderList := []*lavasession.RPCProviderEndpoint{}
-	for _, staticProvider := range options.staticProvidersList {
-		if staticProvider.ChainID == rpcEndpoint.ChainID {
-			relevantStaticProviderList = append(relevantStaticProviderList, staticProvider)
-		}
-	}
-	staticProvidersActive := len(relevantStaticProviderList) > 0
-
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var consumerConsistency *ConsumerConsistency
+	var consumerConsistency relaycore.Consistency
 	var finalizationConsensus *finalizationconsensus.FinalizationConsensus
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
@@ -379,7 +341,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var err error
 
 		// Create / Use existing optimizer
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		// QoS selection is disabled by default (false) - can be enabled via command flag in the future
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, false)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
 			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -390,8 +353,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 		}
 
-		// Create / Use existing ConsumerConsistency
-		newConsumerConsistency := NewConsumerConsistency(chainID)
+		// Create / Use existing Consistency
+		newConsumerConsistency := relaycore.NewConsistency(chainID)
 		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
 		if err != nil {
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -404,7 +367,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 		}
 		if !loaded { // when creating new finalization consensus instance we need to register it to updates
-			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, staticProvidersActive)
+			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, false)
 		}
 		return nil
 	}
@@ -423,8 +386,17 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+
+	// Set callback to get Lava blockchain block height for RelaySession.Epoch
+	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
+		return rpcc.consumerStateTracker.LatestBlock()
+	})
+
+	if lavasession.PeriodicProbeProviders {
+		go consumerSessionManager.PeriodicProbeProviders(ctx, lavasession.PeriodicProbeProvidersInterval)
+	}
 	// Register For Updates
-	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList, options.backupProvidersList)
+	rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, nil, nil)
 
 	var relaysMonitor *metrics.RelaysMonitor
 	if options.cmdFlags.RelaysHealthEnableFlag {
@@ -468,13 +440,15 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 func CreateRPCConsumerCobraCommand() *cobra.Command {
 	cmdRPCConsumer := &cobra.Command{
 		Use:   "rpcconsumer [config-file] | { {listen-ip:listen-port spec-chain-id api-interface} ... }",
-		Short: `rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers`,
-		Long: `rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers
+		Short: `rpcconsumer sets up a decentralized server to perform api requests through the lava protocol using blockchain-paired providers`,
+		Long: `rpcconsumer sets up a decentralized server to perform api requests and sends them through the lava protocol to blockchain-paired data providers.
+		This is the decentralized mode that discovers and connects to providers dynamically through on-chain pairing.
+		For centralized/static provider routing, use rpcsmartrouter instead.
 		all configs should be located in the local running directory /config or ` + app.DefaultNodeHome + `
 		if no arguments are passed, assumes default config file: ` + DefaultRPCConsumerFileName + `
 		if one argument is passed, its assumed the config file name
 		`,
-		Example: `required flags: --geolocation 1 --from alice
+		Example: `required flags: --geolocation 1 --from alice --chain-id lava-testnet-2
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
 rpcconsumer 127.0.0.1:3333 OSMOSIS tendermintrpc 127.0.0.1:3334 OSMOSIS rest <flags>
@@ -540,11 +514,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				} else {
 					utils.LavaFormatInfo("created new config file", utils.Attribute{Key: "file_name", Value: DefaultRPCConsumerFileName})
 				}
+			} else if err = viper.ReadInConfig(); err != nil {
+				utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			} else {
-				err = viper.ReadInConfig()
-				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
-				}
 				utils.LavaFormatInfo("read config file successfully", utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)
@@ -610,31 +582,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				gasPricesStr = statetracker.DefaultGasPrice
 			}
 
-			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProvider function
-			var staticProviderEndpoints []*lavasession.RPCProviderEndpoint
-			if viper.IsSet(common.StaticProvidersConfigName) {
-				staticProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
-				if err != nil {
-					return utils.LavaFormatError("invalid static providers definition", err)
-				}
-				for _, endpoint := range staticProviderEndpoints {
-					utils.LavaFormatInfo("Static Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
-				}
-			}
-
-			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseEndpointsCustomName function
-			var backupProviderEndpoints []*lavasession.RPCProviderEndpoint
-			if viper.IsSet(common.BackupProvidersConfigName) {
-				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
-				backupProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
-				if err != nil {
-					return utils.LavaFormatError("invalid backup providers definition", err)
-				}
-				for _, endpoint := range backupProviderEndpoints {
-					utils.LavaFormatInfo("Backup Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
-				}
-			}
-
 			// set up the txFactory with gas adjustments and gas
 			txFactory = txFactory.WithGasAdjustment(viper.GetFloat64(flags.FlagGasAdjustment))
 			txFactory = txFactory.WithGasPrices(gasPricesStr)
@@ -698,43 +645,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 			}
 
-			if viper.GetBool(LavaOverLavaBackupFlagName) {
-				additionalEndpoint := func() *lavasession.RPCEndpoint {
-					for _, endpoint := range rpcEndpoints {
-						if statetracker.IsLavaNativeSpec(endpoint.ChainID) {
-							// native spec already exists, no need to add
-							return nil
-						}
-					}
-					// need to add an endpoint for the native lava chain
-					if strings.Contains(networkChainId, "mainnet") {
-						return &lavasession.RPCEndpoint{
-							NetworkAddress: chainlib.INTERNAL_ADDRESS,
-							ChainID:        statetracker.MAINNET_SPEC,
-							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
-						}
-					} else if strings.Contains(networkChainId, "testnet") {
-						return &lavasession.RPCEndpoint{
-							NetworkAddress: chainlib.INTERNAL_ADDRESS,
-							ChainID:        statetracker.TESTNET_SPEC,
-							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
-						}
-					} else if strings.Contains(networkChainId, "testnet") || networkChainId == "lava" {
-						return &lavasession.RPCEndpoint{
-							NetworkAddress: chainlib.INTERNAL_ADDRESS,
-							ChainID:        statetracker.TESTNET_SPEC,
-							ApiInterface:   spectypes.APIInterfaceTendermintRPC,
-						}
-					}
-					utils.LavaFormatError("could not find a native lava chain for the current network", nil, utils.LogAttr("networkChainId", networkChainId))
-					return nil
-				}()
-				if additionalEndpoint != nil {
-					utils.LavaFormatInfo("Lava over Lava backup is enabled", utils.Attribute{Key: "additionalEndpoint", Value: additionalEndpoint.ChainID})
-					rpcEndpoints = append(rpcEndpoints, additionalEndpoint)
-				}
-			}
-
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
 				txFactory,
@@ -748,8 +658,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				consumerPropagatedFlags,
 				rpcConsumerSharedState,
 				refererData,
-				staticProviderEndpoints,
-				backupProviderEndpoints,
 				geolocation,
 			})
 			return err
@@ -798,7 +706,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
-	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	// optimizer metrics
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, provideroptimizer.LastTierChance, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
@@ -817,8 +725,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Int64Var(&chainlib.MaximumNumberOfParallelWebsocketConnectionsPerIp, common.LimitParallelWebsocketConnectionsPerIpFlag, chainlib.MaximumNumberOfParallelWebsocketConnectionsPerIp, "limit number of parallel connections to websocket, per ip, default is unlimited (0)")
 	cmdRPCConsumer.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCConsumer.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
-	// lava over lava backup
-	cmdRPCConsumer.Flags().Bool(LavaOverLavaBackupFlagName, true, "enable lava over lava backup to regular rpc calls")
+
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
+	cmdRPCConsumer.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
+
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
