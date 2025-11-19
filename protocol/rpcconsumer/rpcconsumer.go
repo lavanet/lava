@@ -136,6 +136,7 @@ type rpcConsumerStartOptions struct {
 	refererData              *chainlib.RefererData
 	geoLocation              uint64
 	memoryGCThresholdGB      float64
+	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
 }
 
 func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
@@ -348,6 +349,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 		// Create / Use existing optimizer
 		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
 			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -640,6 +642,13 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
 			memoryutils.EnableMemoryLogs(enableMemoryLogs)
+			weightedSelectorConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+			weightedSelectorConfig.AvailabilityWeight = viper.GetFloat64(common.ProviderOptimizerAvailabilityWeight)
+			weightedSelectorConfig.LatencyWeight = viper.GetFloat64(common.ProviderOptimizerLatencyWeight)
+			weightedSelectorConfig.SyncWeight = viper.GetFloat64(common.ProviderOptimizerSyncWeight)
+			weightedSelectorConfig.StakeWeight = viper.GetFloat64(common.ProviderOptimizerStakeWeight)
+			weightedSelectorConfig.MinSelectionChance = viper.GetFloat64(common.ProviderOptimizerMinSelectionChance)
+			weightedSelectorConfig.Strategy = strategyFlag.Strategy
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -662,19 +671,20 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				memoryGCThresholdGB = 0
 			}
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
-				txFactory,
-				clientCtx,
-				rpcEndpoints,
-				requiredResponses,
-				cache,
-				strategyFlag.Strategy,
-				maxConcurrentProviders,
-				analyticsServerAddresses,
-				consumerPropagatedFlags,
-				rpcConsumerSharedState,
-				refererData,
-				geolocation,
-				memoryGCThresholdGB,
+				txFactory:                txFactory,
+				clientCtx:                clientCtx,
+				rpcEndpoints:             rpcEndpoints,
+				requiredResponses:        requiredResponses,
+				cache:                    cache,
+				strategy:                 strategyFlag.Strategy,
+				maxConcurrentProviders:   maxConcurrentProviders,
+				analyticsServerAddresses: analyticsServerAddresses,
+				cmdFlags:                 consumerPropagatedFlags,
+				stateShare:               rpcConsumerSharedState,
+				refererData:              refererData,
+				geoLocation:              geolocation,
+				memoryGCThresholdGB:      memoryGCThresholdGB,
+				weightedSelectorConfig:   weightedSelectorConfig,
 			})
 			return err
 		},
@@ -695,6 +705,27 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
+	defaultWeightedConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerAvailabilityWeight, defaultWeightedConfig.AvailabilityWeight, "weight assigned to provider availability when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerLatencyWeight, defaultWeightedConfig.LatencyWeight, "weight assigned to provider latency when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerSyncWeight, defaultWeightedConfig.SyncWeight, "weight assigned to provider sync freshness when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerStakeWeight, defaultWeightedConfig.StakeWeight, "weight assigned to provider stake when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerMinSelectionChance, defaultWeightedConfig.MinSelectionChance, "minimum selection probability for any provider regardless of score")
+	if err := viper.BindPFlag(common.ProviderOptimizerAvailabilityWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerAvailabilityWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding availability weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerLatencyWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerLatencyWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding latency weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerSyncWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerSyncWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding sync weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerStakeWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerStakeWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding stake weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerMinSelectionChance, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerMinSelectionChance)); err != nil {
+		utils.LavaFormatFatal("failed binding min selection chance flag", err)
+	}
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCConsumer.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
