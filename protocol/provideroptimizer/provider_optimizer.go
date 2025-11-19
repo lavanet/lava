@@ -118,6 +118,17 @@ func (po *ProviderOptimizer) Strategy() Strategy {
 	return po.strategy
 }
 
+// ConfigureWeightedSelector rebuilds the weighted selector using the supplied
+// configuration. Strategy is always enforced from the optimizer so callers only
+// provide weights and selection chance values.
+func (po *ProviderOptimizer) ConfigureWeightedSelector(config WeightedSelectorConfig) {
+	if po == nil {
+		return
+	}
+	config.Strategy = po.strategy
+	po.weightedSelector = NewWeightedSelector(config)
+}
+
 // UpdateWeights updates provider stake amounts in the cache and metrics
 func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
 	po.stakeCache.UpdateStakes(weights)

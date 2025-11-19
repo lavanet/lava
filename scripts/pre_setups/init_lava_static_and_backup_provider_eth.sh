@@ -275,7 +275,7 @@ config/consumer_examples/lava_consumer_static_with_backup_eth.yml \
 --allow-insecure-provider-dialing \
 --use-static-spec $SPECS_DIR \
 --metrics-listen-address ':7779' \
---enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
+2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

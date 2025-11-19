@@ -65,11 +65,15 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --stati
 
 <<<<<<< HEAD:scripts/pre_setups/init_lava_static_provider_with_node.sh
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcsmartrouter consumer_examples/lava_consumer_static_peers.yml \
+<<<<<<< HEAD
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --allow-insecure-provider-dialing --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 =======
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/lava_consumer_static_peers.yml \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" --use-lava-over-lava-backup=false 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 >>>>>>> 842864bd0 (test: Update provider optimizer tests for weighted selection logic):scripts/pre_setups/init_lava_static_provider.sh
+=======
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+>>>>>>> 1b80781ea (Refactor provider optimizer initialization to remove unused parameter)
 
 echo "--- setting up screens done ---"
 screen -ls
