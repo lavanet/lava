@@ -178,7 +178,8 @@ func TestCompressData_LargePayload(t *testing.T) {
 
 func TestCompressData_ExactThreshold(t *testing.T) {
 	// Test data exactly at threshold (1 MB)
-	// The check is "len(data) < threshold", so data AT threshold (>=) WILL be compressed
+	// The check is "len(data) <= threshold", so data AT threshold will NOT be compressed
+	// Only data LARGER THAN threshold gets compressed
 	exactData := make([]byte, CompressionThreshold)
 	for i := range exactData {
 		exactData[i] = byte('a') // Highly compressible pattern
@@ -187,10 +188,9 @@ func TestCompressData_ExactThreshold(t *testing.T) {
 	result, wasCompressed, err := CompressData(exactData, CompressionThreshold)
 
 	require.NoError(t, err, "CompressData should not error at exact threshold")
-	// Data at exact threshold is NOT < threshold, so it will go through compression
-	// Since 'aaaa...' compresses very well, it should be compressed
-	require.True(t, wasCompressed, "Data at exact threshold should be compressed (not < threshold)")
-	require.Less(t, len(result), len(exactData), "Compressed data should be smaller")
+	// Data at exact threshold is NOT > threshold, so it will NOT be compressed
+	require.False(t, wasCompressed, "Data at exact threshold should NOT be compressed (only > threshold)")
+	require.Equal(t, exactData, result, "Uncompressed data should be unchanged")
 }
 
 func TestCompressData_OneByteAboveThreshold(t *testing.T) {
