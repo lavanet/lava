@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func init() {
+	rand.InitRandomSeed()
+}
+
 const (
 	TEST_AVERAGE_BLOCK_TIME = 10 * time.Second
 	TEST_BASE_WORLD_LATENCY = 10 * time.Millisecond // same as score.DefaultLatencyNum
@@ -97,7 +101,7 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 
 // runChooseManyTimesAndReturnResults uses the given optimizer and providers addresses
 // to pick providers <times> times and return the results map:
-//  - results: map of provider address to the number of times it was picked
+//   - results: map of provider address to the number of times it was picked
 func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *ProviderOptimizer, providers []string, ignoredProviders map[string]struct{}, times int, cu uint64, requestBlock int64) map[string]int {
 	results := make(map[string]int)
 	for i := 0; i < times; i++ {
@@ -176,7 +180,6 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	require.Greater(t, goodProviderSelections, 300,
 		"good providers should get >30% of selections with extreme latency advantage")
 }
-
 
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed probe relays. Providers with bad scores should have
@@ -544,7 +547,6 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		actualSelections, iterations, percentAboveUniform, uniformExpectation)
 }
 
-
 func TestReputation(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 5
@@ -650,7 +652,6 @@ func TestProviderOptimizerWeights(t *testing.T) {
 		}
 	}
 }
-
 
 // TestProviderOptimizerChooseProvider checks that the follwing occurs:
 // 0. Assume 6 providers: 2 with great score, 2 with mid score but one has a great stake, and 2 with low score (benchmark).

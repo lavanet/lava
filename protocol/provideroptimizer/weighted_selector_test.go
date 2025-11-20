@@ -6,7 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v5/utils/rand"
+
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
