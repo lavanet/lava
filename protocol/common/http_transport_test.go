@@ -124,7 +124,7 @@ func TestDefaultConstants(t *testing.T) {
 		{
 			name:     "MaxConnsPerHost",
 			got:      DefaultMaxConnsPerHost,
-			want:     0,
+			want:     100,
 			critical: false,
 		},
 		{
