@@ -274,7 +274,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		for _, val := range details {
 			detailsMap[val.Key] = fmt.Sprint(val.Value)
 		}
-		utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake Entry")
+		utils.LogLavaEventDebug(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake Entry")
 		return nil
 	}
 

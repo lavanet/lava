@@ -200,7 +200,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
 		details["total_rewards"] = specFund.Fund.String()
 		details["chainid"] = specFund.GetSpec()
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
+		utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 
 		// count used rewards
 		leftovers = leftovers.Add(specFund.Fund.Sub(UsedReward...)...)

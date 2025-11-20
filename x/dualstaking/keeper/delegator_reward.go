@@ -274,7 +274,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 			return err
 		}
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "All contributors rewarded successfully")
+	utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "All contributors rewarded successfully")
 	if !leftRewards.IsZero() {
 		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		// we don;t want to bail on this
