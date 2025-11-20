@@ -116,6 +116,32 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 	}
 }
 
+// IsValidJsonRpcError checks if the provided data contains a valid JSON-RPC error response
+// Returns true if the data is valid JSON with an error field
+func IsValidJsonRpcError(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+
+	// Try to parse as JSON-RPC message
+	var result struct {
+		Version string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Error   *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return false
+	}
+
+	// Valid JSON-RPC error must have error field with message
+	return result.Error != nil && result.Error.Message != ""
+}
+
 // IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
 // This is a convenience function that accepts a string directly
 func IsUnsupportedMethodErrorMessage(errorMessage string) bool {

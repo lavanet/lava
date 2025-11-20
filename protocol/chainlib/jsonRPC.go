@@ -492,6 +492,23 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
 			}
 
+			// Check if reply.Data contains a valid JSON-RPC error from the node
+			// If so, return it directly to preserve the node's error code and message
+			if reply.Data != nil && len(reply.Data) > 0 && IsValidJsonRpcError(reply.Data) {
+				// Log request and response with actual node error
+				apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), err)
+
+				// Set status to internal error or use the provided status code
+				if relayResult.GetStatusCode() != 0 {
+					fiberCtx.Status(relayResult.StatusCode)
+				} else {
+					fiberCtx.Status(fiber.StatusInternalServerError)
+				}
+
+				// Return the node's JSON-RPC error response as-is
+				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 

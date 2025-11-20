@@ -1,0 +1,738 @@
+Test Directory /Users/tomelia/myProjects/lava
+=== RUN   TestLavaProtocol
+Nov 19 11:30:19 INF Starting Lava
+Nov 19 11:30:19 INF Executing Command: ./scripts/start_env_dev.sh
+Nov 19 11:30:19 INF Waiting for Lava
+Nov 19 11:30:29 INF Waiting for Lava
+Nov 19 11:30:39 INF Waiting for Lava
+Nov 19 11:30:49 INF Starting Lava OK
+Nov 19 11:30:49 INF Staking Lava
+Nov 19 11:30:49 INF Executing Command: ./scripts/test/init_e2e.sh
+Nov 19 11:32:08 INF stakeLava OK
+ETH1
+provider lava@1487ys2nzkm4xmc6nvsvf2um0nfx2w8a95d0ysw [{127.0.0.1:2222 1 [] [jsonrpc] []}]
+provider lava@14lc25rn8rgwhyqcv0vx2m6rmwu0hu7ts4xr49d [{127.0.0.1:2221 1 [debug] [jsonrpc] [archive]}]
+provider lava@1qj3rwdfk4pv5nd45y3qmj8y4zz226smhu7cdf7 [{127.0.0.1:2224 1 [] [jsonrpc] []}]
+provider lava@1rzxclznnx9ku0l63fasc7fl30n5y2vqghnyag7 [{127.0.0.1:2223 1 [] [jsonrpc] []}]
+provider lava@1xf2k5hpztlc0ddeuepekujt9lnhwj3qftdszt9 [{127.0.0.1:2225 1 [] [jsonrpc] []}]
+LAV1
+provider lava@19ex57a0wsujlpj6v3ksuf93zwg6fax4f6fqgt0 [{127.0.0.1:2263 1 [] [grpc rest tendermintrpc] []}]
+provider lava@1hha8mt6jfr8cyxl873sckc0kss77wqg8knpxjm [{127.0.0.1:2264 1 [] [grpc rest tendermintrpc] []}]
+provider lava@1hjj34cq2m3vdg5h32nqwe989qx3egffdes9ycp [{127.0.0.1:2265 1 [] [grpc rest tendermintrpc] []}]
+provider lava@1wxl0rc59q4lcutrm9rq3j8fcvkc8lrs5lu2vw8 [{127.0.0.1:2262 1 [] [grpc rest tendermintrpc] []}]
+provider lava@1xc97379h0tju626phsjl9lcps3j3wf7jph77uq [{127.0.0.1:2261 1 [] [grpc rest tendermintrpc] []}]
+Nov 19 11:32:08 INF Staking Lava OK
+Nov 19 11:32:08 INF RUNNING TESTS
+Nov 19 11:32:08 INF Executing Command: /opt/homebrew/Cellar/go/1.24.4/libexec/bin/go test ./testutil/e2e/proxy/. -v -timeout 0 -args -host eth
+Nov 19 11:32:08 INF startJSONRPCProxy OK
+Nov 19 11:32:12 INF Waiting JSONRPC Consumer attempt=5 remaining=1m56s url=http://127.0.0.1:1111
+Nov 19 11:32:12 INF JSONRPCProxy OK
+Nov 19 11:32:12 INF Validated proxy is alive got response attempts=5 res=16482926
+Nov 19 11:32:12 DBG Executing command /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/jsonrpcProvider1.yml --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer1 --geolocation 1 --log_level debug
+Nov 19 11:32:12 DBG Executing command /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/jsonrpcProvider2.yml --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer2 --geolocation 1 --log_level debug
+Nov 19 11:32:12 DBG Executing command /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/jsonrpcProvider3.yml --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer3 --geolocation 1 --log_level debug
+Nov 19 11:32:12 DBG Executing command /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/jsonrpcProvider4.yml --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer4 --geolocation 1 --log_level debug
+Nov 19 11:32:12 DBG Executing command /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/jsonrpcProvider5.yml --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer5 --geolocation 1 --log_level debug
+Nov 19 11:32:25 INF Waiting Provider 127.0.0.1:2221 attempt=5 remaining=48s
+Nov 19 11:32:36 INF Provider is responsive 127.0.0.1:2221 attempts=7
+Nov 19 11:32:36 INF Provider is responsive 127.0.0.1:2222 attempts=1
+Nov 19 11:32:36 INF Provider is responsive 127.0.0.1:2223 attempts=1
+Nov 19 11:32:36 INF Provider is responsive 127.0.0.1:2224 attempts=1
+Nov 19 11:32:36 INF startJSONRPCProvider OK
+Nov 19 11:32:36 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider6 --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer6 --geolocation 1 --log_level debug
+Nov 19 11:32:36 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider7 --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer7 --geolocation 1 --log_level debug
+Nov 19 11:32:36 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider8 --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer8 --geolocation 1 --log_level debug
+Nov 19 11:32:36 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider9 --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer9 --geolocation 1 --log_level debug
+Nov 19 11:32:36 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider10 --cache-be 127.0.0.1:2777 --chain-id=lava --from servicer10 --geolocation 1 --log_level debug
+Nov 19 11:32:41 INF Provider is responsive 127.0.0.1:2261 attempts=3
+Nov 19 11:32:41 INF Provider is responsive 127.0.0.1:2262 attempts=1
+Nov 19 11:32:41 INF Provider is responsive 127.0.0.1:2263 attempts=1
+Nov 19 11:32:41 INF Provider is responsive 127.0.0.1:2264 attempts=1
+Nov 19 11:32:41 INF Provider is responsive 127.0.0.1:2265 attempts=1
+Nov 19 11:32:41 INF startLavaProviders OK
+Nov 19 11:32:48 INF Executing Command: /Users/tomelia/go/bin/lavap rpcconsumer ./testutil/e2e/e2eConfigs/consumer/ethConsumer1.yml --cache-be 127.0.0.1:2778 --chain-id=lava --from user1 --geolocation 1 --log_level debug --allow-insecure-provider-dialing
+Nov 19 11:32:48 INF startJSONRPCConsumer OK
+Nov 19 11:32:52 INF Waiting JSONRPC Consumer attempt=5 remaining=1m56s url=http://127.0.0.1:3331
+Nov 19 11:32:53 INF JSONRPCConsumer1 OK
+Nov 19 11:32:53 INF Validated proxy is alive got response attempts=5 res=16482926
+Nov 19 11:32:53 INF Executing Command: /Users/tomelia/go/bin/lavap rpcconsumer ./testutil/e2e/e2eConfigs/consumer/lavaConsumer1.yml --cache-be 127.0.0.1:2778 --chain-id=lava --from user3 --geolocation 1 --log_level debug --allow-insecure-provider-dialing
+Nov 19 11:32:53 INF startRPCConsumer OK
+Nov 19 11:32:53 INF Waiting TENDERMINT Consumer
+Nov 19 11:32:54 INF Waiting TENDERMINT Consumer
+Nov 19 11:32:55 INF Waiting TENDERMINT Consumer
+Nov 19 11:32:56 INF Waiting TENDERMINT Consumer
+Nov 19 11:32:57 INF Waiting TENDERMINT Consumer
+Nov 19 11:32:57 INF checkTendermintConsumer OK
+Nov 19 11:32:57 INF Waiting REST Consumer
+Nov 19 11:32:58 INF Waiting REST Consumer
+Nov 19 11:32:58 INF checkRESTConsumer OK
+Nov 19 11:32:58 INF Waiting GRPC Consumer
+Nov 19 11:32:58 INF checkGRPCConsumer OK
+Nov 19 11:32:58 INF Starting JSONRPC Tests
+Nov 19 11:33:00 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:33:01 INF balance balance=78298958383712273820
+Nov 19 11:33:05 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:33:06 INF balance balance=78298958383712273820
+Nov 19 11:33:10 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:33:11 INF balance balance=78298958383712273820
+Nov 19 11:33:13 INF JSONRPC TEST OK
+Nov 19 11:33:13 INF Starting TENDERMINT Tests
+Nov 19 11:33:28 INF TENDERMINTRPC TEST OK
+Nov 19 11:33:28 INF Starting TENDERMINTRPC URI Tests
+Nov 19 11:33:43 INF TENDERMINTRPC URI TEST OK
+Nov 19 11:33:43 INF Starting REST Tests
+Nov 19 11:33:58 INF REST TEST OK
+Nov 19 11:33:58 INF Starting GRPC Tests
+Nov 19 11:34:13 INF GRPC TEST OK
+Nov 19 11:34:13 INF Executing Command: /Users/tomelia/go/bin/lavap cache 127.0.0.1:2778 --log_level debug
+Nov 19 11:34:13 INF Waiting Cache 127.0.0.1:2778
+Nov 19 11:34:15 INF Waiting Cache 127.0.0.1:2778
+Nov 19 11:34:15 INF startConsumerCache OK
+Nov 19 11:34:15 INF Executing Command: /Users/tomelia/go/bin/lavap cache 127.0.0.1:2777 --log_level debug
+Nov 19 11:34:15 INF Waiting Cache 127.0.0.1:2777
+Nov 19 11:34:17 INF Waiting Cache 127.0.0.1:2777
+Nov 19 11:34:17 INF startProviderCache OK
+Nov 19 11:34:17 INF Waiting TENDERMINT Consumer
+Nov 19 11:34:17 INF checkTendermintConsumer OK
+Nov 19 11:34:17 INF Waiting REST Consumer
+Nov 19 11:34:17 INF checkRESTConsumer OK
+Nov 19 11:34:17 INF Waiting GRPC Consumer
+Nov 19 11:34:17 INF checkGRPCConsumer OK
+Nov 19 11:34:17 INF Starting JSONRPC Tests
+Nov 19 11:34:20 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:34:20 INF balance balance=78298958383712273820
+Nov 19 11:34:25 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:34:25 INF balance balance=78298958383712273820
+Nov 19 11:34:30 INF sender sender=0x479Bc00624e58398f4Cf59D78884d12Fb515790A
+Nov 19 11:34:30 INF balance balance=78298958383712273820
+Nov 19 11:34:32 INF JSONRPC TEST OK
+Nov 19 11:34:32 INF Starting TENDERMINT Tests
+Nov 19 11:34:47 INF TENDERMINTRPC TEST OK
+Nov 19 11:34:47 INF Starting TENDERMINTRPC URI Tests
+Nov 19 11:35:02 INF TENDERMINTRPC URI TEST OK
+Nov 19 11:35:02 INF Starting REST Tests
+Nov 19 11:35:18 INF REST TEST OK
+Nov 19 11:35:18 INF Starting GRPC Tests
+Nov 19 11:35:33 INF GRPC TEST OK
+Nov 19 11:35:33 INF Starting Lava over Lava Tests
+Nov 19 11:35:33 INF Executing Command: ./scripts/test/init_e2e_lava_over_lava.sh
+SEP1
+provider lava@1487ys2nzkm4xmc6nvsvf2um0nfx2w8a95d0ysw [{127.0.0.1:2122 1 [] [jsonrpc] []}]
+provider lava@14lc25rn8rgwhyqcv0vx2m6rmwu0hu7ts4xr49d [{127.0.0.1:2121 1 [] [jsonrpc] []}]
+provider lava@1qj3rwdfk4pv5nd45y3qmj8y4zz226smhu7cdf7 [{127.0.0.1:2124 1 [] [jsonrpc] []}]
+provider lava@1rzxclznnx9ku0l63fasc7fl30n5y2vqghnyag7 [{127.0.0.1:2123 1 [] [jsonrpc] []}]
+provider lava@1xf2k5hpztlc0ddeuepekujt9lnhwj3qftdszt9 [{127.0.0.1:2125 1 [] [jsonrpc] []}]
+Nov 19 11:35:50 INF Lava Over Lava Test OK
+Nov 19 11:35:50 INF Starting Relay Response Integrity Tests
+Nov 19 11:35:50 INF TENDERMINT RESPONSE CROSS VERIFICATION OK
+Nov 19 11:35:50 INF REST RESPONSE CROSS VERIFICATION OK
+Nov 19 11:35:50 INF GRPC RESPONSE CROSS VERIFICATION OK
+Nov 19 11:35:50 INF Starting WebSocket Subscription Test
+Nov 19 11:35:50 INF Setting up web socket client 1
+Nov 19 11:35:50 DBG Dialed WebSocket Successful response="&{Status:101 Switching Protocols StatusCode:101 Proto:HTTP/1.1 ProtoMajor:1 ProtoMinor:1 Header:map[Access-Control-Allow-Origin:[*] Connection:[Upgrade] Date:[Wed, 19 Nov 2025 09:35:50 GMT] Sec-Websocket-Accept:[CdT0QZUM9CZsSDTvVFo/SXQcgXQ=] Upgrade:[websocket]] Body:{Reader:0x1401017fe60} ContentLength:0 TransferEncoding:[] Close:false Uncompressed:false Trailer:map[] Request:0x1400fbbd2c0 TLS:<nil>}" url=ws://127.0.0.1:3340/websocket
+Nov 19 11:35:50 INF Start listening for NewBlock messages on web socket 1
+Nov 19 11:35:50 INF Subscribing to NewBlock events on web socket 1
+Nov 19 11:35:50 INF Setting up web socket client 2
+Nov 19 11:35:50 DBG Dialed WebSocket Successful response="&{Status:101 Switching Protocols StatusCode:101 Proto:HTTP/1.1 ProtoMajor:1 ProtoMinor:1 Header:map[Access-Control-Allow-Origin:[*] Connection:[Upgrade] Date:[Wed, 19 Nov 2025 09:35:50 GMT] Sec-Websocket-Accept:[8z+NB/zYltEh4s7w9isIW9DUlCM=] Upgrade:[websocket]] Body:{Reader:0x140101ce390} ContentLength:0 TransferEncoding:[] Close:false Uncompressed:false Trailer:map[] Request:0x1400fbbda40 TLS:<nil>}" url=ws://127.0.0.1:3340/websocket
+Nov 19 11:35:50 INF Start listening for NewBlock messages on web socket 2
+Nov 19 11:35:50 INF Subscribing to NewBlock events on web socket 2
+Nov 19 11:35:50 INF Setting up web socket client 3
+Nov 19 11:35:50 DBG Dialed WebSocket Successful response="&{Status:101 Switching Protocols StatusCode:101 Proto:HTTP/1.1 ProtoMajor:1 ProtoMinor:1 Header:map[Access-Control-Allow-Origin:[*] Connection:[Upgrade] Date:[Wed, 19 Nov 2025 09:35:50 GMT] Sec-Websocket-Accept:[g3KoKmz8d5mm9SVWbQQqg/iaW2I=] Upgrade:[websocket]] Body:{Reader:0x140101ce7e0} ContentLength:0 TransferEncoding:[] Close:false Uncompressed:false Trailer:map[] Request:0x140101da280 TLS:<nil>}" url=ws://127.0.0.1:3340/websocket
+Nov 19 11:35:50 INF Start listening for NewBlock messages on web socket 3
+Nov 19 11:35:50 INF Subscribing to NewBlock events on web socket 3
+Nov 19 11:35:50 INF Setting up web socket client 4
+Nov 19 11:35:50 DBG Dialed WebSocket Successful response="&{Status:101 Switching Protocols StatusCode:101 Proto:HTTP/1.1 ProtoMajor:1 ProtoMinor:1 Header:map[Access-Control-Allow-Origin:[*] Connection:[Upgrade] Date:[Wed, 19 Nov 2025 09:35:50 GMT] Sec-Websocket-Accept:[H7uG528wBPJD2HvHuE8eSOs5sqQ=] Upgrade:[websocket]] Body:{Reader:0x1401023bbc0} ContentLength:0 TransferEncoding:[] Close:false Uncompressed:false Trailer:map[] Request:0x140101daa00 TLS:<nil>}" url=ws://127.0.0.1:3340/websocket
+Nov 19 11:35:50 INF Start listening for NewBlock messages on web socket 4
+Nov 19 11:35:50 INF Subscribing to NewBlock events on web socket 4
+Nov 19 11:35:50 INF Setting up web socket client 5
+Nov 19 11:35:50 DBG Dialed WebSocket Successful response="&{Status:101 Switching Protocols StatusCode:101 Proto:HTTP/1.1 ProtoMajor:1 ProtoMinor:1 Header:map[Access-Control-Allow-Origin:[*] Connection:[Upgrade] Date:[Wed, 19 Nov 2025 09:35:50 GMT] Sec-Websocket-Accept:[/5qyVjTmydQULqAkzmUAfiKX/n4=] Upgrade:[websocket]] Body:{Reader:0x14010410270} ContentLength:0 TransferEncoding:[] Close:false Uncompressed:false Trailer:map[] Request:0x1400fc3f680 TLS:<nil>}" url=ws://127.0.0.1:3340/websocket
+Nov 19 11:35:50 INF Start listening for NewBlock messages on web socket 5
+Nov 19 11:35:50 INF Subscribing to NewBlock events on web socket 5
+Nov 19 11:35:50 INF Sleeping for 12 seconds to receive blocks
+Nov 19 11:36:02 DBG Looping through subscription containers subscriptionContainers="[0x1401019abf0 0x1401019b2e0 0x1401019b9d0 0x14010271380 0x1400eb4b3d0]"
+Nov 19 11:36:02 INF Making sure both clients received at least 10 blocks
+Nov 19 11:36:02 INF Making sure both clients received at least 10 blocks
+Nov 19 11:36:02 INF Making sure both clients received at least 10 blocks
+Nov 19 11:36:02 INF Making sure both clients received at least 10 blocks
+Nov 19 11:36:02 INF Making sure both clients received at least 10 blocks
+Nov 19 11:36:02 INF Unsubscribing from NewBlock events on web socket 1
+Nov 19 11:36:02 INF Sleeping for 7 seconds to make sure unsubscribed client stops receiving blocks
+Nov 19 11:36:10 INF Closing web socket 1
+Nov 19 11:36:10 INF Closing web socket 2
+Nov 19 11:36:10 INF Closing web socket 3
+Nov 19 11:36:10 INF Closing web socket 4
+Nov 19 11:36:10 INF Closing web socket 5
+Nov 19 11:36:10 INF WebSocket Subscription Test OK
+Nov 19 11:36:10 INF Starting QoS Tests
+Nov 19 11:36:10 INF QOS CHECK OK
+Nov 19 11:36:10 INF Sleeping Until All Rewards are collected
+Nov 19 11:36:32 INF sleepUntilNextEpoch OK
+Nov 19 11:36:52 INF sleepUntilNextEpoch OK
+Nov 19 11:37:12 INF sleepUntilNextEpoch OK
+Nov 19 11:37:33 INF sleepUntilNextEpoch OK
+Nov 19 11:37:33 INF Restarting lava to emergency mode
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=05_LavaProvider_02
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=05_LavaProvider_02
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=05_LavaProvider_04
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=05_LavaProvider_04
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=03_EthProvider_03
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=03_EthProvider_03
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=03_EthProvider_02
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=03_EthProvider_02
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_02
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_02
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount06
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount06
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=03_EthProvider_04
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=03_EthProvider_04
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=05_LavaProvider_03
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=05_LavaProvider_03
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount07
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount07
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=07_lavaOverLava
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=07_lavaOverLava
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=09_Provider_Cache
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=3 log_name=09_Provider_Cache
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_07
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_07
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount08
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount08
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=05_LavaProvider_05
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=05_LavaProvider_05
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=00_StartLava
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=00_StartLava
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount02
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount02
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=04_jsonConsumer_01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=04_jsonConsumer_01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount03
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount03
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_03
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_03
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount00
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount00
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=05_LavaProvider_01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=05_LavaProvider_01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=03_EthProvider_01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=03_EthProvider_01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=08_Consumer_Cache
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=3 log_name=08_Consumer_Cache
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_06
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_06
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=06_RPCConsumer_01
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=06_RPCConsumer_01
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=03_EthProvider_05
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=03_EthProvider_05
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_05
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_05
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=02_jsonProxy
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=02_jsonProxy
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_00
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_00
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount05
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount05
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=01_stakeLava
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=01_stakeLava
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_08
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_08
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=8_authAccount04
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=1 log_name=8_authAccount04
+Nov 19 11:37:33 INF Adding EmergencyMode Start Line to log_name=9_QoS_04
+Nov 19 11:37:33 INF Successfully verified EmergencyMode Start Line in the last 20 lines line=19 log_name=9_QoS_04
+Nov 19 11:37:33 INF stopLava OK
+Nov 19 11:37:33 INF Executing emergency mode script command="./scripts/test/emergency_mode.sh 100000"
+Nov 19 11:37:33 INF Waiting for Lava
+Nov 19 11:37:33 INF Executing Command: /Users/tomelia/go/bin/lavad start
+Nov 19 11:37:33 INF startLavaInEmergencyMode OK
+Nov 19 11:37:33 INF startLava OK
+Nov 19 11:37:33 ERR Emergency mode process failed error="exit status 1"
+Nov 19 11:37:33 DBG success writing to file bytesWritten=290 fileName=8_authAccount01 lines=290
+Nov 19 11:37:33 INF Found Emergency start line Line index=1 file=8_authAccount01
+Nov 19 11:37:33 DBG success writing to file bytesWritten=291 fileName=8_authAccount02 lines=291
+Nov 19 11:37:33 INF Found Emergency start line Line index=1 file=8_authAccount02
+Nov 19 11:37:33 DBG success writing to file bytesWritten=289 fileName=8_authAccount07 lines=289
+Nov 19 11:37:33 INF Found Emergency start line Line index=1 file=8_authAccount07
+Nov 19 11:37:33 DBG success writing to file bytesWritten=9784387 fileName=05_LavaProvider_04 lines=9784387
+Nov 19 11:37:33 INF Found Emergency start line Line index=43369 file=05_LavaProvider_04
+Nov 19 11:37:33 DBG success writing to file bytesWritten=11338534 fileName=05_LavaProvider_03 lines=11338534
+Nov 19 11:37:33 INF Found Emergency start line Line index=49578 file=05_LavaProvider_03
+Nov 19 11:37:33 DBG success writing to file bytesWritten=232 fileName=09_Provider_Cache lines=232
+Nov 19 11:37:33 INF Found Emergency start line Line index=3 file=09_Provider_Cache
+Nov 19 11:37:33 DBG success writing to file bytesWritten=14038 fileName=9_QoS_08 lines=14038
+Nov 19 11:37:33 INF Found Emergency start line Line index=414 file=9_QoS_08
+Nov 19 11:37:33 DBG success writing to file bytesWritten=291 fileName=8_authAccount03 lines=291
+Nov 19 11:37:33 INF Found Emergency start line Line index=1 file=8_authAccount03
+Nov 19 11:37:33 DBG success writing to file bytesWritten=14018 fileName=9_QoS_04 lines=14018
+Nov 19 11:37:33 INF Found Emergency start line Line index=414 file=9_QoS_04
+Nov 19 11:37:33 DBG success writing to file bytesWritten=619622 fileName=00_StartLava lines=619622
+Nov 19 11:37:33 DBG success writing to file bytesWritten=137649964 fileName=06_RPCConsumer_01 lines=137649964
+Nov 19 11:37:34 INF Found Emergency start line Line index=588965 file=06_RPCConsumer_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=7390 fileName=10_StartLavaInEmergencyMode lines=7390
+Nov 19 11:37:34 DBG success writing to file bytesWritten=36999 fileName=03_EthProvider_03 lines=36999
+Nov 19 11:37:34 INF Found Emergency start line Line index=261 file=03_EthProvider_03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount00 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount00
+Nov 19 11:37:34 DBG success writing to file bytesWritten=2072 fileName=07_lavaOverLava lines=2072
+Nov 19 11:37:34 INF Found Emergency start line Line index=96 file=07_lavaOverLava
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_00 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_00
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8040919 fileName=05_LavaProvider_01 lines=8040919
+Nov 19 11:37:34 INF Found Emergency start line Line index=35547 file=05_LavaProvider_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=28598 fileName=03_EthProvider_04 lines=28598
+Nov 19 11:37:34 INF Found Emergency start line Line index=217 file=03_EthProvider_04
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount05 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=33463 fileName=03_EthProvider_02 lines=33463
+Nov 19 11:37:34 INF Found Emergency start line Line index=248 file=03_EthProvider_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9275130 fileName=02_jsonProxy lines=9275130
+Nov 19 11:37:34 INF Found Emergency start line Line index=7607 file=02_jsonProxy
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_06 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_06
+Nov 19 11:37:34 DBG success writing to file bytesWritten=14038 fileName=9_QoS_01 lines=14038
+Nov 19 11:37:34 INF Found Emergency start line Line index=414 file=9_QoS_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=19174 fileName=9_QoS_02 lines=19174
+Nov 19 11:37:34 INF Found Emergency start line Line index=555 file=9_QoS_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=64465 fileName=03_EthProvider_01 lines=64465
+Nov 19 11:37:34 INF Found Emergency start line Line index=392 file=03_EthProvider_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=232 fileName=08_Consumer_Cache lines=232
+Nov 19 11:37:34 INF Found Emergency start line Line index=3 file=08_Consumer_Cache
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount04 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount04
+Nov 19 11:37:34 DBG success writing to file bytesWritten=30225 fileName=03_EthProvider_05 lines=30225
+Nov 19 11:37:34 INF Found Emergency start line Line index=231 file=03_EthProvider_05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=142531 fileName=04_jsonConsumer_01 lines=142531
+Nov 19 11:37:34 INF Found Emergency start line Line index=651 file=04_jsonConsumer_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=289 fileName=8_authAccount06 lines=289
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount06
+Nov 19 11:37:34 DBG success writing to file bytesWritten=10815997 fileName=05_LavaProvider_02 lines=10815997
+Nov 19 11:37:34 INF Found Emergency start line Line index=47753 file=05_LavaProvider_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_07 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_07
+Nov 19 11:37:34 DBG success writing to file bytesWritten=17117 fileName=9_QoS_03 lines=17117
+Nov 19 11:37:34 INF Found Emergency start line Line index=506 file=9_QoS_03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=4410 fileName=00_StartLava_Daemon lines=4410
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_05 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8806 fileName=01_stakeLava lines=8806
+Nov 19 11:37:34 INF Found Emergency start line Line index=424 file=01_stakeLava
+Nov 19 11:37:34 DBG success writing to file bytesWritten=291 fileName=8_authAccount08 lines=291
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount08
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8172817 fileName=05_LavaProvider_05 lines=8172817
+Nov 19 11:37:34 INF Found Emergency start line Line index=36701 file=05_LavaProvider_05
+Nov 19 11:37:34 ERR Panic in emergency mode command error="Emergency mode process returned unexpectedly: exit status 1"
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_06 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_06
+Nov 19 11:37:34 DBG success writing to file bytesWritten=14038 fileName=9_QoS_01 lines=14038
+Nov 19 11:37:34 INF Found Emergency start line Line index=414 file=9_QoS_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=36999 fileName=03_EthProvider_03 lines=36999
+Nov 19 11:37:34 INF Found Emergency start line Line index=261 file=03_EthProvider_03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount00 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount00
+Nov 19 11:37:34 DBG success writing to file bytesWritten=30225 fileName=03_EthProvider_05 lines=30225
+Nov 19 11:37:34 INF Found Emergency start line Line index=231 file=03_EthProvider_05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=232 fileName=09_Provider_Cache lines=232
+Nov 19 11:37:34 INF Found Emergency start line Line index=3 file=09_Provider_Cache
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_00 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_00
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9784387 fileName=05_LavaProvider_04 lines=9784387
+Nov 19 11:37:34 INF Found Emergency start line Line index=43369 file=05_LavaProvider_04
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9275130 fileName=02_jsonProxy lines=9275130
+Nov 19 11:37:34 INF Found Emergency start line Line index=7607 file=02_jsonProxy
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount04 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount04
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount05 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=33463 fileName=03_EthProvider_02 lines=33463
+Nov 19 11:37:34 INF Found Emergency start line Line index=248 file=03_EthProvider_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8806 fileName=01_stakeLava lines=8806
+Nov 19 11:37:34 INF Found Emergency start line Line index=424 file=01_stakeLava
+Nov 19 11:37:34 DBG success writing to file bytesWritten=289 fileName=8_authAccount06 lines=289
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount06
+Nov 19 11:37:34 DBG success writing to file bytesWritten=7390 fileName=10_StartLavaInEmergencyMode lines=7390
+Nov 19 11:37:34 DBG success writing to file bytesWritten=64465 fileName=03_EthProvider_01 lines=64465
+Nov 19 11:37:34 INF Found Emergency start line Line index=392 file=03_EthProvider_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=11338534 fileName=05_LavaProvider_03 lines=11338534
+Nov 19 11:37:34 INF Found Emergency start line Line index=49578 file=05_LavaProvider_03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=4410 fileName=00_StartLava_Daemon lines=4410
+Nov 19 11:37:34 DBG success writing to file bytesWritten=2072 fileName=07_lavaOverLava lines=2072
+Nov 19 11:37:34 INF Found Emergency start line Line index=96 file=07_lavaOverLava
+Nov 19 11:37:34 DBG success writing to file bytesWritten=142531 fileName=04_jsonConsumer_01 lines=142531
+Nov 19 11:37:34 INF Found Emergency start line Line index=651 file=04_jsonConsumer_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8040919 fileName=05_LavaProvider_01 lines=8040919
+Nov 19 11:37:34 INF Found Emergency start line Line index=35547 file=05_LavaProvider_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=14038 fileName=9_QoS_08 lines=14038
+Nov 19 11:37:34 INF Found Emergency start line Line index=414 file=9_QoS_08
+Nov 19 11:37:34 DBG success writing to file bytesWritten=28598 fileName=03_EthProvider_04 lines=28598
+Nov 19 11:37:34 INF Found Emergency start line Line index=217 file=03_EthProvider_04
+Nov 19 11:37:34 DBG success writing to file bytesWritten=290 fileName=8_authAccount01 lines=290
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_07 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_07
+Nov 19 11:37:34 DBG success writing to file bytesWritten=8172817 fileName=05_LavaProvider_05 lines=8172817
+Nov 19 11:37:34 INF Found Emergency start line Line index=36701 file=05_LavaProvider_05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=619622 fileName=00_StartLava lines=619622
+Nov 19 11:37:34 DBG success writing to file bytesWritten=137649964 fileName=06_RPCConsumer_01 lines=137649964
+Nov 19 11:37:34 INF Found Emergency start line Line index=588965 file=06_RPCConsumer_01
+Nov 19 11:37:34 DBG success writing to file bytesWritten=291 fileName=8_authAccount03 lines=291
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=17117 fileName=9_QoS_03 lines=17117
+Nov 19 11:37:34 INF Found Emergency start line Line index=506 file=9_QoS_03
+Nov 19 11:37:34 DBG success writing to file bytesWritten=289 fileName=8_authAccount07 lines=289
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount07
+Nov 19 11:37:34 DBG success writing to file bytesWritten=232 fileName=08_Consumer_Cache lines=232
+Nov 19 11:37:34 INF Found Emergency start line Line index=3 file=08_Consumer_Cache
+Nov 19 11:37:34 DBG success writing to file bytesWritten=291 fileName=8_authAccount08 lines=291
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount08
+Nov 19 11:37:34 DBG success writing to file bytesWritten=10815997 fileName=05_LavaProvider_02 lines=10815997
+Nov 19 11:37:34 INF Found Emergency start line Line index=47753 file=05_LavaProvider_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=291 fileName=8_authAccount02 lines=291
+Nov 19 11:37:34 INF Found Emergency start line Line index=1 file=8_authAccount02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=19174 fileName=9_QoS_02 lines=19174
+Nov 19 11:37:34 INF Found Emergency start line Line index=555 file=9_QoS_02
+Nov 19 11:37:34 DBG success writing to file bytesWritten=9344 fileName=9_QoS_05 lines=9344
+Nov 19 11:37:34 INF Found Emergency start line Line index=292 file=9_QoS_05
+Nov 19 11:37:34 DBG success writing to file bytesWritten=14018 fileName=9_QoS_04 lines=14018
+Nov 19 11:37:34 INF Found Emergency start line Line index=414 file=9_QoS_04
+Nov 19 11:37:43 INF Starting Lava OK
+Nov 19 11:37:43 INF Executing Command: /Users/tomelia/go/bin/lavap rpcconsumer ./testutil/e2e/e2eConfigs/consumer/lavaConsumerEmergency1.yml --chain-id=lava --from user5 --geolocation 1 --log_level debug --allow-insecure-provider-dialing
+Nov 19 11:37:43 INF startRPCEmergencyConsumer OK
+Nov 19 11:37:43 INF Waiting REST Consumer
+Nov 19 11:37:44 INF Waiting REST Consumer
+Nov 19 11:37:45 INF Waiting REST Consumer
+Nov 19 11:37:45 INF checkRESTConsumer OK
+Nov 19 11:37:45 INF getLastBlockTime OK
+Nov 19 11:37:45 INF Waiting for finishing current epoch and waiting for 2 more virtual epochs
+Nov 19 11:37:45 INF Waiting for virtual epoch signal 1/3
+Nov 19 11:38:08 INF 0 : VIRTUAL EPOCH ENDED
+Nov 19 11:38:08 INF Received virtual epoch signal 1/3
+Nov 19 11:38:08 INF Waiting for virtual epoch signal 2/3
+Nov 19 11:38:32 INF 1 : VIRTUAL EPOCH ENDED
+Nov 19 11:38:32 INF Received virtual epoch signal 2/3
+Nov 19 11:38:32 INF Waiting for virtual epoch signal 3/3
+Nov 19 11:38:56 INF 2 : VIRTUAL EPOCH ENDED
+Nov 19 11:38:56 INF Received virtual epoch signal 3/3
+Nov 19 11:38:56 INF All virtual epoch signals received
+Nov 19 11:38:56 INF Virtual epochs completed, starting REST relay tests totalTests=10 url=http://127.0.0.1:3347
+Nov 19 11:38:56 INF REST relay test progress: 2/10 (elapsed: 41ns)
+Nov 19 11:38:56 INF REST relay test progress: 3/10 (elapsed: 112.366958ms)
+Nov 19 11:38:56 INF REST relay test progress: 4/10 (elapsed: 220.47525ms)
+Nov 19 11:38:56 INF REST relay test progress: 5/10 (elapsed: 327.081416ms)
+Nov 19 11:38:56 INF REST relay test progress: 6/10 (elapsed: 434.325083ms)
+Nov 19 11:38:56 INF REST relay test progress: 7/10 (elapsed: 538.919375ms)
+Nov 19 11:38:56 INF REST relay test progress: 8/10 (elapsed: 642.983208ms)
+Nov 19 11:38:56 INF REST relay test progress: 9/10 (elapsed: 747.964458ms)
+Nov 19 11:38:56 INF REST relay test progress: 10/10 (elapsed: 852.302666ms)
+Nov 19 11:38:56 INF REST relay test progress: 11/10 (elapsed: 957.709083ms)
+Nov 19 11:38:57 INF All 10 REST relay tests completed successfully
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_04
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=05_LavaProvider_04
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=02_jsonProxy
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=05_LavaProvider_05
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_06
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount07
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_02
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_08
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=03_EthProvider_04
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount00
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=03_EthProvider_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=05_LavaProvider_02
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_03
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=00_StartLava_Daemon
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_00
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount04
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_07
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=05_LavaProvider_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=04_jsonConsumer_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount03
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=9_QoS_05
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=08_Consumer_Cache
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=11_RPCEmergencyConsumer_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount05
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=00_StartLava
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=03_EthProvider_03
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=07_lavaOverLava
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=01_stakeLava
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=09_Provider_Cache
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount06
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=05_LavaProvider_03
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=06_RPCConsumer_01
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount02
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=03_EthProvider_05
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=03_EthProvider_02
+Nov 19 11:38:57 INF Adding EmergencyMode End Line to log_name=8_authAccount08
+Nov 19 11:38:57 INF REST RELAY TESTS OK
+Nov 19 11:38:57 INF Killing process name=03_EthProvider_01
+Nov 19 11:38:57 INF Killing process name=05_LavaProvider_01
+Nov 19 11:38:57 INF Killing process name=9_QoS_07
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_07
+Nov 19 11:38:57 INF Killing process name=04_jsonConsumer_01
+Nov 19 11:38:57 INF Killing process name=9_QoS_03
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_03
+Nov 19 11:38:57 INF Killing process name=05_LavaProvider_03
+Nov 19 11:38:57 INF Killing process name=05_LavaProvider_05
+Nov 19 11:38:57 INF Killing process name=09_Provider_Cache
+Nov 19 11:38:57 INF Killing process name=8_authAccount01
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount01
+Nov 19 11:38:57 INF Killing process name=8_authAccount02
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount02
+Nov 19 11:38:57 INF Killing process name=8_authAccount04
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount04
+Nov 19 11:38:57 INF Killing process name=8_authAccount06
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount06
+Nov 19 11:38:57 INF Killing process name=05_LavaProvider_02
+Nov 19 11:38:57 INF Killing process name=06_RPCConsumer_01
+Nov 19 11:38:57 INF Killing process name=9_QoS_01
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_01
+Nov 19 11:38:57 INF Killing process name=03_EthProvider_02
+Nov 19 11:38:57 INF Killing process name=03_EthProvider_04
+Nov 19 11:38:57 INF Killing process name=8_authAccount00
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount00
+Nov 19 11:38:57 INF Killing process name=8_authAccount08
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount08
+Nov 19 11:38:57 INF Killing process name=02_jsonProxy
+Nov 19 11:38:57 INF Killing process name=03_EthProvider_03
+Nov 19 11:38:57 INF Killing process name=03_EthProvider_05
+Nov 19 11:38:57 INF Killing process name=08_Consumer_Cache
+Nov 19 11:38:57 INF Killing process name=9_QoS_00
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_00
+Nov 19 11:38:57 INF Killing process name=9_QoS_02
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_02
+Nov 19 11:38:57 INF Killing process name=9_QoS_05
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_05
+Nov 19 11:38:57 INF Killing process name=8_authAccount07
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount07
+Nov 19 11:38:57 INF Killing process name=05_LavaProvider_04
+Nov 19 11:38:57 INF Killing process name=8_authAccount03
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount03
+Nov 19 11:38:57 INF Killing process name=9_QoS_04
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_04
+Nov 19 11:38:57 INF Killing process name=8_authAccount05
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=8_authAccount05
+Nov 19 11:38:57 INF Killing process name=9_QoS_06
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_06
+Nov 19 11:38:57 INF Killing process name=9_QoS_08
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=9_QoS_08
+Nov 19 11:38:57 INF Killing process name=00_StartLava_Daemon
+Nov 19 11:38:57 INF Killing process name=11_RPCEmergencyConsumer_01
+Nov 19 11:38:57 INF Killing process name=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 ERR Failed to kill process error="os: process already finished" name=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 INF Cleanup: Killing process name=05_LavaProvider_03
+Nov 19 11:38:57 INF Cleanup: Killing process name=05_LavaProvider_05
+Nov 19 11:38:57 INF Cleanup: Killing process name=09_Provider_Cache
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount01
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount01
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount02
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount02
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount04
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount04
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount06
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount06
+Nov 19 11:38:57 INF Cleanup: Killing process name=05_LavaProvider_02
+Nov 19 11:38:57 INF Cleanup: Killing process name=06_RPCConsumer_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_01
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=03_EthProvider_02
+Nov 19 11:38:57 INF Cleanup: Killing process name=03_EthProvider_04
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount00
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount00
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount08
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount08
+Nov 19 11:38:57 INF Cleanup: Killing process name=02_jsonProxy
+Nov 19 11:38:57 INF Cleanup: Killing process name=03_EthProvider_03
+Nov 19 11:38:57 INF Cleanup: Killing process name=03_EthProvider_05
+Nov 19 11:38:57 INF Cleanup: Killing process name=08_Consumer_Cache
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_00
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_00
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_02
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_02
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_05
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_05
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount07
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount07
+Nov 19 11:38:57 INF Cleanup: Killing process name=05_LavaProvider_04
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount03
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount03
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_04
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_04
+Nov 19 11:38:57 INF Cleanup: Killing process name=8_authAccount05
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=8_authAccount05
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_06
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_06
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_08
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_08
+Nov 19 11:38:57 INF Cleanup: Killing process name=00_StartLava_Daemon
+Nov 19 11:38:57 INF Cleanup: Killing process name=11_RPCEmergencyConsumer_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 INF Cleanup: Killing process name=03_EthProvider_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=05_LavaProvider_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_07
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_07
+Nov 19 11:38:57 INF Cleanup: Killing process name=04_jsonConsumer_01
+Nov 19 11:38:57 INF Cleanup: Killing process name=9_QoS_03
+Nov 19 11:38:57 ERR Cleanup: Failed to kill process error="os: process already finished" name=9_QoS_03
+Nov 19 11:38:57 INF All goroutines finished cleanly
+Nov 19 11:38:57 DBG success writing to file bytesWritten=333 fileName=8_authAccount03 lines=333
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount03
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount03
+Nov 19 11:38:57 DBG success writing to file bytesWritten=17159 fileName=9_QoS_03 lines=17159
+Nov 19 11:38:57 INF Found Emergency start line Line index=506 file=9_QoS_03
+Nov 19 11:38:57 INF Found Emergency end line Line index=507 file=9_QoS_03
+Nov 19 11:38:57 DBG success writing to file bytesWritten=331 fileName=8_authAccount07 lines=331
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount07
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount07
+Nov 19 11:38:57 DBG success writing to file bytesWritten=14080 fileName=9_QoS_01 lines=14080
+Nov 19 11:38:57 INF Found Emergency start line Line index=414 file=9_QoS_01
+Nov 19 11:38:57 INF Found Emergency end line Line index=415 file=9_QoS_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=137654430 fileName=06_RPCConsumer_01 lines=137654430
+Nov 19 11:38:57 INF Found Emergency start line Line index=588965 file=06_RPCConsumer_01
+Nov 19 11:38:57 INF Found Emergency end line Line index=589016 file=06_RPCConsumer_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=2114 fileName=07_lavaOverLava lines=2114
+Nov 19 11:38:57 INF Found Emergency start line Line index=96 file=07_lavaOverLava
+Nov 19 11:38:57 INF Found Emergency end line Line index=97 file=07_lavaOverLava
+Nov 19 11:38:57 DBG success writing to file bytesWritten=35238 fileName=03_EthProvider_02 lines=35238
+Nov 19 11:38:57 INF Found Emergency start line Line index=248 file=03_EthProvider_02
+Nov 19 11:38:57 INF Found Emergency end line Line index=268 file=03_EthProvider_02
+Nov 19 11:38:57 DBG success writing to file bytesWritten=144221 fileName=04_jsonConsumer_01 lines=144221
+Nov 19 11:38:57 INF Found Emergency start line Line index=651 file=04_jsonConsumer_01
+Nov 19 11:38:57 INF Found Emergency end line Line index=669 file=04_jsonConsumer_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=7432 fileName=10_StartLavaInEmergencyMode lines=7432
+Nov 19 11:38:57 INF Found Emergency end line Line index=71 file=10_StartLavaInEmergencyMode
+Nov 19 11:38:57 DBG success writing to file bytesWritten=332 fileName=8_authAccount00 lines=332
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount00
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount00
+Nov 19 11:38:57 DBG success writing to file bytesWritten=332 fileName=8_authAccount04 lines=332
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount04
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount04
+Nov 19 11:38:57 DBG success writing to file bytesWritten=30373 fileName=03_EthProvider_04 lines=30373
+Nov 19 11:38:57 INF Found Emergency start line Line index=217 file=03_EthProvider_04
+Nov 19 11:38:57 INF Found Emergency end line Line index=237 file=03_EthProvider_04
+Nov 19 11:38:57 DBG success writing to file bytesWritten=19216 fileName=9_QoS_02 lines=19216
+Nov 19 11:38:57 INF Found Emergency start line Line index=555 file=9_QoS_02
+Nov 19 11:38:57 INF Found Emergency end line Line index=556 file=9_QoS_02
+Nov 19 11:38:57 DBG success writing to file bytesWritten=109941 fileName=00_StartLava_Daemon lines=109941
+Nov 19 11:38:57 INF Found Emergency end line Line index=701 file=00_StartLava_Daemon
+Nov 19 11:38:57 DBG success writing to file bytesWritten=8051292 fileName=05_LavaProvider_01 lines=8051292
+Nov 19 11:38:57 INF Found Emergency start line Line index=35547 file=05_LavaProvider_01
+Nov 19 11:38:57 INF Found Emergency end line Line index=35626 file=05_LavaProvider_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=9386 fileName=9_QoS_05 lines=9386
+Nov 19 11:38:57 INF Found Emergency start line Line index=292 file=9_QoS_05
+Nov 19 11:38:57 INF Found Emergency end line Line index=293 file=9_QoS_05
+Nov 19 11:38:57 DBG success writing to file bytesWritten=8848 fileName=01_stakeLava lines=8848
+Nov 19 11:38:57 INF Found Emergency start line Line index=424 file=01_stakeLava
+Nov 19 11:38:57 INF Found Emergency end line Line index=425 file=01_stakeLava
+Nov 19 11:38:57 DBG success writing to file bytesWritten=10827688 fileName=05_LavaProvider_02 lines=10827688
+Nov 19 11:38:57 INF Found Emergency start line Line index=47753 file=05_LavaProvider_02
+Nov 19 11:38:57 INF Found Emergency end line Line index=47837 file=05_LavaProvider_02
+Nov 19 11:38:57 DBG success writing to file bytesWritten=9801830 fileName=05_LavaProvider_04 lines=9801830
+Nov 19 11:38:57 INF Found Emergency start line Line index=43369 file=05_LavaProvider_04
+Nov 19 11:38:57 INF Found Emergency end line Line index=43475 file=05_LavaProvider_04
+Nov 19 11:38:57 DBG success writing to file bytesWritten=8189029 fileName=05_LavaProvider_05 lines=8189029
+Nov 19 11:38:57 INF Found Emergency start line Line index=36701 file=05_LavaProvider_05
+Nov 19 11:38:57 INF Found Emergency end line Line index=36801 file=05_LavaProvider_05
+Nov 19 11:38:57 DBG success writing to file bytesWritten=11149251 fileName=02_jsonProxy lines=11149251
+Nov 19 11:38:57 INF Found Emergency start line Line index=7607 file=02_jsonProxy
+Nov 19 11:38:57 INF Found Emergency end line Line index=9456 file=02_jsonProxy
+Nov 19 11:38:57 DBG success writing to file bytesWritten=66347 fileName=03_EthProvider_01 lines=66347
+Nov 19 11:38:57 INF Found Emergency start line Line index=392 file=03_EthProvider_01
+Nov 19 11:38:57 INF Found Emergency end line Line index=413 file=03_EthProvider_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=274 fileName=08_Consumer_Cache lines=274
+Nov 19 11:38:57 INF Found Emergency start line Line index=3 file=08_Consumer_Cache
+Nov 19 11:38:57 INF Found Emergency end line Line index=4 file=08_Consumer_Cache
+Nov 19 11:38:57 DBG success writing to file bytesWritten=9386 fileName=9_QoS_00 lines=9386
+Nov 19 11:38:57 INF Found Emergency start line Line index=292 file=9_QoS_00
+Nov 19 11:38:57 INF Found Emergency end line Line index=293 file=9_QoS_00
+Nov 19 11:38:57 DBG success writing to file bytesWritten=104469 fileName=11_RPCEmergencyConsumer_01 lines=104469
+Nov 19 11:38:57 INF Found Emergency end line Line index=508 file=11_RPCEmergencyConsumer_01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=14060 fileName=9_QoS_04 lines=14060
+Nov 19 11:38:57 INF Found Emergency start line Line index=414 file=9_QoS_04
+Nov 19 11:38:57 INF Found Emergency end line Line index=415 file=9_QoS_04
+Nov 19 11:38:57 DBG success writing to file bytesWritten=332 fileName=8_authAccount01 lines=332
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount01
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount01
+Nov 19 11:38:57 DBG success writing to file bytesWritten=32001 fileName=03_EthProvider_05 lines=32001
+Nov 19 11:38:57 INF Found Emergency start line Line index=231 file=03_EthProvider_05
+Nov 19 11:38:57 INF Found Emergency end line Line index=252 file=03_EthProvider_05
+Nov 19 11:38:57 DBG success writing to file bytesWritten=331 fileName=8_authAccount06 lines=331
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount06
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount06
+Nov 19 11:38:57 DBG success writing to file bytesWritten=333 fileName=8_authAccount08 lines=333
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount08
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount08
+Nov 19 11:38:57 DBG success writing to file bytesWritten=9386 fileName=9_QoS_07 lines=9386
+Nov 19 11:38:57 INF Found Emergency start line Line index=292 file=9_QoS_07
+Nov 19 11:38:57 INF Found Emergency end line Line index=293 file=9_QoS_07
+Nov 19 11:38:57 DBG success writing to file bytesWritten=11351773 fileName=05_LavaProvider_03 lines=11351773
+Nov 19 11:38:57 INF Found Emergency start line Line index=49578 file=05_LavaProvider_03
+Nov 19 11:38:57 INF Found Emergency end line Line index=49668 file=05_LavaProvider_03
+Nov 19 11:38:57 DBG success writing to file bytesWritten=9386 fileName=9_QoS_06 lines=9386
+Nov 19 11:38:57 INF Found Emergency start line Line index=292 file=9_QoS_06
+Nov 19 11:38:57 INF Found Emergency end line Line index=293 file=9_QoS_06
+Nov 19 11:38:57 DBG success writing to file bytesWritten=332 fileName=8_authAccount05 lines=332
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount05
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount05
+Nov 19 11:38:57 DBG success writing to file bytesWritten=333 fileName=8_authAccount02 lines=333
+Nov 19 11:38:57 INF Found Emergency start line Line index=1 file=8_authAccount02
+Nov 19 11:38:57 INF Found Emergency end line Line index=2 file=8_authAccount02
+Nov 19 11:38:57 DBG success writing to file bytesWritten=274 fileName=09_Provider_Cache lines=274
+Nov 19 11:38:57 INF Found Emergency start line Line index=3 file=09_Provider_Cache
+Nov 19 11:38:57 INF Found Emergency end line Line index=4 file=09_Provider_Cache
+Nov 19 11:38:57 DBG success writing to file bytesWritten=14080 fileName=9_QoS_08 lines=14080
+Nov 19 11:38:57 INF Found Emergency start line Line index=414 file=9_QoS_08
+Nov 19 11:38:57 INF Found Emergency end line Line index=415 file=9_QoS_08
+Nov 19 11:38:57 DBG success writing to file bytesWritten=619664 fileName=00_StartLava lines=619664
+Nov 19 11:38:57 DBG success writing to file bytesWritten=38774 fileName=03_EthProvider_03 lines=38774
+Nov 19 11:38:57 INF Found Emergency start line Line index=261 file=03_EthProvider_03
+Nov 19 11:38:57 INF Found Emergency end line Line index=282 file=03_EthProvider_03
+--- PASS: TestLavaProtocol (518.41s)
+=== RUN   TestLavaProtocolPayment
+Nov 19 11:38:57 INF Starting Lava
+Nov 19 11:38:57 INF Executing Command: ./scripts/test/start_env_dev_for_payment_e2e.sh
+Nov 19 11:38:57 INF Waiting for Lava
+Nov 19 11:39:07 INF Waiting for Lava
+Nov 19 11:39:17 INF Waiting for Lava
+Nov 19 11:39:20 INF 3 : VIRTUAL EPOCH ENDED
+Nov 19 11:39:27 INF Starting Lava OK
+Nov 19 11:39:27 INF Staking Lava
+Nov 19 11:39:27 INF Executing Command: ./scripts/test/init_payment_e2e.sh
+Nov 19 11:39:50 INF stakeLavaForPayment OK
+LAV1
+provider lava@169ne3qjtjy0rlwqntz9e395rnqhattg658p74c [{127.0.0.1:2262 1 [] [grpc rest tendermintrpc] []}]
+provider lava@1nkv9wavsr478tyascfakqcs6h7u62u42zh4aev [{127.0.0.1:2261 1 [] [grpc rest tendermintrpc] []}]
+Nov 19 11:39:50 INF Staking Lava OK
+Nov 19 11:39:50 INF RUNNING TESTS
+Nov 19 11:39:50 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider6 --chain-id=lava --from servicer1 --geolocation 1 --log_level debug
+Nov 19 11:39:50 INF Executing Command: /Users/tomelia/go/bin/lavap rpcprovider ./testutil/e2e/e2eConfigs/provider/lavaProvider7 --chain-id=lava --from servicer2 --geolocation 1 --log_level debug
+Nov 19 11:39:53 INF Provider is responsive 127.0.0.1:2261 attempts=2
+Nov 19 11:39:53 INF Provider is responsive 127.0.0.1:2262 attempts=1
+Nov 19 11:39:53 INF startLavaProvidersForPayment OK
+Nov 19 11:39:53 INF Executing Command: /Users/tomelia/go/bin/lavap rpcconsumer ./testutil/e2e/e2eConfigs/consumer/lavaConsumer1.yml --chain-id=lava --from user1 --geolocation 1 --log_level debug --allow-insecure-provider-dialing --concurrent-providers 1
+Nov 19 11:39:53 INF startLavaConsumerForPayment OK
+Nov 19 11:39:53 INF Waiting TENDERMINT Consumer
+Nov 19 11:39:54 INF Waiting TENDERMINT Consumer
+Nov 19 11:39:55 INF Waiting TENDERMINT Consumer
+Nov 19 11:39:55 INF checkTendermintConsumer OK
+Nov 19 11:39:55 INF Starting TENDERMINT Tests
+Nov 19 11:40:15 INF TENDERMINTRPC TEST OK
+Nov 19 11:40:15 INF Starting TENDERMINTRPC URI Tests
+Nov 19 11:40:35 INF TENDERMINTRPC URI TEST OK
+Nov 19 11:40:35 INF CHECKING PAYMENT
+Nov 19 11:44:35 INF PAYMENT TEST OK
+Nov 19 11:44:35 INF Killing process name=05_LavaProvider_01
+Nov 19 11:44:35 INF Killing process name=05_LavaProvider_02
+Nov 19 11:44:35 INF Killing process name=06_RPCConsumer_01
+Nov 19 11:44:35 DBG writing file fileName=01_stakeLavaForPayment lines=2910
+Nov 19 11:44:35 DBG writing file fileName=05_LavaProvider_01 lines=11210197
+Nov 19 11:44:35 DBG writing file fileName=05_LavaProvider_02 lines=11148524
+Nov 19 11:44:35 DBG writing file fileName=06_RPCConsumer_01 lines=68410887
+Nov 19 11:44:35 DBG writing file fileName=00_StartLava lines=485055
+--- PASS: TestLavaProtocolPayment (337.86s)
+PASS
+ok  	github.com/lavanet/lava/v5/testutil/e2e	857.106s
