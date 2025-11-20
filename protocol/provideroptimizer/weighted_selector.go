@@ -2,6 +2,7 @@ package provideroptimizer
 
 import (
 	"math"
+	stdrand "math/rand"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +11,23 @@ import (
 	"github.com/lavanet/lava/v5/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
+
+// Randomizer interface allows switching between global probabilistic RNG and deterministic RNG for testing
+type Randomizer interface {
+	Float64() float64
+	Intn(n int) int
+}
+
+// globalRandomizer uses the thread-safe global random generator from utils/rand
+type globalRandomizer struct{}
+
+func (g globalRandomizer) Float64() float64 {
+	return rand.Float64()
+}
+
+func (g globalRandomizer) Intn(n int) int {
+	return rand.Intn(n)
+}
 
 // WeightedSelector implements continuous weighted random selection based on
 // composite QoS scores. It replaces the tier-based selection system with a
@@ -27,6 +45,9 @@ type WeightedSelector struct {
 
 	// Strategy-specific adjustments for weights
 	strategy Strategy
+
+	// Random number generator (defaults to global probabilistic RNG)
+	rng Randomizer
 }
 
 // ProviderScore represents a provider's calculated scores for selection
@@ -85,7 +106,14 @@ func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 		stakeWeight:        config.StakeWeight,
 		minSelectionChance: config.MinSelectionChance,
 		strategy:           config.Strategy,
+		rng:                globalRandomizer{},
 	}
+}
+
+// SetDeterministicSeed sets a specific seed for the weighted selector's RNG
+// This should ONLY be used for testing to ensure deterministic selection
+func (ws *WeightedSelector) SetDeterministicSeed(seed int64) {
+	ws.rng = stdrand.New(stdrand.NewSource(seed))
 }
 
 // CalculateScore computes a composite score for a provider based on QoS metrics and stake
@@ -262,11 +290,11 @@ func (ws *WeightedSelector) SelectProvider(
 	if totalScore <= 0 {
 		// Fallback to uniform random selection if all scores are zero
 		utils.LavaFormatWarning("all provider scores are zero, using uniform selection", nil)
-		return providerScores[rand.Intn(len(providerScores))].Address
+		return providerScores[ws.rng.Intn(len(providerScores))].Address
 	}
 
 	// Generate random value in [0, totalScore)
-	randomValue := rand.Float64() * totalScore
+	randomValue := ws.rng.Float64() * totalScore
 
 	// Use cumulative probability to select provider
 	cumulativeScore := 0.0
