@@ -141,7 +141,10 @@ func DialHTTPWithClient(endpoint string, client *http.Client) (*Client, error) {
 
 // DialHTTP creates a new RPC client that connects to an RPC server over HTTP.
 func DialHTTP(endpoint string) (*Client, error) {
-	return DialHTTPWithClient(endpoint, new(http.Client))
+	optimizedClient := &http.Client{
+		Transport: common.OptimizedHttpTransport(),
+	}
+	return DialHTTPWithClient(endpoint, optimizedClient)
 }
 
 func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool, strict bool) error {

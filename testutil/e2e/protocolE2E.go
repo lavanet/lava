@@ -1966,15 +1966,40 @@ func runProtocolE2E(timeout time.Duration) {
 
 	latestBlockTime := lt.getLatestBlockTime()
 
+	// Create a context for the virtual epoch goroutine so it can be cancelled
+	epochCtx, epochCancel := context.WithCancel(ctx)
+	defer epochCancel() // Ensure the goroutine is stopped when test finishes
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				utils.LavaFormatError("Panic in virtual epoch goroutine", fmt.Errorf("%v", r))
+			}
+		}()
+
 		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
 
 		for {
-			time.Sleep(time.Until(latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))))
-			utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+			nextEpochTime := latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))
+			sleepDuration := time.Until(nextEpochTime)
 
-			epochCounter++
-			signalChannel <- true
+			select {
+			case <-epochCtx.Done():
+				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
+				return
+			case <-time.After(sleepDuration):
+				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+				epochCounter++
+
+				// Non-blocking send to avoid goroutine leak if nobody is listening
+				select {
+				case signalChannel <- true:
+				case <-epochCtx.Done():
+					return
+				default:
+					// Channel full or no receiver, just continue
+				}
+			}
 		}
 	}()
 
@@ -1998,9 +2023,9 @@ func runProtocolE2E(timeout time.Duration) {
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	testStartTime := time.Now()
 	repeat(10, func(m int) {
-		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m+1, time.Since(testStartTime)))
+		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		if err := restRelayTest(url); err != nil {
-			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m+1), err)
+			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
 			panic(err)
 		}
 		// Small delay between requests to avoid overwhelming the system
