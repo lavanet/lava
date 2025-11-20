@@ -272,6 +272,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "seenBlock", Value: request.RelayData.GetSeenBlock()},
 		utils.Attribute{Key: "requestBlock", Value: request.RelayData.GetRequestBlock()},
 	)
+
+	// Check if consumer supports compression via custom header
+	md, _ := metadata.FromIncomingContext(ctx)
+	compressionSupport := md.Get(common.LavaCompressionSupportHeader)
+	consumerSupportsCompression := len(compressionSupport) > 0 && compressionSupport[0] == "true"
+
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
@@ -333,6 +339,29 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		rpcps.metrics.SetEndToEndLatency(endToEndLatencyMs)
 	}
 
+	// Application-level compression if consumer supports it
+	if reply != nil && reply.Data != nil {
+		// Only compress if consumer explicitly supports it via custom header
+		// Don't rely on grpc-accept-encoding which is always present
+		if consumerSupportsCompression {
+			originalSize := len(reply.Data)
+			compressedData, wasCompressed, compressErr := common.CompressData(reply.Data, common.CompressionThreshold)
+
+			if compressErr != nil {
+				utils.LavaFormatWarning("Failed to compress response, sending uncompressed",
+					compressErr,
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("originalSize", originalSize),
+				)
+			} else if wasCompressed {
+				reply.Data = compressedData
+
+				// Set header to indicate manual compression
+				grpc.SetHeader(ctx, metadata.Pairs(common.LavaCompressionHeader, common.LavaCompressionGzip))
+			}
+		}
+	}
+
 	utils.LavaFormatInfo("Done handling relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
@@ -343,6 +372,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
 		utils.Attribute{Key: "timeTaken", Value: processingTime},
+		utils.Attribute{Key: "consumerSupportsCompression", Value: consumerSupportsCompression},
 	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
