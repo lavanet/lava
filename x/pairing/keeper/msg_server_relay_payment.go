@@ -281,7 +281,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// differentiate between different relays by providing the index in the keys
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
-		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
+		utils.LogLavaEventDebug(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
 		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
 		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos)
@@ -331,7 +331,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
 		k.setStakeEntryBlockReport(ctx, msg.Creator, report.GetSpecId(), report.GetLatestBlock())
 	}
-	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
+	utils.LogLavaEventDebug(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
 	epochCuCache.Flush()
 
@@ -395,7 +395,7 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
 			"chainID":                    chainID,
 		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
+		utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}
 
 	return nil

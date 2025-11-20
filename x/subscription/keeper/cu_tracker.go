@@ -258,7 +258,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	details["total_rewards"] = totalTokenRewarded.String()
 	details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.SubscriptionPayoutEventName, details, "subscription monthly payout and reset")
+	utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.SubscriptionPayoutEventName, details, "subscription monthly payout and reset")
 }
 
 func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
