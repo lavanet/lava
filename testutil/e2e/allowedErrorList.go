@@ -13,6 +13,7 @@ var allowedErrors = map[string]string{
 	"Original Node Error":                        "This error is allowed because it logs masked connection errors during provider bootup or node communication issues, continuous failure would be caught by the e2e",
 	"Maximum cu exceeded PrepareSessionForUsage": "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Failed To Connect to cache at address":      "This error is allowed because it is caused by cache being connected only during the test and not during the bootup",
+	"Post \"http://[IP_ADDRESS]:1111\": EOF":     "This error is allowed because HTTP connections to the proxy can fail with EOF during test execution when connections are interrupted or not yet fully established",
 	"Not Implemented":                            "This error is allowed because the /lavanet/lava/pairing/clients API endpoint returns 501 Not Implemented from providers during tests",
 	"unsupported method":                         "This error is allowed because providers now return unsupported method errors for unimplemented APIs instead of retrying",
 	"unsupported method 'Default-/lavanet/lava/pairing/clients/LAV1': Not Implemented": "This error is allowed because the /lavanet/lava/pairing/clients API endpoint is not implemented in test providers",
