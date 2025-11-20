@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -706,6 +707,40 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 	return blocksHashesToHeights
 }
 
+// deepCopyRelayPrivateData creates a complete independent copy of RelayPrivateData
+// to prevent race conditions when the same protocolMessage is accessed by multiple goroutines
+func deepCopyRelayPrivateData(original *pairingtypes.RelayPrivateData) *pairingtypes.RelayPrivateData {
+	if original == nil {
+		return nil
+	}
+
+	// Deep copy all byte slices and string slices
+	dataCopy := make([]byte, len(original.Data))
+	copy(dataCopy, original.Data)
+
+	saltCopy := make([]byte, len(original.Salt))
+	copy(saltCopy, original.Salt)
+
+	metadataCopy := make([]pairingtypes.Metadata, len(original.Metadata))
+	copy(metadataCopy, original.Metadata)
+
+	extensionsCopy := make([]string, len(original.Extensions))
+	copy(extensionsCopy, original.Extensions)
+
+	return &pairingtypes.RelayPrivateData{
+		ConnectionType: original.ConnectionType,
+		ApiUrl:         original.ApiUrl,
+		Data:           dataCopy,
+		RequestBlock:   original.RequestBlock,
+		ApiInterface:   original.ApiInterface,
+		Salt:           saltCopy,
+		Metadata:       metadataCopy,
+		Addon:          original.Addon,
+		Extensions:     extensionsCopy,
+		SeenBlock:      original.SeenBlock,
+	}
+}
+
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
 	numOfProviders int,
@@ -726,6 +761,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 	// Use the latest protocol message from the relay state machine to ensure we have any archive upgrades
 	protocolMessage := relayProcessor.GetProtocolMessage()
+
+	// IMPORTANT: Create an isolated copy of RelayPrivateData at function entry to prevent race conditions.
+	// This ensures that modifications in this call don't affect goroutines from previous calls,
+	// and goroutines launched in this call aren't affected by future calls.
+	localRelayData := deepCopyRelayPrivateData(protocolMessage.RelayPrivateData())
+	if localRelayData == nil {
+		return utils.LavaFormatError("RelayPrivateData is nil", nil, utils.LogAttr("GUID", ctx))
+	}
+
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
@@ -776,7 +820,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.LavaFormatDebug("Cache lookup hash generated",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("hashKey", fmt.Sprintf("%x", hashKey)),
-						utils.LogAttr("apiUrl", protocolMessage.RelayPrivateData().ApiUrl),
+						utils.LogAttr("apiUrl", localRelayData.ApiUrl),
 					)
 
 					// Resolve the requested block for cache lookup
@@ -820,7 +864,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						BlockHash:             nil,
 						Finalized:             lookupFinalized,
 						SharedStateId:         sharedStateId,
-						SeenBlock:             protocolMessage.RelayPrivateData().SeenBlock,
+						SeenBlock:             localRelayData.SeenBlock,
 						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
@@ -846,9 +890,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					cacheSeenBlock := cacheReply.GetSeenBlock()
 					// check if the cache seen block is greater than my local seen block, this means the user requested this
 					// request spoke with another consumer instance and use that block for inter consumer consistency.
-					if rpccs.sharedState && cacheSeenBlock > protocolMessage.RelayPrivateData().SeenBlock {
-						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", protocolMessage.RelayPrivateData().SeenBlock), utils.LogAttr("GUID", ctx))
-						protocolMessage.RelayPrivateData().SeenBlock = cacheSeenBlock
+					if rpccs.sharedState && cacheSeenBlock > localRelayData.SeenBlock {
+						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", localRelayData.SeenBlock), utils.LogAttr("GUID", ctx))
+						localRelayData.SeenBlock = cacheSeenBlock
 						// setting the fetched seen block from the cache server to our local cache as well.
 						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
@@ -874,7 +918,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						relayResult := common.RelayResult{
 							Reply: reply,
 							Request: &pairingtypes.RelayRequest{
-								RelayData: protocolMessage.RelayPrivateData(),
+								RelayData: localRelayData,
 							},
 							Finalized:    false, // set false to skip data reliability
 							StatusCode:   200,
@@ -904,7 +948,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	addon := chainlib.GetAddon(protocolMessage)
-	reqBlock = rpccs.resolveRequestedBlock(reqBlock, protocolMessage.RelayPrivateData().SeenBlock, latestBlockHashRequested, protocolMessage)
+	reqBlock = rpccs.resolveRequestedBlock(reqBlock, localRelayData.SeenBlock, latestBlockHashRequested, protocolMessage)
 	// check whether we need a new protocol message with the new earliest block hash requested
 	protocolMessage = rpccs.updateProtocolMessageIfNeededWithNewEarliestData(ctx, relayState, protocolMessage, earliestBlockHashRequested, addon)
 
@@ -912,12 +956,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
-	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", protocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", localRelayData), utils.LogAttr("GUID", ctx))
 
 	// Debug: Check if the protocol message has the archive extension in its internal state
-	if relayPrivateData := protocolMessage.RelayPrivateData(); relayPrivateData != nil {
-		utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", relayPrivateData.Extensions), utils.LogAttr("GUID", ctx))
-	}
+	utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", localRelayData.Extensions), utils.LogAttr("GUID", ctx))
 	usedProviders := relayProcessor.GetUsedProviders()
 	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 
@@ -937,9 +979,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				if err != nil {
 					return err
 				}
-				relayProcessor.SetSkipDataReliability(true)                // disabling data reliability when disabling extensions.
-				protocolMessage.RelayPrivateData().Extensions = []string{} // reset request data extensions
-				extensions = []*spectypes.Extension{}                      // reset extensions too so we wont hit SetDisallowDegradation
+				relayProcessor.SetSkipDataReliability(true) // disabling data reliability when disabling extensions.
+				localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
+				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
 			} else {
 				return err
 			}
@@ -979,7 +1021,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
-		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
+		// IMPORTANT: Pass localRelayData by value to isolate each goroutine from future modifications
+		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo, relayData *pairingtypes.RelayPrivateData) {
 			// add ticker launch metrics
 			localRelayResult := &common.RelayResult{
 				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderReputationSummary: sessionInfo.QoSSummaryResult},
@@ -998,6 +1041,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			defer func() {
+				// Recover from any panics to prevent consumer crash
+				if r := recover(); r != nil {
+					errResponse = utils.LavaFormatError("Panic recovered in sendRelayToProvider goroutine", fmt.Errorf("%v", r), utils.LogAttr("provider", providerPublicAddress), utils.LogAttr("GUID", goroutineCtx), utils.LogAttr("stack", string(debug.Stack())))
+				}
+
 				// Return response
 				relayProcessor.SetResponse(&relaycore.RelayResponse{
 					RelayResult: *localRelayResult,
@@ -1008,7 +1056,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				goroutineCtxCancel()
 			}()
 
-			localRelayRequestData := *protocolMessage.RelayPrivateData()
+			// Use the relayData parameter which is isolated for this goroutine
+			if relayData == nil {
+				errResponse = utils.LavaFormatError("RelayPrivateData is nil", nil, utils.LogAttr("GUID", goroutineCtx))
+				return
+			}
+			localRelayRequestData := *relayData
 
 			// Extract fields from the sessionInfo
 			singleConsumerSession := sessionInfo.Session
@@ -1231,7 +1284,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 			// localRelayResult is being sent on the relayProcessor by a deferred function
-		}(providerPublicAddress, sessionInfo)
+		}(providerPublicAddress, sessionInfo, localRelayData)
 	}
 	// finished setting up go routines, can return and wait for responses
 	return nil

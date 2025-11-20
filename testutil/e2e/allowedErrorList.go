@@ -8,6 +8,7 @@ var allowedErrors = map[string]string{
 	`error connecting to provider error="context deadline exceeded"`: "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"purging provider after all endpoints are disabled provider":     "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
+	"Provider Side Failed Sending MessagePost":                       "This error is allowed because it can occur when providers fail to send HTTP POST messages during shutdown or connection issues",
 	"Original Node Error":                        "This error is allowed because it logs masked connection errors during provider bootup or node communication issues, continuous failure would be caught by the e2e",
 	"Maximum cu exceeded PrepareSessionForUsage": "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Failed To Connect to cache at address":      "This error is allowed because it is caused by cache being connected only during the test and not during the bootup",
