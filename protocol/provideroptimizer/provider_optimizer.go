@@ -700,3 +700,11 @@ func (po *ProviderOptimizer) GetWeightedSelectorConfig() WeightedSelectorConfig 
 	}
 	return WeightedSelectorConfig{}
 }
+
+// SetDeterministicSeed sets a deterministic seed for the weighted selector
+// This is used for testing purposes only to ensure reproducible provider selection
+func (po *ProviderOptimizer) SetDeterministicSeed(seed int64) {
+	if po.weightedSelector != nil {
+		po.weightedSelector.SetDeterministicSeed(seed)
+	}
+}
