@@ -69,7 +69,7 @@ func TestProviderOptimizerProviderDataSetGet(t *testing.T) {
 func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := int64(1000)
 
@@ -119,7 +119,7 @@ func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *Provide
 func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
@@ -191,7 +191,7 @@ func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
 	cu := uint64(1)
 	requestBlock := int64(1000)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
@@ -236,7 +236,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	// damage all the providers scores with failed probe relays but three random ones
 	skipIndex := rand.Intn(providersCount - 3)
@@ -271,7 +271,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(1000)
@@ -421,7 +421,7 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
 
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	// start with a disabled chosen index
 	chosenIndex := -1
 	testProvidersExploration := func(iterations int) float64 {
@@ -483,7 +483,7 @@ func TestProviderOptimizerExploration(t *testing.T) {
 func TestProviderOptimizerSyncScore(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	cu := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
 
@@ -570,8 +570,8 @@ func TestReputation(t *testing.T) {
 
 // test low providers count 0-9
 func TestProviderOptimizerProvidersCount(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
@@ -609,8 +609,8 @@ func TestProviderOptimizerProvidersCount(t *testing.T) {
 }
 
 func TestProviderOptimizerWeights(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
@@ -659,8 +659,8 @@ func TestProviderOptimizerWeights(t *testing.T) {
 // 2. high stake mid score is picked more than 0 times and picked more than mid score with average stake
 // 3. low score are not selected
 func TestProviderOptimizerChooseProvider(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 6
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
@@ -742,8 +742,8 @@ func TestProviderOptimizerChooseProvider(t *testing.T) {
 // Expected: the ranking of providers stays the same, providers with high stake are picked more often,
 // providers with worst scores are selected less often
 func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 6
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 
@@ -828,8 +828,8 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 // sample with a better range (for example, the better one gets latency of 10-30ms and the bad one gets 25-40ms)
 // 2. Choose between them and verify the better one is chosen more.
 func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 3
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
@@ -891,8 +891,8 @@ func TestProviderOptimizerChoiceSimulationBasedOnLatency(t *testing.T) {
 }
 
 func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 3
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)
@@ -959,8 +959,8 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 // score_good_latency = latency + sync_factor * sync_lag + ... = 0.01 + 0.3 * 10 + ... = 3.01 + ...
 // score_good_sync = latency + sync_factor * sync_lag + ... = 3.01 + 0.3 * 0 + ... = 3.01 + ...
 func TestProviderOptimizerLatencySyncScore(t *testing.T) {
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
 	providerOptimizer := setupProviderOptimizer(1)
+	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 	providersCount := 2
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	cu := uint64(10)

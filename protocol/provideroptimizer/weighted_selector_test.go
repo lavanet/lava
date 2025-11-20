@@ -11,11 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	// Initialize random seed for testing
-	rand.SetSpecificSeed(1234567) // Use fixed seed for deterministic test
-}
-
 // Helper function to create a QoS report
 func createQoSReport(availability, latency, sync float64) *pairingtypes.QualityOfServiceReport {
 	return &pairingtypes.QualityOfServiceReport{
@@ -39,7 +34,7 @@ func TestNewWeightedSelector(t *testing.T) {
 	require.Equal(t, 0.3, ws.latencyWeight)
 	require.Equal(t, 0.2, ws.syncWeight)
 	require.Equal(t, 0.1, ws.stakeWeight)
-	require.Equal(t, 0.01, ws.minSelectionChance)
+	require.Equal(t, 0.10, ws.minSelectionChance)
 }
 
 // TestWeightNormalization tests that weights are normalized if they don't sum to 1.0
@@ -229,6 +224,7 @@ func TestSelectProviderEmptyList(t *testing.T) {
 func TestSelectProviderDistribution(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	// Create providers with different scores
 	providers := []ProviderScore{
@@ -270,6 +266,7 @@ func TestSelectProviderDistribution(t *testing.T) {
 func TestSelectProviderEqualScores(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	providers := []ProviderScore{
 		{Address: "provider1", CompositeScore: 0.5, SelectionWeight: 0.5},
@@ -296,6 +293,7 @@ func TestSelectProviderEqualScores(t *testing.T) {
 func TestSelectProviderZeroScores(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	providers := []ProviderScore{
 		{Address: "provider1", CompositeScore: 0.0, SelectionWeight: 0.0},
@@ -483,6 +481,7 @@ func BenchmarkCalculateScore(b *testing.B) {
 func BenchmarkSelectProvider(b *testing.B) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567) // Use fixed seed for deterministic benchmark
 
 	providers := make([]ProviderScore, 50)
 	for i := 0; i < 50; i++ {

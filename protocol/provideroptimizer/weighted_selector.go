@@ -3,6 +3,7 @@ package provideroptimizer
 import (
 	"math"
 	stdrand "math/rand"
+	"sync"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,6 +28,24 @@ func (g globalRandomizer) Float64() float64 {
 
 func (g globalRandomizer) Intn(n int) int {
 	return rand.Intn(n)
+}
+
+// mutexRandomizer wraps *rand.Rand with a mutex for thread safety
+type mutexRandomizer struct {
+	mu  sync.Mutex
+	rng *stdrand.Rand
+}
+
+func (m *mutexRandomizer) Float64() float64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.rng.Float64()
+}
+
+func (m *mutexRandomizer) Intn(n int) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.rng.Intn(n)
 }
 
 // WeightedSelector implements continuous weighted random selection based on
@@ -74,7 +93,7 @@ func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 		LatencyWeight:      0.3,  // Latency is second priority (30%)
 		SyncWeight:         0.2,  // Sync is third priority (20%)
 		StakeWeight:        0.1,  // Stake provides small boost (10%)
-		MinSelectionChance: 0.01, // 1% minimum chance to ensure fairness
+		MinSelectionChance: 0.10, // 10% minimum chance to ensure fairness
 		Strategy:           StrategyBalanced,
 	}
 }
@@ -113,7 +132,9 @@ func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 // SetDeterministicSeed sets a specific seed for the weighted selector's RNG
 // This should ONLY be used for testing to ensure deterministic selection
 func (ws *WeightedSelector) SetDeterministicSeed(seed int64) {
-	ws.rng = stdrand.New(stdrand.NewSource(seed))
+	ws.rng = &mutexRandomizer{
+		rng: stdrand.New(stdrand.NewSource(seed)),
+	}
 }
 
 // CalculateScore computes a composite score for a provider based on QoS metrics and stake
