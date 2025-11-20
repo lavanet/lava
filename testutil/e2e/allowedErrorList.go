@@ -27,6 +27,7 @@ var allowedErrors = map[string]string{
 	"\\\"Error_GUID\\\"":                                                               "This error is allowed because it's an escaped JSON error response containing unsupported method errors",
 	"tx already exists in cache":                                                       "This error is allowed because it can occur when transactions are retried during the test",
 	"failed to create canonical form":                                                  "This error is allowed because it is caused by the relay processor not being able to create a canonical form",
+	"received node error reply from provider":                                          "This error is allowed because providers can return node errors (like Internal error) when the underlying node has issues or unsupported methods",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
