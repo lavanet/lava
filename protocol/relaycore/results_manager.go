@@ -223,12 +223,49 @@ func (rp *ResultsManagerInst) SetResponse(response *RelayResponse, protocolMessa
 	if response == nil {
 		return nil
 	}
+
 	if response.Err != nil {
+		// Check if this is actually a node error wrapped in a gRPC error by checking status code
+		// Status codes like 429, 504 indicate node errors, not protocol/connectivity errors
+		if rp.isNodeErrorStatusCode(response.RelayResult.StatusCode) {
+			// Extract error message from the gRPC error and treat as node error
+			errorMessage := response.Err.Error()
+			return rp.setNodeErrorFromProtocolError(response, errorMessage)
+		}
+
 		rp.setErrorResponse(response)
 	} else {
 		return rp.setValidResponse(response, protocolMessage)
 	}
 	return nil
+}
+
+// isNodeErrorStatusCode checks if the status code indicates a node error (like 429, 504)
+// rather than a protocol/connectivity error
+func (rp *ResultsManagerInst) isNodeErrorStatusCode(statusCode int) bool {
+	// 429 Too Many Requests - node rate limiting
+	// 504 Gateway Timeout - node timeout
+	// 400-499 range (except 401, 403 which might be provider issues) - typically node errors
+	// 500-599 range - node internal errors
+	return statusCode == 429 || statusCode == 504 ||
+		(statusCode >= 400 && statusCode < 600 && statusCode != 401 && statusCode != 403)
+}
+
+// setNodeErrorFromProtocolError treats a protocol error as a node error when the status code indicates so
+func (rp *ResultsManagerInst) setNodeErrorFromProtocolError(response *RelayResponse, errorMessage string) error {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+
+	err := fmt.Errorf("%s", errorMessage)
+	utils.LavaFormatError(
+		"received node error (from gRPC error with node status code)",
+		err,
+		utils.LogAttr("GUID", rp.guid),
+		utils.LogAttr("provider", response.RelayResult.ProviderInfo),
+		utils.LogAttr("statusCode", response.RelayResult.StatusCode),
+	)
+	rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
+	return err
 }
 
 func (rp *ResultsManagerInst) GetResultsData() (successResults []common.RelayResult, nodeErrors []common.RelayResult, protocolErrors []RelayError) {

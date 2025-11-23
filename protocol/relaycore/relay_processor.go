@@ -273,20 +273,21 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
 	neededForQuorum := rp.getActualQuorumSize(resultsCount)
+
 	if rp.quorumParams.Enabled() && neededForQuorum <= rp.currentQourumEqualResults ||
 		!rp.quorumParams.Enabled() && resultsCount >= rp.quorumParams.Min {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
 		}
-		// Check if we need to add node errors retry metrics
-		if rp.selection == Quorum {
-			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
-			if nodeErrors > 0 {
-				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
-			}
+
+		// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
+		// Now that 429s and similar errors are properly classified as node errors, this will work correctly
+		if nodeErrors > 0 {
+			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+			go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
 		}
+
 		if rp.debugRelay {
 			utils.LavaFormatDebug("HasRequiredNodeResults quorum met",
 				utils.LogAttr("GUID", rp.guid),
@@ -331,6 +332,14 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		if !retryForQuorumNeeded {
 			// Retry on node error flow:
 			shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors)
+
+			// If we successfully recovered from node errors, increment metric
+			// Now that 429s and similar errors are properly classified as node errors, this will work correctly
+			if !shouldRetry && nodeErrors > 0 {
+				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
+			}
+
 			if rp.debugRelay {
 				utils.LavaFormatDebug("HasRequiredNodeResults shouldRetry",
 					utils.LogAttr("GUID", rp.guid),
