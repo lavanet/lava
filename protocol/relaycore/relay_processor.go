@@ -592,6 +592,11 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 			shouldDegradeAvailability = true
 		}
 		return rp.responsesQuorum(successResults, requiredQuorumSize)
+	} else if nodeErrorCount >= requiredQuorumSize {
+		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+			shouldDegradeAvailability = true
+		}
+		return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
 	}
 
 	if rp.debugRelay {
@@ -616,9 +621,9 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		if rp.selection == Quorum {
 			// When quorum is enabled, we need to ensure we have enough successful responses
 			// to actually meet quorum requirements, not just enough total attempts
-			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
+			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min && nodeErrorCount < rp.quorumParams.Min {
 				// We have enough total responses, but not enough successful ones for quorum
-				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
+				return nil, utils.LavaFormatError("insufficient responses for quorum: neither success results nor node errors alone meet quorum threshold",
 					nil,
 					utils.LogAttr("successResultsCount", successResultsCount),
 					utils.LogAttr("nodeErrorCount", nodeErrorCount),
@@ -626,8 +631,9 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 					utils.LogAttr("quorumMin", rp.quorumParams.Min),
 					utils.LogAttr("totalResponses", totalResponses))
 			}
-			// Only use responsesQuorum if we have at least some successful results
-			// If we only have node errors, fall through to error handling below
+			// Only combine if we have at least some successes
+			// If we have ONLY node errors but didn't meet quorum as checked above,
+			// combining them won't help since they'd still be the same responses
 			if successResultsCount > 0 {
 				nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 				nodeResults = append(nodeResults, successResults...)
