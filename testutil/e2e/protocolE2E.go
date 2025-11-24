@@ -272,7 +272,8 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 	lt.commandsMu.Unlock()
 
 	if err != nil && !lt.testFinishedProperly.Load() && !exitExpected {
-		utils.LavaFormatError(functionName+" cmd wait err", err)
+		utils.LavaFormatError(functionName+" cmd wait err", err,
+			utils.LogAttr("logName", logName))
 	}
 	if exitExpected {
 		utils.LavaFormatInfo(functionName+" exit expected; skipping panic",
@@ -293,6 +294,8 @@ func (lt *lavaTest) expectCommandExit(logName string) {
 		lt.expectedCommandExit = make(map[string]bool)
 	}
 	lt.expectedCommandExit[logName] = true
+	utils.LavaFormatInfo("Marked command exit expectation",
+		utils.LogAttr("logName", logName))
 }
 
 func (lt *lavaTest) resetCommandExitExpectation(logName string) {
@@ -302,6 +305,8 @@ func (lt *lavaTest) resetCommandExitExpectation(logName string) {
 		return
 	}
 	delete(lt.expectedCommandExit, logName)
+	utils.LavaFormatDebug("Reset command exit expectation",
+		utils.LogAttr("logName", logName))
 }
 
 func (lt *lavaTest) consumeCommandExitExpectation(logName string) bool {
@@ -312,6 +317,9 @@ func (lt *lavaTest) consumeCommandExitExpectation(logName string) bool {
 	}
 	val := lt.expectedCommandExit[logName]
 	delete(lt.expectedCommandExit, logName)
+	utils.LavaFormatDebug("Consume command exit expectation",
+		utils.LogAttr("logName", logName),
+		utils.LogAttr("value", val))
 	return val
 }
 
