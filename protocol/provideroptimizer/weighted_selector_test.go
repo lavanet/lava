@@ -30,10 +30,10 @@ func TestNewWeightedSelector(t *testing.T) {
 	ws := NewWeightedSelector(config)
 
 	require.NotNil(t, ws)
-	require.Equal(t, 0.4, ws.availabilityWeight)
+	require.Equal(t, 0.3, ws.availabilityWeight)
 	require.Equal(t, 0.3, ws.latencyWeight)
 	require.Equal(t, 0.2, ws.syncWeight)
-	require.Equal(t, 0.1, ws.stakeWeight)
+	require.Equal(t, 0.2, ws.stakeWeight)
 	require.Equal(t, 0.10, ws.minSelectionChance)
 }
 
@@ -73,12 +73,12 @@ func TestCalculateScorePerfectProvider(t *testing.T) {
 	score := ws.CalculateScore(qos, stake, totalStake)
 
 	// Perfect provider should have high score (close to 1.0)
-	// availability: 1.0 * 0.4 = 0.4
+	// availability: 1.0 * 0.3 = 0.3
 	// latency: 1.0 * 0.3 = 0.3 (0 latency normalized to 1.0)
 	// sync: 1.0 * 0.2 = 0.2 (0 sync normalized to 1.0)
-	// stake: 0.1 * 0.1 = 0.01 (1000/10000 = 0.1)
-	// total: 0.4 + 0.3 + 0.2 + 0.01 = 0.91
-	require.InDelta(t, 0.91, score, 0.02)
+	// stake: 0.1 * 0.2 = 0.02 (1000/10000 = 0.1)
+	// total: 0.3 + 0.3 + 0.2 + 0.02 = 0.82
+	require.InDelta(t, 0.82, score, 0.02)
 }
 
 // TestCalculateScorePoorProvider tests scoring for a poor provider
@@ -93,12 +93,12 @@ func TestCalculateScorePoorProvider(t *testing.T) {
 	score := ws.CalculateScore(qos, stake, totalStake)
 
 	// Poor provider should have lower score
-	// availability: 0.5 * 0.4 = 0.2
+	// availability: 0.5 * 0.3 = 0.15
 	// latency: 0.0 * 0.3 = 0.0 (1s latency normalized to 0)
 	// sync: 0.0 * 0.2 = 0.0 (60s sync normalized to 0)
-	// stake: 0.01 * 0.1 = 0.001 (100/10000 = 0.01)
-	// total: 0.2 + 0.0 + 0.0 + 0.001 = 0.201
-	require.InDelta(t, 0.20, score, 0.05)
+	// stake: 0.01 * 0.2 = 0.002 (100/10000 = 0.01)
+	// total: 0.15 + 0.0 + 0.0 + 0.002 = 0.152
+	require.InDelta(t, 0.15, score, 0.05)
 }
 
 // TestCalculateScoreMinimumChance ensures minimum selection chance is enforced
