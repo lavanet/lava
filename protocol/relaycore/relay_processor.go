@@ -591,7 +591,20 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
 		}
-		return rp.responsesQuorum(successResults, requiredQuorumSize)
+		returnedResults, err := rp.responsesQuorum(successResults, requiredQuorumSize)
+		if err != nil {
+			utils.LavaFormatError("failed to get a quorum of success results", err, utils.LogAttr("successResults", successResults), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+			if len(nodeErrors) >= requiredQuorumSize {
+				utils.LavaFormatDebug("trying to get a quorum of node errors", utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+				returnedResults, err = rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+				if err != nil {
+					return nil, utils.LavaFormatError("failed to get a quorum of responses", err)
+				}
+				return returnedResults, nil
+			}
+			return nil, err
+		}
+		return returnedResults, nil
 	} else if nodeErrorCount >= requiredQuorumSize {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
