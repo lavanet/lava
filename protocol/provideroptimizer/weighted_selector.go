@@ -54,10 +54,10 @@ func (m *mutexRandomizer) Intn(n int) int {
 // overall quality without artificial tier boundaries.
 type WeightedSelector struct {
 	// Configuration weights for different QoS metrics (should sum to 1.0)
-	availabilityWeight float64 // Default: 0.4 (40% weight)
+	availabilityWeight float64 // Default: 0.3 (30% weight)
 	latencyWeight      float64 // Default: 0.3 (30% weight)
 	syncWeight         float64 // Default: 0.2 (20% weight)
-	stakeWeight        float64 // Default: 0.1 (10% weight)
+	stakeWeight        float64 // Default: 0.2 (20% weight)
 
 	// Minimum selection probability to ensure all providers get some traffic
 	minSelectionChance float64 // Default: 0.01 (1% minimum)
@@ -89,10 +89,10 @@ type WeightedSelectorConfig struct {
 // DefaultWeightedSelectorConfig returns a configuration with balanced default weights
 func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 	return WeightedSelectorConfig{
-		AvailabilityWeight: 0.4,  // Availability is most important (40%)
-		LatencyWeight:      0.3,  // Latency is second priority (30%)
+		AvailabilityWeight: 0.3,  // Availability remains critical (30%)
+		LatencyWeight:      0.3,  // Latency shares equal emphasis (30%)
 		SyncWeight:         0.2,  // Sync is third priority (20%)
-		StakeWeight:        0.1,  // Stake provides small boost (10%)
+		StakeWeight:        0.2,  // Stake provides meaningful influence (20%)
 		MinSelectionChance: 0.10, // 10% minimum chance to ensure fairness
 		Strategy:           StrategyBalanced,
 	}
