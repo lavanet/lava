@@ -1,7 +1,9 @@
 package relaycore
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math"
@@ -17,7 +19,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/common/types"
 )
 
 type RelayProcessor struct {
@@ -37,7 +38,7 @@ type RelayProcessor struct {
 	ResultsManager
 	RelayStateMachine
 	availabilityDegrader      QoSAvailabilityDegrader
-	qourumMap                 map[string]int
+	quorumMap                 map[[32]byte]int
 	currentQourumEqualResults int
 	statefulRelayTargets      []string // stores all providers that received a stateful relay
 }
@@ -70,7 +71,7 @@ func NewRelayProcessor(
 		selection:                    relayStateMachine.GetSelection(),
 		usedProviders:                relayStateMachine.GetUsedProviders(),
 		availabilityDegrader:         availabilityDegrader,
-		qourumMap:                    make(map[string]int),
+		quorumMap:                    make(map[[32]byte]int),
 		currentQourumEqualResults:    0,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
@@ -373,16 +374,19 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
-	if response != nil {
-		canonicalForm, err := types.CreateCanonicalForm(response.RelayResult.GetReply().GetData())
-		if err == nil {
-			rp.qourumMap[canonicalForm]++
-			if rp.qourumMap[canonicalForm] > rp.currentQourumEqualResults {
-				rp.currentQourumEqualResults = rp.qourumMap[canonicalForm]
-			}
+	// Only hash successful responses (not errors) for quorum tracking
+	// This prevents error responses from being counted toward quorum
+	if response != nil && nodeError == nil && response.Err == nil {
+		// Hash the response data instead of creating canonical form - much more efficient
+		hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
+		rp.quorumMap[hash]++
+		if rp.quorumMap[hash] > rp.currentQourumEqualResults {
+			rp.currentQourumEqualResults = rp.quorumMap[hash]
 		}
+	}
 
-		if rp.consistency != nil && response.RelayResult.Reply != nil && response.RelayResult.Reply.LatestBlock > 0 {
+	if response != nil && response.RelayResult.Reply != nil {
+		if rp.consistency != nil && response.RelayResult.Reply.LatestBlock > 0 {
 			// set consistency when possible
 			blockSeen := response.RelayResult.Reply.LatestBlock
 			rp.consistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
@@ -451,26 +455,36 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		result common.RelayResult
 	}
 
-	countMap := make(map[string]*resultCount)
+	countMap := make(map[[32]byte]*resultCount)
 	deterministic := rp.RelayStateMachine.GetProtocolMessage().GetApi().Category.Deterministic
 	var bestQosResult common.RelayResult
 	bestQos := sdktypes.ZeroDec()
 	nilReplies := 0
 	nilReplyIdx := -1
 
-	for idx, result := range results {
-		if result.Reply != nil && result.Reply.Data != nil {
-			// Create canonical form for comparison (handles both JSON and binary data)
-			canonicalForm, err := types.CreateCanonicalForm(result.Reply.Data)
-			if err != nil {
-				utils.LavaFormatError("failed to create canonical form", err, utils.LogAttr("result", result.Reply.Data))
-				continue
-			}
+	// Helper function to check if response data is valid and meaningful
+	isValidResponse := func(data []byte) bool {
+		if len(data) == 0 {
+			return false
+		}
+		// Check for empty JSON objects/arrays that are technically valid but meaningless
+		trimmed := bytes.TrimSpace(data)
+		if bytes.Equal(trimmed, []byte("{}")) || bytes.Equal(trimmed, []byte("[]")) {
+			return false
+		}
+		return true
+	}
 
-			if count, exists := countMap[canonicalForm]; exists {
+	for idx, result := range results {
+		if result.Reply != nil && result.Reply.Data != nil && isValidResponse(result.Reply.Data) {
+			// Hash the response data for comparison - much faster and more memory efficient
+			// than creating canonical forms. SHA256 ensures reliable comparison for quorum.
+			hash := sha256.Sum256(result.Reply.Data)
+
+			if count, exists := countMap[hash]; exists {
 				count.count++
 			} else {
-				countMap[canonicalForm] = &resultCount{
+				countMap[hash] = &resultCount{
 					count:  1,
 					result: result,
 				}
