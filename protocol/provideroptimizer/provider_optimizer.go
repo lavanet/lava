@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -99,19 +97,6 @@ func (s Strategy) String() string {
 	}
 
 	return ""
-}
-
-// GetStrategyFactor gets the appropriate factor to multiply the sync factor
-// with according to the strategy
-func (s Strategy) GetStrategyFactor() math.LegacyDec {
-	switch s {
-	case StrategyLatency:
-		return pairingtypes.LatencyStrategyFactor
-	case StrategySyncFreshness:
-		return pairingtypes.SyncFreshnessStrategyFactor
-	}
-
-	return pairingtypes.BalancedStrategyFactor
 }
 
 func (po *ProviderOptimizer) Strategy() Strategy {
@@ -378,28 +363,6 @@ func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredPr
 	)
 
 	return []string{selectedProvider}
-}
-
-// CalculateProbabilityOfBlockError calculates the probability that a provider doesn't a specific requested
-// block when the consumer asks the optimizer to fetch a provider with the specific block
-func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int64, providerData ProviderData) sdk.Dec {
-	probabilityBlockError := float64(0)
-	// if there is no syncBlock data we assume successful relays so we don't over fit providers who were lucky to update
-	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) && providerData.SyncBlock > 0 {
-		// requested a specific block, so calculate a probability of provider having that block
-		averageBlockTime := po.averageBlockTime.Seconds()
-		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock
-		if blockDistanceRequired > 0 {
-			timeSinceSyncReceived := time.Since(providerData.Sync.GetLastUpdateTime()).Seconds()
-			eventRate := timeSinceSyncReceived / averageBlockTime // a new block every average block time, numerator is time passed, gamma=rt
-			// probValueAfterRepetitions(k,lambda) calculates the probability for k events or less meaning p(x<=k),
-			// an error occurs if we didn't have enough blocks, so the chance of error is p(x<k) where k is the required number of blocks so we do p(x<=k-1)
-			probabilityBlockError = CumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
-		} else {
-			probabilityBlockError = 0
-		}
-	}
-	return score.ConvertToDec(probabilityBlockError)
 }
 
 // calculate the probability a random variable with a poisson distribution
