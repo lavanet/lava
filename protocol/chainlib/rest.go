@@ -489,9 +489,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
 	if rcp.httpClient == nil {
-		rcp.httpClient = &http.Client{
-			Timeout: 5 * time.Minute, // we are doing a timeout by request
-		}
+		rcp.httpClient = common.OptimizedHttpClient()
 	}
 	httpClient := rcp.httpClient
 

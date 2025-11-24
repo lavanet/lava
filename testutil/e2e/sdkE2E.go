@@ -164,14 +164,40 @@ func runSDKE2E(timeout time.Duration) {
 	signalChannel := make(chan bool)
 	latestBlockTime := lt.getLatestBlockTime()
 
+	// Create a context for the virtual epoch goroutine so it can be cancelled
+	epochCtx, epochCancel := context.WithCancel(lavaContext)
+	defer epochCancel() // Ensure the goroutine is stopped when test finishes
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				utils.LavaFormatError("Panic in virtual epoch goroutine", fmt.Errorf("%v", r))
+			}
+		}()
+
 		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
 
 		for {
-			time.Sleep(time.Until(latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))))
-			utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
-			epochCounter++
-			signalChannel <- true
+			nextEpochTime := latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))
+			sleepDuration := time.Until(nextEpochTime)
+
+			select {
+			case <-epochCtx.Done():
+				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
+				return
+			case <-time.After(sleepDuration):
+				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+				epochCounter++
+
+				// Non-blocking send to avoid goroutine leak if nobody is listening
+				select {
+				case signalChannel <- true:
+				case <-epochCtx.Done():
+					return
+				default:
+					// Channel full or no receiver, just continue
+				}
+			}
 		}
 	}()
 

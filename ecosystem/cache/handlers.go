@@ -13,6 +13,7 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
@@ -45,17 +46,30 @@ type CacheValue struct {
 	Hash             []byte
 	OptionalMetadata []pairingtypes.Metadata
 	SeenBlock        int64
+	IsCompressed     bool // Track if Response.Data is gzip compressed
 }
 
 func (cv *CacheValue) ToCacheReply() *pairingtypes.CacheRelayReply {
+	response := cv.Response
+	// Decompress data if it was compressed
+	if cv.IsCompressed && len(response.Data) > 0 {
+		decompressed, err := common.DecompressData(response.Data)
+		if err != nil {
+			utils.LavaFormatError("Failed to decompress cache data", err)
+			// Return original data on decompression error
+		} else {
+			response.Data = decompressed
+		}
+	}
 	return &pairingtypes.CacheRelayReply{
-		Reply:            &cv.Response,
+		Reply:            &response,
 		OptionalMetadata: cv.OptionalMetadata,
 		SeenBlock:        cv.SeenBlock,
 	}
 }
 
 func (cv *CacheValue) Cost() int64 {
+	// Cost is based on actual stored size (compressed if applicable)
 	return int64(len(cv.Response.Data))
 }
 
@@ -471,6 +485,16 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey []byte) (r
 
 func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata, seenBlock int64) CacheValue {
 	response.Sig = []byte{} // make sure we return a signed value, as the output was modified by our outputParser
+
+	// Compress large responses to save memory (JSON typically compresses 70-90%)
+	// Use the common compression module with threshold checking
+	compressed, isCompressed, err := common.CompressData(response.Data, common.CompressionThreshold)
+	if err != nil {
+		utils.LavaFormatWarning("Failed to compress cache data, storing uncompressed", err)
+	} else if isCompressed {
+		response.Data = compressed
+	}
+
 	if !finalized {
 		// hash value is only used on non finalized entries to check for forks
 		return CacheValue{
@@ -478,6 +502,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 			Hash:             hash,
 			OptionalMetadata: optionalMetadata,
 			SeenBlock:        seenBlock,
+			IsCompressed:     isCompressed,
 		}
 	}
 	// no need to store the hash value for finalized entries
@@ -486,6 +511,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 		Hash:             nil,
 		OptionalMetadata: optionalMetadata,
 		SeenBlock:        seenBlock,
+		IsCompressed:     isCompressed,
 	}
 }
 

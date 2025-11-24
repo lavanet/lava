@@ -110,7 +110,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 		details["chainid"] = spec.ChainID
 		details["total_rewards"] = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalbasepay).String()
 		details["total_cu"] = totalbasepay.String()
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
+		utils.LogLavaEventDebug(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}
 
 	// Get current month IprpcReward and use it to distribute rewards
@@ -231,7 +231,7 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 		}
 	}
 
-	utils.LogLavaEvent(ctx, ctx.Logger(), types.ValidatorsAndCommunityFund,
+	utils.LogLavaEventDebug(ctx, ctx.Logger(), types.ValidatorsAndCommunityFund,
 		map[string]string{"community": communityParticipationReward.String(), "validators": validatorsParticipationReward.String(), "validator_pool": string(validatorPool)},
 		"contribution to validators pool and community pool")
 
