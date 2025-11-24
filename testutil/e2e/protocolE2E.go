@@ -55,6 +55,7 @@ const (
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
 	NumberOfSpecsExpectedInE2E = 10
+	startLavaDaemonLogName     = "00_StartLava_Daemon"
 )
 
 var (
@@ -70,6 +71,7 @@ type lavaTest struct {
 	testFinishedProperly atomic.Bool
 	logsMu               sync.RWMutex
 	commandsMu           sync.RWMutex
+	expectedExitMu       sync.RWMutex
 	providerTypeMu       sync.RWMutex
 
 	// Original fields
@@ -80,6 +82,7 @@ type lavaTest struct {
 	consumerArgs         string
 	logs                 map[string]*sdk.SafeBuffer
 	commands             map[string]*exec.Cmd
+	expectedCommandExit  map[string]bool
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
 	logPath              string
@@ -159,6 +162,8 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 		panic(err)
 	}
 
+	lt.resetCommandExitExpectation(logName)
+	lt.resetCommandExitExpectation(logName)
 	lt.commandsMu.Lock()
 	lt.commands[logName] = cmd
 	lt.commandsMu.Unlock()
@@ -193,7 +198,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 				}
 			}
 		}()
-		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logName)
 	}()
 }
 
@@ -238,6 +243,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 			panic(funcName + " failed " + err.Error())
 		}
 	} else {
+		lt.resetCommandExitExpectation(logName)
 		lt.commandsMu.Lock()
 		lt.commands[logName] = cmd
 		lt.commandsMu.Unlock()
@@ -252,21 +258,61 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 					lt.saveLogs()
 				}
 			}()
-			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logName)
 		}()
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string, logName string) {
 	err := cmd.Wait()
-	if err != nil && !lt.testFinishedProperly.Load() {
+	exitExpected := lt.consumeCommandExitExpectation(logName)
+
+	lt.commandsMu.Lock()
+	delete(lt.commands, logName)
+	lt.commandsMu.Unlock()
+
+	if err != nil && !lt.testFinishedProperly.Load() && !exitExpected {
 		utils.LavaFormatError(functionName+" cmd wait err", err)
+	}
+	if exitExpected {
+		utils.LavaFormatInfo(functionName+" exit expected; skipping panic",
+			utils.LogAttr("logName", logName))
+		return
 	}
 	if lt.testFinishedProperly.Load() {
 		return
 	}
 	lt.saveLogs()
 	panic(panicReason)
+}
+
+func (lt *lavaTest) expectCommandExit(logName string) {
+	lt.expectedExitMu.Lock()
+	defer lt.expectedExitMu.Unlock()
+	if lt.expectedCommandExit == nil {
+		lt.expectedCommandExit = make(map[string]bool)
+	}
+	lt.expectedCommandExit[logName] = true
+}
+
+func (lt *lavaTest) resetCommandExitExpectation(logName string) {
+	lt.expectedExitMu.Lock()
+	defer lt.expectedExitMu.Unlock()
+	if lt.expectedCommandExit == nil {
+		return
+	}
+	delete(lt.expectedCommandExit, logName)
+}
+
+func (lt *lavaTest) consumeCommandExitExpectation(logName string) bool {
+	lt.expectedExitMu.Lock()
+	defer lt.expectedExitMu.Unlock()
+	if lt.expectedCommandExit == nil {
+		return false
+	}
+	val := lt.expectedCommandExit[logName]
+	delete(lt.expectedCommandExit, logName)
+	return val
 }
 
 const OKstr = " OK"
@@ -281,7 +327,7 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 
 	// Now start the daemon in the background
 	startCommand := lt.lavadPath + " start"
-	logNameDaemon := "00_StartLava_Daemon"
+	logNameDaemon := startLavaDaemonLogName
 	funcNameDaemon := "startLavaDaemon"
 
 	lt.execCommand(ctx, funcNameDaemon, logNameDaemon, startCommand, false)
@@ -1449,6 +1495,8 @@ func (lt *lavaTest) stopLava() {
 	// but we don't want to fail the test
 	lt.markEmergencyModeLogsStart()
 
+	utils.LavaFormatInfo("stopLava: marking daemon exit as expected")
+	lt.expectCommandExit(startLavaDaemonLogName)
 	cmd := exec.Command("killall", "lavad")
 	err := cmd.Run()
 	if err != nil {
@@ -1791,6 +1839,7 @@ func runProtocolE2E(timeout time.Duration) {
 		consumerArgs:         " --allow-insecure-provider-dialing",
 		logs:                 make(map[string]*sdk.SafeBuffer),
 		commands:             make(map[string]*exec.Cmd),
+		expectedCommandExit:  make(map[string]bool),
 		providerType:         make(map[string][]epochStorageTypes.Endpoint),
 		logPath:              protocolLogsFolder,
 		tokenDenom:           commonconsts.TestTokenDenom,
