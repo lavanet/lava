@@ -586,32 +586,52 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	if rp.debugRelay {
 		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
 	}
+
 	// there are enough successes
 	if successResultsCount >= requiredQuorumSize {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
 		}
-		returnedResults, err := rp.responsesQuorum(successResults, requiredQuorumSize)
-		if err != nil {
-			utils.LavaFormatError("failed to get a quorum of success results", err, utils.LogAttr("successResults", successResults), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
-			if len(nodeErrors) >= requiredQuorumSize {
-				utils.LavaFormatDebug("trying to get a quorum of node errors", utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
-				returnedResults, err = rp.responsesQuorum(nodeErrors, requiredQuorumSize)
-				if err != nil {
-					return nil, utils.LavaFormatError("failed to get a quorum of responses", err)
-				}
-				return returnedResults, nil
-			}
-			return nil, err
-		}
-		return returnedResults, nil
-	} else if nodeErrorCount >= requiredQuorumSize {
-		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
-			shouldDegradeAvailability = true
-		}
-		return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+		return rp.responsesQuorum(successResults, requiredQuorumSize)
 	}
 
+	// the folloowing fix is to handle cases where quorum feature is enabled, and we want take the nodeErrors into account, the problem is that in the rest of the code we dont take it into account (when deciding if retry is needed, or when calculating the requiredQuorum param)
+	/*
+		if successResultsCount >= requiredQuorumSize {
+			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+				shouldDegradeAvailability = true
+			}
+			returnedResults, err := rp.responsesQuorum(successResults, requiredQuorumSize)
+			if err != nil {
+				utils.LavaFormatError("failed to get a quorum of success results", err, utils.LogAttr("successResults", successResults), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+				if len(nodeErrors) >= requiredQuorumSize {
+					utils.LavaFormatDebug("trying to get a quorum of node errors", utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+					returnedResults, err = rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+					if err != nil {
+						return nil, utils.LavaFormatError("failed to get a quorum of responses", err)
+					}
+					return returnedResults, nil
+				}
+				return nil, err
+			}
+			return returnedResults, nil
+		} else if nodeErrorCount >= requiredQuorumSize {
+			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+				shouldDegradeAvailability = true
+			}
+			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+		}
+	*/
+
+	//in case quorum feature is disabled, we can return the node errors if they meet the quorum size which is 1
+	/*
+		if !rp.quorumParams.Enabled() && nodeErrorCount >= requiredQuorumSize {
+			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+				shouldDegradeAvailability = true
+			}
+			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+		}
+	*/
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
 		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
