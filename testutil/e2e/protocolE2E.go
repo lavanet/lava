@@ -69,6 +69,7 @@ var (
 type lavaTest struct {
 	// Thread-safety fields
 	testFinishedProperly atomic.Bool
+	savingLogs           atomic.Bool // Prevents recursive saveLogs() calls
 	logsMu               sync.RWMutex
 	commandsMu           sync.RWMutex
 	expectedExitMu       sync.RWMutex
@@ -1139,6 +1140,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 }
 
 func (lt *lavaTest) saveLogs() {
+	// Prevent recursive calls that cause double panics
+	if !lt.savingLogs.CompareAndSwap(false, true) {
+		utils.LavaFormatWarning("saveLogs already running, skipping recursive call to prevent double panic", nil)
+		return
+	}
+	defer lt.savingLogs.Store(false)
+
 	if _, err := os.Stat(lt.logPath); errors.Is(err, os.ErrNotExist) {
 		err = os.MkdirAll(lt.logPath, os.ModePerm)
 		if err != nil {
