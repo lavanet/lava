@@ -162,8 +162,6 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 		panic(err)
 	}
 
-	lt.resetCommandExitExpectation(logName)
-	lt.resetCommandExitExpectation(logName)
 	lt.commandsMu.Lock()
 	lt.commands[logName] = cmd
 	lt.commandsMu.Unlock()
@@ -243,7 +241,6 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 			panic(funcName + " failed " + err.Error())
 		}
 	} else {
-		lt.resetCommandExitExpectation(logName)
 		lt.commandsMu.Lock()
 		lt.commands[logName] = cmd
 		lt.commandsMu.Unlock()
@@ -295,17 +292,6 @@ func (lt *lavaTest) expectCommandExit(logName string) {
 	}
 	lt.expectedCommandExit[logName] = true
 	utils.LavaFormatInfo("Marked command exit expectation",
-		utils.LogAttr("logName", logName))
-}
-
-func (lt *lavaTest) resetCommandExitExpectation(logName string) {
-	lt.expectedExitMu.Lock()
-	defer lt.expectedExitMu.Unlock()
-	if lt.expectedCommandExit == nil {
-		return
-	}
-	delete(lt.expectedCommandExit, logName)
-	utils.LavaFormatDebug("Reset command exit expectation",
 		utils.LogAttr("logName", logName))
 }
 
@@ -1263,9 +1249,14 @@ func (lt *lavaTest) saveLogs() {
 	}
 
 	if errorFound {
-		for _, errLine := range errorPrint {
-			fmt.Println("ERROR: ", errLine)
+		fmt.Println("========================================")
+		fmt.Println("ERRORS FOUND IN E2E TEST LOGS")
+		fmt.Println("========================================")
+		for fileName, errLines := range errorPrint {
+			fmt.Printf("\n--- File: %s ---\n", fileName)
+			fmt.Println(errLines)
 		}
+		fmt.Println("========================================")
 		panic("Error found in logs on " + lt.logPath + strings.Join(errorFiles, ", "))
 	}
 }
