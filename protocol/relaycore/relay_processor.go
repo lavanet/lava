@@ -595,7 +595,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		return rp.responsesQuorum(successResults, requiredQuorumSize)
 	}
 
-	//in case quorum feature is disabled, we can return the node errors if they meet the quorum size which is 1
+	//in case quorum feature is disabled, we can return the node errors if they meet the quorum size (which is 1 when quorum feature is disabled)
 	if !rp.quorumParams.Enabled() && nodeErrorCount >= requiredQuorumSize {
 		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 			shouldDegradeAvailability = true
@@ -625,9 +625,9 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		if rp.selection == Quorum {
 			// When quorum is enabled, we need to ensure we have enough successful responses
 			// to actually meet quorum requirements, not just enough total attempts
-			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min && nodeErrorCount < rp.quorumParams.Min {
+			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
 				// We have enough total responses, but not enough successful ones for quorum
-				return nil, utils.LavaFormatError("insufficient responses for quorum: neither success results nor node errors alone meet quorum threshold",
+				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
 					nil,
 					utils.LogAttr("successResultsCount", successResultsCount),
 					utils.LogAttr("nodeErrorCount", nodeErrorCount),
