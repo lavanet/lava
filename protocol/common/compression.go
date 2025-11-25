@@ -30,7 +30,7 @@ const (
 // CompressData compresses data using gzip if it's larger than threshold
 // Returns compressed data, whether it was compressed, and any error
 func CompressData(data []byte, threshold int) ([]byte, bool, error) {
-	if len(data) < threshold {
+	if len(data) <= threshold {
 		// Too small to benefit from compression
 		return data, false, nil
 	}
