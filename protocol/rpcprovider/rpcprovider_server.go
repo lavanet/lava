@@ -1042,8 +1042,8 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 		// reply.Data is NEVER modified after this point - verified by code review
 		// Only Sig, SigBlocks, LatestBlock, and Metadata are modified later (not needed in cache)
 		cacheReply := &pairingtypes.RelayReply{
-			Data:        reply.Data,        
-			LatestBlock: reply.LatestBlock, 
+			Data:        reply.Data,
+			LatestBlock: reply.LatestBlock,
 		}
 
 		go func() {
