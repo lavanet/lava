@@ -595,14 +595,6 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		return rp.responsesQuorum(successResults, requiredQuorumSize)
 	}
 
-	//in case quorum feature is disabled, we can return the node errors if they meet the quorum size (which is 1 when quorum feature is disabled)
-	if !rp.quorumParams.Enabled() && nodeErrorCount >= requiredQuorumSize {
-		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
-			shouldDegradeAvailability = true
-		}
-		return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
-	}
-
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
 		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
@@ -645,6 +637,11 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 				return rp.responsesQuorum(nodeResults, requiredQuorumSize)
 			}
 		}
+	}
+
+	if len(nodeErrors) >= requiredQuorumSize && !rp.quorumParams.Enabled() { // if we have node errors, we prefer returning them over protocol errors.
+		nodeErr := rp.GetBestNodeErrorMessageForUser()
+		return &nodeErr.Response.RelayResult, nil
 	}
 
 	// Not enough successful results - continue waiting for more responses
