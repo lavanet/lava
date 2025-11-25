@@ -1215,7 +1215,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			numOfProviders:     3,
 			archiveProviders:   3,
 			nodeErrorProviders: 3,
-			expectedResult:     `{"error": "failure", "message": "test", "code": "-32132"}`,
+			expectedResult:     "",  // Will be checked separately to verify node error is returned directly
 			statusCode:         500, // Status code from the node error
 		},
 	}
@@ -1327,7 +1327,37 @@ func TestArchiveProvidersRetry(t *testing.T) {
 
 				resp.Body.Close()
 
-				if play.expectedResult != "" {
+				// For the error case, verify that the node error is returned directly (not wrapped)
+				if play.name == "archive with 3 errored provider" {
+					// Log the actual response for debugging
+					t.Logf("Actual response: %s", string(bodyBytes))
+
+					// Parse the response
+					var response map[string]interface{}
+					err := json.Unmarshal(bodyBytes, &response)
+					require.NoError(t, err, "Response should be valid JSON")
+
+					// Verify we get the direct node error, not a wrapped error
+					// The response should contain the node error fields directly
+					require.Contains(t, response, "error", "Response should contain 'error' field")
+					require.Contains(t, response, "message", "Response should contain 'message' field")
+					require.Contains(t, response, "code", "Response should contain 'code' field")
+
+					// Verify the actual error values match the node error
+					require.Equal(t, "failure", response["error"], "Error should be 'failure'")
+					require.Equal(t, "test", response["message"], "Message should be 'test'")
+					require.Equal(t, "-32132", response["code"], "Code should be '-32132'")
+
+					// Make sure it's NOT wrapped with "failed relay, insufficient results"
+					// The error field should be a string "failure", not a JSON-encoded error object
+					errorValue, ok := response["error"].(string)
+					require.True(t, ok, "Error field should be a string, not an object")
+					require.NotContains(t, errorValue, "failed relay, insufficient results",
+						"Error should NOT be wrapped with 'failed relay, insufficient results'")
+					require.NotContains(t, errorValue, "Error_GUID",
+						"Error should NOT contain Error_GUID (not wrapped)")
+				} else if play.expectedResult != "" {
+					// Only check expectedResult if it's not empty
 					require.Equal(t, play.expectedResult, string(bodyBytes))
 				}
 			}

@@ -1237,6 +1237,8 @@ func sendSuccessWithData(relayProcessor *RelayProcessor, provider string, delay 
 		Err: nil,
 	}
 	relayProcessor.SetResponse(response)
+}
+
 func TestIsValidResponse(t *testing.T) {
 	// Create the isValidResponse function (extracted from relay_processor.go for testing)
 	isValidResponse := func(data []byte) bool {
