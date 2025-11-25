@@ -27,7 +27,7 @@ import (
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
@@ -332,7 +332,10 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 func (lt *lavaTest) checkLava(timeout time.Duration) {
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
-	for start := time.Now(); time.Since(start) < timeout; {
+	deadline := time.Now().Add(timeout)
+
+	// First wait for the spec query to work
+	for time.Now().Before(deadline) {
 		// This loop would wait for the lavad server to be up before chain init
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err != nil && strings.Contains(err.Error(), "rpc error") {
@@ -341,14 +344,33 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 				return
 			}
 		} else if err == nil {
-			// Now wait for validators to be registered
-			lt.waitForValidators(timeout)
-			return
+			break
 		} else {
 			panic(err)
 		}
 	}
-	panic("Lava Check Failed")
+
+	// Additionally, wait for validators to be available (needed for init_e2e.sh operator_address call)
+	utils.LavaFormatInfo("Waiting for validators to be ready...")
+	stakingQueryClient := stakingtypes.NewQueryClient(lt.grpcConn)
+	for time.Now().Before(deadline) {
+		resp, err := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
+		if err == nil && resp != nil && len(resp.Validators) > 0 {
+			utils.LavaFormatInfo("Validators are ready",
+				utils.LogAttr("validatorCount", len(resp.Validators)),
+				utils.LogAttr("firstValidator", resp.Validators[0].OperatorAddress))
+			return
+		}
+		if err != nil && !strings.Contains(err.Error(), "rpc error") {
+			// If it's not an RPC error, it's something more serious
+			utils.LavaFormatWarning("Error querying validators", err)
+		}
+		utils.LavaFormatInfo("Validators not ready yet, waiting...")
+		if err := contextSleep(context.Background(), time.Second*2); err != nil {
+			return
+		}
+	}
+	panic("Lava Check Failed: validators not available")
 }
 
 func (lt *lavaTest) waitForValidators(timeout time.Duration) {
@@ -684,9 +706,9 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		}
 
 		// put in a loop for cases that a block have no tx because
-		var latestBlock *types.Block
+		var latestBlock *ethtypes.Block
 		var latestBlockNumber *big.Int
-		var latestBlockTxs types.Transactions
+		var latestBlockTxs ethtypes.Transactions
 		for {
 			// eth_getBlockByNumber
 			latestBlockNumber = big.NewInt(int64(latestBlockNumberUint))
@@ -724,7 +746,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 			errors = append(errors, "error eth_getTransactionReceipt")
 		}
 
-		sender, err := types.Sender(types.LatestSignerForChainID(targetTx.ChainId()), targetTx)
+		sender, err := ethtypes.Sender(ethtypes.LatestSignerForChainID(targetTx.ChainId()), targetTx)
 		utils.LavaFormatInfo("sender", utils.Attribute{Key: "sender", Value: sender})
 		if err != nil {
 			errors = append(errors, "error eth_getTransactionReceipt")
