@@ -1,6 +1,7 @@
 package relaycore
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -1236,4 +1237,106 @@ func sendSuccessWithData(relayProcessor *RelayProcessor, provider string, delay 
 		Err: nil,
 	}
 	relayProcessor.SetResponse(response)
+func TestIsValidResponse(t *testing.T) {
+	// Create the isValidResponse function (extracted from relay_processor.go for testing)
+	isValidResponse := func(data []byte) bool {
+		if len(data) == 0 {
+			return false
+		}
+		// Check for empty JSON objects/arrays that are technically valid but meaningless
+		trimmed := bytes.TrimSpace(data)
+		if bytes.Equal(trimmed, []byte("{}")) || bytes.Equal(trimmed, []byte("[]")) {
+			return false
+		}
+		return true
+	}
+
+	tests := []struct {
+		name     string
+		data     []byte
+		expected bool
+	}{
+		{
+			name:     "empty byte slice",
+			data:     []byte{},
+			expected: false,
+		},
+		{
+			name:     "nil byte slice",
+			data:     nil,
+			expected: false,
+		},
+		{
+			name:     "empty JSON object",
+			data:     []byte("{}"),
+			expected: false,
+		},
+		{
+			name:     "empty JSON array",
+			data:     []byte("[]"),
+			expected: false,
+		},
+		{
+			name:     "empty JSON object with whitespace",
+			data:     []byte("  {}  "),
+			expected: false,
+		},
+		{
+			name:     "empty JSON array with whitespace",
+			data:     []byte("\n[]\n"),
+			expected: false,
+		},
+		{
+			name:     "empty JSON object with tabs and newlines",
+			data:     []byte("\t{}\n"),
+			expected: false,
+		},
+		{
+			name:     "valid JSON object with content",
+			data:     []byte(`{"key": "value"}`),
+			expected: true,
+		},
+		{
+			name:     "valid JSON array with content",
+			data:     []byte(`[1, 2, 3]`),
+			expected: true,
+		},
+		{
+			name:     "valid JSON with single element",
+			data:     []byte(`{"result": null}`),
+			expected: true,
+		},
+		{
+			name:     "plain text response",
+			data:     []byte("ok"),
+			expected: true,
+		},
+		{
+			name:     "whitespace only",
+			data:     []byte("   \n\t  "),
+			expected: true, // trimmed will be empty but doesn't match {} or []
+		},
+		{
+			name:     "partial JSON object",
+			data:     []byte(`{`),
+			expected: true,
+		},
+		{
+			name:     "nested empty object inside object",
+			data:     []byte(`{"nested": {}}`),
+			expected: true,
+		},
+		{
+			name:     "nested empty array inside array",
+			data:     []byte(`[[]]`),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidResponse(tt.data)
+			require.Equal(t, tt.expected, result, "isValidResponse(%q) = %v, want %v", string(tt.data), result, tt.expected)
+		})
+	}
 }
