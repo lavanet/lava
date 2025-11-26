@@ -25,8 +25,9 @@ import (
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
@@ -54,6 +55,7 @@ const (
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
 	NumberOfSpecsExpectedInE2E = 10
+	startLavaDaemonLogName     = "00_StartLava_Daemon"
 )
 
 var (
@@ -67,8 +69,10 @@ var (
 type lavaTest struct {
 	// Thread-safety fields
 	testFinishedProperly atomic.Bool
+	savingLogs           atomic.Bool // Prevents recursive saveLogs() calls
 	logsMu               sync.RWMutex
 	commandsMu           sync.RWMutex
+	expectedExitMu       sync.RWMutex
 	providerTypeMu       sync.RWMutex
 
 	// Original fields
@@ -79,6 +83,7 @@ type lavaTest struct {
 	consumerArgs         string
 	logs                 map[string]*sdk.SafeBuffer
 	commands             map[string]*exec.Cmd
+	expectedCommandExit  map[string]bool
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
 	logPath              string
@@ -192,7 +197,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 				}
 			}
 		}()
-		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logName)
 	}()
 }
 
@@ -251,21 +256,58 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 					lt.saveLogs()
 				}
 			}()
-			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logName)
 		}()
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string, logName string) {
 	err := cmd.Wait()
-	if err != nil && !lt.testFinishedProperly.Load() {
-		utils.LavaFormatError(functionName+" cmd wait err", err)
+	exitExpected := lt.consumeCommandExitExpectation(logName)
+
+	lt.commandsMu.Lock()
+	delete(lt.commands, logName)
+	lt.commandsMu.Unlock()
+
+	if err != nil && !lt.testFinishedProperly.Load() && !exitExpected {
+		utils.LavaFormatError(functionName+" cmd wait err", err,
+			utils.LogAttr("logName", logName))
+	}
+	if exitExpected {
+		utils.LavaFormatInfo(functionName+" exit expected; skipping panic",
+			utils.LogAttr("logName", logName))
+		return
 	}
 	if lt.testFinishedProperly.Load() {
 		return
 	}
 	lt.saveLogs()
 	panic(panicReason)
+}
+
+func (lt *lavaTest) expectCommandExit(logName string) {
+	lt.expectedExitMu.Lock()
+	defer lt.expectedExitMu.Unlock()
+	if lt.expectedCommandExit == nil {
+		lt.expectedCommandExit = make(map[string]bool)
+	}
+	lt.expectedCommandExit[logName] = true
+	utils.LavaFormatInfo("Marked command exit expectation",
+		utils.LogAttr("logName", logName))
+}
+
+func (lt *lavaTest) consumeCommandExitExpectation(logName string) bool {
+	lt.expectedExitMu.Lock()
+	defer lt.expectedExitMu.Unlock()
+	if lt.expectedCommandExit == nil {
+		return false
+	}
+	val := lt.expectedCommandExit[logName]
+	delete(lt.expectedCommandExit, logName)
+	utils.LavaFormatDebug("Consume command exit expectation",
+		utils.LogAttr("logName", logName),
+		utils.LogAttr("value", val))
+	return val
 }
 
 const OKstr = " OK"
@@ -280,7 +322,7 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 
 	// Now start the daemon in the background
 	startCommand := lt.lavadPath + " start"
-	logNameDaemon := "00_StartLava_Daemon"
+	logNameDaemon := startLavaDaemonLogName
 	funcNameDaemon := "startLavaDaemon"
 
 	lt.execCommand(ctx, funcNameDaemon, logNameDaemon, startCommand, false)
@@ -290,6 +332,7 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 func (lt *lavaTest) checkLava(timeout time.Duration) {
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
+	// First wait for the spec query to work
 	for start := time.Now(); time.Since(start) < timeout; {
 		// This loop would wait for the lavad server to be up before chain init
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
@@ -299,12 +342,33 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 				return
 			}
 		} else if err == nil {
-			return
+			break
 		} else {
 			panic(err)
 		}
 	}
-	panic("Lava Check Failed")
+
+	// Additionally, wait for validators to be available (needed for init_e2e.sh operator_address call)
+	utils.LavaFormatInfo("Waiting for validators to be ready...")
+	stakingQueryClient := stakingtypes.NewQueryClient(lt.grpcConn)
+	for start := time.Now(); time.Since(start) < timeout; {
+		resp, err := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
+		if err == nil && resp != nil && len(resp.Validators) > 0 {
+			utils.LavaFormatInfo("Validators are ready",
+				utils.LogAttr("validatorCount", len(resp.Validators)),
+				utils.LogAttr("firstValidator", resp.Validators[0].OperatorAddress))
+			return
+		}
+		if err != nil && !strings.Contains(err.Error(), "rpc error") {
+			// If it's not an RPC error, it's something more serious
+			utils.LavaFormatWarning("Error querying validators", err)
+		}
+		utils.LavaFormatInfo("Validators not ready yet, waiting...")
+		if err := contextSleep(context.Background(), time.Second*2); err != nil {
+			return
+		}
+	}
+	panic("Lava Check Failed: validators not available")
 }
 
 func (lt *lavaTest) stakeLava(ctx context.Context) {
@@ -621,9 +685,9 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		}
 
 		// put in a loop for cases that a block have no tx because
-		var latestBlock *types.Block
+		var latestBlock *ethtypes.Block
 		var latestBlockNumber *big.Int
-		var latestBlockTxs types.Transactions
+		var latestBlockTxs ethtypes.Transactions
 		for {
 			// eth_getBlockByNumber
 			latestBlockNumber = big.NewInt(int64(latestBlockNumberUint))
@@ -661,7 +725,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 			errors = append(errors, "error eth_getTransactionReceipt")
 		}
 
-		sender, err := types.Sender(types.LatestSignerForChainID(targetTx.ChainId()), targetTx)
+		sender, err := ethtypes.Sender(ethtypes.LatestSignerForChainID(targetTx.ChainId()), targetTx)
 		utils.LavaFormatInfo("sender", utils.Attribute{Key: "sender", Value: sender})
 		if err != nil {
 			errors = append(errors, "error eth_getTransactionReceipt")
@@ -1049,6 +1113,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 }
 
 func (lt *lavaTest) saveLogs() {
+	// Prevent recursive calls that cause double panics
+	if !lt.savingLogs.CompareAndSwap(false, true) {
+		utils.LavaFormatWarning("saveLogs already running, skipping recursive call to prevent double panic", nil)
+		return
+	}
+	defer lt.savingLogs.Store(false)
+
 	if _, err := os.Stat(lt.logPath); errors.Is(err, os.ErrNotExist) {
 		err = os.MkdirAll(lt.logPath, os.ModePerm)
 		if err != nil {
@@ -1159,9 +1230,14 @@ func (lt *lavaTest) saveLogs() {
 	}
 
 	if errorFound {
-		for _, errLine := range errorPrint {
-			fmt.Println("ERROR: ", errLine)
+		fmt.Println("========================================")
+		fmt.Println("ERRORS FOUND IN E2E TEST LOGS")
+		fmt.Println("========================================")
+		for fileName, errLines := range errorPrint {
+			fmt.Printf("\n--- File: %s ---\n", fileName)
+			fmt.Println(errLines)
 		}
+		fmt.Println("========================================")
 		panic("Error found in logs on " + lt.logPath + strings.Join(errorFiles, ", "))
 	}
 }
@@ -1399,6 +1475,8 @@ func (lt *lavaTest) stopLava() {
 	// but we don't want to fail the test
 	lt.markEmergencyModeLogsStart()
 
+	utils.LavaFormatInfo("stopLava: marking daemon exit as expected")
+	lt.expectCommandExit(startLavaDaemonLogName)
 	cmd := exec.Command("killall", "lavad")
 	err := cmd.Run()
 	if err != nil {
@@ -1741,6 +1819,7 @@ func runProtocolE2E(timeout time.Duration) {
 		consumerArgs:         " --allow-insecure-provider-dialing",
 		logs:                 make(map[string]*sdk.SafeBuffer),
 		commands:             make(map[string]*exec.Cmd),
+		expectedCommandExit:  make(map[string]bool),
 		providerType:         make(map[string][]epochStorageTypes.Endpoint),
 		logPath:              protocolLogsFolder,
 		tokenDenom:           commonconsts.TestTokenDenom,
