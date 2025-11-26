@@ -641,13 +641,25 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		}
 		return nil, err
 	}
+	
+	// Convert and release memory immediately to prevent OOM on large Solana responses
+	// Each Solana block can be 10-30MB. With 8 concurrent batch requests (3 blocks each),
+	// keeping all responses in batch[].Result causes 4x memory duplication:
+	//   1. HTTP response buffer
+	//   2. Decoded JsonrpcMessage.Result (RawMessage)
+	//   3. batch[].Result (stored reference)
+	//   4. Final marshaled output
+	// By releasing batch[].Result immediately after conversion, we reduce peak memory usage.
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
-	for idx, element := range batch {
+	for idx := range batch {
 		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
-		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
+		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(batch[idx])
 		if err != nil {
 			return nil, err
 		}
+		// Release the large Result field immediately after conversion to allow GC
+		// This is critical for Solana where Result can be 10-30MB per block
+		batch[idx].Result = nil
 	}
 	retData, err := json.Marshal(replyMsgs)
 	if err != nil {
