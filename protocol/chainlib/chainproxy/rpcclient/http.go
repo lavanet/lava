@@ -182,6 +182,8 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	}
 	for i := 0; i < len(respmsgs); i++ {
 		op.resp <- &respmsgs[i]
+		// Release the large Result field immediately to allow GC
+		respmsgs[i] = JsonrpcMessage{}
 	}
 	return nil
 }
