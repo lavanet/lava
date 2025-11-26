@@ -1467,11 +1467,13 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 	// No sleep needed - probeProviders() already waits for all probes to complete
 
 	csm.lock.Lock()
-	defer csm.lock.Unlock()
 
-	// Check each provider that was re-blocked from previous epoch history
+	// First pass: Identify which re-blocked providers had successful probes
+	providersNeedingComprehensiveProbe := make(map[string]*ConsumerSessionsWithProvider)
+
 	for blockedAddr := range csm.previousEpochBlockedProviders {
-		if _, exists := csm.pairing[blockedAddr]; !exists {
+		cswp, exists := csm.pairing[blockedAddr]
+		if !exists {
 			continue // Provider not in current pairing
 		}
 
@@ -1491,12 +1493,54 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 			// This prevents periodic reconnection attempts from trying this provider again
 			csm.reportedProviders.RemoveReport(blockedAddr)
 		} else {
-			// Probe failed in this epoch - provider is in reported list, keep blocked
-			utils.LavaFormatDebug("Re-blocked provider's probe failed, keeping blocked",
+			// Probe failed with tryReconnect=false
+			// Mark for comprehensive probe with tryReconnect=true to retry disabled endpoints
+			providersNeedingComprehensiveProbe[blockedAddr] = cswp
+			utils.LavaFormatDebug("Re-blocked provider's initial probe failed, will try comprehensive probe",
 				utils.Attribute{Key: "provider", Value: blockedAddr},
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
+		}
+	}
+
+	csm.lock.Unlock()
+
+	// Second pass: For providers that failed initial probe, try comprehensive probe with reconnection
+	// This gives disabled endpoints a chance to be retried and re-enabled
+	for blockedAddr, cswp := range providersNeedingComprehensiveProbe {
+		utils.LavaFormatDebug("Attempting comprehensive probe with endpoint reconnection",
+			utils.Attribute{Key: "provider", Value: blockedAddr},
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.LogAttr("GUID", ctx),
+		)
+
+		// Probe with tryReconnect=TRUE - retry disabled endpoints
+		_, providerAddress, err := csm.probeProvider(
+			ctx,
+			cswp,
+			epoch,
+			true, // tryReconnect=TRUE: Comprehensive probe, retries disabled endpoints
+		)
+
+		if err == nil {
+			// Comprehensive probe succeeded! Provider recovered, unblock immediately
+			utils.LavaFormatInfo("Re-blocked provider's comprehensive probe succeeded, immediately unblocking",
+				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			csm.reportedProviders.RemoveReport(providerAddress)
+		} else {
+			// Still failing even with comprehensive probe, keep blocked
+			utils.LavaFormatDebug("Re-blocked provider still unhealthy after comprehensive probe, keeping blocked",
+				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "error", Value: err.Error()},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+			// Provider stays in reportedProviders and will be retried by periodic reconnection (30s)
 		}
 	}
 }
