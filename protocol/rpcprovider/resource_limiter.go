@@ -318,6 +318,14 @@ func (rl *ResourceLimiter) enqueueRequest(
 	case queue <- qr:
 		rl.metrics.incrementQueuedWithLabels(bucket)
 
+		// Log current queue depth after enqueuing
+		queueDepth := len(queue)
+		utils.LavaFormatDebug("Request enqueued",
+			utils.LogAttr("bucket", bucket.String()),
+			utils.LogAttr("queue_depth", queueDepth),
+			utils.LogAttr("max_queue_size", cfg.QueueSize),
+		)
+
 		// Wait for result or timeout
 		select {
 		case err := <-qr.result:
@@ -332,6 +340,12 @@ func (rl *ResourceLimiter) enqueueRequest(
 	default:
 		// Queue is full
 		rl.metrics.incrementRejectedWithLabels(bucket, "queue_full")
+		queueDepth := len(queue)
+		utils.LavaFormatWarning("Request rejected - queue full", nil,
+			utils.LogAttr("bucket", bucket.String()),
+			utils.LogAttr("queue_depth", queueDepth),
+			utils.LogAttr("max_queue_size", cfg.QueueSize),
+		)
 		return fmt.Errorf("provider queue full: %s queue size %d", bucket, cfg.QueueSize)
 	}
 }
@@ -358,10 +372,12 @@ func (rl *ResourceLimiter) processQueue(
 		}
 
 		waitTime := time.Since(qr.enqueued)
+		queueDepth := len(queue) // Remaining requests in queue after dequeuing this one
 		rl.metrics.recordQueueWaitTime(bucket, waitTime)
 		utils.LavaFormatDebug("Processing queued request",
 			utils.LogAttr("bucket", bucket.String()),
 			utils.LogAttr("waitTime", waitTime),
+			utils.LogAttr("remaining_queue_depth", queueDepth),
 		)
 
 		// Execute
@@ -422,12 +438,18 @@ func (rl *ResourceLimiter) monitorMemory() {
 		reserved := rl.currentMemory
 		rl.memoryLock.RUnlock()
 
+		// Get current queue depths
+		heavyQueueDepth := len(rl.heavyQueue)
+		normalQueueDepth := 0 // Normal bucket has no queue (QueueSize: 0)
+
 		utils.LavaFormatDebug("Provider memory status",
 			utils.LogAttr("heap_alloc_mb", m.HeapAlloc/(1024*1024)),
 			utils.LogAttr("reserved_mb", reserved/(1024*1024)),
 			utils.LogAttr("threshold_mb", rl.memoryThreshold/(1024*1024)),
 			utils.LogAttr("heavy_in_flight", rl.metrics.getInFlight(BucketHeavy)),
 			utils.LogAttr("normal_in_flight", rl.metrics.getInFlight(BucketNormal)),
+			utils.LogAttr("heavy_queue_depth", heavyQueueDepth),
+			utils.LogAttr("normal_queue_depth", normalQueueDepth),
 		)
 	}
 }
