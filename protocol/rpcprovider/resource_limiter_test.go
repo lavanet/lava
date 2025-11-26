@@ -137,10 +137,10 @@ func TestResourceLimiter_HeavyConcurrencyLimit(t *testing.T) {
 	// Launch 10 concurrent heavy requests
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go func() {
+		go func(idx int) {
 			defer wg.Done()
-			results[i] = rl.Acquire(ctx, 200, "debug_trace", executeFunc)
-		}()
+			results[idx] = rl.Acquire(ctx, 200, "debug_trace", executeFunc)
+		}(i)
 	}
 
 	// Give goroutines time to start
@@ -198,10 +198,10 @@ func TestResourceLimiter_NormalConcurrencyNoQueue(t *testing.T) {
 	// Launch 105 concurrent normal requests
 	for i := 0; i < 105; i++ {
 		wg.Add(1)
-		go func() {
+		go func(idx int) {
 			defer wg.Done()
-			results[i] = rl.Acquire(ctx, 20, "eth_blockNumber", executeFunc)
-		}()
+			results[idx] = rl.Acquire(ctx, 20, "eth_blockNumber", executeFunc)
+		}(i)
 	}
 
 	// Give goroutines time to start
@@ -522,13 +522,13 @@ func TestResourceLimiter_ErrorMessages(t *testing.T) {
 	errors1 := make([]error, 10)
 	for i := 0; i < 10; i++ {
 		wg1.Add(1)
-		go func() {
+		go func(idx int) {
 			defer wg1.Done()
-			errors1[i] = rl.Acquire(ctx, 200, "debug_trace", func() error {
+			errors1[idx] = rl.Acquire(ctx, 200, "debug_trace", func() error {
 				<-block1
 				return nil
 			})
-		}()
+		}(i)
 	}
 
 	time.Sleep(200 * time.Millisecond) // Ensure all have attempted
@@ -556,13 +556,13 @@ func TestResourceLimiter_ErrorMessages(t *testing.T) {
 	errors2 := make([]error, 105)
 	for i := 0; i < 105; i++ {
 		wg2.Add(1)
-		go func() {
+		go func(idx int) {
 			defer wg2.Done()
-			errors2[i] = rl.Acquire(ctx, 20, "eth_call", func() error {
+			errors2[idx] = rl.Acquire(ctx, 20, "eth_call", func() error {
 				<-block2
 				return nil
 			})
-		}()
+		}(i)
 	}
 
 	time.Sleep(200 * time.Millisecond) // Ensure all have attempted
@@ -682,14 +682,14 @@ func TestResourceLimiter_StressTest(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
-		go func() {
+		go func(idx int) {
 			defer wg.Done()
 			totalRequests.Add(1)
 
 			var cu uint64
 			var method string
 
-			if i%3 == 0 {
+			if idx%3 == 0 {
 				// Heavy request
 				cu = 200
 				method = "debug_trace"
@@ -705,7 +705,7 @@ func TestResourceLimiter_StressTest(t *testing.T) {
 			} else {
 				successfulRequests.Add(1)
 			}
-		}()
+		}(i)
 	}
 
 	wg.Wait()
