@@ -111,8 +111,33 @@ func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint
 
 	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
 
-	// Create Prometheus metrics
-	metricsInstance := &ResourceLimiterMetrics{
+	// Create Prometheus metrics (with nil checks for testing)
+	metricsInstance := createResourceLimiterMetrics()
+
+	rl := &ResourceLimiter{
+		heavySemaphore:  semaphore.NewWeighted(config[BucketHeavy].MaxConcurrent),
+		normalSemaphore: semaphore.NewWeighted(config[BucketNormal].MaxConcurrent),
+		heavyQueue:      make(chan *queuedRequest, config[BucketHeavy].QueueSize),
+		config:          config,
+		memoryThreshold: memoryThreshold,
+		cuThreshold:     cuThreshold,
+		metrics:         metricsInstance,
+		enabled:         true,
+	}
+
+	// Start queue worker for heavy bucket
+	go rl.processQueue(BucketHeavy, rl.heavyQueue, rl.heavySemaphore)
+
+	// Start memory monitor
+	go rl.monitorMemory()
+
+	return rl
+}
+
+// createResourceLimiterMetrics creates metrics instance
+// Separated for testability
+func createResourceLimiterMetrics() *ResourceLimiterMetrics {
+	return &ResourceLimiterMetrics{
 		rejectedRequestsMetric: promauto.NewCounterVec(prometheus.CounterOpts{
 			Name: "lava_provider_resource_limiter_rejections_total",
 			Help: "Total number of requests rejected by resource limiter",
@@ -139,6 +164,33 @@ func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint
 			Buckets: prometheus.ExponentialBuckets(0.1, 2, 10),
 		}, []string{"bucket"}),
 	}
+}
+
+// newResourceLimiterForTesting creates a limiter without Prometheus metrics for testing
+func newResourceLimiterForTesting(enabled bool, memoryThresholdGB uint64, cuThreshold uint64) *ResourceLimiter {
+	if !enabled {
+		return &ResourceLimiter{enabled: false}
+	}
+
+	config := map[BucketType]*MethodConfig{
+		BucketHeavy: {
+			MaxConcurrent: 2,
+			MemoryPerCall: 512 * 1024 * 1024,
+			QueueSize:     5,
+			Timeout:       30 * time.Second,
+		},
+		BucketNormal: {
+			MaxConcurrent: 100,
+			MemoryPerCall: 1 * 1024 * 1024,
+			QueueSize:     0,
+			Timeout:       0,
+		},
+	}
+
+	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
+
+	// Create minimal metrics without Prometheus registration
+	metricsInstance := &ResourceLimiterMetrics{}
 
 	rl := &ResourceLimiter{
 		heavySemaphore:  semaphore.NewWeighted(config[BucketHeavy].MaxConcurrent),
