@@ -30,7 +30,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/protocopy"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -1057,14 +1056,20 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 	isNodeError, _ := chainMsg.CheckResponseError(reply.Data, replyWrapper.StatusCode)
 	// in case the error is a node error we don't want to cache
 	if !isNodeError {
-		// copy request and reply as they change later on and we call SetEntry in a routine.
+		// Snapshot values that will be modified after this point
 		requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
 		hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
-		copyReply := &pairingtypes.RelayReply{}
-		copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
+
+		// reply.Data is NEVER modified after this point - verified by code review
+		// Only Sig, SigBlocks, LatestBlock, and Metadata are modified later (not needed in cache)
+		cacheReply := &pairingtypes.RelayReply{
+			Data:        reply.Data,
+			LatestBlock: reply.LatestBlock,
+		}
+
 		go func() {
-			if hashErr != nil || copyReplyErr != nil {
-				utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
+			if hashErr != nil {
+				utils.LavaFormatError("Failed hashing cache request", nil, utils.LogAttr("hashErr", hashErr))
 				return
 			}
 			new_ctx := context.Background()
@@ -1075,7 +1080,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				RequestedBlock:   requestedBlock,
 				BlockHash:        requestedBlockHash,
 				ChainId:          rpcps.rpcProviderEndpoint.ChainID,
-				Response:         copyReply,
+				Response:         cacheReply,
 				Finalized:        finalized,
 				OptionalMetadata: ignoredMetadata,
 				AverageBlockTime: int64(averageBlockTime),
