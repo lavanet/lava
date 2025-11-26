@@ -97,6 +97,7 @@ type RPCProviderServer struct {
 	providerLoadManager             *ProviderLoadManager
 	verificationsStatusGetter       IVerificationsStatus
 	testModeConfig                  *TestModeConfig
+	resourceLimiter                 *ResourceLimiter
 }
 
 type ReliabilityManagerInf interface {
@@ -147,6 +148,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	verificationsStatusGetter IVerificationsStatus,
 	numberOfRetries int,
 	testModeConfig *TestModeConfig,
+	resourceLimiter *ResourceLimiter,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -171,6 +173,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter, numberOfRetries, testModeConfig)
 	rpcps.providerLoadManager = providerLoadManager
 	rpcps.verificationsStatusGetter = verificationsStatusGetter
+	rpcps.resourceLimiter = resourceLimiter
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -300,30 +303,48 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			rpcps.metrics.SubInFlightRelay(chainMessage.GetApi().Name)
 		}()
 	}()
+
+	// Get method info for resource limiting
+	apiComputeUnits := chainMessage.GetApi().ComputeUnits
+	apiName := chainMessage.GetApi().Name
+
 	var reply *pairingtypes.RelayReply
 	var replyWrapper *chainlib.RelayReplyWrapper
-	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-		reply, err = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
-		// For unsubscribe, we don't have a replyWrapper, so set to nil
-		replyWrapper = nil
-	} else {
-		// Try sending relay
-		reply, replyWrapper, err = rpcps.TryRelayWithWrapper(ctx, request, consumerAddress, chainMessage)
-	}
+	var isErroredRelay bool
 
-	isErroredRelay := err != nil || common.ContextOutOfTime(ctx)
-	if !isErroredRelay {
-		latestRelayCu := uint64(0)
-		if relaySession != nil {
-			latestRelayCu = relaySession.LatestRelayCu
+	// Wrap relay execution in resource limiter
+	err = rpcps.resourceLimiter.Acquire(ctx, apiComputeUnits, apiName, func() error {
+		var execErr error
+		if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
+			reply, execErr = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
+			// For unsubscribe, we don't have a replyWrapper, so set to nil
+			replyWrapper = nil
+		} else {
+			// Try sending relay
+			reply, replyWrapper, execErr = rpcps.TryRelayWithWrapper(ctx, request, consumerAddress, chainMessage)
 		}
-		go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport, chainMessage.GetApi().Name)
-	} else {
-		go rpcps.metrics.AddFunctionError(chainMessage.GetApi().Name)
-	}
 
-	if !rpcps.StaticProvider {
-		err = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, err)
+		isErroredRelay = execErr != nil || common.ContextOutOfTime(ctx)
+		if !isErroredRelay {
+			latestRelayCu := uint64(0)
+			if relaySession != nil {
+				latestRelayCu = relaySession.LatestRelayCu
+			}
+			go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport, apiName)
+		} else {
+			go rpcps.metrics.AddFunctionError(apiName)
+		}
+
+		if !rpcps.StaticProvider {
+			execErr = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, execErr)
+		}
+
+		return execErr
+	})
+
+	// If resource limiter rejected the request, return early
+	if err != nil {
+		return nil, err
 	}
 
 	processingTime := time.Since(startTime)
