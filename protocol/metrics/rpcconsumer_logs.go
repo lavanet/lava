@@ -124,11 +124,6 @@ func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chai
 }
 
 func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
-	if providerAddress == "" {
-		// skip if provider address is empty
-		return
-	}
-
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
 	rpccl.consumerOptimizerQoSClient.SetNodeErrorToProvider(providerAddress, chainId)
 }
