@@ -21,6 +21,9 @@ func (romm *RelayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, 
 func (romm *RelayProcessorMetricsMock) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
 }
 
+func (romm *RelayProcessorMetricsMock) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+}
+
 func (romm *RelayProcessorMetricsMock) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
 }
 

@@ -40,9 +40,10 @@ type ConsumerMetricsManager struct {
 	totalRelaysRequestedMetric                  *prometheus.CounterVec
 	totalErroredMetric                          *prometheus.CounterVec
 	totalNodeErroredMetric                      *prometheus.CounterVec
-	totalNodeErroredRecoveredSuccessfullyMetric *prometheus.CounterVec
-	totalNodeErroredRecoveryAttemptsMetric      *prometheus.CounterVec
-	totalRelaysSentToProvidersMetric            *prometheus.CounterVec
+	totalNodeErroredRecoveredSuccessfullyMetric    *prometheus.CounterVec
+	totalNodeErroredRecoveryAttemptsMetric         *prometheus.CounterVec
+	totalProtocolErrorsRecoveredSuccessfullyMetric *prometheus.CounterVec
+	totalRelaysSentToProvidersMetric               *prometheus.CounterVec
 	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
 	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
 	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
@@ -266,6 +267,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of retries sent due to retry mechanism",
 	}, []string{"spec", "apiInterface"})
 
+	totalProtocolErrorsRecoveredSuccessfullyMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_protocol_errors_recovered_successfully",
+		Help: "The total number of protocol errors that managed to recover using a retry or quorum",
+	}, []string{"spec", "apiInterface", "attempt"})
+
 	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_relay_processing_latency_before_provider_in_micro_seconds",
 		Help: "average latency of processing a successful relay before it is sent to the provider in µs (10^6)",
@@ -321,6 +327,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(totalNodeErroredMetric)
 	registerMetric(totalNodeErroredRecoveredSuccessfullyMetric)
 	registerMetric(totalNodeErroredRecoveryAttemptsMetric)
+	registerMetric(totalProtocolErrorsRecoveredSuccessfullyMetric)
 	registerMetric(relayProcessingLatencyBeforeProvider)
 	registerMetric(relayProcessingLatencyAfterProvider)
 	registerMetric(totalWsSubscriptionRequestsMetric)
@@ -360,9 +367,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		apiMethodCalls:                              apiSpecificsMetric,
 		addMethodsApiGauge:                          options.AddMethodsApiGauge,
 		totalNodeErroredMetric:                      totalNodeErroredMetric,
-		totalNodeErroredRecoveredSuccessfullyMetric: totalNodeErroredRecoveredSuccessfullyMetric,
-		totalNodeErroredRecoveryAttemptsMetric:      totalNodeErroredRecoveryAttemptsMetric,
-		totalRelaysSentToProvidersMetric:            totalRelaysSentToProvidersMetric,
+		totalNodeErroredRecoveredSuccessfullyMetric:    totalNodeErroredRecoveredSuccessfullyMetric,
+		totalNodeErroredRecoveryAttemptsMetric:         totalNodeErroredRecoveryAttemptsMetric,
+		totalProtocolErrorsRecoveredSuccessfullyMetric: totalProtocolErrorsRecoveredSuccessfullyMetric,
+		totalRelaysSentToProvidersMetric:               totalRelaysSentToProvidersMetric,
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
@@ -445,6 +453,13 @@ func (pme *ConsumerMetricsManager) SetNodeErrorRecoveredSuccessfullyMetric(chain
 		return
 	}
 	pme.totalNodeErroredRecoveredSuccessfullyMetric.WithLabelValues(chainId, apiInterface, attempt).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	if pme == nil {
+		return
+	}
+	pme.totalProtocolErrorsRecoveredSuccessfullyMetric.WithLabelValues(chainId, apiInterface, attempt).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
