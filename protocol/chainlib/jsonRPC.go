@@ -641,15 +641,22 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		}
 		return nil, err
 	}
-	
+
 	// Convert and release memory immediately to prevent OOM on large Solana responses
 	// Each Solana block can be 10-30MB. With 8 concurrent batch requests (3 blocks each),
-	// keeping all responses in batch[].Result causes 4x memory duplication:
-	//   1. HTTP response buffer
-	//   2. Decoded JsonrpcMessage.Result (RawMessage)
-	//   3. batch[].Result (stored reference)
-	//   4. Final marshaled output
-	// By releasing batch[].Result immediately after conversion, we reduce peak memory usage.
+	// keeping all responses causes massive memory duplication.
+	//
+	// Memory copies in the pipeline:
+	//   1. HTTP response buffer (~30MB)
+	//   2. JsonrpcMessage.Result after decode (~30MB) 
+	//   3. batch[].Result stored in slice (~30MB)
+	//   4. replyMsgs[] after conversion (~30MB)
+	//   5. Final marshaled retData (~30MB)
+	//   6. Cache deep copy if caching enabled (~30MB)
+	// Total: Up to 6x duplication = 180MB per 3-block batch!
+	//
+	// Strategy: Release each copy ASAP after it's no longer needed
+	
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx := range batch {
 		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
@@ -657,13 +664,21 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		if err != nil {
 			return nil, err
 		}
-		// Release the large Result field immediately after conversion to allow GC
-		// This is critical for Solana where Result can be 10-30MB per block
+		// Release batch[].Result immediately - allows GC of RawMessage copy
+		// Even though ConvertBatchElement already copied it, this releases the original
 		batch[idx].Result = nil
 	}
+	
+	// Marshal all messages to final JSON
 	retData, err := json.Marshal(replyMsgs)
 	if err != nil {
 		return nil, err
+	}
+	
+	// Release replyMsgs Result fields immediately after marshaling
+	// This is critical - the marshaled data is in retData, we don't need the RawMessage copies anymore
+	for idx := range replyMsgs {
+		replyMsgs[idx].Result = nil
 	}
 	reply := &RelayReplyWrapper{
 		StatusCode: http.StatusOK, // status code is used only for rest at the moment

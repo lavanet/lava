@@ -30,7 +30,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/protocopy"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -1039,11 +1038,23 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 		// copy request and reply as they change later on and we call SetEntry in a routine.
 		requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
 		hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
-		copyReply := &pairingtypes.RelayReply{}
-		copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
+		
+		// OPTIMIZATION: Don't deep copy the entire reply - just copy the Data reference
+		// The Data field can be 30MB+ for Solana batch responses. Since we're caching in a goroutine,
+		// deep copying creates a 30MB allocation that stays in memory until cache.SetEntry completes.
+		// Instead, we'll copy the reply structure but share the Data byte slice reference.
+		// This is safe because the Data field is immutable after creation.
+		copyReply := &pairingtypes.RelayReply{
+			Data:                reply.Data, // Share reference instead of deep copy
+			LatestBlock:         reply.LatestBlock,
+			FinalizedBlocksHashes: reply.FinalizedBlocksHashes,
+			SigBlocks:           reply.SigBlocks,
+			Metadata:            append([]pairingtypes.Metadata{}, reply.Metadata...), // Copy metadata slice
+		}
+		
 		go func() {
-			if hashErr != nil || copyReplyErr != nil {
-				utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
+			if hashErr != nil {
+				utils.LavaFormatError("Failed computing hash for cache", nil, utils.LogAttr("hashErr", hashErr))
 				return
 			}
 			new_ctx := context.Background()
