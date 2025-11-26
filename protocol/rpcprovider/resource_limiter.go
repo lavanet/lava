@@ -401,11 +401,7 @@ func (rl *ResourceLimiter) canAdmitRequest(estimatedMemory uint64) bool {
 	runtime.ReadMemStats(&m)
 
 	// If heap usage > 80% of threshold, reject
-	if m.HeapAlloc > (rl.memoryThreshold * 80 / 100) {
-		return false
-	}
-
-	return true
+	return m.HeapAlloc <= (rl.memoryThreshold * 80 / 100)
 }
 
 func (rl *ResourceLimiter) reserveMemory(amount uint64) {
