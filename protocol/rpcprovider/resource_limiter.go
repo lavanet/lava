@@ -231,8 +231,8 @@ func (rl *ResourceLimiter) selectBucket(computeUnits uint64, methodName string) 
 
 // Acquire attempts to acquire resources for executing a request
 func (rl *ResourceLimiter) Acquire(ctx context.Context, computeUnits uint64, methodName string, execute func() error) error {
-	if !rl.enabled {
-		return execute() // Pass through if disabled
+	if rl == nil || !rl.enabled {
+		return execute() // Pass through if nil or disabled
 	}
 
 	bucket := rl.selectBucket(computeUnits, methodName)
