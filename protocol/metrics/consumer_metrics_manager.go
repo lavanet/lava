@@ -36,48 +36,48 @@ func (lt *LatencyTracker) AddLatency(latency time.Duration) {
 }
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric                      *prometheus.CounterVec
-	totalRelaysRequestedMetric                  *prometheus.CounterVec
-	totalErroredMetric                          *prometheus.CounterVec
-	totalNodeErroredMetric                      *prometheus.CounterVec
+	totalCURequestedMetric                         *prometheus.CounterVec
+	totalRelaysRequestedMetric                     *prometheus.CounterVec
+	totalErroredMetric                             *prometheus.CounterVec
+	totalNodeErroredMetric                         *prometheus.CounterVec
 	totalNodeErroredRecoveredSuccessfullyMetric    *prometheus.CounterVec
 	totalNodeErroredRecoveryAttemptsMetric         *prometheus.CounterVec
 	totalProtocolErrorsRecoveredSuccessfullyMetric *prometheus.CounterVec
 	totalRelaysSentToProvidersMetric               *prometheus.CounterVec
-	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
-	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
-	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
-	totalWsSubscriptionDisconnectMetric         *prometheus.CounterVec
-	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
-	totalLoLSuccessMetric                       prometheus.Counter
-	totalLoLErrorsMetric                        prometheus.Counter
-	totalWebSocketConnectionsActive             *prometheus.GaugeVec
-	blockMetric                                 *prometheus.GaugeVec
-	latencyMetric                               *prometheus.GaugeVec
-	endToEndLatencyMetric                       *prometheus.GaugeVec
-	qosMetric                                   *MappedLabelsGaugeVec
-	providerReputationMetric                    *MappedLabelsGaugeVec
-	LatestBlockMetric                           *MappedLabelsGaugeVec
-	LatestProviderRelay                         *prometheus.GaugeVec
-	virtualEpochMetric                          *prometheus.GaugeVec
-	apiMethodCalls                              *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric               prometheus.Gauge
-	endpointsHealthChecksOk                     uint64
-	endpointsHealthChecksBreakdownMetric        *prometheus.GaugeVec
-	lock                                        sync.Mutex
-	protocolVersionMetric                       *prometheus.GaugeVec
-	requestsPerProviderMetric                   *prometheus.CounterVec
-	protocolErrorsPerProviderMetric             *prometheus.CounterVec
-	providerRelays                              map[string]uint64
-	addMethodsApiGauge                          bool
-	averageLatencyPerChain                      map[string]*LatencyTracker // key == chain Id + api interface
-	averageLatencyMetric                        *prometheus.GaugeVec
-	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
-	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
-	averageProcessingLatency                    map[string]*LatencyTracker
-	consumerOptimizerQoSClient                  *ConsumerOptimizerQoSClient
-	providerLivenessMetric                      *prometheus.GaugeVec
-	blockedProviderMetric                       *MappedLabelsGaugeVec
+	totalRelaysSentByNewBatchTickerMetric          *prometheus.CounterVec
+	totalWsSubscriptionRequestsMetric              *prometheus.CounterVec
+	totalFailedWsSubscriptionRequestsMetric        *prometheus.CounterVec
+	totalWsSubscriptionDisconnectMetric            *prometheus.CounterVec
+	totalDuplicatedWsSubscriptionRequestsMetric    *prometheus.CounterVec
+	totalLoLSuccessMetric                          prometheus.Counter
+	totalLoLErrorsMetric                           prometheus.Counter
+	totalWebSocketConnectionsActive                *prometheus.GaugeVec
+	blockMetric                                    *prometheus.GaugeVec
+	latencyMetric                                  *prometheus.GaugeVec
+	endToEndLatencyMetric                          *prometheus.GaugeVec
+	qosMetric                                      *MappedLabelsGaugeVec
+	providerReputationMetric                       *MappedLabelsGaugeVec
+	LatestBlockMetric                              *MappedLabelsGaugeVec
+	LatestProviderRelay                            *prometheus.GaugeVec
+	virtualEpochMetric                             *prometheus.GaugeVec
+	apiMethodCalls                                 *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric                  prometheus.Gauge
+	endpointsHealthChecksOk                        uint64
+	endpointsHealthChecksBreakdownMetric           *prometheus.GaugeVec
+	lock                                           sync.Mutex
+	protocolVersionMetric                          *prometheus.GaugeVec
+	requestsPerProviderMetric                      *prometheus.CounterVec
+	protocolErrorsPerProviderMetric                *prometheus.CounterVec
+	providerRelays                                 map[string]uint64
+	addMethodsApiGauge                             bool
+	averageLatencyPerChain                         map[string]*LatencyTracker // key == chain Id + api interface
+	averageLatencyMetric                           *prometheus.GaugeVec
+	relayProcessingLatencyBeforeProvider           *prometheus.GaugeVec
+	relayProcessingLatencyAfterProvider            *prometheus.GaugeVec
+	averageProcessingLatency                       map[string]*LatencyTracker
+	consumerOptimizerQoSClient                     *ConsumerOptimizerQoSClient
+	providerLivenessMetric                         *prometheus.GaugeVec
+	blockedProviderMetric                          *MappedLabelsGaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -340,47 +340,47 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(protocolErrorsPerProviderMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
-		totalCURequestedMetric:                      totalCURequestedMetric,
-		totalRelaysRequestedMetric:                  totalRelaysRequestedMetric,
-		totalWsSubscriptionRequestsMetric:           totalWsSubscriptionRequestsMetric,
-		totalFailedWsSubscriptionRequestsMetric:     totalFailedWsSubscriptionRequestsMetric,
-		totalDuplicatedWsSubscriptionRequestsMetric: totalDuplicatedWsSubscriptionRequestsMetric,
-		totalWsSubscriptionDisconnectMetric:         totalWsSubscriptionDisconnectMetric,
-		totalWebSocketConnectionsActive:             totalWebSocketConnectionsActive,
-		totalErroredMetric:                          totalErroredMetric,
-		blockMetric:                                 blockMetric,
-		latencyMetric:                               latencyMetric,
-		endToEndLatencyMetric:                       endToEndLatencyMetric,
-		qosMetric:                                   qosMetric,
-		providerReputationMetric:                    providerReputationMetric,
-		LatestBlockMetric:                           latestBlockMetric,
-		LatestProviderRelay:                         latestProviderRelay,
-		providerRelays:                              map[string]uint64{},
-		averageLatencyPerChain:                      map[string]*LatencyTracker{},
-		virtualEpochMetric:                          virtualEpochMetric,
-		endpointsHealthChecksOkMetric:               endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:                     1,
-		endpointsHealthChecksBreakdownMetric:        endpointsHealthChecksBreakdownMetric,
-		protocolVersionMetric:                       protocolVersionMetric,
-		averageLatencyMetric:                        averageLatencyMetric,
-		totalRelaysSentByNewBatchTickerMetric:       totalRelaysSentByNewBatchTickerMetric,
-		apiMethodCalls:                              apiSpecificsMetric,
-		addMethodsApiGauge:                          options.AddMethodsApiGauge,
-		totalNodeErroredMetric:                      totalNodeErroredMetric,
+		totalCURequestedMetric:                         totalCURequestedMetric,
+		totalRelaysRequestedMetric:                     totalRelaysRequestedMetric,
+		totalWsSubscriptionRequestsMetric:              totalWsSubscriptionRequestsMetric,
+		totalFailedWsSubscriptionRequestsMetric:        totalFailedWsSubscriptionRequestsMetric,
+		totalDuplicatedWsSubscriptionRequestsMetric:    totalDuplicatedWsSubscriptionRequestsMetric,
+		totalWsSubscriptionDisconnectMetric:            totalWsSubscriptionDisconnectMetric,
+		totalWebSocketConnectionsActive:                totalWebSocketConnectionsActive,
+		totalErroredMetric:                             totalErroredMetric,
+		blockMetric:                                    blockMetric,
+		latencyMetric:                                  latencyMetric,
+		endToEndLatencyMetric:                          endToEndLatencyMetric,
+		qosMetric:                                      qosMetric,
+		providerReputationMetric:                       providerReputationMetric,
+		LatestBlockMetric:                              latestBlockMetric,
+		LatestProviderRelay:                            latestProviderRelay,
+		providerRelays:                                 map[string]uint64{},
+		averageLatencyPerChain:                         map[string]*LatencyTracker{},
+		virtualEpochMetric:                             virtualEpochMetric,
+		endpointsHealthChecksOkMetric:                  endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:                        1,
+		endpointsHealthChecksBreakdownMetric:           endpointsHealthChecksBreakdownMetric,
+		protocolVersionMetric:                          protocolVersionMetric,
+		averageLatencyMetric:                           averageLatencyMetric,
+		totalRelaysSentByNewBatchTickerMetric:          totalRelaysSentByNewBatchTickerMetric,
+		apiMethodCalls:                                 apiSpecificsMetric,
+		addMethodsApiGauge:                             options.AddMethodsApiGauge,
+		totalNodeErroredMetric:                         totalNodeErroredMetric,
 		totalNodeErroredRecoveredSuccessfullyMetric:    totalNodeErroredRecoveredSuccessfullyMetric,
 		totalNodeErroredRecoveryAttemptsMetric:         totalNodeErroredRecoveryAttemptsMetric,
 		totalProtocolErrorsRecoveredSuccessfullyMetric: totalProtocolErrorsRecoveredSuccessfullyMetric,
 		totalRelaysSentToProvidersMetric:               totalRelaysSentToProvidersMetric,
-		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
-		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
-		averageProcessingLatency:                    map[string]*LatencyTracker{},
-		totalLoLSuccessMetric:                       totalLoLSuccessMetric,
-		totalLoLErrorsMetric:                        totalLoLErrorsMetric,
-		consumerOptimizerQoSClient:                  options.ConsumerOptimizerQoSClient,
-		requestsPerProviderMetric:                   requestsPerProviderMetric,
-		protocolErrorsPerProviderMetric:             protocolErrorsPerProviderMetric,
-		providerLivenessMetric:                      providerLivenessMetric,
-		blockedProviderMetric:                       blockedProviderMetric,
+		relayProcessingLatencyBeforeProvider:           relayProcessingLatencyBeforeProvider,
+		relayProcessingLatencyAfterProvider:            relayProcessingLatencyAfterProvider,
+		averageProcessingLatency:                       map[string]*LatencyTracker{},
+		totalLoLSuccessMetric:                          totalLoLSuccessMetric,
+		totalLoLErrorsMetric:                           totalLoLErrorsMetric,
+		consumerOptimizerQoSClient:                     options.ConsumerOptimizerQoSClient,
+		requestsPerProviderMetric:                      requestsPerProviderMetric,
+		protocolErrorsPerProviderMetric:                protocolErrorsPerProviderMetric,
+		providerLivenessMetric:                         providerLivenessMetric,
+		blockedProviderMetric:                          blockedProviderMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
