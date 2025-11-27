@@ -812,8 +812,18 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	err = relayProcessor.WaitForResults(waitCtx)
 	require.NoError(t, err)
 
-	// Check HasRequiredNodeResults
-	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
+	// Wait for all responses to be processed (including node errors)
+	// WaitForResults returns when quorum is met, but node errors might still be in flight
+	// Poll until we see node errors or timeout
+	var hasResults bool
+	var nodeErrorCount int
+	for i := 0; i < 20; i++ {
+		time.Sleep(10 * time.Millisecond)
+		hasResults, nodeErrorCount = relayProcessor.HasRequiredNodeResults(1)
+		if hasResults && nodeErrorCount > 0 {
+			break
+		}
+	}
 
 	// Verify results
 	require.True(t, hasResults, "Should have required results (quorum met)")
