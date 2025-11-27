@@ -340,8 +340,23 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 		return execErr
 	})
-	// If resource limiter rejected the request, return early
+	// If resource limiter rejected the request, cleanup session and return early
 	if err != nil {
+		// When resource limiter rejects the request, the session was already
+		// locked by PrepareSessionForUsage in initRelay. We must call OnSessionFailure to:
+		// 1. Unlock the session
+		// 2. Rollback the CU deltas
+		// 3. Prevent session leak
+		if !rpcps.StaticProvider && relaySession != nil {
+			relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+			if relayFailureError != nil {
+				utils.LavaFormatError("Failed to cleanup session after resource limiter rejection", relayFailureError,
+					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
+					utils.Attribute{Key: "limiter_error", Value: err.Error()},
+				)
+			}
+		}
 		return nil, err
 	}
 
