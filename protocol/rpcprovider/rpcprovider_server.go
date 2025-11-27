@@ -312,7 +312,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	var isErroredRelay bool
 
 	// Wrap relay execution in resource limiter
+	var executionStarted bool
 	err = rpcps.resourceLimiter.Acquire(ctx, apiComputeUnits, apiName, func() error {
+		executionStarted = true
 		var execErr error
 		if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 			reply, execErr = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
@@ -341,7 +343,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return execErr
 	})
 	// If resource limiter rejected the request, cleanup session and return early
-	if err != nil {
+	// We only call OnSessionFailure if execution DID NOT start (i.e. limiter rejection).
+	// If execution started, finalizeSession was already called inside the closure.
+	if err != nil && !executionStarted {
 		// When resource limiter rejects the request, the session was already
 		// locked by PrepareSessionForUsage in initRelay. We must call OnSessionFailure to:
 		// 1. Unlock the session
@@ -357,6 +361,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 				)
 			}
 		}
+		return nil, err
+	}
+	// If execution started and we have an error, it's a relay error returned by the closure (which already called finalizeSession)
+	if err != nil {
 		return nil, err
 	}
 
