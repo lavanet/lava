@@ -33,6 +33,7 @@ type ResultsCheckerInf interface {
 type MetricsInterface interface {
 	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
 	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
+	SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
 	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
 }
 
