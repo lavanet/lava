@@ -790,7 +790,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		cuThreshold = MinCUThreshold
 	}
 
-	resourceLimiter := NewResourceLimiter(enableResourceLimiter, memoryThresholdGB, cuThreshold, heavyMaxConcurrent, heavyQueueSize, normalMaxConcurrent)
+	// Use provider name if set, otherwise use chainID+apiInterface key
+	endpointLabel := rpcProviderEndpoint.Name
+	if endpointLabel == "" {
+		endpointLabel = rpcProviderEndpoint.Key()
+	}
+	resourceLimiter := NewResourceLimiter(enableResourceLimiter, endpointLabel, memoryThresholdGB, cuThreshold, heavyMaxConcurrent, heavyQueueSize, normalMaxConcurrent)
 
 	if enableResourceLimiter {
 		utils.LavaFormatInfo("Resource limiter enabled",

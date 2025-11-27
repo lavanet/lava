@@ -86,12 +86,13 @@ type ResourceLimiterMetrics struct {
 }
 
 // NewResourceLimiter creates a new resource limiter
+// endpointName: Unique name for this provider endpoint (used for metric differentiation)
 // cuThreshold: CU value above which methods are classified as "heavy" (recommended: 100, minimum: 10)
 // heavyMaxConcurrent: Max concurrent heavy (high-CU/debug/trace) method calls
 // heavyQueueSize: Queue size for heavy methods
 // normalMaxConcurrent: Max concurrent normal method calls
 // Note: cuThreshold should be validated before calling this function
-func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
+func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB uint64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
@@ -114,8 +115,8 @@ func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint
 
 	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
 
-	// Create Prometheus metrics (with nil checks for testing)
-	metricsInstance := createResourceLimiterMetrics()
+	// Create Prometheus metrics with endpoint name as constant label
+	metricsInstance := createResourceLimiterMetrics(endpointName)
 
 	rl := &ResourceLimiter{
 		heavySemaphore:  semaphore.NewWeighted(config[BucketHeavy].MaxConcurrent),
@@ -137,40 +138,49 @@ func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint
 	return rl
 }
 
-// createResourceLimiterMetrics creates metrics instance
-// Separated for testability
-func createResourceLimiterMetrics() *ResourceLimiterMetrics {
+// createResourceLimiterMetrics creates metrics instance with endpoint-specific labels
+// Uses ConstLabels to automatically differentiate metrics per endpoint without re-registration conflicts
+func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
+	// ConstLabels are applied to all metrics from this endpoint, preventing registration conflicts
+	constLabels := prometheus.Labels{"endpoint": endpointName}
+
 	return &ResourceLimiterMetrics{
 		rejectedRequestsMetric: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "lava_provider_resource_limiter_rejections_total",
-			Help: "Total number of requests rejected by resource limiter",
+			Name:        "lava_provider_resource_limiter_rejections_total",
+			Help:        "Total number of requests rejected by resource limiter",
+			ConstLabels: constLabels,
 		}, []string{"bucket", "reason"}),
 		queuedRequestsMetric: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "lava_provider_resource_limiter_queued_total",
-			Help: "Total number of requests queued by resource limiter",
+			Name:        "lava_provider_resource_limiter_queued_total",
+			Help:        "Total number of requests queued by resource limiter",
+			ConstLabels: constLabels,
 		}, []string{"bucket"}),
 		timeoutRequestsMetric: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "lava_provider_resource_limiter_timeouts_total",
-			Help: "Total number of requests that timed out in queue",
+			Name:        "lava_provider_resource_limiter_timeouts_total",
+			Help:        "Total number of requests that timed out in queue",
+			ConstLabels: constLabels,
 		}, []string{"bucket"}),
 		inFlightRequestsMetric: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "lava_provider_resource_limiter_in_flight",
-			Help: "Number of requests currently executing",
+			Name:        "lava_provider_resource_limiter_in_flight",
+			Help:        "Number of requests currently executing",
+			ConstLabels: constLabels,
 		}, []string{"bucket"}),
 		estimatedMemoryMetric: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "lava_provider_resource_limiter_memory_bytes",
-			Help: "Estimated memory usage by resource limiter",
+			Name:        "lava_provider_resource_limiter_memory_bytes",
+			Help:        "Estimated memory usage by resource limiter",
+			ConstLabels: constLabels,
 		}),
 		queueWaitTimeMetric: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "lava_provider_resource_limiter_queue_wait_seconds",
-			Help:    "Time requests spent waiting in queue",
-			Buckets: prometheus.ExponentialBuckets(0.1, 2, 10),
+			Name:        "lava_provider_resource_limiter_queue_wait_seconds",
+			Help:        "Time requests spent waiting in queue",
+			Buckets:     prometheus.ExponentialBuckets(0.1, 2, 10),
+			ConstLabels: constLabels,
 		}, []string{"bucket"}),
 	}
 }
 
 // newResourceLimiterForTesting creates a limiter without Prometheus metrics for testing
-func newResourceLimiterForTesting(enabled bool, memoryThresholdGB uint64, cuThreshold uint64) *ResourceLimiter {
+func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThresholdGB uint64, cuThreshold uint64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
