@@ -438,9 +438,12 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 		elem := &b[byOrder]
 		if resp.Error != nil {
 			elem.Error = resp.Error
-			continue
+		} else {
+			elem.Error = json.Unmarshal(resp.Result, elem.Result)
 		}
-		elem.Error = json.Unmarshal(resp.Result, elem.Result)
+		// Release resp immediately after use to allow GC of large Result field
+		resp.Result = nil
+		resp = nil
 	}
 	// when timing out, return extra data on partial ids support
 	if err != nil && n > 0 && n < len(b) {
