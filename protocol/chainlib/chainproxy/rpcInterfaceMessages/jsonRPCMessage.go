@@ -80,6 +80,9 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 		msg.Params = rpcMsg.Params
 	}
 
+	// Clear the large Result field from source after conversion
+	rpcMsg.Result = nil
+
 	return msg, nil
 }
 
