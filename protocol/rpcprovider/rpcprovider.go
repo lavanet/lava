@@ -772,12 +772,19 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		cuThreshold = MinCUThreshold
 	}
 
-	resourceLimiter := NewResourceLimiter(enableResourceLimiter, memoryThresholdGB, cuThreshold)
+	heavyMaxConcurrent := viper.GetInt64("heavy-max-concurrent")
+	heavyQueueSize := viper.GetInt("heavy-queue-size")
+	normalMaxConcurrent := viper.GetInt64("normal-max-concurrent")
+
+	resourceLimiter := NewResourceLimiter(enableResourceLimiter, memoryThresholdGB, cuThreshold, heavyMaxConcurrent, heavyQueueSize, normalMaxConcurrent)
 
 	if enableResourceLimiter {
 		utils.LavaFormatInfo("Resource limiter enabled",
 			utils.LogAttr("memory_threshold_gb", memoryThresholdGB),
 			utils.LogAttr("cu_threshold", cuThreshold),
+			utils.LogAttr("heavy_max_concurrent", heavyMaxConcurrent),
+			utils.LogAttr("heavy_queue_size", heavyQueueSize),
+			utils.LogAttr("normal_max_concurrent", normalMaxConcurrent),
 		)
 	}
 
