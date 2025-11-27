@@ -814,10 +814,11 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 
 	// Wait for all responses to be processed (including node errors)
 	// WaitForResults returns when quorum is met, but node errors might still be in flight
-	// Poll until we see node errors or timeout
+	// Poll until we see node errors or timeout (max 200ms)
 	var hasResults bool
 	var nodeErrorCount int
-	for i := 0; i < 20; i++ {
+	maxRetries := 20
+	for retry := 0; retry < maxRetries; retry++ {
 		time.Sleep(10 * time.Millisecond)
 		hasResults, nodeErrorCount = relayProcessor.HasRequiredNodeResults(1)
 		if hasResults && nodeErrorCount > 0 {
