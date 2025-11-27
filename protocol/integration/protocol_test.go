@@ -1334,7 +1334,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 
 					// Parse the response
 					var response map[string]interface{}
-					err := json.Unmarshal(bodyBytes, &response)
+					err = json.Unmarshal(bodyBytes, &response)
 					require.NoError(t, err, "Response should be valid JSON")
 
 					// Verify we get the direct node error, not a wrapped error
