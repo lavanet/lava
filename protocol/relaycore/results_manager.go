@@ -196,10 +196,14 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	resultsCount := len(rp.successResults)
-	if resultsCount >= requiredSuccesses {
+	if selection == BestResult {
+		utils.LavaFormatDebug("Reached RequiredResults for BestResult", utils.LogAttr("GUID", rp.guid))
+		return len(rp.successResults) > 0
+	}
+	successResultsCount := len(rp.successResults)
+	if successResultsCount >= requiredSuccesses {
 		// we have enough successes, we can return
-		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
+		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
 		return true
 	}
 	// Only count successful results for quorum validation
