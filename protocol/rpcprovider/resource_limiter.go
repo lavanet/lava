@@ -378,6 +378,18 @@ func (rl *ResourceLimiter) processQueue(
 	cfg := rl.config[bucket]
 
 	for qr := range queue {
+		// Check if context was canceled/timed out before we process
+		// This prevents executing requests that already timed out in the queue
+		if qr.ctx.Err() != nil {
+			utils.LavaFormatDebug("Skipping queued request - context already canceled",
+				utils.LogAttr("bucket", bucket.String()),
+				utils.LogAttr("error", qr.ctx.Err().Error()),
+				utils.LogAttr("wait_time", time.Since(qr.enqueued)),
+			)
+			qr.result <- qr.ctx.Err()
+			continue
+		}
+
 		// Wait for semaphore
 		if err := sem.Acquire(qr.ctx, 1); err != nil {
 			qr.result <- err
