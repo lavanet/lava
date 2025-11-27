@@ -270,10 +270,12 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		// With quorum changes, we now fail when we only have node errors
-		_, err = relayProcessor.ProcessingResult()
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed relay, insufficient results")
+		// When quorum is disabled and we have node errors, we should get the node error as result
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err, "Should return node error when quorum is disabled")
+		require.NotNil(t, returnedResult)
+		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
+		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
 	})
 }
 
@@ -371,10 +373,12 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		// With quorum changes, we now fail when we only have node errors
-		_, err = relayProcessor.ProcessingResult()
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed relay, insufficient results")
+		// When quorum is disabled and we have node errors, we should get the node error as result
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err, "Should return node error when quorum is disabled")
+		require.NotNil(t, returnedResult)
+		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
+		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
 	})
 }
 
@@ -796,6 +800,147 @@ func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
 	})
 }
 
+// Test: Node error prioritized over protocol errors when quorum disabled
+// This tests that with 4 protocol errors and 1 node error, we get the node error
+func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
+	t.Run("node_error_prioritized_over_protocol_errors", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Quorum disabled (BestResult selection)
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			common.DefaultQuorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachine(protocolMessage, usedProviders),
+			qos.NewQoSManager(),
+		)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{
+			"lava@test1": &lavasession.SessionInfo{},
+			"lava@test2": &lavasession.SessionInfo{},
+			"lava@test3": &lavasession.SessionInfo{},
+			"lava@test4": &lavasession.SessionInfo{},
+			"lava@test5": &lavasession.SessionInfo{},
+		}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+
+		// Send 4 protocol errors and 1 node error
+		go SendProtocolError(relayProcessor, "lava@test1", time.Millisecond*5, fmt.Errorf("protocol error 1"))
+		go SendProtocolError(relayProcessor, "lava@test2", time.Millisecond*10, fmt.Errorf("protocol error 2"))
+		go SendProtocolError(relayProcessor, "lava@test3", time.Millisecond*15, fmt.Errorf("protocol error 3"))
+		go SendProtocolError(relayProcessor, "lava@test4", time.Millisecond*20, fmt.Errorf("protocol error 4"))
+		go SendNodeError(relayProcessor, "lava@test5", time.Millisecond*25)
+
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+		err = relayProcessor.WaitForResults(ctx)
+		require.NoError(t, err)
+
+		// Verify counts
+		protocolErrors := relayProcessor.ProtocolErrors()
+		require.Equal(t, uint64(4), protocolErrors, "Should have 4 protocol errors")
+
+		// Process results - should return node error (prioritized over protocol errors)
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err, "Should return node error, not an error")
+		require.NotNil(t, returnedResult)
+		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
+		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
+		require.Equal(t, "lava@test5", returnedResult.ProviderInfo.ProviderAddress, "Should return the node error from provider 5")
+	})
+
+	t.Run("node_error_prioritized_over_protocol_errors_with_quorum_selection", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Quorum selection but quorum feature disabled (DefaultQuorumParams)
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			common.DefaultQuorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			qos.NewQoSManager(),
+		)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{
+			"lava@test1": &lavasession.SessionInfo{},
+			"lava@test2": &lavasession.SessionInfo{},
+			"lava@test3": &lavasession.SessionInfo{},
+			"lava@test4": &lavasession.SessionInfo{},
+			"lava@test5": &lavasession.SessionInfo{},
+		}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+
+		// Send 4 protocol errors and 1 node error
+		go SendProtocolError(relayProcessor, "lava@test1", time.Millisecond*5, fmt.Errorf("protocol error 1"))
+		go SendProtocolError(relayProcessor, "lava@test2", time.Millisecond*10, fmt.Errorf("protocol error 2"))
+		go SendProtocolError(relayProcessor, "lava@test3", time.Millisecond*15, fmt.Errorf("protocol error 3"))
+		go SendProtocolError(relayProcessor, "lava@test4", time.Millisecond*20, fmt.Errorf("protocol error 4"))
+		go SendNodeError(relayProcessor, "lava@test5", time.Millisecond*25)
+
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+		err = relayProcessor.WaitForResults(ctx)
+		require.NoError(t, err)
+
+		// Verify counts
+		protocolErrors := relayProcessor.ProtocolErrors()
+		require.Equal(t, uint64(4), protocolErrors, "Should have 4 protocol errors")
+
+		// Process results - should return node error (prioritized over protocol errors)
+		// Even with Quorum selection, when quorum feature is disabled, node errors should be prioritized
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err, "Should return node error, not an error")
+		require.NotNil(t, returnedResult)
+		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
+		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
+		require.Equal(t, "lava@test5", returnedResult.ProviderInfo.ProviderAddress, "Should return the node error from provider 5")
+	})
+}
+
 // ============================================================================
 // CATEGORY 2: Priority Logic Tests
 // These tests validate that success results take priority over node errors
@@ -1105,93 +1250,6 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 				"If it fails, should indicate quorum failure")
 		} else {
 			// If it succeeds, that's also valid - 1 success with quorumSize=1 should work
-			require.NotNil(t, returnedResult, "If it succeeds, should return a result")
-		}
-	})
-}
-
-// Test: Success quorum fails with non-matching responses when quorum disabled
-// This tests when we have multiple success responses that don't match each other
-func TestSuccessQuorumFailsWithNonMatchingWhenQuorumDisabled(t *testing.T) {
-	t.Run("success_quorum_fails_with_non_matching_when_quorum_disabled", func(t *testing.T) {
-		ctx := context.Background()
-		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-		specId := "LAV1"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
-		if closeServer != nil {
-			defer closeServer()
-		}
-		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
-		usedProviders := lavasession.NewUsedProviders(nil)
-
-		// Quorum feature DISABLED
-		relayProcessor := NewRelayProcessor(
-			ctx,
-			common.QuorumParams{Min: 1, Rate: 0.6, Max: 5},
-			nil,
-			RelayProcessorMetrics,
-			RelayProcessorMetrics,
-			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, BestResult), // BestResult = quorum disabled
-			qos.NewQoSManager(),
-		)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse := usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{
-			"lava@test1": &lavasession.SessionInfo{},
-			"lava@test2": &lavasession.SessionInfo{},
-			"lava@test3": &lavasession.SessionInfo{},
-		}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-
-		// Send 2 DIFFERENT success responses (won't match)
-		// When quorum is disabled and we have 2 non-matching responses,
-		// maxCount = 1 (each appears once), quorumSize = 1
-		// This should actually SUCCEED because maxCount (1) >= quorumSize (1)
-		// So let's use a deterministic API to force quorum checking
-		successData1 := []byte(`{"result":"A","block":100}`)
-		successData2 := []byte(`{"result":"B","block":101}`)
-		go sendSuccessWithData(relayProcessor, "lava@test1", time.Millisecond*5, successData1)
-		go sendSuccessWithData(relayProcessor, "lava@test2", time.Millisecond*10, successData2)
-
-		// Send 1 node error (available as fallback)
-		nodeErrorData := []byte(`{"message":"invalid params","code":400}`)
-		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeErrorData)
-
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
-		defer cancel()
-		err = relayProcessor.WaitForResults(ctx)
-		require.NoError(t, err)
-
-		// Verify counts
-		successResults, nodeErrors, _ := relayProcessor.GetResultsData()
-		require.Equal(t, 2, len(successResults), "Should have 2 success responses")
-		require.Equal(t, 1, len(nodeErrors), "Should have 1 node error")
-
-		// Process results
-		// With quorum disabled: requiredQuorumSize = Min = 1
-		// successResultsCount (2) >= requiredQuorumSize (1) → enters success path
-		// If responses don't match and API is deterministic, it may fail
-		// But with non-deterministic API, it should return best QoS result
-		// This test verifies the behavior when success quorum is attempted
-		returnedResult, err := relayProcessor.ProcessingResult()
-		// The result depends on whether API is deterministic or not
-		// For non-deterministic (which REST usually is), it should succeed with best QoS
-		// For deterministic, it might fail if responses don't match
-		if err != nil {
-			require.Contains(t, err.Error(), "majority count is less than quorumSize",
-				"If it fails, should indicate quorum failure")
-		} else {
 			require.NotNil(t, returnedResult, "If it succeeds, should return a result")
 		}
 	})

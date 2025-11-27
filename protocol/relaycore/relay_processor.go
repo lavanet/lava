@@ -428,9 +428,9 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
-// getActualQuorumSize calculates the actual quorum size based on quorum rate and succeeded replies
-func (rp *RelayProcessor) getActualQuorumSize(succeededReplies int) int {
-	return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, succeededReplies))))
+// getActualQuorumSize calculates the actual quorum size based on quorum rate and number of results
+func (rp *RelayProcessor) getActualQuorumSize(succeededOrNodeErrors int) int {
+	return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, succeededOrNodeErrors))))
 }
 
 func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
@@ -598,18 +598,6 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	if rp.debugRelay {
-		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
-	}
-
-	// there are enough successes
-	if successResultsCount >= requiredQuorumSize {
-		if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
-			shouldDegradeAvailability = true
-		}
-		return rp.responsesQuorum(successResults, requiredQuorumSize)
-	}
-
-	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
 		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
 		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("nodeErrorCount", nodeErrorCount), utils.LogAttr("protocolErrorCount", protocolErrorCount))
@@ -622,40 +610,56 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		for idx, result := range protocolErrors {
 			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
 		}
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+	}
+
+	// there are enough successes
+	if successResultsCount >= requiredQuorumSize {
+		// Try to form a quorum with successes first
+		result, err := rp.responsesQuorum(successResults, requiredQuorumSize)
+		if err == nil {
+			// Successes formed a quorum
+			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
+				shouldDegradeAvailability = true
+			}
+			return result, nil
+		}
+
+		// Successes couldn't form a quorum (they don't match), try node errors if available
+		requiredQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
+		if nodeErrorCount >= requiredQuorumSize {
+			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+			if nodeErrorErr == nil {
+				// Node errors formed a quorum, use them
+				return nodeErrorResult, nil
+			}
+		}
+		// Neither successes nor node errors could form a quorum, return the error from successes
+		return result, err
 	}
 
 	// there are not enough successes, let's check if there are enough node errors and protocol errors
 	// Protocol errors (like consistency violations) should count as attempted responses
 	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
-	if totalResponses >= rp.quorumParams.Min {
-		if rp.selection == Quorum {
-			// When quorum is enabled, we need to ensure we have enough successful responses
-			// to actually meet quorum requirements, not just enough total attempts
-			if rp.quorumParams.Enabled() && successResultsCount < rp.quorumParams.Min {
-				// We have enough total responses, but not enough successful ones for quorum
-				return nil, utils.LavaFormatError("insufficient successful responses for quorum",
-					nil,
-					utils.LogAttr("successResultsCount", successResultsCount),
-					utils.LogAttr("nodeErrorCount", nodeErrorCount),
-					utils.LogAttr("protocolErrorCount", protocolErrorCount),
-					utils.LogAttr("quorumMin", rp.quorumParams.Min),
-					utils.LogAttr("totalResponses", totalResponses))
-			}
-			// Only combine if we have at least some successes
-			// If we have ONLY node errors but didn't meet quorum as checked above,
-			// combining them won't help since they'd still be the same responses
-			if successResultsCount > 0 {
-				nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
-				nodeResults = append(nodeResults, successResults...)
-				nodeResults = append(nodeResults, nodeErrors...)
-				return rp.responsesQuorum(nodeResults, requiredQuorumSize)
-			}
+	if totalResponses >= rp.quorumParams.Min && rp.selection == Quorum {
+		// Check if we have enough node errors to form a quorum
+		requiredQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
+		if successResultsCount == 0 && nodeErrorCount >= requiredQuorumSize {
+			// Try to form a quorum with node errors first
+			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+		}
+
+		// If we couldn't form a quorum with node errors, try combining with successes
+		if nodeErrorCount+successResultsCount >= requiredQuorumSize {
+			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
+			nodeResults = append(nodeResults, successResults...)
+			nodeResults = append(nodeResults, nodeErrors...)
+			return rp.responsesQuorum(nodeResults, requiredQuorumSize)
 		}
 	}
 
-	if len(nodeErrors) >= requiredQuorumSize && !rp.quorumParams.Enabled() { // if we have node errors, we prefer returning them over protocol errors.
-		nodeErr := rp.GetBestNodeErrorMessageForUser()
-		return &nodeErr.Response.RelayResult, nil
+	if rp.selection == BestResult && nodeErrorCount > 0 {
+		return rp.responsesQuorum(nodeErrors, rp.getActualQuorumSize(nodeErrorCount))
 	}
 
 	// Not enough successful results - continue waiting for more responses
