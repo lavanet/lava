@@ -87,6 +87,9 @@ type ResourceLimiterMetrics struct {
 
 // NewResourceLimiter creates a new resource limiter
 // cuThreshold: CU value above which methods are classified as "heavy" (recommended: 100, minimum: 10)
+// heavyMaxConcurrent: Max concurrent heavy (high-CU/debug/trace) method calls
+// heavyQueueSize: Queue size for heavy methods
+// normalMaxConcurrent: Max concurrent normal method calls
 // Note: cuThreshold should be validated before calling this function
 func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
 	if !enabled {
@@ -96,15 +99,15 @@ func NewResourceLimiter(enabled bool, memoryThresholdGB uint64, cuThreshold uint
 	// Default configurations
 	config := map[BucketType]*MethodConfig{
 		BucketHeavy: {
-			MaxConcurrent: heavyMaxConcurrent,                 // 2 concurrent heavy (debug/trace) calls
-			MemoryPerCall: 512 * 1024 * 1024, // Estimate 512MB per heavy call
-			QueueSize:     heavyQueueSize,                 // Queue up to 5 more
+			MaxConcurrent: heavyMaxConcurrent, // 2 concurrent heavy (debug/trace) calls
+			MemoryPerCall: 512 * 1024 * 1024,  // Estimate 512MB per heavy call
+			QueueSize:     heavyQueueSize,     // Queue up to 5 more
 			Timeout:       30 * time.Second,
 		},
 		BucketNormal: {
-			MaxConcurrent: normalMaxConcurrent,             // 100 concurrent normal calls
-			MemoryPerCall: 1 * 1024 * 1024, // 1MB per normal call
-			QueueSize:     0,               // No queue, reject if full
+			MaxConcurrent: normalMaxConcurrent, // 100 concurrent normal calls
+			MemoryPerCall: 1 * 1024 * 1024,     // 1MB per normal call
+			QueueSize:     0,                   // No queue, reject if full
 			Timeout:       0,
 		},
 	}

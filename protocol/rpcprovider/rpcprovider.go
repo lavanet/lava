@@ -123,6 +123,16 @@ type rpcProviderStartOptions struct {
 	testMode                  bool
 	testResponsesFile         string
 	epochDuration             time.Duration
+	resourceLimiterOptions    *resourceLimiterOptions
+}
+
+type resourceLimiterOptions struct {
+	enabled             bool
+	memoryThresholdGB   uint64
+	cuThreshold         uint64
+	heavyMaxConcurrent  int64
+	heavyQueueSize      int
+	normalMaxConcurrent int64
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -165,6 +175,7 @@ type RPCProvider struct {
 	allChainsAndAPIInterfacesVerificationStatusFetchers []IVerificationsStatus
 	testMode                                            bool
 	testResponsesFile                                   string
+	resourceLimiterOptions                              resourceLimiterOptions
 }
 
 func (rpcp *RPCProvider) AddVerificationStatusFetcher(fetcher IVerificationsStatus) {
@@ -202,6 +213,9 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.githubToken = options.githubToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
 	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
+	if options.resourceLimiterOptions != nil {
+		rpcp.resourceLimiterOptions = *options.resourceLimiterOptions
+	}
 
 	// Initialize session managers map for epoch timer callbacks
 	rpcp.sessionManagers = make(map[string]*lavasession.ProviderSessionManager)
@@ -748,9 +762,13 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	// Create resource limiter if enabled
-	enableResourceLimiter := viper.GetBool("enable-resource-limiter")
-	memoryThresholdGB := viper.GetUint64("resource-limiter-memory-gb")
-	cuThreshold := viper.GetUint64("resource-limiter-cu-threshold")
+	rlOptions := rpcp.resourceLimiterOptions
+	enableResourceLimiter := rlOptions.enabled
+	memoryThresholdGB := rlOptions.memoryThresholdGB
+	cuThreshold := rlOptions.cuThreshold
+	heavyMaxConcurrent := rlOptions.heavyMaxConcurrent
+	heavyQueueSize := rlOptions.heavyQueueSize
+	normalMaxConcurrent := rlOptions.normalMaxConcurrent
 
 	// Validate and apply fallback for CU threshold
 	const DefaultCUThreshold = 100
@@ -771,10 +789,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 		cuThreshold = MinCUThreshold
 	}
-
-	heavyMaxConcurrent := viper.GetInt64("heavy-max-concurrent")
-	heavyQueueSize := viper.GetInt("heavy-queue-size")
-	normalMaxConcurrent := viper.GetInt64("normal-max-concurrent")
 
 	resourceLimiter := NewResourceLimiter(enableResourceLimiter, memoryThresholdGB, cuThreshold, heavyMaxConcurrent, heavyQueueSize, normalMaxConcurrent)
 
@@ -1096,6 +1110,23 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				return utils.LavaFormatError("test_responses file is required when test_mode is enabled", nil)
 			}
 
+			// Create resource limiter options
+			enableResourceLimiter, _ := cmd.Flags().GetBool("enable-resource-limiter")
+			memoryThresholdGB, _ := cmd.Flags().GetUint64("resource-limiter-memory-gb")
+			cuThreshold, _ := cmd.Flags().GetUint64("resource-limiter-cu-threshold")
+			heavyMaxConcurrent, _ := cmd.Flags().GetInt64("heavy-max-concurrent")
+			heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
+			normalMaxConcurrent, _ := cmd.Flags().GetInt64("normal-max-concurrent")
+
+			resourceLimiterOptions := &resourceLimiterOptions{
+				enabled:             enableResourceLimiter,
+				memoryThresholdGB:   memoryThresholdGB,
+				cuThreshold:         cuThreshold,
+				heavyMaxConcurrent:  heavyMaxConcurrent,
+				heavyQueueSize:      heavyQueueSize,
+				normalMaxConcurrent: normalMaxConcurrent,
+			}
+
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,
@@ -1123,6 +1154,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testMode,
 				testResponsesFile,
 				epochDuration,
+				resourceLimiterOptions,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
