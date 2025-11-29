@@ -2161,13 +2161,22 @@ func runProtocolE2E(timeout time.Duration) {
 		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
+			// Dump stack trace to see where we are hanging/failing
+			buf := make([]byte, 1<<16)
+			stackSize := runtime.Stack(buf, true)
+			utils.LavaFormatError("Stack trace", nil, utils.LogAttr("stack", string(buf[:stackSize])))
 			panic(err)
 		}
+		utils.LavaFormatInfo(fmt.Sprintf("REST 1 relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		// Small delay between requests to avoid overwhelming the system
 		time.Sleep(100 * time.Millisecond)
+		utils.LavaFormatInfo(fmt.Sprintf("REST 2 relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
+			buf := make([]byte, 1<<16)
+			stackSize := runtime.Stack(buf, true)
+			utils.LavaFormatError("Timeout stack trace", nil, utils.LogAttr("stack", string(buf[:stackSize])))
 			panic(fmt.Sprintf("REST relay tests taking too long - %s elapsed", time.Since(testStartTime)))
 		}
 	})
