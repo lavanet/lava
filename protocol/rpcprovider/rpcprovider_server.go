@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -222,7 +224,7 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
-func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (reply *pairingtypes.RelayReply, err error) {
 	endToEndStartTime := time.Now()
 	// get the number of simultaneous relay calls
 	currentLoad := rpcps.providerLoadManager.addAndSetRelayLoadToContextTrailer(ctx)
@@ -281,18 +283,53 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	consumerSupportsCompression := len(compressionSupport) > 0 && compressionSupport[0] == "true"
 
 	// Init relay
-	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
+	var relaySession *lavasession.SingleProviderSession
+	var consumerAddress sdk.AccAddress
+	var chainMessage chainlib.ChainMessage
+	relaySession, consumerAddress, chainMessage, err = rpcps.initRelay(ctx, request)
 	if err != nil {
 		utils.LavaFormatDebug("got error from init relay", utils.LogAttr("error", err))
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 
+	// Recover from panics to ensure session is unlocked
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic
+			utils.LavaFormatError("Panic in RPCProviderServer.Relay", fmt.Errorf("%v", r),
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("stack", string(debug.Stack())),
+			)
+
+			// Unlock session if needed
+			if !rpcps.StaticProvider && relaySession != nil {
+				utils.LavaFormatWarning("Unlocking session after panic", nil,
+					utils.LogAttr("sessionID", relaySession.SessionID),
+					utils.LogAttr("GUID", ctx),
+				)
+				// Use OnSessionFailure to unlock and rollback CU
+				_ = rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+			}
+
+			// Return internal error
+			err = status.Error(codes.Internal, "internal provider error")
+		}
+	}()
+
 	// Check that this is not subscription related messages
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+		// Unlock session before returning error
+		if !rpcps.StaticProvider && relaySession != nil {
+			_ = rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+		}
 		return nil, errors.New("subscribe method is not supported through Relay")
 	}
 
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
+		// Unlock session before returning error
+		if !rpcps.StaticProvider && relaySession != nil {
+			_ = rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+		}
 		return nil, errors.New("unsubscribe_all method  is not supported through Relay")
 	}
 
@@ -307,7 +344,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	apiComputeUnits := chainMessage.GetApi().ComputeUnits
 	apiName := chainMessage.GetApi().Name
 
-	var reply *pairingtypes.RelayReply
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isErroredRelay bool
 
