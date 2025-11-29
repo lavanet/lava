@@ -2158,22 +2158,21 @@ func runProtocolE2E(timeout time.Duration) {
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	testStartTime := time.Now()
 	repeat(10, func(m int) {
+		fmt.Printf("DEBUG: Starting REST relay %d/10\n", m)
 		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		if err := restRelayTest(url); err != nil {
+			fmt.Printf("DEBUG: Error in REST relay %d/10: %v\n", m, err)
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
-			// Dump stack trace to see where we are hanging/failing
-			buf := make([]byte, 1<<16)
-			stackSize := runtime.Stack(buf, true)
-			utils.LavaFormatError("Stack trace", nil, utils.LogAttr("stack", string(buf[:stackSize])))
 			panic(err)
 		}
-		utils.LavaFormatInfo(fmt.Sprintf("REST 1 relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
+		fmt.Printf("DEBUG: Finished REST relay %d/10\n", m)
 		// Small delay between requests to avoid overwhelming the system
-		time.Sleep(100 * time.Millisecond)
-		utils.LavaFormatInfo(fmt.Sprintf("REST 2 relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
+		// time.Sleep(100 * time.Millisecond) // Sleeping might be the issue?
+		// fmt.Printf("DEBUG: Slept after REST relay %d/10\n", m)
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
+			fmt.Printf("DEBUG: Timeout in REST relay loop\n")
 			buf := make([]byte, 1<<16)
 			stackSize := runtime.Stack(buf, true)
 			utils.LavaFormatError("Timeout stack trace", nil, utils.LogAttr("stack", string(buf[:stackSize])))
@@ -2181,6 +2180,7 @@ func runProtocolE2E(timeout time.Duration) {
 		}
 	})
 
+	fmt.Println("DEBUG: All 10 REST relay tests loop finished")
 	utils.LavaFormatInfo("All 10 REST relay tests completed successfully")
 
 	lt.markEmergencyModeLogsEnd()
