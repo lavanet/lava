@@ -141,10 +141,6 @@ func (rpccl *RPCConsumerLogs) SetProtocolErrorRecoveredSuccessfullyMetric(chainI
 	rpccl.consumerMetricsManager.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
 }
 
-func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetNodeErrorAttemptMetric(chainId, apiInterface)
-}
-
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }

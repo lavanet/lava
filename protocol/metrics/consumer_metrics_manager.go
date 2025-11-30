@@ -41,7 +41,6 @@ type ConsumerMetricsManager struct {
 	totalErroredMetric                             *prometheus.CounterVec
 	totalNodeErroredMetric                         *prometheus.CounterVec
 	totalNodeErroredRecoveredSuccessfullyMetric    *prometheus.CounterVec
-	totalNodeErroredRecoveryAttemptsMetric         *prometheus.CounterVec
 	totalProtocolErrorsRecoveredSuccessfullyMetric *prometheus.CounterVec
 	totalRelaysSentToProvidersMetric               *prometheus.CounterVec
 	totalRelaysSentByNewBatchTickerMetric          *prometheus.CounterVec
@@ -262,11 +261,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of node errors that managed to recover using a retry",
 	}, []string{"spec", "apiInterface", "attempt"})
 
-	totalNodeErroredRecoveryAttemptsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_node_errors_recovery_attempts",
-		Help: "The total number of retries sent due to retry mechanism",
-	}, []string{"spec", "apiInterface"})
-
 	totalProtocolErrorsRecoveredSuccessfullyMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_protocol_errors_recovered_successfully",
 		Help: "The total number of protocol errors that managed to recover using a retry or quorum",
@@ -326,7 +320,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(totalRelaysSentToProvidersMetric)
 	registerMetric(totalNodeErroredMetric)
 	registerMetric(totalNodeErroredRecoveredSuccessfullyMetric)
-	registerMetric(totalNodeErroredRecoveryAttemptsMetric)
 	registerMetric(totalProtocolErrorsRecoveredSuccessfullyMetric)
 	registerMetric(relayProcessingLatencyBeforeProvider)
 	registerMetric(relayProcessingLatencyAfterProvider)
@@ -368,7 +361,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		addMethodsApiGauge:                             options.AddMethodsApiGauge,
 		totalNodeErroredMetric:                         totalNodeErroredMetric,
 		totalNodeErroredRecoveredSuccessfullyMetric:    totalNodeErroredRecoveredSuccessfullyMetric,
-		totalNodeErroredRecoveryAttemptsMetric:         totalNodeErroredRecoveryAttemptsMetric,
 		totalProtocolErrorsRecoveredSuccessfullyMetric: totalProtocolErrorsRecoveredSuccessfullyMetric,
 		totalRelaysSentToProvidersMetric:               totalRelaysSentToProvidersMetric,
 		relayProcessingLatencyBeforeProvider:           relayProcessingLatencyBeforeProvider,
@@ -460,13 +452,6 @@ func (pme *ConsumerMetricsManager) SetProtocolErrorRecoveredSuccessfullyMetric(c
 		return
 	}
 	pme.totalProtocolErrorsRecoveredSuccessfullyMetric.WithLabelValues(chainId, apiInterface, attempt).Inc()
-}
-
-func (pme *ConsumerMetricsManager) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
-	if pme == nil {
-		return
-	}
-	pme.totalNodeErroredRecoveryAttemptsMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetBlock(block int64) {

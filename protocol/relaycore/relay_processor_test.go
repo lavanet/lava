@@ -742,9 +742,6 @@ func (m *MockMetricsTracker) SetProtocolErrorRecoveredSuccessfullyMetric(chainId
 	})
 }
 
-func (m *MockMetricsTracker) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
-}
-
 func (m *MockMetricsTracker) GetChainIdAndApiInterface() (string, string) {
 	return "TEST_CHAIN", "rest"
 }
