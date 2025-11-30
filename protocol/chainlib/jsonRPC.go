@@ -659,8 +659,6 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		// Release the large Result field immediately after conversion to allow GC
 		batch[idx].Result = nil
 	}
-	// Clear the entire batch reference to help GC
-	batch = nil
 
 	retData, err := json.Marshal(replyMsgs)
 	if err != nil {
@@ -670,7 +668,6 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	for idx := range replyMsgs {
 		replyMsgs[idx].Result = nil
 	}
-	replyMsgs = nil
 
 	reply := &RelayReplyWrapper{
 		StatusCode: http.StatusOK, // status code is used only for rest at the moment
