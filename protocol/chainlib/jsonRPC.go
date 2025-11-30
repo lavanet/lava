@@ -641,18 +641,34 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		}
 		return nil, err
 	}
+
+	// Convert and release memory immediately to prevent OOM on large responses
+	// keeping all responses in batch[].Result causes 4x memory duplication:
+	//   1. HTTP response buffer
+	//   2. Decoded JsonrpcMessage.Result (RawMessage)
+	//   3. batch[].Result (stored reference)
+	//   4. Final marshaled output
+	// By releasing batch[].Result immediately after conversion, we reduce peak memory usage.
 	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
-	for idx, element := range batch {
+	for idx := range batch {
 		// convert them because batch elements can't be marshaled back to the user, they are missing tags and fields
-		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
+		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(batch[idx])
 		if err != nil {
 			return nil, err
 		}
+		// Release the large Result field immediately after conversion to allow GC
+		batch[idx].Result = nil
 	}
+
 	retData, err := json.Marshal(replyMsgs)
 	if err != nil {
 		return nil, err
 	}
+	// Clear replyMsgs Result fields after successful marshaling to release memory
+	for idx := range replyMsgs {
+		replyMsgs[idx].Result = nil
+	}
+
 	reply := &RelayReplyWrapper{
 		StatusCode: http.StatusOK, // status code is used only for rest at the moment
 
@@ -742,6 +758,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 	}
+
 	// validate result is valid
 	if replyMsg.Error == nil {
 		responseIsNilValidationError := ValidateNilResponse(string(replyMsg.Result))
@@ -760,6 +777,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			utils.Attribute{Key: "request", Value: nodeMessage},
 		)
 	}
+
+	// Release rpcMessage after all references to it are complete
+	rpcMessage.Result = nil
+	rpcMessage = nil
 
 	retData, err := json.Marshal(replyMsg)
 	if err != nil {
@@ -788,6 +809,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			subscriptionID = string(replyMsg.Result)
 		}
 	}
+
+	// Clear replyMsg after all references to it are complete
+	replyMsg.Result = nil
+	replyMsg = nil
 
 	return reply, subscriptionID, sub, err
 }

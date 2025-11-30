@@ -50,8 +50,12 @@ func (jm *JsonrpcMessage) GetRawRequestHash() ([]byte, error) {
 
 // returns if error exists and
 func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	result := &JsonrpcMessage{}
-	err := json.Unmarshal(data, result)
+	// Use a temporary struct that omits the Result field to avoid allocating memory for large results
+	// when we only need to check for errors
+	var result struct {
+		Error *rpcclient.JsonError `json:"error,omitempty"`
+	}
+	err := json.Unmarshal(data, &result)
 	if err != nil {
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
@@ -79,6 +83,9 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 	if rpcMsg.Params != nil {
 		msg.Params = rpcMsg.Params
 	}
+
+	// Clear the large Result field from source after conversion
+	rpcMsg.Result = nil
 
 	return msg, nil
 }
@@ -222,7 +229,10 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 
 // returns if error exists and
 func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	result := []JsonrpcMessage{}
+	// Use a temporary struct that omits the Result field to avoid allocating memory for large results
+	var result []struct {
+		Error *rpcclient.JsonError `json:"error,omitempty"`
+	}
 	err := json.Unmarshal(data, &result)
 	if err != nil {
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
