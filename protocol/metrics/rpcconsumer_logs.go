@@ -137,8 +137,8 @@ func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId st
 	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
 }
 
-func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetNodeErrorAttemptMetric(chainId, apiInterface)
+func (rpccl *RPCConsumerLogs) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	rpccl.consumerMetricsManager.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
 }
 
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {

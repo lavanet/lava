@@ -270,7 +270,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	resultsCount, nodeErrors, specialNodeErrors, _ := rp.GetResults()
+	resultsCount, nodeErrors, specialNodeErrors, protocolErrors := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
 	neededForQuorum := rp.getActualQuorumSize(resultsCount)
@@ -286,6 +286,12 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			if nodeErrors > 0 {
 				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
+			}
+
+			// Check if we need to add protocol errors retry metrics
+			if protocolErrors > 0 {
+				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+				go rp.metricsInf.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(protocolErrors))
 			}
 		}
 		if rp.debugRelay {
