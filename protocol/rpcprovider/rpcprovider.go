@@ -123,6 +123,16 @@ type rpcProviderStartOptions struct {
 	testMode                  bool
 	testResponsesFile         string
 	epochDuration             time.Duration
+	resourceLimiterOptions    *resourceLimiterOptions
+}
+
+type resourceLimiterOptions struct {
+	enabled             bool
+	memoryThresholdGB   uint64
+	cuThreshold         uint64
+	heavyMaxConcurrent  int64
+	heavyQueueSize      int
+	normalMaxConcurrent int64
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -165,6 +175,7 @@ type RPCProvider struct {
 	allChainsAndAPIInterfacesVerificationStatusFetchers []IVerificationsStatus
 	testMode                                            bool
 	testResponsesFile                                   string
+	resourceLimiterOptions                              resourceLimiterOptions
 }
 
 func (rpcp *RPCProvider) AddVerificationStatusFetcher(fetcher IVerificationsStatus) {
@@ -202,6 +213,9 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.githubToken = options.githubToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
 	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
+	if options.resourceLimiterOptions != nil {
+		rpcp.resourceLimiterOptions = *options.resourceLimiterOptions
+	}
 
 	// Initialize session managers map for epoch timer callbacks
 	rpcp.sessionManagers = make(map[string]*lavasession.ProviderSessionManager)
@@ -747,7 +761,53 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		testModeConfig = rpcProviderServer.testModeConfig
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig)
+	// Create resource limiter if enabled
+	rlOptions := rpcp.resourceLimiterOptions
+	enableResourceLimiter := rlOptions.enabled
+	memoryThresholdGB := rlOptions.memoryThresholdGB
+	cuThreshold := rlOptions.cuThreshold
+	heavyMaxConcurrent := rlOptions.heavyMaxConcurrent
+	heavyQueueSize := rlOptions.heavyQueueSize
+	normalMaxConcurrent := rlOptions.normalMaxConcurrent
+
+	// Validate and apply fallback for CU threshold
+	const DefaultCUThreshold = 100
+	const MinCUThreshold = 50
+	if cuThreshold == 0 {
+		cuThreshold = DefaultCUThreshold
+		if enableResourceLimiter {
+			utils.LavaFormatWarning("resource-limiter-cu-threshold not set or is 0, using default",
+				nil,
+				utils.LogAttr("default_cu_threshold", DefaultCUThreshold),
+			)
+		}
+	} else if cuThreshold < MinCUThreshold {
+		utils.LavaFormatWarning("resource-limiter-cu-threshold is too low, using minimum",
+			nil,
+			utils.LogAttr("provided", cuThreshold),
+			utils.LogAttr("minimum", MinCUThreshold),
+		)
+		cuThreshold = MinCUThreshold
+	}
+
+	// Use provider name if set, otherwise use chainID+apiInterface key
+	endpointLabel := rpcProviderEndpoint.Name
+	if endpointLabel == "" {
+		endpointLabel = rpcProviderEndpoint.Key()
+	}
+	resourceLimiter := NewResourceLimiter(enableResourceLimiter, endpointLabel, memoryThresholdGB, cuThreshold, heavyMaxConcurrent, heavyQueueSize, normalMaxConcurrent)
+
+	if enableResourceLimiter {
+		utils.LavaFormatInfo("Resource limiter enabled",
+			utils.LogAttr("memory_threshold_gb", memoryThresholdGB),
+			utils.LogAttr("cu_threshold", cuThreshold),
+			utils.LogAttr("heavy_max_concurrent", heavyMaxConcurrent),
+			utils.LogAttr("heavy_queue_size", heavyQueueSize),
+			utils.LogAttr("normal_max_concurrent", normalMaxConcurrent),
+		)
+	}
+
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1055,6 +1115,23 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				return utils.LavaFormatError("test_responses file is required when test_mode is enabled", nil)
 			}
 
+			// Create resource limiter options
+			enableResourceLimiter, _ := cmd.Flags().GetBool("enable-resource-limiter")
+			memoryThresholdGB, _ := cmd.Flags().GetUint64("resource-limiter-memory-gb")
+			cuThreshold, _ := cmd.Flags().GetUint64("resource-limiter-cu-threshold")
+			heavyMaxConcurrent, _ := cmd.Flags().GetInt64("heavy-max-concurrent")
+			heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
+			normalMaxConcurrent, _ := cmd.Flags().GetInt64("normal-max-concurrent")
+
+			resourceLimiterOptions := &resourceLimiterOptions{
+				enabled:             enableResourceLimiter,
+				memoryThresholdGB:   memoryThresholdGB,
+				cuThreshold:         cuThreshold,
+				heavyMaxConcurrent:  heavyMaxConcurrent,
+				heavyQueueSize:      heavyQueueSize,
+				normalMaxConcurrent: normalMaxConcurrent,
+			}
+
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,
@@ -1082,6 +1159,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testMode,
 				testResponsesFile,
 				epochDuration,
+				resourceLimiterOptions,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -1144,6 +1222,12 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
+	cmdRPCProvider.Flags().Bool("enable-resource-limiter", false, "Enable method-specific resource limiting to prevent OOM from high-CU requests")
+	cmdRPCProvider.Flags().Uint64("resource-limiter-memory-gb", 8, "Maximum memory threshold in GB for resource limiter")
+	cmdRPCProvider.Flags().Uint64("resource-limiter-cu-threshold", 100, "CU threshold above which methods are considered 'heavy' (default: 100)")
+	cmdRPCProvider.Flags().Int64("heavy-max-concurrent", 2, "Max concurrent heavy (high-CU/debug/trace) method calls")
+	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
+	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }
