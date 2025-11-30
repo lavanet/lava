@@ -636,7 +636,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
 			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager)
 			if err != nil {
-				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint",
+				utils.LavaFormatError("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", err, utils.LogAttr("providerAddress", providerAddress), utils.LogAttr("validAddresses", csm.validAddresses), utils.LogAttr("GUID", ctx),
 					utils.LogAttr("providerAddress", providerAddress),
 					utils.LogAttr("validAddresses", csm.validAddresses),
 					utils.LogAttr("Error", err.Error()),
