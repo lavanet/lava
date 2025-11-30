@@ -703,3 +703,404 @@ func TestIsValidResponse(t *testing.T) {
 		})
 	}
 }
+
+// Mock metrics tracker for testing error recovery metrics
+type MockMetricsTracker struct {
+	nodeErrorRecoveryCalls     []MetricCall
+	protocolErrorRecoveryCalls []MetricCall
+}
+
+type MetricCall struct {
+	chainId      string
+	apiInterface string
+	attempt      string
+}
+
+func NewMockMetricsTracker() *MockMetricsTracker {
+	return &MockMetricsTracker{
+		nodeErrorRecoveryCalls:     []MetricCall{},
+		protocolErrorRecoveryCalls: []MetricCall{},
+	}
+}
+
+func (m *MockMetricsTracker) SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string) {
+}
+
+func (m *MockMetricsTracker) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	m.nodeErrorRecoveryCalls = append(m.nodeErrorRecoveryCalls, MetricCall{
+		chainId:      chainId,
+		apiInterface: apiInterface,
+		attempt:      attempt,
+	})
+}
+
+func (m *MockMetricsTracker) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	m.protocolErrorRecoveryCalls = append(m.protocolErrorRecoveryCalls, MetricCall{
+		chainId:      chainId,
+		apiInterface: apiInterface,
+		attempt:      attempt,
+	})
+}
+
+func (m *MockMetricsTracker) GetChainIdAndApiInterface() (string, string) {
+	return "TEST_CHAIN", "rest"
+}
+
+// Test: Quorum met with node errors only
+func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+	usedProviders := lavasession.NewUsedProviders(nil)
+	mockMetrics := NewMockMetricsTracker()
+	consistency := NewConsistency(specId)
+
+	quorumParams := common.QuorumParams{
+		Min:  3,
+		Max:  5,
+		Rate: 0.6,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		quorumParams,
+		consistency,
+		mockMetrics,
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+		qos.NewQoSManager(),
+	)
+
+	// Add providers
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.Nil(t, canUse)
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+	for i := 0; i < 5; i++ {
+		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+	}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+
+	// Simulate 3 successful responses
+	for i := 0; i < 3; i++ {
+		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+	}
+
+	// Simulate 2 node errors
+	for i := 3; i < 5; i++ {
+		go SendNodeError(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+	}
+
+	// Wait for results
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	err = relayProcessor.WaitForResults(waitCtx)
+	require.NoError(t, err)
+
+	// Wait for all responses to be processed (including node errors)
+	// WaitForResults returns when quorum is met, but node errors might still be in flight
+	// Poll until we see node errors or timeout (max 200ms)
+	var hasResults bool
+	var nodeErrorCount int
+	maxRetries := 20
+	for retry := 0; retry < maxRetries; retry++ {
+		time.Sleep(10 * time.Millisecond)
+		hasResults, nodeErrorCount = relayProcessor.HasRequiredNodeResults(1)
+		if hasResults && nodeErrorCount > 0 {
+			break
+		}
+	}
+
+	// Verify results
+	require.True(t, hasResults, "Should have required results (quorum met)")
+	require.Greater(t, nodeErrorCount, 0, "Should have at least 1 node error")
+
+	// Give time for async metric calls
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify metrics - nodeError recovery metric should be called since we had node errors
+	require.Equal(t, 1, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should be called once")
+	require.Equal(t, 0, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should NOT be called")
+
+	if len(mockMetrics.nodeErrorRecoveryCalls) > 0 {
+		// Note: Due to timing, we might not get all 2 error responses before quorum is met
+		// The important thing is that the metric is incremented when quorum is met with some node errors
+		require.Greater(t, len(mockMetrics.nodeErrorRecoveryCalls[0].attempt), 0, "Should record node errors")
+		require.Equal(t, "TEST_CHAIN", mockMetrics.nodeErrorRecoveryCalls[0].chainId)
+		require.Equal(t, "rest", mockMetrics.nodeErrorRecoveryCalls[0].apiInterface)
+	}
+}
+
+// Test: Quorum met with protocol errors only
+func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+	usedProviders := lavasession.NewUsedProviders(nil)
+	mockMetrics := NewMockMetricsTracker()
+	consistency := NewConsistency(specId)
+
+	quorumParams := common.QuorumParams{
+		Min:  3,
+		Max:  5,
+		Rate: 0.6,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		quorumParams,
+		consistency,
+		mockMetrics,
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+		qos.NewQoSManager(),
+	)
+
+	// Add providers
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.Nil(t, canUse)
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+	for i := 0; i < 5; i++ {
+		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+	}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+
+	// Simulate 3 successful responses
+	for i := 0; i < 3; i++ {
+		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+	}
+
+	// Simulate 2 protocol errors (connection timeouts)
+	for i := 3; i < 5; i++ {
+		go SendProtocolError(relayProcessor, fmt.Sprintf("provider%d", i), 0, fmt.Errorf("connection timeout"))
+	}
+
+	// Wait for results
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	err = relayProcessor.WaitForResults(waitCtx)
+	require.NoError(t, err)
+
+	// Check HasRequiredNodeResults
+	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
+
+	// Verify results
+	require.True(t, hasResults, "Should have required results (quorum met)")
+	require.Equal(t, 0, nodeErrorCount, "Should have 0 node errors")
+
+	// Give time for async metric calls
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify metrics
+	require.Equal(t, 0, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should NOT be called")
+	require.Equal(t, 1, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should be called once")
+
+	if len(mockMetrics.protocolErrorRecoveryCalls) > 0 {
+		// Note: Due to timing, we might not get all error responses before quorum is met
+		// The important thing is that the metric is incremented when quorum is met with some protocol errors
+		require.Greater(t, len(mockMetrics.protocolErrorRecoveryCalls[0].attempt), 0, "Should record protocol errors")
+		require.Equal(t, "TEST_CHAIN", mockMetrics.protocolErrorRecoveryCalls[0].chainId)
+		require.Equal(t, "rest", mockMetrics.protocolErrorRecoveryCalls[0].apiInterface)
+	}
+}
+
+// Test: Quorum met with both error types
+func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+	usedProviders := lavasession.NewUsedProviders(nil)
+	mockMetrics := NewMockMetricsTracker()
+	consistency := NewConsistency(specId)
+
+	quorumParams := common.QuorumParams{
+		Min:  3,
+		Max:  5,
+		Rate: 0.6,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		quorumParams,
+		consistency,
+		mockMetrics,
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+		qos.NewQoSManager(),
+	)
+
+	// Add providers
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.Nil(t, canUse)
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+	for i := 0; i < 5; i++ {
+		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+	}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+
+	// Simulate 3 successful responses
+	for i := 0; i < 3; i++ {
+		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+	}
+
+	// Simulate 1 node error
+	go SendNodeError(relayProcessor, "provider3", 0)
+
+	// Simulate 1 protocol error
+	go SendProtocolError(relayProcessor, "provider4", 0, fmt.Errorf("epoch mismatch"))
+
+	// Wait for results
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	err = relayProcessor.WaitForResults(waitCtx)
+	require.NoError(t, err)
+
+	// Check HasRequiredNodeResults
+	hasResults, _ := relayProcessor.HasRequiredNodeResults(1)
+
+	// Verify results
+	require.True(t, hasResults, "Should have required results (quorum met)")
+
+	// Give time for async metric calls
+	time.Sleep(100 * time.Millisecond)
+
+	// Get actual error counts
+	resultsCount, actualNodeErrors, _, actualProtocolErrors := relayProcessor.GetResults()
+
+	// Due to timing and async execution, we might get various combinations:
+	// 1. Both error types (ideal case) - both metrics called
+	// 2. Only one error type - one metric called
+	// 3. No errors before quorum - no metrics called (successes came in very fast)
+	// All scenarios are valid! The test proves that when errors ARE received before quorum,
+	// the corresponding metrics ARE incremented correctly.
+
+	// Verify metric consistency: if we have node errors, metric should be called
+	if actualNodeErrors > 0 {
+		require.Equal(t, 1, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should be called when node errors present")
+	}
+
+	// Verify metric consistency: if we have protocol errors, metric should be called
+	if actualProtocolErrors > 0 {
+		require.Equal(t, 1, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should be called when protocol errors present")
+	}
+
+	// Verify we had successful responses (quorum)
+	require.GreaterOrEqual(t, resultsCount, 3, "Should have at least 3 successes for quorum")
+}
+
+// Test: Quorum not met - no metrics
+func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+	usedProviders := lavasession.NewUsedProviders(nil)
+	mockMetrics := NewMockMetricsTracker()
+	consistency := NewConsistency(specId)
+
+	quorumParams := common.QuorumParams{
+		Min:  3,
+		Max:  5,
+		Rate: 0.6,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		quorumParams,
+		consistency,
+		mockMetrics,
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+		qos.NewQoSManager(),
+	)
+
+	// Add providers
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.Nil(t, canUse)
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+	for i := 0; i < 5; i++ {
+		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+	}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+
+	// Simulate only 1 successful response (not enough for quorum)
+	go SendSuccessResp(relayProcessor, "provider0", 0)
+
+	// Simulate 2 node errors
+	go SendNodeError(relayProcessor, "provider1", 0)
+	go SendNodeError(relayProcessor, "provider2", 0)
+
+	// Simulate 2 protocol errors
+	go SendProtocolError(relayProcessor, "provider3", 0, fmt.Errorf("connection timeout"))
+	go SendProtocolError(relayProcessor, "provider4", 0, fmt.Errorf("provider unavailable"))
+
+	// Wait for results
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	err = relayProcessor.WaitForResults(waitCtx)
+	require.NoError(t, err)
+
+	// Check HasRequiredNodeResults
+	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
+
+	// Verify results
+	require.False(t, hasResults, "Should NOT have required results (only 1 success, need 3)")
+	require.Equal(t, 2, nodeErrorCount, "Should have 2 node errors")
+
+	// Give time for async metric calls (if any)
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify NO metrics were called (no recovery since quorum not met)
+	require.Equal(t, 0, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should NOT be called")
+	require.Equal(t, 0, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should NOT be called")
+}
