@@ -626,9 +626,9 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 
 		// Successes couldn't form a quorum (they don't match), try node errors if available
-		requiredQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
-		if nodeErrorCount >= requiredQuorumSize {
-			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+		requiredNodeErrorsQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
+		if nodeErrorCount >= requiredNodeErrorsQuorumSize {
+			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredNodeErrorsQuorumSize)
 			if nodeErrorErr == nil {
 				// Node errors formed a quorum, use them
 				return nodeErrorResult, nil
