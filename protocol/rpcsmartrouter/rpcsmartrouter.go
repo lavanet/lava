@@ -284,8 +284,8 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		for chainKey, sm := range rpsr.sessionManagers {
 			sessionManager := sm
 			chainKeyLog := chainKey
-			providerSessions := rpsr.providerSessions[chainKey]
-			backupSessions := rpsr.backupProviderSessions[chainKey]
+			oldProviderSessions := rpsr.providerSessions[chainKey]
+			oldBackupSessions := rpsr.backupProviderSessions[chainKey]
 
 			utils.LavaFormatInfo("ConsumerSessionManager: Epoch update triggered",
 				utils.LogAttr("epoch", epoch),
@@ -293,26 +293,56 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 				utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
 			)
 
-			// Update PairingEpoch for all static provider sessions
-			// This is critical to prevent epoch mismatch errors during session creation
-			for _, providerSession := range providerSessions {
-				providerSession.Lock.Lock()
-				oldEpoch := providerSession.PairingEpoch
-				providerSession.PairingEpoch = epoch
-				providerSession.Lock.Unlock()
-				utils.LavaFormatInfo("Updated provider PairingEpoch", utils.LogAttr("provider", providerSession.PublicLavaAddress), utils.LogAttr("oldEpoch", oldEpoch), utils.LogAttr("newEpoch", epoch), utils.LogAttr("chainKey", chainKeyLog))
-			}
-			for _, backupSession := range backupSessions {
-				backupSession.Lock.Lock()
-				oldEpoch := backupSession.PairingEpoch
-				backupSession.PairingEpoch = epoch
-				backupSession.Lock.Unlock()
-				utils.LavaFormatInfo("Updated backup provider PairingEpoch", utils.LogAttr("provider", backupSession.PublicLavaAddress), utils.LogAttr("oldEpoch", oldEpoch), utils.LogAttr("newEpoch", epoch), utils.LogAttr("chainKey", chainKeyLog))
+			// Create FRESH ConsumerSessionsWithProvider objects to avoid session accumulation
+			// This is critical: reusing the same objects causes sessions to accumulate in the Sessions map
+			// until hitting the 1000-session limit, causing "No pairings available" errors
+			freshProviderSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
+			for idx, oldSession := range oldProviderSessions {
+				// Create new session with same configuration but fresh Sessions map
+				freshSession := lavasession.NewConsumerSessionWithProvider(
+					oldSession.PublicLavaAddress,
+					oldSession.Endpoints, // Endpoints are safe to reuse
+					oldSession.MaxComputeUnits,
+					epoch,                   // New epoch
+					StaticProviderDummyCoin, // Static providers use dummy coin for type compatibility
+				)
+				freshSession.StaticProvider = oldSession.StaticProvider
+				freshProviderSessions[idx] = freshSession
+
+				utils.LavaFormatDebug("Created fresh provider session for epoch",
+					utils.LogAttr("provider", freshSession.PublicLavaAddress),
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("chainKey", chainKeyLog))
 			}
 
-			// Update session manager with current pairing (static in standalone mode)
-			// The pairing doesn't change, but this triggers cleanup and provider unblocking
-			err := sessionManager.UpdateAllProviders(epoch, providerSessions, backupSessions)
+			// Create fresh backup sessions
+			freshBackupSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
+			for idx, oldSession := range oldBackupSessions {
+				freshSession := lavasession.NewConsumerSessionWithProvider(
+					oldSession.PublicLavaAddress,
+					oldSession.Endpoints,
+					oldSession.MaxComputeUnits,
+					epoch,
+					StaticProviderDummyCoin, // Static providers use dummy coin for type compatibility
+				)
+				freshSession.StaticProvider = oldSession.StaticProvider
+				freshBackupSessions[idx] = freshSession
+
+				utils.LavaFormatDebug("Created fresh backup provider session for epoch",
+					utils.LogAttr("provider", freshSession.PublicLavaAddress),
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("chainKey", chainKeyLog))
+			}
+
+			// Update stored sessions with fresh objects
+			rpsr.providerSessions[chainKey] = freshProviderSessions
+			if len(freshBackupSessions) > 0 {
+				rpsr.backupProviderSessions[chainKey] = freshBackupSessions
+			}
+
+			// Update session manager with fresh provider sessions
+			// This triggers cleanup and provider unblocking while preventing session accumulation
+			err := sessionManager.UpdateAllProviders(epoch, freshProviderSessions, freshBackupSessions)
 			if err != nil {
 				utils.LavaFormatError("Failed to update providers on epoch change", err,
 					utils.LogAttr("epoch", epoch),
