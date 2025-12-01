@@ -128,7 +128,7 @@ type rpcProviderStartOptions struct {
 
 type resourceLimiterOptions struct {
 	enabled             bool
-	memoryThresholdGB   uint64
+	memoryThresholdGB   float64
 	cuThreshold         uint64
 	heavyMaxConcurrent  int64
 	heavyQueueSize      int
@@ -1117,7 +1117,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 
 			// Create resource limiter options
 			enableResourceLimiter, _ := cmd.Flags().GetBool("enable-resource-limiter")
-			memoryThresholdGB, _ := cmd.Flags().GetUint64("resource-limiter-memory-gb")
+			memoryThresholdGB, _ := cmd.Flags().GetFloat64("resource-limiter-memory-gb")
 			cuThreshold, _ := cmd.Flags().GetUint64("resource-limiter-cu-threshold")
 			heavyMaxConcurrent, _ := cmd.Flags().GetInt64("heavy-max-concurrent")
 			heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
@@ -1223,7 +1223,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	cmdRPCProvider.Flags().Bool("enable-resource-limiter", false, "Enable method-specific resource limiting to prevent OOM from high-CU requests")
-	cmdRPCProvider.Flags().Uint64("resource-limiter-memory-gb", 8, "Maximum memory threshold in GB for resource limiter")
+	cmdRPCProvider.Flags().Float64("resource-limiter-memory-gb", 8, "Maximum memory threshold in GB for resource limiter")
 	cmdRPCProvider.Flags().Uint64("resource-limiter-cu-threshold", 100, "CU threshold above which methods are considered 'heavy' (default: 100)")
 	cmdRPCProvider.Flags().Int64("heavy-max-concurrent", 2, "Max concurrent heavy (high-CU/debug/trace) method calls")
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
