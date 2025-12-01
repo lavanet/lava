@@ -97,23 +97,62 @@ func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB uin
 		return &ResourceLimiter{enabled: false}
 	}
 
-	// Default configurations
+	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
+
+	// Memory per call estimates
+	const heavyMemoryPerCall = 512 * 1024 * 1024 // 512MB per heavy call
+	const normalMemoryPerCall = 1 * 1024 * 1024  // 1MB per normal call
+
+	// Calculate effective max concurrent based on memory constraints
+	// effective_max = min(configured_max, memory_threshold / memory_per_call)
+	effectiveHeavyMax := heavyMaxConcurrent
+	memoryBasedHeavyMax := int64(memoryThreshold / heavyMemoryPerCall)
+	if memoryBasedHeavyMax < effectiveHeavyMax {
+		effectiveHeavyMax = memoryBasedHeavyMax
+		utils.LavaFormatWarning("Heavy request concurrency limited by memory",
+			nil,
+			utils.LogAttr("configured_max", heavyMaxConcurrent),
+			utils.LogAttr("memory_limited_max", effectiveHeavyMax),
+			utils.LogAttr("memory_threshold_gb", memoryThresholdGB),
+			utils.LogAttr("memory_per_heavy_mb", heavyMemoryPerCall/(1024*1024)),
+		)
+	}
+
+	effectiveNormalMax := normalMaxConcurrent
+	memoryBasedNormalMax := int64(memoryThreshold / normalMemoryPerCall)
+	if memoryBasedNormalMax < effectiveNormalMax {
+		effectiveNormalMax = memoryBasedNormalMax
+		utils.LavaFormatWarning("Normal request concurrency limited by memory",
+			nil,
+			utils.LogAttr("configured_max", normalMaxConcurrent),
+			utils.LogAttr("memory_limited_max", effectiveNormalMax),
+			utils.LogAttr("memory_threshold_gb", memoryThresholdGB),
+		)
+	}
+
+	// Ensure at least 1 request can run
+	if effectiveHeavyMax < 1 {
+		effectiveHeavyMax = 1
+	}
+	if effectiveNormalMax < 1 {
+		effectiveNormalMax = 1
+	}
+
+	// Default configurations using effective limits
 	config := map[BucketType]*MethodConfig{
 		BucketHeavy: {
-			MaxConcurrent: heavyMaxConcurrent, // 2 concurrent heavy (debug/trace) calls
-			MemoryPerCall: 512 * 1024 * 1024,  // Estimate 512MB per heavy call
-			QueueSize:     heavyQueueSize,     // Queue up to 5 more
+			MaxConcurrent: effectiveHeavyMax,
+			MemoryPerCall: heavyMemoryPerCall,
+			QueueSize:     heavyQueueSize,
 			Timeout:       30 * time.Second,
 		},
 		BucketNormal: {
-			MaxConcurrent: normalMaxConcurrent, // 100 concurrent normal calls
-			MemoryPerCall: 1 * 1024 * 1024,     // 1MB per normal call
-			QueueSize:     0,                   // No queue, reject if full
+			MaxConcurrent: effectiveNormalMax,
+			MemoryPerCall: normalMemoryPerCall,
+			QueueSize:     0, // No queue, reject if full
 			Timeout:       0,
 		},
 	}
-
-	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
 
 	// Create Prometheus metrics with endpoint name as constant label
 	metricsInstance := createResourceLimiterMetrics(endpointName)
@@ -185,22 +224,48 @@ func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThres
 		return &ResourceLimiter{enabled: false}
 	}
 
+	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
+
+	// Memory per call estimates (same as production)
+	const heavyMemoryPerCall = 512 * 1024 * 1024 // 512MB per heavy call
+	const normalMemoryPerCall = 1 * 1024 * 1024  // 1MB per normal call
+
+	// Calculate effective max concurrent based on memory constraints
+	const configuredHeavyMax = 2
+	const configuredNormalMax = 100
+
+	effectiveHeavyMax := int64(configuredHeavyMax)
+	memoryBasedHeavyMax := int64(memoryThreshold / heavyMemoryPerCall)
+	if memoryBasedHeavyMax < effectiveHeavyMax {
+		effectiveHeavyMax = memoryBasedHeavyMax
+	}
+	if effectiveHeavyMax < 1 {
+		effectiveHeavyMax = 1
+	}
+
+	effectiveNormalMax := int64(configuredNormalMax)
+	memoryBasedNormalMax := int64(memoryThreshold / normalMemoryPerCall)
+	if memoryBasedNormalMax < effectiveNormalMax {
+		effectiveNormalMax = memoryBasedNormalMax
+	}
+	if effectiveNormalMax < 1 {
+		effectiveNormalMax = 1
+	}
+
 	config := map[BucketType]*MethodConfig{
 		BucketHeavy: {
-			MaxConcurrent: 2,
-			MemoryPerCall: 512 * 1024 * 1024,
+			MaxConcurrent: effectiveHeavyMax,
+			MemoryPerCall: heavyMemoryPerCall,
 			QueueSize:     5,
 			Timeout:       30 * time.Second,
 		},
 		BucketNormal: {
-			MaxConcurrent: 100,
-			MemoryPerCall: 1 * 1024 * 1024,
+			MaxConcurrent: effectiveNormalMax,
+			MemoryPerCall: normalMemoryPerCall,
 			QueueSize:     0,
 			Timeout:       0,
 		},
 	}
-
-	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
 
 	// Create minimal metrics without Prometheus registration
 	metricsInstance := &ResourceLimiterMetrics{}
@@ -251,15 +316,11 @@ func (rl *ResourceLimiter) Acquire(ctx context.Context, computeUnits uint64, met
 	bucket := rl.selectBucket(computeUnits, methodName)
 	cfg := rl.config[bucket]
 
-	// Check memory before admitting
-	if !rl.canAdmitRequest(cfg.MemoryPerCall) {
-		rl.metrics.incrementRejectedWithLabels(bucket, "memory_limit")
-		return fmt.Errorf("provider memory limit reached, rejecting %s request", bucket)
-	}
-
 	// Try immediate execution
 	sem := rl.getSemaphore(bucket)
 	if sem.TryAcquire(1) {
+		// Semaphore limit already accounts for memory constraints
+		// (calculated as min(configured_max, memory_threshold/memory_per_call))
 		return rl.executeWithSemaphore(bucket, sem, cfg, execute)
 	}
 
@@ -390,7 +451,7 @@ func (rl *ResourceLimiter) processQueue(
 			continue
 		}
 
-		// Wait for semaphore
+		// Wait for semaphore (which already accounts for memory constraints)
 		if err := sem.Acquire(qr.ctx, 1); err != nil {
 			qr.result <- err
 			continue
@@ -411,24 +472,7 @@ func (rl *ResourceLimiter) processQueue(
 	}
 }
 
-// Memory management
-func (rl *ResourceLimiter) canAdmitRequest(estimatedMemory uint64) bool {
-	rl.memoryLock.RLock()
-	defer rl.memoryLock.RUnlock()
-
-	// Check if adding this request would exceed threshold
-	if rl.currentMemory+estimatedMemory > rl.memoryThreshold {
-		return false
-	}
-
-	// Also check actual system memory
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-
-	// If heap usage > 80% of threshold, reject
-	return m.HeapAlloc <= (rl.memoryThreshold * 80 / 100)
-}
-
+// Memory management - reserveMemory and releaseMemory track estimated usage
 func (rl *ResourceLimiter) reserveMemory(amount uint64) {
 	rl.memoryLock.Lock()
 	defer rl.memoryLock.Unlock()

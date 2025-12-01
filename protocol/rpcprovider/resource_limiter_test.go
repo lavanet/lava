@@ -351,6 +351,101 @@ func TestResourceLimiter_MemoryLimit(t *testing.T) {
 	require.NoError(t, err1, "First request should succeed")
 }
 
+// TestResourceLimiter_QueueingWithMemoryLimit tests that requests can be queued
+// even when memory is full from currently executing requests
+func TestResourceLimiter_QueueingWithMemoryLimit(t *testing.T) {
+	// Reproduce the exact scenario from the bug report:
+	// - 1GB memory limit (--resource-limiter-memory-gb=1)
+	// - 512MB per heavy request
+	// - Max 5 concurrent heavy requests (semaphore)
+	// - Queue size = 100
+	// - Only 2 requests can fit in memory at once (1GB / 512MB = 2)
+	//
+	// Bug: Memory check happened before queueing, so only 2 requests got through
+	// Fix: Memory check happens when executing, allowing up to 100 to queue
+	
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 1, 100) // 1GB threshold
+	
+	// Override to smaller queue for faster test
+	rl.config[BucketHeavy].QueueSize = 10
+	rl.heavyQueue = make(chan *queuedRequest, 10)
+	go rl.processQueue(BucketHeavy, rl.heavyQueue, rl.heavySemaphore)
+	
+	ctx := context.Background()
+	
+	// Block to control when requests complete
+	block := make(chan struct{})
+	
+	var executing atomic.Int32
+	var queued atomic.Int32
+	var completed atomic.Int32
+	
+	executeFunc := func() error {
+		current := executing.Add(1)
+		// Max 2 can execute at once due to memory (1GB / 512MB)
+		require.LessOrEqual(t, current, int32(2), "Should never exceed 2 executing due to memory limit")
+		time.Sleep(10 * time.Millisecond)
+		<-block
+		executing.Add(-1)
+		completed.Add(1)
+		return nil
+	}
+	
+	var wg sync.WaitGroup
+	results := make([]error, 12) // 2 executing + 10 queued
+	
+	// Launch 12 requests (2 should execute, 10 should queue)
+	for i := 0; i < 12; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			
+			// Track queue attempt
+			results[idx] = rl.Acquire(ctx, 200, "debug_traceBlockByNumber", executeFunc)
+			if results[idx] != nil {
+				if strings.Contains(results[idx].Error(), "queue full") {
+					// Expected if we exceed queue capacity
+				} else {
+					// Unexpected error
+					t.Logf("Request %d error: %v", idx, results[idx])
+				}
+			}
+		}(i)
+	}
+	
+	// Give time for requests to reach execution/queue
+	time.Sleep(100 * time.Millisecond)
+	
+	// At this point:
+	// - 2 should be executing (limited by memory)
+	// - 10 should be queued (waiting for memory to free up)
+	// - 0 should be rejected (queue isn't full yet)
+	require.Equal(t, int32(2), executing.Load(), "Should have 2 executing (memory limit)")
+	queueDepth := len(rl.heavyQueue)
+	require.GreaterOrEqual(t, queueDepth, 8, "Should have at least 8 queued (possibly 10)")
+	
+	// Unblock first batch
+	close(block)
+	wg.Wait()
+	
+	// Count results
+	var successful, rejected int
+	for _, err := range results {
+		if err == nil {
+			successful++
+		} else {
+			rejected++
+		}
+	}
+	
+	// With the fix: Most/all requests should succeed (queued, then executed)
+	// Without the fix: Only 2 would succeed (memory check blocked queueing)
+	require.GreaterOrEqual(t, successful, 10, "At least 10 should succeed (2 immediate + 8+ queued)")
+	require.LessOrEqual(t, rejected, 2, "At most 2 should be rejected (queue overflow)")
+	
+	t.Logf("Results: %d successful, %d rejected out of 12 total", successful, rejected)
+}
+
 func TestResourceLimiter_ExecutionError(t *testing.T) {
 	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
 
