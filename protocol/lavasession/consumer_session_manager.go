@@ -170,7 +170,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.RemoveAddonAddresses("", nil)
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
-	csm.closePurgedUnusedPairingsConnections() // this must be before updating csm.pairingPurge as we want to close the connections of older sessions (prev 2 epochs)
+	// Save reference to old pairingPurge BEFORE updating, so we can close connections outside the lock
+	oldPairingPurge := csm.pairingPurge
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
@@ -208,6 +209,11 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.stickySessions.DeleteOldSessions(previousEpoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
+
+	// Close old connections OUTSIDE the lock to prevent blocking other operations
+	// This is safe because after an entire epoch, it's impossible to have sessions connected to the old purged list
+	go csm.closePurgedUnusedPairingsConnections(oldPairingPurge)
+
 	return nil
 }
 
@@ -283,8 +289,13 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // After 2 epochs we need to close all open connections.
 // otherwise golang garbage collector is not closing network connections and they
 // will remain open forever.
-func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
-	for providerAddr, purgedPairing := range csm.pairingPurge {
+// This function is now called asynchronously to avoid blocking UpdateAllProviders while closing connections.
+func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingPurge map[string]*ConsumerSessionsWithProvider) {
+	if pairingPurge == nil {
+		return
+	}
+
+	for providerAddr, purgedPairing := range pairingPurge {
 		callbackPurge := func() {
 			for _, endpoint := range purgedPairing.Endpoints {
 				for _, endpointConnection := range endpoint.Connections {
@@ -1309,6 +1320,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesList(providerAddress string) {
 	csm.lock.Lock()
 	defer csm.lock.Unlock()
+	csm.validateAndReturnBlockedProviderToValidAddressesListLocked(providerAddress)
+}
+
+// internal version that assumes csm.lock is already held
+func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesListLocked(providerAddress string) {
 	for idx, addr := range csm.currentlyBlockedProviderAddresses {
 		if addr == providerAddress {
 			// Remove it from the csm.currentlyBlockedProviderAddresses
@@ -1464,7 +1480,10 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 // and immediately unblocks them if their probe was successful. This only happens at epoch transitions.
 // Other providers and normal blocking behavior during an epoch remain unchanged.
 func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx context.Context, epoch uint64) {
-	// No sleep needed - probeProviders() already waits for all probes to complete
+	// Ensure context has unique identifier for probing
+	if _, found := utils.GetUniqueIdentifier(ctx); !found {
+		ctx = utils.AppendUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+	}
 
 	csm.lock.Lock()
 
@@ -1487,7 +1506,7 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
-			csm.validateAndReturnBlockedProviderToValidAddressesList(blockedAddr)
+			csm.validateAndReturnBlockedProviderToValidAddressesListLocked(blockedAddr)
 
 			// Clean up: Remove from reported providers if it was there from previous epoch
 			// This prevents periodic reconnection attempts from trying this provider again
@@ -1503,7 +1522,6 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 			)
 		}
 	}
-
 	csm.lock.Unlock()
 
 	// Second pass: For providers that failed initial probe, try comprehensive probe with reconnection
