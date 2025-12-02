@@ -186,7 +186,7 @@ func (rl *ResourceLimiter) Acquire(ctx context.Context, computeUnits uint64, met
 	// Try immediate execution
 	sem := rl.getSemaphore(bucket)
 	if sem.TryAcquire(1) {
-		return rl.executeWithSemaphore(bucket, sem, cfg, execute)
+		return rl.executeWithSemaphore(bucket, sem, execute)
 	}
 
 	// If can't acquire immediately, try queue (if available)
@@ -210,7 +210,6 @@ func (rl *ResourceLimiter) getSemaphore(bucket BucketType) *semaphore.Weighted {
 func (rl *ResourceLimiter) executeWithSemaphore(
 	bucket BucketType,
 	sem *semaphore.Weighted,
-	cfg *MethodConfig,
 	execute func() error,
 ) error {
 	defer sem.Release(1)
@@ -297,8 +296,6 @@ func (rl *ResourceLimiter) processQueue(
 	queue chan *queuedRequest,
 	sem *semaphore.Weighted,
 ) {
-	cfg := rl.config[bucket]
-
 	for qr := range queue {
 		// Check if context was canceled/timed out before we process
 		// This prevents executing requests that already timed out in the queue
@@ -328,7 +325,7 @@ func (rl *ResourceLimiter) processQueue(
 		)
 
 		// Execute
-		err := rl.executeWithSemaphore(bucket, sem, cfg, qr.execute)
+		err := rl.executeWithSemaphore(bucket, sem, qr.execute)
 		qr.result <- err
 	}
 }
