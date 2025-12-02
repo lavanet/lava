@@ -238,8 +238,13 @@ func (rl *ResourceLimiter) enqueueRequest(
 	cfg *MethodConfig,
 	execute func() error,
 ) error {
+	// Create a timeout context so the request gets canceled if it waits too long
+	// This ensures processQueue will skip execution for timed-out requests
+	queueCtx, cancel := context.WithTimeout(ctx, cfg.Timeout)
+	defer cancel() // Always cancel to free resources
+
 	qr := &queuedRequest{
-		ctx:      ctx,
+		ctx:      queueCtx,
 		execute:  execute,
 		result:   make(chan error, 1),
 		enqueued: time.Now(),
@@ -260,15 +265,18 @@ func (rl *ResourceLimiter) enqueueRequest(
 			utils.LogAttr("max_queue_size", cfg.QueueSize),
 		)
 
-		// Wait for result or timeout
+		// Wait for result or context cancellation (parent or timeout)
 		select {
 		case err := <-qr.result:
 			return err
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(cfg.Timeout):
-			rl.metrics.incrementTimeoutWithLabels(bucket)
-			return fmt.Errorf("request timeout in queue after %v", cfg.Timeout)
+		case <-queueCtx.Done():
+			// Context canceled (either parent or timeout)
+			// Check if it was a timeout specifically
+			if ctx.Err() == nil && queueCtx.Err() == context.DeadlineExceeded {
+				rl.metrics.incrementTimeoutWithLabels(bucket)
+				return fmt.Errorf("request timeout in queue after %v", cfg.Timeout)
+			}
+			return queueCtx.Err()
 		}
 
 	default:
