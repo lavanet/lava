@@ -81,6 +81,7 @@ type RPCSmartRouterServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	serverContext                  context.Context // Context for cancellation handling
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -118,6 +119,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpcss.serverContext = ctx // Store context for cancellation handling
 	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, refererData, wsSubscriptionManager)
 	if err != nil {
 		return err
@@ -165,15 +167,31 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(initialRelays bool) 
 }
 
 func (rpcss *RPCSmartRouterServer) waitForPairing() {
-	reinitializedChan := make(chan bool)
+	ctx := rpcss.serverContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	reinitializedChan := make(chan bool, 1) // Buffered to prevent deadlock
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
 		for {
-			if rpcss.sessionManager.Initialized() {
-				reinitializedChan <- true
+			select {
+			case <-ctx.Done():
 				return
+			case <-ticker.C:
+				if rpcss.sessionManager.Initialized() {
+					// Non-blocking send to prevent deadlock if receiver has exited
+					select {
+					case reinitializedChan <- true:
+					default:
+					}
+					return
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}()
 
@@ -181,6 +199,8 @@ func (rpcss *RPCSmartRouterServer) waitForPairing() {
 	for {
 		select {
 		case <-reinitializedChan:
+			return
+		case <-ctx.Done():
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1

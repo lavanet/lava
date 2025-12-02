@@ -86,6 +86,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	serverContext                  context.Context // Context for cancellation handling
 }
 
 type ConsumerTxSender interface {
@@ -131,6 +132,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpccs.serverContext = ctx // Store context for cancellation handling
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
@@ -178,15 +180,31 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
-	reinitializedChan := make(chan bool)
+	ctx := rpccs.serverContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	reinitializedChan := make(chan bool, 1) // Buffered to prevent deadlock
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
 		for {
-			if rpccs.consumerSessionManager.Initialized() {
-				reinitializedChan <- true
+			select {
+			case <-ctx.Done():
 				return
+			case <-ticker.C:
+				if rpccs.consumerSessionManager.Initialized() {
+					// Non-blocking send to prevent deadlock if receiver has exited
+					select {
+					case reinitializedChan <- true:
+					default: // If can't send (buffer full/receiver gone), just exit
+					}
+					return
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}()
 
@@ -194,6 +212,8 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 	for {
 		select {
 		case <-reinitializedChan:
+			return
+		case <-ctx.Done():
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1
