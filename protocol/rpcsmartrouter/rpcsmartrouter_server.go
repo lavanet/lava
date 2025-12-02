@@ -131,7 +131,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	// we trigger a latest block call to get some more information on our providers, using the relays monitor
 	if cmdFlags.RelaysHealthEnableFlag {
 		rpcss.relaysMonitor.SetRelaySender(func() (bool, error) {
-			success, err := rpcss.sendCraftedRelaysWrapper(initialRelays)
+			success, err := rpcss.sendCraftedRelaysWrapper(ctx, initialRelays)
 			if success {
 				initialRelays = false
 			}
@@ -139,7 +139,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 		})
 		rpcss.relaysMonitor.Start(ctx)
 	} else {
-		rpcss.sendCraftedRelaysWrapper(true)
+		rpcss.sendCraftedRelaysWrapper(ctx, true)
 	}
 	return nil
 }
@@ -152,10 +152,10 @@ func (rpcss *RPCSmartRouterServer) GetListeningAddress() string {
 	return rpcss.chainListener.GetListeningAddress()
 }
 
-func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
+func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(ctx context.Context, initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		rpcss.waitForPairing()
+		rpcss.waitForPairing(ctx)
 	}
 	success, err := rpcss.sendCraftedRelays(MaxRelayRetries, initialRelays)
 	if success {
@@ -164,16 +164,29 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(initialRelays bool) 
 	return success, err
 }
 
-func (rpcss *RPCSmartRouterServer) waitForPairing() {
-	reinitializedChan := make(chan bool)
+func (rpcss *RPCSmartRouterServer) waitForPairing(ctx context.Context) {
+	reinitializedChan := make(chan bool, 1) // Buffered channel to prevent deadlock
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop() // Ensure ticker is cleaned up
+
 		for {
-			if rpcss.sessionManager.Initialized() {
-				reinitializedChan <- true
+			select {
+			case <-ctx.Done():
+				// Context cancelled, exit goroutine
 				return
+			case <-ticker.C:
+				if rpcss.sessionManager.Initialized() {
+					// Non-blocking send to prevent deadlock
+					select {
+					case reinitializedChan <- true:
+					default:
+						// Channel already has value or receiver gone, but we can exit
+					}
+					return
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}()
 
@@ -181,6 +194,9 @@ func (rpcss *RPCSmartRouterServer) waitForPairing() {
 	for {
 		select {
 		case <-reinitializedChan:
+			return
+		case <-ctx.Done():
+			// Context cancelled, exit function
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1
