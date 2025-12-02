@@ -92,7 +92,7 @@ type ResourceLimiterMetrics struct {
 // heavyQueueSize: Queue size for heavy methods
 // normalMaxConcurrent: Max concurrent normal method calls
 // Note: cuThreshold should be validated before calling this function
-func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB uint64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
+func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB float64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
@@ -113,7 +113,7 @@ func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB uin
 		},
 	}
 
-	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
+	memoryThreshold := uint64(memoryThresholdGB * 1024 * 1024 * 1024)
 
 	// Create Prometheus metrics with endpoint name as constant label
 	metricsInstance := createResourceLimiterMetrics(endpointName)
@@ -180,7 +180,7 @@ func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
 }
 
 // newResourceLimiterForTesting creates a limiter without Prometheus metrics for testing
-func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThresholdGB uint64, cuThreshold uint64) *ResourceLimiter {
+func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThresholdGB float64, cuThreshold uint64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
@@ -200,7 +200,7 @@ func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThres
 		},
 	}
 
-	memoryThreshold := memoryThresholdGB * 1024 * 1024 * 1024
+	memoryThreshold := uint64(memoryThresholdGB * 1024 * 1024 * 1024)
 
 	// Create minimal metrics without Prometheus registration
 	metricsInstance := &ResourceLimiterMetrics{}
