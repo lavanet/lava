@@ -15,7 +15,7 @@ import (
 
 func TestResourceLimiter_Disabled(t *testing.T) {
 	// When disabled, should pass through all requests
-	rl := newResourceLimiterForTesting(false, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(false, "test-endpoint", 100)
 	require.NotNil(t, rl)
 	require.False(t, rl.enabled)
 
@@ -30,7 +30,7 @@ func TestResourceLimiter_Disabled(t *testing.T) {
 }
 
 func TestResourceLimiter_SelectBucket_CUPriority(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	require.NotNil(t, rl)
 
 	tests := []struct {
@@ -101,7 +101,7 @@ func TestResourceLimiter_SelectBucket_CUPriority(t *testing.T) {
 }
 
 func TestResourceLimiter_HeavyConcurrencyLimit(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	require.NotNil(t, rl)
 
 	ctx := context.Background()
@@ -177,7 +177,7 @@ func TestResourceLimiter_HeavyConcurrencyLimit(t *testing.T) {
 }
 
 func TestResourceLimiter_NormalConcurrencyNoQueue(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	require.NotNil(t, rl)
 
 	ctx := context.Background()
@@ -232,7 +232,7 @@ func TestResourceLimiter_NormalConcurrencyNoQueue(t *testing.T) {
 
 func TestResourceLimiter_QueueTimeout(t *testing.T) {
 	// Create limiter with very short timeout for testing
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	// Modify the timeout to be very short
 	rl.config[BucketHeavy].Timeout = 100 * time.Millisecond
 
@@ -271,7 +271,7 @@ func TestResourceLimiter_QueueTimeout(t *testing.T) {
 }
 
 func TestResourceLimiter_ContextCancellation(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -321,38 +321,9 @@ func TestResourceLimiter_ContextCancellation(t *testing.T) {
 	wg.Wait()
 }
 
-func TestResourceLimiter_MemoryLimit(t *testing.T) {
-	// Create limiter with very low memory threshold
-	// Heavy request reserves 512MB, so with 1GB threshold:
-	// First request: 512MB (OK)
-	// Second request would be: 512MB + 512MB = 1024MB = 1GB
-	// We need it to exceed, so set threshold to 0.8 GB (just under 1GB)
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 1, 100) // 1GB threshold
-
-	// Manually set a lower threshold for testing
-	rl.memoryThreshold = 800 * 1024 * 1024 // 800MB threshold
-
-	ctx := context.Background()
-
-	// Try to acquire with heavy method (512MB per call)
-	// First request should work (512MB < 800MB)
-	err1 := rl.Acquire(ctx, 200, "debug_trace", func() error {
-		// Second request should be rejected due to memory
-		// (512MB + 512MB = 1024MB > 800MB threshold)
-		err2 := rl.Acquire(ctx, 200, "debug_trace", func() error {
-			return nil
-		})
-		require.Error(t, err2)
-		require.Contains(t, err2.Error(), "memory limit",
-			"Should reject due to memory limit")
-		return nil
-	})
-
-	require.NoError(t, err1, "First request should succeed")
-}
 
 func TestResourceLimiter_ExecutionError(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 
 	ctx := context.Background()
 	expectedErr := errors.New("execution failed")
@@ -366,7 +337,7 @@ func TestResourceLimiter_ExecutionError(t *testing.T) {
 }
 
 func TestResourceLimiter_Metrics(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	require.NotNil(t, rl.metrics)
 
 	ctx := context.Background()
@@ -413,7 +384,7 @@ func TestResourceLimiter_Metrics(t *testing.T) {
 }
 
 func TestResourceLimiter_ConcurrentMixedRequests(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 
 	ctx := context.Background()
 	block := make(chan struct{})
@@ -477,31 +448,6 @@ func TestResourceLimiter_ConcurrentMixedRequests(t *testing.T) {
 	require.Greater(t, normalCompleted.Load(), int32(0))
 }
 
-func TestResourceLimiter_MemoryReservationRelease(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
-
-	ctx := context.Background()
-
-	// Check initial memory
-	initialMemory := rl.currentMemory
-	require.Equal(t, uint64(0), initialMemory)
-
-	// Execute request and check memory during execution
-	var memoryDuringExecution uint64
-	err := rl.Acquire(ctx, 200, "debug_trace", func() error {
-		memoryDuringExecution = rl.currentMemory
-		return nil
-	})
-
-	require.NoError(t, err)
-	require.Greater(t, memoryDuringExecution, uint64(0),
-		"Memory should be reserved during execution")
-
-	// Check memory after execution
-	finalMemory := rl.currentMemory
-	require.Equal(t, uint64(0), finalMemory,
-		"Memory should be released after execution")
-}
 
 func TestResourceLimiter_BucketTypeString(t *testing.T) {
 	require.Equal(t, "heavy", BucketHeavy.String())
@@ -509,7 +455,7 @@ func TestResourceLimiter_BucketTypeString(t *testing.T) {
 }
 
 func TestResourceLimiter_ErrorMessages(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 
 	ctx := context.Background()
 
@@ -583,7 +529,7 @@ func TestResourceLimiter_ErrorMessages(t *testing.T) {
 }
 
 func BenchmarkResourceLimiter_LightLoad(b *testing.B) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	ctx := context.Background()
 
 	b.ResetTimer()
@@ -597,7 +543,7 @@ func BenchmarkResourceLimiter_LightLoad(b *testing.B) {
 }
 
 func BenchmarkResourceLimiter_Disabled(b *testing.B) {
-	rl := newResourceLimiterForTesting(false, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(false, "test-endpoint", 100)
 	ctx := context.Background()
 
 	b.ResetTimer()
@@ -611,7 +557,7 @@ func BenchmarkResourceLimiter_Disabled(b *testing.B) {
 }
 
 func BenchmarkResourceLimiter_BucketSelection(b *testing.B) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -621,7 +567,7 @@ func BenchmarkResourceLimiter_BucketSelection(b *testing.B) {
 
 // Test helper to verify metrics are tracking correctly
 func TestResourceLimiter_MetricsTracking(t *testing.T) {
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	ctx := context.Background()
 
 	// Track initial metrics
@@ -666,7 +612,7 @@ func TestResourceLimiter_StressTest(t *testing.T) {
 		t.Skip("Skipping stress test in short mode")
 	}
 
-	rl := newResourceLimiterForTesting(true, "test-endpoint", 8, 100)
+	rl := newResourceLimiterForTesting(true, "test-endpoint", 100)
 	ctx := context.Background()
 
 	var totalRequests atomic.Int32

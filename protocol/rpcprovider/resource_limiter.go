@@ -3,7 +3,6 @@ package rpcprovider
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -32,12 +31,11 @@ func (b BucketType) String() string {
 // MethodConfig defines resource limits for specific method types
 type MethodConfig struct {
 	MaxConcurrent int64         // Max concurrent executions
-	MemoryPerCall uint64        // Estimated memory per call (bytes)
 	QueueSize     int           // Max queued requests
 	Timeout       time.Duration // Max time in queue
 }
 
-// ResourceLimiter manages concurrent execution based on method type and memory
+// ResourceLimiter manages concurrent execution based on method type
 type ResourceLimiter struct {
 	heavySemaphore  *semaphore.Weighted
 	normalSemaphore *semaphore.Weighted
@@ -45,11 +43,6 @@ type ResourceLimiter struct {
 	heavyQueue chan *queuedRequest
 
 	config map[BucketType]*MethodConfig
-
-	// Memory monitoring
-	memoryThreshold uint64 // Max memory usage (bytes)
-	memoryLock      sync.RWMutex
-	currentMemory   uint64
 
 	// Metrics
 	metrics *ResourceLimiterMetrics
@@ -68,20 +61,18 @@ type queuedRequest struct {
 }
 
 type ResourceLimiterMetrics struct {
-	TotalRejected      uint64
-	TotalQueued        uint64
-	TotalTimeout       uint64
-	HeavyInFlight      uint64
-	NormalInFlight     uint64
-	EstimatedMemoryUse uint64
-	lock               sync.RWMutex
+	TotalRejected  uint64
+	TotalQueued    uint64
+	TotalTimeout   uint64
+	HeavyInFlight  uint64
+	NormalInFlight uint64
+	lock           sync.RWMutex
 
 	// Prometheus metrics
 	rejectedRequestsMetric *prometheus.CounterVec
 	queuedRequestsMetric   *prometheus.CounterVec
 	timeoutRequestsMetric  *prometheus.CounterVec
 	inFlightRequestsMetric *prometheus.GaugeVec
-	estimatedMemoryMetric  prometheus.Gauge
 	queueWaitTimeMetric    *prometheus.HistogramVec
 }
 
@@ -92,7 +83,7 @@ type ResourceLimiterMetrics struct {
 // heavyQueueSize: Queue size for heavy methods
 // normalMaxConcurrent: Max concurrent normal method calls
 // Note: cuThreshold should be validated before calling this function
-func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB float64, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
+func NewResourceLimiter(enabled bool, endpointName string, cuThreshold uint64, heavyMaxConcurrent int64, heavyQueueSize int, normalMaxConcurrent int64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
@@ -101,19 +92,15 @@ func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB flo
 	config := map[BucketType]*MethodConfig{
 		BucketHeavy: {
 			MaxConcurrent: heavyMaxConcurrent, // 2 concurrent heavy (debug/trace) calls
-			MemoryPerCall: 512 * 1024 * 1024,  // Estimate 512MB per heavy call
 			QueueSize:     heavyQueueSize,     // Queue up to 5 more
 			Timeout:       30 * time.Second,
 		},
 		BucketNormal: {
 			MaxConcurrent: normalMaxConcurrent, // 100 concurrent normal calls
-			MemoryPerCall: 1 * 1024 * 1024,     // 1MB per normal call
 			QueueSize:     0,                   // No queue, reject if full
 			Timeout:       0,
 		},
 	}
-
-	memoryThreshold := uint64(memoryThresholdGB * 1024 * 1024 * 1024)
 
 	// Create Prometheus metrics with endpoint name as constant label
 	metricsInstance := createResourceLimiterMetrics(endpointName)
@@ -123,7 +110,6 @@ func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB flo
 		normalSemaphore: semaphore.NewWeighted(config[BucketNormal].MaxConcurrent),
 		heavyQueue:      make(chan *queuedRequest, config[BucketHeavy].QueueSize),
 		config:          config,
-		memoryThreshold: memoryThreshold,
 		cuThreshold:     cuThreshold,
 		metrics:         metricsInstance,
 		enabled:         true,
@@ -131,9 +117,6 @@ func NewResourceLimiter(enabled bool, endpointName string, memoryThresholdGB flo
 
 	// Start queue worker for heavy bucket
 	go rl.processQueue(BucketHeavy, rl.heavyQueue, rl.heavySemaphore)
-
-	// Start memory monitor
-	go rl.monitorMemory()
 
 	return rl
 }
@@ -165,11 +148,6 @@ func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
 			Help:        "Number of requests currently executing",
 			ConstLabels: constLabels,
 		}, []string{"bucket"}),
-		estimatedMemoryMetric: promauto.NewGauge(prometheus.GaugeOpts{
-			Name:        "lava_provider_resource_limiter_memory_bytes",
-			Help:        "Estimated memory usage by resource limiter",
-			ConstLabels: constLabels,
-		}),
 		queueWaitTimeMetric: promauto.NewHistogramVec(prometheus.HistogramOpts{
 			Name:        "lava_provider_resource_limiter_queue_wait_seconds",
 			Help:        "Time requests spent waiting in queue",
@@ -180,7 +158,7 @@ func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
 }
 
 // newResourceLimiterForTesting creates a limiter without Prometheus metrics for testing
-func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThresholdGB float64, cuThreshold uint64) *ResourceLimiter {
+func newResourceLimiterForTesting(enabled bool, endpointName string, cuThreshold uint64) *ResourceLimiter {
 	if !enabled {
 		return &ResourceLimiter{enabled: false}
 	}
@@ -188,19 +166,15 @@ func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThres
 	config := map[BucketType]*MethodConfig{
 		BucketHeavy: {
 			MaxConcurrent: 2,
-			MemoryPerCall: 512 * 1024 * 1024,
 			QueueSize:     5,
 			Timeout:       30 * time.Second,
 		},
 		BucketNormal: {
 			MaxConcurrent: 100,
-			MemoryPerCall: 1 * 1024 * 1024,
 			QueueSize:     0,
 			Timeout:       0,
 		},
 	}
-
-	memoryThreshold := uint64(memoryThresholdGB * 1024 * 1024 * 1024)
 
 	// Create minimal metrics without Prometheus registration
 	metricsInstance := &ResourceLimiterMetrics{}
@@ -210,7 +184,6 @@ func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThres
 		normalSemaphore: semaphore.NewWeighted(config[BucketNormal].MaxConcurrent),
 		heavyQueue:      make(chan *queuedRequest, config[BucketHeavy].QueueSize),
 		config:          config,
-		memoryThreshold: memoryThreshold,
 		cuThreshold:     cuThreshold,
 		metrics:         metricsInstance,
 		enabled:         true,
@@ -218,9 +191,6 @@ func newResourceLimiterForTesting(enabled bool, endpointName string, memoryThres
 
 	// Start queue worker for heavy bucket
 	go rl.processQueue(BucketHeavy, rl.heavyQueue, rl.heavySemaphore)
-
-	// Start memory monitor
-	go rl.monitorMemory()
 
 	return rl
 }
@@ -250,12 +220,6 @@ func (rl *ResourceLimiter) Acquire(ctx context.Context, computeUnits uint64, met
 
 	bucket := rl.selectBucket(computeUnits, methodName)
 	cfg := rl.config[bucket]
-
-	// Check memory before admitting
-	if !rl.canAdmitRequest(cfg.MemoryPerCall) {
-		rl.metrics.incrementRejectedWithLabels(bucket, "memory_limit")
-		return fmt.Errorf("provider memory limit reached, rejecting %s request", bucket)
-	}
 
 	// Try immediate execution
 	sem := rl.getSemaphore(bucket)
@@ -288,10 +252,6 @@ func (rl *ResourceLimiter) executeWithSemaphore(
 	execute func() error,
 ) error {
 	defer sem.Release(1)
-
-	// Reserve memory
-	rl.reserveMemory(cfg.MemoryPerCall)
-	defer rl.releaseMemory(cfg.MemoryPerCall)
 
 	// Update metrics
 	rl.metrics.incrementInFlight(bucket)
@@ -411,70 +371,6 @@ func (rl *ResourceLimiter) processQueue(
 	}
 }
 
-// Memory management
-func (rl *ResourceLimiter) canAdmitRequest(estimatedMemory uint64) bool {
-	rl.memoryLock.RLock()
-	defer rl.memoryLock.RUnlock()
-
-	// Check if adding this request would exceed threshold
-	if rl.currentMemory+estimatedMemory > rl.memoryThreshold {
-		return false
-	}
-
-	// Also check actual system memory
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-
-	// If heap usage > 80% of threshold, reject
-	return m.HeapAlloc <= (rl.memoryThreshold * 80 / 100)
-}
-
-func (rl *ResourceLimiter) reserveMemory(amount uint64) {
-	rl.memoryLock.Lock()
-	defer rl.memoryLock.Unlock()
-	rl.currentMemory += amount
-	rl.metrics.updateMemory(rl.currentMemory)
-}
-
-func (rl *ResourceLimiter) releaseMemory(amount uint64) {
-	rl.memoryLock.Lock()
-	defer rl.memoryLock.Unlock()
-	if rl.currentMemory >= amount {
-		rl.currentMemory -= amount
-	} else {
-		rl.currentMemory = 0
-	}
-	rl.metrics.updateMemory(rl.currentMemory)
-}
-
-func (rl *ResourceLimiter) monitorMemory() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
-
-		rl.memoryLock.RLock()
-		reserved := rl.currentMemory
-		rl.memoryLock.RUnlock()
-
-		// Get current queue depths
-		heavyQueueDepth := len(rl.heavyQueue)
-		normalQueueDepth := 0 // Normal bucket has no queue (QueueSize: 0)
-
-		utils.LavaFormatDebug("Provider memory status",
-			utils.LogAttr("heap_alloc_mb", m.HeapAlloc/(1024*1024)),
-			utils.LogAttr("reserved_mb", reserved/(1024*1024)),
-			utils.LogAttr("threshold_mb", rl.memoryThreshold/(1024*1024)),
-			utils.LogAttr("heavy_in_flight", rl.metrics.getInFlight(BucketHeavy)),
-			utils.LogAttr("normal_in_flight", rl.metrics.getInFlight(BucketNormal)),
-			utils.LogAttr("heavy_queue_depth", heavyQueueDepth),
-			utils.LogAttr("normal_queue_depth", normalQueueDepth),
-		)
-	}
-}
-
 // Metrics methods
 func (m *ResourceLimiterMetrics) incrementRejected() {
 	m.lock.Lock()
@@ -550,15 +446,6 @@ func (m *ResourceLimiterMetrics) getInFlight(bucket BucketType) uint64 {
 		return m.HeavyInFlight
 	}
 	return m.NormalInFlight
-}
-
-func (m *ResourceLimiterMetrics) updateMemory(current uint64) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.EstimatedMemoryUse = current
-	if m.estimatedMemoryMetric != nil {
-		m.estimatedMemoryMetric.Set(float64(current))
-	}
 }
 
 func (m *ResourceLimiterMetrics) recordQueueWaitTime(bucket BucketType, duration time.Duration) {
