@@ -1480,10 +1480,27 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 // and immediately unblocks them if their probe was successful. This only happens at epoch transitions.
 // Other providers and normal blocking behavior during an epoch remain unchanged.
 func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx context.Context, epoch uint64) {
+	// Check if epoch is still current - if epoch changed, our previousEpochBlockedProviders data is stale
+	currentEpoch := csm.atomicReadCurrentEpoch()
+	if epoch != currentEpoch {
+		utils.LavaFormatDebug("Skipping re-blocked provider check due to epoch change",
+			utils.Attribute{Key: "requestedEpoch", Value: epoch},
+			utils.Attribute{Key: "currentEpoch", Value: currentEpoch},
+		)
+		return
+	}
+
 	// Ensure context has unique identifier for probing
 	if _, found := utils.GetUniqueIdentifier(ctx); !found {
 		ctx = utils.AppendUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 	}
+
+	// Clean up previousEpochBlockedProviders after processing
+	defer func() {
+		csm.lock.Lock()
+		csm.previousEpochBlockedProviders = make(map[string]struct{})
+		csm.lock.Unlock()
+	}()
 
 	csm.lock.Lock()
 
