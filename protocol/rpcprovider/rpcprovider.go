@@ -1112,20 +1112,20 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				return utils.LavaFormatError("test_responses file is required when test_mode is enabled", nil)
 			}
 
-		// Create resource limiter options
-		enableResourceLimiter, _ := cmd.Flags().GetBool("enable-resource-limiter")
-		cuThreshold, _ := cmd.Flags().GetUint64("resource-limiter-cu-threshold")
-		heavyMaxConcurrent, _ := cmd.Flags().GetInt64("heavy-max-concurrent")
-		heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
-		normalMaxConcurrent, _ := cmd.Flags().GetInt64("normal-max-concurrent")
+			// Create resource limiter options
+			enableResourceLimiter, _ := cmd.Flags().GetBool("enable-resource-limiter")
+			cuThreshold, _ := cmd.Flags().GetUint64("resource-limiter-cu-threshold")
+			heavyMaxConcurrent, _ := cmd.Flags().GetInt64("heavy-max-concurrent")
+			heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
+			normalMaxConcurrent, _ := cmd.Flags().GetInt64("normal-max-concurrent")
 
-		resourceLimiterOptions := &resourceLimiterOptions{
-			enabled:             enableResourceLimiter,
-			cuThreshold:         cuThreshold,
-			heavyMaxConcurrent:  heavyMaxConcurrent,
-			heavyQueueSize:      heavyQueueSize,
-			normalMaxConcurrent: normalMaxConcurrent,
-		}
+			resourceLimiterOptions := &resourceLimiterOptions{
+				enabled:             enableResourceLimiter,
+				cuThreshold:         cuThreshold,
+				heavyMaxConcurrent:  heavyMaxConcurrent,
+				heavyQueueSize:      heavyQueueSize,
+				normalMaxConcurrent: normalMaxConcurrent,
+			}
 
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
