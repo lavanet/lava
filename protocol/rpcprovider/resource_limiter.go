@@ -157,44 +157,6 @@ func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
 	}
 }
 
-// newResourceLimiterForTesting creates a limiter without Prometheus metrics for testing
-func newResourceLimiterForTesting(enabled bool, endpointName string, cuThreshold uint64) *ResourceLimiter {
-	if !enabled {
-		return &ResourceLimiter{enabled: false}
-	}
-
-	config := map[BucketType]*MethodConfig{
-		BucketHeavy: {
-			MaxConcurrent: 2,
-			QueueSize:     5,
-			Timeout:       30 * time.Second,
-		},
-		BucketNormal: {
-			MaxConcurrent: 100,
-			QueueSize:     0,
-			Timeout:       0,
-		},
-	}
-
-	// Create minimal metrics without Prometheus registration
-	metricsInstance := &ResourceLimiterMetrics{}
-
-	rl := &ResourceLimiter{
-		heavySemaphore:  semaphore.NewWeighted(config[BucketHeavy].MaxConcurrent),
-		normalSemaphore: semaphore.NewWeighted(config[BucketNormal].MaxConcurrent),
-		heavyQueue:      make(chan *queuedRequest, config[BucketHeavy].QueueSize),
-		config:          config,
-		cuThreshold:     cuThreshold,
-		metrics:         metricsInstance,
-		enabled:         true,
-	}
-
-	// Start queue worker for heavy bucket
-	go rl.processQueue(BucketHeavy, rl.heavyQueue, rl.heavySemaphore)
-
-	return rl
-}
-
 // selectBucket determines the resource category for a method
 // First checks CU, then checks method name prefixes
 func (rl *ResourceLimiter) selectBucket(computeUnits uint64, methodName string) BucketType {
@@ -437,15 +399,6 @@ func (m *ResourceLimiterMetrics) decrementInFlight(bucket BucketType) {
 	if m.inFlightRequestsMetric != nil {
 		m.inFlightRequestsMetric.WithLabelValues(bucket.String()).Dec()
 	}
-}
-
-func (m *ResourceLimiterMetrics) getInFlight(bucket BucketType) uint64 {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-	if bucket == BucketHeavy {
-		return m.HeavyInFlight
-	}
-	return m.NormalInFlight
 }
 
 func (m *ResourceLimiterMetrics) recordQueueWaitTime(bucket BucketType, duration time.Duration) {
