@@ -1561,23 +1561,47 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 
 func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
 	var reply pairingtypes.RelayReply
-	gotFirstReplyChanOrErr := make(chan struct{})
+	gotFirstReplyChanOrErr := make(chan struct{}, 1) // Buffered to prevent blocking
+
+	// Atomic flag to prevent data race on reply status
+	var replyReceived atomic.Bool
+
+	// Create timer ONCE, not in loop - prevents memory leak from repeated time.After() calls
+	timeoutTimer := time.NewTimer(common.SubscriptionFirstReplyTimeout)
+	defer timeoutTimer.Stop() // Always cleanup timer resources
 
 	// Cancel the context after SubscriptionFirstReplyTimeout duration, so we won't hang forever
 	go func() {
-		for {
-			select {
-			case <-time.After(common.SubscriptionFirstReplyTimeout):
-				if reply.Data == nil {
-					utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-					)
-					rpccs.CancelSubscriptionContext(hashedParams) // Cancel the context with the provider, which will trigger the replyServer's context to be cancelled
-				}
-			case <-gotFirstReplyChanOrErr:
-				return
+		defer func() {
+			// Ensure we clean up on exit
+			utils.LavaFormatTrace("subscription timeout goroutine exiting",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+		}()
+
+		select {
+		case <-timeoutTimer.C:
+			if !replyReceived.Load() { // Use atomic check to prevent data race
+				utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				rpccs.CancelSubscriptionContext(hashedParams) // Cancel the context with the provider, which will trigger the replyServer's context to be cancelled
 			}
+			return // Exit after timeout - prevents goroutine leak
+		case <-gotFirstReplyChanOrErr:
+			return // Exit on success
+		case <-ctx.Done():
+			return // Exit on context cancellation - prevents orphaned goroutines
+		}
+	}()
+
+	// Ensure goroutine exits even on error paths
+	defer func() {
+		select {
+		case gotFirstReplyChanOrErr <- struct{}{}:
+		default: // Non-blocking send
 		}
 	}()
 
@@ -1587,14 +1611,21 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
+		// Defer will signal channel, goroutine exits
 	default:
 		err := replyServer.RecvMsg(&reply)
-		gotFirstReplyChanOrErr <- struct{}{}
+		replyReceived.Store(true) // Mark as received atomically - prevents data race
 		if err != nil {
 			return nil, utils.LavaFormatError("Could not read reply from reply server", err,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
+			// Defer will signal channel, goroutine exits
+		}
+		// Signal successful receipt
+		select {
+		case gotFirstReplyChanOrErr <- struct{}{}:
+		default: // Non-blocking
 		}
 	}
 
