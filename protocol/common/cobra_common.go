@@ -65,6 +65,7 @@ const (
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
+	EnableMemoryLogsFlag                   = "enable-memory-logs" // enable memory tracking logs
 )
 
 const (
@@ -89,6 +90,7 @@ type ConsumerCmdFlags struct {
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
+	EnableMemoryLogs         bool          // enables memory tracking logs
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
