@@ -429,19 +429,11 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
-	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.GetSkipDataReliability() {
-		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
-		// as data reliability happens in a go routine it will continue while the response returns.
-		guid, found := utils.GetUniqueIdentifier(ctx)
-		dataReliabilityContext := context.Background()
-		if found {
-			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
-		}
-		go rpcss.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
-	}
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: DR dispatch for smart router that sent verification relays to secondary providers
+	// Previously: enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
+	// Previously: go rpcss.sendDataReliabilityRelayIfApplicable(...)
+	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())

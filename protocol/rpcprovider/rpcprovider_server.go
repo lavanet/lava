@@ -1030,24 +1030,20 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	}
 
 	var latestBlock int64
-	var requestedBlockHash []byte
-	var requestedHashes []*chaintracker.BlockStore
-	var modifiedReqBlock int64
+	// Data Reliability disabled - Phase 1 removal: removed unused variables requestedBlockHash, requestedHashes, modifiedReqBlock
 
 	finalized := false
-	updatedChainMessage := false
+	// Data Reliability disabled - Phase 1 removal: removed unused variable updatedChainMessage
 
-	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
-	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
-	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: GetParametersForRelayDataReliability() call that fetched latest block, hashes, etc.
+	// Previously: if dataReliabilityEnabled { latestBlock, requestedBlockHash, requestedHashes, ... = rpcps.GetParametersForRelayDataReliability(...) }
+	// Variables removed: requestedBlockHash, requestedHashes, modifiedReqBlock, updatedChainMessage
+	// Function GetParametersForRelayDataReliability() still exists but is no longer called
 
-	if dataReliabilityEnabled {
-		var err error
-		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
+	// Data Reliability disabled - Phase 1 removal: removed unused variables blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData, relayTimeout
+	// Previously: blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
+	// Previously: relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply
@@ -1055,7 +1051,10 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
 
-	if requestedBlockHash != nil || finalized { // try get reply from cache
+	// Data Reliability disabled - Phase 1 removal: cache lookup uses requestedBlockHash which is nil
+	// Note: cache.tryGetRelayReplyFromCache() will never be called since requestedBlockHash is always nil and finalized is always false
+	requestedBlockHash := []byte(nil) // Explicitly set to nil for clarity
+	if finalized {                    // try get reply from cache (requestedBlockHash check removed - always nil)
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}
 
@@ -1070,7 +1069,8 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
-		if rpcps.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
+		if rpcps.cache.CacheActive() && finalized {
+			_, averageBlockTime, _, _ := rpcps.chainParser.ChainBlockStats() // Get averageBlockTime for cache
 			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
 		}
 	} else if len(request.RelayData.Extensions) > 0 {
@@ -1078,14 +1078,15 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	if dataReliabilityEnabled {
-		err := rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: BuildRelayFinalizedBlockHashes() call that populated reply.FinalizedBlocksHashes
+	// Previously: if dataReliabilityEnabled { err := rpcps.BuildRelayFinalizedBlockHashes(...) }
+	// Result: reply.FinalizedBlocksHashes will remain empty (cache handles this gracefully)
+	// Result: reply.LatestBlock will NOT be overwritten - remains as actual node's latest block (more accurate!)
+	// Function BuildRelayFinalizedBlockHashes() still exists but is no longer called
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
+	dataReliabilityEnabled := false // Data Reliability disabled - Phase 1 removal: always false now
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, nil, err
@@ -1257,21 +1258,13 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 		Data: dataToSend,
 	}
 
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscriptions
+	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = rpcps.GetParametersForRelayDataReliability(...); rpcps.BuildRelayFinalizedBlockHashes(...) }
+	// Result: Subscription responses will not have FinalizedBlocksHashes populated
+	// Functions still exist but are no longer called
+
 	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
-	if dataReliabilityEnabled {
-		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
-		relayTimeout := chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return nil, err
-		}
-
-		err = rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply, dataReliabilityEnabled)

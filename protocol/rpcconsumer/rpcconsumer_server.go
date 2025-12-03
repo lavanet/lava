@@ -16,7 +16,6 @@ import (
 
 	"github.com/goccy/go-json"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -25,7 +24,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -446,19 +444,11 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	// check if data reliability is enabled and relay processor allows us to perform data reliability
-	if enabled && !relayProcessor.GetSkipDataReliability() {
-		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
-		// as data reliability happens in a go routine it will continue while the response returns.
-		guid, found := utils.GetUniqueIdentifier(ctx)
-		dataReliabilityContext := context.Background()
-		if found {
-			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
-		}
-		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
-	}
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: DR dispatch that sent verification relays to secondary providers
+	// Previously: enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
+	// Previously: go rpccs.sendDataReliabilityRelayIfApplicable(...)
+	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
@@ -1603,7 +1593,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	originalRequestBlock := relayRequest.RelayData.RequestBlock
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
+	// Data Reliability disabled - Phase 1 removal: removed unused variable blocksInFinalizationProof
 	// Use original request block for finalization check to avoid converting LATEST_BLOCK to actual block numbers
 	isFinalized := spectypes.IsFinalizedBlock(originalRequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
 	if !rpccs.chainParser.ParseDirectiveEnabled() {
@@ -1624,26 +1615,15 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled() {
-		// TODO: allow static providers to detect hash mismatches,
-		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
-		if err != nil {
-			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
-				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
-			}
-			return 0, err, false
-		}
 
-		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-		if err != nil {
-			if finalizationAccountabilityError != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
-			}
-			return 0, err, false
-		}
-	}
+	// Data Reliability disabled - Phase 1 removal
+	// REMOVED: Finalization consensus verification and conflict detection
+	// Previously: enabled, _ := rpccs.chainParser.DataReliabilityParams()
+	// Previously: if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled()
+	// Previously: Called finalizationverification.VerifyFinalizationData() and finalizationConsensus.UpdateFinalizedHashes()
+	// Previously: Triggered conflict detection via rpccs.consumerTxSender.TxConflictDetection()
+	// Note: Static providers were already excluded from this check
+
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
 }
