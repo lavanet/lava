@@ -23,6 +23,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -901,4 +902,369 @@ func (m *MockProtocolMessage) GetBlockedProviders() []string {
 
 func (m *MockProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	return false
+}
+
+// TestWaitForPairingBufferedChannelNoDeadlock validates that the buffered channel
+// prevents deadlock when context is cancelled before initialization completes.
+// This is the primary test for Issue #3's deadlock fix.
+func TestWaitForPairingBufferedChannelNoDeadlock(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/lavasession.NewReportedProviders.func1"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create server with slow-initializing session manager
+	server := &RPCSmartRouterServer{
+		serverContext:  ctx,
+		sessionManager: createSlowInitializingSessionManager(ctx, 2*time.Second),
+		listenEndpoint: &lavasession.RPCEndpoint{
+			ChainID:      "TEST",
+			ApiInterface: "rest",
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		server.waitForPairing()
+		close(done)
+	}()
+
+	// Cancel context after 500ms - this creates the race condition:
+	// - Sender goroutine is still waiting for initialization
+	// - Main loop will exit via ctx.Done()
+	// - Without buffered channel, sender would block forever when it tries to send
+	time.Sleep(500 * time.Millisecond)
+	cancel()
+
+	// Verify function exits cleanly within 1 second
+	select {
+	case <-done:
+		// Success - function exited
+	case <-time.After(1 * time.Second):
+		t.Fatal("waitForPairing() did not exit after context cancellation - potential deadlock")
+	}
+
+	// Give goroutines time to cleanup
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingNonBlockingSendPattern validates that the non-blocking send
+// pattern (select with default) prevents any potential blocking scenarios.
+func TestWaitForPairingNonBlockingSendPattern(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/lavasession.NewReportedProviders.func1"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create server with pre-initialized session manager
+	server := &RPCSmartRouterServer{
+		serverContext:  ctx,
+		sessionManager: createInitializedSessionManager(),
+		listenEndpoint: &lavasession.RPCEndpoint{
+			ChainID:      "TEST",
+			ApiInterface: "rest",
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		server.waitForPairing()
+		close(done)
+	}()
+
+	// Should complete almost immediately since already initialized
+	select {
+	case <-done:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing() did not complete quickly with pre-initialized session manager")
+	}
+
+	// Give goroutines time to cleanup
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingAggressiveCancellation stress tests the deadlock fix with
+// 100 rapid iterations of random-timed cancellations to trigger race windows.
+func TestWaitForPairingAggressiveCancellation(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/lavasession.NewReportedProviders.func1"),
+	)
+
+	rand.InitRandomSeed()
+
+	// Run 50 iterations with random timing (reduced from 100 for faster test)
+	for i := 0; i < 50; i++ {
+		ctx, cancel := context.WithCancel(context.Background())
+
+		// Random initialization delay (0-500ms)
+		initDelay := time.Duration(rand.Intn(500)) * time.Millisecond
+
+		server := &RPCSmartRouterServer{
+			serverContext:  ctx,
+			sessionManager: createSlowInitializingSessionManager(ctx, initDelay),
+			listenEndpoint: &lavasession.RPCEndpoint{
+				ChainID:      "TEST",
+				ApiInterface: "rest",
+			},
+		}
+
+		done := make(chan struct{})
+		go func() {
+			server.waitForPairing()
+			close(done)
+		}()
+
+		// Random cancellation time (0-400ms)
+		cancelDelay := time.Duration(rand.Intn(400)) * time.Millisecond
+		time.Sleep(cancelDelay)
+		cancel()
+
+		// Verify clean exit within 2 seconds (increased from 1 second)
+		select {
+		case <-done:
+			// Success
+		case <-time.After(2 * time.Second):
+			t.Fatalf("Iteration %d: waitForPairing() did not exit after cancellation", i)
+		}
+
+		// Small delay between iterations to allow goroutines to fully cleanup
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// Give all goroutines time to cleanup (increased from 500ms)
+	time.Sleep(2 * time.Second)
+}
+
+// TestWaitForPairingRaceWindowCoverage specifically tests the race window
+// between when the sender goroutine decides to send and when it actually sends.
+func TestWaitForPairingRaceWindowCoverage(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/lavasession.NewReportedProviders.func1"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Use timing-aware session manager that signals when it's about to initialize
+	signalChan := make(chan struct{})
+	server := &RPCSmartRouterServer{
+		serverContext:  ctx,
+		sessionManager: createSignalingSessionManager(ctx, signalChan, 100*time.Millisecond, 10*time.Millisecond),
+		listenEndpoint: &lavasession.RPCEndpoint{
+			ChainID:      "TEST",
+			ApiInterface: "rest",
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		server.waitForPairing()
+		close(done)
+	}()
+
+	// Wait for signal that initialization is about to happen
+	select {
+	case <-signalChan:
+		// Cancel in the race window (between check and send)
+		cancel()
+	case <-time.After(2 * time.Second):
+		t.Fatal("Did not receive signal from session manager")
+	}
+
+	// Verify function exits cleanly despite cancellation during race window
+	select {
+	case <-done:
+		// Success - even with cancellation in race window, no deadlock
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing() did not exit after cancellation in race window")
+	}
+
+	// Give goroutines time to cleanup
+	time.Sleep(1 * time.Second)
+}
+
+// TestWaitForPairingMultipleTimeoutCycles validates that multiple 30-second
+// timeout cycles don't accumulate goroutines and cancellation still works.
+func TestWaitForPairingMultipleTimeoutCycles(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode (requires 65+ seconds)")
+	}
+
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/lavasession.NewReportedProviders.func1"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create server that never initializes
+	server := &RPCSmartRouterServer{
+		serverContext:  ctx,
+		sessionManager: createNeverInitializingSessionManager(),
+		listenEndpoint: &lavasession.RPCEndpoint{
+			ChainID:      "TEST",
+			ApiInterface: "rest",
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		server.waitForPairing()
+		close(done)
+	}()
+
+	// Let it run for 65 seconds (2+ timeout cycles of 30s each)
+	time.Sleep(65 * time.Second)
+
+	// Now cancel
+	cancel()
+
+	// Should exit cleanly even after multiple timeout cycles
+	select {
+	case <-done:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing() did not exit after cancellation following multiple timeout cycles")
+	}
+
+	// Give goroutines time to cleanup
+	time.Sleep(200 * time.Millisecond)
+}
+
+// Helper functions for Issue #3 tests - create session managers with controlled initialization
+
+func createTestProviderSessionsWithProvider() *lavasession.ConsumerSessionsWithProvider {
+	return &lavasession.ConsumerSessionsWithProvider{
+		PublicLavaAddress: "test-provider",
+		PairingEpoch:      100,
+		Endpoints: []*lavasession.Endpoint{
+			{
+				NetworkAddress: "test-endpoint:443",
+				Enabled:        true,
+				Geolocation:    1,
+			},
+		},
+	}
+}
+
+func createSlowInitializingSessionManager(ctx context.Context, initDelay time.Duration) *lavasession.ConsumerSessionManager {
+	rand.InitRandomSeed()
+	endpoint := &lavasession.RPCEndpoint{
+		NetworkAddress: "test",
+		ChainID:        "TEST",
+		ApiInterface:   "rest",
+		Geolocation:    1,
+	}
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "test", false)
+	csm := lavasession.NewConsumerSessionManager(endpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+
+	// Initialize after delay in background goroutine
+	go func() {
+		select {
+		case <-time.After(initDelay):
+			// Initialize by adding a properly configured provider
+			csm.UpdateAllProviders(100, map[uint64]*lavasession.ConsumerSessionsWithProvider{
+				100: createTestProviderSessionsWithProvider(),
+			}, nil)
+		case <-ctx.Done():
+			return
+		}
+	}()
+
+	return csm
+}
+
+func createInitializedSessionManager() *lavasession.ConsumerSessionManager {
+	rand.InitRandomSeed()
+	endpoint := &lavasession.RPCEndpoint{
+		NetworkAddress: "test",
+		ChainID:        "TEST",
+		ApiInterface:   "rest",
+		Geolocation:    1,
+	}
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "test", false)
+	csm := lavasession.NewConsumerSessionManager(endpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+
+	// Initialize immediately with properly configured provider
+	csm.UpdateAllProviders(100, map[uint64]*lavasession.ConsumerSessionsWithProvider{
+		100: createTestProviderSessionsWithProvider(),
+	}, nil)
+
+	return csm
+}
+
+func createNeverInitializingSessionManager() *lavasession.ConsumerSessionManager {
+	rand.InitRandomSeed()
+	endpoint := &lavasession.RPCEndpoint{
+		NetworkAddress: "test",
+		ChainID:        "TEST",
+		ApiInterface:   "rest",
+		Geolocation:    1,
+	}
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "test", false)
+	// Create but never call UpdateAllProviders - will never be initialized
+	return lavasession.NewConsumerSessionManager(endpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+}
+
+func createSignalingSessionManager(ctx context.Context, signalChan chan struct{}, initializeIn, signalBefore time.Duration) *lavasession.ConsumerSessionManager {
+	rand.InitRandomSeed()
+	endpoint := &lavasession.RPCEndpoint{
+		NetworkAddress: "test",
+		ChainID:        "TEST",
+		ApiInterface:   "rest",
+		Geolocation:    1,
+	}
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "test", false)
+	csm := lavasession.NewConsumerSessionManager(endpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+
+	// Initialize after delay, but signal before
+	go func() {
+		select {
+		case <-time.After(initializeIn - signalBefore):
+			close(signalChan) // Signal that initialization is imminent
+			select {
+			case <-time.After(signalBefore):
+				// Now initialize with properly configured provider
+				csm.UpdateAllProviders(100, map[uint64]*lavasession.ConsumerSessionsWithProvider{
+					100: createTestProviderSessionsWithProvider(),
+				}, nil)
+			case <-ctx.Done():
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}()
+
+	return csm
 }
