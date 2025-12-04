@@ -3,6 +3,7 @@ package rpcsmartrouter
 import (
 	"context"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -901,4 +903,262 @@ func (m *MockProtocolMessage) GetBlockedProviders() []string {
 
 func (m *MockProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	return false
+}
+
+// ============================================================================
+// Tests for Issue #1: Goroutine Leak in waitForPairing()
+// ============================================================================
+
+// TestWaitForPairingContextCancellation tests that waitForPairing exits when context is cancelled
+// This is the critical test for Issue #1: Goroutine Leak
+func TestWaitForPairingContextCancellation(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	// Create RPC smart router server with minimal setup
+	rpcss := &RPCSmartRouterServer{
+		sessionManager: &lavasession.ConsumerSessionManager{},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Start waitForPairing in a goroutine
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// Test the actual waitForPairing function
+		rpcss.waitForPairing(ctx)
+	}()
+
+	// Cancel context after a short delay
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+
+	// Wait for function to return with timeout
+	select {
+	case <-done:
+		// Success - function returned
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing did not exit after context cancellation")
+	}
+
+	// Give goroutines time to clean up (wait longer for ticker cleanup)
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingNoInitialization tests behavior when initialization never completes
+// This tests that the function can be cancelled even after waiting for a while
+func TestWaitForPairingNoInitialization(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	// Create RPC smart router server with session manager that will never initialize
+	rpcss := &RPCSmartRouterServer{
+		sessionManager: &lavasession.ConsumerSessionManager{},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Start waitForPairing
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		rpcss.waitForPairing(ctx)
+	}()
+
+	// Let it wait for a bit, then cancel
+	time.Sleep(500 * time.Millisecond)
+	cancel()
+
+	// Wait for completion - should exit via cancellation
+	select {
+	case <-done:
+		// Success - function exited via context cancellation
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing did not exit after context cancellation")
+	}
+
+	// Give goroutines time to clean up
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingRapidStartStop tests rapid start/stop cycles for memory leaks
+func TestWaitForPairingRapidStartStop(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	// Run 50 rapid start/stop cycles
+	for i := 0; i < 50; i++ {
+		rpcss := &RPCSmartRouterServer{
+			sessionManager: &lavasession.ConsumerSessionManager{},
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			rpcss.waitForPairing(ctx)
+		}()
+
+		// Cancel immediately
+		cancel()
+
+		// Wait for completion
+		select {
+		case <-done:
+			// Success
+		case <-time.After(500 * time.Millisecond):
+			t.Fatalf("Iteration %d: waitForPairing did not exit", i)
+		}
+	}
+
+	// Give all goroutines time to clean up (wait longer for ticker cleanup)
+	time.Sleep(300 * time.Millisecond)
+}
+
+// TestWaitForPairingLongWait tests that waiting for extended periods works correctly
+func TestWaitForPairingLongWait(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test")
+	}
+
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	rpcss := &RPCSmartRouterServer{
+		sessionManager: &lavasession.ConsumerSessionManager{},
+		listenEndpoint: &lavasession.RPCEndpoint{ChainID: "test-chain", ApiInterface: "jsonrpc"},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start waitForPairing
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		rpcss.waitForPairing(ctx)
+	}()
+
+	// Wait for 35 seconds (past the 30s warning), then cancel
+	time.Sleep(35 * time.Second)
+	cancel()
+
+	// Wait for function to exit
+	select {
+	case <-done:
+		// Success - function exited after cancel
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing did not exit after context cancellation")
+	}
+
+	// Give goroutines time to clean up
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingCancelDuringWait tests cancellation during the 30s wait loop
+func TestWaitForPairingCancelDuringWait(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	rpcss := &RPCSmartRouterServer{
+		sessionManager: &lavasession.ConsumerSessionManager{},
+		listenEndpoint: &lavasession.RPCEndpoint{ChainID: "test-chain", ApiInterface: "jsonrpc"},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		rpcss.waitForPairing(ctx)
+	}()
+
+	// Cancel after 5 seconds (during the 30s wait loop)
+	time.Sleep(5 * time.Second)
+	cancel()
+
+	// Wait for function to return
+	select {
+	case <-done:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForPairing did not exit after cancellation during wait loop")
+	}
+
+	// Give goroutines time to clean up (wait longer for ticker cleanup)
+	time.Sleep(200 * time.Millisecond)
+}
+
+// TestWaitForPairingConcurrentCalls tests multiple concurrent calls to waitForPairing
+// This verifies that the fix handles concurrent router startups correctly
+func TestWaitForPairingConcurrentCalls(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+	)
+
+	const concurrentCalls = 10
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Create server instances
+	var wg sync.WaitGroup
+	wg.Add(concurrentCalls)
+
+	for i := 0; i < concurrentCalls; i++ {
+		go func() {
+			defer wg.Done()
+			rpcss := &RPCSmartRouterServer{
+				sessionManager: &lavasession.ConsumerSessionManager{},
+			}
+			rpcss.waitForPairing(ctx)
+		}()
+	}
+
+	// Let them run briefly
+	time.Sleep(100 * time.Millisecond)
+
+	// Cancel all contexts
+	cancel()
+
+	// Wait for all to complete with timeout
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Success - all goroutines exited
+	case <-time.After(3 * time.Second):
+		t.Fatal("Not all concurrent waitForPairing calls exited after context cancellation")
+	}
+
+	// Give goroutines time to clean up
+	time.Sleep(300 * time.Millisecond)
 }
