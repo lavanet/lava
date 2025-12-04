@@ -25,6 +25,7 @@ import (
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -299,12 +300,33 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 				return
 			}
 		} else if err == nil {
+			// Now wait for validators to be registered
+			lt.waitForValidators(timeout)
 			return
 		} else {
 			panic(err)
 		}
 	}
 	panic("Lava Check Failed")
+}
+
+func (lt *lavaTest) waitForValidators(timeout time.Duration) {
+	stakingQueryClient := stakingtypes.NewQueryClient(lt.grpcConn)
+
+	for start := time.Now(); time.Since(start) < timeout; {
+		// Try to get validators
+		validatorsResp, err := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
+		if err == nil && validatorsResp != nil && len(validatorsResp.Validators) > 0 {
+			utils.LavaFormatInfo("Validators registered")
+			return
+		}
+
+		utils.LavaFormatInfo("Waiting for validators to be registered")
+		if err := contextSleep(context.Background(), time.Second*5); err != nil {
+			return
+		}
+	}
+	panic("Validators not registered within timeout")
 }
 
 func (lt *lavaTest) stakeLava(ctx context.Context) {
