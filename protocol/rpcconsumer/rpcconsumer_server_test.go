@@ -24,8 +24,10 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Context, consumeSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress, providerPublicAddress string, relayer pairingtypes.RelayerClient, specId string, apiInterface string, epoch uint64, requiredResponses int, lavaChainID string) (*RPCConsumerServer, chainlib.ChainParser) {
@@ -917,4 +919,208 @@ func (m *MockProtocolMessage) GetBlockedProviders() []string {
 
 func (m *MockProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	return false
+}
+
+// Mock implementation for Relayer_RelaySubscribeClient used in subscription tests
+type mockRelaySubscribeClient struct {
+	ctx       context.Context
+	replyData []byte
+	delay     time.Duration
+	recvError error
+}
+
+func (m *mockRelaySubscribeClient) Recv() (*pairingtypes.RelayReply, error) {
+	if m.delay > 0 {
+		time.Sleep(m.delay)
+	}
+	if m.recvError != nil {
+		return nil, m.recvError
+	}
+	return &pairingtypes.RelayReply{Data: m.replyData}, nil
+}
+
+func (m *mockRelaySubscribeClient) RecvMsg(msg interface{}) error {
+	if m.delay > 0 {
+		time.Sleep(m.delay)
+	}
+	if m.recvError != nil {
+		return m.recvError
+	}
+	if reply, ok := msg.(*pairingtypes.RelayReply); ok {
+		reply.Data = m.replyData
+	}
+	return nil
+}
+
+func (m *mockRelaySubscribeClient) Context() context.Context {
+	return m.ctx
+}
+
+func (m *mockRelaySubscribeClient) Header() (metadata.MD, error) {
+	return nil, nil
+}
+
+func (m *mockRelaySubscribeClient) Trailer() metadata.MD {
+	return nil
+}
+
+func (m *mockRelaySubscribeClient) CloseSend() error {
+	return nil
+}
+
+func (m *mockRelaySubscribeClient) SendMsg(msg interface{}) error {
+	return nil
+}
+
+// TestGetFirstSubscriptionReplyNoLeakSuccess verifies no goroutine leak on successful subscription
+func TestGetFirstSubscriptionReplyNoLeakSuccess(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+	)
+
+	ctx := context.Background()
+	mockReplyServer := &mockRelaySubscribeClient{
+		ctx:       context.Background(),
+		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
+	}
+
+	server := &RPCConsumerServer{}
+
+	reply, err := server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
+	require.NoError(t, err)
+	require.NotNil(t, reply)
+	require.Equal(t, mockReplyServer.replyData, reply.Data)
+
+	// Give goroutines time to exit
+	time.Sleep(100 * time.Millisecond)
+	// goleak.VerifyNone should pass - no leaked goroutines
+}
+
+// TestGetFirstSubscriptionReplyNoLeakTimeout verifies no goroutine leak when timeout occurs
+// Note: This test uses the actual 10s timeout from common.SubscriptionFirstReplyTimeout
+// For CI/CD, consider using -short flag to skip this test if runtime is a concern
+func TestGetFirstSubscriptionReplyNoLeakTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping timeout test in short mode (requires 10+ seconds)")
+	}
+
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+	)
+
+	ctx := context.Background()
+	mockReplyServer := &mockRelaySubscribeClient{
+		ctx:       context.Background(),
+		delay:     15 * time.Second, // Longer than 10s timeout
+		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
+	}
+
+	server := &RPCConsumerServer{}
+
+	// This will timeout but should not leak goroutines
+	_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
+
+	// Wait for timeout goroutine to exit (timeout is 10s, plus buffer)
+	time.Sleep(500 * time.Millisecond)
+	// goleak.VerifyNone should pass - goroutine exited after timeout
+}
+
+// TestGetFirstSubscriptionReplyNoLeakEarlyError verifies no goroutine leak on early error
+func TestGetFirstSubscriptionReplyNoLeakEarlyError(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+	)
+
+	ctx := context.Background()
+	cancelledCtx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel context immediately
+
+	mockReplyServer := &mockRelaySubscribeClient{
+		ctx: cancelledCtx,
+	}
+
+	server := &RPCConsumerServer{}
+
+	_, err := server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "reply server context canceled")
+
+	// Give defer time to signal channel
+	time.Sleep(100 * time.Millisecond)
+	// goleak.VerifyNone should pass - defer signaled channel, goroutine exited
+}
+
+// TestGetFirstSubscriptionReplyNoDataRace verifies no data race with concurrent access
+func TestGetFirstSubscriptionReplyNoDataRace(t *testing.T) {
+	// Run with: go test -race
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+	)
+
+	ctx := context.Background()
+
+	// Run multiple times to increase race detection likelihood
+	for i := 0; i < 50; i++ {
+		mockReplyServer := &mockRelaySubscribeClient{
+			ctx:       context.Background(),
+			replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
+			delay:     time.Duration(i%10) * time.Millisecond, // Vary timing
+		}
+
+		server := &RPCConsumerServer{}
+		_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	// Race detector should not report any races
+}
+
+// TestGetFirstSubscriptionReplyContextCancellation verifies goroutine exits on context cancellation
+func TestGetFirstSubscriptionReplyContextCancellation(t *testing.T) {
+	defer goleak.VerifyNone(t,
+		goleak.IgnoreTopFunction("github.com/desertbit/timer.timerRoutine"),
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*defaultPolicy[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/dgraph-io/ristretto/v2.(*Cache[...]).processItems"),
+		goleak.IgnoreTopFunction("github.com/lavanet/lava/v5/protocol/chainlib.(*TendermintRpcChainListener).Serve"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mockReplyServer := &mockRelaySubscribeClient{
+		ctx:       context.Background(),
+		delay:     500 * time.Millisecond, // Long delay
+		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
+	}
+
+	server := &RPCConsumerServer{}
+
+	// Start the call in a goroutine
+	go func() {
+		_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
+	}()
+
+	// Cancel context after a short time
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+
+	// Wait for goroutine to exit via ctx.Done()
+	time.Sleep(150 * time.Millisecond)
+	// goleak.VerifyNone should pass - goroutine respected context cancellation
 }
