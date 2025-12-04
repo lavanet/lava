@@ -68,6 +68,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		epoch: {
 			PublicLavaAddress: providerPublicAddress,
 			PairingEpoch:      epoch,
+			MaxComputeUnits:   10000, // Set a reasonable max compute units for testing
 			Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayer}}}},
 		},
 	}, nil)
@@ -151,6 +152,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 	singleConsumerSession.Parent = &lavasession.ConsumerSessionsWithProvider{
 		PublicLavaAddress: providerPublicAddress,
 		PairingEpoch:      100,
+		MaxComputeUnits:   10000, // Set a reasonable max compute units for testing
 		Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayerMock}}}},
 	}
 	// Create RelayResult
