@@ -1288,6 +1288,11 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 			common.LAVA_LB_UNIQUE_ID_HEADER:   singleConsumerSession.EndpointConnection.GetLbUniqueId(),
 		})
 
+		// Add compression support header if enabled
+		if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
+			metadataAdd.Set(common.LavaCompressionSupportHeader, "true")
+		}
+
 		utils.LavaFormatTrace("Sending relay to provider",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
@@ -1308,8 +1313,21 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 		}
 
 		relaySentTime := time.Now()
-		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+		var responseHeader metadata.MD
+		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
+
+		// Decompress response if compressed
+		if reply != nil && reply.Data != nil {
+			if lavaCompressionValues := responseHeader.Get(common.LavaCompressionHeader); len(lavaCompressionValues) > 0 && lavaCompressionValues[0] == common.LavaCompressionGzip {
+				decompressedData, decompressErr := common.DecompressData(reply.Data)
+				if decompressErr != nil {
+					utils.LavaFormatError("Failed to decompress response", decompressErr, utils.LogAttr("GUID", ctx))
+					return nil, 0, decompressErr, false
+				}
+				reply.Data = decompressedData
+			}
+		}
 
 		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)
 		if len(providerUniqueId) > 0 {
