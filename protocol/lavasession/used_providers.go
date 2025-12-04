@@ -162,23 +162,25 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 	defer up.lock.Unlock()
 	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
 
+	// Track errored providers for debugging
 	if err != nil {
 		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
-		if shouldRetryWithThisError(err) {
-			_, ok := uniqueUsedProviders.blockOnSyncLoss[provider]
-			if !ok && IsSessionSyncLoss(err) {
-				uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
-				utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
-			} else {
-				up.setUnwanted(uniqueUsedProviders, provider)
-			}
-		} else {
-			up.setUnwanted(uniqueUsedProviders, provider)
-		}
+	}
+
+	// Check if this is a NEW sync loss that should be retried
+	_, alreadyBlocked := uniqueUsedProviders.blockOnSyncLoss[provider]
+	isNewSyncLoss := err != nil && shouldRetryWithThisError(err) && !alreadyBlocked
+
+	if isNewSyncLoss {
+		// First sync loss for this provider - allow one retry
+		uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
+		utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
 	} else {
-		// we got a valid response from this provider, no reason to keep using it
+		// All other cases: mark provider as unwanted
+		// This includes: no error, non-retryable errors, and subsequent sync losses
 		up.setUnwanted(uniqueUsedProviders, provider)
 	}
+
 	delete(uniqueUsedProviders.providers, provider)
 }
 
