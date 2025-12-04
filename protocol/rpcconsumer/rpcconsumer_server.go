@@ -23,19 +23,22 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+
+	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
+
+	// Data Reliability disabled - Phase 2: removed statetracker import (was used for DisableDR)
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
-	"github.com/lavanet/lava/v5/utils/rand"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+
+	// Data Reliability disabled - Phase 2: removed rand import (was used for DR)
+	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -70,16 +73,19 @@ type CancelableContextHolder struct {
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
-	consumerProcessGuid            string
-	chainParser                    chainlib.ChainParser
-	consumerSessionManager         *lavasession.ConsumerSessionManager
-	listenEndpoint                 *lavasession.RPCEndpoint
-	rpcConsumerLogs                *metrics.RPCConsumerLogs
-	cache                          *performance.Cache
-	privKey                        *btcec.PrivateKey
-	consumerTxSender               ConsumerTxSender
-	requiredResponses              int
-	finalizationConsensus          finalizationconsensus.FinalizationConsensusInf
+	consumerProcessGuid    string
+	chainParser            chainlib.ChainParser
+	consumerSessionManager *lavasession.ConsumerSessionManager
+	listenEndpoint         *lavasession.RPCEndpoint
+	rpcConsumerLogs        *metrics.RPCConsumerLogs
+	cache                  *performance.Cache
+	privKey                *btcec.PrivateKey
+	consumerTxSender       ConsumerTxSender
+	requiredResponses      int
+	// Data Reliability disabled - Phase 2: removed finalizationConsensus field
+	// Added latest block estimator for archive extension detection (non-DR)
+	latestBlockHeight              atomic.Uint64
+	latestBlockEstimator           *relaycore.LatestBlockEstimator
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            relaycore.Consistency
@@ -95,7 +101,7 @@ type RPCConsumerServer struct {
 }
 
 type ConsumerTxSender interface {
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error
+	// Data Reliability disabled - Phase 2: removed TxConflictDetection method
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetLatestVirtualEpoch() uint64
 }
@@ -103,7 +109,7 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
-	finalizationConsensus finalizationconsensus.FinalizationConsensusInf,
+	// Data Reliability disabled - Phase 2: removed finalizationConsensus parameter
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -128,7 +134,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.rpcConsumerLogs = rpcConsumerLogs
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
-	rpccs.finalizationConsensus = finalizationConsensus
+	// Data Reliability disabled - Phase 2: removed finalizationConsensus assignment
 	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
@@ -137,6 +143,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpccs.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
@@ -317,6 +324,10 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
 						utils.LogAttr("provider address", relayResult.ProviderInfo.ProviderAddress),
 					)
+					// Update our simple block height tracker for archive extension detection
+					if relayResult.Reply.LatestBlock > 0 {
+						rpccs.updateLatestBlockHeight(uint64(relayResult.Reply.LatestBlock), relayResult.ProviderInfo.ProviderAddress)
+					}
 					rpccs.relaysMonitor.LogRelay()
 					success = true
 					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
@@ -359,12 +370,38 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	latestKnownBlock, numProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
-	if numProviders > 0 && latestKnownBlock > 0 {
-		return uint64(latestKnownBlock)
+	// Archive extension auto-detection requires the same estimation logic we previously sourced from finalizationConsensus.
+	if rpccs.latestBlockEstimator != nil {
+		latestKnownBlock, numProviders := rpccs.latestBlockEstimator.Estimate(rpccs.chainParser)
+		if numProviders > 0 && latestKnownBlock > 0 {
+			return uint64(latestKnownBlock)
+		}
 	}
+
+	if latest := rpccs.latestBlockHeight.Load(); latest > 0 {
+		return latest
+	}
+
 	utils.LavaFormatWarning("no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
 	return 0
+}
+
+// updateLatestBlockHeight updates the latest block height and records the provider observation.
+// This feeds archive extension auto-detection (non-DR functionality).
+func (rpccs *RPCConsumerServer) updateLatestBlockHeight(blockHeight uint64, providerAddress string) {
+	for {
+		current := rpccs.latestBlockHeight.Load()
+		if blockHeight <= current {
+			break // Only update if new block is higher
+		}
+		if rpccs.latestBlockHeight.CompareAndSwap(current, blockHeight) {
+			break
+		}
+	}
+
+	if providerAddress != "" && rpccs.latestBlockEstimator != nil {
+		rpccs.latestBlockEstimator.Record(providerAddress, int64(blockHeight))
+	}
 }
 
 func (rpccs *RPCConsumerServer) SendRelay(
@@ -1005,6 +1042,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							StatusCode:   200,
 							ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
 						}
+						if reply.LatestBlock > 0 {
+							rpccs.updateLatestBlockHeight(uint64(reply.LatestBlock), "")
+						}
 						relayProcessor.SetResponse(&relaycore.RelayResponse{
 							RelayResult: relayResult,
 							Err:         nil,
@@ -1248,12 +1288,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// get here only if performed a regular relay successfully
-			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
-			if !rpccs.chainParser.ParseDirectiveEnabled() {
-				expectedBH = int64(math.MaxInt64)
-			}
+			// Data Reliability disabled - Phase 2: removed finalizationConsensus.GetExpectedBlockHeight
+			expectedBH := int64(math.MaxInt64) // Default to max since we don't track expected block height anymore
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
+			// Update our simple block height tracker for archive extension detection
+			if latestBlock > 0 {
+				rpccs.updateLatestBlockHeight(uint64(latestBlock), providerPublicAddress)
+			}
 			// Only check block gap if expectedBH is not the sentinel value (MaxInt64)
 			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
@@ -1670,6 +1712,13 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
 	latestBlock := relayResult.Reply.LatestBlock
+	if latestBlock > 0 {
+		providerAddress := ""
+		if singleConsumerSession != nil && singleConsumerSession.Parent != nil {
+			providerAddress = singleConsumerSession.Parent.PublicLavaAddress
+		}
+		rpccs.updateLatestBlockHeight(uint64(latestBlock), providerAddress)
+	}
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession, latestBlock)
 	return err
 }
@@ -1773,125 +1822,10 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *relaycore.RelayProcessor) error {
-	if statetracker.DisableDR {
-		return nil
-	}
-	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(protocolMessage)
-	// Wait another relayTimeout duration to maybe get additional relay results
-	if relayProcessor.GetUsedProviders().CurrentlyUsed() > 0 {
-		time.Sleep(expectedRelayTimeout)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	specCategory := protocolMessage.GetApi().Category
-	if !specCategory.Deterministic {
-		return nil // disabled for this spec and requested block so no data reliability messages
-	}
-
-	if rand.Uint32() > dataReliabilityThreshold {
-		// decided not to do data reliability
-		return nil
-	}
-	// only need to send another relay if we don't have enough replies
-	results := []common.RelayResult{}
-	for _, result := range relayProcessor.NodeResults() {
-		if result.Finalized {
-			results = append(results, result)
-		}
-	}
-	if len(results) == 0 {
-		// nothing to check
-		return nil
-	}
-
-	reqBlock, _ := protocolMessage.RequestedBlock()
-	if reqBlock <= spectypes.NOT_APPLICABLE {
-		if reqBlock <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
-		}
-		// does not support sending data reliability requests on a block that is not specific
-		return nil
-	}
-	relayResult := results[0]
-	if len(results) < 2 {
-		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, protocolMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		userData := protocolMessage.GetUserData()
-		//  We create new protocol message from the old one, but with a new instance of relay request data.
-		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
-
-		// Get quorum parameters from the data reliability protocol message
-		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
-		if err != nil {
-			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
-		}
-
-		// Validate that quorum min doesn't exceed available providers
-		if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-			return utils.LavaFormatError("requested quorum min exceeds available providers for data reliability",
-				lavasession.PairingListEmptyError,
-				utils.LogAttr("quorumMin", quorumParams.Min),
-				utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
-				utils.LogAttr("GUID", ctx))
-		}
-
-		relayProcessorDataReliability := relaycore.NewRelayProcessor(
-			ctx,
-			quorumParams,
-			rpccs.consumerConsistency,
-			rpccs.rpcConsumerLogs,
-			rpccs,
-			rpccs.relayRetriesManager,
-			NewRelayStateMachine(ctx, relayProcessor.GetUsedProviders(), rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
-			rpccs.consumerSessionManager.GetQoSManager(),
-		)
-		err = rpccs.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
-		if err != nil {
-			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
-		}
-
-		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-		defer cancel()
-		err = relayProcessorDataReliability.WaitForResults(processingCtx)
-		if err != nil {
-			return utils.LavaFormatWarning("failed sending data reliability relays", err, utils.Attribute{Key: "relayProcessorDataReliability", Value: relayProcessorDataReliability})
-		}
-		relayResultsDataReliability := relayProcessorDataReliability.NodeResults()
-		resultsDataReliability := []common.RelayResult{}
-		for _, result := range relayResultsDataReliability {
-			if result.Finalized {
-				resultsDataReliability = append(resultsDataReliability, result)
-			}
-		}
-		if len(resultsDataReliability) == 0 {
-			utils.LavaFormatDebug("skipping data reliability check since responses from second batch was not finalized", utils.Attribute{Key: "results", Value: relayResultsDataReliability})
-			return nil
-		}
-		results = append(results, resultsDataReliability...)
-	}
-	for i := 0; i < len(results)-1; i++ {
-		relayResult := results[i]
-		relayResultDataReliability := results[i+1]
-		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpccs.chainParser)
-		if conflict != nil {
-			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
-			if len(protocolMessage.GetExtensions()) == 0 {
-				err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, relayResultDataReliability.ConflictHandler)
-				if err != nil {
-					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
-				}
-				if rpccs.reporter != nil {
-					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
-					rpccs.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
-				}
-			}
-		} else {
-			utils.LavaFormatDebug("[+] verified relay successfully with data reliability", utils.LogAttr("api", protocolMessage.GetApi().Name))
-		}
-	}
-	return nil
-}
+// Data Reliability disabled - Phase 2 removal
+// DELETED: sendDataReliabilityRelayIfApplicable() function (~120 lines)
+// This function was responsible for sending verification relays to secondary providers
+// and detecting conflicts between provider responses
 
 func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()

@@ -16,7 +16,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	sdkerrors "cosmossdk.io/errors"
+	// Data Reliability disabled - Phase 2: removed sdkerrors import (was used for DR verification)
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -24,17 +24,20 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
+
+	// Data Reliability disabled - Phase 2: removed finalizationverification import
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
+
+	// Data Reliability disabled - Phase 2: removed statetracker import (was used for DisableDR)
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
-	"github.com/lavanet/lava/v5/utils/rand"
+
+	// Data Reliability disabled - Phase 2: removed rand import (was used for DR)
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
@@ -88,6 +91,8 @@ type RPCSmartRouterServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	latestBlockHeight              atomic.Uint64
+	latestBlockEstimator           *relaycore.LatestBlockEstimator
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -125,6 +130,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpcss.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
 	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, refererData, wsSubscriptionManager)
 	if err != nil {
 		return err
@@ -305,6 +311,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
 						utils.LogAttr("provider address", relayResult.ProviderInfo.ProviderAddress),
 					)
+					if relayResult.Reply.LatestBlock > 0 {
+						rpcss.updateLatestBlockHeight(uint64(relayResult.Reply.LatestBlock), relayResult.ProviderInfo.ProviderAddress)
+					}
 					rpcss.relaysMonitor.LogRelay()
 					success = true
 					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
@@ -347,9 +356,35 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays 
 }
 
 func (rpcss *RPCSmartRouterServer) getLatestBlock() uint64 {
-	// Smart router doesn't track expected block height
-	// Return 0 to use default behavior
+	if rpcss.latestBlockEstimator != nil {
+		latestKnownBlock, numProviders := rpcss.latestBlockEstimator.Estimate(rpcss.chainParser)
+		if numProviders > 0 && latestKnownBlock > 0 {
+			return uint64(latestKnownBlock)
+		}
+	}
+
+	if latest := rpcss.latestBlockHeight.Load(); latest > 0 {
+		return latest
+	}
+
+	utils.LavaFormatWarning("smart router has no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
 	return 0
+}
+
+func (rpcss *RPCSmartRouterServer) updateLatestBlockHeight(blockHeight uint64, providerAddress string) {
+	for {
+		current := rpcss.latestBlockHeight.Load()
+		if blockHeight <= current {
+			break
+		}
+		if rpcss.latestBlockHeight.CompareAndSwap(current, blockHeight) {
+			break
+		}
+	}
+
+	if providerAddress != "" && rpcss.latestBlockEstimator != nil {
+		rpcss.latestBlockEstimator.Record(providerAddress, int64(blockHeight))
+	}
 }
 
 func (rpcss *RPCSmartRouterServer) SendRelay(
@@ -989,6 +1024,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 							StatusCode:   200,
 							ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
 						}
+						if reply.LatestBlock > 0 {
+							rpcss.updateLatestBlockHeight(uint64(reply.LatestBlock), "")
+						}
 						relayProcessor.SetResponse(&relaycore.RelayResponse{
 							RelayResult: relayResult,
 							Err:         nil,
@@ -1237,6 +1275,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			numOfProviders := 1 // Smart router always has static providers
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
+			if latestBlock > 0 {
+				providerAddr := providerPublicAddress
+				if singleConsumerSession != nil && singleConsumerSession.Parent != nil && singleConsumerSession.Parent.PublicLavaAddress != "" {
+					providerAddr = singleConsumerSession.Parent.PublicLavaAddress
+				}
+				rpcss.updateLatestBlockHeight(uint64(latestBlock), providerAddr)
+			}
 			// Skip block gap check for smart router since expectedBH is always MaxInt64
 			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
@@ -1546,7 +1591,7 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 	originalRequestBlock := relayRequest.RelayData.RequestBlock
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpcss.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, _ := rpcss.chainParser.ChainBlockStats()
 
 	// Use original request block for finalization check to avoid converting LATEST_BLOCK to actual block numbers
 	isFinalized := spectypes.IsFinalizedBlock(originalRequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
@@ -1573,21 +1618,8 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
-	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpcss.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider && rpcss.chainParser.ParseDirectiveEnabled() {
-		// TODO: allow static providers to detect hash mismatches,
-		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		_, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpcss.SmartRouterAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
-		if err != nil {
-			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
-				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider), utils.LogAttr("GUID", ctx))
-			}
-			return 0, err, false
-		}
-
-		// Smart router doesn't track finalization consensus - no special handling needed
-	}
+	// Data Reliability disabled - Phase 2: removed finalization verification block
+	// Previously verified provider finalization data for non-static providers
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
 }
@@ -1634,6 +1666,13 @@ func (rpcss *RPCSmartRouterServer) relaySubscriptionInner(ctx context.Context, h
 	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
 	latestBlock := relayResult.Reply.LatestBlock
+	if latestBlock > 0 {
+		providerAddr := ""
+		if singleConsumerSession != nil && singleConsumerSession.Parent != nil {
+			providerAddr = singleConsumerSession.Parent.PublicLavaAddress
+		}
+		rpcss.updateLatestBlockHeight(uint64(latestBlock), providerAddr)
+	}
 	err = rpcss.sessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession, latestBlock)
 	return err
 }
@@ -1737,136 +1776,8 @@ func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context
 	return &reply, nil
 }
 
-func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *relaycore.RelayProcessor) error {
-	if statetracker.DisableDR {
-		return nil
-	}
-
-	// Data reliability requires at least 2 providers to compare results
-	// Skip if we only have 1 provider to avoid "No pairings available" errors
-	numProviders := rpcss.sessionManager.GetNumberOfValidProviders()
-	if numProviders < 2 {
-		utils.LavaFormatTrace("Skipping data reliability - requires at least 2 providers",
-			utils.LogAttr("availableProviders", numProviders),
-			utils.LogAttr("GUID", ctx))
-		return nil
-	}
-
-	processingTimeout, expectedRelayTimeout := rpcss.getProcessingTimeout(protocolMessage)
-	// Wait another relayTimeout duration to maybe get additional relay results
-	if relayProcessor.GetUsedProviders().CurrentlyUsed() > 0 {
-		time.Sleep(expectedRelayTimeout)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	specCategory := protocolMessage.GetApi().Category
-	if !specCategory.Deterministic {
-		return nil // disabled for this spec and requested block so no data reliability messages
-	}
-
-	if rand.Uint32() > dataReliabilityThreshold {
-		// decided not to do data reliability
-		return nil
-	}
-	// only need to send another relay if we don't have enough replies
-	results := []common.RelayResult{}
-	for _, result := range relayProcessor.NodeResults() {
-		if result.Finalized {
-			results = append(results, result)
-		}
-	}
-	if len(results) == 0 {
-		// nothing to check
-		return nil
-	}
-
-	reqBlock, _ := protocolMessage.RequestedBlock()
-	if reqBlock <= spectypes.NOT_APPLICABLE {
-		if reqBlock <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
-		}
-		// does not support sending data reliability requests on a block that is not specific
-		return nil
-	}
-	relayResult := results[0]
-	if len(results) < 2 {
-		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, protocolMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		userData := protocolMessage.GetUserData()
-		//  We create new protocol message from the old one, but with a new instance of relay request data.
-		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
-
-		// Get quorum parameters from the data reliability protocol message
-		quorumParams, err := dataReliabilityProtocolMessage.GetQuorumParameters()
-		if err != nil {
-			return utils.LavaFormatError("failed to get quorum parameters from data reliability protocol message", err, utils.LogAttr("dataReliabilityProtocolMessage", dataReliabilityProtocolMessage))
-		}
-
-		// Validate that quorum min doesn't exceed available providers
-		if quorumParams.Enabled() && quorumParams.Min > rpcss.sessionManager.GetNumberOfValidProviders() {
-			return utils.LavaFormatError("requested quorum min exceeds available providers for data reliability",
-				lavasession.PairingListEmptyError,
-				utils.LogAttr("quorumMin", quorumParams.Min),
-				utils.LogAttr("availableProviders", rpcss.sessionManager.GetNumberOfValidProviders()),
-				utils.LogAttr("GUID", ctx))
-		}
-
-		relayProcessorDataReliability := relaycore.NewRelayProcessor(
-			ctx,
-			quorumParams,
-			rpcss.smartRouterConsistency,
-			rpcss.rpcSmartRouterLogs,
-			rpcss,
-			rpcss.relayRetriesManager,
-			NewSmartRouterRelayStateMachine(ctx, relayProcessor.GetUsedProviders(), rpcss, dataReliabilityProtocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
-			rpcss.sessionManager.GetQoSManager(),
-		)
-		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
-		if err != nil {
-			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
-		}
-
-		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-		defer cancel()
-		err = relayProcessorDataReliability.WaitForResults(processingCtx)
-		if err != nil {
-			return utils.LavaFormatWarning("failed sending data reliability relays", err, utils.Attribute{Key: "relayProcessorDataReliability", Value: relayProcessorDataReliability})
-		}
-		relayResultsDataReliability := relayProcessorDataReliability.NodeResults()
-		resultsDataReliability := []common.RelayResult{}
-		for _, result := range relayResultsDataReliability {
-			if result.Finalized {
-				resultsDataReliability = append(resultsDataReliability, result)
-			}
-		}
-		if len(resultsDataReliability) == 0 {
-			utils.LavaFormatDebug("skipping data reliability check since responses from second batch was not finalized", utils.Attribute{Key: "results", Value: relayResultsDataReliability})
-			return nil
-		}
-		results = append(results, resultsDataReliability...)
-	}
-	for i := 0; i < len(results)-1; i++ {
-		relayResult := results[i]
-		relayResultDataReliability := results[i+1]
-		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpcss.chainParser)
-		if conflict != nil {
-			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
-			if len(protocolMessage.GetExtensions()) == 0 {
-				// Smart router doesn't report conflicts to blockchain
-				utils.LavaFormatWarning("Data reliability conflict detected in smart router mode", nil,
-					utils.Attribute{Key: "GUID", Value: ctx},
-					utils.Attribute{Key: "conflict", Value: conflict})
-				if rpcss.reporter != nil {
-					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
-					rpcss.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
-				}
-			}
-		} else {
-			utils.LavaFormatDebug("[+] verified relay successfully with data reliability", utils.LogAttr("api", protocolMessage.GetApi().Name))
-		}
-	}
-	return nil
-}
+// Data Reliability disabled - Phase 2 removal:
+// sendDataReliabilityRelayIfApplicable() was removed.
 
 func (rpcss *RPCSmartRouterServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()

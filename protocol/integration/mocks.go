@@ -10,23 +10,22 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
-	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+	// Data Reliability disabled - Phase 2: removed common and finalizationconsensus imports
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
+	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-type TxConflictDetectionMock func(context.Context, *conflicttypes.FinalizationConflict, *conflicttypes.ResponseConflict, common.ConflictHandlerInterface) error
+// Data Reliability disabled - Phase 2: removed TxConflictDetectionMock type
 
 type mockConsumerStateTracker struct {
-	txConflictDetectionMock TxConflictDetectionMock
+	// Data Reliability disabled - Phase 2: removed txConflictDetectionMock field
 }
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
@@ -39,23 +38,13 @@ func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, s
 	return nil
 }
 
-func (m *mockConsumerStateTracker) RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool) {
-}
+// Data Reliability disabled - Phase 2: removed RegisterFinalizationConsensusForUpdates
 
 func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	return nil
 }
 
-func (m *mockConsumerStateTracker) SetTxConflictDetectionWrapper(txConflictDetectionWrapper TxConflictDetectionMock) {
-	m.txConflictDetectionMock = txConflictDetectionWrapper
-}
-
-func (m *mockConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-	if m.txConflictDetectionMock != nil {
-		return m.txConflictDetectionMock(ctx, finalizationConflict, responseConflict, conflictHandler)
-	}
-	return nil
-}
+// Data Reliability disabled - Phase 2: removed TxConflictDetection
 
 func (m *mockConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
 	return &plantypes.Policy{

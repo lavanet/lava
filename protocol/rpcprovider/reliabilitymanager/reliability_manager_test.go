@@ -14,11 +14,11 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
+	// Data Reliability disabled - Phase 2: removed finalizationverification import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
+	// Data Reliability disabled - Phase 2: removed statetracker import
 	testkeeper "github.com/lavanet/lava/v5/testutil/keeper"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -96,8 +96,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
-		require.NoError(t, err)
+		// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 
 		relayResult := &common.RelayResult{
 			Request:      relay,
@@ -129,8 +128,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
-		require.NoError(t, err)
+		// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
 			Reply:        replyDR,
@@ -171,7 +169,9 @@ func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finaliza
 }
 
 func TestFullFlowReliabilityConflict(t *testing.T) {
+	// Data Reliability disabled - Phase 2: skipping conflict detection tests
 	t.Run("test", func(t *testing.T) {
+		t.Skip("Data Reliability disabled - conflict detection tests skipped")
 		specId := "LAV1"
 		ts := chainlib.SetupForTests(t, 3, specId, "../../../")
 		// consumer
@@ -255,8 +255,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
-		require.NoError(t, err)
+		// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 
 		relayResult := &common.RelayResult{
 			Request:      relay,
@@ -299,8 +298,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 
-		_, err = finalizationverification.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
-		require.NoError(t, err)
+		// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
 			Reply:        replyDR,
@@ -314,22 +312,22 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		msg := conflicttypes.NewMsgDetection(consumer_address.String())
 		msg.SetResponseConflict(conflict)
 
-		cb := func() error {
-			_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
-			require.NoError(t, err)
-			return err
-		}
-
-		txm := &txSenderMock{cb: cb}
-
-		consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // report first time
-		require.NoError(t, err)
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // make sure we dont report 2nd time
-		require.NoError(t, err)
-
-		_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.
-		require.Error(t, err)
+		// Data Reliability disabled - Phase 2: removed conflict detection code
+		// cb := func() error {
+		// 	_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
+		// 	require.NoError(t, err)
+		// 	return err
+		// }
+		// txm := &txSenderMock{cb: cb}
+		// consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
+		// err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // report first time
+		// require.NoError(t, err)
+		// err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // make sure we dont report 2nd time
+		// require.NoError(t, err)
+		// _, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.
+		// require.Error(t, err)
+		_ = msg     // suppress unused warning
+		_ = conflict // suppress unused warning
 
 		lastEvent := sdk.UnwrapSDKContext(ts.Ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.Ctx).EventManager().Events())-1]
 		event := terderminttypes.Event(lastEvent)

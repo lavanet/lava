@@ -10,7 +10,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
+
+	// Data Reliability disabled - Phase 2: removed chaintracker import
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -19,36 +20,7 @@ import (
 
 const testGuid = "testGuid"
 
-type RelayFinalizationBlocksHandlerMock struct{}
-
-func (rf *RelayFinalizationBlocksHandlerMock) GetParametersForRelayDataReliability(
-	ctx context.Context,
-	request *pairingtypes.RelayRequest,
-	chainMsg ChainMessage,
-	relayTimeout time.Duration,
-	blockLagForQosSync int64,
-	averageBlockTime time.Duration,
-	blockDistanceToFinalization,
-	blocksInFinalizationData uint32,
-) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
-	return 0, []byte{}, []*chaintracker.BlockStore{}, 0, true, true, nil
-}
-
-func (rf *RelayFinalizationBlocksHandlerMock) BuildRelayFinalizedBlockHashes(
-	ctx context.Context,
-	request *pairingtypes.RelayRequest,
-	reply *pairingtypes.RelayReply,
-	latestBlock int64,
-	requestedHashes []*chaintracker.BlockStore,
-	updatedChainMessage bool,
-	relayTimeout time.Duration,
-	averageBlockTime time.Duration,
-	blockDistanceToFinalization uint32,
-	blocksInFinalizationData uint32,
-	modifiedReqBlock int64,
-) (err error) {
-	return nil
-}
+// Data Reliability disabled - Phase 2: removed RelayFinalizationBlocksHandlerMock struct and methods
 
 func TestSubscriptionManager_HappyFlow(t *testing.T) {
 	playbook := []struct {
@@ -134,8 +106,8 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			mockRpcProvider := &RelayFinalizationBlocksHandlerMock{}
-			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, mockRpcProvider, ts.Providers[0].SK)
+			// Data Reliability disabled - Phase 2: removed mockRpcProvider
+			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			consumerChannel := make(chan *pairingtypes.RelayReply)
 
@@ -279,8 +251,8 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParams(t *t
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			mockRpcProvider := &RelayFinalizationBlocksHandlerMock{}
-			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, mockRpcProvider, ts.Providers[0].SK)
+			// Data Reliability disabled - Phase 2: removed mockRpcProvider
+			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			wg.Add(1)
 			wgAllIds := sync.WaitGroup{}
@@ -407,8 +379,8 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			mockRpcProvider := &RelayFinalizationBlocksHandlerMock{}
-			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, mockRpcProvider, ts.Providers[0].SK)
+			// Data Reliability disabled - Phase 2: removed mockRpcProvider
+			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			wgAllIds := sync.WaitGroup{}
 			wgAllIds.Add(9)

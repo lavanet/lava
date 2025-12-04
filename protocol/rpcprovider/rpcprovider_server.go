@@ -1276,96 +1276,11 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	return reply, nil
 }
 
-func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
-	ctx context.Context,
-	request *pairingtypes.RelayRequest,
-	chainMsg chainlib.ChainMessage,
-	relayTimeout time.Duration,
-	blockLagForQosSync int64,
-	averageBlockTime time.Duration,
-	blockDistanceToFinalization,
-	blocksInFinalizationData uint32,
-) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
-	specificBlock := request.RelayData.RequestBlock
-	if specificBlock < spectypes.LATEST_BLOCK {
-		// cases of EARLIEST, FINALIZED, SAFE
-		// GetLatestBlockData only supports latest relative queries or specific block numbers
-		specificBlock = spectypes.NOT_APPLICABLE
-	}
-
-	// handle consistency, if the consumer requested information we do not have in the state tracker
-
-	latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, relayTimeout, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
-	if err != nil {
-		return 0, nil, nil, 0, false, false, err
-	}
-
-	// get specific block data for caching
-	_, specificRequestedHashes, _, getLatestBlockErr := rpcps.reliabilityManager.GetLatestBlockData(spectypes.NOT_APPLICABLE, spectypes.NOT_APPLICABLE, specificBlock)
-	if getLatestBlockErr == nil && len(specificRequestedHashes) == 1 {
-		requestedBlockHash = []byte(specificRequestedHashes[0].Hash)
-	}
-
-	// TODO: take latestBlock and lastSeenBlock and put the greater one of them
-	updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
-
-	modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
-	if modifiedReqBlock != request.RelayData.RequestBlock {
-		request.RelayData.RequestBlock = modifiedReqBlock
-		updatedChainMessage = true // meaning we can't bring a newer proof
-	}
-	// requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
-	finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, int64(blockDistanceToFinalization))
-	if !finalized && requestedBlockHash == nil && modifiedReqBlock != spectypes.NOT_APPLICABLE {
-		// avoid using cache, but can still service
-		utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "modifiedReqBlock", Value: modifiedReqBlock}, utils.Attribute{Key: "specificBlock", Value: specificBlock})
-	}
-
-	return latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, nil
-}
-
-func (rpcps *RPCProviderServer) BuildRelayFinalizedBlockHashes(
-	ctx context.Context,
-	request *pairingtypes.RelayRequest,
-	reply *pairingtypes.RelayReply,
-	latestBlock int64,
-	requestedHashes []*chaintracker.BlockStore,
-	updatedChainMessage bool,
-	relayTimeout time.Duration,
-	averageBlockTime time.Duration,
-	blockDistanceToFinalization uint32,
-	blocksInFinalizationData uint32,
-	modifiedReqBlock int64,
-) (err error) {
-	// now we need to provide the proof for the response
-	proofBlock := latestBlock
-	if !updatedChainMessage || len(requestedHashes) == 0 {
-		// we can fetch a more advanced finalization proof, than we fetched previously
-		proofBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return err
-		}
-	} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
-	if proofBlock < modifiedReqBlock && proofBlock < request.RelayData.SeenBlock {
-		// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
-		proofBlock = lavaslices.Min([]int64{modifiedReqBlock, request.RelayData.SeenBlock})
-
-		proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, relayTimeout, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
-		if err != nil {
-			return utils.LavaFormatError("error getting block range for finalization proof", err)
-		}
-	}
-
-	finalizedBlockHashes := chaintracker.BuildProofFromBlocks(requestedHashes)
-	jsonStr, err := json.Marshal(finalizedBlockHashes)
-	if err != nil {
-		return utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
-			utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
-	reply.FinalizedBlocksHashes = jsonStr
-	reply.LatestBlock = proofBlock
-	return nil
-}
+// Data Reliability disabled - Phase 2 removal
+// DELETED: GetParametersForRelayDataReliability() function (~50 lines)
+// This function was responsible for fetching latest block data and hashes for DR verification
+// DELETED: BuildRelayFinalizedBlockHashes() function (~45 lines)
+// This function was responsible for building finalization proof data in relay responses
 
 func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Context, relayBaseTimeout time.Duration, requiredProofBlock int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32, averageBlockTime time.Duration) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
 	utils.LavaFormatDebug("getting new blockData for optimistic fetch", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock})

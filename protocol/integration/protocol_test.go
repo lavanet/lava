@@ -27,7 +27,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
+
+	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -231,7 +232,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		Geolocation:     1,
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
-	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
+	// Data Reliability disabled - Phase 2: removed finalizationConsensus
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", false)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
@@ -279,7 +280,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization
@@ -1430,7 +1431,9 @@ func TestSameProviderConflictReport(t *testing.T) {
 		return pairingList
 	}
 
+	// Data Reliability disabled - Phase 2: skipping conflict detection tests
 	t.Run("same provider conflict report", func(t *testing.T) {
+		t.Skip("Data Reliability disabled - conflict detection tests skipped")
 		ctx := context.Background()
 		// can be any spec and api interface
 		specId := "LAV1"
@@ -1480,7 +1483,9 @@ func TestSameProviderConflictReport(t *testing.T) {
 			conflictSent = true
 			return nil
 		}
-		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		// Data Reliability disabled - Phase 2: commented out conflict detection
+		// rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		_ = txConflictDetectionMock
 		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
@@ -1511,7 +1516,9 @@ func TestSameProviderConflictReport(t *testing.T) {
 		require.True(t, conflictSent)
 	})
 
+	// Data Reliability disabled - Phase 2: skipping conflict detection tests
 	t.Run("two providers conflict report", func(t *testing.T) {
+		t.Skip("Data Reliability disabled - conflict detection tests skipped")
 		ctx := context.Background()
 		// can be any spec and api interface
 		specId := "LAV1"
@@ -1567,7 +1574,9 @@ func TestSameProviderConflictReport(t *testing.T) {
 			reported <- true
 			return nil
 		}
-		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		// Data Reliability disabled - Phase 2: commented out conflict detection
+		// rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
+		_ = txConflictDetectionMock
 		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
