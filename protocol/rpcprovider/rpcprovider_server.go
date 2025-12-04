@@ -722,9 +722,12 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan, consumerProcessGuid)
 	if err != nil {
 		// Subscription failed due to node error mark session as done and return
-		relayError := rpcps.providerSessionManager.OnSessionFailure(relaySession, relayNumber)
-		if relayError != nil {
-			utils.LavaFormatError("Error OnSessionDone", relayError)
+		// Only call OnSessionFailure if relaySession is not nil (static providers don't have sessions)
+		if relaySession != nil {
+			relayError := rpcps.providerSessionManager.OnSessionFailure(relaySession, relayNumber)
+			if relayError != nil {
+				utils.LavaFormatError("Error OnSessionFailure", relayError)
+			}
 		}
 
 		return false, utils.LavaFormatWarning("RPCProviderServer: Subscription failed", err,
@@ -733,12 +736,16 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		)
 	}
 
-	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber)
-	if relayError != nil {
-		utils.LavaFormatError("Error OnSessionDone", relayError)
-	}
+	// Only call OnSessionDone if relaySession is not nil (static providers don't have sessions)
+	if relaySession != nil {
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber)
+		if relayError != nil {
+			utils.LavaFormatError("Error OnSessionDone", relayError)
+		}
 
-	go rpcps.SendProof(ctx, relaySession.PairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+		bgCtx := context.Background()
+		go rpcps.SendProof(bgCtx, relaySession.PairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+	}
 
 	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	wg.Wait() // Block until subscription is done
