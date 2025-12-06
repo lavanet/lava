@@ -431,8 +431,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	}
 
 	// REMOVED: DR dispatch for smart router that sent verification relays to secondary providers
-	// Previously: enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
-	// Previously: go rpcss.sendDataReliabilityRelayIfApplicable(...)
 	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()
@@ -980,12 +978,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
-			if err != nil {
-				return err
-			}
-			localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
-			extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
-		} else {
+				if err != nil {
+					return err
+				}
+				localRelayData.Extensions = []string{} // reset request data extensions in our local copy
+				extensions = []*spectypes.Extension{}  // reset extensions too so we wont hit SetDisallowDegradation
+			} else {
 				return err
 			}
 		} else {
@@ -1605,7 +1603,6 @@ func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context
 	return &reply, nil
 }
 
-// DELETED: sendDataReliabilityRelayIfApplicable() function (~120 lines)
 // This function was responsible for sending verification relays to secondary providers
 // and detecting conflicts between provider responses in smart router mode
 
