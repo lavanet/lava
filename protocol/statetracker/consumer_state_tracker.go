@@ -15,8 +15,6 @@ import (
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-// DELETED: var DisableDR = false
-
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
@@ -80,7 +78,6 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 		utils.LavaFormatError("failed registering updatable for pairing updates", err)
 	}
 }
-
 
 func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified

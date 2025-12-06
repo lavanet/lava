@@ -179,11 +179,6 @@ func NewProviderSessionsWithConsumer(projectId string, epochData *ProviderSessio
 	return pswc
 }
 
-// reads the pairedProviders data atomically for DR
-func (pswc *ProviderSessionsWithConsumerProject) atomicReadPairedProviders() int64 {
-	return atomic.LoadInt64(&pswc.pairedProviders)
-}
-
 // reads cs.BlockedEpoch atomically to determine if the consumer is blocked notBlockListedConsumer = 0, blockListedConsumer = 1
 func (pswc *ProviderSessionsWithConsumerProject) atomicReadConsumerBlocked() (blockStatus uint32) {
 	return atomic.LoadUint32(&pswc.isBlockListed)
