@@ -6,7 +6,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -82,10 +82,7 @@ func (sst *StandaloneStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-// RegisterReliabilityManagerForVoteUpdates registers reliability manager (no-op in standalone, no voting)
-func (sst *StandaloneStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	utils.LavaFormatDebug("Standalone mode: skipping reliability manager vote updates registration")
-}
+// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates method
 
 // RegisterForEpochUpdates registers for epoch updates using the time-based EpochTimer
 func (sst *StandaloneStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
@@ -110,15 +107,7 @@ func (sst *StandaloneStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return utils.LavaFormatWarning("TxRelayPayment not supported in standalone mode", nil)
 }
 
-// SendVoteReveal sends vote reveal (not supported in standalone mode)
-func (sst *StandaloneStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return utils.LavaFormatWarning("SendVoteReveal not supported in standalone mode", nil)
-}
-
-// SendVoteCommitment sends vote commitment (not supported in standalone mode)
-func (sst *StandaloneStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return utils.LavaFormatWarning("SendVoteCommitment not supported in standalone mode", nil)
-}
+// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment methods
 
 // LatestBlock returns the latest block number (returns 0 in standalone mode)
 func (sst *StandaloneStateTracker) LatestBlock() int64 {
