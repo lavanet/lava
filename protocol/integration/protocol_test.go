@@ -27,8 +27,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-
-	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -36,8 +34,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
-
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -233,7 +229,6 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		Geolocation:     1,
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", false)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
@@ -403,7 +398,6 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(ctx)
-	// Data Reliability disabled - Phase 2: removed reliabilityManager, use chainTracker directly wrapped in mock
 	mockChainTracker := NewMockChainTracker(chainTracker)
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockChainTracker, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
@@ -1109,7 +1103,7 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 					addons:           []string(nil),
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 			}
 
@@ -1144,8 +1138,8 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 			// Set first provider as a "liar", to return wrong block hashes
-			getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-				latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+			getLatestBlockDataWrapper := func(ct chaintracker.IChainTracker, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
+				latestBlock, requestedHashes, changeTime, err := ct.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
 				for _, block := range requestedHashes {
 					block.Hash += strconv.Itoa(int(rand.Int63()))
@@ -1155,7 +1149,7 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			}
 
 			for i := 0; i < play.numOfLyingProviders; i++ {
-				providers[i].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
+				providers[i].mockChainTracker.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
 			}
 
 			client := http.Client{Timeout: 500 * time.Millisecond}
@@ -1269,7 +1263,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 					addons:           addons,
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(`{"result": "success"}`)
 				if i+1 <= play.nodeErrorProviders {
 					providers[i].replySetter.replyDataBuf = []byte(`{"error": "failure", "message": "test", "code": "-32132"}`)
@@ -1404,7 +1398,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 				addons:           []string(nil),
 				providerUniqueId: fmt.Sprintf("provider%d", i),
 			}
-			providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+			providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 			providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 		}
 	}
@@ -1432,7 +1426,6 @@ func TestSameProviderConflictReport(t *testing.T) {
 		return pairingList
 	}
 
-	// Data Reliability disabled - Phase 2: skipping conflict detection tests
 	t.Run("same provider conflict report", func(t *testing.T) {
 		t.Skip("Data Reliability disabled - conflict detection tests skipped")
 		ctx := context.Background()
@@ -1484,14 +1477,13 @@ func TestSameProviderConflictReport(t *testing.T) {
 			conflictSent = true
 			return nil
 		}
-		// Data Reliability disabled - Phase 2: commented out conflict detection
 		// rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
 		_ = txConflictDetectionMock
 		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
-		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+		getLatestBlockDataWrapper := func(ct chaintracker.IChainTracker, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
+			latestBlock, requestedHashes, changeTime, err := ct.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
 			for _, block := range requestedHashes {
 				block.Hash += strconv.Itoa(int(rand.Int63()))
@@ -1500,7 +1492,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			return latestBlock, requestedHashes, changeTime, err
 		}
 
-		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
+		providers[0].mockChainTracker.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
 
 		client := http.Client{Timeout: 1 * time.Minute}
 		clientCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -1517,7 +1509,6 @@ func TestSameProviderConflictReport(t *testing.T) {
 		require.True(t, conflictSent)
 	})
 
-	// Data Reliability disabled - Phase 2: skipping conflict detection tests
 	t.Run("two providers conflict report", func(t *testing.T) {
 		t.Skip("Data Reliability disabled - conflict detection tests skipped")
 		ctx := context.Background()
@@ -1575,14 +1566,13 @@ func TestSameProviderConflictReport(t *testing.T) {
 			reported <- true
 			return nil
 		}
-		// Data Reliability disabled - Phase 2: commented out conflict detection
 		// rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
 		_ = txConflictDetectionMock
 		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 
 		// Set first provider as a "liar", to return wrong block hashes
-		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+		getLatestBlockDataWrapper := func(ct chaintracker.IChainTracker, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
+			latestBlock, requestedHashes, changeTime, err := ct.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
 			for _, block := range requestedHashes {
 				block.Hash += strconv.Itoa(int(rand.Int63()))
@@ -1591,7 +1581,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			return latestBlock, requestedHashes, changeTime, err
 		}
 
-		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
+		providers[0].mockChainTracker.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
 
 		client := http.Client{Timeout: 1000 * time.Millisecond}
 		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
@@ -2113,7 +2103,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 					addons:           addons,
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.handler = handler
 
 				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{

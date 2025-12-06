@@ -157,7 +157,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
 	if cf.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 		new_ctx := context.Background()
-		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+		new_ctx, cancel := context.WithTimeout(new_ctx, common.CacheWriteTimeout)
 		defer cancel()
 		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
 

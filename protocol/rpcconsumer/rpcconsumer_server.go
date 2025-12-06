@@ -547,7 +547,7 @@ func (rpccs *RPCConsumerServer) cacheUnsupportedMethodErrorResponse(ctx context.
 	}
 	finalized := spectypes.IsFinalizedBlock(requestedBlock, latestBlock, int64(blockDistanceForFinalizedData))
 
-	cacheCtx, cancel := context.WithTimeout(context.Background(), common.DataReliabilityTimeoutIncrease)
+	cacheCtx, cancel := context.WithTimeout(context.Background(), common.CacheWriteTimeout)
 	defer cancel()
 	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 
@@ -1388,7 +1388,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights), utils.LogAttr("GUID", ctx))
 
 						new_ctx := context.Background()
-						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+						new_ctx, cancel := context.WithTimeout(new_ctx, common.CacheWriteTimeout)
 						defer cancel()
 						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 

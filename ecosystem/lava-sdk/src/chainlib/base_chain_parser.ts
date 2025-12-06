@@ -133,8 +133,6 @@ export interface ChainBlockStats {
   blocksInFinalizationProof: number;
 }
 
-// Data Reliability disabled - Phase 2: removed DataReliabilityParams interface
-
 export abstract class BaseChainParser {
   protected taggedApis: Map<number, TaggedContainer>;
   protected spec: Spec | undefined;
@@ -187,8 +185,6 @@ export abstract class BaseChainParser {
     }
     return collection;
   }
-
-  // Data Reliability disabled - Phase 2: removed dataReliabilityParams() method
 
   // initialize the base chain parser with the spec information
   public init(spec: Spec) {

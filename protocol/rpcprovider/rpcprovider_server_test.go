@@ -263,7 +263,6 @@ func TestHandleConsistency(t *testing.T) {
 			calls := 1                                                                                      // how many times we have setLatestBlock in the mock
 			mockChainTracker.SetLatestBlock(play.chainTrackerBlocks[0], time.Now().Add(-1*play.changeTime)) // change time is only in the past
 			require.NoError(t, err)
-			// Data Reliability disabled - Phase 2: removed reliabilityManager, use chainTracker directly
 			rpcproviderServer := RPCProviderServer{
 				chainTracker: mockChainTracker,
 				rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{

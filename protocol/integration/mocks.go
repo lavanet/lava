@@ -19,7 +19,6 @@ import (
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-
 type mockConsumerStateTracker struct {
 }
 
@@ -33,11 +32,9 @@ func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, s
 	return nil
 }
 
-
 func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	return nil
 }
-
 
 func (m *mockConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
 	return &plantypes.Policy{
@@ -85,7 +82,6 @@ func (m *mockProviderStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-
 func (m *mockProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 }
 
@@ -96,7 +92,6 @@ func (m *mockProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.
 func (m *mockProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return nil
 }
-
 
 func (m *mockProviderStateTracker) LatestBlock() int64 {
 	return 1000
@@ -323,13 +318,13 @@ func (ag *uniqueAddressGenerator) GetAddress() string {
 type GetLatestBlockDataWrapper func(chaintracker.IChainTracker, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
 
 type MockChainTracker struct {
-	ChainTracker              chaintracker.IChainTracker
+	chaintracker.IChainTracker
 	getLatestBlockDataWrapper GetLatestBlockDataWrapper
 }
 
 func NewMockChainTracker(chainTracker chaintracker.IChainTracker) *MockChainTracker {
 	return &MockChainTracker{
-		ChainTracker: chainTracker,
+		IChainTracker: chainTracker,
 	}
 }
 
@@ -339,31 +334,7 @@ func (mct *MockChainTracker) SetGetLatestBlockDataWrapper(wrapper GetLatestBlock
 
 func (mct *MockChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
 	if mct.getLatestBlockDataWrapper != nil {
-		return mct.getLatestBlockDataWrapper(mct.ChainTracker, fromBlock, toBlock, specificBlock)
+		return mct.getLatestBlockDataWrapper(mct.IChainTracker, fromBlock, toBlock, specificBlock)
 	}
-	return mct.ChainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
-}
-
-func (mct *MockChainTracker) GetLatestBlockNum() (int64, time.Time) {
-	return mct.ChainTracker.GetLatestBlockNum()
-}
-
-func (mct *MockChainTracker) GetAtomicLatestBlockNum() int64 {
-	return mct.ChainTracker.GetAtomicLatestBlockNum()
-}
-
-func (mct *MockChainTracker) RegisterForBlockTimeUpdates(updatable interface{}) {
-	// No-op for mock - chaintracker has a private interface we can't call
-}
-
-func (mct *MockChainTracker) StartAndServe(ctx context.Context) error {
-	return mct.ChainTracker.StartAndServe(ctx)
-}
-
-func (mct *MockChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
-	mct.ChainTracker.AddBlockGap(newData, blocks)
-}
-
-func (mct *MockChainTracker) IsDummy() bool {
-	return false
+	return mct.IChainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }

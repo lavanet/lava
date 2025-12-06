@@ -40,7 +40,6 @@ func TestGRPCChainParser_Spec(t *testing.T) {
 	}
 	apip.SetSpec(spec)
 
-	// Data Reliability disabled - Phase 2: removed DataReliabilityParams() test
 	// fetch chain block stats
 	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, blocksInFinalizationProof := apip.ChainBlockStats()
 
@@ -64,7 +63,6 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 	}()
 
 	apip.SetSpec(spectypes.Spec{})
-	// Data Reliability disabled - Phase 2: removed DataReliabilityParams() call
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
 	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})

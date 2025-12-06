@@ -17,7 +17,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
@@ -80,7 +79,6 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		Return(int64(1000)).
 		AnyTimes()
 
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", false)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
