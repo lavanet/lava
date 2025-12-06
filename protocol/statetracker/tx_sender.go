@@ -19,11 +19,11 @@ import (
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
+
+	// Data Reliability disabled - Phase 2: removed reliabilitymanager and conflicttypes imports
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -306,22 +306,8 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
-	if finalizationConflict != nil {
-		msg.SetFinalizationConflict(finalizationConflict)
-	} else if responseConflict != nil {
-		msg.SetResponseConflict(responseConflict)
-	} else {
-		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
-	}
-
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
-	if err != nil {
-		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
+// Data Reliability disabled - Phase 2: removed TxSenderConflictDetection() function
+// This function was used to send conflict detection transactions to the blockchain
 
 type ProviderTxSender struct {
 	*TxSender
