@@ -19,7 +19,7 @@ import (
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
@@ -441,25 +441,7 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	return nil
 }
 
-func (pts *ProviderTxSender) SendVoteReveal(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
-
-func (pts *ProviderTxSender) SendVoteCommitment(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
+// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment methods
 
 func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	feesPart := strings.Split(msg, "insufficient fees; got: ")[1]

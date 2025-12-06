@@ -134,7 +134,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	chainParser chainlib.ChainParser,
 	rewardServer RewardServerInf,
 	providerSessionManager *lavasession.ProviderSessionManager,
-	reliabilityManager ReliabilityManagerInf,
+	// Data Reliability disabled - Phase 2: removed reliabilityManager parameter
 	privKey *btcec.PrivateKey,
 	cache *performance.Cache,
 	chainRouter chainlib.ChainRouter,
@@ -156,7 +156,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.chainRouter = chainRouter
 	rpcps.privKey = privKey
 	rpcps.providerSessionManager = providerSessionManager
-	rpcps.reliabilityManager = reliabilityManager
+	// Data Reliability disabled - Phase 2: removed reliabilityManager assignment
 	if rewardServer == nil {
 		utils.LavaFormatError("disabled rewards for provider, reward server not defined", nil)
 		rewardServer = &rewardserver.DisabledRewardServer{}

@@ -13,7 +13,7 @@ import (
 	// Data Reliability disabled - Phase 2: removed common and finalizationconsensus imports
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	// Data Reliability disabled - Phase 2: removed conflicttypes import
@@ -92,8 +92,7 @@ func (m *mockProviderStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-func (m *mockProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-}
+// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates mock method
 
 func (m *mockProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 }
@@ -106,13 +105,7 @@ func (m *mockProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return nil
 }
 
-func (m *mockProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return nil
-}
-
-func (m *mockProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return nil
-}
+// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment mock methods
 
 func (m *mockProviderStateTracker) LatestBlock() int64 {
 	return 1000
