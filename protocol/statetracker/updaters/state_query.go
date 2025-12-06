@@ -12,9 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/dgraph-io/ristretto/v2"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
+
 	"github.com/lavanet/lava/v5/utils"
-	// Data Reliability disabled - Phase 2: removed conflicttypes import (was used in VoteEvents)
 	epochkeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	pairingkeeper "github.com/lavanet/lava/v5/x/pairing/keeper"
@@ -322,7 +321,6 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
 }
 
-// Data Reliability disabled - Phase 2: removed VoteEvents() method (was used by VoteUpdater)
 
 func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)

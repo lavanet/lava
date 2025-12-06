@@ -29,7 +29,6 @@ type RelayProcessor struct {
 	guid          uint64
 	selection     Selection
 	consistency   Consistency
-	// Data Reliability disabled - Phase 2: removed skipDataReliability field
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
@@ -93,7 +92,6 @@ func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
 }
 
-// Data Reliability disabled - Phase 2: removed SetSkipDataReliability() and GetSkipDataReliability() methods
 
 // SetStatefulRelayTargets stores the list of providers that received a stateful relay
 func (rp *RelayProcessor) SetStatefulRelayTargets(providers []string) {

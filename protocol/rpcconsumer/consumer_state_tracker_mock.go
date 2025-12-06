@@ -13,10 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
-	// Data Reliability disabled - Phase 2: removed conflict types import
 	types0 "github.com/lavanet/lava/v5/x/plans/types"
 	types1 "github.com/lavanet/lava/v5/x/protocol/types"
 	gomock "go.uber.org/mock/gomock"
@@ -116,7 +114,6 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManage
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }
 
-// Data Reliability disabled - Phase 2: removed RegisterFinalizationConsensusForUpdates mock method
 
 // RegisterForDowntimeParamsUpdates mocks base method.
 func (m *MockConsumerStateTrackerInf) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
@@ -158,4 +155,3 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterForVersionUpdates(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterForVersionUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterForVersionUpdates), ctx, version, versionValidator)
 }
 
-// Data Reliability disabled - Phase 2: removed TxConflictDetection mock method

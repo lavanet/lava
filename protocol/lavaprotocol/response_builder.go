@@ -63,7 +63,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	}
 	reply.Sig = sig
 
-	// Data Reliability disabled - FinalizedBlocksHashes and SigBlocks remain empty
+
 	return reply, nil
 }
 

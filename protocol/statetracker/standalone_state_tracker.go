@@ -6,7 +6,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
+
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -82,7 +82,6 @@ func (sst *StandaloneStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates method
 
 // RegisterForEpochUpdates registers for epoch updates using the time-based EpochTimer
 func (sst *StandaloneStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
@@ -107,7 +106,6 @@ func (sst *StandaloneStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return utils.LavaFormatWarning("TxRelayPayment not supported in standalone mode", nil)
 }
 
-// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment methods
 
 // LatestBlock returns the latest block number (returns 0 in standalone mode)
 func (sst *StandaloneStateTracker) LatestBlock() int64 {

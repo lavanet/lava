@@ -10,22 +10,17 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
-	// Data Reliability disabled - Phase 2: removed common and finalizationconsensus imports
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	// Data Reliability disabled - Phase 2: removed rpcprovider import (was only used for ReliabilityManagerInf)
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 
-	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-// Data Reliability disabled - Phase 2: removed TxConflictDetectionMock type
 
 type mockConsumerStateTracker struct {
-	// Data Reliability disabled - Phase 2: removed txConflictDetectionMock field
 }
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
@@ -38,13 +33,11 @@ func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, s
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed RegisterFinalizationConsensusForUpdates
 
 func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed TxConflictDetection
 
 func (m *mockConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
 	return &plantypes.Policy{
@@ -92,7 +85,6 @@ func (m *mockProviderStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates mock method
 
 func (m *mockProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 }
@@ -105,7 +97,6 @@ func (m *mockProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment mock methods
 
 func (m *mockProviderStateTracker) LatestBlock() int64 {
 	return 1000
@@ -329,7 +320,6 @@ func (ag *uniqueAddressGenerator) GetAddress() string {
 	return address
 }
 
-// Data Reliability disabled - Phase 2: MockReliabilityManager replaced with MockChainTracker
 type GetLatestBlockDataWrapper func(chaintracker.IChainTracker, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
 
 type MockChainTracker struct {

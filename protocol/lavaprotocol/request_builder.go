@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	// Data Reliability disabled - Phase 2: removed bytes, common, conflicttypes, conflictconstruct imports
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -166,5 +165,4 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-// Data Reliability disabled - Phase 2: removed VerifyReliabilityResults(), compareRelaysFindConflict(), and findFirstDifferentChar() functions
 // These functions were used for conflict detection between provider responses

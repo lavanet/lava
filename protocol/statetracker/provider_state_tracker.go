@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -99,7 +98,6 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates method
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
 	paymentUpdater := updaters.NewPaymentUpdater(pst.GetEventTracker())
@@ -128,7 +126,6 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
 
-// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment methods
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {
 	return pst.IStateTracker.LatestBlock()

@@ -8,11 +8,9 @@ import (
 	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
 	"github.com/lavanet/lava/v5/utils"
-	// Data Reliability disabled - Phase 2: removed conflicttypes import (was used in getLatestVoteEvents)
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -153,7 +151,6 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 	return false, nil
 }
 
-// Data Reliability disabled - Phase 2: removed getLatestVoteEvents() method (was used by VoteUpdater)
 
 type tendermintRPC interface {
 	BlockResults(
