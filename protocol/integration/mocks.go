@@ -12,10 +12,10 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	// Data Reliability disabled - Phase 2: removed common and finalizationconsensus imports
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
+	// Data Reliability disabled - Phase 2: removed rpcprovider import (was only used for ReliabilityManagerInf)
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
+
 	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
@@ -329,34 +329,51 @@ func (ag *uniqueAddressGenerator) GetAddress() string {
 	return address
 }
 
-type GetLatestBlockDataWrapper func(rpcprovider.ReliabilityManagerInf, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
+// Data Reliability disabled - Phase 2: MockReliabilityManager replaced with MockChainTracker
+type GetLatestBlockDataWrapper func(chaintracker.IChainTracker, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
 
-type MockReliabilityManager struct {
-	ReliabilityManager        rpcprovider.ReliabilityManagerInf
+type MockChainTracker struct {
+	ChainTracker              chaintracker.IChainTracker
 	getLatestBlockDataWrapper GetLatestBlockDataWrapper
 }
 
-func NewMockReliabilityManager(reliabilityManager rpcprovider.ReliabilityManagerInf) *MockReliabilityManager {
-	return &MockReliabilityManager{
-		ReliabilityManager: reliabilityManager,
+func NewMockChainTracker(chainTracker chaintracker.IChainTracker) *MockChainTracker {
+	return &MockChainTracker{
+		ChainTracker: chainTracker,
 	}
 }
 
-func (mrm *MockReliabilityManager) SetGetLatestBlockDataWrapper(wrapper GetLatestBlockDataWrapper) {
-	mrm.getLatestBlockDataWrapper = wrapper
+func (mct *MockChainTracker) SetGetLatestBlockDataWrapper(wrapper GetLatestBlockDataWrapper) {
+	mct.getLatestBlockDataWrapper = wrapper
 }
 
-func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
-	if mrm.getLatestBlockDataWrapper != nil {
-		return mrm.getLatestBlockDataWrapper(mrm.ReliabilityManager, fromBlock, toBlock, specificBlock)
+func (mct *MockChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
+	if mct.getLatestBlockDataWrapper != nil {
+		return mct.getLatestBlockDataWrapper(mct.ChainTracker, fromBlock, toBlock, specificBlock)
 	}
-	return mrm.ReliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+	return mct.ChainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
-func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
-	return mrm.ReliabilityManager.GetLatestBlockNum()
+func (mct *MockChainTracker) GetLatestBlockNum() (int64, time.Time) {
+	return mct.ChainTracker.GetLatestBlockNum()
 }
 
-func (mrm *MockReliabilityManager) IsDummy() bool {
+func (mct *MockChainTracker) GetAtomicLatestBlockNum() int64 {
+	return mct.ChainTracker.GetAtomicLatestBlockNum()
+}
+
+func (mct *MockChainTracker) RegisterForBlockTimeUpdates(updatable interface{}) {
+	// No-op for mock - chaintracker has a private interface we can't call
+}
+
+func (mct *MockChainTracker) StartAndServe(ctx context.Context) error {
+	return mct.ChainTracker.StartAndServe(ctx)
+}
+
+func (mct *MockChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
+	mct.ChainTracker.AddBlockGap(newData, blocks)
+}
+
+func (mct *MockChainTracker) IsDummy() bool {
 	return false
 }

@@ -36,7 +36,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
+	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -313,7 +314,7 @@ type rpcProviderOptions struct {
 	cacheListenAddress string
 }
 
-func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
+func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockChainTracker) {
 	replySetter := &ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
@@ -402,9 +403,9 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(ctx)
-	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
-	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil)
+	// Data Reliability disabled - Phase 2: removed reliabilityManager, use chainTracker directly wrapped in mock
+	mockChainTracker := NewMockChainTracker(chainTracker)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockChainTracker, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -412,7 +413,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
 	require.True(t, providerUp)
-	return rpcProviderServer, endpoint, replySetter, mockChainFetcher, mockReliabilityManager
+	return rpcProviderServer, endpoint, replySetter, mockChainFetcher, mockChainTracker
 }
 
 func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
@@ -1078,12 +1079,12 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 
 			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+				mockChainTracker *MockChainTracker
 			}
 			providers := []providerData{}
 
@@ -1233,12 +1234,12 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			consumerListenAddress := addressGen.GetAddress()
 
 			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+				mockChainTracker *MockChainTracker
 			}
 			providers := []providerData{}
 
@@ -1368,12 +1369,12 @@ func TestArchiveProvidersRetry(t *testing.T) {
 
 func TestSameProviderConflictReport(t *testing.T) {
 	type providerData struct {
-		account                sigs.Account
-		endpoint               *lavasession.RPCProviderEndpoint
-		server                 *rpcprovider.RPCProviderServer
-		replySetter            *ReplySetter
-		mockChainFetcher       *MockChainFetcher
-		mockReliabilityManager *MockReliabilityManager
+		account          sigs.Account
+		endpoint         *lavasession.RPCProviderEndpoint
+		server           *rpcprovider.RPCProviderServer
+		replySetter      *ReplySetter
+		mockChainFetcher *MockChainFetcher
+		mockChainTracker *MockChainTracker
 	}
 
 	createProvidersData := func(numProviders int) (providers []*providerData) {
@@ -2015,12 +2016,12 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			consumerListenAddress := addressGen.GetAddress()
 
 			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+				mockChainTracker *MockChainTracker
 			}
 			providers := []providerData{}
 			for i := 0; i < numProviders; i++ {
