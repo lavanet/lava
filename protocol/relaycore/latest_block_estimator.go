@@ -45,7 +45,7 @@ func (lbe *LatestBlockEstimator) Record(providerAddress string, latestBlock int6
 	lbe.mu.Unlock()
 }
 
-// Estimate replicates finalizationConsensus.GetExpectedBlockHeight logic (minus DR-specific data).
+// Estimate expected block height based on time elapsed.
 // Returns the expected block height as well as the number of provider observations included.
 func (lbe *LatestBlockEstimator) Estimate(chainParser chainlib.ChainParser) (int64, int) {
 	if lbe == nil || chainParser == nil {
