@@ -24,21 +24,17 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 
-	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 
-	// Data Reliability disabled - Phase 2: removed statetracker import (was used for DisableDR)
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 
-	// Data Reliability disabled - Phase 2: removed rand import (was used for DR)
-	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -82,7 +78,6 @@ type RPCConsumerServer struct {
 	privKey                *btcec.PrivateKey
 	consumerTxSender       ConsumerTxSender
 	requiredResponses      int
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus field
 	// Added latest block estimator for archive extension detection (non-DR)
 	latestBlockHeight              atomic.Uint64
 	latestBlockEstimator           *relaycore.LatestBlockEstimator
@@ -101,7 +96,6 @@ type RPCConsumerServer struct {
 }
 
 type ConsumerTxSender interface {
-	// Data Reliability disabled - Phase 2: removed TxConflictDetection method
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetLatestVirtualEpoch() uint64
 }
@@ -109,7 +103,6 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus parameter
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -134,7 +127,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.rpcConsumerLogs = rpcConsumerLogs
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus assignment
 	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
@@ -358,7 +350,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
-		// Data Reliability disabled - GET_BLOCKNUM not required
+
 		return true, nil
 	}
 	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysConsumerIp)
@@ -477,7 +469,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Data Reliability disabled - Phase 1 removal
 	// REMOVED: DR dispatch that sent verification relays to secondary providers
 	// Previously: enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	// Previously: go rpccs.sendDataReliabilityRelayIfApplicable(...)
@@ -1092,13 +1083,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
-				if err != nil {
-					return err
-				}
-				relayProcessor.SetSkipDataReliability(true) // disabling data reliability when disabling extensions.
-				localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
-				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
-			} else {
+			if err != nil {
+				return err
+			}
+			localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
+			extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
+		} else {
 				return err
 			}
 		} else {
@@ -1284,7 +1274,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// get here only if performed a regular relay successfully
-			// Data Reliability disabled - Phase 2: removed finalizationConsensus.GetExpectedBlockHeight
 			expectedBH := int64(math.MaxInt64) // Default to max since we don't track expected block height anymore
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
@@ -1632,7 +1621,6 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
 	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
-	// Data Reliability disabled - Phase 1 removal: removed unused variable blocksInFinalizationProof
 	// Use original request block for finalization check to avoid converting LATEST_BLOCK to actual block numbers
 	isFinalized := spectypes.IsFinalizedBlock(originalRequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
 	if !rpccs.chainParser.ParseDirectiveEnabled() {
@@ -1654,7 +1642,6 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
 
-	// Data Reliability disabled - Phase 1 removal
 	// REMOVED: Finalization consensus verification and conflict detection
 	// Previously: enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	// Previously: if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled()
@@ -1818,7 +1805,6 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-// Data Reliability disabled - Phase 2 removal
 // DELETED: sendDataReliabilityRelayIfApplicable() function (~120 lines)
 // This function was responsible for sending verification relays to secondary providers
 // and detecting conflicts between provider responses

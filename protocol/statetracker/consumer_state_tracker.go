@@ -15,7 +15,6 @@ import (
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-// Data Reliability disabled - Phase 2 removal
 // DELETED: var DisableDR = false
 // DELETED: ConsumerTxSenderInf interface (TxSenderConflictDetection)
 
@@ -23,7 +22,6 @@ import (
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
 	StateQuery *updaters.ConsumerStateQuery
-	// Data Reliability disabled - Phase 2: removed ConsumerTxSenderInf (conflict detection)
 	*StateTracker
 	ConsumerEmergencyTrackerInf
 }
@@ -35,7 +33,6 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	// Data Reliability disabled - Phase 2: removed txSender creation (conflict detection)
 	cst := &ConsumerStateTracker{
 		StateTracker:                stateTrackerBase,
 		StateQuery:                  stateQuery,
@@ -85,7 +82,6 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	}
 }
 
-// Data Reliability disabled - Phase 2 removal
 // DELETED: RegisterFinalizationConsensusForUpdates() function
 // DELETED: TxConflictDetection() function
 

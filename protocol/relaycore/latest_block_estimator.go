@@ -18,6 +18,8 @@ type providerBlockObservation struct {
 
 // LatestBlockEstimator approximates the network latest block based on provider observations.
 // It mirrors the behavior of the removed finalization consensus estimator, but without relying on DR-specific data.
+// Consumers (classic and smart router) feed the estimator with every successful relay response so archive extensions
+// and "latest" requests can continue to auto-detect heights even after DR-specific components are removed.
 type LatestBlockEstimator struct {
 	mu           sync.RWMutex
 	observations map[string]providerBlockObservation

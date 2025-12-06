@@ -14,7 +14,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 
-	// Data Reliability disabled - Phase 2: removed chaintracker import
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/utils"
@@ -25,7 +24,6 @@ import (
 
 const SubscriptionTimeoutDuration = 15 * time.Minute
 
-// Data Reliability disabled - Phase 2: removed relayFinalizationBlocksHandler interface
 // Previously required GetParametersForRelayDataReliability and BuildRelayFinalizedBlockHashes methods
 
 type connectedConsumerContainer struct {
@@ -48,14 +46,12 @@ type activeSubscription struct {
 type ProviderNodeSubscriptionManager struct {
 	chainRouter ChainRouter
 	chainParser ChainParser
-	// Data Reliability disabled - Phase 2: removed relayFinalizationBlocksHandler field
 	activeSubscriptions           map[string]*activeSubscription                   // key is request params hash
 	currentlyPendingSubscriptions map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
 	privKey                       *btcec.PrivateKey
 	lock                          sync.RWMutex
 }
 
-// Data Reliability disabled - Phase 2: removed relayFinalizationBlocksHandler parameter
 func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
 	return &ProviderNodeSubscriptionManager{
 		chainRouter:                   chainRouter,
@@ -508,7 +504,6 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 
-	// Data Reliability disabled - Phase 2 removal: removed DataReliabilityParams() call
 	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscription manager
 	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(...); pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(...) }
 	// Result: Subscription messages will not have FinalizedBlocksHashes populated

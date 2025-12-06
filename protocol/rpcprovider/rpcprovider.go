@@ -27,7 +27,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager import
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
@@ -85,7 +84,6 @@ type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
-	// Data Reliability disabled - Phase 2: removed RegisterReliabilityManagerForVoteUpdates, SendVoteReveal, SendVoteCommitment
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
@@ -626,7 +624,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
 	}
-	// Data Reliability disabled - Phase 2 removal: always use lightweight ChainFetcher
 	utils.LavaFormatInfo("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
 	var chainFetcher chainlib.IChainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
@@ -720,7 +717,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
-	// Data Reliability disabled - Phase 2: removed reliabilityManager creation and registration
 	// Previously: reliabilityManager := reliabilitymanager.NewReliabilityManager(...); rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(...)
 
 	// add a database for this chainID if does not exist.
@@ -738,7 +734,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatInfo("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		// Data Reliability disabled - Phase 2: removed rpcProviderServer parameter (was used for DR)
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcp.privKey)
 	}
 
@@ -797,7 +792,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	// Data Reliability disabled - Phase 2: passing chainTracker directly instead of reliabilityManager
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
 	// set up grpc listener
 	var listener *ProviderListener

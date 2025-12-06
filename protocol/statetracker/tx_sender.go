@@ -20,7 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
 
-	// Data Reliability disabled - Phase 2: removed reliabilitymanager and conflicttypes imports
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
@@ -306,7 +305,6 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-// Data Reliability disabled - Phase 2: removed TxSenderConflictDetection() function
 // This function was used to send conflict detection transactions to the blockchain
 
 type ProviderTxSender struct {
@@ -427,7 +425,6 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	return nil
 }
 
-// Data Reliability disabled - Phase 2: removed SendVoteReveal and SendVoteCommitment methods
 
 func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	feesPart := strings.Split(msg, "insufficient fees; got: ")[1]

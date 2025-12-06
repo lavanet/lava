@@ -16,7 +16,6 @@ import (
 
 	"github.com/goccy/go-json"
 
-	// Data Reliability disabled - Phase 2: removed sdkerrors import (was used for DR verification)
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -25,19 +24,16 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 
-	// Data Reliability disabled - Phase 2: removed finalizationverification import
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 
-	// Data Reliability disabled - Phase 2: removed statetracker import (was used for DisableDR)
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 
-	// Data Reliability disabled - Phase 2: removed rand import (was used for DR)
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
@@ -344,7 +340,7 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpcss.craftRelay(ctx)
 	if !ok {
-		// Data Reliability disabled - GET_BLOCKNUM not required
+
 		return true, nil
 	}
 	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysSmartRouterIp)
@@ -460,7 +456,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Data Reliability disabled - Phase 1 removal
 	// REMOVED: DR dispatch for smart router that sent verification relays to secondary providers
 	// Previously: enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
 	// Previously: go rpcss.sendDataReliabilityRelayIfApplicable(...)
@@ -1077,9 +1072,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				if err != nil {
 					return err
 				}
-				relayProcessor.SetSkipDataReliability(true) // disabling data reliability when disabling extensions.
-				localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
-				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
+				localRelayData.Extensions = []string{} // reset request data extensions in our local copy
+				extensions = []*spectypes.Extension{}  // reset extensions too so we wont hit SetDisallowDegradation
 			} else {
 				return err
 			}
@@ -1614,7 +1608,6 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
-	// Data Reliability disabled - Phase 2: removed finalization verification block
 	// Previously verified provider finalization data for non-static providers
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
@@ -1771,9 +1764,6 @@ func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context
 
 	return &reply, nil
 }
-
-// Data Reliability disabled - Phase 2 removal:
-// sendDataReliabilityRelayIfApplicable() was removed.
 
 func (rpcss *RPCSmartRouterServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()

@@ -20,8 +20,6 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
-
-	// Data Reliability disabled - Phase 2: removed finalizationconsensus import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -34,8 +32,6 @@ import (
 	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
-
-	// Data Reliability disabled - Phase 2: removed conflicttypes import
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -96,9 +92,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
-	// Data Reliability disabled - Phase 2: removed RegisterFinalizationConsensusForUpdates
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
-	// Data Reliability disabled - Phase 2: removed TxConflictDetection
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
@@ -220,7 +214,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
 	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
-	// Data Reliability disabled - Phase 2: removed finalizationConsensuses map
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -297,7 +290,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
 	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
-	// Data Reliability disabled - Phase 2: removed finalizationConsensuses parameter
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
 	privKey *secp256k1.PrivateKey,
@@ -340,7 +332,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var consumerConsistency relaycore.Consistency
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus variable
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
 		chainMutexes[chainID].Lock()
@@ -368,7 +359,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 		}
 
-		// Data Reliability disabled - Phase 2: removed FinalizationConsensus creation and registration
 		return nil
 	}
 	err = getOrCreateChainAssets()
@@ -414,7 +404,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	// Data Reliability disabled - Phase 2: removed finalizationConsensus parameter
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
