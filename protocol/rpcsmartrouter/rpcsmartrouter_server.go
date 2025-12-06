@@ -456,8 +456,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// REMOVED: DR dispatch for smart router that sent verification relays to secondary providers
-
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {

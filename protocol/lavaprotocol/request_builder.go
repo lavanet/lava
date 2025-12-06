@@ -144,7 +144,7 @@ func UpdateRequestedBlock(request *pairingtypes.RelayPrivateData, response *pair
 	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
 
-// currently used when cache hits. we don't want DR.
+// currently used when cache hits.
 func SetRequestedBlockNotApplicable(request *pairingtypes.RelayPrivateData) {
 	request.RequestBlock = spectypes.NOT_APPLICABLE
 }

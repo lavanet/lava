@@ -375,7 +375,7 @@ func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
 }
 
 // updateLatestBlockHeight updates the latest block height and records the provider observation.
-// This feeds archive extension auto-detection (non-DR functionality).
+// This feeds archive extension auto-detection.
 func (rpccs *RPCConsumerServer) updateLatestBlockHeight(blockHeight uint64, providerAddress string) {
 	for {
 		current := rpccs.latestBlockHeight.Load()
@@ -468,8 +468,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 
 		return nil, err
 	}
-
-	// REMOVED: DR dispatch that sent verification relays to secondary providers
 
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())

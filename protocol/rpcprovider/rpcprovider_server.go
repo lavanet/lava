@@ -1249,10 +1249,6 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	return reply, nil
 }
 
-// This function was responsible for fetching latest block data and hashes for DR verification
-// DELETED: BuildRelayFinalizedBlockHashes() function (~45 lines)
-// This function was responsible for building finalization proof data in relay responses
-
 func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Context, relayBaseTimeout time.Duration, requiredProofBlock int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32, averageBlockTime time.Duration) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
 	utils.LavaFormatDebug("getting new blockData for optimistic fetch", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock})
 	proofBlock := requiredProofBlock
@@ -1302,7 +1298,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 		// requested block is older than our information, or the consumer is asking a future block he has no information about
 		return latestBlock, requestedHashes, 0, nil
 	}
-	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, calculate wether we should wait and try to update
+	// consumer asked for a block that is newer than our state tracker, calculate wether we should wait and try to update
 	blockGap := requestBlock - latestBlock
 	if seenBlock < requestBlock {
 		// we don't have to wait until we reach requested block for consistency here, we just need to reach the seen block height
