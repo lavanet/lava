@@ -17,10 +17,8 @@ import (
 const (
 	testNumberOfBlocksKeptInMemory = 100
 	relayCu                        = uint64(10)
-	dataReliabilityRelayCu         = uint64(0)
 	epoch1                         = uint64(10)
 	sessionId                      = uint64(123)
-	dataReliabilitySessionId       = uint64(0)
 	relayNumber                    = uint64(1)
 	relayNumberBeforeUse           = uint64(0)
 	maxCu                          = uint64(150)
@@ -156,35 +154,6 @@ func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleP
 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
 	require.Equal(t, sps.PairingEpoch, epoch1)
 }
-
-// func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
-// 	// initialize the struct
-// 	psm := initProviderSessionManager()
-
-// 	// get data reliability session
-// 	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
-
-// 	// validate results
-// 	require.NoError(t, err)
-// 	require.NotNil(t, sps)
-
-// 	// validate expected results
-// 	require.Empty(t, psm.sessionsWithAllConsumers)
-// 	require.NotEmpty(t, psm.dataReliabilitySessionsWithAllConsumers)
-// 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
-
-// 	// // prepare session for usage
-// 	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
-// 	require.NoError(t, err)
-// 	// validate session was prepared successfully
-// 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-// 	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-// 	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-// 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
-// 	require.Equal(t, epoch1, sps.PairingEpoch)
-
-// 	return psm, sps
-// }
 
 func TestHappyFlowPSM(t *testing.T) {
 	// init test

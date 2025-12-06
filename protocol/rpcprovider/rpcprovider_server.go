@@ -968,7 +968,6 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 
 	// Variables removed: requestedBlockHash, requestedHashes, modifiedReqBlock, updatedChainMessage
 
-
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply
 	var ignoredMetadata []pairingtypes.Metadata
@@ -1074,7 +1073,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				return
 			}
 			new_ctx := context.Background()
-			new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+			new_ctx, cancel := context.WithTimeout(new_ctx, common.CacheWriteTimeout)
 			defer cancel()
 			err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 				RequestHash:      hashKey,

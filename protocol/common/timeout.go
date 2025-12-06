@@ -13,7 +13,7 @@ import (
 const (
 	TimePerCU                           = uint64(100 * time.Millisecond)
 	MinimumTimePerRelayDelay            = time.Second
-	DataReliabilityTimeoutIncrease      = 5 * time.Second
+	CacheWriteTimeout                   = 5 * time.Second
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
 	DefaultTimeout                      = 30 * time.Second

@@ -10,8 +10,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
-
-	// Data Reliability disabled - Phase 2: removed chaintracker import
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -19,8 +17,6 @@ import (
 )
 
 const testGuid = "testGuid"
-
-// Data Reliability disabled - Phase 2: removed RelayFinalizationBlocksHandlerMock struct and methods
 
 func TestSubscriptionManager_HappyFlow(t *testing.T) {
 	playbook := []struct {
@@ -106,7 +102,6 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			// Data Reliability disabled - Phase 2: removed mockRpcProvider
 			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			consumerChannel := make(chan *pairingtypes.RelayReply)
@@ -251,7 +246,6 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParams(t *t
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			// Data Reliability disabled - Phase 2: removed mockRpcProvider
 			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			wg.Add(1)
@@ -379,7 +373,6 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			// Data Reliability disabled - Phase 2: removed mockRpcProvider
 			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
 
 			wgAllIds := sync.WaitGroup{}

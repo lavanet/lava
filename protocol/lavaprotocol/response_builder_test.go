@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	// Data Reliability disabled - Phase 2: removed finalizationverification import
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -63,7 +62,6 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 }
 
 func TestSignAndExtractResponseLatest(t *testing.T) {
@@ -112,5 +110,4 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	// Data Reliability disabled - Phase 2: removed finalizationverification.VerifyFinalizationData call
 }
