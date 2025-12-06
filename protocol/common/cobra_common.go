@@ -65,7 +65,8 @@ const (
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
-	EnableMemoryLogsFlag                   = "enable-memory-logs" // enable memory tracking logs
+	EnableMemoryLogsFlag                  = "enable-memory-logs"     // enable memory tracking logs
+	MemoryGCThresholdGBFlagName           = "memory-gc-threshold-gb" // Memory GC threshold in GB (0 = disabled)
 )
 
 const (

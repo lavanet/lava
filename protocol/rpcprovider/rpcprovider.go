@@ -125,6 +125,7 @@ type rpcProviderStartOptions struct {
 	testResponsesFile         string
 	epochDuration             time.Duration
 	resourceLimiterOptions    *resourceLimiterOptions
+	memoryGCThresholdGB       float64
 }
 
 type resourceLimiterOptions struct {
@@ -285,6 +286,9 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
+
+	// Start memory GC monitoring goroutine
+	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
 
 	// single reward server
 	if !options.staticProvider {
@@ -1130,6 +1134,13 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				normalMaxConcurrent: normalMaxConcurrent,
 			}
 
+			// Get memory GC threshold
+			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
+			if err != nil {
+				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
+				memoryGCThresholdGB = 0
+			}
+
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,
@@ -1158,6 +1169,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testResponsesFile,
 				epochDuration,
 				resourceLimiterOptions,
+				memoryGCThresholdGB,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -1226,6 +1238,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
 	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
 	cmdRPCProvider.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
+	cmdRPCProvider.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

@@ -15,10 +15,8 @@ const (
 	gcMonitoringCheckInterval = 5 * time.Second
 )
 
-var (
-	// memoryLogsEnabled is an atomic flag to control whether memory logs are enabled
-	memoryLogsEnabled int32
-)
+// memoryLogsEnabled is an atomic flag to control whether memory logs are enabled
+var memoryLogsEnabled int32
 
 // MemoryStats holds current memory statistics
 type MemoryStats struct {
