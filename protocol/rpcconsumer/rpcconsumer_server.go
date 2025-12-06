@@ -358,7 +358,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	// Archive extension auto-detection requires the same estimation logic we previously sourced from finalizationConsensus.
+	// Archive extension auto-detection requires the same estimation logic we need for block height estimation.
 	if rpccs.latestBlockEstimator != nil {
 		latestKnownBlock, numProviders := rpccs.latestBlockEstimator.Estimate(rpccs.chainParser)
 		if numProviders > 0 && latestKnownBlock > 0 {
@@ -470,7 +470,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	// REMOVED: DR dispatch that sent verification relays to secondary providers
-	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())

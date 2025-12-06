@@ -24,7 +24,6 @@ import (
 
 const SubscriptionTimeoutDuration = 15 * time.Minute
 
-// Previously required GetParametersForRelayDataReliability and BuildRelayFinalizedBlockHashes methods
 
 type connectedConsumerContainer struct {
 	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]

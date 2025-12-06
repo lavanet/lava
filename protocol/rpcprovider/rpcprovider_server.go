@@ -1026,7 +1026,6 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	finalized := false
 
 	// Variables removed: requestedBlockHash, requestedHashes, modifiedReqBlock, updatedChainMessage
-	// Function GetParametersForRelayDataReliability() still exists but is no longer called
 
 
 	// TODO: handle cache on fork for dataReliability = false
