@@ -102,7 +102,6 @@ type RPCProviderServer struct {
 	resourceLimiter                 *ResourceLimiter
 }
 
-
 type RewardServerInf interface {
 	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr, apiInterface string) (existingCU uint64, updatedWithProof bool)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
@@ -1026,13 +1025,9 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 
 	finalized := false
 
-	// REMOVED: GetParametersForRelayDataReliability() call that fetched latest block, hashes, etc.
-	// Previously: if dataReliabilityEnabled { latestBlock, requestedBlockHash, requestedHashes, ... = rpcps.GetParametersForRelayDataReliability(...) }
 	// Variables removed: requestedBlockHash, requestedHashes, modifiedReqBlock, updatedChainMessage
 	// Function GetParametersForRelayDataReliability() still exists but is no longer called
 
-	// Previously: blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
-	// Previously: relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply
@@ -1066,8 +1061,6 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	// REMOVED: BuildRelayFinalizedBlockHashes() call that populated reply.FinalizedBlocksHashes
-	// Previously: if dataReliabilityEnabled { err := rpcps.BuildRelayFinalizedBlockHashes(...) }
 	// Result: reply.FinalizedBlocksHashes will remain empty (cache handles this gracefully)
 	// Result: reply.LatestBlock will NOT be overwritten - remains as actual node's latest block (more accurate!)
 	// Function BuildRelayFinalizedBlockHashes() still exists but is no longer called
@@ -1244,8 +1237,6 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 		Data: dataToSend,
 	}
 
-	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscriptions
-	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = rpcps.GetParametersForRelayDataReliability(...); rpcps.BuildRelayFinalizedBlockHashes(...) }
 	// Result: Subscription responses will not have FinalizedBlocksHashes populated
 	// Functions still exist but are no longer called
 
@@ -1260,7 +1251,6 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	return reply, nil
 }
 
-// DELETED: GetParametersForRelayDataReliability() function (~50 lines)
 // This function was responsible for fetching latest block data and hashes for DR verification
 // DELETED: BuildRelayFinalizedBlockHashes() function (~45 lines)
 // This function was responsible for building finalization proof data in relay responses

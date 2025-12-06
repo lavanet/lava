@@ -717,7 +717,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
-	// Previously: reliabilityManager := reliabilitymanager.NewReliabilityManager(...); rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(...)
 
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)

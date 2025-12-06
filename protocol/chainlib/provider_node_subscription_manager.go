@@ -504,8 +504,6 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 
-	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscription manager
-	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(...); pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(...) }
 	// Result: Subscription messages will not have FinalizedBlocksHashes populated
 	// Functions still exist but are no longer called
 

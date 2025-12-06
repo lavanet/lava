@@ -457,8 +457,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	}
 
 	// REMOVED: DR dispatch for smart router that sent verification relays to secondary providers
-	// Previously: enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
-	// Previously: go rpcss.sendDataReliabilityRelayIfApplicable(...)
 	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()

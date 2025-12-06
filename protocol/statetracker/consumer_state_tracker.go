@@ -16,7 +16,6 @@ import (
 )
 
 // DELETED: var DisableDR = false
-// DELETED: ConsumerTxSenderInf interface (TxSenderConflictDetection)
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
@@ -82,8 +81,6 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	}
 }
 
-// DELETED: RegisterFinalizationConsensusForUpdates() function
-// DELETED: TxConflictDetection() function
 
 func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified

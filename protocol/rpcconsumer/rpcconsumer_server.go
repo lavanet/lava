@@ -470,8 +470,6 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	// REMOVED: DR dispatch that sent verification relays to secondary providers
-	// Previously: enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	// Previously: go rpccs.sendDataReliabilityRelayIfApplicable(...)
 	// Function sendDataReliabilityRelayIfApplicable() still exists but is no longer called
 
 	returnedResult, err := relayProcessor.ProcessingResult()
@@ -1083,12 +1081,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
-			if err != nil {
-				return err
-			}
-			localRelayData.Extensions = []string{}      // reset request data extensions in our local copy
-			extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
-		} else {
+				if err != nil {
+					return err
+				}
+				localRelayData.Extensions = []string{} // reset request data extensions in our local copy
+				extensions = []*spectypes.Extension{}  // reset extensions too so we wont hit SetDisallowDegradation
+			} else {
 				return err
 			}
 		} else {
@@ -1642,11 +1640,6 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
 
-	// REMOVED: Finalization consensus verification and conflict detection
-	// Previously: enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	// Previously: if enabled && !singleConsumerSession.StaticProvider && rpccs.chainParser.ParseDirectiveEnabled()
-	// Previously: Called finalizationverification.VerifyFinalizationData() and finalizationConsensus.UpdateFinalizedHashes()
-	// Previously: Triggered conflict detection via rpccs.consumerTxSender.TxConflictDetection()
 	// Note: Static providers were already excluded from this check
 
 	relayResult.Finalized = isFinalized
@@ -1805,7 +1798,6 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-// DELETED: sendDataReliabilityRelayIfApplicable() function (~120 lines)
 // This function was responsible for sending verification relays to secondary providers
 // and detecting conflicts between provider responses
 
