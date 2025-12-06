@@ -344,12 +344,8 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpcss.craftRelay(ctx)
 	if !ok {
-		enabled, _ := rpcss.chainParser.DataReliabilityParams()
-		// if DR is disabled it's okay to not have GET_BLOCKNUM
-		if !enabled {
-			return true, nil
-		}
-		return false, err
+		// Data Reliability disabled - GET_BLOCKNUM not required
+		return true, nil
 	}
 	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysSmartRouterIp)
 	return rpcss.sendRelayWithRetries(ctx, retries, initialRelays, protocolMessage)

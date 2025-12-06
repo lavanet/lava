@@ -508,16 +508,15 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 
-	// Data Reliability disabled - Phase 1 removal
+	// Data Reliability disabled - Phase 2 removal: removed DataReliabilityParams() call
 	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscription manager
 	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(...); pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(...) }
 	// Result: Subscription messages will not have FinalizedBlocksHashes populated
 	// Functions still exist but are no longer called
 
-	dataReliabilityEnabled, _ := pnsm.chainParser.DataReliabilityParams()
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, dataReliabilityEnabled)
+	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply)
 	if err != nil {
 		return err
 	}

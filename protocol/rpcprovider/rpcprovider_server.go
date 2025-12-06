@@ -1086,8 +1086,8 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	// Function BuildRelayFinalizedBlockHashes() still exists but is no longer called
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
-	dataReliabilityEnabled := false // Data Reliability disabled - Phase 1 removal: always false now
-	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	// Data Reliability disabled - Phase 2 removal: removed dataReliabilityEnabled parameter
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1258,16 +1258,15 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 		Data: dataToSend,
 	}
 
-	// Data Reliability disabled - Phase 1 removal
+	// Data Reliability disabled - Phase 2 removal: removed DataReliabilityParams() call
 	// REMOVED: GetParametersForRelayDataReliability() and BuildRelayFinalizedBlockHashes() for subscriptions
 	// Previously: if dataReliabilityEnabled { latestBlock, requestedHashes, ... = rpcps.GetParametersForRelayDataReliability(...); rpcps.BuildRelayFinalizedBlockHashes(...) }
 	// Result: Subscription responses will not have FinalizedBlocksHashes populated
 	// Functions still exist but are no longer called
 
-	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply)
 	if err != nil {
 		return nil, err
 	}
