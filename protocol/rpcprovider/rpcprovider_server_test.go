@@ -13,14 +13,14 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 type MockChainTracker struct {
-	latestBlock int64
-	changeTime  time.Time
+	*chaintracker.DummyChainTracker // Embed DummyChainTracker to satisfy the interface
+	latestBlock                     int64
+	changeTime                      time.Time
 }
 
 // Test the error handling logic directly without needing a full ProviderSessionManager
@@ -37,12 +37,24 @@ func testUnsupportedMethodErrorHandling(inputError error) error {
 	return inputError
 }
 
+func NewMockChainTracker() *MockChainTracker {
+	return &MockChainTracker{
+		DummyChainTracker: &chaintracker.DummyChainTracker{},
+		latestBlock:       0,
+		changeTime:        time.Now(),
+	}
+}
+
 func (mct *MockChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
 	return mct.latestBlock, nil, mct.changeTime, nil
 }
 
 func (mct *MockChainTracker) GetLatestBlockNum() (int64, time.Time) {
 	return mct.latestBlock, mct.changeTime
+}
+
+func (mct *MockChainTracker) GetAtomicLatestBlockNum() int64 {
+	return mct.latestBlock
 }
 
 func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Time) {
@@ -242,18 +254,18 @@ func TestHandleConsistency(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, string(replyDataBuf))
 			})
-			chainParser, chainProxy, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
-			mockChainTracker := &MockChainTracker{}
+			mockChainTracker := NewMockChainTracker()
 			require.GreaterOrEqual(t, len(play.chainTrackerBlocks), 1)
 			calls := 1                                                                                      // how many times we have setLatestBlock in the mock
 			mockChainTracker.SetLatestBlock(play.chainTrackerBlocks[0], time.Now().Add(-1*play.changeTime)) // change time is only in the past
 			require.NoError(t, err)
-			reliabilityManager := reliabilitymanager.NewReliabilityManager(mockChainTracker, nil, ts.Providers[0].Addr.String(), chainProxy, chainParser)
+			// Data Reliability disabled - Phase 2: removed reliabilityManager, use chainTracker directly
 			rpcproviderServer := RPCProviderServer{
-				reliabilityManager: reliabilityManager,
+				chainTracker: mockChainTracker,
 				rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{
 					ChainID: specId,
 				},
