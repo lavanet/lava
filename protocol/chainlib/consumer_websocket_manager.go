@@ -38,7 +38,6 @@ type ConsumerWebsocketManager struct {
 	chainId                       string
 	apiInterface                  string
 	connectionType                string
-	refererData                   *RefererData
 	relaySender                   RelaySender
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
@@ -54,7 +53,6 @@ type ConsumerWebsocketManagerOptions struct {
 	ChainID                       string
 	ApiInterface                  string
 	ConnectionType                string
-	RefererData                   *RefererData
 	RelaySender                   RelaySender
 	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	WebsocketConnectionUID        string
@@ -72,7 +70,6 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		chainId:                       options.ChainID,
 		apiInterface:                  options.ApiInterface,
 		connectionType:                options.ConnectionType,
-		refererData:                   options.RefererData,
 		consumerWsSubscriptionManager: options.ConsumerWsSubscriptionManager,
 		WebsocketConnectionUID:        options.WebsocketConnectionUID,
 		headerRateLimit:               options.headerRateLimit,
@@ -351,11 +348,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 				)
 			}()
-		}
-
-		refererMatch, referrerMatchCastedSuccessfully := websocketConn.Locals(cwm.refererMatchString).(string)
-		if referrerMatchCastedSuccessfully && refererMatch != "" && cwm.refererData != nil {
-			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
 		}
 
 		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)
