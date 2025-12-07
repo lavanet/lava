@@ -111,7 +111,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -267,7 +267,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -518,7 +518,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -638,7 +638,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				},
 			}
 
-			relayResult2.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult2.Request, ts.Providers[0].SK, relayResult2.Reply, true)
+			relayResult2.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult2.Request, ts.Providers[0].SK, relayResult2.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient2.
