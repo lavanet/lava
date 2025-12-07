@@ -348,9 +348,8 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 	)
 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
-	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
+	ok, relay, chainMessage, _ := rpccs.craftRelay(ctx)
 	if !ok {
-
 		return true, nil
 	}
 	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysConsumerIp)

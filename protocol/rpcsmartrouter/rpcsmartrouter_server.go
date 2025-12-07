@@ -340,7 +340,6 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpcss.craftRelay(ctx)
 	if !ok {
-
 		return true, nil
 	}
 	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysSmartRouterIp)

@@ -321,7 +321,6 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
 }
 
-
 func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
 	extractedResultFromCache := false

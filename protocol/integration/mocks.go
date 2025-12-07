@@ -19,8 +19,7 @@ import (
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
 
-type mockConsumerStateTracker struct {
-}
+type mockConsumerStateTracker struct{}
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }

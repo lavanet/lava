@@ -24,7 +24,6 @@ import (
 
 const SubscriptionTimeoutDuration = 15 * time.Minute
 
-
 type connectedConsumerContainer struct {
 	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]
 	firstSetupRequest  *pairingtypes.RelayRequest
@@ -43,8 +42,8 @@ type activeSubscription struct {
 }
 
 type ProviderNodeSubscriptionManager struct {
-	chainRouter ChainRouter
-	chainParser ChainParser
+	chainRouter                   ChainRouter
+	chainParser                   ChainParser
 	activeSubscriptions           map[string]*activeSubscription                   // key is request params hash
 	currentlyPendingSubscriptions map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
 	privKey                       *btcec.PrivateKey

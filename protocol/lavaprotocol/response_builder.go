@@ -63,7 +63,6 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	}
 	reply.Sig = sig
 
-
 	return reply, nil
 }
 
