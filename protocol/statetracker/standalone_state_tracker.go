@@ -82,7 +82,6 @@ func (sst *StandaloneStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-
 // RegisterForEpochUpdates registers for epoch updates using the time-based EpochTimer
 func (sst *StandaloneStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 	sst.epochUpdatables = append(sst.epochUpdatables, epochUpdatable)
@@ -105,7 +104,6 @@ func (sst *StandaloneStateTracker) RegisterForDowntimeParamsUpdates(ctx context.
 func (sst *StandaloneStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return utils.LavaFormatWarning("TxRelayPayment not supported in standalone mode", nil)
 }
-
 
 // LatestBlock returns the latest block number (returns 0 in standalone mode)
 func (sst *StandaloneStateTracker) LatestBlock() int64 {

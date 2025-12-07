@@ -22,13 +22,13 @@ import (
 )
 
 type RelayProcessor struct {
-	usedProviders *lavasession.UsedProviders
-	responses     chan *RelayResponse
-	quorumParams  common.QuorumParams
-	lock          sync.RWMutex
-	guid          uint64
-	selection     Selection
-	consistency   Consistency
+	usedProviders                *lavasession.UsedProviders
+	responses                    chan *RelayResponse
+	quorumParams                 common.QuorumParams
+	lock                         sync.RWMutex
+	guid                         uint64
+	selection                    Selection
+	consistency                  Consistency
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
@@ -91,7 +91,6 @@ func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
 }
-
 
 // SetStatefulRelayTargets stores the list of providers that received a stateful relay
 func (rp *RelayProcessor) SetStatefulRelayTargets(providers []string) {

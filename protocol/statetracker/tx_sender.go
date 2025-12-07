@@ -425,7 +425,6 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	return nil
 }
 
-
 func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	feesPart := strings.Split(msg, "insufficient fees; got: ")[1]
 	prices := strings.Split(feesPart, commontypes.TokenDenom)

@@ -98,7 +98,6 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
 	paymentUpdater := updaters.NewPaymentUpdater(pst.GetEventTracker())
 	paymentUpdaterRaw := pst.IStateTracker.RegisterForUpdates(ctx, paymentUpdater)
@@ -125,7 +124,6 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
-
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {
 	return pst.IStateTracker.LatestBlock()

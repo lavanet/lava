@@ -151,7 +151,6 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 	return false, nil
 }
 
-
 type tendermintRPC interface {
 	BlockResults(
 		ctx context.Context,

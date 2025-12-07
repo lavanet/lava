@@ -114,7 +114,6 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManage
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }
 
-
 // RegisterForDowntimeParamsUpdates mocks base method.
 func (m *MockConsumerStateTrackerInf) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	m.ctrl.T.Helper()
@@ -154,4 +153,3 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterForVersionUpdates(ctx
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterForVersionUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterForVersionUpdates), ctx, version, versionValidator)
 }
-
