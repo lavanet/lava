@@ -100,9 +100,6 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
 						// If the connection is closed, we can just return
-						if _, ok := err.(*websocket.CloseError); ok {
-							return
-						}
 						return
 					}
 
@@ -243,9 +240,6 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParams(t *t
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
 						// If the connection is closed, we can just return
-						if _, ok := err.(*websocket.CloseError); ok {
-							return
-						}
 						return
 					}
 
@@ -367,9 +361,6 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
 						// If the connection is closed, we can just return
-						if _, ok := err.(*websocket.CloseError); ok {
-							return
-						}
 						return
 					}
 
