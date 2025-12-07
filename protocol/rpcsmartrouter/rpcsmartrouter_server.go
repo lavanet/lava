@@ -125,13 +125,16 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 
 	go rpcss.chainListener.Serve(ctx, cmdFlags)
 
+	// Start periodic cleanup of stale subscription contexts to prevent memory leaks
+	go rpcss.cleanupStaleSubscriptions(ctx)
+
 	initialRelays := true
 	rpcss.relaysMonitor = relaysMonitor
 
 	// we trigger a latest block call to get some more information on our providers, using the relays monitor
 	if cmdFlags.RelaysHealthEnableFlag {
 		rpcss.relaysMonitor.SetRelaySender(func() (bool, error) {
-			success, err := rpcss.sendCraftedRelaysWrapper(initialRelays)
+			success, err := rpcss.sendCraftedRelaysWrapper(ctx, initialRelays)
 			if success {
 				initialRelays = false
 			}
@@ -139,7 +142,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 		})
 		rpcss.relaysMonitor.Start(ctx)
 	} else {
-		rpcss.sendCraftedRelaysWrapper(true)
+		rpcss.sendCraftedRelaysWrapper(ctx, true)
 	}
 	return nil
 }
@@ -152,10 +155,10 @@ func (rpcss *RPCSmartRouterServer) GetListeningAddress() string {
 	return rpcss.chainListener.GetListeningAddress()
 }
 
-func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
+func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(ctx context.Context, initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		rpcss.waitForPairing()
+		rpcss.waitForPairing(ctx)
 	}
 	success, err := rpcss.sendCraftedRelays(MaxRelayRetries, initialRelays)
 	if success {
@@ -164,16 +167,29 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(initialRelays bool) 
 	return success, err
 }
 
-func (rpcss *RPCSmartRouterServer) waitForPairing() {
-	reinitializedChan := make(chan bool)
+func (rpcss *RPCSmartRouterServer) waitForPairing(ctx context.Context) {
+	reinitializedChan := make(chan bool, 1) // Buffered channel to prevent deadlock
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop() // Ensure ticker is cleaned up
+
 		for {
-			if rpcss.sessionManager.Initialized() {
-				reinitializedChan <- true
+			select {
+			case <-ctx.Done():
+				// Context cancelled, exit goroutine
 				return
+			case <-ticker.C:
+				if rpcss.sessionManager.Initialized() {
+					// Non-blocking send to prevent deadlock
+					select {
+					case reinitializedChan <- true:
+					default:
+						// Channel already has value or receiver gone, but we can exit
+					}
+					return
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}()
 
@@ -181,6 +197,9 @@ func (rpcss *RPCSmartRouterServer) waitForPairing() {
 	for {
 		select {
 		case <-reinitializedChan:
+			return
+		case <-ctx.Done():
+			// Context cancelled, exit function
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1
@@ -586,6 +605,61 @@ func (rpcss *RPCSmartRouterServer) CancelSubscriptionContext(subscriptionKey str
 		delete(rpcss.connectedSubscriptionsContexts, subscriptionKey)
 	} else {
 		utils.LavaFormatWarning("tried to cancel context for subscription ID that does not exist", nil, utils.LogAttr("subscriptionID", subscriptionKey))
+	}
+}
+
+// cleanupStaleSubscriptions periodically checks for and removes stale/cancelled subscription contexts
+// This is a safety mechanism to prevent memory leaks from subscriptions that failed to cleanup properly
+func (rpcss *RPCSmartRouterServer) cleanupStaleSubscriptions(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			utils.LavaFormatTrace("stopping subscription cleanup goroutine")
+			return
+		case <-ticker.C:
+			rpcss.connectedSubscriptionsLock.Lock()
+
+			staleKeys := []string{}
+			for key, holder := range rpcss.connectedSubscriptionsContexts {
+				// Check if context is done (cancelled or timed out)
+				select {
+				case <-holder.Ctx.Done():
+					// Context is cancelled/done, mark for removal
+					staleKeys = append(staleKeys, key)
+				default:
+					// Context still active, keep it
+				}
+			}
+
+			// Remove stale entries
+			for _, key := range staleKeys {
+				holder := rpcss.connectedSubscriptionsContexts[key]
+				holder.CancelFunc() // Ensure cancellation
+				delete(rpcss.connectedSubscriptionsContexts, key)
+			}
+
+			currentSize := len(rpcss.connectedSubscriptionsContexts)
+			rpcss.connectedSubscriptionsLock.Unlock()
+
+			if len(staleKeys) > 0 {
+				utils.LavaFormatInfo("cleaned up stale subscription contexts",
+					utils.LogAttr("cleanedCount", len(staleKeys)),
+					utils.LogAttr("remainingCount", currentSize),
+				)
+			}
+
+			// Log warning if map is growing large
+			if currentSize > 5000 {
+				utils.LavaFormatWarning("subscription context map is large, potential memory leak",
+					nil,
+					utils.LogAttr("mapSize", currentSize),
+					utils.LogAttr("maxRecommended", 5000),
+				)
+			}
+		}
 	}
 }
 
@@ -1088,6 +1162,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 				errResponse = rpcss.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
+					// Explicit cleanup on error to prevent memory leak
+					rpcss.CancelSubscriptionContext(hashedParams)
+
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
@@ -1537,23 +1614,47 @@ func (rpcss *RPCSmartRouterServer) relaySubscriptionInner(ctx context.Context, h
 
 func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
 	var reply pairingtypes.RelayReply
-	gotFirstReplyChanOrErr := make(chan struct{})
+	gotFirstReplyChanOrErr := make(chan struct{}, 1) // Buffered to prevent blocking
+
+	// Atomic flag to prevent data race on reply status
+	var replyReceived atomic.Bool
+
+	// Create timer ONCE, not in loop - prevents memory leak from repeated time.After() calls
+	timeoutTimer := time.NewTimer(common.SubscriptionFirstReplyTimeout)
+	defer timeoutTimer.Stop() // Always cleanup timer resources
 
 	// Cancel the context after SubscriptionFirstReplyTimeout duration, so we won't hang forever
 	go func() {
-		for {
-			select {
-			case <-time.After(common.SubscriptionFirstReplyTimeout):
-				if reply.Data == nil {
-					utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-					)
-					rpcss.CancelSubscriptionContext(hashedParams) // Cancel the context with the provider, which will trigger the replyServer's context to be cancelled
-				}
-			case <-gotFirstReplyChanOrErr:
-				return
+		defer func() {
+			// Ensure we clean up on exit
+			utils.LavaFormatTrace("subscription timeout goroutine exiting",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+		}()
+
+		select {
+		case <-timeoutTimer.C:
+			if !replyReceived.Load() { // Use atomic check to prevent data race
+				utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				rpcss.CancelSubscriptionContext(hashedParams) // Cancel the context with the provider, which will trigger the replyServer's context to be cancelled
 			}
+			return // Exit after timeout - prevents goroutine leak
+		case <-gotFirstReplyChanOrErr:
+			return // Exit on success
+		case <-ctx.Done():
+			return // Exit on context cancellation - prevents orphaned goroutines
+		}
+	}()
+
+	// Ensure goroutine exits even on error paths
+	defer func() {
+		select {
+		case gotFirstReplyChanOrErr <- struct{}{}:
+		default: // Non-blocking send
 		}
 	}()
 
@@ -1563,14 +1664,21 @@ func (rpcss *RPCSmartRouterServer) getFirstSubscriptionReply(ctx context.Context
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
+		// Defer will signal channel, goroutine exits
 	default:
 		err := replyServer.RecvMsg(&reply)
-		gotFirstReplyChanOrErr <- struct{}{}
+		replyReceived.Store(true) // Mark as received atomically - prevents data race
 		if err != nil {
 			return nil, utils.LavaFormatError("Could not read reply from reply server", err,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
+			// Defer will signal channel, goroutine exits
+		}
+		// Signal successful receipt
+		select {
+		case gotFirstReplyChanOrErr <- struct{}{}:
+		default: // Non-blocking
 		}
 	}
 
