@@ -1044,7 +1044,10 @@ func restRelayTest(rpcURL string) error {
 	errors := []string{}
 	apiToTest := "%s/cosmos/base/tendermint/v1beta1/blocks/1"
 
-	reply, err := getRequest(fmt.Sprintf(apiToTest, rpcURL))
+	fullURL := fmt.Sprintf(apiToTest, rpcURL)
+	utils.LavaFormatDebug("restRelayTest: calling getRequest", utils.LogAttr("url", fullURL))
+	reply, err := getRequest(fullURL)
+	utils.LavaFormatDebug("restRelayTest: getRequest returned", utils.LogAttr("url", fullURL), utils.LogAttr("err", err))
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("%s", err))
 	} else if strings.Contains(string(reply), "error") {
@@ -1063,7 +1066,9 @@ func getRequest(url string) ([]byte, error) {
 		Timeout: 30 * time.Second,
 	}
 
+	utils.LavaFormatDebug("getRequest: calling client.Get", utils.LogAttr("url", url))
 	res, err := client.Get(url)
+	utils.LavaFormatDebug("getRequest: client.Get returned", utils.LogAttr("url", url), utils.LogAttr("err", err))
 	if err != nil {
 		return nil, err
 	}
@@ -1071,7 +1076,9 @@ func getRequest(url string) ([]byte, error) {
 		_ = res.Body.Close()
 	}()
 
+	utils.LavaFormatDebug("getRequest: calling io.ReadAll", utils.LogAttr("url", url))
 	body, err := io.ReadAll(res.Body)
+	utils.LavaFormatDebug("getRequest: io.ReadAll returned", utils.LogAttr("url", url), utils.LogAttr("err", err))
 	if err != nil {
 		return nil, err
 	}
