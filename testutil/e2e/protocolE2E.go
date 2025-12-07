@@ -1063,7 +1063,7 @@ func restRelayTest(rpcURL string) error {
 func getRequest(url string) ([]byte, error) {
 	// Create HTTP client with timeout to prevent hanging
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 2 * time.Second,
 	}
 
 	utils.LavaFormatDebug("getRequest: calling client.Get", utils.LogAttr("url", url))
