@@ -230,7 +230,6 @@ type RestChainListener struct {
 	relaySender      RelaySender
 	healthReporter   HealthReporter
 	logger           *metrics.RPCConsumerLogs
-	refererData      *RefererData
 	listeningAddress string
 }
 
@@ -238,7 +237,6 @@ type RestChainListener struct {
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	refererData *RefererData,
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
@@ -246,7 +244,6 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender:    relaySender,
 		healthReporter: healthReporter,
 		logger:         rpcConsumerLogs,
-		refererData:    refererData,
 	}
 
 	return chainListener
@@ -293,7 +290,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		analytics.SetProcessingTimestampBeforeRelay(startTime)
 		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
 			utils.LogAttr("GUID", ctx),
@@ -307,9 +303,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", restHeaders),
 		)
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, userIp, analytics, restHeaders)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
@@ -381,11 +374,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", restHeaders),
 		)
 
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, userIp, analytics, restHeaders)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
@@ -424,11 +413,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
-	}
-
-	if apil.refererData != nil && apil.refererData.Marker != "" {
-		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
-		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerUse)
 	}
 
 	app.Post("/*", handlerPost)

@@ -337,7 +337,6 @@ type TendermintRpcChainListener struct {
 	relaySender                   RelaySender
 	healthReporter                HealthReporter
 	logger                        *metrics.RPCConsumerLogs
-	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
 	websocketConnectionLimiter    *WebsocketConnectionLimiter
@@ -347,7 +346,6 @@ type TendermintRpcChainListener struct {
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	refererData *RefererData,
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
@@ -356,7 +354,6 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		relaySender:                   relaySender,
 		healthReporter:                healthReporter,
 		logger:                        rpcConsumerLogs,
-		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
 		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
@@ -405,13 +402,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,
 			RpcConsumerLogs:               apil.logger,
-			RefererMatchString:            refererMatchString,
+			RefererMatchString:            "",
 			CmdFlags:                      cmdFlags,
 			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
 			ChainID:                       chainID,
 			ApiInterface:                  apiInterface,
 			ConnectionType:                "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RefererData:                   apil.refererData,
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
@@ -456,11 +452,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 
@@ -540,11 +532,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
-		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
@@ -583,21 +571,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
-	}
-
-	if apil.refererData != nil && apil.refererData.Marker != "" {
-		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
-			if websocket.IsWebSocketUpgrade(c) {
-				c.Locals("allowed", true)
-				return c.Next()
-			}
-			return fiber.ErrUpgradeRequired
-		})
-		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
-		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerGet)
 	}
 
 	app.Post("/*", handlerPost)

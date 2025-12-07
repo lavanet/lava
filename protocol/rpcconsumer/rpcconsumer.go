@@ -39,12 +39,10 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
-	DebugRelaysFlagName           = "debug-relays"
-	DebugProbesFlagName           = "debug-probes"
-	refererBackendAddressFlagName = "referer-be-address"
-	refererMarkerFlagName         = "referer-marker"
-	reportsSendBEAddress          = "reports-be-address"
+	DefaultRPCConsumerFileName = "rpcconsumer.yml"
+	DebugRelaysFlagName        = "debug-relays"
+	DebugProbesFlagName        = "debug-probes"
+	reportsSendBEAddress       = "reports-be-address"
 )
 
 var (
@@ -128,7 +126,6 @@ type rpcConsumerStartOptions struct {
 	analyticsServerAddresses AnalyticsServerAddresses
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
-	refererData              *chainlib.RefererData
 	geoLocation              uint64
 }
 
@@ -164,7 +161,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	consumerAddr, privKey, err := getConsumerAddressAndKeys(options.clientCtx)
@@ -395,10 +391,10 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		specMethodType = http.MethodPost
 	}
-	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
+	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerReportsManager, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -633,14 +629,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				OptimizerQoSListen:       viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
-			var refererData *chainlib.RefererData
-			if viper.GetString(refererBackendAddressFlagName) != "" || viper.GetString(refererMarkerFlagName) != "" {
-				refererData = &chainlib.RefererData{
-					Address: viper.GetString(refererBackendAddressFlagName), // address is used to send to a backend if necessary
-					Marker:  viper.GetString(refererMarkerFlagName),         // marker is necessary to unwrap paths
-				}
-			}
-
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
@@ -667,7 +655,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				analyticsServerAddresses,
 				consumerPropagatedFlags,
 				rpcConsumerSharedState,
-				refererData,
 				geolocation,
 			})
 			return err
@@ -713,8 +700,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCConsumer.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
-	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")

@@ -69,8 +69,6 @@ const (
 	DefaultRPCSmartRouterFileName = "rpcsmartrouter.yml"
 	DebugRelaysFlagName           = "debug-relays"
 	DebugProbesFlagName           = "debug-probes"
-	refererBackendAddressFlagName = "referer-be-address"
-	refererMarkerFlagName         = "referer-marker"
 	reportsSendBEAddress          = "reports-be-address"
 )
 
@@ -176,7 +174,6 @@ type rpcSmartRouterStartOptions struct {
 	analyticsServerAddresses AnalyticsServerAddresses
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
-	refererData              *chainlib.RefererData
 	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as primary providers
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
@@ -213,7 +210,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		utils.LogAttr("nextEpochTime", time.Now().Add(timeUntilNext).Format("15:04:05 MST")),
 	)
 
-	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	// Smart router doesn't need consumer address from blockchain
@@ -590,12 +586,12 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		specMethodType = http.MethodPost
 	}
-	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
+	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
 	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, smartRouterReportsManager, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -887,14 +883,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				OptimizerQoSListen:       viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
-			var refererData *chainlib.RefererData
-			if viper.GetString(refererBackendAddressFlagName) != "" || viper.GetString(refererMarkerFlagName) != "" {
-				refererData = &chainlib.RefererData{
-					Address: viper.GetString(refererBackendAddressFlagName), // address is used to send to a backend if necessary
-					Marker:  viper.GetString(refererMarkerFlagName),         // marker is necessary to unwrap paths
-				}
-			}
-
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			// RPCSmartRouter always runs in standalone mode
@@ -957,7 +945,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				analyticsServerAddresses: analyticsServerAddresses,
 				cmdFlags:                 consumerPropagatedFlags,
 				stateShare:               rpcSmartRouterSharedState,
-				refererData:              refererData,
 				staticProvidersList:      staticProviderEndpoints,
 				backupProvidersList:      backupProviderEndpoints,
 				geoLocation:              geolocation,
@@ -965,6 +952,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				privKey:                  privKey,
 				lavaChainID:              lavaChainID,
 			})
+
 			return err
 		},
 	}
@@ -1006,8 +994,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// relays health check related flags
 	cmdRPCSmartRouter.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCSmartRouter.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCSmartRouter.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
-	cmdRPCSmartRouter.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCSmartRouter.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")

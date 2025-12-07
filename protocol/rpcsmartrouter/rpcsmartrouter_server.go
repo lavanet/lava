@@ -107,7 +107,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
-	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
 	wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
 ) (err error) {
@@ -128,7 +127,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpcss.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
-	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, refererData, wsSubscriptionManager)
+	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, wsSubscriptionManager)
 	if err != nil {
 		return err
 	}
