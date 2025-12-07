@@ -1066,9 +1066,7 @@ func getRequest(url string) ([]byte, error) {
 		Timeout: 2 * time.Second,
 	}
 
-	utils.LavaFormatDebug("getRequest: calling client.Get", utils.LogAttr("url", url))
 	res, err := client.Get(url)
-	utils.LavaFormatDebug("getRequest: client.Get returned", utils.LogAttr("url", url), utils.LogAttr("err", err))
 	if err != nil {
 		return nil, err
 	}
@@ -1076,9 +1074,7 @@ func getRequest(url string) ([]byte, error) {
 		_ = res.Body.Close()
 	}()
 
-	utils.LavaFormatDebug("getRequest: calling io.ReadAll", utils.LogAttr("url", url))
 	body, err := io.ReadAll(res.Body)
-	utils.LavaFormatDebug("getRequest: io.ReadAll returned", utils.LogAttr("url", url), utils.LogAttr("err", err))
 	if err != nil {
 		return nil, err
 	}
