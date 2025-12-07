@@ -36,6 +36,10 @@ rpcconsumer.yml
 .env.local
 provider*_eth.yml
 
+# Generated TLS certs/keys (local/dev) - never commit
+protocol/rpcprovider/cert.pem
+protocol/rpcprovider/key.pem
+
 # Node modules
 **/node_modules
 

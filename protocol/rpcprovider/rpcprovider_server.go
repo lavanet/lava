@@ -27,7 +27,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	rewardserver "github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -1022,20 +1021,20 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	}
 
 	var latestBlock int64
+	var requestedBlockHash []byte
+	var finalized bool
 
-	finalized := false
-
-	// Variables removed: requestedBlockHash, requestedHashes, modifiedReqBlock, updatedChainMessage
-
-	// TODO: handle cache on fork for dataReliability = false
+	// currently used when cache hits.
 	var reply *pairingtypes.RelayReply
 	var ignoredMetadata []pairingtypes.Metadata
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
 
-	// Note: cache.tryGetRelayReplyFromCache() will never be called since requestedBlockHash is always nil and finalized is always false
-	requestedBlockHash := []byte(nil) // Explicitly set to nil for clarity
-	if finalized {                    // try get reply from cache (requestedBlockHash check removed - always nil)
+	// TODO: handle cache on fork for dataReliability = false.
+	// Previously, finalized block data was calculated inside the Data Reliability logic.
+	// Since DR is removed, this calculation is missing, so finalizing cache will not work.
+	// This needs to be refactored to support caching without DR.
+	if finalized { // try get reply from cache (requestedBlockHash check removed - always nil)
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}
 
