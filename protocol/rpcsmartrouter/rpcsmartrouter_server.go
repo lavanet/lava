@@ -125,6 +125,9 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 
 	go rpcss.chainListener.Serve(ctx, cmdFlags)
 
+	// Start periodic cleanup of stale subscription contexts to prevent memory leaks
+	go rpcss.cleanupStaleSubscriptions(ctx)
+
 	initialRelays := true
 	rpcss.relaysMonitor = relaysMonitor
 
@@ -602,6 +605,61 @@ func (rpcss *RPCSmartRouterServer) CancelSubscriptionContext(subscriptionKey str
 		delete(rpcss.connectedSubscriptionsContexts, subscriptionKey)
 	} else {
 		utils.LavaFormatWarning("tried to cancel context for subscription ID that does not exist", nil, utils.LogAttr("subscriptionID", subscriptionKey))
+	}
+}
+
+// cleanupStaleSubscriptions periodically checks for and removes stale/cancelled subscription contexts
+// This is a safety mechanism to prevent memory leaks from subscriptions that failed to cleanup properly
+func (rpcss *RPCSmartRouterServer) cleanupStaleSubscriptions(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			utils.LavaFormatTrace("stopping subscription cleanup goroutine")
+			return
+		case <-ticker.C:
+			rpcss.connectedSubscriptionsLock.Lock()
+
+			staleKeys := []string{}
+			for key, holder := range rpcss.connectedSubscriptionsContexts {
+				// Check if context is done (cancelled or timed out)
+				select {
+				case <-holder.Ctx.Done():
+					// Context is cancelled/done, mark for removal
+					staleKeys = append(staleKeys, key)
+				default:
+					// Context still active, keep it
+				}
+			}
+
+			// Remove stale entries
+			for _, key := range staleKeys {
+				holder := rpcss.connectedSubscriptionsContexts[key]
+				holder.CancelFunc() // Ensure cancellation
+				delete(rpcss.connectedSubscriptionsContexts, key)
+			}
+
+			currentSize := len(rpcss.connectedSubscriptionsContexts)
+			rpcss.connectedSubscriptionsLock.Unlock()
+
+			if len(staleKeys) > 0 {
+				utils.LavaFormatInfo("cleaned up stale subscription contexts",
+					utils.LogAttr("cleanedCount", len(staleKeys)),
+					utils.LogAttr("remainingCount", currentSize),
+				)
+			}
+
+			// Log warning if map is growing large
+			if currentSize > 5000 {
+				utils.LavaFormatWarning("subscription context map is large, potential memory leak",
+					nil,
+					utils.LogAttr("mapSize", currentSize),
+					utils.LogAttr("maxRecommended", 5000),
+				)
+			}
+		}
 	}
 }
 
@@ -1104,6 +1162,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 				errResponse = rpcss.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
+					// Explicit cleanup on error to prevent memory leak
+					rpcss.CancelSubscriptionContext(hashedParams)
+
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
 						utils.LogAttr("Request", localRelayRequestData),
 						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
