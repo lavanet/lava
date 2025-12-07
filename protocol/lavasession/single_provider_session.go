@@ -99,30 +99,11 @@ func (sps *SingleProviderSession) VerifyLock() error {
 	return nil
 }
 
-// In case the user session is a data reliability we just need to verify that the cusum is the amount agreed between the consumer and the provider
-func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayRequestTotalCU uint64) error {
-	if relayRequestTotalCU != DataReliabilityCuSum {
-		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU})
-	}
-	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
-	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
-	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage",
-		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
-		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
-	)
-	return nil
-}
-
 // if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
 func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64, virtualEpoch uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
-	}
-
-	// checking if this user session is a data reliability user session.
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
 	}
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
@@ -281,22 +262,12 @@ func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
 	}
 }
 
-// for a different behavior in data reliability session failure add here
-func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
-	return nil
-}
-
 func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, utils.Attribute{Key: "sessionID", Value: sps.SessionID})
 	}
 	defer sps.lock.Unlock()
-
-	// handle data reliability session failure
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.onDataReliabilitySessionFailure()
-	}
 
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)

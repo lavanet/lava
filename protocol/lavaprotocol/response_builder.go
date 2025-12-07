@@ -10,7 +10,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -48,7 +47,7 @@ func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.Generi
 	return rpcResponse, nil
 }
 
-func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
+func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
@@ -64,19 +63,6 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	}
 	reply.Sig = sig
 
-	if signDataReliability {
-		// update sig blocks signature
-		relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, reply, consumerAddress)
-		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
-		if err != nil {
-			return nil, utils.LavaFormatError("failed signing finalization data", err,
-				utils.LogAttr("request", request),
-				utils.LogAttr("reply", reply),
-				utils.LogAttr("userAddr", consumerAddress),
-			)
-		}
-		reply.SigBlocks = sigBlocks
-	}
 	return reply, nil
 }
 
