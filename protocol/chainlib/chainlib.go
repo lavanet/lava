@@ -173,7 +173,16 @@ func GetChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint *lavas
 	case spectypes.APIInterfaceTendermintRPC:
 		proxyConstructor = NewtendermintRpcChainProxy
 	case spectypes.APIInterfaceRest:
-		proxyConstructor = NewRestChainProxy
+		// Use a wrapper that checks the URL scheme and chooses the appropriate proxy
+		proxyConstructor = func(ctx context.Context, nConns uint, endpoint lavasession.RPCProviderEndpoint, parser ChainParser) (ChainProxy, error) {
+			if len(endpoint.NodeUrls) > 0 {
+				isWs, err := IsUrlWebSocket(endpoint.NodeUrls[0].Url)
+				if err == nil && isWs {
+					return NewRestWsChainProxy(ctx, nConns, endpoint, parser)
+				}
+			}
+			return NewRestChainProxy(ctx, nConns, endpoint, parser)
+		}
 	case spectypes.APIInterfaceGrpc:
 		proxyConstructor = NewGrpcChainProxy
 	default:

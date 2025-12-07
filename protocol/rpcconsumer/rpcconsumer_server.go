@@ -394,7 +394,15 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 		seenBlock = 0
 	}
 
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
+	// Get extensions from chain message
+	relayExtensions := common.GetExtensionNames(chainMessage.GetExtensions())
+	// Include AdditionalExtensions (e.g., "websocket") which may not be in the extension parser
+	// but are needed for provider-side routing
+	if len(extensions.AdditionalExtensions) > 0 {
+		relayExtensions = append(relayExtensions, extensions.AdditionalExtensions...)
+	}
+
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), relayExtensions)
 	protocolMessage = chainlib.NewProtocolMessage(chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp)
 	return protocolMessage, nil
 }
