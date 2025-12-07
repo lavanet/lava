@@ -949,7 +949,7 @@ func (m *mockRelaySubscribeClient) Context() context.Context {
 }
 
 func (m *mockRelaySubscribeClient) Header() (metadata.MD, error) {
-	return nil, nil
+	return metadata.MD{}, nil
 }
 
 func (m *mockRelaySubscribeClient) Trailer() metadata.MD {
