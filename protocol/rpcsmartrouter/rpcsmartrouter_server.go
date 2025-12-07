@@ -331,14 +331,14 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 }
 
 // sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
-func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays bool) (success bool, err error) {
+func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays bool) (bool, error) {
 	utils.LavaFormatDebug("Sending crafted relays",
 		utils.LogAttr("chainId", rpcss.listenEndpoint.ChainID),
 		utils.LogAttr("apiInterface", rpcss.listenEndpoint.ApiInterface),
 	)
 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
-	ok, relay, chainMessage, err := rpcss.craftRelay(ctx)
+	ok, relay, chainMessage, _ := rpcss.craftRelay(ctx)
 	if !ok {
 		return true, nil
 	}
