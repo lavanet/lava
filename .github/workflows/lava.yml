@@ -22,32 +22,38 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
-      - name: cp lava
-        run: cp -r ~/work/lava/lava ~/go/lava
-      - name: export PATH
-        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-      - name: export GOPATH
-        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-      - name: export LAVA
-        run: export LAVA=/home/runner/work/lava/lava
+          cache: true
 
       ######################################################
       ### Run Consensus unitests
       ######################################################
-      - name: Lava Unit Tests
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+        timeout-minutes: 10
+
+      - name: Run Utils Tests
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test -v ./utils/... | go-junit-report -iocopy -set-exit-code -out utils-report.xml  
-          go test -v ./common/... | go-junit-report -iocopy -set-exit-code -out common-report.xml  
-          go test -v ./x/... | go-junit-report -iocopy -set-exit-code -out x-report.xml
+          set -o pipefail
+          go test -v ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
+
+      - name: Run Common Tests
+        run: |
+          set -o pipefail
+          go test -v ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
+
+      - name: Run X Tests
+        run: |
+          set -o pipefail
+          go test -v ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Test Results (Consensus)
-          path: "*-report.xml"
+          path: |
+            *-report.xml
+            *-test.log
 
   test-protocol:
     runs-on: ubuntu-latest
@@ -56,31 +62,33 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
-      - name: cp lava
-        run: cp -r ~/work/lava/lava ~/go/lava
-      - name: export GOPATH
-        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-      - name: export PATH
-        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
-      - name: export LAVA
-        run: export LAVA=/home/runner/work/lava/lava
+          cache: true
 
       ######################################################
       ### Run protocol unitests
       ######################################################
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+        timeout-minutes: 10
+
       - name: Run Lava Protocol Tests
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test -v ./protocol/... | go-junit-report -iocopy -set-exit-code -out protocol-report.xml  
-          go test -v ./ecosystem/cache/... | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+          set -o pipefail
+          go test -v ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+
+      - name: Run Cache Tests
+        run: |
+          set -o pipefail
+          go test -v ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Test Results (Protocol)
-          path: "*-report.xml"
+          path: |
+            *-report.xml
+            *-test.log
 
   test-protocol-e2e:
     runs-on: ubuntu-latest
@@ -89,22 +97,28 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: true
 
       ######################################################
       ### Run Lava Protocol E2E Tests
       ######################################################
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+        timeout-minutes: 25
+
       - name: Run Lava Protocol E2E Tests -timeout 1200s
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
+          set -o pipefail
+          go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s 2>&1 | tee protocol-e2e-test.log | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Test Results (Protocol E2E)
-          path: "*-report.xml"
+          path: |
+            *-report.xml
+            *-test.log
 
       - name: tail -n 1000 Lavad Logs
         if: always()
@@ -139,7 +153,12 @@ jobs:
       - name: JSON Proxy Error Only Logs
         if: always()
         continue-on-error: true
-        run: cat testutil/e2e/protocolLogs/02_jsonProxy_errors.log
+        run: |
+          if [ -f testutil/e2e/protocolLogs/02_jsonProxy_errors.log ]; then
+            cat testutil/e2e/protocolLogs/02_jsonProxy_errors.log
+          else
+            echo "Log file not found (test may not have run or failed early)"
+          fi
 
       - name: JSON Provider All Logs
         if: always()
@@ -364,22 +383,28 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: true
 
       ######################################################
       ### Run Lava Protocol Payment E2E Tests
       ######################################################
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+        timeout-minutes: 25
+
       - name: Run Lava Payment E2E Tests -timeout 1200s
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins
+          set -o pipefail
+          go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s 2>&1 | tee payment-e2e-test.log | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Test Results (Payment E2E)
-          path: "*-report.xml"
+          path: |
+            *-report.xml
+            *-test.log
 
       - name: Lavad Logs
         if: always()
