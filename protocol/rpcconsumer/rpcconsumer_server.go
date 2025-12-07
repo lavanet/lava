@@ -144,7 +144,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	// we trigger a latest block call to get some more information on our providers, using the relays monitor
 	if cmdFlags.RelaysHealthEnableFlag {
 		rpccs.relaysMonitor.SetRelaySender(func() (bool, error) {
-			success, err := rpccs.sendCraftedRelaysWrapper(initialRelays)
+			success, err := rpccs.sendCraftedRelaysWrapper(ctx, initialRelays)
 			if success {
 				initialRelays = false
 			}
@@ -152,7 +152,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 		})
 		rpccs.relaysMonitor.Start(ctx)
 	} else {
-		rpccs.sendCraftedRelaysWrapper(true)
+		rpccs.sendCraftedRelaysWrapper(ctx, true)
 	}
 	return nil
 }
@@ -165,10 +165,10 @@ func (rpccs *RPCConsumerServer) GetListeningAddress() string {
 	return rpccs.chainListener.GetListeningAddress()
 }
 
-func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
+func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(ctx context.Context, initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		rpccs.waitForPairing()
+		rpccs.waitForPairing(ctx)
 	}
 	success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
 	if success {
@@ -177,16 +177,29 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	return success, err
 }
 
-func (rpccs *RPCConsumerServer) waitForPairing() {
-	reinitializedChan := make(chan bool)
+func (rpccs *RPCConsumerServer) waitForPairing(ctx context.Context) {
+	reinitializedChan := make(chan bool, 1) // Buffered channel to prevent deadlock
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop() // Ensure ticker is cleaned up
+
 		for {
-			if rpccs.consumerSessionManager.Initialized() {
-				reinitializedChan <- true
+			select {
+			case <-ctx.Done():
+				// Context cancelled, exit goroutine
 				return
+			case <-ticker.C:
+				if rpccs.consumerSessionManager.Initialized() {
+					// Non-blocking send to prevent deadlock
+					select {
+					case reinitializedChan <- true:
+					default:
+						// Channel already has value or receiver gone, but we can exit
+					}
+					return
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}()
 
@@ -194,6 +207,9 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 	for {
 		select {
 		case <-reinitializedChan:
+			return
+		case <-ctx.Done():
+			// Context cancelled, exit function
 			return
 		case <-time.After(30 * time.Second):
 			numberOfTimesChecked += 1
