@@ -58,6 +58,10 @@ type ConsumerSessionManager struct {
 	// contains a sorted list of blocked addresses, sorted by their cu used this epoch for higher chance of response
 	currentlyBlockedProviderAddresses []string
 
+	// History of blocked providers from previous epoch to prevent known-bad providers
+	// from getting a clean slate at epoch transitions
+	previousEpochBlockedProviders map[string]struct{}
+
 	// backup providers - emergency fallback providers when no regular providers are available
 	backupProviders map[string]*ConsumerSessionsWithProvider // key == provider address
 
@@ -102,8 +106,14 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	defer func() {
 		// run this after done updating pairing
 		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // sleep up to 500ms in order to scatter different chains probe triggers
-		ctx := context.Background()
-		go csm.probeProviders(ctx, pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
+		go func() {
+			ctx := context.Background()
+			// Probe all providers to eliminate offline ones from affecting relays
+			csm.probeProviders(ctx, pairingList, epoch) // pairingList is thread safe it's members are not (accessed through csm.pairing)
+
+			// Check re-blocked providers from previous epoch and unblock if healthy
+			csm.checkAndUnblockHealthyReBlockedProviders(ctx, epoch)
+		}()
 	}()
 	previousEpoch := csm.atomicReadCurrentEpoch()
 	// clean qos manager purged epochs.
@@ -136,6 +146,19 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Reset States - MUST run even for same-epoch updates because each CSM has its own state
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make(map[uint64]string, pairingListLength)
+
+	// Save blocking history from previous epoch before clearing
+	// This prevents known-bad providers from getting a clean slate at epoch transition
+	csm.previousEpochBlockedProviders = make(map[string]struct{})
+	for _, blockedAddr := range csm.currentlyBlockedProviderAddresses {
+		csm.previousEpochBlockedProviders[blockedAddr] = struct{}{}
+		utils.LavaFormatDebug("UpdateAllProviders: Preserving blocked provider from previous epoch",
+			utils.Attribute{Key: "provider", Value: blockedAddr},
+			utils.Attribute{Key: "fromEpoch", Value: previousEpoch},
+			utils.Attribute{Key: "toEpoch", Value: epoch},
+		)
+	}
+
 	csm.secondChanceGivenToAddresses = make(map[string]struct{})
 
 	csm.reportedProviders.Reset()
@@ -147,7 +170,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.RemoveAddonAddresses("", nil)
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
-	csm.closePurgedUnusedPairingsConnections() // this must be before updating csm.pairingPurge as we want to close the connections of older sessions (prev 2 epochs)
+	// Save reference to old pairingPurge BEFORE updating, so we can close connections outside the lock
+	oldPairingPurge := csm.pairingPurge
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
@@ -156,6 +180,20 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		providerAddressToEndpoint[provider.PublicLavaAddress] = provider.Endpoints[0].NetworkAddress
 	}
 	csm.setValidAddressesToDefaultValue("", nil, context.Background()) // the starting point is that valid addresses are equal to pairing addresses.
+
+	// Re-block providers that were blocked in previous epoch and still exist in new pairing
+	// This prevents users from hitting known-bad providers at epoch transition
+	for blockedAddr := range csm.previousEpochBlockedProviders {
+		if _, exists := csm.pairing[blockedAddr]; exists {
+			utils.LavaFormatDebug("UpdateAllProviders: Re-blocking provider from previous epoch",
+				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "epoch", Value: epoch},
+			)
+			// Remove from valid addresses to keep it blocked
+			csm.removeAddressFromValidAddresses(blockedAddr)
+		}
+	}
+
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
@@ -171,6 +209,11 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.stickySessions.DeleteOldSessions(previousEpoch)
 
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
+
+	// Close old connections OUTSIDE the lock to prevent blocking other operations
+	// This is safe because after an entire epoch, it's impossible to have sessions connected to the old purged list
+	go csm.closePurgedUnusedPairingsConnections(oldPairingPurge)
+
 	return nil
 }
 
@@ -246,8 +289,13 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // After 2 epochs we need to close all open connections.
 // otherwise golang garbage collector is not closing network connections and they
 // will remain open forever.
-func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
-	for providerAddr, purgedPairing := range csm.pairingPurge {
+// This function is now called asynchronously to avoid blocking UpdateAllProviders while closing connections.
+func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingPurge map[string]*ConsumerSessionsWithProvider) {
+	if pairingPurge == nil {
+		return
+	}
+
+	for providerAddr, purgedPairing := range pairingPurge {
 		callbackPurge := func() {
 			for _, endpoint := range purgedPairing.Endpoints {
 				for _, endpointConnection := range endpoint.Connections {
@@ -1272,6 +1320,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesList(providerAddress string) {
 	csm.lock.Lock()
 	defer csm.lock.Unlock()
+	csm.validateAndReturnBlockedProviderToValidAddressesListLocked(providerAddress)
+}
+
+// internal version that assumes csm.lock is already held
+func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesListLocked(providerAddress string) {
 	for idx, addr := range csm.currentlyBlockedProviderAddresses {
 		if addr == providerAddress {
 			// Remove it from the csm.currentlyBlockedProviderAddresses
@@ -1420,6 +1473,110 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
 		}
 		return err
+	}
+}
+
+// checkAndUnblockHealthyReBlockedProviders checks providers that were re-blocked from previous epoch
+// and immediately unblocks them if their probe was successful. This only happens at epoch transitions.
+// Other providers and normal blocking behavior during an epoch remain unchanged.
+func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx context.Context, epoch uint64) {
+	// Check if epoch is still current - if epoch changed, our previousEpochBlockedProviders data is stale
+	currentEpoch := csm.atomicReadCurrentEpoch()
+	if epoch != currentEpoch {
+		utils.LavaFormatDebug("Skipping re-blocked provider check due to epoch change",
+			utils.Attribute{Key: "requestedEpoch", Value: epoch},
+			utils.Attribute{Key: "currentEpoch", Value: currentEpoch},
+		)
+		return
+	}
+
+	// Ensure context has unique identifier for probing
+	if _, found := utils.GetUniqueIdentifier(ctx); !found {
+		ctx = utils.AppendUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+	}
+
+	// Clean up previousEpochBlockedProviders after processing
+	defer func() {
+		csm.lock.Lock()
+		csm.previousEpochBlockedProviders = make(map[string]struct{})
+		csm.lock.Unlock()
+	}()
+
+	csm.lock.Lock()
+
+	// First pass: Identify which re-blocked providers had successful probes
+	providersNeedingComprehensiveProbe := make(map[string]*ConsumerSessionsWithProvider)
+
+	for blockedAddr := range csm.previousEpochBlockedProviders {
+		cswp, exists := csm.pairing[blockedAddr]
+		if !exists {
+			continue // Provider not in current pairing
+		}
+
+		// Check if provider is in reported providers
+		// If probe FAILED in this epoch, provider would be in reportedProviders (line 1208)
+		// If probe SUCCEEDED in this epoch, provider would NOT be in reportedProviders
+		if !csm.reportedProviders.IsReported(blockedAddr) {
+			// Probe succeeded! Provider is healthy, immediately unblock
+			utils.LavaFormatInfo("Re-blocked provider's probe succeeded, immediately unblocking",
+				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+			csm.validateAndReturnBlockedProviderToValidAddressesListLocked(blockedAddr)
+
+			// Clean up: Remove from reported providers if it was there from previous epoch
+			// This prevents periodic reconnection attempts from trying this provider again
+			csm.reportedProviders.RemoveReport(blockedAddr)
+		} else {
+			// Probe failed with tryReconnect=false
+			// Mark for comprehensive probe with tryReconnect=true to retry disabled endpoints
+			providersNeedingComprehensiveProbe[blockedAddr] = cswp
+			utils.LavaFormatDebug("Re-blocked provider's initial probe failed, will try comprehensive probe",
+				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+		}
+	}
+	csm.lock.Unlock()
+
+	// Second pass: For providers that failed initial probe, try comprehensive probe with reconnection
+	// This gives disabled endpoints a chance to be retried and re-enabled
+	for blockedAddr, cswp := range providersNeedingComprehensiveProbe {
+		utils.LavaFormatDebug("Attempting comprehensive probe with endpoint reconnection",
+			utils.Attribute{Key: "provider", Value: blockedAddr},
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.LogAttr("GUID", ctx),
+		)
+
+		// Probe with tryReconnect=TRUE - retry disabled endpoints
+		_, providerAddress, err := csm.probeProvider(
+			ctx,
+			cswp,
+			epoch,
+			true, // tryReconnect=TRUE: Comprehensive probe, retries disabled endpoints
+		)
+
+		if err == nil {
+			// Comprehensive probe succeeded! Provider recovered, unblock immediately
+			utils.LavaFormatInfo("Re-blocked provider's comprehensive probe succeeded, immediately unblocking",
+				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			csm.reportedProviders.RemoveReport(providerAddress)
+		} else {
+			// Still failing even with comprehensive probe, keep blocked
+			utils.LavaFormatDebug("Re-blocked provider still unhealthy after comprehensive probe, keeping blocked",
+				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "error", Value: err.Error()},
+				utils.Attribute{Key: "epoch", Value: epoch},
+				utils.LogAttr("GUID", ctx),
+			)
+			// Provider stays in reportedProviders and will be retried by periodic reconnection (30s)
+		}
 	}
 }
 
