@@ -1439,10 +1439,8 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 		// add consumer processing timestamp before provider metric and start measuring time after the provider replied
 		rpcss.rpcSmartRouterLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface)
 
-		if relayResult.ProviderTrailer == nil {
-			// if the provider trailer is nil, we need to initialize it
-			relayResult.ProviderTrailer = metadata.MD{}
-		}
+		// Always reset the provider trailer to ensure we get fresh trailer data for each relay
+		relayResult.ProviderTrailer = metadata.MD{}
 
 		relaySentTime := time.Now()
 		var responseHeader metadata.MD
