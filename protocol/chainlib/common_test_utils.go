@@ -126,9 +126,16 @@ func CreateChainLibMocks(
 	services []string,
 ) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
 	utils.SetGlobalLoggingLevel("debug")
-	closeServer = nil
+	// Create a cancellable context for the connector to prevent leaks
+	connectorCtx, cancelConnector := context.WithCancel(ctx)
+
+	closeServer = func() {
+		cancelConnector()
+	}
+
 	spec, err := specutils.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
+		cancelConnector()
 		return nil, nil, nil, nil, nil, err
 	}
 	index, err := strconv.Atoi(apiInterface)
@@ -137,6 +144,7 @@ func CreateChainLibMocks(
 	}
 	chainParser, err := NewChainParser(apiInterface)
 	if err != nil {
+		cancelConnector()
 		return nil, nil, nil, nil, nil, err
 	}
 	var chainRouter ChainRouter
@@ -150,6 +158,7 @@ func CreateChainLibMocks(
 	}
 	addons, extensions, err := chainParser.SeparateAddonsExtensions(context.Background(), services)
 	if err != nil {
+		cancelConnector()
 		return nil, nil, nil, nil, nil, err
 	}
 
@@ -166,6 +175,7 @@ func CreateChainLibMocks(
 		grpcServer := grpc.NewServer()
 		lis, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
+			cancelConnector()
 			return nil, nil, nil, closeServer, nil, err
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
@@ -183,9 +193,15 @@ func CreateChainLibMocks(
 			}
 		}()
 		time.Sleep(10 * time.Millisecond)
-		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
+		chainRouter, err = GetChainRouter(connectorCtx, 1, endpoint, chainParser)
 		if err != nil {
+			grpcServer.Stop()
+			cancelConnector()
 			return nil, nil, nil, closeServer, nil, err
+		}
+		closeServer = func() {
+			grpcServer.Stop()
+			cancelConnector()
 		}
 	} else {
 		var mockWebSocketServer *httptest.Server
@@ -196,6 +212,7 @@ func CreateChainLibMocks(
 		closeServer = func() {
 			mockHttpServer.Close()
 			mockWebSocketServer.Close()
+			cancelConnector()
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
 		if len(extensions) > 0 {
@@ -203,8 +220,11 @@ func CreateChainLibMocks(
 			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: extensions})
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
-		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
+		chainRouter, err = GetChainRouter(connectorCtx, 1, endpoint, chainParser)
 		if err != nil {
+			mockHttpServer.Close()
+			mockWebSocketServer.Close()
+			cancelConnector()
 			return nil, nil, nil, closeServer, nil, err
 		}
 	}

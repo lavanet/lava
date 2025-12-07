@@ -115,8 +115,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		DoAndReturn(func(ctx context.Context, in *pairingtypes.RelayRequest, opts ...grpc.CallOption) (*pairingtypes.RelayReply, error) {
 			// Find the TrailerCallOption among the options (could be 1 or 2 options now)
 			for _, opt := range opts {
-				trailerCallOption, ok := opt.(grpc.TrailerCallOption)
-				if ok {
+				if trailerCallOption, ok := opt.(grpc.TrailerCallOption); ok {
 					trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
 					break
 				}

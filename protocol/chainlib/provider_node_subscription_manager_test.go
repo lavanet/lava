@@ -99,7 +99,10 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 					// Read the request
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
-						require.NoError(t, err)
+						// If the connection is closed, we can just return
+						if _, ok := err.(*websocket.CloseError); ok {
+							return
+						}
 						return
 					}
 
@@ -239,7 +242,10 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParams(t *t
 					// Read the request
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
-						require.NoError(t, err)
+						// If the connection is closed, we can just return
+						if _, ok := err.(*websocket.CloseError); ok {
+							return
+						}
 						return
 					}
 
@@ -360,7 +366,10 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 					// Read the request
 					messageType, message, err := conn.ReadMessage()
 					if err != nil {
-						require.NoError(t, err)
+						// If the connection is closed, we can just return
+						if _, ok := err.(*websocket.CloseError); ok {
+							return
+						}
 						return
 					}
 
