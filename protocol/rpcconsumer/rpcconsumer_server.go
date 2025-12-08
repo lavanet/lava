@@ -34,6 +34,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 	"github.com/lavanet/lava/v5/utils/rand"
 	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
@@ -1414,6 +1415,15 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			utils.LogAttr("seenBlock", relayResult.Request.RelayData.SeenBlock),
 			utils.LogAttr("extensions", relayResult.Request.RelayData.Extensions),
 		)
+
+		// Log memory and message size before sending to provider
+		requestDataSize := len(relayRequest.RelayData.Data)
+		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_pre_provider_send", requestDataSize,
+			utils.Attribute{Key: "provider_address", Value: providerPublicAddress},
+			utils.Attribute{Key: "chain_id", Value: rpccs.listenEndpoint.ChainID},
+			utils.Attribute{Key: "api_interface", Value: rpccs.listenEndpoint.ApiInterface},
+		)
+
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 
@@ -1446,6 +1456,17 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				return nil, 0, decompressErr, false
 			}
 			reply.Data = decompressedData
+		}
+
+		// Log memory and message size after receiving from provider
+		if reply != nil && reply.Data != nil {
+			responseDataSize := len(reply.Data)
+			memoryutils.LogMemoryAndMessageSize(ctx, "consumer_post_provider_receive", responseDataSize,
+				utils.Attribute{Key: "provider_address", Value: providerPublicAddress},
+				utils.Attribute{Key: "chain_id", Value: rpccs.listenEndpoint.ChainID},
+				utils.Attribute{Key: "api_interface", Value: rpccs.listenEndpoint.ApiInterface},
+				utils.Attribute{Key: "was_compressed", Value: appLevelCompressed},
+			)
 		}
 
 		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)

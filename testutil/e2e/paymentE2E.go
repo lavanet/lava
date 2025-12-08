@@ -347,6 +347,11 @@ func runPaymentE2E(timeout time.Duration) {
 	lt.startLavaProvidersForPayment(ctx)
 	lt.startLavaConsumerForPayment(ctx)
 
+	// Wait for consumer to sync with the chain to avoid epoch mismatch errors
+	// Providers start first and sync, so we need to give consumer time to catch up
+	utils.LavaFormatInfo("Waiting for consumer to sync with chain...")
+	time.Sleep(10 * time.Second)
+
 	// check the client's Tendermint port is up
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)

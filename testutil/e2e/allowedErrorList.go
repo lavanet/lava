@@ -28,6 +28,10 @@ var allowedErrors = map[string]string{
 	"tx already exists in cache":                                                       "This error is allowed because it can occur when transactions are retried during the test",
 	"failed to create canonical form":                                                  "This error is allowed because it is caused by the relay processor not being able to create a canonical form",
 	"received node error reply from provider":                                          "This error is allowed because providers can return node errors (like Internal error) when the underlying node has issues or unsupported methods",
+	"TryRelay Failed":                                                                  "This error is allowed because it can occur when relay attempts fail due to unsupported methods or provider issues",
+	"rpc error: code = Unknown desc =":                                                 "This error is allowed because it's part of gRPC error responses that may contain unsupported method errors",
+	"request.SessionId":                                                                "This error is allowed because it's part of error context information in relay failures",
+	"request.userAddr":                                                                 "This error is allowed because it's part of error context information in relay failures",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{

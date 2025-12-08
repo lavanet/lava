@@ -102,6 +102,10 @@ jobs:
       ######################################################
       ### Run Lava Protocol E2E Tests
       ######################################################
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y psmisc
+        timeout-minutes: 5
+
       - name: Install go-junit-report
         run: go install github.com/jstemmer/go-junit-report/v2@latest
         timeout-minutes: 25
@@ -388,6 +392,10 @@ jobs:
       ######################################################
       ### Run Lava Protocol Payment E2E Tests
       ######################################################
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y psmisc
+        timeout-minutes: 5
+
       - name: Install go-junit-report
         run: go install github.com/jstemmer/go-junit-report/v2@latest
         timeout-minutes: 25
