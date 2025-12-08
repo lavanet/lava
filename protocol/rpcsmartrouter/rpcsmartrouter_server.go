@@ -652,7 +652,7 @@ func (rpcss *RPCSmartRouterServer) cleanupStaleSubscriptions(ctx context.Context
 			rpcss.connectedSubscriptionsLock.Lock()
 			for _, key := range staleKeys {
 				if holder, exists := rpcss.connectedSubscriptionsContexts[key]; exists {
-					if holder != nil && holder.CancelFunc != nil {
+					if holder != nil {
 						holder.CancelFunc() // Ensure cancellation
 					}
 					delete(rpcss.connectedSubscriptionsContexts, key)

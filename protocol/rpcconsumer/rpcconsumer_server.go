@@ -669,7 +669,7 @@ func (rpccs *RPCConsumerServer) cleanupStaleSubscriptions(ctx context.Context) {
 			rpccs.connectedSubscriptionsLock.Lock()
 			for _, key := range staleKeys {
 				if holder, exists := rpccs.connectedSubscriptionsContexts[key]; exists {
-					if holder != nil && holder.CancelFunc != nil {
+					if holder != nil {
 						holder.CancelFunc() // Ensure cancellation
 					}
 					delete(rpccs.connectedSubscriptionsContexts, key)
