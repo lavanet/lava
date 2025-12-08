@@ -628,11 +628,17 @@ func (rpcss *RPCSmartRouterServer) cleanupStaleSubscriptions(ctx context.Context
 			utils.LavaFormatTrace("stopping subscription cleanup goroutine")
 			return
 		case <-ticker.C:
+			// Create a snapshot of holders to check
 			rpcss.connectedSubscriptionsLock.Lock()
-
-			staleKeys := []string{}
+			holdersToCheck := make(map[string]*CancelableContextHolder, len(rpcss.connectedSubscriptionsContexts))
 			for key, holder := range rpcss.connectedSubscriptionsContexts {
-				// Check if context is done (cancelled or timed out)
+				holdersToCheck[key] = holder
+			}
+			rpcss.connectedSubscriptionsLock.Unlock()
+
+			// Check contexts WITHOUT holding the lock
+			staleKeys := []string{}
+			for key, holder := range holdersToCheck {
 				select {
 				case <-holder.Ctx.Done():
 					// Context is cancelled/done, mark for removal
@@ -642,15 +648,16 @@ func (rpcss *RPCSmartRouterServer) cleanupStaleSubscriptions(ctx context.Context
 				}
 			}
 
-			// Remove stale entries
+			// Re-acquire lock only for deletion
+			rpcss.connectedSubscriptionsLock.Lock()
 			for _, key := range staleKeys {
-				holder := rpcss.connectedSubscriptionsContexts[key]
-				if holder != nil && holder.CancelFunc != nil {
-					holder.CancelFunc() // Ensure cancellation
+				if holder, exists := rpcss.connectedSubscriptionsContexts[key]; exists {
+					if holder != nil && holder.CancelFunc != nil {
+						holder.CancelFunc() // Ensure cancellation
+					}
+					delete(rpcss.connectedSubscriptionsContexts, key)
 				}
-				delete(rpcss.connectedSubscriptionsContexts, key)
 			}
-
 			currentSize := len(rpcss.connectedSubscriptionsContexts)
 			rpcss.connectedSubscriptionsLock.Unlock()
 
