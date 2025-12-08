@@ -1065,12 +1065,16 @@ func restRelayTest(rpcURL string) error {
 }
 
 func getRequest(url string) ([]byte, error) {
-	// Create HTTP client with timeout to prevent hanging
-	client := &http.Client{
-		Timeout: 2 * time.Second,
+	// Use an explicit context deadline so requests can't hang
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	res, err := client.Get(url)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1081,6 +1085,11 @@ func getRequest(url string) ([]byte, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	// Surface HTTP errors instead of silently returning a body
+	if res.StatusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("http %d: %s", res.StatusCode, string(body))
 	}
 
 	return body, nil
@@ -2159,12 +2168,21 @@ func runProtocolE2E(timeout time.Duration) {
 	testStartTime := time.Now()
 	repeat(10, func(m int) {
 		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
+		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
+		fmt.Printf("[rest-relay] starting request %d/10 at %s\n", m, time.Since(testStartTime))
+		_ = os.Stdout.Sync()
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
+			fmt.Printf("[rest-relay] request %d/10 failed: %v\n", m, err)
+			_ = os.Stdout.Sync()
 			panic(err)
 		}
+		fmt.Printf("[rest-relay] finished request %d/10 at %s\n", m, time.Since(testStartTime))
+		_ = os.Stdout.Sync()
 		// Small delay between requests to avoid overwhelming the system
 		time.Sleep(100 * time.Millisecond)
+		fmt.Printf("[rest-relay] post-sleep after request %d/10 at %s\n", m, time.Since(testStartTime))
+		_ = os.Stdout.Sync()
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
