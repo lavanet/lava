@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -1403,6 +1404,7 @@ func TestIsValidResponse(t *testing.T) {
 
 // Mock metrics tracker for testing error recovery metrics
 type MockMetricsTracker struct {
+	mu                         sync.Mutex
 	nodeErrorRecoveryCalls     []MetricCall
 	protocolErrorRecoveryCalls []MetricCall
 }
@@ -1424,6 +1426,8 @@ func (m *MockMetricsTracker) SetRelayNodeErrorMetric(providerAddress string, cha
 }
 
 func (m *MockMetricsTracker) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.nodeErrorRecoveryCalls = append(m.nodeErrorRecoveryCalls, MetricCall{
 		chainId:      chainId,
 		apiInterface: apiInterface,
@@ -1432,6 +1436,8 @@ func (m *MockMetricsTracker) SetNodeErrorRecoveredSuccessfullyMetric(chainId str
 }
 
 func (m *MockMetricsTracker) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.protocolErrorRecoveryCalls = append(m.protocolErrorRecoveryCalls, MetricCall{
 		chainId:      chainId,
 		apiInterface: apiInterface,
@@ -1441,6 +1447,24 @@ func (m *MockMetricsTracker) SetProtocolErrorRecoveredSuccessfullyMetric(chainId
 
 func (m *MockMetricsTracker) GetChainIdAndApiInterface() (string, string) {
 	return "TEST_CHAIN", "rest"
+}
+
+// GetNodeErrorRecoveryCalls returns a copy of the calls for thread-safe reading
+func (m *MockMetricsTracker) GetNodeErrorRecoveryCalls() []MetricCall {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	calls := make([]MetricCall, len(m.nodeErrorRecoveryCalls))
+	copy(calls, m.nodeErrorRecoveryCalls)
+	return calls
+}
+
+// GetProtocolErrorRecoveryCalls returns a copy of the calls for thread-safe reading
+func (m *MockMetricsTracker) GetProtocolErrorRecoveryCalls() []MetricCall {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	calls := make([]MetricCall, len(m.protocolErrorRecoveryCalls))
+	copy(calls, m.protocolErrorRecoveryCalls)
+	return calls
 }
 
 // Test: Quorum met with node errors only
@@ -1492,13 +1516,16 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 
 	// Simulate 3 successful responses
 	for i := 0; i < 3; i++ {
-		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 20*time.Millisecond)
 	}
 
 	// Simulate 2 node errors
 	for i := 3; i < 5; i++ {
 		go SendNodeError(relayProcessor, fmt.Sprintf("provider%d", i), 0)
 	}
+
+	// Give goroutines a chance to start executing
+	time.Sleep(10 * time.Millisecond)
 
 	// Wait for results
 	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
@@ -1528,15 +1555,18 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify metrics - nodeError recovery metric should be called since we had node errors
-	require.Equal(t, 1, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should be called once")
-	require.Equal(t, 0, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should NOT be called")
+	nodeErrorCalls := mockMetrics.GetNodeErrorRecoveryCalls()
+	protocolErrorCalls := mockMetrics.GetProtocolErrorRecoveryCalls()
 
-	if len(mockMetrics.nodeErrorRecoveryCalls) > 0 {
+	require.Equal(t, 1, len(nodeErrorCalls), "Node error recovery metric should be called once")
+	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
+
+	if len(nodeErrorCalls) > 0 {
 		// Note: Due to timing, we might not get all 2 error responses before quorum is met
 		// The important thing is that the metric is incremented when quorum is met with some node errors
-		require.Greater(t, len(mockMetrics.nodeErrorRecoveryCalls[0].attempt), 0, "Should record node errors")
-		require.Equal(t, "TEST_CHAIN", mockMetrics.nodeErrorRecoveryCalls[0].chainId)
-		require.Equal(t, "rest", mockMetrics.nodeErrorRecoveryCalls[0].apiInterface)
+		require.Greater(t, len(nodeErrorCalls[0].attempt), 0, "Should record node errors")
+		require.Equal(t, "TEST_CHAIN", nodeErrorCalls[0].chainId)
+		require.Equal(t, "rest", nodeErrorCalls[0].apiInterface)
 	}
 }
 
@@ -1614,15 +1644,18 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify metrics
-	require.Equal(t, 0, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should NOT be called")
-	require.Equal(t, 1, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should be called once")
+	nodeErrorCalls := mockMetrics.GetNodeErrorRecoveryCalls()
+	protocolErrorCalls := mockMetrics.GetProtocolErrorRecoveryCalls()
 
-	if len(mockMetrics.protocolErrorRecoveryCalls) > 0 {
+	require.Equal(t, 0, len(nodeErrorCalls), "Node error recovery metric should NOT be called")
+	require.Equal(t, 1, len(protocolErrorCalls), "Protocol error recovery metric should be called once")
+
+	if len(protocolErrorCalls) > 0 {
 		// Note: Due to timing, we might not get all error responses before quorum is met
 		// The important thing is that the metric is incremented when quorum is met with some protocol errors
-		require.Greater(t, len(mockMetrics.protocolErrorRecoveryCalls[0].attempt), 0, "Should record protocol errors")
-		require.Equal(t, "TEST_CHAIN", mockMetrics.protocolErrorRecoveryCalls[0].chainId)
-		require.Equal(t, "rest", mockMetrics.protocolErrorRecoveryCalls[0].apiInterface)
+		require.Greater(t, len(protocolErrorCalls[0].attempt), 0, "Should record protocol errors")
+		require.Equal(t, "TEST_CHAIN", protocolErrorCalls[0].chainId)
+		require.Equal(t, "rest", protocolErrorCalls[0].apiInterface)
 	}
 }
 
@@ -1710,13 +1743,16 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 	// the corresponding metrics ARE incremented correctly.
 
 	// Verify metric consistency: if we have node errors, metric should be called
+	nodeErrorCalls := mockMetrics.GetNodeErrorRecoveryCalls()
+	protocolErrorCalls := mockMetrics.GetProtocolErrorRecoveryCalls()
+
 	if actualNodeErrors > 0 {
-		require.Equal(t, 1, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should be called when node errors present")
+		require.Equal(t, 1, len(nodeErrorCalls), "Node error recovery metric should be called when node errors present")
 	}
 
 	// Verify metric consistency: if we have protocol errors, metric should be called
 	if actualProtocolErrors > 0 {
-		require.Equal(t, 1, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should be called when protocol errors present")
+		require.Equal(t, 1, len(protocolErrorCalls), "Protocol error recovery metric should be called when protocol errors present")
 	}
 
 	// Verify we had successful responses (quorum)
@@ -1798,6 +1834,9 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify NO metrics were called (no recovery since quorum not met)
-	require.Equal(t, 0, len(mockMetrics.nodeErrorRecoveryCalls), "Node error recovery metric should NOT be called")
-	require.Equal(t, 0, len(mockMetrics.protocolErrorRecoveryCalls), "Protocol error recovery metric should NOT be called")
+	nodeErrorCalls := mockMetrics.GetNodeErrorRecoveryCalls()
+	protocolErrorCalls := mockMetrics.GetProtocolErrorRecoveryCalls()
+
+	require.Equal(t, 0, len(nodeErrorCalls), "Node error recovery metric should NOT be called")
+	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
 }

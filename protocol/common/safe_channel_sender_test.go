@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -17,11 +16,12 @@ func TestSafeChannelSender(t *testing.T) {
 
 		msg := 42
 		chEnd := make(chan bool)
+		ready := make(chan bool)
 		go func() {
+			ready <- true // Signal that goroutine is starting
 			defer func() { chEnd <- true }()
 			select {
 			case received, ok := <-ch:
-				fmt.Println("got message from channel", ok, received)
 				require.True(t, ok)
 				require.Equal(t, msg, received)
 				return
@@ -30,8 +30,10 @@ func TestSafeChannelSender(t *testing.T) {
 			}
 		}()
 
-		// wait for the routine to listen to the channel
-		<-time.After(time.Second * 1)
+		// wait for the routine to be ready
+		<-ready
+		// Give it a small additional time to ensure it's listening on the channel
+		time.Sleep(10 * time.Millisecond)
 		sender.Send(msg)
 		sender.Close()
 		require.True(t, sender.closed)
