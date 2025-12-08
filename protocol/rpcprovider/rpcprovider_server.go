@@ -32,6 +32,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -277,6 +278,14 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "requestBlock", Value: request.RelayData.GetRequestBlock()},
 	)
 
+	// Log memory and message size at provider entry point
+	requestDataSize := len(request.RelayData.Data)
+	memoryutils.LogMemoryAndMessageSize(ctx, "provider_request_receive", requestDataSize,
+		utils.Attribute{Key: "chain_id", Value: rpcps.rpcProviderEndpoint.ChainID},
+		utils.Attribute{Key: "api_interface", Value: rpcps.rpcProviderEndpoint.ApiInterface},
+		utils.Attribute{Key: "consumer_address", Value: request.RelaySession.Provider},
+	)
+
 	// Check if consumer supports compression via custom header
 	md, _ := metadata.FromIncomingContext(ctx)
 	compressionSupport := md.Get(common.LavaCompressionSupportHeader)
@@ -419,10 +428,17 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Application-level compression if consumer supports it
 	if reply != nil && reply.Data != nil {
+		// Log memory and message size before sending to consumer
+		originalSize := len(reply.Data)
+		memoryutils.LogMemoryAndMessageSize(ctx, "provider_pre_consumer_send", originalSize,
+			utils.Attribute{Key: "chain_id", Value: rpcps.rpcProviderEndpoint.ChainID},
+			utils.Attribute{Key: "api_interface", Value: rpcps.rpcProviderEndpoint.ApiInterface},
+			utils.Attribute{Key: "consumer_supports_compression", Value: consumerSupportsCompression},
+		)
+
 		// Only compress if consumer explicitly supports it via custom header
 		// Don't rely on grpc-accept-encoding which is always present
 		if consumerSupportsCompression {
-			originalSize := len(reply.Data)
 			compressedData, wasCompressed, compressErr := common.CompressData(reply.Data, common.CompressionThreshold)
 
 			if compressErr != nil {
@@ -1163,6 +1179,15 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if debugLatency {
 		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
+
+	// Log memory and message size before sending to node
+	requestDataSize := len(request.RelayData.Data)
+	memoryutils.LogMemoryAndMessageSize(ctx, "provider_pre_node_send", requestDataSize,
+		utils.Attribute{Key: "chain_id", Value: rpcps.rpcProviderEndpoint.ChainID},
+		utils.Attribute{Key: "api_interface", Value: rpcps.rpcProviderEndpoint.ApiInterface},
+		utils.Attribute{Key: "api_name", Value: chainMsg.GetApi().Name},
+	)
+
 	// add stickiness header
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetTokenFromGrpcContext(ctx)})}})
 	// For static providers, use the provider name instead of address
@@ -1184,6 +1209,18 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if latency.Milliseconds() != 0 { // if node error empty time is returned
 		go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
 	}
+
+	// Log memory and message size after receiving from node
+	if relayReplayWrapper != nil && relayReplayWrapper.RelayReply != nil && relayReplayWrapper.RelayReply.Data != nil {
+		responseDataSize := len(relayReplayWrapper.RelayReply.Data)
+		memoryutils.LogMemoryAndMessageSize(ctx, "provider_post_node_receive", responseDataSize,
+			utils.Attribute{Key: "chain_id", Value: rpcps.rpcProviderEndpoint.ChainID},
+			utils.Attribute{Key: "api_interface", Value: rpcps.rpcProviderEndpoint.ApiInterface},
+			utils.Attribute{Key: "api_name", Value: chainMsg.GetApi().Name},
+			utils.Attribute{Key: "latency_ms", Value: latency.Milliseconds()},
+		)
+	}
+
 	return relayReplayWrapper, err
 }
 
