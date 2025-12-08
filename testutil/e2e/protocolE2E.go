@@ -350,6 +350,10 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 		}
 	}
 
+	if time.Now().After(deadline) {
+		panic("Lava Check Failed: timeout waiting for spec query")
+	}
+
 	// Additionally, wait for validators to be available (needed for init_e2e.sh operator_address call)
 	utils.LavaFormatInfo("Waiting for validators to be ready...")
 	stakingQueryClient := stakingtypes.NewQueryClient(lt.grpcConn)
@@ -2160,7 +2164,7 @@ func runProtocolE2E(timeout time.Duration) {
 			panic(err)
 		}
 		// Small delay between requests to avoid overwhelming the system
-		// time.Sleep(100 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
