@@ -2230,6 +2230,18 @@ func runProtocolE2E(timeout time.Duration) {
 			panic(fmt.Sprintf("REST relay tests taking too long - %s elapsed", time.Since(testStartTime)))
 		}
 	})
+	fmt.Printf("[rest-relay] loop completed in %s\n", time.Since(testStartTime))
+	_ = os.Stdout.Sync()
+
+	// Watch for hangs after the REST loop completes (e.g., during log marking or finish).
+	postLoopWatchdog := time.AfterFunc(10*time.Second, func() {
+		buf := make([]byte, 1<<16)
+		n := runtime.Stack(buf, true)
+		fmt.Printf("[rest-relay-post] stalled after loop; stack dump:\n%s\n", string(buf[:n]))
+		_ = os.Stdout.Sync()
+		panic("post-rest relay watchdog timeout")
+	})
+	defer postLoopWatchdog.Stop()
 
 	utils.LavaFormatInfo("All 10 REST relay tests completed successfully")
 
