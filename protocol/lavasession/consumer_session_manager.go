@@ -846,7 +846,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else if stickiness != "" {
-		providers = csm.providerOptimizer.ChooseProviderFromTopTier(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		providers = csm.providerOptimizer.ChooseBestProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
 		ignoredProvidersListCopy := make(map[string]struct{}, len(ignoredProvidersList))
@@ -854,7 +854,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			ignoredProvidersListCopy[k] = v
 		}
 		for i := 0; i < wantedProviders; i++ {
-			provider, _ := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
+			provider := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
 			}

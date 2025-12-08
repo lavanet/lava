@@ -178,7 +178,8 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 					return
 				}
 
-				utils.LavaFormatError("Panic occurred", fmt.Errorf("%v", r),
+				panicMsg := fmt.Sprintf("%v", r)
+				utils.LavaFormatError("Panic occurred", fmt.Errorf("%s", panicMsg),
 					utils.LogAttr("funcName", funcName),
 					utils.LogAttr("logName", logName))
 				if retries < maxRetries {
@@ -188,7 +189,10 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 						utils.LogAttr("remainingRetries", maxRetries-retries))
 					go lt.execCommandWithRetry(ctx, funcName, logName, command)
 				} else {
-					lt.saveLogs()
+					// Don't call saveLogs() if the panic came from saveLogs() itself
+					if !strings.Contains(panicMsg, "Error found in logs on") {
+						lt.saveLogs()
+					}
 					panic(fmt.Errorf("maximum number of retries exceeded for %s", funcName))
 				}
 			}
@@ -200,7 +204,11 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
 	defer func() {
 		if r := recover(); r != nil {
-			lt.saveLogs()
+			panicMsg := fmt.Sprintf("%v", r)
+			// Don't call saveLogs() if the panic came from saveLogs() itself
+			if !strings.Contains(panicMsg, "Error found in logs on") {
+				lt.saveLogs()
+			}
 			panic(fmt.Sprintf("Panic happened with command: %s", command))
 		}
 	}()
@@ -246,10 +254,14 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 			defer lt.wg.Done()
 			defer func() {
 				if r := recover(); r != nil {
-					utils.LavaFormatError("Panic in command listener", fmt.Errorf("%v", r),
+					panicMsg := fmt.Sprintf("%v", r)
+					utils.LavaFormatError("Panic in command listener", fmt.Errorf("%s", panicMsg),
 						utils.LogAttr("funcName", funcName),
 						utils.LogAttr("logName", logName))
-					lt.saveLogs()
+					// Don't call saveLogs() if the panic came from saveLogs() itself
+					if !strings.Contains(panicMsg, "Error found in logs on") {
+						lt.saveLogs()
+					}
 				}
 			}()
 			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
@@ -490,7 +502,8 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	}
 	// force go's test timeout to 0, otherwise the default is 10m; our timeout
 	// will be enforced by the given ctx.
-	command := fmt.Sprintf("%s test ./testutil/e2e/proxy/. -v -timeout 0 -args -host eth", goExecutablePath)
+	// Note: -tags=manual is required because proxy test uses manual build tag to prevent it from running in regular test suites
+	command := fmt.Sprintf("%s test -tags=manual ./testutil/e2e/proxy/. -v -timeout 0 -args -host eth", goExecutablePath)
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
@@ -1353,8 +1366,14 @@ func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit 
 		defer lt.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				utils.LavaFormatError("Panic in emergency mode command", fmt.Errorf("%v", r))
-				lt.saveLogs()
+				panicMsg := fmt.Sprintf("%v", r)
+				utils.LavaFormatError("Panic in emergency mode command", fmt.Errorf("%s", panicMsg))
+				// Don't call saveLogs() if the panic came from saveLogs() itself to avoid recursive panics
+				if !strings.Contains(panicMsg, "Error found in logs on") {
+					lt.saveLogs()
+				} else {
+					utils.LavaFormatError("Skipping saveLogs() call to prevent recursive panic", nil)
+				}
 			}
 		}()
 
@@ -1853,8 +1872,12 @@ func runProtocolE2E(timeout time.Duration) {
 
 		// Save logs and handle panic
 		if r := recover(); r != nil {
-			lt.saveLogs()
-			panic(fmt.Sprintf("E2E Failed: %v", r))
+			panicMsg := fmt.Sprintf("%v", r)
+			// Don't call saveLogs() if the panic came from saveLogs() itself to prevent recursive panic
+			if !strings.Contains(panicMsg, "Error found in logs on") {
+				lt.saveLogs()
+			}
+			panic(fmt.Sprintf("E2E Failed: %s", panicMsg))
 		} else {
 			lt.saveLogs()
 		}
