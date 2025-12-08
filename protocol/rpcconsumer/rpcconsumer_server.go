@@ -52,6 +52,14 @@ const (
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
 	initRelaysDappId                         = "-init-"
 	initRelaysConsumerIp                     = ""
+
+	// Subscription and pairing management constants
+	MaxSubscriptionMapSizeWarningThreshold = 5000
+	SubscriptionCleanupInterval            = 1 * time.Minute
+	PairingInitializationTimeout           = 30 * time.Second
+	PairingCheckInterval                   = 1 * time.Second
+	BlockGapWarningThreshold               = 1000
+	RelayRetryBackoffDuration              = 2 * time.Millisecond
 )
 
 // NoResponseTimeout is imported from protocolerrors to avoid duplicate error code registration
@@ -184,7 +192,7 @@ func (rpccs *RPCConsumerServer) waitForPairing(ctx context.Context) {
 	reinitializedChan := make(chan bool, 1) // Buffered channel to prevent deadlock
 
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(PairingCheckInterval)
 		defer ticker.Stop() // Ensure ticker is cleaned up
 
 		for {
@@ -214,7 +222,7 @@ func (rpccs *RPCConsumerServer) waitForPairing(ctx context.Context) {
 		case <-ctx.Done():
 			// Context cancelled, exit function
 			return
-		case <-time.After(30 * time.Second):
+		case <-time.After(PairingInitializationTimeout):
 			numberOfTimesChecked += 1
 			utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
 				utils.LogAttr("times_checked", numberOfTimesChecked),
@@ -325,7 +333,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 				}
 			}
 		}
-		time.Sleep(2 * time.Millisecond)
+		time.Sleep(RelayRetryBackoffDuration)
 	}
 
 	return success, err
@@ -627,7 +635,7 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 // cleanupStaleSubscriptions periodically checks for and removes stale/cancelled subscription contexts
 // This is a safety mechanism to prevent memory leaks from subscriptions that failed to cleanup properly
 func (rpccs *RPCConsumerServer) cleanupStaleSubscriptions(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(SubscriptionCleanupInterval)
 	defer ticker.Stop()
 
 	for {
@@ -653,7 +661,9 @@ func (rpccs *RPCConsumerServer) cleanupStaleSubscriptions(ctx context.Context) {
 			// Remove stale entries
 			for _, key := range staleKeys {
 				holder := rpccs.connectedSubscriptionsContexts[key]
-				holder.CancelFunc() // Ensure cancellation
+				if holder != nil && holder.CancelFunc != nil {
+					holder.CancelFunc() // Ensure cancellation
+				}
 				delete(rpccs.connectedSubscriptionsContexts, key)
 			}
 
@@ -668,11 +678,11 @@ func (rpccs *RPCConsumerServer) cleanupStaleSubscriptions(ctx context.Context) {
 			}
 
 			// Log warning if map is growing large
-			if currentSize > 5000 {
+			if currentSize > MaxSubscriptionMapSizeWarningThreshold {
 				utils.LavaFormatWarning("subscription context map is large, potential memory leak",
 					nil,
 					utils.LogAttr("mapSize", currentSize),
-					utils.LogAttr("maxRecommended", 5000),
+					utils.LogAttr("maxRecommended", MaxSubscriptionMapSizeWarningThreshold),
 				)
 			}
 		}
@@ -1235,7 +1245,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
-			if expectedBH-latestBlock > 1000 {
+			if expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
