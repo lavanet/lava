@@ -176,13 +176,40 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 		return err
 	}
 	defer respBody.Close()
-	var respmsgs []JsonrpcMessage
-	if err := json.NewDecoder(respBody).Decode(&respmsgs); err != nil {
+
+	dec := json.NewDecoder(respBody)
+
+	// Read start of array '['
+	t, err := dec.Token()
+	if err != nil {
 		return err
 	}
-	for i := 0; i < len(respmsgs); i++ {
-		op.resp <- &respmsgs[i]
+	if delim, ok := t.(json.Delim); !ok || delim != '[' {
+		return fmt.Errorf("expected start of array, got %v", t)
 	}
+
+	// Stream decode each message one by one to avoid buffering entire array in memory
+	for dec.More() {
+		var respmsg JsonrpcMessage
+		if err := dec.Decode(&respmsg); err != nil {
+			return err
+		}
+		select {
+		case op.resp <- &respmsg:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	// Read end of array ']'
+	t, err = dec.Token()
+	if err != nil {
+		return err
+	}
+	if delim, ok := t.(json.Delim); !ok || delim != ']' {
+		return fmt.Errorf("expected end of array, got %v", t)
+	}
+
 	return nil
 }
 

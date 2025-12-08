@@ -154,7 +154,7 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 	var idInterface interface{}
 	err := json.Unmarshal(rawID, &idInterface)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to unmarshal id from response", err, utils.Attribute{Key: "id", Value: string(rawID)})
+		return nil, fmt.Errorf("failed to unmarshal id from response: %w (id: %s)", err, string(rawID))
 	}
 
 	switch id := idInterface.(type) {
@@ -167,7 +167,7 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 		return jsonrpcId(nil), nil
 	default:
 		typ := reflect.TypeOf(id)
-		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, []utils.Attribute{{Key: "id", Value: string(rawID)}, {Key: "id type", Value: typ}}...)
+		return nil, fmt.Errorf("failed to unmarshal id not a string or float (id: %s, type: %v)", string(rawID), typ)
 	}
 }
 
