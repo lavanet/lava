@@ -94,6 +94,27 @@ func TestResourceLimiter_SelectBucket_CUPriority(t *testing.T) {
 			expectedBucket: BucketHeavy,
 			reason:         "Case insensitive debug_ prefix",
 		},
+		{
+			name:           "Batch method with ampersands uses normal bucket",
+			computeUnits:   50,
+			methodName:     "eth_getBlockByNumber&eth_getBlockByNumber&eth_getBlockByNumber",
+			expectedBucket: BucketNormal,
+			reason:         "Method contains ampersands (batch method)",
+		},
+		{
+			name:           "Batch method with high CU still uses normal bucket",
+			computeUnits:   500,
+			methodName:     "debug_trace&debug_trace",
+			expectedBucket: BucketNormal,
+			reason:         "Method contains ampersands - bypasses CU check",
+		},
+		{
+			name:           "Single ampersand in method name",
+			computeUnits:   200,
+			methodName:     "eth_call&eth_call",
+			expectedBucket: BucketNormal,
+			reason:         "Method contains ampersand - bypasses heavy classification",
+		},
 	}
 
 	for _, tt := range tests {
