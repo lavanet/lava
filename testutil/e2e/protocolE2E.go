@@ -2166,6 +2166,16 @@ func runProtocolE2E(timeout time.Duration) {
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	testStartTime := time.Now()
+	// Watchdog to crash with a stack trace if this loop ever hangs unexpectedly.
+	watchdog := time.AfterFunc(20*time.Second, func() {
+		buf := make([]byte, 1<<16)
+		n := runtime.Stack(buf, true)
+		fmt.Printf("[rest-relay] watchdog fired after 20s; stack dump:\n%s\n", string(buf[:n]))
+		_ = os.Stdout.Sync()
+		panic("rest relay watchdog timeout")
+	})
+	defer watchdog.Stop()
+
 	repeat(10, func(m int) {
 		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
