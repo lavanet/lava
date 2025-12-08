@@ -142,6 +142,7 @@ func DialHTTPWithClient(endpoint string, client *http.Client) (*Client, error) {
 // DialHTTP creates a new RPC client that connects to an RPC server over HTTP.
 func DialHTTP(endpoint string) (*Client, error) {
 	optimizedClient := &http.Client{
+		Timeout:   common.DefaultHTTPTimeout, // 5 minute timeout for entire request/response cycle
 		Transport: common.OptimizedHttpTransport(),
 	}
 	return DialHTTPWithClient(endpoint, optimizedClient)
