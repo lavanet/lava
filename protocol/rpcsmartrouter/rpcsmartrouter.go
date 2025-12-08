@@ -254,7 +254,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	parallelJobs := len(options.rpcEndpoints)
 	wg.Add(parallelJobs)
 
-	errCh := make(chan error)
+	errCh := make(chan error, parallelJobs)
 
 	utils.LavaFormatInfo("RPCSmartRouter identifier: " + smartRouterIdentifier)
 	utils.LavaFormatInfo("RPCSmartRouter setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})

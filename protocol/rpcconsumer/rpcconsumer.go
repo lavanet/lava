@@ -224,7 +224,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	parallelJobs := len(options.rpcEndpoints)
 	wg.Add(parallelJobs)
 
-	errCh := make(chan error)
+	errCh := make(chan error, parallelJobs)
 
 	// Register for updates
 	consumerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(consumerMetricsManager))

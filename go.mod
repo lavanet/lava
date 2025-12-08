@@ -51,6 +51,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.16.0
 	github.com/tidwall/sjson v1.2.5
+	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.3.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80
