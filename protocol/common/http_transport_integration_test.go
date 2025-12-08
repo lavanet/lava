@@ -573,11 +573,11 @@ func TestHighConcurrencyStressTest(t *testing.T) {
 
 	var requestCount int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		count := atomic.AddInt64(&requestCount, 1)
 		// Simulate variable latency
-		time.Sleep(time.Duration(5+requestCount%10) * time.Millisecond)
+		time.Sleep(time.Duration(5+count%10) * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]int64{"count": requestCount})
+		json.NewEncoder(w).Encode(map[string]int64{"count": count})
 	}))
 	defer server.Close()
 
