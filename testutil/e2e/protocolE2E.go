@@ -2166,33 +2166,64 @@ func runProtocolE2E(timeout time.Duration) {
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	testStartTime := time.Now()
-	// Watchdog to crash with a stack trace if this loop ever hangs unexpectedly.
-	watchdog := time.AfterFunc(20*time.Second, func() {
-		buf := make([]byte, 1<<16)
-		n := runtime.Stack(buf, true)
-		fmt.Printf("[rest-relay] watchdog fired after 20s; stack dump:\n%s\n", string(buf[:n]))
-		_ = os.Stdout.Sync()
-		panic("rest relay watchdog timeout")
-	})
-	defer watchdog.Stop()
+	// Progress watchdog: if we don't advance for >5s, dump stacks and panic.
+	watchdogDone := make(chan struct{})
+	var latestReq int32
+	var lastProgress atomic.Int64
+	var phase atomic.Value // string: where we are in the loop
+	phase.Store("init")
+	lastProgress.Store(time.Now().UnixNano())
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-watchdogDone:
+				return
+			case <-ticker.C:
+				last := time.Unix(0, lastProgress.Load())
+				if time.Since(last) > 5*time.Second {
+					req := atomic.LoadInt32(&latestReq)
+					ph := phase.Load().(string)
+					buf := make([]byte, 1<<16)
+					n := runtime.Stack(buf, true)
+					fmt.Printf("[rest-relay-watchdog] stalled after request %d phase=%s; lastProgress=%s ago; stack:\n%s\n", req, ph, time.Since(last), string(buf[:n]))
+					_ = os.Stdout.Sync()
+					panic("rest relay watchdog timeout")
+				}
+			}
+		}
+	}()
+	defer close(watchdogDone)
 
 	repeat(10, func(m int) {
 		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
 		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
 		fmt.Printf("[rest-relay] starting request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
+		atomic.StoreInt32(&latestReq, int32(m))
+		phase.Store("start-request")
+		lastProgress.Store(time.Now().UnixNano())
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
 			fmt.Printf("[rest-relay] request %d/10 failed: %v\n", m, err)
 			_ = os.Stdout.Sync()
 			panic(err)
 		}
+		phase.Store("after-request")
+		lastProgress.Store(time.Now().UnixNano())
 		fmt.Printf("[rest-relay] finished request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
 		// Small delay between requests to avoid overwhelming the system
+		phase.Store("sleeping")
+		lastProgress.Store(time.Now().UnixNano())
 		time.Sleep(100 * time.Millisecond)
+		phase.Store("after-sleep")
+		lastProgress.Store(time.Now().UnixNano())
 		fmt.Printf("[rest-relay] post-sleep after request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
+		atomic.StoreInt32(&latestReq, int32(m))
+		lastProgress.Store(time.Now().UnixNano())
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
