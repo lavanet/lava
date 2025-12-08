@@ -2217,7 +2217,18 @@ func runProtocolE2E(timeout time.Duration) {
 		// Small delay between requests to avoid overwhelming the system
 		phase.Store("sleeping")
 		lastProgress.Store(time.Now().UnixNano())
-		time.Sleep(100 * time.Millisecond)
+		sleepTimer := time.NewTimer(100 * time.Millisecond)
+		sleepGuard := time.AfterFunc(2*time.Second, func() {
+			buf := make([]byte, 1<<16)
+			n := runtime.Stack(buf, true)
+			fmt.Printf("[rest-relay] sleep stuck at request %d/10; stack:\n%s\n", m, string(buf[:n]))
+			_ = os.Stdout.Sync()
+			panic("rest relay sleep stuck")
+		})
+		<-sleepTimer.C
+		if !sleepGuard.Stop() {
+			<-sleepTimer.C
+		}
 		phase.Store("after-sleep")
 		lastProgress.Store(time.Now().UnixNano())
 		fmt.Printf("[rest-relay] post-sleep after request %d/10 at %s\n", m, time.Since(testStartTime))
