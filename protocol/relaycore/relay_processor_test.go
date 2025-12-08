@@ -819,7 +819,7 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 
 	// Simulate 3 successful responses
 	for i := 0; i < 3; i++ {
-		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 0)
+		go SendSuccessResp(relayProcessor, fmt.Sprintf("provider%d", i), 20*time.Millisecond)
 	}
 
 	// Simulate 2 node errors
