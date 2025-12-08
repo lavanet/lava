@@ -2164,7 +2164,7 @@ func runProtocolE2E(timeout time.Duration) {
 			panic(err)
 		}
 		// Small delay between requests to avoid overwhelming the system
-		// time.Sleep(100 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
