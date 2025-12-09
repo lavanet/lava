@@ -17,22 +17,18 @@ GASPRICE="0.00002ulava"
 echo "---- Specs proposal ----"
 lavad tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-wait_next_block
-wait_next_block
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-sleep 8 # need to sleep because plan policies need the specs when setting chain policies verifications
+sleep 6 # need to sleep because plan policies need the specs when setting chain policies verifications
 
 # Plans proposal
 echo "---- Plans proposal ----"
 wait_next_block
 lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-wait_next_block
-wait_next_block
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-sleep 8
+sleep 6
 
 STAKE="500000000000ulava"
 
