@@ -1159,23 +1159,27 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	lt.commandsMu.RLock()
 
 	_ = os.Stdout.Sync()
-	fmt.Printf("[commandsMu] acquired RLock in finishTestSuccessfully\n")
+	fmt.Printf("[commandsMu] acquired RLock, copying %d commands\n", len(lt.commands))
 	_ = os.Stdout.Sync()
+
+	// CRITICAL FIX: Copy the commands map so we can release the lock BEFORE killing
+	// This prevents deadlock when killed processes' monitoring goroutines try to acquire Write lock
+	commandsCopy := make(map[string]*exec.Cmd)
+	for name, cmd := range lt.commands {
+		commandsCopy[name] = cmd
+	}
+
+	lt.commandsMu.RUnlock()
+	_ = os.Stdout.Sync()
+	fmt.Printf("[commandsMu] released RLock after copying commands\n")
+	_ = os.Stdout.Sync()
+
+	_ = os.Stdout.Sync()
+	fmt.Printf("[finishTestSuccessfully] iterating over %d commands to kill\n", len(commandsCopy))
+	_ = os.Stdout.Sync()
+
 	time.Sleep(1 * time.Second)
-
-	defer func() {
-		lt.commandsMu.RUnlock()
-		_ = os.Stdout.Sync()
-		fmt.Printf("[commandsMu] released RLock in finishTestSuccessfully\n")
-		_ = os.Stdout.Sync()
-	}()
-
-	_ = os.Stdout.Sync()
-	fmt.Printf("[finishTestSuccessfully] iterating over %d commands to kill\n", len(lt.commands))
-	_ = os.Stdout.Sync()
-
-	time.Sleep(1 * time.Second)
-	for name, cmd := range lt.commands { // kill all the project commands
+	for name, cmd := range commandsCopy { // kill all the project commands
 		_ = os.Stdout.Sync()
 		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
 		_ = os.Stdout.Sync()
