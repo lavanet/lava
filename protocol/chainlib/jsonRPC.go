@@ -382,7 +382,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,
 			RpcConsumerLogs:               apil.logger,
-			RefererMatchString:            "",
 			CmdFlags:                      cmdFlags,
 			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
 			ChainID:                       chainID,

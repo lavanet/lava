@@ -402,7 +402,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,
 			RpcConsumerLogs:               apil.logger,
-			RefererMatchString:            "",
 			CmdFlags:                      cmdFlags,
 			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
 			ChainID:                       chainID,
