@@ -2147,21 +2147,24 @@ func runProtocolE2E(timeout time.Duration) {
 		}
 	}()
 
-	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+	fmt.Printf("Waiting for finishing current epoch and waiting for 2 more virtual epochs\n")
+	_ = os.Stdout.Sync()
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
-		utils.LavaFormatInfo(fmt.Sprintf("Waiting for virtual epoch signal %d/3", m))
+		fmt.Printf("Waiting for virtual epoch signal %d/3\n", m)
+		_ = os.Stdout.Sync()
 		<-signalChannel
-		utils.LavaFormatInfo(fmt.Sprintf("Received virtual epoch signal %d/3", m))
+		fmt.Printf("Received virtual epoch signal %d/3\n", m)
+		_ = os.Stdout.Sync()
 	})
 
-	utils.LavaFormatInfo("All virtual epoch signals received")
+	fmt.Printf("All virtual epoch signals received\n")
+	_ = os.Stdout.Sync()
 
-	utils.LavaFormatInfo("Virtual epochs completed, starting REST relay tests",
-		utils.LogAttr("url", url),
-		utils.LogAttr("totalTests", 10))
+	fmt.Printf("Virtual epochs completed, starting REST relay tests url=%s totalTests=%d\n", url, 10)
+	_ = os.Stdout.Sync()
 
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
@@ -2197,7 +2200,8 @@ func runProtocolE2E(timeout time.Duration) {
 	defer close(watchdogDone)
 
 	repeat(10, func(m int) {
-		utils.LavaFormatInfo(fmt.Sprintf("REST relay test progress: %d/10 (elapsed: %s)", m, time.Since(testStartTime)))
+		fmt.Printf("REST relay test progress: %d/10 (elapsed: %s)\n", m, time.Since(testStartTime))
+		_ = os.Stdout.Sync()
 		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
 		fmt.Printf("[rest-relay] starting request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
@@ -2205,7 +2209,6 @@ func runProtocolE2E(timeout time.Duration) {
 		phase.Store("start-request")
 		lastProgress.Store(time.Now().UnixNano())
 		if err := restRelayTest(url); err != nil {
-			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
 			fmt.Printf("[rest-relay] request %d/10 failed: %v\n", m, err)
 			_ = os.Stdout.Sync()
 			panic(err)
@@ -2254,11 +2257,13 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 	defer postLoopWatchdog.Stop()
 
-	utils.LavaFormatInfo("All 10 REST relay tests completed successfully")
+	fmt.Printf("All 10 REST relay tests completed successfully\n")
+	_ = os.Stdout.Sync()
 
 	lt.markEmergencyModeLogsEnd()
 
-	utils.LavaFormatInfo("REST RELAY TESTS OK")
+	fmt.Printf("REST RELAY TESTS OK\n")
+	_ = os.Stdout.Sync()
 
 	lt.finishTestSuccessfully()
 }
