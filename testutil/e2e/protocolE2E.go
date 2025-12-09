@@ -2281,7 +2281,24 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// Sleep in smaller increments to detect if test times out during sleep
 	for i := 0; i < 21; i++ {
+		_ = os.Stdout.Sync()
+		fmt.Printf("[rest-relay] sleep iteration %d starting\n", i)
+		_ = os.Stdout.Sync()
+		
+		// If we get past iteration 17, print goroutine dump to debug hang
+		if i == 17 {
+			buf := make([]byte, 1<<16)
+			runtime.Stack(buf, true)
+			fmt.Printf("[rest-relay] GOROUTINE DUMP at iteration 17:\n%s\n", buf)
+			_ = os.Stdout.Sync()
+		}
+		
 		time.Sleep(1 * time.Second)
+		
+		_ = os.Stdout.Sync()
+		fmt.Printf("[rest-relay] sleep iteration %d completed\n", i)
+		_ = os.Stdout.Sync()
+		
 		if i%5 == 0 {
 			_ = os.Stdout.Sync()
 			fmt.Printf("[rest-relay] sleep progress: %d/21s\n", i)
