@@ -1145,7 +1145,15 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
+	fmt.Printf("[finishTestSuccessfully] ENTERED\n")
+	_ = os.Stdout.Sync()
+	time.Sleep(100 * time.Millisecond)
+
 	lt.testFinishedProperly.Store(true)
+
+	fmt.Printf("[finishTestSuccessfully] acquiring RLock to copy commands\n")
+	_ = os.Stdout.Sync()
+	time.Sleep(100 * time.Millisecond)
 
 	lt.commandsMu.RLock()
 
@@ -1158,7 +1166,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 
 	lt.commandsMu.RUnlock()
 
+	fmt.Printf("[finishTestSuccessfully] released RLock, copied %d commands\n", len(commandsCopy))
+	_ = os.Stdout.Sync()
+	time.Sleep(100 * time.Millisecond)
+
 	for name, cmd := range commandsCopy { // kill all the project commands
+		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
+		_ = os.Stdout.Sync()
+		time.Sleep(100 * time.Millisecond)
+
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 
@@ -1183,7 +1199,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				}
 			}
 		}
+
+		fmt.Printf("[finishTestSuccessfully] killed command: %s\n", name)
+		_ = os.Stdout.Sync()
+		time.Sleep(100 * time.Millisecond)
 	}
+
+	fmt.Printf("[finishTestSuccessfully] COMPLETED killing all commands\n")
+	_ = os.Stdout.Sync()
+	time.Sleep(100 * time.Millisecond)
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -2261,10 +2285,12 @@ func runProtocolE2E(timeout time.Duration) {
 	fmt.Printf("All 10 REST relay tests completed\n")
 	_ = os.Stdout.Sync()
 	utils.LavaFormatInfo("All REST relay tests completed successfully")
+	time.Sleep(500 * time.Millisecond)
 
 	lt.markEmergencyModeLogsEnd()
 
 	utils.LavaFormatInfo("REST RELAY TESTS OK")
 
+	time.Sleep(500 * time.Millisecond)
 	lt.finishTestSuccessfully()
 }
