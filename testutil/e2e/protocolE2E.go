@@ -1180,16 +1180,43 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
 		_ = os.Stdout.Sync()
 
+		// Add goroutine dump for emergency mode process to debug hang
+		if name == "10_StartLavaInEmergencyMode" {
+			buf := make([]byte, 1<<20) // 1MB buffer for full stack traces
+			stackLen := runtime.Stack(buf, true)
+			_ = os.Stdout.Sync()
+			fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
+			_ = os.Stdout.Sync()
+		}
+
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 
 			time.Sleep(1 * time.Second)
+
+			_ = os.Stdout.Sync()
+			fmt.Printf("[finishTestSuccessfully] getting pgid for %s (PID: %d)\n", name, cmd.Process.Pid)
+			_ = os.Stdout.Sync()
+
 			// Kill the entire process group to ensure child processes are also terminated
 			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
 			pgid, err := syscall.Getpgid(cmd.Process.Pid)
+
+			_ = os.Stdout.Sync()
+			fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
+			_ = os.Stdout.Sync()
+
 			if err == nil {
+				_ = os.Stdout.Sync()
+				fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
+				_ = os.Stdout.Sync()
+
 				// Kill the process group (negative PID kills the group)
 				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+					_ = os.Stdout.Sync()
+					fmt.Printf("[finishTestSuccessfully] kill process group failed: %v\n", err)
+					_ = os.Stdout.Sync()
+
 					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
 					// Fallback to killing just the process
@@ -1197,8 +1224,16 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 					}
+				} else {
+					_ = os.Stdout.Sync()
+					fmt.Printf("[finishTestSuccessfully] successfully killed process group -%d for %s\n", pgid, name)
+					_ = os.Stdout.Sync()
 				}
 			} else {
+				_ = os.Stdout.Sync()
+				fmt.Printf("[finishTestSuccessfully] no pgid, killing single process for %s\n", name)
+				_ = os.Stdout.Sync()
+
 				// If we can't get the process group, just kill the process
 				if err := cmd.Process.Kill(); err != nil {
 					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
