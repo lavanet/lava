@@ -2193,34 +2193,23 @@ func runProtocolE2E(timeout time.Duration) {
 				fmt.Printf("[epoch-goroutine] entering select to send signal %d\n", epochCounter-1)
 				_ = os.Stdout.Sync()
 
-				// Dump goroutine stacks before epoch 2 send to debug deadlock
+				// NOTE: Goroutine dump disabled - printing 1MB dump breaks CI output
+				// If needed, save to file instead of stdout
 				if epochCounter-1 == 2 {
-					buf := make([]byte, 1<<20)
-					stackLen := runtime.Stack(buf, true)
-					fmt.Printf("[epoch-goroutine] GOROUTINE DUMP before sending signal 2:\n%s\n", buf[:stackLen])
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					fmt.Printf("[epoch-goroutine] About to send signal 2 - goroutine count: %d\n", runtime.NumGoroutine())
 					_ = os.Stdout.Sync()
 				}
 
-				select {
-				case signalChannel <- true:
-					fmt.Printf("[epoch-goroutine] signal sent successfully for epoch %d\n", epochCounter-1)
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-				case <-epochCtx.Done():
-					fmt.Printf("[epoch-goroutine] context cancelled during send, exiting\n")
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
-					return
-				default:
-					// Buffer full and no receiver - this is expected after 3 signals received
-					fmt.Printf("[epoch-goroutine] buffer full, signal %d dropped (main already has 3 signals)\n", epochCounter-1)
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
-				}
+				// Direct blocking send - simplest possible approach to avoid select bug
+				// This will block until main receives or goroutine is killed
+				fmt.Printf("[epoch-goroutine] sending signal %d to channel...\n", epochCounter-1)
+				_ = os.Stdout.Sync()
+
+				signalChannel <- true
+
+				fmt.Printf("[epoch-goroutine] signal %d sent successfully\n", epochCounter-1)
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
 
 				time.Sleep(100 * time.Millisecond)
 				_ = os.Stdout.Sync()
