@@ -442,13 +442,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("headers", headers),
 		)
 
-		// Log memory and message size at consumer entry point
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_request_entry", len(msg),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
