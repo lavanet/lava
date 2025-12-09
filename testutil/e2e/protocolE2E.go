@@ -2235,9 +2235,9 @@ func runProtocolE2E(timeout time.Duration) {
 	_ = os.Stdout.Sync()
 
 	// Hold for observation before cleanup to see if anything hangs after REST tests.
-	fmt.Printf("[rest-relay] sleeping 20s before cleanup\n")
+	fmt.Printf("[rest-relay] sleeping 21s before cleanup\n")
 	_ = os.Stdout.Sync()
-	time.Sleep(20 * time.Second)
+	time.Sleep(21 * time.Second)
 
 	fmt.Printf("Before finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
