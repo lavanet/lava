@@ -33,7 +33,6 @@ type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
 	rpcConsumerLogs               *metrics.RPCConsumerLogs
 	cmdFlags                      common.ConsumerCmdFlags
-	refererMatchString            string
 	relayMsgLogMaxChars           int
 	chainId                       string
 	apiInterface                  string
@@ -47,7 +46,6 @@ type ConsumerWebsocketManager struct {
 type ConsumerWebsocketManagerOptions struct {
 	WebsocketConn                 *websocket.Conn
 	RpcConsumerLogs               *metrics.RPCConsumerLogs
-	RefererMatchString            string
 	CmdFlags                      common.ConsumerCmdFlags
 	RelayMsgLogMaxChars           int
 	ChainID                       string
@@ -65,7 +63,6 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		relaySender:                   options.RelaySender,
 		rpcConsumerLogs:               options.RpcConsumerLogs,
 		cmdFlags:                      options.CmdFlags,
-		refererMatchString:            options.RefererMatchString,
 		relayMsgLogMaxChars:           options.RelayMsgLogMaxChars,
 		chainId:                       options.ChainID,
 		apiInterface:                  options.ApiInterface,
