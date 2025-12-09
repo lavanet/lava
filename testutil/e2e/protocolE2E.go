@@ -1149,6 +1149,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	fmt.Printf("[finishTestSuccessfully] ENTERED - setting testFinishedProperly\n")
 	_ = os.Stdout.Sync()
 
+	time.Sleep(1 * time.Second)
 	lt.testFinishedProperly.Store(true)
 
 	_ = os.Stdout.Sync()
@@ -1160,6 +1161,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	_ = os.Stdout.Sync()
 	fmt.Printf("[commandsMu] acquired RLock in finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
+	time.Sleep(1 * time.Second)
 
 	defer func() {
 		lt.commandsMu.RUnlock()
@@ -1172,6 +1174,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	fmt.Printf("[finishTestSuccessfully] iterating over %d commands to kill\n", len(lt.commands))
 	_ = os.Stdout.Sync()
 
+	time.Sleep(1 * time.Second)
 	for name, cmd := range lt.commands { // kill all the project commands
 		_ = os.Stdout.Sync()
 		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
@@ -1180,6 +1183,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 
+			time.Sleep(1 * time.Second)
 			// Kill the entire process group to ensure child processes are also terminated
 			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
 			pgid, err := syscall.Getpgid(cmd.Process.Pid)
@@ -1189,6 +1193,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
 					// Fallback to killing just the process
+					time.Sleep(1 * time.Second)
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 					}
@@ -1198,6 +1203,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				if err := cmd.Process.Kill(); err != nil {
 					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 				}
+				time.Sleep(1 * time.Second)
 			}
 		}
 
