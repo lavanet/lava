@@ -2112,7 +2112,9 @@ func runProtocolE2E(timeout time.Duration) {
 	// set in init_chain.sh
 	var epochDuration int64 = 20 * 1.2
 
-	signalChannel := make(chan bool)
+	// Use buffered channel to avoid losing signals if receiver isn't ready yet
+	// Buffer size of 3 ensures we can queue all 3 epoch signals
+	signalChannel := make(chan bool, 3)
 	url := "http://127.0.0.1:3347"
 
 	lt.startLavaEmergencyConsumer(ctx)
@@ -2163,31 +2165,53 @@ func runProtocolE2E(timeout time.Duration) {
 
 			select {
 			case <-epochCtx.Done():
+				time.Sleep(100 * time.Millisecond)
 				fmt.Printf("[epoch-goroutine] context cancelled, exiting\n")
 				_ = os.Stdout.Sync()
 				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
 				return
 			case <-time.After(sleepDuration):
+				time.Sleep(100 * time.Millisecond)
+				_ = os.Stdout.Sync()
 				fmt.Printf("[epoch-goroutine] epoch %d ended, sending signal\n", epochCounter)
 				_ = os.Stdout.Sync()
 
 				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+
+				time.Sleep(100 * time.Millisecond)
+				_ = os.Stdout.Sync()
+				fmt.Printf("[epoch-goroutine] about to send signal for epoch %d\n", epochCounter)
+				_ = os.Stdout.Sync()
+
 				epochCounter++
 
-				// Non-blocking send to avoid goroutine leak if nobody is listening
+				// Send signal to buffered channel
+				// After main goroutine receives 3 signals and stops listening,
+				// additional signals will hit the default case (which is fine - we only need 3)
 				select {
 				case signalChannel <- true:
+					time.Sleep(100 * time.Millisecond)
+					_ = os.Stdout.Sync()
 					fmt.Printf("[epoch-goroutine] signal sent successfully for epoch %d\n", epochCounter-1)
 					_ = os.Stdout.Sync()
 				case <-epochCtx.Done():
+					time.Sleep(100 * time.Millisecond)
+					_ = os.Stdout.Sync()
 					fmt.Printf("[epoch-goroutine] context cancelled during send, exiting\n")
 					_ = os.Stdout.Sync()
 					return
 				default:
-					fmt.Printf("[epoch-goroutine] no receiver for signal, continuing\n")
+					// Buffer full and no receiver - this is expected after 3 signals received
+					time.Sleep(100 * time.Millisecond)
 					_ = os.Stdout.Sync()
-					// Channel full or no receiver, just continue
+					fmt.Printf("[epoch-goroutine] buffer full, signal %d dropped (main already has 3 signals)\n", epochCounter-1)
+					_ = os.Stdout.Sync()
 				}
+
+				time.Sleep(100 * time.Millisecond)
+				_ = os.Stdout.Sync()
+				fmt.Printf("[epoch-goroutine] finished processing epoch %d\n", epochCounter-1)
+				_ = os.Stdout.Sync()
 			}
 		}
 	}()
@@ -2198,9 +2222,20 @@ func runProtocolE2E(timeout time.Duration) {
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
+		time.Sleep(100 * time.Millisecond)
+		_ = os.Stdout.Sync()
 		fmt.Printf("Waiting for virtual epoch signal %d/3\n", m)
 		_ = os.Stdout.Sync()
+
+		time.Sleep(100 * time.Millisecond)
+		_ = os.Stdout.Sync()
+		fmt.Printf("[main] about to block on channel receive for signal %d/3\n", m)
+		_ = os.Stdout.Sync()
+
 		<-signalChannel
+
+		time.Sleep(100 * time.Millisecond)
+		_ = os.Stdout.Sync()
 		fmt.Printf("Received virtual epoch signal %d/3\n", m)
 		_ = os.Stdout.Sync()
 	})
