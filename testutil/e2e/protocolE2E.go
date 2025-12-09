@@ -1145,22 +1145,9 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
-	_ = os.Stdout.Sync()
-	fmt.Printf("[finishTestSuccessfully] ENTERED - setting testFinishedProperly\n")
-	_ = os.Stdout.Sync()
-
-	time.Sleep(1 * time.Second)
 	lt.testFinishedProperly.Store(true)
 
-	_ = os.Stdout.Sync()
-	fmt.Printf("[commandsMu] acquiring RLock in finishTestSuccessfully\n")
-	_ = os.Stdout.Sync()
-
 	lt.commandsMu.RLock()
-
-	_ = os.Stdout.Sync()
-	fmt.Printf("[commandsMu] acquired RLock, copying %d commands\n", len(lt.commands))
-	_ = os.Stdout.Sync()
 
 	// CRITICAL FIX: Copy the commands map so we can release the lock BEFORE killing
 	// This prevents deadlock when killed processes' monitoring goroutines try to acquire Write lock
@@ -1170,98 +1157,33 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	}
 
 	lt.commandsMu.RUnlock()
-	_ = os.Stdout.Sync()
-	fmt.Printf("[commandsMu] released RLock after copying commands\n")
-	_ = os.Stdout.Sync()
 
-	_ = os.Stdout.Sync()
-	fmt.Printf("[finishTestSuccessfully] iterating over %d commands to kill\n", len(commandsCopy))
-	_ = os.Stdout.Sync()
-
-	time.Sleep(1 * time.Second)
 	for name, cmd := range commandsCopy { // kill all the project commands
-		_ = os.Stdout.Sync()
-		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
-		_ = os.Stdout.Sync()
-		time.Sleep(100 * time.Millisecond)
-
-		// Add goroutine dump for emergency mode process to debug hang
-		if name == "10_StartLavaInEmergencyMode" {
-			buf := make([]byte, 1<<20) // 1MB buffer for full stack traces
-			stackLen := runtime.Stack(buf, true)
-			_ = os.Stdout.Sync()
-			fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
-			_ = os.Stdout.Sync()
-			time.Sleep(500 * time.Millisecond)
-		}
-
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
-			time.Sleep(100 * time.Millisecond)
-
-			_ = os.Stdout.Sync()
-			fmt.Printf("[finishTestSuccessfully] getting pgid for %s (PID: %d)\n", name, cmd.Process.Pid)
-			_ = os.Stdout.Sync()
-			time.Sleep(100 * time.Millisecond)
 
 			// Kill the entire process group to ensure child processes are also terminated
 			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
 			pgid, err := syscall.Getpgid(cmd.Process.Pid)
 
-			_ = os.Stdout.Sync()
-			fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
-			_ = os.Stdout.Sync()
-			time.Sleep(100 * time.Millisecond)
-
 			if err == nil {
-				_ = os.Stdout.Sync()
-				fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
-
 				// Kill the process group (negative PID kills the group)
 				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
-					_ = os.Stdout.Sync()
-					fmt.Printf("[finishTestSuccessfully] kill process group failed: %v\n", err)
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-
 					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
 					// Fallback to killing just the process
-					time.Sleep(100 * time.Millisecond)
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 					}
-				} else {
-					_ = os.Stdout.Sync()
-					fmt.Printf("[finishTestSuccessfully] successfully killed process group -%d for %s\n", pgid, name)
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
 				}
 			} else {
-				_ = os.Stdout.Sync()
-				fmt.Printf("[finishTestSuccessfully] no pgid, killing single process for %s\n", name)
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
-
 				// If we can't get the process group, just kill the process
 				if err := cmd.Process.Kill(); err != nil {
 					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 				}
-				time.Sleep(100 * time.Millisecond)
 			}
 		}
-
-		_ = os.Stdout.Sync()
-		fmt.Printf("[finishTestSuccessfully] killed command: %s\n", name)
-		_ = os.Stdout.Sync()
-		time.Sleep(100 * time.Millisecond)
 	}
-
-	_ = os.Stdout.Sync()
-	fmt.Printf("[finishTestSuccessfully] COMPLETED killing all commands\n")
-	_ = os.Stdout.Sync()
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -1603,21 +1525,14 @@ func (lt *lavaTest) markEmergencyModeLogsStart() {
 }
 
 func (lt *lavaTest) markEmergencyModeLogsEnd() {
-	fmt.Printf("[markEmergencyModeLogsEnd] acquiring logsMu.RLock\n")
-	_ = os.Stdout.Sync()
-
 	// Create a copy of logs to avoid holding the lock for too long
 	lt.logsMu.RLock()
-	fmt.Printf("[markEmergencyModeLogsEnd] acquired logsMu.RLock, copying %d logs\n", len(lt.logs))
-	_ = os.Stdout.Sync()
 
 	logsCopy := make(map[string]*sdk.SafeBuffer)
 	for k, v := range lt.logs {
 		logsCopy[k] = v
 	}
 	lt.logsMu.RUnlock()
-	fmt.Printf("[markEmergencyModeLogsEnd] released logsMu.RLock\n")
-	_ = os.Stdout.Sync()
 
 	for log, buffer := range logsCopy {
 		utils.LavaFormatInfo("Adding EmergencyMode End Line to", utils.LogAttr("log_name", log))
@@ -1626,9 +1541,6 @@ func (lt *lavaTest) markEmergencyModeLogsEnd() {
 			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
 		}
 	}
-
-	fmt.Printf("[markEmergencyModeLogsEnd] completed writing to all buffers\n")
-	_ = os.Stdout.Sync()
 }
 
 func (lt *lavaTest) stopLava() {
@@ -1995,11 +1907,7 @@ func runProtocolE2E(timeout time.Duration) {
 		// Kill all processes first (before waiting for goroutines)
 		// This ensures orphan processes like proxy.test are cleaned up
 		// even if the test panics or fails before reaching finishTestSuccessfully()
-		fmt.Printf("[commandsMu] acquiring RLock in deferred cleanup\n")
-		_ = os.Stdout.Sync()
 		lt.commandsMu.RLock()
-		fmt.Printf("[commandsMu] acquired RLock in deferred cleanup\n")
-		_ = os.Stdout.Sync()
 		for name, cmd := range lt.commands {
 			if cmd != nil && cmd.Process != nil {
 				utils.LavaFormatInfo("Cleanup: Killing process", utils.LogAttr("name", name))
@@ -2025,8 +1933,6 @@ func runProtocolE2E(timeout time.Duration) {
 			}
 		}
 		lt.commandsMu.RUnlock()
-		fmt.Printf("[commandsMu] released RLock in deferred cleanup\n")
-		_ = os.Stdout.Sync()
 
 		// Wait for all goroutines with timeout
 		done := make(chan struct{})
@@ -2198,18 +2104,6 @@ func runProtocolE2E(timeout time.Duration) {
 	// emergency mode
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
 	lt.stopLava()
-	// Start a heartbeat goroutine before starting emergency mode to detect stalls.
-	go func() {
-		t := time.NewTicker(time.Second)
-		defer t.Stop()
-		counter := 0
-		for {
-			<-t.C
-			counter++
-			fmt.Printf("[heartbeat] %d\n", counter)
-			_ = os.Stdout.Sync()
-		}
-	}()
 	go lt.startLavaInEmergencyMode(ctx, 100000)
 
 	lt.checkLava(timeout)
@@ -2263,112 +2157,25 @@ func runProtocolE2E(timeout time.Duration) {
 		}
 	}()
 
-	fmt.Printf("Waiting for finishing current epoch and waiting for 2 more virtual epochs\n")
-	_ = os.Stdout.Sync()
-
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
-		fmt.Printf("Waiting for virtual epoch signal %d/3\n", m)
-		_ = os.Stdout.Sync()
 		<-signalChannel
-		fmt.Printf("Received virtual epoch signal %d/3\n", m)
-		_ = os.Stdout.Sync()
 	})
-
-	fmt.Printf("All virtual epoch signals received\n")
-	_ = os.Stdout.Sync()
-
-	fmt.Printf("Virtual epochs completed, starting REST relay tests url=%s totalTests=%d\n", url, 10)
-	_ = os.Stdout.Sync()
 
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
-	testStartTime := time.Now()
-
 	repeat(10, func(m int) {
-		fmt.Printf("REST relay test progress: %d/10 (elapsed: %s)\n", m, time.Since(testStartTime))
-		_ = os.Stdout.Sync()
-		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
-		fmt.Printf("[rest-relay] starting request %d/10 at %s\n", m, time.Since(testStartTime))
-		_ = os.Stdout.Sync()
 		if err := restRelayTest(url); err != nil {
-			fmt.Printf("[rest-relay] request %d/10 failed: %v\n", m, err)
-			_ = os.Stdout.Sync()
 			panic(err)
 		}
-		fmt.Printf("[rest-relay] finished request %d/10 at %s\n", m, time.Since(testStartTime))
-		_ = os.Stdout.Sync()
-		// Small delay between requests to avoid overwhelming the system
-		time.Sleep(100 * time.Millisecond)
-		fmt.Printf("[rest-relay] post-sleep after request %d/10 at %s\n", m, time.Since(testStartTime))
-		_ = os.Stdout.Sync()
-
-		// Safety check - if we've been running too long, something is wrong
-		if time.Since(testStartTime) > 5*time.Minute {
-			panic(fmt.Sprintf("REST relay tests taking too long - %s elapsed", time.Since(testStartTime)))
-		}
 	})
-	fmt.Printf("[rest-relay] loop completed in %s\n", time.Since(testStartTime))
-	_ = os.Stdout.Sync()
 
-	fmt.Printf("All 10 REST relay tests completed successfully\n")
-	_ = os.Stdout.Sync()
+	utils.LavaFormatInfo("All REST relay tests completed successfully")
 
-	fmt.Printf("[rest-relay] sleeping 10s after REST tests\n")
-	_ = os.Stdout.Sync()
-	time.Sleep(10 * time.Second)
-
-	fmt.Printf("[rest-relay] Before markEmergencyModeLogsEnd\n")
-	_ = os.Stdout.Sync()
 	lt.markEmergencyModeLogsEnd()
-	fmt.Printf("[rest-relay] After markEmergencyModeLogsEnd\n")
-	_ = os.Stdout.Sync()
 
-	fmt.Printf("REST RELAY TESTS OK\n")
-	_ = os.Stdout.Sync()
-
-	// Hold for observation before cleanup to see if anything hangs after REST tests.
-	fmt.Printf("[rest-relay] sleeping 31s before cleanup\n")
-	_ = os.Stdout.Sync()
-
-	// Sleep in smaller increments to detect if test times out during sleep
-	for i := 0; i < 31; i++ {
-		_ = os.Stdout.Sync()
-		fmt.Printf("[rest-relay] sleep iteration %d starting\n", i)
-		_ = os.Stdout.Sync()
-
-		// If we get past iteration 17, print goroutine dump to debug hang
-		if i == 17 {
-			buf := make([]byte, 1<<16)
-			runtime.Stack(buf, true)
-			fmt.Printf("[rest-relay] GOROUTINE DUMP at iteration 17:\n%s\n", buf)
-			_ = os.Stdout.Sync()
-		}
-
-		time.Sleep(1 * time.Second)
-
-		_ = os.Stdout.Sync()
-		fmt.Printf("[rest-relay] sleep iteration %d completed\n", i)
-		_ = os.Stdout.Sync()
-
-		if i%5 == 0 {
-			_ = os.Stdout.Sync()
-			fmt.Printf("[rest-relay] sleep progress: %d/21s\n", i)
-			_ = os.Stdout.Sync()
-		}
-	}
-	_ = os.Stdout.Sync()
-	fmt.Printf("[rest-relay] sleep completed (21s)\n")
-	_ = os.Stdout.Sync()
-
-	_ = os.Stdout.Sync()
-	fmt.Printf("Before finishTestSuccessfully\n")
-	_ = os.Stdout.Sync()
+	utils.LavaFormatInfo("REST RELAY TESTS OK")
 
 	lt.finishTestSuccessfully()
-
-	_ = os.Stdout.Sync()
-	fmt.Printf("After finishTestSuccessfully\n")
-	_ = os.Stdout.Sync()
 }
