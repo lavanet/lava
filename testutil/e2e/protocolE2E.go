@@ -2094,6 +2094,18 @@ func runProtocolE2E(timeout time.Duration) {
 	// emergency mode
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
 	lt.stopLava()
+	// Start a heartbeat goroutine before starting emergency mode to detect stalls.
+	go func() {
+		t := time.NewTicker(time.Second)
+		defer t.Stop()
+		counter := 0
+		for {
+			<-t.C
+			counter++
+			fmt.Printf("[heartbeat] %d\n", counter)
+			_ = os.Stdout.Sync()
+		}
+	}()
 	go lt.startLavaInEmergencyMode(ctx, 100000)
 
 	lt.checkLava(timeout)
@@ -2169,35 +2181,6 @@ func runProtocolE2E(timeout time.Duration) {
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	testStartTime := time.Now()
-	// Progress watchdog: if we don't advance for >5s, dump stacks and panic.
-	watchdogDone := make(chan struct{})
-	var latestReq int32
-	var lastProgress atomic.Int64
-	var phase atomic.Value // string: where we are in the loop
-	phase.Store("init")
-	lastProgress.Store(time.Now().UnixNano())
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-watchdogDone:
-				return
-			case <-ticker.C:
-				last := time.Unix(0, lastProgress.Load())
-				if time.Since(last) > 5*time.Second {
-					req := atomic.LoadInt32(&latestReq)
-					ph := phase.Load().(string)
-					buf := make([]byte, 1<<16)
-					n := runtime.Stack(buf, true)
-					fmt.Printf("[rest-relay-watchdog] stalled after request %d phase=%s; lastProgress=%s ago; stack:\n%s\n", req, ph, time.Since(last), string(buf[:n]))
-					_ = os.Stdout.Sync()
-					panic("rest relay watchdog timeout")
-				}
-			}
-		}
-	}()
-	defer close(watchdogDone)
 
 	repeat(10, func(m int) {
 		fmt.Printf("REST relay test progress: %d/10 (elapsed: %s)\n", m, time.Since(testStartTime))
@@ -2205,39 +2188,17 @@ func runProtocolE2E(timeout time.Duration) {
 		// Extra stdio logging (with sync) to debug potential LavaFormat* dropouts.
 		fmt.Printf("[rest-relay] starting request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
-		atomic.StoreInt32(&latestReq, int32(m))
-		phase.Store("start-request")
-		lastProgress.Store(time.Now().UnixNano())
 		if err := restRelayTest(url); err != nil {
 			fmt.Printf("[rest-relay] request %d/10 failed: %v\n", m, err)
 			_ = os.Stdout.Sync()
 			panic(err)
 		}
-		phase.Store("after-request")
-		lastProgress.Store(time.Now().UnixNano())
 		fmt.Printf("[rest-relay] finished request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
 		// Small delay between requests to avoid overwhelming the system
-		phase.Store("sleeping")
-		lastProgress.Store(time.Now().UnixNano())
-		sleepTimer := time.NewTimer(100 * time.Millisecond)
-		sleepGuard := time.AfterFunc(2*time.Second, func() {
-			buf := make([]byte, 1<<16)
-			n := runtime.Stack(buf, true)
-			fmt.Printf("[rest-relay] sleep stuck at request %d/10; stack:\n%s\n", m, string(buf[:n]))
-			_ = os.Stdout.Sync()
-			panic("rest relay sleep stuck")
-		})
-		<-sleepTimer.C
-		if !sleepGuard.Stop() {
-			<-sleepTimer.C
-		}
-		phase.Store("after-sleep")
-		lastProgress.Store(time.Now().UnixNano())
+		time.Sleep(100 * time.Millisecond)
 		fmt.Printf("[rest-relay] post-sleep after request %d/10 at %s\n", m, time.Since(testStartTime))
 		_ = os.Stdout.Sync()
-		atomic.StoreInt32(&latestReq, int32(m))
-		lastProgress.Store(time.Now().UnixNano())
 
 		// Safety check - if we've been running too long, something is wrong
 		if time.Since(testStartTime) > 5*time.Minute {
@@ -2247,23 +2208,22 @@ func runProtocolE2E(timeout time.Duration) {
 	fmt.Printf("[rest-relay] loop completed in %s\n", time.Since(testStartTime))
 	_ = os.Stdout.Sync()
 
-	// Watch for hangs after the REST loop completes (e.g., during log marking or finish).
-	postLoopWatchdog := time.AfterFunc(10*time.Second, func() {
-		buf := make([]byte, 1<<16)
-		n := runtime.Stack(buf, true)
-		fmt.Printf("[rest-relay-post] stalled after loop; stack dump:\n%s\n", string(buf[:n]))
-		_ = os.Stdout.Sync()
-		panic("post-rest relay watchdog timeout")
-	})
-	defer postLoopWatchdog.Stop()
-
 	fmt.Printf("All 10 REST relay tests completed successfully\n")
 	_ = os.Stdout.Sync()
+
+	fmt.Printf("[rest-relay] sleeping 10s after REST tests\n")
+	_ = os.Stdout.Sync()
+	time.Sleep(10 * time.Second)
 
 	lt.markEmergencyModeLogsEnd()
 
 	fmt.Printf("REST RELAY TESTS OK\n")
 	_ = os.Stdout.Sync()
+
+	// Hold for observation before cleanup to see if anything hangs after REST tests.
+	fmt.Printf("[rest-relay] sleeping 20s before cleanup\n")
+	_ = os.Stdout.Sync()
+	time.Sleep(20 * time.Second)
 
 	lt.finishTestSuccessfully()
 }
