@@ -2182,45 +2182,43 @@ func runProtocolE2E(timeout time.Duration) {
 				_ = os.Stdout.Sync()
 				fmt.Printf("[epoch-goroutine] about to send signal for epoch %d\n", epochCounter)
 				_ = os.Stdout.Sync()
-				
+
 				epochCounter++
 
 				// Send signal to buffered channel
 				// After main goroutine receives 3 signals and stops listening,
 				// additional signals will hit the default case (which is fine - we only need 3)
-				
+
 				// NO SLEEP HERE - it was causing hangs
-				_ = os.Stdout.Sync()
 				fmt.Printf("[epoch-goroutine] entering select to send signal %d\n", epochCounter-1)
 				_ = os.Stdout.Sync()
-				
+
 				// Dump goroutine stacks before epoch 2 send to debug deadlock
 				if epochCounter-1 == 2 {
 					buf := make([]byte, 1<<20)
 					stackLen := runtime.Stack(buf, true)
-					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
 					fmt.Printf("[epoch-goroutine] GOROUTINE DUMP before sending signal 2:\n%s\n", buf[:stackLen])
 					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+					_ = os.Stdout.Sync()
 				}
-				
+
 				select {
 				case signalChannel <- true:
-					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
 					fmt.Printf("[epoch-goroutine] signal sent successfully for epoch %d\n", epochCounter-1)
 					_ = os.Stdout.Sync()
-				case <-epochCtx.Done():
 					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
+				case <-epochCtx.Done():
 					fmt.Printf("[epoch-goroutine] context cancelled during send, exiting\n")
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
 					_ = os.Stdout.Sync()
 					return
 				default:
 					// Buffer full and no receiver - this is expected after 3 signals received
-					time.Sleep(100 * time.Millisecond)
-					_ = os.Stdout.Sync()
 					fmt.Printf("[epoch-goroutine] buffer full, signal %d dropped (main already has 3 signals)\n", epochCounter-1)
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
 					_ = os.Stdout.Sync()
 				}
 
@@ -2250,10 +2248,9 @@ func runProtocolE2E(timeout time.Duration) {
 
 		<-signalChannel
 
-		time.Sleep(100 * time.Millisecond)
-		_ = os.Stdout.Sync()
 		fmt.Printf("Received virtual epoch signal %d/3\n", m)
 		_ = os.Stdout.Sync()
+		time.Sleep(100 * time.Millisecond)
 	})
 
 	fmt.Printf("All 3 virtual epoch signals received, starting REST relay tests\n")
