@@ -2182,12 +2182,28 @@ func runProtocolE2E(timeout time.Duration) {
 				_ = os.Stdout.Sync()
 				fmt.Printf("[epoch-goroutine] about to send signal for epoch %d\n", epochCounter)
 				_ = os.Stdout.Sync()
-
+				
 				epochCounter++
 
 				// Send signal to buffered channel
 				// After main goroutine receives 3 signals and stops listening,
 				// additional signals will hit the default case (which is fine - we only need 3)
+				
+				// NO SLEEP HERE - it was causing hangs
+				_ = os.Stdout.Sync()
+				fmt.Printf("[epoch-goroutine] entering select to send signal %d\n", epochCounter-1)
+				_ = os.Stdout.Sync()
+				
+				// Dump goroutine stacks before epoch 2 send to debug deadlock
+				if epochCounter-1 == 2 {
+					buf := make([]byte, 1<<20)
+					stackLen := runtime.Stack(buf, true)
+					time.Sleep(100 * time.Millisecond)
+					_ = os.Stdout.Sync()
+					fmt.Printf("[epoch-goroutine] GOROUTINE DUMP before sending signal 2:\n%s\n", buf[:stackLen])
+					_ = os.Stdout.Sync()
+				}
+				
 				select {
 				case signalChannel <- true:
 					time.Sleep(100 * time.Millisecond)
