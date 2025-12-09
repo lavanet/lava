@@ -1147,8 +1147,16 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 func (lt *lavaTest) finishTestSuccessfully() {
 	lt.testFinishedProperly.Store(true)
 
+	fmt.Printf("[commandsMu] acquiring RLock in finishTestSuccessfully\n")
+	_ = os.Stdout.Sync()
 	lt.commandsMu.RLock()
-	defer lt.commandsMu.RUnlock()
+	fmt.Printf("[commandsMu] acquired RLock in finishTestSuccessfully\n")
+	_ = os.Stdout.Sync()
+	defer func() {
+		lt.commandsMu.RUnlock()
+		fmt.Printf("[commandsMu] released RLock in finishTestSuccessfully\n")
+		_ = os.Stdout.Sync()
+	}()
 
 	for name, cmd := range lt.commands { // kill all the project commands
 		if cmd != nil && cmd.Process != nil {
@@ -1897,7 +1905,11 @@ func runProtocolE2E(timeout time.Duration) {
 		// Kill all processes first (before waiting for goroutines)
 		// This ensures orphan processes like proxy.test are cleaned up
 		// even if the test panics or fails before reaching finishTestSuccessfully()
+		fmt.Printf("[commandsMu] acquiring RLock in deferred cleanup\n")
+		_ = os.Stdout.Sync()
 		lt.commandsMu.RLock()
+		fmt.Printf("[commandsMu] acquired RLock in deferred cleanup\n")
+		_ = os.Stdout.Sync()
 		for name, cmd := range lt.commands {
 			if cmd != nil && cmd.Process != nil {
 				utils.LavaFormatInfo("Cleanup: Killing process", utils.LogAttr("name", name))
@@ -1923,6 +1935,8 @@ func runProtocolE2E(timeout time.Duration) {
 			}
 		}
 		lt.commandsMu.RUnlock()
+		fmt.Printf("[commandsMu] released RLock in deferred cleanup\n")
+		_ = os.Stdout.Sync()
 
 		// Wait for all goroutines with timeout
 		done := make(chan struct{})
@@ -2225,5 +2239,9 @@ func runProtocolE2E(timeout time.Duration) {
 	_ = os.Stdout.Sync()
 	time.Sleep(20 * time.Second)
 
+	fmt.Printf("Before finishTestSuccessfully\n")
+	_ = os.Stdout.Sync()
 	lt.finishTestSuccessfully()
+	fmt.Printf("After finishTestSuccessfully\n")
+	_ = os.Stdout.Sync()
 }
