@@ -2145,29 +2145,47 @@ func runProtocolE2E(timeout time.Duration) {
 		defer func() {
 			if r := recover(); r != nil {
 				utils.LavaFormatError("Panic in virtual epoch goroutine", fmt.Errorf("%v", r))
+				fmt.Printf("[epoch-goroutine] PANIC: %v\n", r)
+				_ = os.Stdout.Sync()
 			}
 		}()
 
 		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
+		fmt.Printf("[epoch-goroutine] started, initial epochCounter=%d, epochDuration=%d\n", epochCounter, epochDuration)
+		_ = os.Stdout.Sync()
 
 		for {
 			nextEpochTime := latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))
 			sleepDuration := time.Until(nextEpochTime)
 
+			fmt.Printf("[epoch-goroutine] epoch %d: sleeping for %s until %s\n", epochCounter, sleepDuration, nextEpochTime.Format("15:04:05"))
+			_ = os.Stdout.Sync()
+
 			select {
 			case <-epochCtx.Done():
+				fmt.Printf("[epoch-goroutine] context cancelled, exiting\n")
+				_ = os.Stdout.Sync()
 				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
 				return
 			case <-time.After(sleepDuration):
+				fmt.Printf("[epoch-goroutine] epoch %d ended, sending signal\n", epochCounter)
+				_ = os.Stdout.Sync()
+
 				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
 				epochCounter++
 
 				// Non-blocking send to avoid goroutine leak if nobody is listening
 				select {
 				case signalChannel <- true:
+					fmt.Printf("[epoch-goroutine] signal sent successfully for epoch %d\n", epochCounter-1)
+					_ = os.Stdout.Sync()
 				case <-epochCtx.Done():
+					fmt.Printf("[epoch-goroutine] context cancelled during send, exiting\n")
+					_ = os.Stdout.Sync()
 					return
 				default:
+					fmt.Printf("[epoch-goroutine] no receiver for signal, continuing\n")
+					_ = os.Stdout.Sync()
 					// Channel full or no receiver, just continue
 				}
 			}
