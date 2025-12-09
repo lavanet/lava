@@ -1145,20 +1145,38 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
+	_ = os.Stdout.Sync()
+	fmt.Printf("[finishTestSuccessfully] ENTERED - setting testFinishedProperly\n")
+	_ = os.Stdout.Sync()
+
 	lt.testFinishedProperly.Store(true)
 
+	_ = os.Stdout.Sync()
 	fmt.Printf("[commandsMu] acquiring RLock in finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
+
 	lt.commandsMu.RLock()
+
+	_ = os.Stdout.Sync()
 	fmt.Printf("[commandsMu] acquired RLock in finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
+
 	defer func() {
 		lt.commandsMu.RUnlock()
+		_ = os.Stdout.Sync()
 		fmt.Printf("[commandsMu] released RLock in finishTestSuccessfully\n")
 		_ = os.Stdout.Sync()
 	}()
 
+	_ = os.Stdout.Sync()
+	fmt.Printf("[finishTestSuccessfully] iterating over %d commands to kill\n", len(lt.commands))
+	_ = os.Stdout.Sync()
+
 	for name, cmd := range lt.commands { // kill all the project commands
+		_ = os.Stdout.Sync()
+		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
+		_ = os.Stdout.Sync()
+
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 
@@ -1182,7 +1200,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				}
 			}
 		}
+
+		_ = os.Stdout.Sync()
+		fmt.Printf("[finishTestSuccessfully] killed command: %s\n", name)
+		_ = os.Stdout.Sync()
 	}
+
+	_ = os.Stdout.Sync()
+	fmt.Printf("[finishTestSuccessfully] COMPLETED killing all commands\n")
+	_ = os.Stdout.Sync()
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -1524,13 +1550,21 @@ func (lt *lavaTest) markEmergencyModeLogsStart() {
 }
 
 func (lt *lavaTest) markEmergencyModeLogsEnd() {
+	fmt.Printf("[markEmergencyModeLogsEnd] acquiring logsMu.RLock\n")
+	_ = os.Stdout.Sync()
+
 	// Create a copy of logs to avoid holding the lock for too long
 	lt.logsMu.RLock()
+	fmt.Printf("[markEmergencyModeLogsEnd] acquired logsMu.RLock, copying %d logs\n", len(lt.logs))
+	_ = os.Stdout.Sync()
+
 	logsCopy := make(map[string]*sdk.SafeBuffer)
 	for k, v := range lt.logs {
 		logsCopy[k] = v
 	}
 	lt.logsMu.RUnlock()
+	fmt.Printf("[markEmergencyModeLogsEnd] released logsMu.RLock\n")
+	_ = os.Stdout.Sync()
 
 	for log, buffer := range logsCopy {
 		utils.LavaFormatInfo("Adding EmergencyMode End Line to", utils.LogAttr("log_name", log))
@@ -1539,6 +1573,9 @@ func (lt *lavaTest) markEmergencyModeLogsEnd() {
 			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
 		}
 	}
+
+	fmt.Printf("[markEmergencyModeLogsEnd] completed writing to all buffers\n")
+	_ = os.Stdout.Sync()
 }
 
 func (lt *lavaTest) stopLava() {
@@ -2229,7 +2266,11 @@ func runProtocolE2E(timeout time.Duration) {
 	_ = os.Stdout.Sync()
 	time.Sleep(10 * time.Second)
 
+	fmt.Printf("[rest-relay] Before markEmergencyModeLogsEnd\n")
+	_ = os.Stdout.Sync()
 	lt.markEmergencyModeLogsEnd()
+	fmt.Printf("[rest-relay] After markEmergencyModeLogsEnd\n")
+	_ = os.Stdout.Sync()
 
 	fmt.Printf("REST RELAY TESTS OK\n")
 	_ = os.Stdout.Sync()
@@ -2237,11 +2278,27 @@ func runProtocolE2E(timeout time.Duration) {
 	// Hold for observation before cleanup to see if anything hangs after REST tests.
 	fmt.Printf("[rest-relay] sleeping 21s before cleanup\n")
 	_ = os.Stdout.Sync()
-	time.Sleep(21 * time.Second)
 
+	// Sleep in smaller increments to detect if test times out during sleep
+	for i := 0; i < 21; i++ {
+		time.Sleep(1 * time.Second)
+		if i%5 == 0 {
+			_ = os.Stdout.Sync()
+			fmt.Printf("[rest-relay] sleep progress: %d/21s\n", i)
+			_ = os.Stdout.Sync()
+		}
+	}
+	_ = os.Stdout.Sync()
+	fmt.Printf("[rest-relay] sleep completed (21s)\n")
+	_ = os.Stdout.Sync()
+
+	_ = os.Stdout.Sync()
 	fmt.Printf("Before finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
+
 	lt.finishTestSuccessfully()
+
+	_ = os.Stdout.Sync()
 	fmt.Printf("After finishTestSuccessfully\n")
 	_ = os.Stdout.Sync()
 }
