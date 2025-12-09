@@ -2124,6 +2124,23 @@ func runProtocolE2E(timeout time.Duration) {
 	epochCtx, epochCancel := context.WithCancel(ctx)
 	defer epochCancel() // Ensure the goroutine is stopped when test finishes
 
+	// Start heartbeat goroutine to show test is still alive
+	go func() {
+		t := time.NewTicker(time.Second)
+		defer t.Stop()
+		counter := 0
+		for {
+			select {
+			case <-epochCtx.Done():
+				return
+			case <-t.C:
+				counter++
+				fmt.Printf("[heartbeat] %d\n", counter)
+				_ = os.Stdout.Sync()
+			}
+		}
+	}()
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -2157,20 +2174,37 @@ func runProtocolE2E(timeout time.Duration) {
 		}
 	}()
 
+	fmt.Printf("Waiting for 3 virtual epoch signals\n")
+	_ = os.Stdout.Sync()
+
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
+		fmt.Printf("Waiting for virtual epoch signal %d/3\n", m)
+		_ = os.Stdout.Sync()
 		<-signalChannel
+		fmt.Printf("Received virtual epoch signal %d/3\n", m)
+		_ = os.Stdout.Sync()
 	})
+
+	fmt.Printf("All 3 virtual epoch signals received, starting REST relay tests\n")
+	_ = os.Stdout.Sync()
 
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
+	fmt.Printf("Running 10 REST relay tests\n")
+	_ = os.Stdout.Sync()
+
 	repeat(10, func(m int) {
+		fmt.Printf("REST relay test %d/10\n", m)
+		_ = os.Stdout.Sync()
 		if err := restRelayTest(url); err != nil {
 			panic(err)
 		}
 	})
 
+	fmt.Printf("All 10 REST relay tests completed\n")
+	_ = os.Stdout.Sync()
 	utils.LavaFormatInfo("All REST relay tests completed successfully")
 
 	lt.markEmergencyModeLogsEnd()
