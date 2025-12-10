@@ -1188,50 +1188,79 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 			time.Sleep(100 * time.Millisecond)
 
-			// Kill the entire process group to ensure child processes are also terminated
-			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
+			// Execute the kill flow with a timeout guard so we never hang the test shutdown.
+			killDone := make(chan struct{})
+			dumpKillStack := func(reason string) {
+				buf := make([]byte, 1<<20)
+				stackLen := runtime.Stack(buf, true)
+				fmt.Printf("[finishTestSuccessfully] STACK DUMP (%s):\n%s\n", reason, buf[:stackLen])
+				_ = os.Stdout.Sync()
+				time.Sleep(200 * time.Millisecond)
+			}
+			go func() {
+				defer close(killDone)
 
-			fmt.Printf("[finishTestSuccessfully] getting pgid for %s (PID: %d)\n", name, cmd.Process.Pid)
-			_ = os.Stdout.Sync()
-			time.Sleep(100 * time.Millisecond)
+				// Kill the entire process group to ensure child processes are also terminated
+				// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
 
-			pgid, err := syscall.Getpgid(cmd.Process.Pid)
-
-			fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
-			_ = os.Stdout.Sync()
-			time.Sleep(100 * time.Millisecond)
-
-			if err == nil {
-				fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
+				fmt.Printf("[finishTestSuccessfully] getting pgid for %s (PID: %d)\n", name, cmd.Process.Pid)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
 
-				// Kill the process group (negative PID kills the group)
-				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
-					fmt.Printf("[finishTestSuccessfully] kill process group failed: %v for %s\n", err, name)
+				pgid, err := syscall.Getpgid(cmd.Process.Pid)
+
+				fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
+
+				if err == nil {
+					fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
 					_ = os.Stdout.Sync()
 					time.Sleep(100 * time.Millisecond)
 
-					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
-						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
-					// Fallback to killing just the process
-					if err := cmd.Process.Kill(); err != nil {
-						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+					// Kill the process group (negative PID kills the group)
+					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+						fmt.Printf("[finishTestSuccessfully] kill process group failed: %v for %s\n", err, name)
+						_ = os.Stdout.Sync()
+						time.Sleep(100 * time.Millisecond)
+						dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
+
+						utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
+							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
+						// Fallback to killing just the process
+						if err := cmd.Process.Kill(); err != nil {
+							utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+							dumpKillStack(fmt.Sprintf("fallback single kill failed for %s", name))
+						}
+					} else {
+						fmt.Printf("[finishTestSuccessfully] successfully killed process group for %s\n", name)
+						_ = os.Stdout.Sync()
+						time.Sleep(100 * time.Millisecond)
+						// Belt-and-suspenders: also kill the root process in case it changed groups.
+						_ = cmd.Process.Kill()
 					}
 				} else {
-					fmt.Printf("[finishTestSuccessfully] successfully killed process group for %s\n", name)
+					fmt.Printf("[finishTestSuccessfully] no pgid, killing single process for %s\n", name)
 					_ = os.Stdout.Sync()
 					time.Sleep(100 * time.Millisecond)
+
+					// If we can't get the process group, just kill the process
+					if err := cmd.Process.Kill(); err != nil {
+						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
+						dumpKillStack(fmt.Sprintf("single kill failed for %s", name))
+						time.Sleep(100 * time.Millisecond)
+					}
 				}
-			} else {
-				fmt.Printf("[finishTestSuccessfully] no pgid, killing single process for %s\n", name)
+			}()
+
+			// Guard against any unexpected syscall hang; continue shutdown after 3s.
+			select {
+			case <-killDone:
+			case <-time.After(3 * time.Second):
+				fmt.Printf("[finishTestSuccessfully] kill timeout exceeded for %s, continuing shutdown\n", name)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
-
-				// If we can't get the process group, just kill the process
-				if err := cmd.Process.Kill(); err != nil {
-					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
-				}
+				dumpKillStack(fmt.Sprintf("kill timeout exceeded for %s", name))
 			}
 		}
 
