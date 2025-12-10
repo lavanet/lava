@@ -161,9 +161,9 @@ func createResourceLimiterMetrics(endpointName string) *ResourceLimiterMetrics {
 // First checks for batch methods (with &), then CU, then method name prefixes
 func (rl *ResourceLimiter) selectBucket(computeUnits uint64, methodName string) BucketType {
 	// Priority 0: Check if method contains ampersands (batch methods)
-	// Batch methods should always use the normal bucket, bypassing resource limiter
+	// Batch methods should always use the heavy bucket
 	if strings.Contains(methodName, "&") {
-		return BucketNormal
+		return BucketHeavy
 	}
 
 	// Priority 1: Check if CU is high (primary indicator)
