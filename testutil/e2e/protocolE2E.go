@@ -1226,7 +1226,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 						fmt.Printf("[finishTestSuccessfully] kill process group failed: %v for %s\n", err, name)
 						_ = os.Stdout.Sync()
 						time.Sleep(100 * time.Millisecond)
-						dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
+						//dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
 
 						utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
