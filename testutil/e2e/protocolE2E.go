@@ -1175,24 +1175,59 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		_ = os.Stdout.Sync()
 		time.Sleep(100 * time.Millisecond)
 
+		// Add stack dump before killing emergency mode process
+		if name == "10_StartLavaInEmergencyMode" {
+			buf := make([]byte, 1<<20)
+			stackLen := runtime.Stack(buf, true)
+			fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
+			_ = os.Stdout.Sync()
+			time.Sleep(500 * time.Millisecond)
+		}
+
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
+			time.Sleep(100 * time.Millisecond)
 
 			// Kill the entire process group to ensure child processes are also terminated
 			// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
+
+			fmt.Printf("[finishTestSuccessfully] getting pgid for %s (PID: %d)\n", name, cmd.Process.Pid)
+			_ = os.Stdout.Sync()
+			time.Sleep(100 * time.Millisecond)
+
 			pgid, err := syscall.Getpgid(cmd.Process.Pid)
 
+			fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
+			_ = os.Stdout.Sync()
+			time.Sleep(100 * time.Millisecond)
+
 			if err == nil {
+				fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
+
 				// Kill the process group (negative PID kills the group)
 				if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+					fmt.Printf("[finishTestSuccessfully] kill process group failed: %v for %s\n", err, name)
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+
 					utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 						utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
 					// Fallback to killing just the process
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 					}
+				} else {
+					fmt.Printf("[finishTestSuccessfully] successfully killed process group for %s\n", name)
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
 				}
 			} else {
+				fmt.Printf("[finishTestSuccessfully] no pgid, killing single process for %s\n", name)
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
+
 				// If we can't get the process group, just kill the process
 				if err := cmd.Process.Kill(); err != nil {
 					utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
@@ -2222,18 +2257,26 @@ func runProtocolE2E(timeout time.Duration) {
 				if epochCounter-1 == 2 {
 					fmt.Printf("[epoch-goroutine] About to send signal 2 - goroutine count: %d\n", runtime.NumGoroutine())
 					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
 				}
 
-				// Direct blocking send - simplest possible approach to avoid select bug
-				// This will block until main receives or goroutine is killed
+				// Blocking send with context cancellation check
+				// No default case - this will block until either send succeeds OR context cancelled
 				fmt.Printf("[epoch-goroutine] sending signal %d to channel...\n", epochCounter-1)
 				_ = os.Stdout.Sync()
-
-				signalChannel <- true
-
-				fmt.Printf("[epoch-goroutine] signal %d sent successfully\n", epochCounter-1)
-				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
+
+				select {
+				case signalChannel <- true:
+					fmt.Printf("[epoch-goroutine] signal %d sent successfully\n", epochCounter-1)
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+				case <-epochCtx.Done():
+					fmt.Printf("[epoch-goroutine] context cancelled during send, exiting\n")
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+					return
+				}
 
 				time.Sleep(100 * time.Millisecond)
 				_ = os.Stdout.Sync()
