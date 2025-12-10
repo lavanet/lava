@@ -1203,6 +1203,24 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			go func() {
 				defer close(killDone)
 
+				getPGIDWithTimeout := func(pid int) (int, error, bool) {
+					type result struct {
+						pgid int
+						err  error
+					}
+					resCh := make(chan result, 1)
+					go func() {
+						pgid, err := syscall.Getpgid(pid)
+						resCh <- result{pgid: pgid, err: err}
+					}()
+					select {
+					case res := <-resCh:
+						return res.pgid, res.err, false
+					case <-time.After(2 * time.Second):
+						return 0, fmt.Errorf("getpgid timeout"), true
+					}
+				}
+
 				// Kill the entire process group to ensure child processes are also terminated
 				// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
 
@@ -1210,13 +1228,20 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
 
-				pgid, err := syscall.Getpgid(cmd.Process.Pid)
+				pgid, err, timedOut := getPGIDWithTimeout(cmd.Process.Pid)
 
 				fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
 
-				if err == nil {
+				if timedOut {
+					fmt.Printf("[finishTestSuccessfully] getpgid timed out for %s, falling back to single process kill\n", name)
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+					dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
+				}
+
+				if err == nil && !timedOut {
 					fmt.Printf("[finishTestSuccessfully] killing process group -%d for %s\n", pgid, name)
 					_ = os.Stdout.Sync()
 					time.Sleep(100 * time.Millisecond)
