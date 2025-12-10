@@ -273,9 +273,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	resultsCount, nodeErrors, specialNodeErrors, protocolErrors := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	neededForQuorum := rp.getActualQuorumSize(resultsCount)
+	neededForQuorum := rp.getRequiredQuorumSize(resultsCount)
 	if rp.quorumParams.Enabled() && neededForQuorum <= rp.currentQourumEqualResults ||
-		!rp.quorumParams.Enabled() && resultsCount >= rp.quorumParams.Min {
+		!rp.quorumParams.Enabled() && resultsCount >= neededForQuorum {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
@@ -434,26 +434,20 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
-// getActualQuorumSize calculates the actual quorum size based on quorum rate and number of results
-func (rp *RelayProcessor) getActualQuorumSize(succeededOrNodeErrors int) int {
-	return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, succeededOrNodeErrors))))
+// getRequiredQuorumSize calculates the required number of matching responses.
+// When quorum feature is enabled: applies the quorum rate formula to the response count
+// When quorum feature is disabled: returns the configured minimum (typically 1)
+// This ensures consistent quorum calculation across all scenarios.
+func (rp *RelayProcessor) getRequiredQuorumSize(responseCount int) int {
+	if rp.quorumParams.Enabled() {
+		return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, responseCount))))
+	}
+	return rp.quorumParams.Min
 }
 
 func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
 	if quorumSize <= 0 {
 		return nil, errors.New("quorumSize must be greater than zero")
-	}
-
-	// Declare originalQuorumSize at function level for use in error messages
-	var originalQuorumSize int
-
-	// When quorum feature is enabled, use the actual calculated quorum size for all comparisons
-	if rp.quorumParams.Enabled() {
-		// Preserve the original quorum size for error reporting
-		originalQuorumSize = quorumSize
-
-		actualQuorumSize := rp.getActualQuorumSize(len(results))
-		quorumSize = actualQuorumSize
 	}
 
 	type resultCount struct {
@@ -533,12 +527,11 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		}
 		// Only apply quorum logic when quorum feature is enabled
 		if rp.quorumParams.Enabled() {
-			return nil, utils.LavaFormatInfo("equal results count is less than actualQuorumSize",
+			return nil, utils.LavaFormatInfo("equal results count is less than requiredQuorumSize",
 				utils.LogAttr("nilReplies", nilReplies),
 				utils.LogAttr("results", len(results)),
 				utils.LogAttr("quorumEqualResults", maxCount),
-				utils.LogAttr("actualQuorumSize", quorumSize),
-				utils.LogAttr("originalQuorumSize", originalQuorumSize),
+				utils.LogAttr("requiredQuorumSize", quorumSize),
 				utils.LogAttr("succeededReplies", len(results)),
 				utils.LogAttr("quorumRate", rp.quorumParams.Rate))
 		} else {
@@ -595,13 +588,8 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}()
 
-	// Calculate the required quorum size
-	var requiredQuorumSize int
-	if rp.quorumParams.Enabled() {
-		requiredQuorumSize = rp.getActualQuorumSize(successResultsCount)
-	} else {
-		requiredQuorumSize = rp.quorumParams.Min
-	}
+	// Calculate the required quorum size using the unified function
+	requiredQuorumSize := rp.getRequiredQuorumSize(successResultsCount)
 
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
@@ -632,13 +620,32 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 
 		// Successes couldn't form a quorum (they don't match), try node errors if available
-		requiredNodeErrorsQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
+		requiredNodeErrorsQuorumSize := rp.getRequiredQuorumSize(nodeErrorCount)
 		if nodeErrorCount >= requiredNodeErrorsQuorumSize {
+			utils.LavaFormatInfo("Success responses didn't match, attempting node error quorum as fallback",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("successCount", successResultsCount),
+				utils.LogAttr("nodeErrorCount", nodeErrorCount),
+				utils.LogAttr("requiredNodeErrorsQuorumSize", requiredNodeErrorsQuorumSize),
+				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+			)
 			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredNodeErrorsQuorumSize)
 			if nodeErrorErr == nil {
-				// Node errors formed a quorum, use them
+				// Node errors formed a quorum, use them as fallback
+				utils.LavaFormatInfo("Using node error quorum as fallback (success responses didn't match)",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("successCount", successResultsCount),
+					utils.LogAttr("nodeErrorCount", nodeErrorCount),
+					utils.LogAttr("nodeErrorQuorum", nodeErrorResult.Quorum),
+				)
 				return nodeErrorResult, nil
 			}
+			utils.LavaFormatDebug("Node errors also failed to form quorum",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("nodeErrorCount", nodeErrorCount),
+				utils.LogAttr("requiredQuorumSize", requiredNodeErrorsQuorumSize),
+				utils.LogAttr("error", nodeErrorErr),
+			)
 		}
 		// Neither successes nor node errors could form a quorum, return the error from successes
 		return result, err
@@ -649,14 +656,30 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
 	if totalResponses >= rp.quorumParams.Min && rp.selection == Quorum {
 		// Check if we have enough node errors to form a quorum
-		requiredQuorumSize := rp.getActualQuorumSize(nodeErrorCount)
+		// Recalculate required quorum size based on node error count
+		requiredQuorumSize = rp.getRequiredQuorumSize(nodeErrorCount)
 		if successResultsCount == 0 && nodeErrorCount >= requiredQuorumSize {
-			// Try to form a quorum with node errors first
+			// Try to form a quorum with node errors first (no successes available)
+			utils.LavaFormatInfo("No success responses, attempting quorum with node errors only",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("nodeErrorCount", nodeErrorCount),
+				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
+				utils.LogAttr("protocolErrorCount", protocolErrorCount),
+				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+			)
 			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
 		}
 
 		// If we couldn't form a quorum with node errors, try combining with successes
 		if nodeErrorCount+successResultsCount >= requiredQuorumSize {
+			utils.LavaFormatInfo("Attempting quorum with combined node errors and successes",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("successCount", successResultsCount),
+				utils.LogAttr("nodeErrorCount", nodeErrorCount),
+				utils.LogAttr("combinedCount", nodeErrorCount+successResultsCount),
+				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
+				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+			)
 			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
@@ -665,7 +688,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	if rp.selection == BestResult && nodeErrorCount > 0 {
-		return rp.responsesQuorum(nodeErrors, rp.getActualQuorumSize(nodeErrorCount))
+		return rp.responsesQuorum(nodeErrors, rp.quorumParams.Min)
 	}
 
 	// Not enough successful results - continue waiting for more responses

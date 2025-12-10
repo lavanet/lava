@@ -733,7 +733,7 @@ func TestNodeErrorQuorumNotMet(t *testing.T) {
 		// Process results - should fail (no quorum)
 		_, err = relayProcessor.ProcessingResult()
 		require.Error(t, err, "Should fail when node errors don't match")
-		require.Contains(t, err.Error(), "equal results count is less than actualQuorumSize")
+		require.Contains(t, err.Error(), "equal results count is less than requiredQuorumSize")
 	})
 }
 
@@ -1839,4 +1839,97 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 
 	require.Equal(t, 0, len(nodeErrorCalls), "Node error recovery metric should NOT be called")
 	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
+}
+
+// TestGetRequiredQuorumSize tests the getRequiredQuorumSize function behavior
+// with quorum enabled and disabled
+func TestGetRequiredQuorumSize(t *testing.T) {
+	tests := []struct {
+		name          string
+		quorumParams  common.QuorumParams
+		responseCount int
+		expected      int
+		description   string
+	}{
+		{
+			name:          "Quorum Disabled - Returns Min",
+			quorumParams:  common.QuorumParams{Rate: 1, Max: 1, Min: 1},
+			responseCount: 5,
+			expected:      1,
+			description:   "When quorum is disabled, should always return Min regardless of response count",
+		},
+		{
+			name:          "Quorum Enabled - Single Response",
+			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
+			responseCount: 1,
+			expected:      2,
+			description:   "When quorum enabled with low response count, should return Min",
+		},
+		{
+			name:          "Quorum Enabled - Multiple Responses",
+			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
+			responseCount: 3,
+			expected:      2,
+			description:   "Rate 0.66 * 3 = 1.98, ceil = 2",
+		},
+		{
+			name:          "Quorum Enabled - High Response Count",
+			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
+			responseCount: 5,
+			expected:      4,
+			description:   "Rate 0.66 * 5 = 3.3, ceil = 4",
+		},
+		{
+			name:          "Quorum Disabled - Zero Responses",
+			quorumParams:  common.QuorumParams{Rate: 1, Max: 1, Min: 1},
+			responseCount: 0,
+			expected:      1,
+			description:   "Even with 0 responses, should return Min when disabled",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the function directly by creating a minimal RelayProcessor
+			rp := &RelayProcessor{
+				quorumParams: tt.quorumParams,
+			}
+
+			result := rp.getRequiredQuorumSize(tt.responseCount)
+			require.Equal(t, tt.expected, result, tt.description)
+		})
+	}
+}
+
+// TestQuorumDisabledScenario tests the core bug fix:
+// With quorum disabled and 2 responses, should only require 1 match (Min)
+func TestQuorumDisabledScenario(t *testing.T) {
+	// This test validates the fix for the bug where:
+	// - Quorum was disabled {Rate: 1, Max: 1, Min: 1}
+	// - 2 node error responses were received
+	// - Old behavior: required 2 matches (calculated from response count)
+	// - New behavior: requires 1 match (from Min)
+
+	quorumDisabled := common.QuorumParams{Rate: 1, Max: 1, Min: 1}
+	rp := &RelayProcessor{quorumParams: quorumDisabled}
+
+	// With 2 responses and quorum disabled, should require only Min (1)
+	result := rp.getRequiredQuorumSize(2)
+	require.Equal(t, 1, result, "Quorum disabled with 2 responses should require Min (1), not 2")
+
+	// With 5 responses and quorum disabled, should still require only Min (1)
+	result = rp.getRequiredQuorumSize(5)
+	require.Equal(t, 1, result, "Quorum disabled with 5 responses should require Min (1), not 5")
+
+	// Now test with quorum enabled
+	quorumEnabled := common.QuorumParams{Rate: 0.66, Max: 5, Min: 2}
+	rp.quorumParams = quorumEnabled
+
+	// With 2 responses and quorum enabled, should calculate: ceil(0.66 * 2) = 2
+	result = rp.getRequiredQuorumSize(2)
+	require.Equal(t, 2, result, "Quorum enabled with 2 responses: ceil(0.66 * 2) = 2")
+
+	// With 3 responses and quorum enabled, should calculate: ceil(0.66 * 3) = 2
+	result = rp.getRequiredQuorumSize(3)
+	require.Equal(t, 2, result, "Quorum enabled with 3 responses: ceil(0.66 * 3) = 2")
 }
