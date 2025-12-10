@@ -1215,7 +1215,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			numOfProviders:     3,
 			archiveProviders:   3,
 			nodeErrorProviders: 3,
-			expectedResult:     "",  // Will be checked separately due to Error_GUID format
+			expectedResult:     "",  // Will be checked separately to verify node error is returned directly
 			statusCode:         500, // Status code from the node error
 		},
 	}
@@ -1327,40 +1327,35 @@ func TestArchiveProvidersRetry(t *testing.T) {
 
 				resp.Body.Close()
 
-				// For the error case, check that the response contains the error
+				// For the error case, verify that the node error is returned directly (not wrapped)
 				if play.name == "archive with 3 errored provider" {
 					// Log the actual response for debugging
 					t.Logf("Actual response: %s", string(bodyBytes))
 
-					// The response is double-wrapped: {"error": "{\"Error_GUID\":\"...\",\"Error\":\"...\"}"}
-					var outerResp map[string]interface{}
-					err := json.Unmarshal(bodyBytes, &outerResp)
-					require.NoError(t, err)
-					require.Contains(t, outerResp, "error")
+					// Parse the response
+					var response map[string]interface{}
+					err = json.Unmarshal(bodyBytes, &response)
+					require.NoError(t, err, "Response should be valid JSON")
 
-					// Now parse the inner error string
-					errorStr, ok := outerResp["error"].(string)
-					require.True(t, ok, "Error field is not a string: %T", outerResp["error"])
+					// Verify we get the direct node error, not a wrapped error
+					// The response should contain the node error fields directly
+					require.Contains(t, response, "error", "Response should contain 'error' field")
+					require.Contains(t, response, "message", "Response should contain 'message' field")
+					require.Contains(t, response, "code", "Response should contain 'code' field")
 
-					// Try to parse as JSON first
-					var innerError map[string]interface{}
-					err = json.Unmarshal([]byte(errorStr), &innerError)
-					if err != nil {
-						// If not JSON, just check the string directly
-						require.Contains(t, errorStr, "failed relay, insufficient results")
-					} else {
-						// If it's JSON, check for Error_GUID format
-						if guid, hasGuid := innerError["Error_GUID"]; hasGuid {
-							require.NotEmpty(t, guid)
-							require.Contains(t, innerError, "Error")
-							errorMsg, ok := innerError["Error"].(string)
-							require.True(t, ok)
-							require.Contains(t, errorMsg, "failed relay, insufficient results")
-						} else {
-							// Otherwise just check the error content
-							require.Contains(t, errorStr, "failed relay, insufficient results")
-						}
-					}
+					// Verify the actual error values match the node error
+					require.Equal(t, "failure", response["error"], "Error should be 'failure'")
+					require.Equal(t, "test", response["message"], "Message should be 'test'")
+					require.Equal(t, "-32132", response["code"], "Code should be '-32132'")
+
+					// Make sure it's NOT wrapped with "failed relay, insufficient results"
+					// The error field should be a string "failure", not a JSON-encoded error object
+					errorValue, ok := response["error"].(string)
+					require.True(t, ok, "Error field should be a string, not an object")
+					require.NotContains(t, errorValue, "failed relay, insufficient results",
+						"Error should NOT be wrapped with 'failed relay, insufficient results'")
+					require.NotContains(t, errorValue, "Error_GUID",
+						"Error should NOT contain Error_GUID (not wrapped)")
 				} else if play.expectedResult != "" {
 					// Only check expectedResult if it's not empty
 					require.Equal(t, play.expectedResult, string(bodyBytes))
