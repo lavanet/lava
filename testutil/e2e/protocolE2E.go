@@ -1176,13 +1176,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		time.Sleep(100 * time.Millisecond)
 
 		// Add stack dump before killing emergency mode process
-		if name == "10_StartLavaInEmergencyMode" {
-			buf := make([]byte, 1<<20)
-			stackLen := runtime.Stack(buf, true)
-			fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
-			_ = os.Stdout.Sync()
-			time.Sleep(500 * time.Millisecond)
-		}
+		// if name == "10_StartLavaInEmergencyMode" {
+		// 	buf := make([]byte, 1<<20)
+		// 	stackLen := runtime.Stack(buf, true)
+		// 	fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
+		// 	_ = os.Stdout.Sync()
+		// 	time.Sleep(500 * time.Millisecond)
+		// }
 
 		if cmd != nil && cmd.Process != nil {
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
@@ -1191,6 +1191,9 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			// Execute the kill flow with a timeout guard so we never hang the test shutdown.
 			killDone := make(chan struct{})
 			dumpKillStack := func(reason string) {
+				if name != "10_StartLavaInEmergencyMode" {
+					return
+				}
 				buf := make([]byte, 1<<20)
 				stackLen := runtime.Stack(buf, true)
 				fmt.Printf("[finishTestSuccessfully] STACK DUMP (%s):\n%s\n", reason, buf[:stackLen])
@@ -1260,7 +1263,6 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				fmt.Printf("[finishTestSuccessfully] kill timeout exceeded for %s, continuing shutdown\n", name)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
-				dumpKillStack(fmt.Sprintf("kill timeout exceeded for %s", name))
 			}
 		}
 
