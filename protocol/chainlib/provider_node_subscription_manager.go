@@ -609,6 +609,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 					)
 					// Cancel the subscription's context and close the subscription
+					pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc()
 					subToClose = pnsm.activeSubscriptions[hashedParams]
 					delete(pnsm.activeSubscriptions, hashedParams)
 				}
@@ -628,7 +629,6 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	if subToClose != nil {
 		subToClose.nodeSubscription.Unsubscribe()
-		subToClose.cancellableContextCancelFunc()
 		close(subToClose.messagesChannel)
 	}
 
