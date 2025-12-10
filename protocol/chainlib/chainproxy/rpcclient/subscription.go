@@ -308,7 +308,10 @@ func (sub *ClientSubscription) run() {
 			// nil error because it's not an error, but we can't close sub.err here.
 			err = nil
 		}
-		sub.err <- err
+		select {
+		case sub.err <- err:
+		default:
+		}
 	}
 }
 

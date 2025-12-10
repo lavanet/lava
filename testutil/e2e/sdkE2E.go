@@ -84,16 +84,17 @@ func runSDKE2E(timeout time.Duration) {
 		fmt.Println(err)
 	}
 	lt := &lavaTest{
-		grpcConn:     grpcConn,
-		lavadPath:    gopath + "/bin/lavad",
-		protocolPath: gopath + "/bin/lavap",
-		lavadArgs:    "--geolocation 1 --log_level debug",
-		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*sdk.SafeBuffer),
-		commands:     make(map[string]*exec.Cmd),
-		providerType: make(map[string][]epochStorageTypes.Endpoint),
-		logPath:      sdkLogsFolder,
-		tokenDenom:   commonconsts.TestTokenDenom,
+		grpcConn:            grpcConn,
+		lavadPath:           gopath + "/bin/lavad",
+		protocolPath:        gopath + "/bin/lavap",
+		lavadArgs:           "--geolocation 1 --log_level debug",
+		consumerArgs:        " --allow-insecure-provider-dialing",
+		logs:                make(map[string]*sdk.SafeBuffer),
+		commands:            make(map[string]*exec.Cmd),
+		expectedCommandExit: make(map[string]bool),
+		providerType:        make(map[string][]epochStorageTypes.Endpoint),
+		logPath:             sdkLogsFolder,
+		tokenDenom:          commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
