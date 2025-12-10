@@ -1215,16 +1215,6 @@ func (lt *lavaTest) finishTestSuccessfully() {
 
 			// Execute the kill flow with a timeout guard so we never hang the test shutdown.
 			killDone := make(chan struct{})
-			dumpKillStack := func(reason string) {
-				if name != "10_StartLavaInEmergencyMode" {
-					return
-				}
-				buf := make([]byte, 1<<20)
-				stackLen := runtime.Stack(buf, true)
-				fmt.Printf("[finishTestSuccessfully] STACK DUMP (%s):\n%s\n", reason, buf[:stackLen])
-				_ = os.Stdout.Sync()
-				time.Sleep(200 * time.Millisecond)
-			}
 			go func() {
 				defer close(killDone)
 
@@ -1259,29 +1249,11 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
 
-				if name == "10_StartLavaInEmergencyMode" {
-					// Snapshot process tree for this pgid and the specific PID
-					psTreeCmd := exec.Command("bash", "-c", fmt.Sprintf("ps -eo pid,ppid,pgid,sid,stat,etime,args | awk 'NR==1 || $3==%d'", pgid))
-					if out, err := psTreeCmd.CombinedOutput(); err == nil {
-						fmt.Printf("[finishTestSuccessfully] process group snapshot (pgid=%d) before killing %s:\n%s\n", pgid, name, out)
-					} else {
-						fmt.Printf("[finishTestSuccessfully] failed to collect process group snapshot for %s: %v\n", name, err)
-					}
-					psPidCmd := exec.Command("bash", "-c", fmt.Sprintf("ps -o pid,ppid,pgid,sid,stat,etime,args -p %d", cmd.Process.Pid))
-					if out, err := psPidCmd.CombinedOutput(); err == nil {
-						fmt.Printf("[finishTestSuccessfully] target pid snapshot (pid=%d) before killing %s:\n%s\n", cmd.Process.Pid, name, out)
-					} else {
-						fmt.Printf("[finishTestSuccessfully] failed to collect pid snapshot for %s: %v\n", name, err)
-					}
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-				}
-
 				if timedOut {
 					fmt.Printf("[finishTestSuccessfully] getpgid timed out for %s, falling back to single process kill\n", name)
 					_ = os.Stdout.Sync()
 					time.Sleep(100 * time.Millisecond)
-					dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
+					// dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
 				}
 
 				if err == nil && !timedOut {
@@ -1301,7 +1273,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 						// Fallback to killing just the process
 						if err := cmd.Process.Kill(); err != nil {
 							utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
-							dumpKillStack(fmt.Sprintf("fallback single kill failed for %s", name))
+							// dumpKillStack(fmt.Sprintf("fallback single kill failed for %s", name))
 						}
 					} else {
 						fmt.Printf("[finishTestSuccessfully] successfully killed process group for %s\n", name)
@@ -1318,7 +1290,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					// If we can't get the process group, just kill the process
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
-						dumpKillStack(fmt.Sprintf("single kill failed for %s", name))
+						// dumpKillStack(fmt.Sprintf("single kill failed for %s", name))
 						time.Sleep(100 * time.Millisecond)
 					}
 				}
