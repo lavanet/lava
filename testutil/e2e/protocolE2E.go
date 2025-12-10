@@ -1171,7 +1171,12 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	time.Sleep(100 * time.Millisecond)
 
 	for name, cmd := range commandsCopy { // kill all the project commands
-		fmt.Printf("[finishTestSuccessfully] killing command: %s\n", name)
+		fmt.Printf("[finishTestSuccessfully] killing command: %s cmd=%v process=%v\n", name, cmd, func() interface{} {
+			if cmd != nil {
+				return cmd.Process
+			}
+			return nil
+		}())
 		_ = os.Stdout.Sync()
 		time.Sleep(100 * time.Millisecond)
 
@@ -1185,6 +1190,26 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		// }
 
 		if cmd != nil && cmd.Process != nil {
+			if name == "10_StartLavaInEmergencyMode" {
+				// Snapshot running lava processes and system memory before we kill to understand what's alive
+				memCmd := exec.Command("bash", "-c", "echo '[meminfo before kill]' && (command -v free >/dev/null 2>&1 && free -m || vm_stat)")
+				psCmd := exec.Command("bash", "-c", "ps -ef | grep lava | grep -v grep")
+
+				if out, err := memCmd.CombinedOutput(); err == nil {
+					fmt.Printf("[finishTestSuccessfully] memory snapshot before killing %s:\n%s\n", name, out)
+				} else {
+					fmt.Printf("[finishTestSuccessfully] failed to collect memory snapshot for %s: %v\n", name, err)
+				}
+				if out, err := psCmd.CombinedOutput(); err == nil {
+					fmt.Printf("[finishTestSuccessfully] ps -ef | grep lava before killing %s:\n%s\n", name, out)
+				} else {
+					fmt.Printf("[finishTestSuccessfully] failed to run ps for %s: %v\n", name, err)
+				}
+
+				// We will fill pgid and pid prints after we know pgid below
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
+			}
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 			time.Sleep(100 * time.Millisecond)
 
@@ -1233,6 +1258,24 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				fmt.Printf("[finishTestSuccessfully] got pgid=%d, err=%v for %s\n", pgid, err, name)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
+
+				if name == "10_StartLavaInEmergencyMode" {
+					// Snapshot process tree for this pgid and the specific PID
+					psTreeCmd := exec.Command("bash", "-c", fmt.Sprintf("ps -eo pid,ppid,pgid,sid,stat,etime,args | awk 'NR==1 || $3==%d'", pgid))
+					if out, err := psTreeCmd.CombinedOutput(); err == nil {
+						fmt.Printf("[finishTestSuccessfully] process group snapshot (pgid=%d) before killing %s:\n%s\n", pgid, name, out)
+					} else {
+						fmt.Printf("[finishTestSuccessfully] failed to collect process group snapshot for %s: %v\n", name, err)
+					}
+					psPidCmd := exec.Command("bash", "-c", fmt.Sprintf("ps -o pid,ppid,pgid,sid,stat,etime,args -p %d", cmd.Process.Pid))
+					if out, err := psPidCmd.CombinedOutput(); err == nil {
+						fmt.Printf("[finishTestSuccessfully] target pid snapshot (pid=%d) before killing %s:\n%s\n", cmd.Process.Pid, name, out)
+					} else {
+						fmt.Printf("[finishTestSuccessfully] failed to collect pid snapshot for %s: %v\n", name, err)
+					}
+					_ = os.Stdout.Sync()
+					time.Sleep(100 * time.Millisecond)
+				}
 
 				if timedOut {
 					fmt.Printf("[finishTestSuccessfully] getpgid timed out for %s, falling back to single process kill\n", name)
@@ -1284,10 +1327,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			// Guard against any unexpected syscall hang; continue shutdown after 3s.
 			select {
 			case <-killDone:
+				fmt.Printf("[finishTestSuccessfully] kill goroutine completed for %s\n", name)
+				_ = os.Stdout.Sync()
+				time.Sleep(100 * time.Millisecond)
 			case <-time.After(3 * time.Second):
 				fmt.Printf("[finishTestSuccessfully] kill timeout exceeded for %s, continuing shutdown\n", name)
 				_ = os.Stdout.Sync()
 				time.Sleep(100 * time.Millisecond)
+				fmt.Printf("[finishTestSuccessfully] proceeding to next command after timeout for %s\n", name)
+				_ = os.Stdout.Sync()
 			}
 		}
 
@@ -1538,6 +1586,8 @@ func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit 
 
 	// Set up environment to ensure lavad is in PATH
 	cmd := exec.CommandContext(ctx, "/bin/bash", "-c", command)
+	// Keep the emergency script and its children in their own process group for clean kills
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	lt.logsMu.Lock()
 	lt.logs[logName] = &sdk.SafeBuffer{}
 	lt.logsMu.Unlock()
