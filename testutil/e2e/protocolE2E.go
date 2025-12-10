@@ -1193,7 +1193,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			if name == "10_StartLavaInEmergencyMode" {
 				// Snapshot running lava processes and system memory before we kill to understand what's alive
 				memCmd := exec.Command("bash", "-c", "echo '[meminfo before kill]' && (command -v free >/dev/null 2>&1 && free -m || vm_stat)")
-				psCmd := exec.Command("bash", "-c", "ps -ef | grep lava | grep -v grep")
+				psCmd := exec.Command("bash", "-c", "ps -ef | grep -E 'lavad|emergency_mode.sh' | grep -v grep")
 
 				if out, err := memCmd.CombinedOutput(); err == nil {
 					fmt.Printf("[finishTestSuccessfully] memory snapshot before killing %s:\n%s\n", name, out)
@@ -1201,7 +1201,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					fmt.Printf("[finishTestSuccessfully] failed to collect memory snapshot for %s: %v\n", name, err)
 				}
 				if out, err := psCmd.CombinedOutput(); err == nil {
-					fmt.Printf("[finishTestSuccessfully] ps -ef | grep lava before killing %s:\n%s\n", name, out)
+					fmt.Printf("[finishTestSuccessfully] ps -ef | grep lavad before killing %s:\n%s\n", name, out)
 				} else {
 					fmt.Printf("[finishTestSuccessfully] failed to run ps for %s: %v\n", name, err)
 				}
