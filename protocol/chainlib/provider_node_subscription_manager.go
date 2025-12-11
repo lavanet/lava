@@ -380,7 +380,16 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 			)
 			closeNodeSubscriptionCallback()
 			return
-		case nodeErr := <-nodeErrChan:
+		case nodeErr, ok := <-nodeErrChan:
+			if !ok {
+				// The channel was closed, meaning Unsubscribe was called.
+				// We can exit gracefully without calling closeNodeSubscriptionCallback (which might have been the caller).
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() nodeErrChan closed, ending subscription",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				return
+			}
 			utils.LavaFormatWarning("ProviderNodeSubscriptionManager:startListeningForSubscription() got error from node, ending subscription", nodeErr,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
@@ -609,7 +618,6 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 					)
 					// Cancel the subscription's context and close the subscription
-					pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc()
 					subToClose = pnsm.activeSubscriptions[hashedParams]
 					delete(pnsm.activeSubscriptions, hashedParams)
 				}
@@ -629,6 +637,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	if subToClose != nil {
 		subToClose.nodeSubscription.Unsubscribe()
+		subToClose.cancellableContextCancelFunc()
 		close(subToClose.messagesChannel)
 	}
 
