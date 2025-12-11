@@ -1147,13 +1147,13 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 func (lt *lavaTest) finishTestSuccessfully() {
 	utils.LavaFormatInfo("[finishTestSuccessfully] ENTERED")
 	_ = os.Stdout.Sync()
-	time.Sleep(100 * time.Millisecond)
+	// time.Sleep(100 * time.Millisecond)
 
 	lt.testFinishedProperly.Store(true)
 
-	utils.LavaFormatInfo("[finishTestSuccessfully] acquiring RLock to copy commands")
+	// utils.LavaFormatInfo("[finishTestSuccessfully] acquiring RLock to copy commands")
 	_ = os.Stdout.Sync()
-	time.Sleep(100 * time.Millisecond)
+	//time.Sleep(100 * time.Millisecond)
 
 	lt.commandsMu.RLock()
 
@@ -1167,8 +1167,8 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	lt.commandsMu.RUnlock()
 
 	utils.LavaFormatInfo("[finishTestSuccessfully] released RLock, copied commands", utils.LogAttr("count", len(commandsCopy)))
-	_ = os.Stdout.Sync()
-	time.Sleep(100 * time.Millisecond)
+	// _ = os.Stdout.Sync()
+	// time.Sleep(100 * time.Millisecond)
 
 	for name, cmd := range commandsCopy { // kill all the project commands
 		utils.LavaFormatInfo("[finishTestSuccessfully] killing command",
@@ -1180,17 +1180,8 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				}
 				return nil
 			}()))
-		_ = os.Stdout.Sync()
-		time.Sleep(100 * time.Millisecond)
-
-		// Add stack dump before killing emergency mode process
-		// if name == "10_StartLavaInEmergencyMode" {
-		// 	buf := make([]byte, 1<<20)
-		// 	stackLen := runtime.Stack(buf, true)
-		// 	fmt.Printf("[finishTestSuccessfully] GOROUTINE DUMP before killing %s:\n%s\n", name, buf[:stackLen])
-		// 	_ = os.Stdout.Sync()
-		// 	time.Sleep(500 * time.Millisecond)
-		// }
+		// _ = os.Stdout.Sync()
+		// time.Sleep(100 * time.Millisecond)
 
 		if cmd != nil && cmd.Process != nil {
 			if name == "10_StartLavaInEmergencyMode" {
@@ -1218,7 +1209,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				time.Sleep(100 * time.Millisecond)
 			}
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
-			time.Sleep(100 * time.Millisecond)
+			// time.Sleep(100 * time.Millisecond)
 
 			// Execute the kill flow with a timeout guard so we never hang the test shutdown.
 			killDone := make(chan struct{})
@@ -1256,13 +1247,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				utils.LavaFormatInfo("[finishTestSuccessfully] got pgid",
 					utils.LogAttr("pgid", pgid), utils.LogAttr("err", err), utils.LogAttr("name", name))
 				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
+				//time.Sleep(100 * time.Millisecond)
 
 				if timedOut {
 					utils.LavaFormatInfo("[finishTestSuccessfully] getpgid timed out, falling back to single process kill",
 						utils.LogAttr("name", name))
 					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					// time.Sleep(100 * time.Millisecond)
 					// dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
 				}
 
@@ -1270,14 +1261,14 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					utils.LavaFormatInfo("[finishTestSuccessfully] killing process group",
 						utils.LogAttr("pgid", pgid), utils.LogAttr("name", name))
 					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					//time.Sleep(100 * time.Millisecond)
 
 					// Kill the process group (negative PID kills the group)
 					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
 						utils.LavaFormatInfo("[finishTestSuccessfully] kill process group failed",
 							utils.LogAttr("err", err), utils.LogAttr("name", name))
 						_ = os.Stdout.Sync()
-						time.Sleep(100 * time.Millisecond)
+						//time.Sleep(100 * time.Millisecond)
 						//dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
 
 						utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
@@ -1297,7 +1288,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				} else {
 					utils.LavaFormatInfo("[finishTestSuccessfully] no pgid, killing single process", utils.LogAttr("name", name))
 					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					// time.Sleep(100 * time.Millisecond)
 
 					// If we can't get the process group, just kill the process
 					if err := cmd.Process.Kill(); err != nil {
