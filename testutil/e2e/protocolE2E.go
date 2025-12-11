@@ -1184,30 +1184,30 @@ func (lt *lavaTest) finishTestSuccessfully() {
 		// time.Sleep(100 * time.Millisecond)
 
 		if cmd != nil && cmd.Process != nil {
-			if name == "10_StartLavaInEmergencyMode" {
-				// Snapshot running lava processes and system memory before we kill to understand what's alive
-				memCmd := exec.Command("bash", "-c", "echo '[meminfo before kill]' && (command -v free >/dev/null 2>&1 && free -m || vm_stat)")
-				psCmd := exec.Command("bash", "-c", "ps -ef | grep -E 'lavad|emergency_mode.sh' | grep -v grep")
+			// if name == "10_StartLavaInEmergencyMode" {
+			// 	// Snapshot running lava processes and system memory before we kill to understand what's alive
+			// 	memCmd := exec.Command("bash", "-c", "echo '[meminfo before kill]' && (command -v free >/dev/null 2>&1 && free -m || vm_stat)")
+			// 	psCmd := exec.Command("bash", "-c", "ps -ef | grep -E 'lavad|emergency_mode.sh' | grep -v grep")
 
-				if out, err := memCmd.CombinedOutput(); err == nil {
-					utils.LavaFormatInfo("[finishTestSuccessfully] memory snapshot before kill",
-						utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
-				} else {
-					utils.LavaFormatInfo("[finishTestSuccessfully] failed to collect memory snapshot",
-						utils.LogAttr("name", name), utils.LogAttr("err", err))
-				}
-				if out, err := psCmd.CombinedOutput(); err == nil {
-					utils.LavaFormatInfo("[finishTestSuccessfully] ps -ef snapshot before kill",
-						utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
-				} else {
-					utils.LavaFormatInfo("[finishTestSuccessfully] failed to run ps",
-						utils.LogAttr("name", name), utils.LogAttr("err", err))
-				}
+			// 	if out, err := memCmd.CombinedOutput(); err == nil {
+			// 		utils.LavaFormatInfo("[finishTestSuccessfully] memory snapshot before kill",
+			// 			utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
+			// 	} else {
+			// 		utils.LavaFormatInfo("[finishTestSuccessfully] failed to collect memory snapshot",
+			// 			utils.LogAttr("name", name), utils.LogAttr("err", err))
+			// 	}
+			// 	if out, err := psCmd.CombinedOutput(); err == nil {
+			// 		utils.LavaFormatInfo("[finishTestSuccessfully] ps -ef snapshot before kill",
+			// 			utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
+			// 	} else {
+			// 		utils.LavaFormatInfo("[finishTestSuccessfully] failed to run ps",
+			// 			utils.LogAttr("name", name), utils.LogAttr("err", err))
+			// 	}
 
-				// We will fill pgid and pid prints after we know pgid below
-				//_ = os.Stdout.Sync()
-				//time.Sleep(100 * time.Millisecond)
-			}
+			// 	// We will fill pgid and pid prints after we know pgid below
+			// 	//_ = os.Stdout.Sync()
+			// 	//time.Sleep(100 * time.Millisecond)
+			// }
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 			// time.Sleep(100 * time.Millisecond)
 
@@ -1280,7 +1280,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 						}
 					} else {
 						utils.LavaFormatInfo("[finishTestSuccessfully] successfully killed process group", utils.LogAttr("name", name))
-						_ = os.Stdout.Sync()
+						//_ = os.Stdout.Sync()
 						//time.Sleep(100 * time.Millisecond)
 						// Belt-and-suspenders: also kill the root process in case it changed groups.
 						_ = cmd.Process.Kill()
@@ -2413,7 +2413,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	utils.LavaFormatInfo("All 10 REST relay tests completed")
-	_ = os.Stdout.Sync()
+	//_ = os.Stdout.Sync()
 	utils.LavaFormatInfo("All REST relay tests completed successfully")
 	time.Sleep(500 * time.Millisecond)
 
