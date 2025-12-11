@@ -73,11 +73,13 @@ jobs:
         timeout-minutes: 10
 
       - name: Run Lava Protocol Tests
+        timeout-minutes: 20
         run: |
           set -o pipefail
           go test -v -timeout 15m ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
 
       - name: Run Cache Tests
+        timeout-minutes: 10
         run: |
           set -o pipefail
           go test -v ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
