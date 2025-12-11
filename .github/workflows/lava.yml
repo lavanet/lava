@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - smart-router-v1.1
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -71,12 +72,14 @@ jobs:
         run: go install github.com/jstemmer/go-junit-report/v2@latest
         timeout-minutes: 10
 
-      - name: Run Lava Protocol Tests
+      - name: Run Lava Protocol Tests-timeout 15m
+        timeout-minutes: 20
         run: |
           set -o pipefail
-          go test -v ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+          go test -v -timeout 15m ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
 
       - name: Run Cache Tests
+        timeout-minutes: 10
         run: |
           set -o pipefail
           go test -v ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
@@ -111,6 +114,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Run Lava Protocol E2E Tests -timeout 1200s
+        timeout-minutes: 20
         run: |
           set -o pipefail
           go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s 2>&1 | tee protocol-e2e-test.log | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
@@ -401,6 +405,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Run Lava Payment E2E Tests -timeout 1200s
+        timeout-minutes: 15
         run: |
           set -o pipefail
           go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s 2>&1 | tee payment-e2e-test.log | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins

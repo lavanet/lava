@@ -28,7 +28,7 @@ func createWebSocketHandler(handler func(string) string) http.HandlerFunc {
 		conn, err := upGrader.Upgrade(w, r, nil)
 		if err != nil {
 			fmt.Println(err)
-			panic("got error in upgrader")
+			return
 		}
 		defer conn.Close()
 
@@ -36,7 +36,8 @@ func createWebSocketHandler(handler func(string) string) http.HandlerFunc {
 			// Read the request
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
-				panic("got error in ReadMessage")
+				// Connection closed or error occurred, gracefully exit
+				break
 			}
 			fmt.Println("got ws message", string(message), messageType)
 			retMsg := handler(string(message))
