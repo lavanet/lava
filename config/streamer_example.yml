@@ -1,0 +1,209 @@
+# ============================================================================
+# Lava Event Streamer Configuration
+# Stateless, real-time blockchain event streaming service
+# ============================================================================
+
+# ============================================================================
+# RPC Configuration
+# ============================================================================
+# RPC endpoint to connect to (can be Lava smart router or direct node)
+rpc_endpoint: "http://localhost:3333"
+
+# Chain identifier (e.g., ETH1, POLYGON1, ARBI1, etc.)
+chain_id: "ETH1"
+
+# ============================================================================
+# Streaming Configuration
+# ============================================================================
+# Block to start streaming from
+# 0 = start from latest block
+# >0 = start from specific block number
+start_block: 0
+
+# How often to check for new blocks (e.g., 6s, 12s, 1m)
+polling_interval: 6s
+
+# Number of block confirmations to wait before streaming
+# 0 = stream immediately (can include reorg'd blocks)
+# 12 = wait for 12 confirmations (safer for Ethereum)
+confirmation_blocks: 0
+
+# Stream native transactions (regular ETH transfers and contract calls)
+stream_transactions: true
+
+# Stream internal transactions (requires debug_traceTransaction)
+# Note: Requires archive node with debug/trace APIs
+stream_internal_txs: false
+
+# Stream event logs
+stream_logs: true
+
+# Decode events using ABIs (auto-decodes ERC20/ERC721)
+decode_events: true
+
+# Track and recognize common events (Transfer, Approval, etc.)
+track_common_events: true
+
+# Maximum events buffer size (prevents memory overflow)
+max_events_buffer_size: 10000
+
+# Maximum concurrent streams
+max_concurrent_streams: 100
+
+# ============================================================================
+# WebSocket Server Configuration
+# ============================================================================
+# Enable WebSocket server for real-time streaming
+enable_websocket: true
+
+# WebSocket server listen address
+websocket_addr: ":8080"
+
+# WebSocket endpoint path
+websocket_path: "/stream"
+
+# Maximum concurrent WebSocket clients
+max_websocket_clients: 1000
+
+# Ping interval to keep connections alive
+websocket_ping_interval: 30s
+
+# ============================================================================
+# Webhook Configuration
+# ============================================================================
+# Enable webhook delivery
+enable_webhooks: true
+
+# Number of concurrent webhook workers
+webhook_workers: 10
+
+# Webhook delivery queue size
+webhook_queue_size: 10000
+
+# HTTP timeout for webhook delivery
+webhook_timeout: 30s
+
+# Maximum retry attempts for failed webhooks
+webhook_max_retries: 3
+
+# Delay between retry attempts
+webhook_retry_delay: 1s
+
+# ============================================================================
+# Message Queue Configuration (Optional)
+# ============================================================================
+# Enable message queue delivery
+enable_message_queue: false
+
+# Message queue type: kafka, rabbitmq, redis
+message_queue_type: "kafka"
+
+# Message queue broker address
+message_queue_addr: "localhost:9092"
+
+# Message queue topic/queue name
+message_queue_topic: "lava-events"
+
+# ============================================================================
+# Cache Configuration (Optional - In-Memory Only)
+# ============================================================================
+# Enable in-memory cache for recent blocks/events
+enable_cache: true
+
+# Cache type: memory (redis coming soon)
+cache_type: "memory"
+
+# Maximum number of recent blocks to cache
+cache_max_blocks: 1000
+
+# Cache entry time-to-live
+cache_ttl: 10m
+
+# ============================================================================
+# API Server Configuration
+# ============================================================================
+# Enable REST API for subscription management
+enable_api: true
+
+# API server listen address
+api_listen_addr: ":8081"
+
+# Enable metrics endpoint
+enable_metrics: true
+
+# Metrics server address
+metrics_addr: ":9090"
+
+# ============================================================================
+# Contract Watch Configuration
+# ============================================================================
+# Contracts to monitor for events
+watched_contracts:
+  # Example 1: USDC Token
+  - name: "USDC"
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    start_block: 6082465
+    stream_all_txs: true  # Stream all transactions to/from this address
+    event_filter:
+      - "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"  # Transfer
+      - "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"  # Approval
+    # Optional: Custom ABI for advanced decoding
+    # abi: |
+    #   [{
+    #     "anonymous": false,
+    #     "inputs": [
+    #       {"indexed": true, "name": "from", "type": "address"},
+    #       {"indexed": true, "name": "to", "type": "address"},
+    #       {"indexed": false, "name": "value", "type": "uint256"}
+    #     ],
+    #     "name": "Transfer",
+    #     "type": "event"
+    #   }]
+
+  # Example 2: Uniswap V2 Router
+  - name: "Uniswap V2 Router"
+    address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+    start_block: 10207858
+    stream_all_txs: false
+    event_filter:
+      - "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822"  # Swap
+
+# ============================================================================
+# Performance Configuration
+# ============================================================================
+# Maximum RPC retries
+max_retries: 3
+
+# Delay between retries
+retry_delay: 1s
+
+# ============================================================================
+# Usage Examples
+# ============================================================================
+
+# Real-time DeFi monitoring:
+# stream_transactions: true
+# stream_logs: true
+# decode_events: true
+# watched_contracts: [Uniswap, Aave, Compound]
+
+# NFT marketplace tracking:
+# stream_logs: true
+# decode_events: true
+# track_common_events: true
+# Filter for: event_type = "nft_transfer"
+
+# High-frequency trading signals:
+# stream_transactions: true
+# stream_internal_txs: true
+# confirmation_blocks: 0
+# Enable WebSocket for lowest latency
+
+# Webhook notifications:
+# enable_webhooks: true
+# Subscribe via: POST /subscribe with webhook URL
+
+# Message queue integration:
+# enable_message_queue: true
+# message_queue_type: "kafka"
+# Forward all events to Kafka for downstream processing

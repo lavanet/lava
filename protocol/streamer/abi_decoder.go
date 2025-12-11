@@ -1,4 +1,4 @@
-package indexer
+package streamer
 
 import (
 	"encoding/hex"

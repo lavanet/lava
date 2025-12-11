@@ -43,8 +43,8 @@ func main() {
 	cmdRPCSmartRouter := rpcsmartrouter.CreateRPCSmartRouterCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
-	// indexer cobra command
-	cmdIndexer := CreateIndexerCommand()
+	// streamer cobra command
+	cmdStreamer := CreateStreamerCommand()
 	// badge generator cobra command
 	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 	// badge generator cobra command
@@ -60,8 +60,8 @@ func main() {
 	rootCmd.AddCommand(cmdRPCSmartRouter)
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdRPCProvider)
-	// Add Indexer Command
-	rootCmd.AddCommand(cmdIndexer)
+	// Add Streamer Command
+	rootCmd.AddCommand(cmdStreamer)
 	// Add Badge Generator Command
 	rootCmd.AddCommand(badgeGenerator)
 	// Add Badge Generator Command
