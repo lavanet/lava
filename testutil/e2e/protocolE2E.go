@@ -1205,8 +1205,8 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				}
 
 				// We will fill pgid and pid prints after we know pgid below
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
+				//_ = os.Stdout.Sync()
+				//time.Sleep(100 * time.Millisecond)
 			}
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
 			// time.Sleep(100 * time.Millisecond)
@@ -1246,13 +1246,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 
 				utils.LavaFormatInfo("[finishTestSuccessfully] got pgid",
 					utils.LogAttr("pgid", pgid), utils.LogAttr("err", err), utils.LogAttr("name", name))
-				_ = os.Stdout.Sync()
+				//_ = os.Stdout.Sync()
 				//time.Sleep(100 * time.Millisecond)
 
 				if timedOut {
 					utils.LavaFormatInfo("[finishTestSuccessfully] getpgid timed out, falling back to single process kill",
 						utils.LogAttr("name", name))
-					_ = os.Stdout.Sync()
+					//	_ = os.Stdout.Sync()
 					// time.Sleep(100 * time.Millisecond)
 					// dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
 				}
@@ -1281,20 +1281,20 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					} else {
 						utils.LavaFormatInfo("[finishTestSuccessfully] successfully killed process group", utils.LogAttr("name", name))
 						_ = os.Stdout.Sync()
-						time.Sleep(100 * time.Millisecond)
+						//time.Sleep(100 * time.Millisecond)
 						// Belt-and-suspenders: also kill the root process in case it changed groups.
 						_ = cmd.Process.Kill()
 					}
 				} else {
 					utils.LavaFormatInfo("[finishTestSuccessfully] no pgid, killing single process", utils.LogAttr("name", name))
-					_ = os.Stdout.Sync()
+					//_ = os.Stdout.Sync()
 					// time.Sleep(100 * time.Millisecond)
 
 					// If we can't get the process group, just kill the process
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
 						// dumpKillStack(fmt.Sprintf("single kill failed for %s", name))
-						time.Sleep(100 * time.Millisecond)
+						// time.Sleep(100 * time.Millisecond)
 					}
 				}
 			}()
@@ -1303,25 +1303,25 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			select {
 			case <-killDone:
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill goroutine completed", utils.LogAttr("name", name))
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
+				//_ = os.Stdout.Sync()
+				//time.Sleep(100 * time.Millisecond)
 			case <-time.After(3 * time.Second):
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill timeout exceeded, continuing shutdown", utils.LogAttr("name", name))
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
+				//_ = os.Stdout.Sync()
+				//time.Sleep(100 * time.Millisecond)
 				utils.LavaFormatInfo("[finishTestSuccessfully] proceeding to next command after timeout", utils.LogAttr("name", name))
-				_ = os.Stdout.Sync()
+				//_ = os.Stdout.Sync()
 			}
 		}
 
 		utils.LavaFormatInfo("[finishTestSuccessfully] killed command", utils.LogAttr("name", name))
-		_ = os.Stdout.Sync()
-		time.Sleep(100 * time.Millisecond)
+		//_ = os.Stdout.Sync()
+		// time.Sleep(100 * time.Millisecond)
 	}
 
 	utils.LavaFormatInfo("[finishTestSuccessfully] COMPLETED killing all commands")
-	_ = os.Stdout.Sync()
-	time.Sleep(100 * time.Millisecond)
+	//_ = os.Stdout.Sync()
+	//time.Sleep(100 * time.Millisecond)
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -2267,21 +2267,21 @@ func runProtocolE2E(timeout time.Duration) {
 	defer epochCancel() // Ensure the goroutine is stopped when test finishes
 
 	// Start heartbeat goroutine to show test is still alive
-	go func() {
-		t := time.NewTicker(time.Second)
-		defer t.Stop()
-		counter := 0
-		for {
-			select {
-			case <-epochCtx.Done():
-				return
-			case <-t.C:
-				counter++
-				utils.LavaFormatInfo("[heartbeat]", utils.LogAttr("count", counter))
-				_ = os.Stdout.Sync()
-			}
-		}
-	}()
+	// go func() {
+	// 	t := time.NewTicker(time.Second)
+	// 	defer t.Stop()
+	// 	counter := 0
+	// 	for {
+	// 		select {
+	// 		case <-epochCtx.Done():
+	// 			return
+	// 		case <-t.C:
+	// 			counter++
+	// 			utils.LavaFormatInfo("[heartbeat]", utils.LogAttr("count", counter))
+	// 			_ = os.Stdout.Sync()
+	// 		}
+	// 	}
+	// }()
 
 	go func() {
 		defer func() {
