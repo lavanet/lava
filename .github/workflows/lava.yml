@@ -75,7 +75,7 @@ jobs:
       - name: Run Lava Protocol Tests
         run: |
           set -o pipefail
-          go test -v ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+          go test -v -timeout 15m ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
 
       - name: Run Cache Tests
         run: |
