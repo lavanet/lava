@@ -1,0 +1,187 @@
+# Lava EVM Indexer Configuration Example
+# This file demonstrates all available configuration options
+
+# ============================================================================
+# RPC Configuration
+# ============================================================================
+# RPC endpoint to connect to (can be Lava smart router or direct node)
+rpc_endpoint: "http://localhost:3333"
+
+# Chain identifier (e.g., ETH1, POLYGON1, ARBI1, etc.)
+chain_id: "ETH1"
+
+# ============================================================================
+# Database Configuration
+# ============================================================================
+# Database type: "sqlite" or "postgres" (postgres coming soon)
+database_type: "sqlite"
+
+# Database connection string
+# For SQLite: path to database file
+# For PostgreSQL: postgresql://user:password@host:port/dbname
+database_url: "indexer.db"
+
+# ============================================================================
+# Indexing Configuration
+# ============================================================================
+# Block to start indexing from
+# 0 = start from latest block
+# >0 = start from specific block number
+start_block: 0
+
+# Number of blocks to fetch per batch
+# Higher values = faster sync but more memory
+batch_size: 10
+
+# Number of parallel workers
+# Higher values = faster sync but more resource usage
+concurrent_workers: 4
+
+# How often to check for new blocks
+# Examples: 6s, 12s, 1m
+polling_interval: 12s
+
+# Number of block confirmations to wait before indexing
+# 0 = index immediately
+# 12 = wait for 12 confirmations (recommended for Ethereum)
+confirmation_blocks: 0
+
+# How many blocks to check for reorganizations
+reorg_depth: 10
+
+# Whether to index full transaction data
+index_transactions: true
+
+# Whether to index internal transactions (requires debug_traceTransaction)
+# Note: This requires an archive node with debug/trace APIs enabled
+index_internal_txs: false
+
+# Whether to index event logs
+index_logs: true
+
+# Whether to fetch full block data (including transactions)
+# If false, only block metadata is indexed
+index_full_blocks: true
+
+# Whether to decode events using ABIs
+# Automatically decodes common ERC20/ERC721 events
+decode_events: true
+
+# Whether to track common events (ERC20 Transfer, Approval, ERC721, etc.)
+track_common_events: true
+
+# Track all activity (txs + logs) for specific addresses
+track_specific_addresses:
+  - "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"  # USDC
+  - "0xdAC17F958D2ee523a2206206994597C13D831ec7"  # USDT
+
+# ============================================================================
+# API Server Configuration
+# ============================================================================
+# Enable the REST API server for querying indexed data
+enable_api: true
+
+# API server listen address
+api_listen_addr: ":8080"
+
+# Enable metrics endpoint
+enable_metrics: true
+
+# Metrics server address
+metrics_addr: ":9090"
+
+# ============================================================================
+# Contract Watch Configuration
+# ============================================================================
+# List of smart contracts to monitor for events
+watched_contracts:
+  # Example 1: USDC Token (with ABI for full event decoding)
+  - name: "USDC"
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    start_block: 6082465
+    track_all_activity: true
+    event_filter:
+      # Transfer event signature
+      - "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+      # Approval event signature
+      - "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+    # Optional: Provide ABI for custom event decoding
+    # abi: '[{"anonymous":false,"inputs":[...],"name":"Transfer","type":"event"}]'
+
+  # Example 2: Uniswap V2 Router
+  - name: "Uniswap V2 Router"
+    address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+    start_block: 10207858
+    track_all_activity: false
+    event_filter:
+      # Swap event
+      - "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822"
+    # abi: '[...]'  # Add full Uniswap ABI for complete decoding
+  
+  # Example 3: Custom Contract with Full ABI
+  # - name: "MyCustomContract"
+  #   address: "0x..."
+  #   start_block: 0
+  #   track_all_activity: true
+  #   abi: |
+  #     [
+  #       {
+  #         "anonymous": false,
+  #         "inputs": [
+  #           {"indexed": true, "name": "user", "type": "address"},
+  #           {"indexed": false, "name": "amount", "type": "uint256"}
+  #         ],
+  #         "name": "CustomEvent",
+  #         "type": "event"
+  #       }
+  #     ]
+
+# ============================================================================
+# Performance Configuration
+# ============================================================================
+# Enable in-memory caching
+cache_enabled: true
+
+# Cache size in MB
+cache_size: 100
+
+# Cache entry time-to-live
+cache_ttl: 5m
+
+# Maximum number of retries for failed RPC calls
+max_retries: 3
+
+# Delay between retries
+retry_delay: 1s
+
+# ============================================================================
+# Examples for Different Use Cases
+# ============================================================================
+
+# Fast Historical Sync:
+# start_block: 15000000
+# batch_size: 100
+# concurrent_workers: 8
+# confirmation_blocks: 0
+
+# Real-time Indexing with Safety:
+# start_block: 0
+# batch_size: 1
+# concurrent_workers: 2
+# confirmation_blocks: 12
+# polling_interval: 6s
+
+# Event-Only Indexing (saves resources):
+# index_transactions: false
+# index_logs: true
+# index_full_blocks: false
+# watched_contracts: [...]  # Specify contracts
+
+# DeFi Protocol Indexing:
+# watched_contracts:
+#   - name: "Aave Lending Pool"
+#     address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+#     start_block: 11362579
+#   - name: "Compound cDAI"
+#     address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+#     start_block: 8983575
