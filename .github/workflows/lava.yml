@@ -72,7 +72,7 @@ jobs:
         run: go install github.com/jstemmer/go-junit-report/v2@latest
         timeout-minutes: 10
 
-      - name: Run Lava Protocol Tests
+      - name: Run Lava Protocol Tests-timeout 15m
         timeout-minutes: 20
         run: |
           set -o pipefail
