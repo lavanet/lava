@@ -1146,14 +1146,14 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) finishTestSuccessfully() {
 	utils.LavaFormatInfo("[finishTestSuccessfully] ENTERED")
-	_ = os.Stdout.Sync()
+	// _ = os.Stdout.Sync()
 	// time.Sleep(100 * time.Millisecond)
 
 	lt.testFinishedProperly.Store(true)
 
 	// utils.LavaFormatInfo("[finishTestSuccessfully] acquiring RLock to copy commands")
 	_ = os.Stdout.Sync()
-	//time.Sleep(100 * time.Millisecond)
+	// time.Sleep(100 * time.Millisecond)
 
 	lt.commandsMu.RLock()
 
@@ -1246,13 +1246,13 @@ func (lt *lavaTest) finishTestSuccessfully() {
 
 				utils.LavaFormatInfo("[finishTestSuccessfully] got pgid",
 					utils.LogAttr("pgid", pgid), utils.LogAttr("err", err), utils.LogAttr("name", name))
-				//_ = os.Stdout.Sync()
-				//time.Sleep(100 * time.Millisecond)
+				// _ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
 
 				if timedOut {
 					utils.LavaFormatInfo("[finishTestSuccessfully] getpgid timed out, falling back to single process kill",
 						utils.LogAttr("name", name))
-					//	_ = os.Stdout.Sync()
+					// _ = os.Stdout.Sync()
 					// time.Sleep(100 * time.Millisecond)
 					// dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
 				}
@@ -1261,15 +1261,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					utils.LavaFormatInfo("[finishTestSuccessfully] killing process group",
 						utils.LogAttr("pgid", pgid), utils.LogAttr("name", name))
 					_ = os.Stdout.Sync()
-					//time.Sleep(100 * time.Millisecond)
+					// time.Sleep(100 * time.Millisecond)
 
 					// Kill the process group (negative PID kills the group)
 					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
 						utils.LavaFormatInfo("[finishTestSuccessfully] kill process group failed",
 							utils.LogAttr("err", err), utils.LogAttr("name", name))
 						_ = os.Stdout.Sync()
-						//time.Sleep(100 * time.Millisecond)
-						//dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
+						// time.Sleep(100 * time.Millisecond)
+						// dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
 
 						utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
@@ -1280,14 +1280,14 @@ func (lt *lavaTest) finishTestSuccessfully() {
 						}
 					} else {
 						utils.LavaFormatInfo("[finishTestSuccessfully] successfully killed process group", utils.LogAttr("name", name))
-						//_ = os.Stdout.Sync()
-						//time.Sleep(100 * time.Millisecond)
+						// _ = os.Stdout.Sync()
+						// time.Sleep(100 * time.Millisecond)
 						// Belt-and-suspenders: also kill the root process in case it changed groups.
 						_ = cmd.Process.Kill()
 					}
 				} else {
 					utils.LavaFormatInfo("[finishTestSuccessfully] no pgid, killing single process", utils.LogAttr("name", name))
-					//_ = os.Stdout.Sync()
+					// _ = os.Stdout.Sync()
 					// time.Sleep(100 * time.Millisecond)
 
 					// If we can't get the process group, just kill the process
@@ -1303,25 +1303,25 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			select {
 			case <-killDone:
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill goroutine completed", utils.LogAttr("name", name))
-				//_ = os.Stdout.Sync()
-				//time.Sleep(100 * time.Millisecond)
+				// _ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
 			case <-time.After(3 * time.Second):
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill timeout exceeded, continuing shutdown", utils.LogAttr("name", name))
-				//_ = os.Stdout.Sync()
-				//time.Sleep(100 * time.Millisecond)
+				// _ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
 				utils.LavaFormatInfo("[finishTestSuccessfully] proceeding to next command after timeout", utils.LogAttr("name", name))
-				//_ = os.Stdout.Sync()
+				// _ = os.Stdout.Sync()
 			}
 		}
 
 		utils.LavaFormatInfo("[finishTestSuccessfully] killed command", utils.LogAttr("name", name))
-		//_ = os.Stdout.Sync()
+		// _ = os.Stdout.Sync()
 		// time.Sleep(100 * time.Millisecond)
 	}
 
 	utils.LavaFormatInfo("[finishTestSuccessfully] COMPLETED killing all commands")
-	//_ = os.Stdout.Sync()
-	//time.Sleep(100 * time.Millisecond)
+	// _ = os.Stdout.Sync()
+	// time.Sleep(100 * time.Millisecond)
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -2413,7 +2413,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	utils.LavaFormatInfo("All 10 REST relay tests completed")
-	//_ = os.Stdout.Sync()
+	// _ = os.Stdout.Sync()
 	utils.LavaFormatInfo("All REST relay tests completed successfully")
 	time.Sleep(500 * time.Millisecond)
 
