@@ -114,7 +114,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Run Lava Protocol E2E Tests -timeout 1200s
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           set -o pipefail
           go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s 2>&1 | tee protocol-e2e-test.log | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
