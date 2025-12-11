@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -322,5 +323,106 @@ func TestRegexParsing(t *testing.T) {
 		} else {
 			assert.ErrorIs(t, err, common.APINotSupportedError)
 		}
+	}
+}
+
+// TestRestWebSocketParseMessage tests that REST WebSocket messages are parsed correctly
+// using the "WEBSOCKET" connection type which treats the path as an API name (not URL path)
+func TestRestWebSocketParseMessage(t *testing.T) {
+	apip := &RestChainParser{
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "server_info", ConnectionType: http.MethodPost}: {
+					api:           &spectypes.Api{Name: "server_info", Enabled: true},
+					collectionKey: CollectionKey{ConnectionType: http.MethodPost},
+				},
+			},
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{
+				{ConnectionType: http.MethodPost}: {
+					Enabled:        true,
+					CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceRest},
+				},
+			},
+		},
+	}
+
+	// Test WEBSOCKET connection type parses API name directly (not as URL path)
+	msg, err := apip.ParseMsg("server_info", []byte(`{"id":1,"command":"server_info"}`), "WEBSOCKET", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	require.NotNil(t, msg)
+	assert.Equal(t, "server_info", msg.GetApi().Name)
+
+	// Verify the message body is preserved
+	restMsg, ok := msg.GetRPCMessage().(*rpcInterfaceMessages.RestMessage)
+	require.True(t, ok)
+	assert.Equal(t, []byte(`{"id":1,"command":"server_info"}`), restMsg.Msg)
+	assert.Equal(t, "server_info", restMsg.Path)
+}
+
+// TestRestWebSocketCommandExtraction tests extracting command/method from JSON messages
+func TestRestWebSocketCommandExtraction(t *testing.T) {
+	tests := []struct {
+		name        string
+		message     string
+		expectedAPI string
+		expectError bool
+	}{
+		{
+			name:        "XRP style command",
+			message:     `{"id": 1, "command": "server_info"}`,
+			expectedAPI: "server_info",
+			expectError: false,
+		},
+		{
+			name:        "JSON-RPC style method",
+			message:     `{"id": 1, "method": "getHealth"}`,
+			expectedAPI: "getHealth",
+			expectError: false,
+		},
+		{
+			name:        "Command takes precedence over method",
+			message:     `{"id": 1, "command": "server_info", "method": "other"}`,
+			expectedAPI: "server_info",
+			expectError: false,
+		},
+		{
+			name:        "Missing command and method",
+			message:     `{"id": 1, "data": "test"}`,
+			expectedAPI: "",
+			expectError: true,
+		},
+		{
+			name:        "Empty command",
+			message:     `{"id": 1, "command": ""}`,
+			expectedAPI: "",
+			expectError: true,
+		},
+		{
+			name:        "Invalid JSON",
+			message:     `{invalid json}`,
+			expectedAPI: "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the extraction logic from RestWebsocketManager
+			var apiName string
+			var msgObj map[string]interface{}
+			if err := json.Unmarshal([]byte(tt.message), &msgObj); err == nil {
+				if cmd, ok := msgObj["command"].(string); ok && cmd != "" {
+					apiName = cmd
+				} else if method, ok := msgObj["method"].(string); ok && method != "" {
+					apiName = method
+				}
+			}
+
+			if tt.expectError {
+				assert.Empty(t, apiName, "Expected empty API name for error case")
+			} else {
+				assert.Equal(t, tt.expectedAPI, apiName)
+			}
+		})
 	}
 }

@@ -12,22 +12,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/metrics"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
 type RestChainParser struct {
@@ -85,14 +84,26 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
 	}
-	urlObj, err := url.Parse(urlPath)
-	if err != nil {
-		return nil, err
+
+	var apiName string
+	var lookupConnectionType string
+
+	// For WEBSOCKET connection type, urlPath is the API name (e.g., "server_info")
+	// not a URL path. This supports REST WebSocket with command-style messages.
+	if connectionType == "WEBSOCKET" {
+		apiName = urlPath
+		lookupConnectionType = http.MethodPost // WebSocket commands are treated as POST
+	} else {
+		urlObj, err := url.Parse(urlPath)
+		if err != nil {
+			return nil, err
+		}
+		apiName = urlObj.Path
+		lookupConnectionType = connectionType
 	}
-	urlWithNoQuery := urlObj.Path
 
 	// Check api is supported and save it in nodeMsg
-	apiCont, err := apip.getSupportedApi(urlWithNoQuery, connectionType)
+	apiCont, err := apip.getSupportedApi(apiName, lookupConnectionType)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +111,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	// Extract default block parser
 	api := apiCont.api
 
-	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	apiCollection, err := apip.getApiCollection(lookupConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
@@ -241,12 +252,13 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type RestChainListener struct {
-	endpoint         *lavasession.RPCEndpoint
-	relaySender      RelaySender
-	healthReporter   HealthReporter
-	logger           *metrics.RPCConsumerLogs
-	refererData      *RefererData
-	listeningAddress string
+	endpoint                   *lavasession.RPCEndpoint
+	relaySender                RelaySender
+	healthReporter             HealthReporter
+	logger                     *metrics.RPCConsumerLogs
+	refererData                *RefererData
+	listeningAddress           string
+	websocketConnectionLimiter *WebsocketConnectionLimiter
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
@@ -255,13 +267,14 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
 ) (chainListener *RestChainListener) {
-	// Create a new instance of JsonRPCChainListener
+	// Create a new instance of RestChainListener
 	chainListener = &RestChainListener{
-		endpoint:       listenEndpoint,
-		relaySender:    relaySender,
-		healthReporter: healthReporter,
-		logger:         rpcConsumerLogs,
-		refererData:    refererData,
+		endpoint:                   listenEndpoint,
+		relaySender:                relaySender,
+		healthReporter:             healthReporter,
+		logger:                     rpcConsumerLogs,
+		refererData:                refererData,
+		websocketConnectionLimiter: &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -279,6 +292,55 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
+
+	// WebSocket handler for REST (plain JSON over WebSocket)
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		apil.websocketConnectionLimiter.HandleFiberRateLimitFlags(c)
+		// IsWebSocketUpgrade returns true if the client
+		// requested upgrade to the WebSocket protocol.
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		canOpenConnection, decreaseIpConnection := apil.websocketConnectionLimiter.CanOpenConnection(websocketConn)
+		defer decreaseIpConnection()
+		if !canOpenConnection {
+			return
+		}
+
+		rateLimitInf := websocketConn.Locals(WebSocketRateLimitHeader)
+		rateLimit, assertionSuccessful := rateLimitInf.(int64)
+		if !assertionSuccessful || rateLimit < 0 {
+			rateLimit = 0
+		}
+
+		utils.LavaFormatDebug("rest websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+		defer utils.LavaFormatDebug("rest websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+
+		// REST WebSocket uses a dedicated manager that handles plain JSON messages
+		restWsManager := NewRestWebsocketManager(RestWebsocketManagerOptions{
+			WebsocketConn:          websocketConn,
+			RpcConsumerLogs:        apil.logger,
+			CmdFlags:               cmdFlags,
+			RelayMsgLogMaxChars:    relayMsgLogMaxChars,
+			ChainID:                chainID,
+			ApiInterface:           apiInterface,
+			RefererData:            apil.refererData,
+			RelaySender:            apil.relaySender,
+			WebsocketConnectionUID: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			HeaderRateLimit:        uint64(rateLimit),
+		})
+
+		restWsManager.ListenToMessages()
+	})
+	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
+	app.Get("/ws", websocketCallbackWithDappID)
+	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/websocket requests.
+
 	// Catch Post
 	handlerPost := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
@@ -440,6 +502,16 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	if apil.refererData != nil && apil.refererData.Marker != "" {
+		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
+		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
 		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
 		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerUse)
 	}
@@ -585,6 +657,127 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.RelayReply.Data)})
 		}
+	}
+
+	return reply, "", nil, nil
+}
+
+// RestWsChainProxy handles REST requests over WebSocket connections
+// This is used for chains like Stellar that use WebSocket for REST-style JSON requests
+// Structure mirrors JrpcChainProxy but uses RestWsConnector for plain JSON communication
+type RestWsChainProxy struct {
+	BaseChainProxy
+	conn *RestWsConnector
+}
+
+func NewRestWsChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
+	if len(rpcProviderEndpoint.NodeUrls) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
+	}
+
+	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
+
+	cp := &RestWsChainProxy{
+		BaseChainProxy: BaseChainProxy{
+			averageBlockTime: averageBlockTime,
+			NodeUrl:          nodeUrl,
+			HashedNodeUrl:    chainproxy.HashURL(nodeUrl.Url),
+			ErrorHandler:     &RestErrorHandler{},
+			ChainID:          rpcProviderEndpoint.ChainID,
+		},
+		conn: nil,
+	}
+
+	return cp, cp.start(ctx, nConns, nodeUrl)
+}
+
+func (cp *RestWsChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
+	conn, err := NewRestWsConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		return err
+	}
+	cp.conn = conn
+	return nil
+}
+
+func (cp *RestWsChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// REST over WebSocket doesn't support subscriptions (similar to JrpcChainProxy subscription check)
+	if ch != nil {
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on REST WebSocket", nil)
+	}
+
+	rpcInputMessage := chainMessage.GetRPCMessage()
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest websocket, failed to cast RPCInput from chainMessage", nil,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
+			utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
+			utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
+			utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+	}
+
+	// Get WebSocket connection from the pool (similar to cp.conn.GetRpc in JrpcChainProxy)
+	wsConn, err := cp.conn.GetWsConnection(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer cp.conn.ReturnWsConnection(wsConn)
+
+	// Appending hashed url (same as JrpcChainProxy)
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn.GetUrlHash()))
+
+	// Set context with timeout (same pattern as JrpcChainProxy)
+	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
+	defer cancel()
+
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, wsConn.SetHeader)
+
+	// For REST over WebSocket, we send the body as plain JSON
+	// The message to send is the REST message body (nodeMessage.Msg)
+	var msgToSend []byte
+	if len(nodeMessage.Msg) > 0 {
+		msgToSend = nodeMessage.Msg
+	} else {
+		// If no body, send an empty JSON object
+		msgToSend = []byte("{}")
+	}
+
+	utils.LavaFormatDebug("Sending REST WebSocket message to node",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("path", nodeMessage.Path),
+		utils.LogAttr("msg", string(msgToSend)),
+	)
+
+	// Send the plain JSON message and receive response (analogous to rpc.CallContext in JrpcChainProxy)
+	responseData, nodeErr := wsConn.SendAndReceive(connectCtx, msgToSend)
+	if nodeErr != nil {
+		// Handle status code errors (same pattern as JrpcChainProxy)
+		if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+			return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr,
+				utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID},
+				utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+		}
+		// Validate if the error is related to the provider connection to the node or it is a valid error
+		if parsedError := cp.HandleNodeError(ctx, nodeErr); parsedError != nil {
+			return nil, "", nil, parsedError
+		}
+		return nil, "", nil, nodeErr
+	}
+
+	// Validate response is not nil (same pattern as JrpcChainProxy)
+	responseIsNilValidationError := ValidateNilResponse(string(responseData))
+	if responseIsNilValidationError != nil {
+		return nil, "", nil, responseIsNilValidationError
+	}
+
+	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK,
+		RelayReply: &pairingtypes.RelayReply{
+			Data: responseData,
+		},
 	}
 
 	return reply, "", nil, nil
