@@ -636,8 +636,16 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	}()
 
 	if subToClose != nil {
-		subToClose.nodeSubscription.Unsubscribe()
+		// CRITICAL: Cancel context FIRST, then Unsubscribe to prevent deadlock.
+		// The subscription's forward() goroutine has two select paths:
+		// - When buffer is empty: only waits on sub.quit (unsubscribe signal) and sub.in (messages)
+		// - When buffer has data: also includes channel send to user
+		// By canceling context first, listenForSubscriptionMessages exits immediately.
+		// Then Unsubscribe() sends signal on sub.quit, which forward() can receive even
+		// when user channel is blocked, since it uses the empty-buffer path.
+		// This ensures: cancel context -> unblock listener -> forward() receives quit -> complete.
 		subToClose.cancellableContextCancelFunc()
+		subToClose.nodeSubscription.Unsubscribe()
 		close(subToClose.messagesChannel)
 	}
 
