@@ -34,6 +34,8 @@ var allowedErrors = map[string]string{
 	"rpc error: code = Unknown desc =":                                                 "This error is allowed because it's part of gRPC error responses that may contain unsupported method errors",
 	"request.SessionId":                                                                "This error is allowed because it's part of error context information in relay failures",
 	"request.userAddr":                                                                 "This error is allowed because it's part of error context information in relay failures",
+	"srv.Send()":                                                                       "This error is allowed because it can occur when trying to send on a closing gRPC connection during normal shutdown or connection issues",
+	"rpc error: code = Unavailable desc = transport is closing":                        "This error is allowed because gRPC streams can close during connection shutdown, causing Unavailable errors",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{
