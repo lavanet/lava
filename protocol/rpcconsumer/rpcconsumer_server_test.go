@@ -83,7 +83,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 	}
 	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcsonumerLogs, consumerAccount, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 
 	return rpcConsumerServer, chainParser
