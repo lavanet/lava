@@ -1146,15 +1146,7 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) finishTestSuccessfully() {
 	utils.LavaFormatInfo("[finishTestSuccessfully] ENTERED")
-	// _ = os.Stdout.Sync()
-	// time.Sleep(100 * time.Millisecond)
-
 	lt.testFinishedProperly.Store(true)
-
-	// utils.LavaFormatInfo("[finishTestSuccessfully] acquiring RLock to copy commands")
-	_ = os.Stdout.Sync()
-	// time.Sleep(100 * time.Millisecond)
-
 	lt.commandsMu.RLock()
 
 	// CRITICAL FIX: Copy the commands map so we can release the lock BEFORE killing
@@ -1167,9 +1159,6 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	lt.commandsMu.RUnlock()
 
 	utils.LavaFormatInfo("[finishTestSuccessfully] released RLock, copied commands", utils.LogAttr("count", len(commandsCopy)))
-	// _ = os.Stdout.Sync()
-	// time.Sleep(100 * time.Millisecond)
-
 	for name, cmd := range commandsCopy { // kill all the project commands
 		utils.LavaFormatInfo("[finishTestSuccessfully] killing command",
 			utils.LogAttr("name", name),
@@ -1180,37 +1169,9 @@ func (lt *lavaTest) finishTestSuccessfully() {
 				}
 				return nil
 			}()))
-		// _ = os.Stdout.Sync()
-		// time.Sleep(100 * time.Millisecond)
 
 		if cmd != nil && cmd.Process != nil {
-			// if name == "10_StartLavaInEmergencyMode" {
-			// 	// Snapshot running lava processes and system memory before we kill to understand what's alive
-			// 	memCmd := exec.Command("bash", "-c", "echo '[meminfo before kill]' && (command -v free >/dev/null 2>&1 && free -m || vm_stat)")
-			// 	psCmd := exec.Command("bash", "-c", "ps -ef | grep -E 'lavad|emergency_mode.sh' | grep -v grep")
-
-			// 	if out, err := memCmd.CombinedOutput(); err == nil {
-			// 		utils.LavaFormatInfo("[finishTestSuccessfully] memory snapshot before kill",
-			// 			utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
-			// 	} else {
-			// 		utils.LavaFormatInfo("[finishTestSuccessfully] failed to collect memory snapshot",
-			// 			utils.LogAttr("name", name), utils.LogAttr("err", err))
-			// 	}
-			// 	if out, err := psCmd.CombinedOutput(); err == nil {
-			// 		utils.LavaFormatInfo("[finishTestSuccessfully] ps -ef snapshot before kill",
-			// 			utils.LogAttr("name", name), utils.LogAttr("snapshot", string(out)))
-			// 	} else {
-			// 		utils.LavaFormatInfo("[finishTestSuccessfully] failed to run ps",
-			// 			utils.LogAttr("name", name), utils.LogAttr("err", err))
-			// 	}
-
-			// 	// We will fill pgid and pid prints after we know pgid below
-			// 	//_ = os.Stdout.Sync()
-			// 	//time.Sleep(100 * time.Millisecond)
-			// }
 			utils.LavaFormatInfo("Killing process", utils.LogAttr("name", name))
-			// time.Sleep(100 * time.Millisecond)
-
 			// Execute the kill flow with a timeout guard so we never hang the test shutdown.
 			killDone := make(chan struct{})
 			go func() {
@@ -1234,9 +1195,6 @@ func (lt *lavaTest) finishTestSuccessfully() {
 					}
 				}
 
-				// Kill the entire process group to ensure child processes are also terminated
-				// This is critical for processes like "go test" that spawn child processes (e.g., proxy.test)
-
 				utils.LavaFormatInfo("[finishTestSuccessfully] getting pgid",
 					utils.LogAttr("name", name), utils.LogAttr("pid", cmd.Process.Pid))
 				_ = os.Stdout.Sync()
@@ -1246,55 +1204,38 @@ func (lt *lavaTest) finishTestSuccessfully() {
 
 				utils.LavaFormatInfo("[finishTestSuccessfully] got pgid",
 					utils.LogAttr("pgid", pgid), utils.LogAttr("err", err), utils.LogAttr("name", name))
-				// _ = os.Stdout.Sync()
-				// time.Sleep(100 * time.Millisecond)
 
 				if timedOut {
 					utils.LavaFormatInfo("[finishTestSuccessfully] getpgid timed out, falling back to single process kill",
 						utils.LogAttr("name", name))
-					// _ = os.Stdout.Sync()
-					// time.Sleep(100 * time.Millisecond)
-					// dumpKillStack(fmt.Sprintf("getpgid timeout for %s", name))
 				}
 
 				if err == nil && !timedOut {
 					utils.LavaFormatInfo("[finishTestSuccessfully] killing process group",
 						utils.LogAttr("pgid", pgid), utils.LogAttr("name", name))
 					_ = os.Stdout.Sync()
-					// time.Sleep(100 * time.Millisecond)
-
 					// Kill the process group (negative PID kills the group)
 					if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
 						utils.LavaFormatInfo("[finishTestSuccessfully] kill process group failed",
 							utils.LogAttr("err", err), utils.LogAttr("name", name))
 						_ = os.Stdout.Sync()
-						// time.Sleep(100 * time.Millisecond)
-						// dumpKillStack(fmt.Sprintf("kill process group failed for %s", name))
 
 						utils.LavaFormatWarning("Failed to kill process group, falling back to single process", err,
 							utils.LogAttr("name", name), utils.LogAttr("pgid", pgid))
 						// Fallback to killing just the process
 						if err := cmd.Process.Kill(); err != nil {
 							utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
-							// dumpKillStack(fmt.Sprintf("fallback single kill failed for %s", name))
 						}
 					} else {
 						utils.LavaFormatInfo("[finishTestSuccessfully] successfully killed process group", utils.LogAttr("name", name))
-						// _ = os.Stdout.Sync()
-						// time.Sleep(100 * time.Millisecond)
 						// Belt-and-suspenders: also kill the root process in case it changed groups.
 						_ = cmd.Process.Kill()
 					}
 				} else {
 					utils.LavaFormatInfo("[finishTestSuccessfully] no pgid, killing single process", utils.LogAttr("name", name))
-					// _ = os.Stdout.Sync()
-					// time.Sleep(100 * time.Millisecond)
-
 					// If we can't get the process group, just kill the process
 					if err := cmd.Process.Kill(); err != nil {
 						utils.LavaFormatError("Failed to kill process", err, utils.LogAttr("name", name))
-						// dumpKillStack(fmt.Sprintf("single kill failed for %s", name))
-						// time.Sleep(100 * time.Millisecond)
 					}
 				}
 			}()
@@ -1303,25 +1244,15 @@ func (lt *lavaTest) finishTestSuccessfully() {
 			select {
 			case <-killDone:
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill goroutine completed", utils.LogAttr("name", name))
-				// _ = os.Stdout.Sync()
-				// time.Sleep(100 * time.Millisecond)
 			case <-time.After(3 * time.Second):
 				utils.LavaFormatInfo("[finishTestSuccessfully] kill timeout exceeded, continuing shutdown", utils.LogAttr("name", name))
-				// _ = os.Stdout.Sync()
-				// time.Sleep(100 * time.Millisecond)
-				utils.LavaFormatInfo("[finishTestSuccessfully] proceeding to next command after timeout", utils.LogAttr("name", name))
-				// _ = os.Stdout.Sync()
 			}
 		}
 
 		utils.LavaFormatInfo("[finishTestSuccessfully] killed command", utils.LogAttr("name", name))
-		// _ = os.Stdout.Sync()
-		// time.Sleep(100 * time.Millisecond)
 	}
 
 	utils.LavaFormatInfo("[finishTestSuccessfully] COMPLETED killing all commands")
-	// _ = os.Stdout.Sync()
-	// time.Sleep(100 * time.Millisecond)
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -2266,23 +2197,6 @@ func runProtocolE2E(timeout time.Duration) {
 	epochCtx, epochCancel := context.WithCancel(ctx)
 	defer epochCancel() // Ensure the goroutine is stopped when test finishes
 
-	// Start heartbeat goroutine to show test is still alive
-	// go func() {
-	// 	t := time.NewTicker(time.Second)
-	// 	defer t.Stop()
-	// 	counter := 0
-	// 	for {
-	// 		select {
-	// 		case <-epochCtx.Done():
-	// 			return
-	// 		case <-t.C:
-	// 			counter++
-	// 			utils.LavaFormatInfo("[heartbeat]", utils.LogAttr("count", counter))
-	// 			_ = os.Stdout.Sync()
-	// 		}
-	// 	}
-	// }()
-
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -2296,7 +2210,7 @@ func runProtocolE2E(timeout time.Duration) {
 		utils.LavaFormatInfo("[epoch-goroutine] started",
 			utils.LogAttr("epochCounter", epochCounter),
 			utils.LogAttr("epochDuration", epochDuration))
-		_ = os.Stdout.Sync()
+		// _ = os.Stdout.Sync()
 
 		for {
 			nextEpochTime := latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))
@@ -2306,27 +2220,27 @@ func runProtocolE2E(timeout time.Duration) {
 				utils.LogAttr("epoch", epochCounter),
 				utils.LogAttr("sleep", sleepDuration),
 				utils.LogAttr("until", nextEpochTime.Format("15:04:05")))
-			_ = os.Stdout.Sync()
+			// _ = os.Stdout.Sync()
 
 			select {
 			case <-epochCtx.Done():
-				time.Sleep(100 * time.Millisecond)
+				// time.Sleep(100 * time.Millisecond)
 				utils.LavaFormatInfo("[epoch-goroutine] context cancelled, exiting")
-				_ = os.Stdout.Sync()
+				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
 				return
 			case <-time.After(sleepDuration):
-				time.Sleep(100 * time.Millisecond)
-				_ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
+				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] epoch ended, sending signal", utils.LogAttr("epoch", epochCounter))
-				_ = os.Stdout.Sync()
+				// _ = os.Stdout.Sync()
 
 				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
 
-				time.Sleep(100 * time.Millisecond)
-				_ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
+				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] about to send signal", utils.LogAttr("epoch", epochCounter))
-				_ = os.Stdout.Sync()
+				//_ = os.Stdout.Sync()
 
 				epochCounter++
 
@@ -2336,64 +2250,64 @@ func runProtocolE2E(timeout time.Duration) {
 
 				// NO SLEEP HERE - it was causing hangs
 				utils.LavaFormatInfo("[epoch-goroutine] entering select to send signal", utils.LogAttr("epoch", epochCounter-1))
-				_ = os.Stdout.Sync()
+				// _ = os.Stdout.Sync()
 
 				// NOTE: Goroutine dump disabled - printing 1MB dump breaks CI output
 				// If needed, save to file instead of stdout
-				if epochCounter-1 == 2 {
-					utils.LavaFormatInfo("[epoch-goroutine] About to send signal 2",
-						utils.LogAttr("goroutine_count", runtime.NumGoroutine()))
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
-				}
+				// if epochCounter-1 == 2 {
+				// 	utils.LavaFormatInfo("[epoch-goroutine] About to send signal 2",
+				// 		utils.LogAttr("goroutine_count", runtime.NumGoroutine()))
+				// 	_ = os.Stdout.Sync()
+				// 	time.Sleep(100 * time.Millisecond)
+				// }
 
 				// Blocking send with context cancellation check
 				// No default case - this will block until either send succeeds OR context cancelled
 				utils.LavaFormatInfo("[epoch-goroutine] sending signal to channel", utils.LogAttr("epoch", epochCounter-1))
-				_ = os.Stdout.Sync()
-				time.Sleep(100 * time.Millisecond)
+				//_ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
 
 				select {
 				case signalChannel <- true:
 					utils.LavaFormatInfo("[epoch-goroutine] signal sent", utils.LogAttr("epoch", epochCounter-1))
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					// _ = os.Stdout.Sync()
+					// time.Sleep(100 * time.Millisecond)
 				case <-epochCtx.Done():
 					utils.LavaFormatInfo("[epoch-goroutine] context cancelled during send, exiting")
-					_ = os.Stdout.Sync()
-					time.Sleep(100 * time.Millisecond)
+					// _ = os.Stdout.Sync()
+					// time.Sleep(100 * time.Millisecond)
 					return
 				}
 
-				time.Sleep(100 * time.Millisecond)
-				_ = os.Stdout.Sync()
+				// time.Sleep(100 * time.Millisecond)
+				//  _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] finished processing epoch", utils.LogAttr("epoch", epochCounter-1))
-				_ = os.Stdout.Sync()
+				// _ = os.Stdout.Sync()
 			}
 		}
 	}()
 
 	utils.LavaFormatInfo("Waiting for 3 virtual epoch signals")
-	_ = os.Stdout.Sync()
+	//_ = os.Stdout.Sync()
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
-		time.Sleep(100 * time.Millisecond)
-		_ = os.Stdout.Sync()
+		//time.Sleep(500 * time.Millisecond)
+		// _ = os.Stdout.Sync()
 		utils.LavaFormatInfo("Waiting for virtual epoch signal", utils.LogAttr("index", m), utils.LogAttr("total", 3))
-		_ = os.Stdout.Sync()
+		// _ = os.Stdout.Sync()
 
-		time.Sleep(100 * time.Millisecond)
-		_ = os.Stdout.Sync()
-		utils.LavaFormatInfo("[main] about to block on channel receive", utils.LogAttr("signal_index", m), utils.LogAttr("total", 3))
-		_ = os.Stdout.Sync()
+		// time.Sleep(100 * time.Millisecond)
+		// _ = os.Stdout.Sync()
+		// utils.LavaFormatInfo("[main] about to block on channel receive", utils.LogAttr("signal_index", m), utils.LogAttr("total", 3))
+		// _ = os.Stdout.Sync()
 
 		<-signalChannel
 
 		utils.LavaFormatInfo("Received virtual epoch signal", utils.LogAttr("index", m), utils.LogAttr("total", 3))
-		_ = os.Stdout.Sync()
-		time.Sleep(100 * time.Millisecond)
+		// _ = os.Stdout.Sync()
+		time.Sleep(300 * time.Millisecond)
 	})
 
 	utils.LavaFormatInfo("All 3 virtual epoch signals received, starting REST relay tests")
@@ -2413,7 +2327,6 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	utils.LavaFormatInfo("All 10 REST relay tests completed")
-	// _ = os.Stdout.Sync()
 	utils.LavaFormatInfo("All REST relay tests completed successfully")
 	time.Sleep(500 * time.Millisecond)
 
