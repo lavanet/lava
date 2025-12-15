@@ -38,12 +38,6 @@ type StreamerConfig struct {
 	WebhookMaxRetries int           `yaml:"webhook_max_retries" json:"webhook_max_retries"`
 	WebhookRetryDelay time.Duration `yaml:"webhook_retry_delay" json:"webhook_retry_delay"`
 
-	// Message Queue Configuration
-	EnableMessageQueue bool   `yaml:"enable_message_queue" json:"enable_message_queue"`
-	MessageQueueType   string `yaml:"message_queue_type" json:"message_queue_type"` // kafka, rabbitmq, redis
-	MessageQueueAddr   string `yaml:"message_queue_addr" json:"message_queue_addr"`
-	MessageQueueTopic  string `yaml:"message_queue_topic" json:"message_queue_topic"`
-
 	// API Server Configuration
 	EnableAPI     bool   `yaml:"enable_api" json:"enable_api"`
 	APIListenAddr string `yaml:"api_listen_addr" json:"api_listen_addr"`
@@ -147,10 +141,6 @@ func DefaultConfig() *StreamerConfig {
 		WebhookTimeout:        30 * time.Second,
 		WebhookMaxRetries:     3,
 		WebhookRetryDelay:     1 * time.Second,
-		EnableMessageQueue:    false,
-		MessageQueueType:      "kafka",
-		MessageQueueAddr:      "localhost:9092",
-		MessageQueueTopic:     "lava-events",
 		EnableAPI:             true,
 		APIListenAddr:         ":8081",
 		EnableMetrics:         true,

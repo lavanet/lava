@@ -26,19 +26,17 @@ func NewSubscriptionManager(metrics *StreamerMetrics) *SubscriptionManager {
 }
 
 // Subscribe creates a new subscription
-func (sm *SubscriptionManager) Subscribe(clientID string, filters *EventFilter, webhook *WebhookConfig, mq *MessageQueueConfig) (*Subscription, error) {
+func (sm *SubscriptionManager) Subscribe(clientID string, filters *EventFilter, webhook *WebhookConfig) (*Subscription, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
 	sub := &Subscription{
-		ID:           uuid.New().String(),
-		ClientID:     clientID,
-		Filters:      filters,
-		Webhook:      webhook,
-		MessageQueue: mq,
-		Active:       true,
-		CreatedAt:    time.Now(),
-		EventCount:   0,
+		ID:        uuid.New().String(),
+		ClientID:  clientID,
+		Filters:   filters,
+		Webhook:   webhook,
+		Active:    true,
+		CreatedAt: time.Now(),
 	}
 
 	sm.subscriptions[sub.ID] = sub
@@ -333,4 +331,5 @@ func (sm *SubscriptionManager) GetActiveCount() int {
 
 	return count
 }
+
 

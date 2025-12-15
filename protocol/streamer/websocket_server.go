@@ -164,7 +164,7 @@ func (ws *WebSocketServer) handleClientMessage(clientID string, message []byte, 
 
 	switch req.Action {
 	case "subscribe":
-		sub, err := ws.subscriptionMgr.Subscribe(clientID, req.Filters, nil, nil)
+		sub, err := ws.subscriptionMgr.Subscribe(clientID, req.Filters, nil)
 		if err != nil {
 			ws.sendError(conn, "Failed to create subscription")
 			return
@@ -306,7 +306,7 @@ func (ws *WebSocketServer) handleSubscribe(w http.ResponseWriter, r *http.Reques
 		req.ClientID = r.RemoteAddr
 	}
 
-	sub, err := ws.subscriptionMgr.Subscribe(req.ClientID, req.Filters, req.Webhook, nil)
+	sub, err := ws.subscriptionMgr.Subscribe(req.ClientID, req.Filters, req.Webhook)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -367,4 +367,5 @@ func (ws *WebSocketServer) GetConnectionCount() int {
 	defer ws.mu.RUnlock()
 	return len(ws.connections)
 }
+
 

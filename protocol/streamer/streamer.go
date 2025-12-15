@@ -19,7 +19,6 @@ type Streamer struct {
 	subscriptionMgr *SubscriptionManager
 	websocketServer *WebSocketServer
 	webhookSender   *WebhookSender
-	messageQueue    *MessageQueueSender
 	eventProcessor  *EventProcessor
 }
 
@@ -57,9 +56,6 @@ func NewStreamer(config *StreamerConfig) (*Streamer, error) {
 	// Initialize webhook sender
 	webhookSender := NewWebhookSender(config, subscriptionMgr, metrics)
 
-	// Initialize message queue sender
-	messageQueue := NewMessageQueueSender(config, subscriptionMgr, metrics)
-
 	// Initialize event processor
 	eventProcessor := NewEventProcessor(
 		config,
@@ -68,7 +64,6 @@ func NewStreamer(config *StreamerConfig) (*Streamer, error) {
 		subscriptionMgr,
 		websocketServer,
 		webhookSender,
-		messageQueue,
 		metrics,
 	)
 
@@ -80,7 +75,6 @@ func NewStreamer(config *StreamerConfig) (*Streamer, error) {
 		subscriptionMgr: subscriptionMgr,
 		websocketServer: websocketServer,
 		webhookSender:   webhookSender,
-		messageQueue:    messageQueue,
 		eventProcessor:  eventProcessor,
 	}, nil
 }
@@ -113,11 +107,6 @@ func (s *Streamer) Start(ctx context.Context) error {
 	// Start webhook sender
 	s.webhookSender.Start(ctx)
 
-	// Start message queue sender
-	if err := s.messageQueue.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start message queue: %w", err)
-	}
-
 	// Start event processor
 	if err := s.eventProcessor.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start event processor: %w", err)
@@ -137,7 +126,6 @@ func (s *Streamer) Stop(ctx context.Context) error {
 
 	// Stop components in reverse order
 	s.eventProcessor.Stop()
-	s.messageQueue.Stop()
 	s.webhookSender.Stop()
 
 	if err := s.websocketServer.Stop(ctx); err != nil {
@@ -175,4 +163,5 @@ func (s *Streamer) GetSubscriptionManager() *SubscriptionManager {
 func (s *Streamer) RegisterContractABI(address string, abiJSON string) error {
 	return s.abiDecoder.RegisterABI(address, abiJSON)
 }
+
 

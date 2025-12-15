@@ -35,17 +35,16 @@ const (
 
 // Subscription represents a client subscription to events
 type Subscription struct {
-	ID              string              `json:"id"`
-	ClientID        string              `json:"client_id"`
-	Filters         *EventFilter        `json:"filters"`
-	WebSocket       interface{}         `json:"-"` // WebSocket connection
-	Webhook         *WebhookConfig      `json:"webhook,omitempty"`
-	MessageQueue    *MessageQueueConfig `json:"message_queue,omitempty"`
-	Active          bool                `json:"active"`
-	CreatedAt       time.Time           `json:"created_at"`
-	LastEventAt     *time.Time          `json:"last_event_at,omitempty"`
-	EventCount      int64               `json:"event_count"`
-	MaxEventsPerSec int                 `json:"max_events_per_sec,omitempty"` // Rate limit
+	ID              string         `json:"id"`
+	ClientID        string         `json:"client_id"`
+	Filters         *EventFilter   `json:"filters"`
+	WebSocket       interface{}    `json:"-"` // WebSocket connection
+	Webhook         *WebhookConfig `json:"webhook,omitempty"`
+	Active          bool           `json:"active"`
+	CreatedAt       time.Time      `json:"created_at"`
+	LastEventAt     *time.Time     `json:"last_event_at,omitempty"`
+	EventCount      int64          `json:"event_count"`
+	MaxEventsPerSec int            `json:"max_events_per_sec,omitempty"` // Rate limit
 }
 
 // EventFilter defines which events a subscription receives
@@ -86,15 +85,6 @@ type WebhookConfig struct {
 	TimeoutSeconds int               `json:"timeout_seconds,omitempty"`   // Request timeout
 	BatchSize      int               `json:"batch_size,omitempty"`        // Batch events (0 = no batching)
 	BatchMaxWaitMs int               `json:"batch_max_wait_ms,omitempty"` // Max wait for batch
-}
-
-// MessageQueueConfig defines message queue delivery settings
-type MessageQueueConfig struct {
-	Type     string `json:"type"`    // kafka, rabbitmq, redis
-	Address  string `json:"address"` // Broker address
-	Topic    string `json:"topic"`   // Topic/queue name
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
 }
 
 // Block represents a simplified block for streaming
@@ -187,4 +177,5 @@ type StreamerMetrics struct {
 	LastBlockProcessed   int64 `json:"last_block_processed"`
 	EventsPerSecond      int64 `json:"events_per_second"`
 }
+
 

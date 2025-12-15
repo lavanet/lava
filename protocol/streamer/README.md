@@ -10,7 +10,7 @@ Unlike traditional indexers that store blockchain data in databases, the **Lava 
 - ✅ **Real-time** - Events delivered as they happen
 - ✅ **Lightweight** - Minimal resource usage, highly scalable
 - ✅ **Event-driven** - Push-based architecture via WebSockets & webhooks
-- ✅ **Flexible** - Forward to external systems (Kafka, webhooks, custom)
+- ✅ **Flexible** - Forward to external systems via webhooks
 
 ## 🚀 Features
 
@@ -24,8 +24,6 @@ Unlike traditional indexers that store blockchain data in databases, the **Lava 
 ### Delivery Methods
 - ✅ **WebSocket Server** - Real-time bidirectional streaming
 - ✅ **Webhooks** - HTTP callbacks with retries & HMAC signing
-- ✅ **Message Queues** - Kafka, RabbitMQ, Redis Pub/Sub
-
 ### Event Decoding
 - ✅ **ERC20 Events** - Transfer, Approval, Mint, Burn
 - ✅ **ERC721 Events** - Transfer, Approval, ApprovalForAll
@@ -219,15 +217,6 @@ webhook_max_retries: 3        # Retry attempts
 webhook_retry_delay: 1s       # Delay between retries
 ```
 
-### Message Queues (Optional)
-
-```yaml
-enable_message_queue: true
-message_queue_type: "kafka"   # kafka, rabbitmq, redis
-message_queue_addr: "localhost:9092"
-message_queue_topic: "lava-events"
-```
-
 ### Contract Watching
 
 ```yaml
@@ -409,4 +398,5 @@ See [LICENSE.md](../../LICENSE.md).
 - [Smart Router](../rpcsmartrouter/README.md) - RPC routing with failover
 - [RPC Consumer](../rpcconsumer/README.md) - Decentralized RPC consumer
 - [Lava Protocol](https://docs.lavanet.xyz) - Full documentation
+
 

@@ -19,7 +19,6 @@ type EventProcessor struct {
 	subscriptionMgr *SubscriptionManager
 	websocketServer *WebSocketServer
 	webhookSender   *WebhookSender
-	messageQueue    *MessageQueueSender
 	metrics         *StreamerMetrics
 
 	currentBlock atomic.Int64
@@ -36,7 +35,6 @@ func NewEventProcessor(
 	subMgr *SubscriptionManager,
 	wsServer *WebSocketServer,
 	whSender *WebhookSender,
-	mqSender *MessageQueueSender,
 	metrics *StreamerMetrics,
 ) *EventProcessor {
 	return &EventProcessor{
@@ -46,7 +44,6 @@ func NewEventProcessor(
 		subscriptionMgr: subMgr,
 		websocketServer: wsServer,
 		webhookSender:   whSender,
-		messageQueue:    mqSender,
 		metrics:         metrics,
 		stopChan:        make(chan struct{}),
 	}
@@ -420,11 +417,6 @@ func (ep *EventProcessor) emitEvent(event *StreamEvent) {
 			}
 		}
 	}
-
-	// 3. Send to message queue (Kafka/RabbitMQ/Redis)
-	if ep.messageQueue != nil {
-		ep.messageQueue.SendEvent(event)
-	}
 }
 
 // reportMetrics periodically reports metrics
@@ -525,4 +517,5 @@ func parseStatus(statusHex string) int {
 	}
 	return 0
 }
+
 
