@@ -88,6 +88,31 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 	}
 }
 
+// unsubscribeNodeSubscription never blocks the caller indefinitely.
+// In tests (and production), it's better to leak a stuck rpcclient subscription goroutine than to deadlock teardown paths.
+func (pnsm *ProviderNodeSubscriptionManager) unsubscribeNodeSubscription(ctx context.Context, sub *rpcclient.ClientSubscription, hashedParams string) {
+	if sub == nil {
+		return
+	}
+	const timeout = 2 * time.Second
+	done := make(chan struct{})
+	go func() {
+		sub.Unsubscribe()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return
+	case <-time.After(timeout):
+		utils.LavaFormatWarning("ProviderNodeSubscriptionManager: Unsubscribe timed out, continuing shutdown to avoid deadlock", nil,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("timeout", timeout),
+		)
+		return
+	}
+}
+
 func (pnsm *ProviderNodeSubscriptionManager) failedPendingSubscription(hashedParams string) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
@@ -372,9 +397,35 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	defer subscriptionTimeoutTicker.Stop()
 
 	closeNodeSubscriptionCallback := func() {
+		// Detach subscription under lock, then perform potentially blocking shutdown steps outside the lock.
+		var subToClose *activeSubscription
 		pnsm.lock.Lock()
-		defer pnsm.lock.Unlock()
-		pnsm.closeNodeSubscription(hashedParams)
+		subToClose = pnsm.activeSubscriptions[hashedParams]
+		if subToClose != nil {
+			delete(pnsm.activeSubscriptions, hashedParams)
+		}
+		pnsm.lock.Unlock()
+
+		if subToClose == nil {
+			return
+		}
+
+		// Disconnect all connected consumers.
+		for consumerAddrString, consumerChannels := range subToClose.connectedConsumers {
+			for consumerGuid, consumerChannel := range consumerChannels {
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
+					utils.LogAttr("consumerAddr", consumerAddrString),
+					utils.LogAttr("consumerGuid", consumerGuid),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				consumerChannel.consumerChannel.Close()
+			}
+		}
+
+		// Cancel context and attempt to unsubscribe from node without risking a deadlock.
+		subToClose.cancellableContextCancelFunc()
+		pnsm.unsubscribeNodeSubscription(ctx, subToClose.nodeSubscription, hashedParams)
+		close(subToClose.messagesChannel)
 	}
 
 	for {
@@ -658,34 +709,9 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		// when user channel is blocked, since it uses the empty-buffer path.
 		// This ensures: cancel context -> unblock listener -> forward() receives quit -> complete.
 		subToClose.cancellableContextCancelFunc()
-		subToClose.nodeSubscription.Unsubscribe()
+		pnsm.unsubscribeNodeSubscription(ctx, subToClose.nodeSubscription, hashedParams)
 		close(subToClose.messagesChannel)
 	}
 
-	return nil
-}
-
-func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams string) error {
-	activeSub, foundActiveSubscription := pnsm.activeSubscriptions[hashedParams]
-	if !foundActiveSubscription {
-		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
-	}
-
-	// Disconnect all connected consumers
-	for consumerAddrString, consumerChannels := range activeSub.connectedConsumers {
-		for consumerGuid, consumerChannel := range consumerChannels {
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
-				utils.LogAttr("consumerAddr", consumerAddrString),
-				utils.LogAttr("consumerGuid", consumerGuid),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			)
-			consumerChannel.consumerChannel.Close()
-		}
-	}
-
-	pnsm.activeSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
-	activeSub.cancellableContextCancelFunc()
-	close(pnsm.activeSubscriptions[hashedParams].messagesChannel)
-	delete(pnsm.activeSubscriptions, hashedParams)
 	return nil
 }

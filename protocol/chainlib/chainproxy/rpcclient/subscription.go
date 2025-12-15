@@ -234,12 +234,13 @@ var errUnsubscribed = errors.New("unsubscribed")
 
 func newClientSubscription(c *Client, namespace string, channel reflect.Value) *ClientSubscription {
 	sub := &ClientSubscription{
-		client:      c,
-		namespace:   namespace,
-		etype:       channel.Type().Elem(),
-		channel:     channel,
-		in:          make(chan *JsonrpcMessage),
-		quit:        make(chan error),
+		client:    c,
+		namespace: namespace,
+		etype:     channel.Type().Elem(),
+		channel:   channel,
+		in:        make(chan *JsonrpcMessage),
+		// Buffered so Unsubscribe() can't deadlock if called before sub.run() starts.
+		quit:        make(chan error, 1),
 		forwardDone: make(chan struct{}),
 		unsubDone:   make(chan struct{}),
 		err:         make(chan error, 1),
@@ -263,10 +264,14 @@ func (sub *ClientSubscription) Err() <-chan error {
 // It can safely be called more than once.
 func (sub *ClientSubscription) Unsubscribe() {
 	sub.errOnce.Do(func() {
+		// IMPORTANT: must never block forever.
+		// If Unsubscribe is called before the subscription forwarding goroutine (sub.run) is started,
+		// an unbuffered quit channel would deadlock here. Even with buffering, waiting for unsubDone
+		// can deadlock if sub.run is never started due to connection/response races.
 		select {
 		case sub.quit <- errUnsubscribed:
-			<-sub.unsubDone
-		case <-sub.unsubDone:
+		default:
+			// Unsubscribe already requested (or subscription already closed).
 		}
 		close(sub.err)
 	})
