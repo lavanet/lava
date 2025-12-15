@@ -166,7 +166,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 	lt.commandsMu.Lock()
 	lt.commands[logName] = cmd
 	lt.commandsMu.Unlock()
-	retries := 0 // Counter for retries
+	retries := 0
 	maxRetries := 2
 
 	lt.wg.Add(1)
@@ -1432,7 +1432,7 @@ func (lt *lavaTest) checkQoS() error {
 		}
 		sequenceInt--
 		sequence = strconv.Itoa(int(sequenceInt))
-		//
+
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
 		lt.logsMu.Lock()
 		lt.logs[logName] = &sdk.SafeBuffer{}
@@ -1675,7 +1675,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	} else if strings.Contains(string(providerReply), "error") {
 		errors = append(errors, string(providerReply))
 	}
-	//
+
 	nodeReply, err := getRequest(fmt.Sprintf(apiMethodTendermint, tendermintNodeURL))
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("%s", err))
@@ -1973,7 +1973,6 @@ func runProtocolE2E(timeout time.Duration) {
 		providerCacheAddress: "127.0.0.1:2777",
 	}
 
-	// Ensure cleanup happens
 	defer func() {
 		// Kill all processes first (before waiting for goroutines)
 		// This ensures orphan processes like proxy.test are cleaned up
@@ -2026,7 +2025,6 @@ func runProtocolE2E(timeout time.Duration) {
 			}
 		}
 
-		// Save logs and handle panic
 		if r := recover(); r != nil {
 			lt.saveLogs()
 			panic(fmt.Sprintf("E2E Failed: %v", r))
@@ -2071,14 +2069,10 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
-	// checks proxy.
 	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK")
 
-	// Start json provider
 	lt.startJSONRPCProvider(ctx)
-	// Start Lava provider
 	lt.startLavaProviders(ctx)
-	// Wait for providers to finish adding all chain routers.
 	if err := contextSleep(ctx, time.Second*7); err != nil {
 		utils.LavaFormatWarning("Context cancelled while waiting for providers", err)
 	}
@@ -2202,7 +2196,6 @@ func runProtocolE2E(timeout time.Duration) {
 			if r := recover(); r != nil {
 				utils.LavaFormatError("Panic in virtual epoch goroutine", fmt.Errorf("%v", r))
 				utils.LavaFormatInfo("[epoch-goroutine] PANIC", utils.LogAttr("err", r))
-				_ = os.Stdout.Sync()
 			}
 		}()
 
@@ -2210,7 +2203,6 @@ func runProtocolE2E(timeout time.Duration) {
 		utils.LavaFormatInfo("[epoch-goroutine] started",
 			utils.LogAttr("epochCounter", epochCounter),
 			utils.LogAttr("epochDuration", epochDuration))
-		// _ = os.Stdout.Sync()
 
 		for {
 			nextEpochTime := latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))
@@ -2220,27 +2212,16 @@ func runProtocolE2E(timeout time.Duration) {
 				utils.LogAttr("epoch", epochCounter),
 				utils.LogAttr("sleep", sleepDuration),
 				utils.LogAttr("until", nextEpochTime.Format("15:04:05")))
-			// _ = os.Stdout.Sync()
 
 			select {
 			case <-epochCtx.Done():
-				// time.Sleep(100 * time.Millisecond)
 				utils.LavaFormatInfo("[epoch-goroutine] context cancelled, exiting")
-				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("Virtual epoch goroutine cancelled")
 				return
 			case <-time.After(sleepDuration):
-				// time.Sleep(100 * time.Millisecond)
-				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] epoch ended, sending signal", utils.LogAttr("epoch", epochCounter))
-				// _ = os.Stdout.Sync()
-
 				utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
-
-				// time.Sleep(100 * time.Millisecond)
-				// _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] about to send signal", utils.LogAttr("epoch", epochCounter))
-				//_ = os.Stdout.Sync()
 
 				epochCounter++
 
@@ -2250,77 +2231,40 @@ func runProtocolE2E(timeout time.Duration) {
 
 				// NO SLEEP HERE - it was causing hangs
 				utils.LavaFormatInfo("[epoch-goroutine] entering select to send signal", utils.LogAttr("epoch", epochCounter-1))
-				// _ = os.Stdout.Sync()
-
-				// NOTE: Goroutine dump disabled - printing 1MB dump breaks CI output
-				// If needed, save to file instead of stdout
-				// if epochCounter-1 == 2 {
-				// 	utils.LavaFormatInfo("[epoch-goroutine] About to send signal 2",
-				// 		utils.LogAttr("goroutine_count", runtime.NumGoroutine()))
-				// 	_ = os.Stdout.Sync()
-				// 	time.Sleep(100 * time.Millisecond)
-				// }
-
 				// Blocking send with context cancellation check
 				// No default case - this will block until either send succeeds OR context cancelled
 				utils.LavaFormatInfo("[epoch-goroutine] sending signal to channel", utils.LogAttr("epoch", epochCounter-1))
-				//_ = os.Stdout.Sync()
-				// time.Sleep(100 * time.Millisecond)
 
 				select {
 				case signalChannel <- true:
 					utils.LavaFormatInfo("[epoch-goroutine] signal sent", utils.LogAttr("epoch", epochCounter-1))
-					// _ = os.Stdout.Sync()
-					// time.Sleep(100 * time.Millisecond)
 				case <-epochCtx.Done():
 					utils.LavaFormatInfo("[epoch-goroutine] context cancelled during send, exiting")
-					// _ = os.Stdout.Sync()
-					// time.Sleep(100 * time.Millisecond)
 					return
 				}
 
-				// time.Sleep(100 * time.Millisecond)
-				//  _ = os.Stdout.Sync()
 				utils.LavaFormatInfo("[epoch-goroutine] finished processing epoch", utils.LogAttr("epoch", epochCounter-1))
-				// _ = os.Stdout.Sync()
 			}
 		}
 	}()
 
 	utils.LavaFormatInfo("Waiting for 3 virtual epoch signals")
-	//_ = os.Stdout.Sync()
-
 	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
-		//time.Sleep(500 * time.Millisecond)
-		// _ = os.Stdout.Sync()
 		utils.LavaFormatInfo("Waiting for virtual epoch signal", utils.LogAttr("index", m), utils.LogAttr("total", 3))
-		// _ = os.Stdout.Sync()
-
-		// time.Sleep(100 * time.Millisecond)
-		// _ = os.Stdout.Sync()
-		// utils.LavaFormatInfo("[main] about to block on channel receive", utils.LogAttr("signal_index", m), utils.LogAttr("total", 3))
-		// _ = os.Stdout.Sync()
-
 		<-signalChannel
-
 		utils.LavaFormatInfo("Received virtual epoch signal", utils.LogAttr("index", m), utils.LogAttr("total", 3))
-		// _ = os.Stdout.Sync()
 		time.Sleep(300 * time.Millisecond)
 	})
 
 	utils.LavaFormatInfo("All 3 virtual epoch signals received, starting REST relay tests")
-	_ = os.Stdout.Sync()
-
 	// check that there was an increase CU due to virtual epochs
 	// 10 requests is sufficient to validate emergency mode CU allocation
 	utils.LavaFormatInfo("Running 10 REST relay tests")
-	_ = os.Stdout.Sync()
 
 	repeat(10, func(m int) {
 		utils.LavaFormatInfo("REST relay test", utils.LogAttr("index", m), utils.LogAttr("total", 10))
-		_ = os.Stdout.Sync()
 		if err := restRelayTest(url); err != nil {
 			panic(err)
 		}
