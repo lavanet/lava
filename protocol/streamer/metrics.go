@@ -34,3 +34,4 @@ func (m *StreamerMetrics) GetStats() map[string]interface{} {
 		"events_per_second":     m.EventsPerSecond,
 	}
 }
+

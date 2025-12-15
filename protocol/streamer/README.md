@@ -6,9 +6,9 @@ A **stateless**, real-time blockchain event streaming service for EVM-compatible
 
 Unlike traditional indexers that store blockchain data in databases, the **Lava Event Streamer** is:
 
-- ✅ **Stateless** - No database, aligns with Lava Protocol's design
+- ✅ **100% Stateless** - No database, no cache, pure streaming
 - ✅ **Real-time** - Events delivered as they happen
-- ✅ **Lightweight** - Low resource usage, highly scalable
+- ✅ **Lightweight** - Minimal resource usage, highly scalable
 - ✅ **Event-driven** - Push-based architecture via WebSockets & webhooks
 - ✅ **Flexible** - Forward to external systems (Kafka, webhooks, custom)
 
@@ -25,7 +25,6 @@ Unlike traditional indexers that store blockchain data in databases, the **Lava 
 - ✅ **WebSocket Server** - Real-time bidirectional streaming
 - ✅ **Webhooks** - HTTP callbacks with retries & HMAC signing
 - ✅ **Message Queues** - Kafka, RabbitMQ, Redis Pub/Sub
-- ✅ **In-Memory Cache** - Optional caching of recent data
 
 ### Event Decoding
 - ✅ **ERC20 Events** - Transfer, Approval, Mint, Burn
@@ -410,3 +409,4 @@ See [LICENSE.md](../../LICENSE.md).
 - [Smart Router](../rpcsmartrouter/README.md) - RPC routing with failover
 - [RPC Consumer](../rpcconsumer/README.md) - Decentralized RPC consumer
 - [Lava Protocol](https://docs.lavanet.xyz) - Full documentation
+

@@ -187,3 +187,4 @@ type StreamerMetrics struct {
 	LastBlockProcessed   int64 `json:"last_block_processed"`
 	EventsPerSecond      int64 `json:"events_per_second"`
 }
+

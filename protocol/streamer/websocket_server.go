@@ -367,3 +367,4 @@ func (ws *WebSocketServer) GetConnectionCount() int {
 	defer ws.mu.RUnlock()
 	return len(ws.connections)
 }
+

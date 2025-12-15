@@ -105,21 +105,6 @@ message_queue_addr: "localhost:9092"
 message_queue_topic: "lava-events"
 
 # ============================================================================
-# Cache Configuration (Optional - In-Memory Only)
-# ============================================================================
-# Enable in-memory cache for recent blocks/events
-enable_cache: true
-
-# Cache type: memory (redis coming soon)
-cache_type: "memory"
-
-# Maximum number of recent blocks to cache
-cache_max_blocks: 1000
-
-# Cache entry time-to-live
-cache_ttl: 10m
-
-# ============================================================================
 # API Server Configuration
 # ============================================================================
 # Enable REST API for subscription management
@@ -207,3 +192,4 @@ retry_delay: 1s
 # enable_message_queue: true
 # message_queue_type: "kafka"
 # Forward all events to Kafka for downstream processing
+

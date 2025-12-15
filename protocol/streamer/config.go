@@ -44,13 +44,6 @@ type StreamerConfig struct {
 	MessageQueueAddr   string `yaml:"message_queue_addr" json:"message_queue_addr"`
 	MessageQueueTopic  string `yaml:"message_queue_topic" json:"message_queue_topic"`
 
-	// Cache Configuration (for recent blocks/events)
-	EnableCache    bool          `yaml:"enable_cache" json:"enable_cache"`
-	CacheType      string        `yaml:"cache_type" json:"cache_type"`             // memory, redis
-	CacheAddr      string        `yaml:"cache_addr" json:"cache_addr"`             // Redis address
-	CacheMaxBlocks int           `yaml:"cache_max_blocks" json:"cache_max_blocks"` // Keep last N blocks
-	CacheTTL       time.Duration `yaml:"cache_ttl" json:"cache_ttl"`
-
 	// API Server Configuration
 	EnableAPI     bool   `yaml:"enable_api" json:"enable_api"`
 	APIListenAddr string `yaml:"api_listen_addr" json:"api_listen_addr"`
@@ -118,12 +111,6 @@ func (c *StreamerConfig) Validate() error {
 	if c.WebhookRetryDelay <= 0 {
 		c.WebhookRetryDelay = 1 * time.Second
 	}
-	if c.CacheMaxBlocks <= 0 {
-		c.CacheMaxBlocks = 1000
-	}
-	if c.CacheTTL <= 0 {
-		c.CacheTTL = 10 * time.Minute
-	}
 	if c.MaxRetries <= 0 {
 		c.MaxRetries = 3
 	}
@@ -164,10 +151,6 @@ func DefaultConfig() *StreamerConfig {
 		MessageQueueType:      "kafka",
 		MessageQueueAddr:      "localhost:9092",
 		MessageQueueTopic:     "lava-events",
-		EnableCache:           true,
-		CacheType:             "memory",
-		CacheMaxBlocks:        1000,
-		CacheTTL:              10 * time.Minute,
 		EnableAPI:             true,
 		APIListenAddr:         ":8081",
 		EnableMetrics:         true,

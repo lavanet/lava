@@ -333,3 +333,4 @@ func (sm *SubscriptionManager) GetActiveCount() int {
 
 	return count
 }
+

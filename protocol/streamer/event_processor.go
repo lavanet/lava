@@ -19,6 +19,7 @@ type EventProcessor struct {
 	subscriptionMgr *SubscriptionManager
 	websocketServer *WebSocketServer
 	webhookSender   *WebhookSender
+	messageQueue    *MessageQueueSender
 	metrics         *StreamerMetrics
 
 	currentBlock atomic.Int64
@@ -35,6 +36,7 @@ func NewEventProcessor(
 	subMgr *SubscriptionManager,
 	wsServer *WebSocketServer,
 	whSender *WebhookSender,
+	mqSender *MessageQueueSender,
 	metrics *StreamerMetrics,
 ) *EventProcessor {
 	return &EventProcessor{
@@ -44,6 +46,7 @@ func NewEventProcessor(
 		subscriptionMgr: subMgr,
 		websocketServer: wsServer,
 		webhookSender:   whSender,
+		messageQueue:    mqSender,
 		metrics:         metrics,
 		stopChan:        make(chan struct{}),
 	}
@@ -398,17 +401,17 @@ func (ep *EventProcessor) emitDecodedEvent(decoded *DecodedEvent, log *Log) {
 	ep.emitEvent(event)
 }
 
-// emitEvent emits an event to all subscribers
+// emitEvent emits an event to all delivery channels
 func (ep *EventProcessor) emitEvent(event *StreamEvent) {
 	// Update metrics
 	ep.metrics.EventsEmitted++
 
-	// Send to WebSocket clients
+	// 1. Send to WebSocket clients (real-time subscriptions)
 	if ep.websocketServer != nil {
 		ep.websocketServer.SendEvent(event)
 	}
 
-	// Send to webhook subscribers
+	// 2. Send to webhook subscribers (HTTP callbacks)
 	if ep.webhookSender != nil {
 		matches := ep.subscriptionMgr.MatchEvent(event)
 		for _, sub := range matches {
@@ -416,6 +419,11 @@ func (ep *EventProcessor) emitEvent(event *StreamEvent) {
 				ep.webhookSender.SendEvent(event, sub)
 			}
 		}
+	}
+
+	// 3. Send to message queue (Kafka/RabbitMQ/Redis)
+	if ep.messageQueue != nil {
+		ep.messageQueue.SendEvent(event)
 	}
 }
 
@@ -517,3 +525,4 @@ func parseStatus(statusHex string) int {
 	}
 	return 0
 }
+

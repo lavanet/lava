@@ -129,10 +129,6 @@ func printExampleStreamerConfig() error {
 		MessageQueueType:      "kafka",
 		MessageQueueAddr:      "localhost:9092",
 		MessageQueueTopic:     "lava-events",
-		EnableCache:           true,
-		CacheType:             "memory",
-		CacheMaxBlocks:        1000,
-		CacheTTL:              10 * time.Minute,
 		EnableAPI:             true,
 		APIListenAddr:         ":8081",
 		EnableMetrics:         true,
@@ -164,3 +160,4 @@ func printExampleStreamerConfig() error {
 
 	return nil
 }
+
