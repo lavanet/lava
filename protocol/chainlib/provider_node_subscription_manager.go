@@ -147,14 +147,35 @@ func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock
 			// check consumer guid.
 			if consumerGuidContainer, foundGuid := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
 				// if the consumer exists and channel is already active, and the consumer tried to resubscribe, we assume the connection was interrupted, we disconnect the previous channel and reconnect the incoming channel.
-				utils.LavaFormatWarning("consumer tried to subscribe twice to the same subscription hash, disconnecting the previous one and attaching incoming channel", nil,
+				utils.LavaFormatInfo("consumer reconnecting to existing subscription, replacing channel",
 					utils.LogAttr("consumerAddr", consumerAddr),
 					utils.LogAttr("hashedParams", hashedParams),
 					utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
 				)
-				// disconnecting the previous channel, attaching new channel, and returning subscription Id.
-				consumerGuidContainer.consumerChannel.ReplaceChannel(consumerChannel)
-				return paramsChannelToConnectedConsumers.subscriptionID, nil
+
+				// Create a NEW SafeChannelSender for the new channel
+				// Note: We don't call Close() on the old one because there might be active sends from listenForSubscriptionMessages.
+				// The old SafeChannelSender will be garbage collected when no longer referenced.
+				paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
+					consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
+					firstSetupRequest:  consumerGuidContainer.firstSetupRequest,
+					consumerSDKAddress: consumerAddr,
+				}
+
+				// Get the first setup reply and sign it for this consumer
+				firstSetupReply := paramsChannelToConnectedConsumers.firstSetupReply
+
+				// Making sure to sign the reply before returning it to the consumer
+				signingError := pnsm.signReply(ctx, firstSetupReply, consumerAddr, chainMessage, request)
+				if signingError != nil {
+					return "", utils.LavaFormatError("AddConsumer failed signing reply during reconnection", signingError)
+				}
+
+				// Send the first reply to the consumer asynchronously
+				subscriptionId := paramsChannelToConnectedConsumers.subscriptionID
+				pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.LockAndSendAsynchronously(firstSetupReply)
+
+				return subscriptionId, nil
 			}
 			// else we have this consumer but two different processes try to subscribe
 			utils.LavaFormatTrace("[AddConsumer] consumer address exists but consumer GUID does not exist in the subscription map, adding",
