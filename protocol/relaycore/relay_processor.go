@@ -164,6 +164,13 @@ func (rp *RelayProcessor) SetResponse(response *RelayResponse) {
 func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
+
+	// Check for no-retry errors first - these should stop processing immediately
+	if rp.HasNoRetryErrors() {
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - no-retry error detected, stopping immediately", utils.LogAttr("GUID", rp.guid))
+		return true
+	}
+
 	if rp.ResultsManager.RequiredResults(rp.quorumParams.Min, rp.selection) {
 		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.quorumParams.Min), utils.LogAttr("selection", rp.selection))
 		return true
@@ -187,20 +194,36 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
-func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
+// HasNoRetryErrors checks if any errors should prevent retry attempts
+// This includes both unsupported method errors and valid node errors that shouldn't be retried
+func (rp *RelayProcessor) HasNoRetryErrors() bool {
 	if rp == nil {
 		return false
 	}
 
-	// Get actual error data to check for unsupported method errors
+	// Check for unsupported methods (method doesn't exist)
+	if rp.hasUnsupportedMethodErrors() {
+		return true
+	}
+
+	// Check for no-retry node errors (method exists but request has issue)
+	if rp.hasNoRetryNodeErrors() {
+		return true
+	}
+
+	return false
+}
+
+// hasUnsupportedMethodErrors checks specifically for unsupported method errors
+// These are methods that don't exist on the provider/spec
+func (rp *RelayProcessor) hasUnsupportedMethodErrors() bool {
 	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
 
-	// Check node errors
+	// Check node errors for unsupported method patterns
 	for _, nodeErrorResult := range nodeErrorResults {
 		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
-			// Check if this is an unsupported method error based on the reply
-			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {
+			replyData := string(nodeErrorResult.Reply.Data)
+			if chainlib.IsUnsupportedMethodErrorMessage(replyData) {
 				return true
 			}
 		}
@@ -208,17 +231,46 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 
 	// Check protocol errors
 	for _, protocolError := range protocolErrors {
-		// Check if this is an unsupported method error
 		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
 			return true
 		}
-		// Check for epoch mismatch errors that should be retried
+	}
+
+	return false
+}
+
+// hasNoRetryNodeErrors checks for valid node errors that shouldn't be retried
+// These are valid methods but the request has an issue (e.g., response too big)
+func (rp *RelayProcessor) hasNoRetryNodeErrors() bool {
+	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
+
+	// Check node errors for no-retry patterns (e.g., "response is too big")
+	for _, nodeErrorResult := range nodeErrorResults {
+		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
+			replyData := string(nodeErrorResult.Reply.Data)
+			if chainlib.IsNoRetryNodeErrorByMessage(replyData) {
+				utils.LavaFormatDebug("no-retry node error detected in relay processor",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("provider", nodeErrorResult.GetProvider()),
+					utils.LogAttr("error_data", replyData),
+				)
+				return true
+			}
+		}
+	}
+
+	// Check protocol errors
+	for _, protocolError := range protocolErrors {
+		// Skip epoch mismatch errors (should be retried)
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
-			// Epoch mismatch errors should be retried, not treated as unsupported
 			continue
 		}
-		// Also check if we shouldn't retry this error
-		if !chainlib.ShouldRetryError(protocolError.GetError()) {
+		// Check if this is a no-retry error
+		if chainlib.IsNoRetryNodeErrorByMessage(protocolError.GetError().Error()) {
+			utils.LavaFormatDebug("no-retry node error detected in protocol errors",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("error", protocolError.GetError().Error()),
+			)
 			return true
 		}
 	}
@@ -231,7 +283,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors))
 
 	// Never retry if we detect unsupported method errors
-	if rp.HasUnsupportedMethodErrors() {
+	if rp.HasNoRetryErrors() {
 		return false
 	}
 

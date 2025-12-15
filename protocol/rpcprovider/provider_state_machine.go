@@ -91,6 +91,19 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			return replyWrapper, latency, nil
 		}
 
+		// Check if this is a non-retryable node error (e.g., response too big)
+		// These are valid errors from the node but retrying won't help
+		if chainlib.IsNoRetryNodeErrorByMessage(errorMessage) {
+			utils.LavaFormatInfo("non-retryable node error detected - returning error to consumer",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("error", errorMessage),
+				utils.LogAttr("chain_id", psm.chainId),
+				utils.LogAttr("retry_attempt", retryAttempt),
+			)
+			// Return the response to consumer without retrying
+			return replyWrapper, latency, nil
+		}
+
 		// Check if this is an unsupported method error based on known patterns/status codes
 		isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(errorMessage)
 		if !isUnsupported && chainMsg != nil && chainMsg.GetApiCollection() != nil {

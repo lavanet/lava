@@ -160,15 +160,16 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 	return shouldRetry
 }
 
-// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level
-func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
+// hasNoRetryErrors checks if we have any no-retry errors at state machine level
+// This includes unsupported methods, response too big, and any future no-retry error patterns
+func (crsm *ConsumerRelayStateMachine) hasNoRetryErrors() bool {
 	if crsm.resultsChecker == nil {
 		return false
 	}
 
-	// Check if the results checker has unsupported method errors
+	// Check if the results checker has any no-retry errors
 	if relayProcessor, ok := crsm.resultsChecker.(*relaycore.RelayProcessor); ok {
-		return relayProcessor.HasUnsupportedMethodErrors()
+		return relayProcessor.HasNoRetryErrors()
 	}
 
 	return false
@@ -177,9 +178,9 @@ func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine(
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
-	if crsm.hasUnsupportedMethodErrorsInStateMachine() {
-		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
+	// Never retry if we detect any no-retry errors at state machine level
+	if crsm.hasNoRetryErrors() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: no-retry error detected, no retry", utils.LogAttr("GUID", crsm.ctx))
 		return false
 	}
 

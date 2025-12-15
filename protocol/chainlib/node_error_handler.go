@@ -51,6 +51,9 @@ const (
 
 	// JSON-RPC error code for method not found
 	JSONRPCMethodNotFoundCode = -32601
+
+	// Error message pattern for response too big errors (error code -32008)
+	ResponseTooBigPattern = "response is too big"
 )
 
 type UnsupportedMethodError struct {
@@ -210,8 +213,21 @@ func IsUnsupportedMethodErrorType(err error) bool {
 	return errors.As(err, &unsupportedMethodError)
 }
 
+// IsNoRetryNodeErrorByMessage checks if an error message indicates a non-retryable error
+// Currently only handles "response is too big" pattern
+func IsNoRetryNodeErrorByMessage(errorMessage string) bool {
+	if errorMessage == "" {
+		return false
+	}
+
+	errorMsg := strings.ToLower(errorMessage)
+
+	// Check for response too big pattern
+	return strings.Contains(errorMsg, strings.ToLower(ResponseTooBigPattern))
+}
+
 // ShouldRetryError determines if an error should trigger retry attempts
-// Returns false for unsupported method errors to prevent unnecessary retries
+// Returns false for unsupported method errors and non-retryable node errors
 func ShouldRetryError(err error) bool {
 	if err == nil {
 		return false
@@ -224,6 +240,11 @@ func ShouldRetryError(err error) bool {
 
 	// Never retry if the error message indicates an unsupported method
 	if IsUnsupportedMethodError(err) {
+		return false
+	}
+
+	// Never retry if the error message indicates response too big
+	if IsNoRetryNodeErrorByMessage(err.Error()) {
 		return false
 	}
 
