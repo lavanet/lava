@@ -153,29 +153,21 @@ func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock
 					utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
 				)
 
+				// Mark the old SafeChannelSender as closed without closing the underlying channel
+				// This ensures that in-flight sends fail gracefully instead of panicking.
+				// The actual channel will be closed when RemoveConsumer is called or garbage collected.
+				consumerGuidContainer.consumerChannel.MarkClosed()
+
 				// Create a NEW SafeChannelSender for the new channel
-				// Note: We don't call Close() on the old one because there might be active sends from listenForSubscriptionMessages.
-				// The old SafeChannelSender will be garbage collected when no longer referenced.
 				paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
 					consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
 					firstSetupRequest:  consumerGuidContainer.firstSetupRequest,
 					consumerSDKAddress: consumerAddr,
 				}
 
-				// Get the first setup reply and sign it for this consumer
-				firstSetupReply := paramsChannelToConnectedConsumers.firstSetupReply
-
-				// Making sure to sign the reply before returning it to the consumer
-				signingError := pnsm.signReply(ctx, firstSetupReply, consumerAddr, chainMessage, request)
-				if signingError != nil {
-					return "", utils.LavaFormatError("AddConsumer failed signing reply during reconnection", signingError)
-				}
-
-				// Send the first reply to the consumer asynchronously
-				subscriptionId := paramsChannelToConnectedConsumers.subscriptionID
-				pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.LockAndSendAsynchronously(firstSetupReply)
-
-				return subscriptionId, nil
+				// Return without sending - the subscription is already established.
+				// The reconnected consumer will receive messages via the new SafeChannelSender.
+				return paramsChannelToConnectedConsumers.subscriptionID, nil
 			}
 			// else we have this consumer but two different processes try to subscribe
 			utils.LavaFormatTrace("[AddConsumer] consumer address exists but consumer GUID does not exist in the subscription map, adding",
