@@ -193,3 +193,4 @@ retry_delay: 1s
 # message_queue_type: "kafka"
 # Forward all events to Kafka for downstream processing
 
+
