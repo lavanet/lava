@@ -138,14 +138,18 @@ func (d *ABIDecoder) loadStandardABIs() {
 	]`
 
 	var err error
-	d.erc20ABI, err = abi.JSON(strings.NewReader(erc20JSON))
+	erc20ABI, err := abi.JSON(strings.NewReader(erc20JSON))
 	if err != nil {
 		utils.LavaFormatWarning("Failed to parse ERC20 ABI", err)
+	} else {
+		d.erc20ABI = &erc20ABI
 	}
 
-	d.erc721ABI, err = abi.JSON(strings.NewReader(erc721JSON))
+	erc721ABI, err := abi.JSON(strings.NewReader(erc721JSON))
 	if err != nil {
 		utils.LavaFormatWarning("Failed to parse ERC721 ABI", err)
+	} else {
+		d.erc721ABI = &erc721ABI
 	}
 
 	// Register standard event signatures

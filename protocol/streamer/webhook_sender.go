@@ -81,7 +81,10 @@ func (wh *WebhookSender) SendEvent(event *StreamEvent, subscription *Subscriptio
 		attempt:      0,
 	}:
 	default:
-		utils.LavaFormatWarning("Webhook queue full, dropping event")
+		utils.LavaFormatWarning("Webhook queue full, dropping event", nil,
+			utils.LogAttr("subscription_id", subscription.ID),
+			utils.LogAttr("event_type", event.Type),
+		)
 		wh.metrics.WebhooksFailed++
 	}
 }

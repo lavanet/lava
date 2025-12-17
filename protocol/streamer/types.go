@@ -139,32 +139,7 @@ type Log struct {
 	Removed          bool    `json:"removed"`
 }
 
-// InternalTransaction represents an internal transaction
-type InternalTransaction struct {
-	ChainID      string `json:"chain_id"`
-	TxHash       string `json:"tx_hash"`
-	BlockNumber  int64  `json:"block_number"`
-	FromAddress  string `json:"from_address"`
-	ToAddress    string `json:"to_address"`
-	Value        string `json:"value"`
-	Gas          int64  `json:"gas"`
-	GasUsed      int64  `json:"gas_used"`
-	Input        string `json:"input"`
-	Output       string `json:"output"`
-	TraceType    string `json:"trace_type"`
-	CallType     string `json:"call_type"`
-	TraceAddress string `json:"trace_address"`
-	Error        string `json:"error,omitempty"`
-}
-
-// DecodedEvent represents a decoded smart contract event
-type DecodedEvent struct {
-	EventType  string                 `json:"event_type"`
-	EventName  string                 `json:"event_name"`
-	Signature  string                 `json:"signature"`
-	Parameters map[string]interface{} `json:"parameters"`
-	RawLog     *Log                   `json:"raw_log,omitempty"`
-}
+// Note: InternalTransaction and DecodedEvent types are defined in their respective implementation files
 
 // StreamerMetrics tracks real-time metrics
 type StreamerMetrics struct {

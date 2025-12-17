@@ -136,6 +136,9 @@ func (c *RPCClient) getInternalTransactionsTrace(ctx context.Context, txHash str
 	return internalTxs, nil
 }
 
+// Note: Storage methods removed - streamer is designed to be stateless
+// Internal transactions should be processed and streamed in real-time
+
 // flattenTrace recursively flattens a trace tree
 func (c *RPCClient) flattenTrace(trace *TraceResult, txHash string, traceAddress []int, result *[]InternalTransaction) {
 	// Skip the top-level transaction (it's already indexed as a regular transaction)
@@ -170,104 +173,4 @@ func (c *RPCClient) flattenTrace(trace *TraceResult, txHash string, traceAddress
 		nestedAddress := append(traceAddress, i)
 		c.flattenTrace(&call, txHash, nestedAddress, result)
 	}
-}
-
-// Storage interface additions for internal transactions
-func (s *SQLiteStorage) SaveInternalTransaction(ctx context.Context, tx *InternalTransaction) error {
-	query := `
-		INSERT OR REPLACE INTO internal_transactions (
-			chain_id, tx_hash, block_number, from_address, to_address, value,
-			gas, gas_used, input, output, trace_type, call_type, trace_address,
-			error, indexed_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	executor := s.getExecutor()
-	_, err := executor.ExecContext(ctx, query,
-		tx.ChainID, tx.TxHash, tx.BlockNumber, tx.FromAddress, tx.ToAddress, tx.Value,
-		tx.Gas, tx.GasUsed, tx.Input, tx.Output, tx.TraceType, tx.CallType, tx.TraceAddress,
-		tx.Error, tx.IndexedAt,
-	)
-	return err
-}
-
-func (s *SQLiteStorage) SaveInternalTransactions(ctx context.Context, txs []InternalTransaction) error {
-	if len(txs) == 0 {
-		return nil
-	}
-
-	executor := s.getExecutor()
-
-	for _, tx := range txs {
-		if err := s.SaveInternalTransaction(ctx, &tx); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// GetInternalTransactions retrieves internal transactions for a transaction hash
-func (s *SQLiteStorage) GetInternalTransactions(ctx context.Context, chainID string, txHash string) ([]InternalTransaction, error) {
-	query := `
-		SELECT chain_id, tx_hash, block_number, from_address, to_address, value,
-			   gas, gas_used, input, output, trace_type, call_type, trace_address,
-			   error, indexed_at
-		FROM internal_transactions WHERE chain_id = ? AND tx_hash = ?
-		ORDER BY trace_address
-	`
-
-	rows, err := s.db.QueryContext(ctx, query, chainID, txHash)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var txs []InternalTransaction
-	for rows.Next() {
-		var tx InternalTransaction
-		err := rows.Scan(
-			&tx.ChainID, &tx.TxHash, &tx.BlockNumber, &tx.FromAddress, &tx.ToAddress, &tx.Value,
-			&tx.Gas, &tx.GasUsed, &tx.Input, &tx.Output, &tx.TraceType, &tx.CallType, &tx.TraceAddress,
-			&tx.Error, &tx.IndexedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		txs = append(txs, tx)
-	}
-
-	return txs, rows.Err()
-}
-
-// Add internal_transactions table to schema
-func (s *SQLiteStorage) addInternalTransactionsTable() error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS internal_transactions (
-		chain_id TEXT NOT NULL,
-		tx_hash TEXT NOT NULL,
-		block_number INTEGER NOT NULL,
-		from_address TEXT NOT NULL,
-		to_address TEXT NOT NULL,
-		value TEXT NOT NULL,
-		gas INTEGER NOT NULL,
-		gas_used INTEGER NOT NULL,
-		input TEXT NOT NULL,
-		output TEXT NOT NULL,
-		trace_type TEXT NOT NULL,
-		call_type TEXT NOT NULL,
-		trace_address TEXT NOT NULL,
-		error TEXT NOT NULL,
-		indexed_at TIMESTAMP NOT NULL,
-		PRIMARY KEY (chain_id, tx_hash, trace_address)
-	);
-
-	CREATE INDEX IF NOT EXISTS idx_internal_tx_hash ON internal_transactions(tx_hash);
-	CREATE INDEX IF NOT EXISTS idx_internal_block ON internal_transactions(block_number);
-	CREATE INDEX IF NOT EXISTS idx_internal_from ON internal_transactions(from_address);
-	CREATE INDEX IF NOT EXISTS idx_internal_to ON internal_transactions(to_address);
-	`
-
-	_, err := s.db.Exec(schema)
-	return err
 }

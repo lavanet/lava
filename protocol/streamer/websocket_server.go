@@ -210,7 +210,7 @@ func (ws *WebSocketServer) SendEvent(event *StreamEvent) {
 	select {
 	case ws.eventChan <- event:
 	default:
-		utils.LavaFormatWarning("WebSocket event buffer full, dropping event",
+		utils.LavaFormatWarning("WebSocket event buffer full, dropping event", nil,
 			utils.LogAttr("eventType", event.Type),
 		)
 	}
