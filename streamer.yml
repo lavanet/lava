@@ -1,0 +1,39 @@
+# Lava Event Streamer Configuration
+# Save this to a file (e.g., streamer.yml) and edit as needed
+
+rpc_endpoint: http://localhost:3333
+chain_id: ETH1
+start_block: 0
+polling_interval: 6s
+confirmation_blocks: 0
+stream_transactions: true
+stream_internal_txs: false
+stream_logs: true
+decode_events: true
+track_common_events: true
+max_events_buffer_size: 10000
+max_concurrent_streams: 100
+enable_websocket: true
+websocket_addr: :8080
+websocket_path: /stream
+max_websocket_clients: 1000
+websocket_ping_interval: 30s
+enable_webhooks: true
+webhook_workers: 10
+webhook_queue_size: 10000
+webhook_timeout: 30s
+webhook_max_retries: 3
+webhook_retry_delay: 1s
+enable_api: true
+api_listen_addr: :8081
+enable_metrics: true
+metrics_addr: :9090
+watched_contracts:
+- name: USDC
+  address: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+  start_block: 6082465
+  event_filter:
+  - 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  stream_all_txs: true
+max_retries: 3
+retry_delay: 1s
