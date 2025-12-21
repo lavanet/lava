@@ -1253,7 +1253,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
+			// Only check block gap if expectedBH is not the sentinel value (MaxInt64)
+			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
@@ -1280,7 +1281,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+			// Calculate sync gap for QoS - use 0 if expectedBH is the sentinel value
+			syncGap := int64(0)
+			if expectedBH != int64(math.MaxInt64) {
+				syncGap = expectedBH - latestBlock
+			}
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpccs.debugRelays {

@@ -72,7 +72,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 				err = psm.OnSessionDone(sps, cs.Session.RelayNum-skippedRelays)
 				require.NoError(t, err)
 
-				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false, nil)
+				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), 1, 1, 1, false, nil)
 				require.NoError(t, err)
 			}
 
@@ -195,7 +195,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 		require.NoError(t, err)
 
 		// Consumer Side:
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false, nil)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), 1, 1, 1, false, nil)
 		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)

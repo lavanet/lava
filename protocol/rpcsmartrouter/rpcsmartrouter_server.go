@@ -1234,6 +1234,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			numOfProviders := 1 // Smart router always has static providers
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
+			// Skip block gap check for smart router since expectedBH is always MaxInt64
 			if expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
@@ -1261,7 +1262,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				}
 			}
 
-			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+			// Smart router uses 0 for syncGap since it doesn't track consensus
+			syncGap := int64(0)
+			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpcss.debugRelays {
