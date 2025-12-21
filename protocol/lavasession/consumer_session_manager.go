@@ -1354,7 +1354,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	specComputeUnits uint64,
 	currentLatency time.Duration,
 	expectedLatency time.Duration,
-	expectedBH int64,
+	syncGap int64,
 	numOfProviders int,
 	providersCount uint64,
 	isHangingApi bool,
@@ -1380,8 +1380,8 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	// calculate QoS
-	csm.qosManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	// calculate QoS - syncGap is the difference between expected and actual block height (0 if not tracked)
+	csm.qosManager.CalculateQoS(csm.atomicReadCurrentEpoch(), consumerSession.SessionId, consumerSession.Parent.PublicLavaAddress, currentLatency, expectedLatency, syncGap, numOfProviders, int64(providersCount))
 	if !isHangingApi {
 		// append relay data only for non hanging apis
 		go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, specComputeUnits, uint64(latestServicedBlock))

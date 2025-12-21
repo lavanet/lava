@@ -1228,40 +1228,43 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				return
 			}
 
-			// get here only if performed a regular relay successfully
-			// Smart router doesn't track expected block height
-			expectedBH := int64(math.MaxInt64)
-			numOfProviders := 1 // Smart router always has static providers
-			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
-			latestBlock := localRelayResult.Reply.LatestBlock
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
-				utils.LavaFormatWarning("identified block gap", nil,
+		// get here only if performed a regular relay successfully
+		// Smart router doesn't track expected block height
+		expectedBH := int64(math.MaxInt64)
+		numOfProviders := 1 // Smart router always has static providers
+		pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
+		latestBlock := localRelayResult.Reply.LatestBlock
+		// Skip block gap check for smart router since expectedBH is always MaxInt64
+		if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
+			utils.LavaFormatWarning("identified block gap", nil,
+				utils.Attribute{Key: "expectedBH", Value: expectedBH},
+				utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
+				utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
+				utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
+				utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+				utils.LogAttr("GUID", ctx),
+			)
+		}
+
+		if rpcss.debugRelays {
+			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+			if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
+				lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+				utils.LavaFormatDebug("identified QoS mismatch",
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
 					utils.LogAttr("GUID", ctx),
 				)
 			}
+		}
 
-			if rpcss.debugRelays {
-				lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
-				if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
-					lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
-					utils.LavaFormatDebug("identified QoS mismatch",
-						utils.Attribute{Key: "expectedBH", Value: expectedBH},
-						utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
-						utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
-						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
-						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
-						utils.LogAttr("GUID", ctx),
-					)
-				}
-			}
-
-			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+		// Smart router uses 0 for syncGap since it doesn't track consensus
+		syncGap := int64(0)
+		errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpcss.debugRelays {

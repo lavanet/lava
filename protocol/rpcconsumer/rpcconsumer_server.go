@@ -1246,41 +1246,47 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return
 			}
 
-			// get here only if performed a regular relay successfully
-			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
-			if !rpccs.chainParser.ParseDirectiveEnabled() {
-				expectedBH = int64(math.MaxInt64)
-			}
-			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
-			latestBlock := localRelayResult.Reply.LatestBlock
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
-				utils.LavaFormatWarning("identified block gap", nil,
+		// get here only if performed a regular relay successfully
+		expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
+		if !rpccs.chainParser.ParseDirectiveEnabled() {
+			expectedBH = int64(math.MaxInt64)
+		}
+		pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
+		latestBlock := localRelayResult.Reply.LatestBlock
+		// Only check block gap if expectedBH is not the sentinel value (MaxInt64)
+		if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
+			utils.LavaFormatWarning("identified block gap", nil,
+				utils.Attribute{Key: "expectedBH", Value: expectedBH},
+				utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
+				utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
+				utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
+				utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+				utils.LogAttr("GUID", ctx),
+			)
+		}
+
+		if rpccs.debugRelays {
+			lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
+			if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
+				lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+				utils.LavaFormatDebug("identified QoS mismatch",
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
 					utils.LogAttr("GUID", ctx),
 				)
 			}
+		}
 
-			if rpccs.debugRelays {
-				lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
-				if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
-					lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
-					utils.LavaFormatDebug("identified QoS mismatch",
-						utils.Attribute{Key: "expectedBH", Value: expectedBH},
-						utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
-						utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
-						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
-						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
-						utils.LogAttr("GUID", ctx),
-					)
-				}
-			}
-
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+		// Calculate sync gap for QoS - use 0 if expectedBH is the sentinel value
+		syncGap := int64(0)
+		if expectedBH != int64(math.MaxInt64) {
+			syncGap = expectedBH - latestBlock
+		}
+		errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpccs.debugRelays {
