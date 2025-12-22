@@ -250,7 +250,20 @@ func StrValue(val interface{}) string {
 			st_val = "false"
 		}
 	case fmt.Stringer:
-		st_val = value.String()
+		// Use a defer/recover to catch panics from String() method
+		// This is particularly important for protobuf messages which can panic
+		// if they have nil internal fields
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					LavaFormatWarning("protobuf String() panic detected",
+						fmt.Errorf("panic: %v", r),
+						LogAttr("type", fmt.Sprintf("%T", value)))
+					st_val = fmt.Sprintf("<panic in String(): %v>", r)
+				}
+			}()
+			st_val = value.String()
+		}()
 	case string:
 		st_val = value
 	case int:
