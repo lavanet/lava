@@ -27,6 +27,7 @@ type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
 	GetQuorumParams() common.QuorumParams
+	HasSuccessfulResults() bool
 }
 
 // MetricsInterface for relay processor metrics

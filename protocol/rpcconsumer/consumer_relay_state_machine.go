@@ -177,18 +177,34 @@ func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine(
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
+	// If unsupported method returned, no retry - stop now
 	if crsm.hasUnsupportedMethodErrorsInStateMachine() {
 		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
 		return false
 	}
 
-	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
-		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	// If quorum is disabled, check for success: if success stop, otherwise retry
+	if !crsm.resultsChecker.GetQuorumParams().Enabled() {
+		if crsm.resultsChecker.HasSuccessfulResults() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with success, no retry",
+				utils.LogAttr("GUID", crsm.ctx))
+			return false
+		} else {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success, allow failover retry",
+				utils.LogAttr("GUID", crsm.ctx))
+			return true
+		}
+	}
+
+	// If quorum is enabled, check retry limit, retry until quorum met
+	if numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
 		return false
 	}
-	// best result sends to top 10 providers anyway.
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+		return false
+	}
+
+	// BestResult selection (stateful) doesn't retry, Quorum selection retries until quorum met
 	return crsm.selection != relaycore.BestResult
 }
 
@@ -297,8 +313,10 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
 				} else {
+					// No retry needed, wait for return condition to be validated
 					go validateReturnCondition(nil)
 				}
+				// Always spawn readResultsFromProcessor to keep checking for new results
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
