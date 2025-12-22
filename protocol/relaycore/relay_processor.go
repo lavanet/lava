@@ -151,6 +151,14 @@ func (rp *RelayProcessor) NodeResults() []common.RelayResult {
 	return rp.ResultsManager.NodeResults()
 }
 
+func (rp *RelayProcessor) HasSuccessfulResults() bool {
+	if rp == nil {
+		return false
+	}
+	successResults, _, _ := rp.GetResultsData()
+	return len(successResults) > 0
+}
+
 func (rp *RelayProcessor) SetResponse(response *RelayResponse) {
 	if rp == nil {
 		return
@@ -329,6 +337,22 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 					utils.LogAttr("rp.currentQourumEqualResults", rp.currentQourumEqualResults),
 					utils.LogAttr("retryForQuorumNeeded", retryForQuorumNeeded),
 				)
+			}
+
+			// CRITICAL FIX: If we have successful responses but quorum is not mathematically possible,
+			// AND we have no node errors to warrant retries, we should stop retrying.
+			// This prevents useless retries when responses are successful but mismatched.
+			if !retryForQuorumNeeded && resultsCount > 0 && nodeErrors == 0 {
+				if rp.debugRelay {
+					utils.LavaFormatDebug("HasRequiredNodeResults: quorum not possible with successful responses, stopping retries",
+						utils.LogAttr("GUID", rp.guid),
+						utils.LogAttr("resultsCount", resultsCount),
+						utils.LogAttr("nodeErrors", nodeErrors),
+						utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
+						utils.LogAttr("maxRemainingProviders", maxRemainingProviders),
+					)
+				}
+				return true, nodeErrors
 			}
 		} else {
 			// Quorum feature disabled: check if we have enough results for quorum
