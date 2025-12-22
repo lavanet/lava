@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -95,6 +96,9 @@ func (pnsm *ProviderNodeSubscriptionManager) unsubscribeNodeSubscription(ctx con
 		return
 	}
 	const timeout = 2 * time.Second
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	done := make(chan struct{})
 	go func() {
 		sub.Unsubscribe()
@@ -103,12 +107,19 @@ func (pnsm *ProviderNodeSubscriptionManager) unsubscribeNodeSubscription(ctx con
 	select {
 	case <-done:
 		return
-	case <-time.After(timeout):
-		utils.LavaFormatWarning("ProviderNodeSubscriptionManager: Unsubscribe timed out, continuing shutdown to avoid deadlock", nil,
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			utils.LogAttr("timeout", timeout),
-		)
+	case <-timeoutCtx.Done():
+		if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
+			utils.LavaFormatWarning("Unsubscribe timed out, continuing shutdown to avoid deadlock", nil,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("timeout", timeout),
+			)
+		} else {
+			utils.LavaFormatInfo("Unsubscribe cancelled by parent context",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+		}
 		return
 	}
 }
