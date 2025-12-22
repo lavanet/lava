@@ -282,7 +282,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
 		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 		require.NoError(t, err)
 		taskNumber := 0
@@ -292,7 +292,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				require.False(t, task.IsDone())
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				relaycore.SendNodeErrorJsonRpc(relayProcessor, "lava2@test", time.Millisecond*1)
+				relaycore.SendNodeErrorJsonRpc(relayProcessor, "lava@test", time.Millisecond*1)
 			case 1:
 				require.False(t, task.IsDone())
 				require.True(t,
@@ -302,7 +302,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				)
 				usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(nil)
-				relaycore.SendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
+				relaycore.SendSuccessRespJsonRpc(relayProcessor, "lava@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
 				results, _ := relayProcessor.HasRequiredNodeResults(1)
