@@ -106,7 +106,7 @@ func TestClientSubscription_UnsubscribeWithRunning(t *testing.T) {
 	// Start the subscription forwarding goroutine
 	var runComplete sync.WaitGroup
 	runComplete.Add(1)
-	
+
 	go func() {
 		defer runComplete.Done()
 		sub.run()
@@ -169,7 +169,7 @@ func TestClientSubscription_BufferedQuitChannelPreventsDeadlock(t *testing.T) {
 	select {
 	case <-unsubscribeComplete:
 		t.Log("✓ Buffered quit channel prevented deadlock")
-		
+
 		// Now verify the quit signal is still available if run() starts later
 		select {
 		case err := <-sub.quit:
