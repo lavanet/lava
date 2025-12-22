@@ -183,17 +183,21 @@ func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched in
 		return false
 	}
 
-	// If quorum is disabled, check for success: if success stop, otherwise retry
+	// If quorum is disabled, check for success: if success stop, otherwise check if retry is warranted
 	if !crsm.resultsChecker.GetQuorumParams().Enabled() {
 		if crsm.resultsChecker.HasSuccessfulResults() {
 			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with success, no retry",
 				utils.LogAttr("GUID", crsm.ctx))
 			return false
-		} else {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success, allow failover retry",
-				utils.LogAttr("GUID", crsm.ctx))
-			return true
 		}
+		// No successful results - check if a retry is warranted based on node errors
+		hasRequiredResults, _ := crsm.resultsChecker.HasRequiredNodeResults(numberOfRetriesLaunched)
+		shouldRetry := !hasRequiredResults
+		utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success",
+			utils.LogAttr("GUID", crsm.ctx),
+			utils.LogAttr("hasRequiredResults", hasRequiredResults),
+			utils.LogAttr("shouldRetry", shouldRetry))
+		return shouldRetry
 	}
 
 	// If quorum is enabled, check retry limit, retry until quorum met

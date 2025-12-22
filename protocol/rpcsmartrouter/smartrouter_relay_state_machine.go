@@ -183,17 +183,21 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
-	// If quorum is disabled, check for success: if success stop, otherwise retry
+	// If quorum is disabled, check for success: if success stop, otherwise check if retry is warranted
 	if !srsm.resultsChecker.GetQuorumParams().Enabled() {
 		if srsm.resultsChecker.HasSuccessfulResults() {
 			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with success, no retry",
 				utils.LogAttr("GUID", srsm.ctx))
 			return false
-		} else {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success, allow failover retry",
-				utils.LogAttr("GUID", srsm.ctx))
-			return true
 		}
+		// No successful results - check if a retry is warranted based on node errors
+		hasRequiredResults, _ := srsm.resultsChecker.HasRequiredNodeResults(numberOfRetriesLaunched)
+		shouldRetry := !hasRequiredResults
+		utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success",
+			utils.LogAttr("GUID", srsm.ctx),
+			utils.LogAttr("hasRequiredResults", hasRequiredResults),
+			utils.LogAttr("shouldRetry", shouldRetry))
+		return shouldRetry
 	}
 
 	// If quorum is enabled, check retry limit, retry until quorum met
