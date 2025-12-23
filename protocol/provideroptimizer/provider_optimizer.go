@@ -278,6 +278,31 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		return []string{}
 	}
 
+	// Apply block availability penalty for historical queries
+	if requestedBlock > 0 {
+		utils.LavaFormatTrace("[Optimizer] applying block availability for historical query",
+			utils.LogAttr("requestedBlock", requestedBlock),
+		)
+
+		for i := range providerScores {
+			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
+
+			// Multiplicative penalty: SelectionWeight *= blockAvailability
+			// This naturally gates providers unlikely to have the block
+			originalWeight := providerScores[i].SelectionWeight
+			providerScores[i].SelectionWeight *= blockAvail
+
+			if blockAvail < 1.0 {
+				utils.LavaFormatTrace("[Optimizer] adjusted provider weight for block availability",
+					utils.LogAttr("provider", providerScores[i].Address),
+					utils.LogAttr("originalWeight", originalWeight),
+					utils.LogAttr("blockAvailability", blockAvail),
+					utils.LogAttr("adjustedWeight", providerScores[i].SelectionWeight),
+				)
+			}
+		}
+	}
+
 	// Select provider using weighted random selection
 	selectedProvider := po.weightedSelector.SelectProvider(providerScores)
 	returnedProviders := []string{selectedProvider}
@@ -308,6 +333,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
 		utils.LogAttr("selectedScore", getProviderScore(selectedProvider, providerScores)),
 		utils.LogAttr("numScores", len(providerScores)),
+		utils.LogAttr("requestedBlock", requestedBlock),
 	)
 
 	return returnedProviders
@@ -352,6 +378,14 @@ func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredPr
 		return []string{}
 	}
 
+	// Apply block availability penalty for historical queries
+	if requestedBlock > 0 {
+		for i := range providerScores {
+			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
+			providerScores[i].SelectionWeight *= blockAvail
+		}
+	}
+
 	// Select the single best provider using weighted random selection
 	// This gives higher probability to better providers while still allowing variety
 	selectedProvider := po.weightedSelector.SelectProvider(providerScores)
@@ -360,9 +394,111 @@ func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredPr
 		utils.LogAttr("provider", selectedProvider),
 		utils.LogAttr("score", getProviderScore(selectedProvider, providerScores)),
 		utils.LogAttr("numCandidates", len(providerScores)),
+		utils.LogAttr("requestedBlock", requestedBlock),
 	)
 
 	return []string{selectedProvider}
+}
+
+// calculateBlockAvailability calculates the probability that a provider has synced
+// to the requested block height using a Poisson distribution model.
+//
+// Returns:
+//   - 1.0 if requestedBlock <= 0 (latest/pending queries, no block-specific requirement)
+//   - 1.0 if provider's syncBlock >= requestedBlock (provider is already synced)
+//   - Poisson probability (0.0-1.0) otherwise, based on time since last update
+//
+// The Poisson model assumes blocks arrive at a constant average rate (po.averageBlockTime).
+// Lambda represents the expected number of new blocks since the last sync observation.
+func (po *ProviderOptimizer) calculateBlockAvailability(
+	providerAddress string,
+	requestedBlock int64,
+) float64 {
+	// No block-specific requirement (latest/pending/safe/finalized queries)
+	if requestedBlock <= 0 {
+		return 1.0
+	}
+
+	// Get provider data to access SyncBlock and last update time
+	providerData, found := po.getProviderData(providerAddress)
+	if !found {
+		// Provider has no data yet - assume neutral (don't penalize for lack of data)
+		utils.LavaFormatTrace("[Optimizer] no provider data for block availability, returning neutral",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+		)
+		return 1.0 // Neutral: don't penalize unknown providers
+	}
+
+	// Provider already at or past the requested block
+	if providerData.SyncBlock >= uint64(requestedBlock) {
+		return 1.0
+	}
+
+	// Calculate how many blocks the provider needs to catch up
+	distanceRequired := uint64(requestedBlock) - providerData.SyncBlock
+	if distanceRequired == 0 {
+		return 1.0
+	}
+
+	// Get time since we last observed this provider's sync block
+	lastUpdateTime := providerData.Sync.GetLastUpdateTime()
+	if lastUpdateTime.IsZero() {
+		// No sync data available - assume neutral (don't penalize for lack of data)
+		// This happens when providers only have probe data but no relay data yet
+		utils.LavaFormatTrace("[Optimizer] no sync update time for block availability, returning neutral",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+		)
+		return 1.0
+	}
+
+	timeSinceLastSync := time.Since(lastUpdateTime)
+	if timeSinceLastSync < 0 {
+		// Clock skew or invalid data
+		utils.LavaFormatWarning("[Optimizer] negative time since last sync",
+			nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
+		)
+		return 0.5 // Neutral probability
+	}
+
+	// Calculate lambda: expected number of blocks produced since last observation
+	// lambda = timeSinceLastSync / averageBlockTime
+	avgBlockTimeSeconds := po.averageBlockTime.Seconds()
+	if avgBlockTimeSeconds <= 0 {
+		utils.LavaFormatWarning("[Optimizer] invalid average block time",
+			nil,
+			utils.LogAttr("averageBlockTime", po.averageBlockTime),
+		)
+		return 0.5
+	}
+
+	lambda := timeSinceLastSync.Seconds() / avgBlockTimeSeconds
+
+	// Poisson probability that provider has produced AT LEAST distanceRequired blocks
+	// CumulativeProbabilityFunctionForPoissonDist(k, lambda) returns P(X >= k)
+	// We want P(X >= distanceRequired), so we call it with distanceRequired
+	// where X ~ Poisson(lambda)
+	if distanceRequired > 0 {
+		// Probability provider has caught up (X >= distanceRequired)
+		blockAvail := CumulativeProbabilityFunctionForPoissonDist(distanceRequired, lambda)
+
+		utils.LavaFormatTrace("[Optimizer] calculated block availability",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+			utils.LogAttr("syncBlock", providerData.SyncBlock),
+			utils.LogAttr("distanceRequired", distanceRequired),
+			utils.LogAttr("lambda", lambda),
+			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
+			utils.LogAttr("blockAvailability", blockAvail),
+		)
+
+		return blockAvail
+	}
+
+	return 1.0
 }
 
 // calculate the probability a random variable with a poisson distribution
