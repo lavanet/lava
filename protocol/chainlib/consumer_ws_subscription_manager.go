@@ -564,13 +564,23 @@ func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParam
 	lavaprotocol.UpdateRequestedBlock(request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
-	err := lavaprotocol.VerifyRelayReply(context.Background(), reply, request, providerAddr)
-	if err != nil {
-		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-			utils.LogAttr("subscriptionMsg", reply.Data),
-			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("originalRequest", request),
-		)
+
+	// For static providers, skip signature verification (similar to regular RPC calls)
+	// Use the explicit flag from the session manager rather than heuristics based on address formatting.
+	isStaticProvider := false
+	if cwsm.consumerSessionManager != nil {
+		isStaticProvider = cwsm.consumerSessionManager.IsStaticProvider(providerAddr)
+	}
+
+	if !isStaticProvider {
+		err := lavaprotocol.VerifyRelayReply(context.Background(), reply, request, providerAddr)
+		if err != nil {
+			return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+				utils.LogAttr("subscriptionMsg", reply.Data),
+				utils.LogAttr("hashedParams", hashedParams),
+				utils.LogAttr("originalRequest", request),
+			)
+		}
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
