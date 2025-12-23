@@ -177,19 +177,40 @@ func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachi
 func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
+	// 1. if selection is BestResult -> return false
+	if srsm.selection == relaycore.BestResult {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: BestResult, no retry", utils.LogAttr("GUID", srsm.ctx))
+		return false
+	}
+
+	// 2. if unsupported -> return false
 	if srsm.hasUnsupportedMethodErrorsInStateMachine() {
 		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
 		return false
 	}
 
+	// 3. if success -> return false
+	// Check if we already have successful results by checking RequiredResults
+	if relayProcessor, ok := srsm.resultsChecker.(*relaycore.RelayProcessor); ok {
+		if relayProcessor.RequiredResults(srsm.resultsChecker.GetQuorumParams().Min, srsm.selection) {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: already have required successful results, no retry", utils.LogAttr("GUID", srsm.ctx))
+			return false
+		}
+	}
+
+	// 4. if cross validation quorum is enabled and number of retries surpass the maximum number of quorum params -> return false
 	if srsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
 		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	}
+
+	// 5. if number of retries surpass the absolute maximum ticker relay retries limit -> return false
+	// This is a hard cap that applies regardless of quorum settings
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
-	// best result sends to top 10 providers anyway.
-	return srsm.selection != relaycore.BestResult
+
+	// default to true
+	return true
 }
 
 func (srsm *SmartRouterRelayStateMachine) GetDebugState() bool {
