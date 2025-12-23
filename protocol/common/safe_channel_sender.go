@@ -97,3 +97,20 @@ func (scs *SafeChannelSender[T]) Close() {
 	close(scs.ch)
 	scs.closed = true
 }
+
+// MarkClosed marks the channel as closed without actually closing the underlying channel.
+// This is useful when replacing a channel (e.g., during consumer reconnection) to signal
+// that sends should fail gracefully without panicking on close.
+func (scs *SafeChannelSender[T]) MarkClosed() {
+	scs.lock.Lock()
+	defer scs.lock.Unlock()
+
+	if scs.closed {
+		return
+	}
+
+	scs.cancelCtx()
+	scs.closed = true
+	// Note: We don't close(scs.ch) here - the underlying channel will be closed
+	// by whoever owns it when they're done with it.
+}
