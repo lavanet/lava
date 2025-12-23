@@ -50,7 +50,7 @@ wait_next_block
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER SOLANA jsonrpc '$SOLANA_RPC_2' \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --spec-validation-interval 2m --metrics-listen-address ":7776" --skip-websocket-verification 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --spec-validation-interval 5m --metrics-listen-address ":7776" --skip-websocket-verification 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 wait_next_block
 
