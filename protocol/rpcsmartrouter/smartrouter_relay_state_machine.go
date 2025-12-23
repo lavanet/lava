@@ -183,24 +183,44 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
-	// If quorum is disabled, check for success: if success stop, otherwise check if retry is warranted
-	if !srsm.resultsChecker.GetQuorumParams().Enabled() {
+	// BestResult selection (stateful) only retries on node errors, check this first
+	if srsm.selection == relaycore.BestResult {
+		// For stateful APIs: if we have success, stop. Otherwise check if retry warranted
 		if srsm.resultsChecker.HasSuccessfulResults() {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with success, no retry",
+			utils.LavaFormatTrace("[StateMachine] retryCondition: BestResult with success, no retry", utils.LogAttr("GUID", srsm.ctx))
+			return false
+		}
+		// No successful results - check if a retry is warranted based on node errors
+		hasRequiredResults, nodeErrors := srsm.resultsChecker.HasRequiredNodeResults(numberOfRetriesLaunched)
+		// For BestResult: only retry if we have node errors. Protocol errors (conflicts) don't warrant retry.
+		shouldRetry := !hasRequiredResults && nodeErrors > 0
+		utils.LavaFormatTrace("[StateMachine] retryCondition: BestResult with no success",
+			utils.LogAttr("GUID", srsm.ctx),
+			utils.LogAttr("hasRequiredResults", hasRequiredResults),
+			utils.LogAttr("nodeErrors", nodeErrors),
+			utils.LogAttr("shouldRetry", shouldRetry))
+		return shouldRetry
+	}
+
+	// For Quorum selection: check if quorum is enabled or disabled
+	if !srsm.resultsChecker.GetQuorumParams().Enabled() {
+		// Quorum selection but quorum disabled: if success stop, otherwise check if retry warranted
+		if srsm.resultsChecker.HasSuccessfulResults() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: Quorum selection with quorum disabled and success, no retry",
 				utils.LogAttr("GUID", srsm.ctx))
 			return false
 		}
 		// No successful results - check if a retry is warranted based on node errors
 		hasRequiredResults, _ := srsm.resultsChecker.HasRequiredNodeResults(numberOfRetriesLaunched)
 		shouldRetry := !hasRequiredResults
-		utils.LavaFormatTrace("[StateMachine] retryCondition: quorum disabled with no success",
+		utils.LavaFormatTrace("[StateMachine] retryCondition: Quorum selection with quorum disabled and no success",
 			utils.LogAttr("GUID", srsm.ctx),
 			utils.LogAttr("hasRequiredResults", hasRequiredResults),
 			utils.LogAttr("shouldRetry", shouldRetry))
 		return shouldRetry
 	}
 
-	// If quorum is enabled, check retry limit, retry until quorum met
+	// Quorum enabled: check retry limit, retry until quorum met
 	if numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
 		return false
 	}
@@ -208,8 +228,8 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
-	// BestResult selection (stateful) doesn't retry, Quorum selection retries until quorum met
-	return srsm.selection != relaycore.BestResult
+	// Retry until quorum is met (we already checked selection != BestResult above)
+	return true
 }
 
 func (srsm *SmartRouterRelayStateMachine) GetDebugState() bool {
