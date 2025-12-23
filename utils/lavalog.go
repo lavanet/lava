@@ -65,6 +65,15 @@ func LogAttr(key string, value interface{}) Attribute {
 	return Attribute{Key: key, Value: value}
 }
 
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	if JsonFormat {
+		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
+	} else {
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+	}
+}
+
 func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
 	LogLavaEventWithLevel(ctx, logger, name, attributes, description, LAVA_LOG_INFO)
 }
@@ -120,6 +129,11 @@ func SetGlobalLoggingLevel(logLevel string) {
 	// setting global level prevents us from having two different levels for example one for stdout and one for rolling log.
 	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
 	defaultGlobalLogLevel = getLogLevel(logLevel)
+	if JsonFormat {
+		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
+	} else {
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+	}
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
@@ -269,11 +283,11 @@ func StrValue(val interface{}) string {
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	if JsonFormat {
-		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
-	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
-	}
+	// if JsonFormat {
+	// 	zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
+	// } else {
+	// 	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+	// }
 
 	// depending on the build flag, this log function will log either a warning or an error.
 	// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.

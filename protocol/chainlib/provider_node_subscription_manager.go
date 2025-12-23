@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -88,6 +89,41 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 	}
 }
 
+// unsubscribeNodeSubscription never blocks the caller indefinitely.
+// In tests (and production), it's better to leak a stuck rpcclient subscription goroutine than to deadlock teardown paths.
+func (pnsm *ProviderNodeSubscriptionManager) unsubscribeNodeSubscription(ctx context.Context, sub *rpcclient.ClientSubscription, hashedParams string) {
+	if sub == nil {
+		return
+	}
+	const timeout = 2 * time.Second
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		sub.Unsubscribe()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return
+	case <-timeoutCtx.Done():
+		if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
+			utils.LavaFormatWarning("Unsubscribe timed out, continuing shutdown to avoid deadlock", nil,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("timeout", timeout),
+			)
+		} else {
+			utils.LavaFormatInfo("Unsubscribe cancelled by parent context",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+		}
+		return
+	}
+}
+
 func (pnsm *ProviderNodeSubscriptionManager) failedPendingSubscription(hashedParams string) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
@@ -147,13 +183,26 @@ func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock
 			// check consumer guid.
 			if consumerGuidContainer, foundGuid := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
 				// if the consumer exists and channel is already active, and the consumer tried to resubscribe, we assume the connection was interrupted, we disconnect the previous channel and reconnect the incoming channel.
-				utils.LavaFormatWarning("consumer tried to subscribe twice to the same subscription hash, disconnecting the previous one and attaching incoming channel", nil,
+				utils.LavaFormatInfo("consumer reconnecting to existing subscription, replacing channel",
 					utils.LogAttr("consumerAddr", consumerAddr),
 					utils.LogAttr("hashedParams", hashedParams),
 					utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
 				)
-				// disconnecting the previous channel, attaching new channel, and returning subscription Id.
-				consumerGuidContainer.consumerChannel.ReplaceChannel(consumerChannel)
+
+				// Mark the old SafeChannelSender as closed without closing the underlying channel
+				// This ensures that in-flight sends fail gracefully instead of panicking.
+				// The actual channel will be closed when RemoveConsumer is called or garbage collected.
+				consumerGuidContainer.consumerChannel.MarkClosed()
+
+				// Create a NEW SafeChannelSender for the new channel
+				paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
+					consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
+					firstSetupRequest:  consumerGuidContainer.firstSetupRequest,
+					consumerSDKAddress: consumerAddr,
+				}
+
+				// Return without sending - the subscription is already established.
+				// The reconnected consumer will receive messages via the new SafeChannelSender.
 				return paramsChannelToConnectedConsumers.subscriptionID, nil
 			}
 			// else we have this consumer but two different processes try to subscribe
@@ -359,9 +408,35 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	defer subscriptionTimeoutTicker.Stop()
 
 	closeNodeSubscriptionCallback := func() {
+		// Detach subscription under lock, then perform potentially blocking shutdown steps outside the lock.
+		var subToClose *activeSubscription
 		pnsm.lock.Lock()
-		defer pnsm.lock.Unlock()
-		pnsm.closeNodeSubscription(hashedParams)
+		subToClose = pnsm.activeSubscriptions[hashedParams]
+		if subToClose != nil {
+			delete(pnsm.activeSubscriptions, hashedParams)
+		}
+		pnsm.lock.Unlock()
+
+		if subToClose == nil {
+			return
+		}
+
+		// Disconnect all connected consumers.
+		for consumerAddrString, consumerChannels := range subToClose.connectedConsumers {
+			for consumerGuid, consumerChannel := range consumerChannels {
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
+					utils.LogAttr("consumerAddr", consumerAddrString),
+					utils.LogAttr("consumerGuid", consumerGuid),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				consumerChannel.consumerChannel.Close()
+			}
+		}
+
+		// Cancel context and attempt to unsubscribe from node without risking a deadlock.
+		subToClose.cancellableContextCancelFunc()
+		pnsm.unsubscribeNodeSubscription(ctx, subToClose.nodeSubscription, hashedParams)
+		close(subToClose.messagesChannel)
 	}
 
 	for {
@@ -380,7 +455,16 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 			)
 			closeNodeSubscriptionCallback()
 			return
-		case nodeErr := <-nodeErrChan:
+		case nodeErr, ok := <-nodeErrChan:
+			if !ok {
+				// The channel was closed, meaning Unsubscribe was called.
+				// We can exit gracefully without calling closeNodeSubscriptionCallback (which might have been the caller).
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() nodeErrChan closed, ending subscription",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				return
+			}
 			utils.LavaFormatWarning("ProviderNodeSubscriptionManager:startListeningForSubscription() got error from node, ending subscription", nodeErr,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
@@ -556,95 +640,89 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	consumerAddrString := consumerAddr.String()
 
-	pnsm.lock.Lock()
-	defer pnsm.lock.Unlock()
+	var subToClose *activeSubscription
+	func() {
+		pnsm.lock.Lock()
+		defer pnsm.lock.Unlock()
 
-	openSubscriptions, ok := pnsm.activeSubscriptions[hashedParams]
-	if !ok {
-		utils.LavaFormatTrace("[RemoveConsumer] no subscription found for params, subscription is already closed",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("consumerAddr", consumerAddr),
-			utils.LogAttr("params", params),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		)
-		return nil
-	}
-
-	// Remove consumer from connected consumers
-	if _, ok := openSubscriptions.connectedConsumers[consumerAddrString]; ok {
-		if _, foundGuid := openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
-			utils.LavaFormatTrace("[RemoveConsumer] found consumer connected consumers",
+		openSubscriptions, ok := pnsm.activeSubscriptions[hashedParams]
+		if !ok {
+			utils.LavaFormatTrace("[RemoveConsumer] no subscription found for params, subscription is already closed",
 				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("consumerAddr", consumerAddrString),
+				utils.LogAttr("consumerAddr", consumerAddr),
+				utils.LogAttr("params", params),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+			return
+		}
+
+		// Remove consumer from connected consumers
+		if _, ok := openSubscriptions.connectedConsumers[consumerAddrString]; ok {
+			if _, foundGuid := openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
+				utils.LavaFormatTrace("[RemoveConsumer] found consumer connected consumers",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddrString),
+					utils.LogAttr("params", params),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+					utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
+				)
+				if closeConsumerChannel {
+					utils.LavaFormatTrace("[RemoveConsumer] closing consumer channel",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("consumerAddr", consumerAddrString),
+						utils.LogAttr("params", params),
+						utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					)
+					openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.Close()
+				}
+
+				// delete guid
+				delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString], consumerProcessGuid)
+				// check if this was our only subscription for this consumer.
+				if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString]) == 0 {
+					// delete consumer as well.
+					delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
+				}
+				if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers) == 0 {
+					utils.LavaFormatTrace("[RemoveConsumer] no more connected consumers",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("consumerAddr", consumerAddr),
+						utils.LogAttr("params", params),
+						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					)
+					// Cancel the subscription's context and close the subscription
+					subToClose = pnsm.activeSubscriptions[hashedParams]
+					delete(pnsm.activeSubscriptions, hashedParams)
+				}
+			}
+			utils.LavaFormatTrace("[RemoveConsumer] removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
+		} else {
+			utils.LavaFormatTrace("[RemoveConsumer] consumer not found in connected consumers",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("consumerAddr", consumerAddr),
 				utils.LogAttr("params", params),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
 				utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
 			)
-			if closeConsumerChannel {
-				utils.LavaFormatTrace("[RemoveConsumer] closing consumer channel",
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("consumerAddr", consumerAddrString),
-					utils.LogAttr("params", params),
-					utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
-					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-				)
-				openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.Close()
-			}
-
-			// delete guid
-			delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString], consumerProcessGuid)
-			// check if this was our only subscription for this consumer.
-			if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString]) == 0 {
-				// delete consumer as well.
-				delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
-			}
-			if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers) == 0 {
-				utils.LavaFormatTrace("[RemoveConsumer] no more connected consumers",
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("consumerAddr", consumerAddr),
-					utils.LogAttr("params", params),
-					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-				)
-				// Cancel the subscription's context and close the subscription
-				pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc()
-				pnsm.closeNodeSubscription(hashedParams)
-			}
 		}
-		utils.LavaFormatTrace("[RemoveConsumer] removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
-	} else {
-		utils.LavaFormatTrace("[RemoveConsumer] consumer not found in connected consumers",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("consumerAddr", consumerAddr),
-			utils.LogAttr("params", params),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
-			utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
-		)
-	}
-	return nil
-}
+	}()
 
-func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams string) error {
-	activeSub, foundActiveSubscription := pnsm.activeSubscriptions[hashedParams]
-	if !foundActiveSubscription {
-		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+	if subToClose != nil {
+		// CRITICAL: Cancel context FIRST, then Unsubscribe to prevent deadlock.
+		// The subscription's forward() goroutine has two select paths:
+		// - When buffer is empty: only waits on sub.quit (unsubscribe signal) and sub.in (messages)
+		// - When buffer has data: also includes channel send to user
+		// By canceling context first, listenForSubscriptionMessages exits immediately.
+		// Then Unsubscribe() sends signal on sub.quit, which forward() can receive even
+		// when user channel is blocked, since it uses the empty-buffer path.
+		// This ensures: cancel context -> unblock listener -> forward() receives quit -> complete.
+		subToClose.cancellableContextCancelFunc()
+		pnsm.unsubscribeNodeSubscription(ctx, subToClose.nodeSubscription, hashedParams)
+		close(subToClose.messagesChannel)
 	}
 
-	// Disconnect all connected consumers
-	for consumerAddrString, consumerChannels := range activeSub.connectedConsumers {
-		for consumerGuid, consumerChannel := range consumerChannels {
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
-				utils.LogAttr("consumerAddr", consumerAddrString),
-				utils.LogAttr("consumerGuid", consumerGuid),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			)
-			consumerChannel.consumerChannel.Close()
-		}
-	}
-
-	pnsm.activeSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
-	close(pnsm.activeSubscriptions[hashedParams].messagesChannel)
-	delete(pnsm.activeSubscriptions, hashedParams)
 	return nil
 }
