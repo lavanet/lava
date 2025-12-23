@@ -1129,7 +1129,7 @@
                                 },
                                 "values": [
                                     {
-                                        "latest_distance": 5
+                                        "expected_value": "*"
                                     }
                                 ]
                             },
