@@ -47,12 +47,11 @@ import (
 
 const (
 	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
-	MaximumNumberOfTickerRelayRetries        = 10
-	MaxRelayRetries                          = 6
-	SendRelayAttempts                        = 3
-	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
-	initRelaysDappId                         = "-init-"
-	initRelaysConsumerIp                     = ""
+	MaximumNumberOfTickerRelayRetries = 10
+	MaxRelayRetries                   = 6
+	SendRelayAttempts                 = 3
+	initRelaysDappId                  = "-init-"
+	initRelaysConsumerIp              = ""
 
 	// Subscription and pairing management constants
 	MaxSubscriptionMapSizeWarningThreshold = 5000
@@ -1048,7 +1047,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
-	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", localRelayData), utils.LogAttr("GUID", ctx))
 
 	// Debug: Check if the protocol message has the archive extension in its internal state
 	utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", localRelayData.Extensions), utils.LogAttr("GUID", ctx))
@@ -1253,7 +1251,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
+			// Only check block gap if expectedBH is not the sentinel value (MaxInt64)
+			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
@@ -1280,7 +1279,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+			// Calculate sync gap for QoS - use 0 if expectedBH is the sentinel value
+			syncGap := int64(0)
+			if expectedBH != int64(math.MaxInt64) {
+				syncGap = expectedBH - latestBlock
+			}
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpccs.debugRelays {

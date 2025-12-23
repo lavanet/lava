@@ -202,16 +202,16 @@ func UpgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 		// add all existing extensions including archive split by "," so the override will work
 		existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
 		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
-		utils.LavaFormatTrace("[Archive Debug] Calling ParseRelay with archive extension", utils.LogAttr("existingExtensionsPlusArchive", existingExtensionsPlusArchive), utils.LogAttr("metaDataForArchive", metaDataForArchive), utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatTrace("[Archive Debug] Calling ParseRelay with archive extension", utils.LogAttr("existingExtensionsPlusArchive", existingExtensionsPlusArchive), utils.LogAttr("metaDataForArchive", metaDataForArchive), utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("GUID", ctx))
 		newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
 		if err != nil {
-			utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+			utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("metadata", metaDataForArchive))
 			return protocolMessage
 		} else {
 			// Update archive status
 			archiveStatus.isUpgraded.Store(true)
 			archiveStatus.isArchive.Store(true)
-			utils.LavaFormatTrace("[Archive Debug] Archive retry successful", utils.LogAttr("extensions", newProtocolMessage.GetExtensions()), utils.LogAttr("relayPrivateData", newProtocolMessage.RelayPrivateData()), utils.LogAttr("GUID", ctx))
+			utils.LavaFormatTrace("[Archive Debug] Archive retry successful", utils.LogAttr("extensions", newProtocolMessage.GetExtensions()), utils.LogAttr("GUID", ctx))
 			return newProtocolMessage
 		}
 	} else if archiveStatus.isUpgraded.Load() && numberOfRetriesLaunched == 2 {
@@ -227,7 +227,7 @@ func UpgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensions}}
 		newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
 		if err != nil {
-			utils.LavaFormatError("Failed converting to regular message in shouldRetry", err, utils.LogAttr("relayRequestData", relayRequestData), utils.LogAttr("metadata", metaDataForArchive))
+			utils.LavaFormatError("Failed converting to regular message in shouldRetry", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("metadata", metaDataForArchive))
 			return protocolMessage
 		} else {
 			archiveStatus.isArchive.Store(false)

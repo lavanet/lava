@@ -499,7 +499,6 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LavaFormatError("could not send unsubscribe message due to a relay error",
 					err,
 					utils.LogAttr("GUID", webSocketCtx),
-					utils.LogAttr("relayRequestData", protocolMessage.RelayPrivateData()),
 					utils.LogAttr("dappID", dappID),
 					utils.LogAttr("userIp", userIp),
 					utils.LogAttr("api", protocolMessage.GetApi().Name),

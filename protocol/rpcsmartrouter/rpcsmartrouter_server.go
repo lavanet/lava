@@ -43,12 +43,11 @@ import (
 
 const (
 	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
-	MaximumNumberOfTickerRelayRetries        = 10
-	MaxRelayRetries                          = 6
-	SendRelayAttempts                        = 3
-	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
-	initRelaysDappId                         = "-init-"
-	initRelaysSmartRouterIp                  = ""
+	MaximumNumberOfTickerRelayRetries = 10
+	MaxRelayRetries                   = 6
+	SendRelayAttempts                 = 3
+	initRelaysDappId                  = "-init-"
+	initRelaysSmartRouterIp           = ""
 
 	// Subscription and pairing management constants
 	MaxSubscriptionMapSizeWarningThreshold = 5000
@@ -1030,7 +1029,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	virtualEpoch := uint64(0)
 	extensions := protocolMessage.GetExtensions()
 	utils.LavaFormatTrace("[Archive Debug] Extensions to send", utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
-	utils.LavaFormatTrace("[Archive Debug] ProtocolMessage details", utils.LogAttr("relayPrivateData", localRelayData), utils.LogAttr("GUID", ctx))
 
 	// Debug: Check if the protocol message has the archive extension in its internal state
 	utils.LavaFormatTrace("[Archive Debug] RelayPrivateData extensions", utils.LogAttr("relayPrivateDataExtensions", localRelayData.Extensions), utils.LogAttr("GUID", ctx))
@@ -1234,6 +1232,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			numOfProviders := 1 // Smart router always has static providers
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
+			// Skip block gap check for smart router since expectedBH is always MaxInt64
 			if expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
@@ -1261,7 +1260,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				}
 			}
 
-			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+			// Smart router uses 0 for syncGap since it doesn't track consensus
+			syncGap := int64(0)
+			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 			if rpcss.debugRelays {
