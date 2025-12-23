@@ -1602,6 +1602,24 @@ func NewConsumerSessionManager(
 	return csm
 }
 
+// IsStaticProvider returns true if the given provider address belongs to a static provider in the current session manager state.
+// If the provider is unknown, it returns false.
+func (csm *ConsumerSessionManager) IsStaticProvider(providerAddress string) bool {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+
+	if cswp, ok := csm.pairing[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	if cswp, ok := csm.backupProviders[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	if cswp, ok := csm.pairingPurge[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	return false
+}
+
 // SetLavaBlockHeightCallback sets the callback function to get current Lava blockchain block height
 // This must be called after creating the ConsumerSessionManager
 func (csm *ConsumerSessionManager) SetLavaBlockHeightCallback(getLavaBlockHeight func() int64) {
