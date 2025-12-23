@@ -43,12 +43,11 @@ import (
 
 const (
 	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
-	MaximumNumberOfTickerRelayRetries        = 10
-	MaxRelayRetries                          = 6
-	SendRelayAttempts                        = 3
-	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
-	initRelaysDappId                         = "-init-"
-	initRelaysSmartRouterIp                  = ""
+	MaximumNumberOfTickerRelayRetries = 10
+	MaxRelayRetries                   = 6
+	SendRelayAttempts                 = 3
+	initRelaysDappId                  = "-init-"
+	initRelaysSmartRouterIp           = ""
 
 	// Subscription and pairing management constants
 	MaxSubscriptionMapSizeWarningThreshold = 5000
