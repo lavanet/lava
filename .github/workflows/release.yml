@@ -1,69 +1,139 @@
-name: Publish Lava Release
+name: Lava Release Process
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: "The desired tag for the release (e.g. v1.1.0)."
-        required: true
+      force_version:
+        description: 'Force a specific version (e.g., 1.5.0). Leave empty for auto-calculation.'
+        required: false
+        type: string
 
 permissions:
-  contents: read
+  contents: write # Required to create tags and releases
+  packages: write # Required to push Docker images
+  issues: write   # Required for Semantic Release bot comments
 
 jobs:
-  release:
-    name: 'release'
+  # ---------------------------------------------------
+  # JOB 1: DEFINE VERSION (Auto vs Manual)
+  # ---------------------------------------------------
+  define-version:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-      
+    outputs:
+      # This output will be available to all other jobs
+      release_tag: ${{ steps.get_final_tag.outputs.TAG_NAME }}
     steps:
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
-      with:
-        large-packages: false
-        docker-images: false
-        swap-storage: false
-        tool-cache: false
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Important for history analysis
 
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}    
-        
-    - name: Fetch all tags
-      run: |
-        git fetch --force --tags
-        
-    - name: Run GoReleaser
-      id: releaser
-      uses: docker://goreleaser/goreleaser-cross:v1.22
-      with:
-        args: release --clean --timeout 90m
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
-  release_docker:
+      # === PATH A: AUTOMATIC (Semantic Release) ===
+      # Runs only if NO manual version input is provided
+      - name: Semantic Release (Auto)
+        if: ${{ inputs.force_version == '' }}
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+            conventional-changelog-conventionalcommits
+
+      # === PATH B: MANUAL (Override) ===
+      # Runs only if a manual version IS provided
+      - name: Manual Release (Override)
+        if: ${{ inputs.force_version != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ inputs.force_version }}"
+          echo "Manual release requested: $VERSION"
+          
+          # 1. Configure Git for the bot
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 2. Create Tag & Push
+          git tag -a "$VERSION" -m "Manual release $VERSION"
+          git push origin "$VERSION"
+
+          # 3. Create GitHub Release Entry (Empty placeholder for binaries to attach to)
+          gh release create "$VERSION" --title "$VERSION" --notes "Manual release triggered via workflow dispatch."
+
+      # === UNIFY OUTPUTS ===
+      # Determines the final tag to pass to the next jobs
+      - name: Set Final Tag Output
+        id: get_final_tag
+        run: |
+          if [ -n "${{ inputs.force_version }}" ]; then
+            # Manual Path
+            echo "TAG_NAME=v${{ inputs.force_version }}" >> $GITHUB_OUTPUT
+          else
+            # Auto Path (Semantic Release)
+            echo "TAG_NAME=${{ steps.semantic.outputs.new_release_git_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+  # ---------------------------------------------------
+  # JOB 2: RELEASE BINARIES (GoReleaser)
+  # ---------------------------------------------------
+  release-binaries:
+    needs: define-version
+    # Only run if a tag was actually generated (not skipped)
+    if: ${{ needs.define-version.outputs.release_tag != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+          tool-cache: false
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Checkout the SPECIFIC TAG created in the previous job
+          ref: ${{ needs.define-version.outputs.release_tag }}
+
+      - name: Fetch tags
+        run: git fetch --force --tags
+
+      - name: Run GoReleaser
+        uses: docker://goreleaser/goreleaser-cross:v1.22
+        with:
+          # GoReleaser will detect the existing GitHub Release and upload artifacts to it
+          args: release --clean --timeout 90m
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------
+  # JOB 3: RELEASE DOCKER IMAGES
+  # ---------------------------------------------------
+  release-docker:
+    needs: define-version
+    if: ${{ needs.define-version.outputs.release_tag != '' }}
+    runs-on: ubuntu-latest
     permissions:
       packages: write
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         binary: [lavap, lavad]
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
+      VERSION_TAG: ${{ needs.define-version.outputs.release_tag }}
     steps:      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}  
+          ref: ${{ env.VERSION_TAG }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -74,22 +144,30 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}  
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.VERSION_TAG }}
+            type=raw,value=latest
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: |
-            GIT_VERSION="${{ steps.meta.outputs.version }}"
-            GIT_COMMIT="${{ github.sha }}"
+            GIT_VERSION=${{ env.VERSION_TAG }}
+            GIT_COMMIT=${{ github.sha }}
           push: true
+
+      # Cosmovisor special handling
       - name: Extract metadata (cosmovisor)
         if: ${{ matrix.binary == 'lavad' }}
         id: meta-cosmovisor
@@ -98,15 +176,18 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cosmovisor
           tags: |
             type=raw,value=latest,enable=true
-      - name: Build and push
+            type=raw,value=${{ env.VERSION_TAG }},enable=true
+
+      - name: Build and push (Cosmovisor)
         uses: docker/build-push-action@v5
         if: ${{ matrix.binary == 'lavad' }}
         with:
+          context: .
           tags: ${{ steps.meta-cosmovisor.outputs.tags }}
           labels: ${{ steps.meta-cosmovisor.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: |
-            GIT_VERSION="${{ steps.meta-cosmovisor.outputs.version }}"
-            GIT_COMMIT="${{ github.sha }}"
+            GIT_VERSION=${{ env.VERSION_TAG }}
+            GIT_COMMIT=${{ github.sha }}
           push: true
