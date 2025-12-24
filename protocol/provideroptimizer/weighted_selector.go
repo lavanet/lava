@@ -103,6 +103,12 @@ func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 	// Validate and normalize weights
 	totalWeight := config.AvailabilityWeight + config.LatencyWeight + config.SyncWeight + config.StakeWeight
+	if totalWeight <= 0 {
+		utils.LavaFormatWarning("weighted selector weights sum to zero or negative, using default config", nil)
+		config = DefaultWeightedSelectorConfig()
+		totalWeight = 1.0 // Default sums to 1.0
+	}
+
 	if math.Abs(totalWeight-1.0) > 0.001 {
 		utils.LavaFormatWarning("weighted selector weights do not sum to 1.0, normalizing",
 			nil,
