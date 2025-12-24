@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/score"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -144,7 +145,9 @@ func (ws *WeightedSelector) CalculateScore(
 	stake sdk.Coin,
 	totalStake sdk.Coin,
 ) float64 {
-	// Extract individual scores from QoS report (already normalized 0-1)
+	// Extract individual scores from QoS report:
+	// - availability is in [0,1] (higher is better)
+	// - latency/sync are in seconds (lower is better) and are clamped by the optimizer
 	availability, err := qos.Availability.Float64()
 	if err != nil {
 		utils.LavaFormatWarning("could not parse availability score, using 0", err)
@@ -154,13 +157,13 @@ func (ws *WeightedSelector) CalculateScore(
 	latency, err := qos.Latency.Float64()
 	if err != nil {
 		utils.LavaFormatWarning("could not parse latency score, using worst latency", err)
-		latency = 1.0 // Worst latency
+		latency = score.WorstLatencyScore
 	}
 
 	sync, err := qos.Sync.Float64()
 	if err != nil {
 		utils.LavaFormatWarning("could not parse sync score, using worst sync", err)
-		sync = 1.0 // Worst sync
+		sync = score.WorstSyncScore
 	}
 
 	// Normalize individual metrics to 0-1 range where higher is better
@@ -197,8 +200,8 @@ func (ws *WeightedSelector) CalculateScore(
 // Input: latency in seconds (lower is better)
 // Output: normalized score where 1.0 = best, 0.0 = worst
 func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
-	// Maximum expected latency (1 second)
-	const maxLatency = 1.0
+	// Maximum expected latency (aligned with optimizer clamp)
+	const maxLatency = score.WorstLatencyScore
 
 	if latency <= 0 {
 		return 1.0 // Perfect latency
@@ -217,8 +220,8 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 // Input: sync lag in seconds (lower is better)
 // Output: normalized score where 1.0 = best, 0.0 = worst
 func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
-	// Maximum acceptable sync lag (60 seconds)
-	const maxSyncLag = 60.0
+	// Maximum acceptable sync lag (aligned with optimizer clamp)
+	const maxSyncLag = score.WorstSyncScore
 
 	if syncLag <= 0 {
 		return 1.0 // Perfect sync

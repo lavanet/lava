@@ -746,23 +746,27 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	// Latency gets exponentially worse for increasing index
 	for i := 0; i < 50; i++ {
 		for j, address := range providersGen.providersAddresses {
-			// Exponential latency degradation: 1ms, 10ms, 100ms, 200ms, 400ms, 800ms
+			// Exponential latency degradation on a scale that matches the selector normalization.
+			// WeightedSelector normalizes latency against score.WorstLatencyScore (=30s), so we need
+			// the "bad" providers to approach that range; otherwise 1ms vs 800ms is nearly identical.
+			//
+			// Exponential degradation: 10ms, 100ms, 1s, 5s, 15s, 30s
 			var latency time.Duration
 			switch j {
 			case 0:
-				latency = 1 * time.Millisecond
-			case 1:
 				latency = 10 * time.Millisecond
-			case 2:
+			case 1:
 				latency = 100 * time.Millisecond
+			case 2:
+				latency = 1 * time.Second
 			case 3:
-				latency = 200 * time.Millisecond
+				latency = 5 * time.Second
 			case 4:
-				latency = 400 * time.Millisecond
+				latency = 15 * time.Second
 			case 5:
-				latency = 800 * time.Millisecond
+				latency = 30 * time.Second
 			default:
-				latency = 500 * time.Millisecond
+				latency = 30 * time.Second
 			}
 			providerOptimizer.appendRelayData(address, latency, true, cu, syncBlock, sampleTime)
 		}
@@ -771,9 +775,9 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 	}
 
 	// With EXTREME latency differences and weighted selection:
-	// Provider 0: 1ms (excellent) - should be selected most
-	// Provider 5: 800ms (terrible) - should be selected least
-	iterations := 1000
+	// Provider 0: 10ms (excellent) - should be selected most
+	// Provider 5: 30s  (terrible) - should be selected least
+	iterations := 5000
 	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
 	// Statistical assertion: With weighted selection, better providers should collectively
@@ -789,11 +793,11 @@ func TestProviderOptimizerRetriesWithReducedProvidersSet(t *testing.T) {
 		results[providersGen.providersAddresses[5]]
 
 	require.Greater(t, topThreeSelections, bottomThreeSelections,
-		"top 3 latency providers (1-100ms) should collectively beat bottom 3 (200-800ms)")
+		"top 3 latency providers should collectively beat bottom 3")
 
-	// Provider 0 (1ms) should be selected more than provider 5 (800ms) individually
+	// Provider 0 (10ms) should be selected more than provider 5 (30s) individually
 	require.Greater(t, results[providersGen.providersAddresses[0]], results[providersGen.providersAddresses[5]],
-		"best latency provider (1ms) should be selected more than worst (800ms), even with stake differences")
+		"best latency provider should be selected more than worst, even with stake differences")
 }
 
 // TestProviderOptimizerChoiceSimulationBasedOnLatency checks that the overall choice mechanism acts as expected,
@@ -1217,13 +1221,13 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 			name:              "Request current block",
 			requestedBlock:    int64(currentBlock),
 			expectedPreferred: []int{0}, // Only provider 0 has it (others are behind)
-			expectedAvoided:   []int{4},    // Definitely doesn't have it
+			expectedAvoided:   []int{4}, // Definitely doesn't have it
 		},
 		{
 			name:              "Request slightly old block",
 			requestedBlock:    int64(currentBlock - 10),
 			expectedPreferred: []int{0, 1}, // Providers 0 and 1 have it; the rest are behind this height
-			expectedAvoided:   []int{4},       // Way too far behind
+			expectedAvoided:   []int{4},    // Way too far behind
 		},
 	}
 
