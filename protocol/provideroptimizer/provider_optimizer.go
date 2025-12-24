@@ -477,13 +477,24 @@ func (po *ProviderOptimizer) calculateBlockAvailability(
 
 	lambda := timeSinceLastSync.Seconds() / avgBlockTimeSeconds
 
-	// Poisson probability that provider has produced AT LEAST distanceRequired blocks
-	// CumulativeProbabilityFunctionForPoissonDist(k, lambda) returns P(X >= k)
-	// We want P(X >= distanceRequired), so we call it with distanceRequired
-	// where X ~ Poisson(lambda)
+	// Poisson probability that provider has produced AT LEAST distanceRequired blocks.
+	//
+	// Let X ~ Poisson(lambda), where lambda is the expected number of new blocks since last observation.
+	// We want:
+	//   blockAvail = P(X >= distanceRequired)
+	//
+	// Note: CumulativeProbabilityFunctionForPoissonDist(k, lambda) returns P(X <= k).
+	// Therefore:
+	//   P(X >= d) = 1 - P(X <= d-1)
 	if distanceRequired > 0 {
-		// Probability provider has caught up (X >= distanceRequired)
-		blockAvail := CumulativeProbabilityFunctionForPoissonDist(distanceRequired, lambda)
+		// Probability provider has NOT caught up yet (insufficient blocks): P(X <= d-1)
+		insufficient := CumulativeProbabilityFunctionForPoissonDist(distanceRequired-1, lambda)
+		blockAvail := 1 - insufficient
+		if blockAvail < 0 {
+			blockAvail = 0
+		} else if blockAvail > 1 {
+			blockAvail = 1
+		}
 
 		utils.LavaFormatTrace("[Optimizer] calculated block availability",
 			utils.LogAttr("provider", providerAddress),
@@ -492,6 +503,7 @@ func (po *ProviderOptimizer) calculateBlockAvailability(
 			utils.LogAttr("distanceRequired", distanceRequired),
 			utils.LogAttr("lambda", lambda),
 			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
+			utils.LogAttr("insufficientProbability", insufficient),
 			utils.LogAttr("blockAvailability", blockAvail),
 		)
 
