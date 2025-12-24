@@ -86,7 +86,7 @@ func TestCalculateScorePoorProvider(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
 
-	qos := createQoSReport(0.5, 1.0, 60.0) // Poor availability, high latency, poor sync
+	qos := createQoSReport(0.5, 30.0, 1200.0) // Poor availability, high latency, poor sync
 	stake := sdk.NewCoin("ulava", math.NewInt(100))
 	totalStake := sdk.NewCoin("ulava", math.NewInt(10000))
 
@@ -94,8 +94,8 @@ func TestCalculateScorePoorProvider(t *testing.T) {
 
 	// Poor provider should have lower score
 	// availability: 0.5 * 0.3 = 0.15
-	// latency: 0.0 * 0.3 = 0.0 (1s latency normalized to 0)
-	// sync: 0.0 * 0.2 = 0.0 (60s sync normalized to 0)
+	// latency: 0.0 * 0.3 = 0.0 (30s latency normalized to 0)
+	// sync: 0.0 * 0.2 = 0.0 (1200s sync normalized to 0)
 	// stake: 0.01 * 0.2 = 0.002 (100/10000 = 0.01)
 	// total: 0.15 + 0.0 + 0.0 + 0.002 = 0.152
 	require.InDelta(t, 0.15, score, 0.05)
@@ -127,10 +127,10 @@ func TestNormalizeLatency(t *testing.T) {
 		expected float64
 	}{
 		{"zero latency", 0.0, 1.0},
-		{"low latency", 0.1, 0.9},
-		{"medium latency", 0.5, 0.5},
-		{"high latency", 1.0, 0.0},
-		{"very high latency", 2.0, 0.0},
+		{"low latency", 3.0, 0.9},
+		{"medium latency", 15.0, 0.5},
+		{"high latency", 30.0, 0.0},
+		{"very high latency", 60.0, 0.0},
 	}
 
 	for _, tc := range testCases {
@@ -152,10 +152,10 @@ func TestNormalizeSync(t *testing.T) {
 		expected float64
 	}{
 		{"zero sync lag", 0.0, 1.0},
-		{"low sync lag", 6.0, 0.9},
-		{"medium sync lag", 30.0, 0.5},
-		{"high sync lag", 60.0, 0.0},
-		{"very high sync lag", 120.0, 0.0},
+		{"low sync lag", 120.0, 0.9},
+		{"medium sync lag", 600.0, 0.5},
+		{"high sync lag", 1200.0, 0.0},
+		{"very high sync lag", 2400.0, 0.0},
 	}
 
 	for _, tc := range testCases {
