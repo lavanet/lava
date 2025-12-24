@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	stdmath "math"
 	"strconv"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
+	"github.com/lavanet/lava/v5/utils/score"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -302,14 +304,11 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 
 	time.Sleep(4 * time.Millisecond)
 
-	// Weighted selection should favor providers with lower block error probability
-	// Use large sample size to achieve 99.9% statistical confidence
-	// Statistical analysis:
-	//   - Good providers (3): score ~0.91 (base 0.71 + sync 0.20)
-	//   - Bad providers (7):  score ~0.71 (base 0.71 + sync 0.00)
-	//   - Expected ratio: 1.282 (good avg / bad avg)
-	//   - With 10,000 iterations, std dev of ratio is ~0.020
-	//   - For 99.9% confidence: tolerance = 3.29 * 0.020 = 0.065
+	// Historical query selection should strongly prefer providers that already have the requested block.
+	// Here, "good sync" providers are at syncBlock=1000 while "bad sync" providers are 50 blocks behind.
+	// With requestedBlock=1000 and average block time of 10s, the probability that a provider catches up
+	// 50 blocks since the last observation (milliseconds ago in this test) is ~0, so they should be
+	// effectively gated by the block availability penalty.
 	iterations := 10000
 	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
@@ -322,38 +321,12 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		}
 	}
 
-	avgGoodSync := float64(sumGoodSync) / 3.0
-	avgBadSync := float64(sumBadSync) / 7.0
-	actualRatio := avgGoodSync / avgBadSync
+	require.Greater(t, sumGoodSync, iterations*90/100,
+		"providers with the requested block should dominate selection on historical queries")
+	require.Less(t, sumBadSync, iterations*10/100,
+		"providers far behind the requested block should be selected rarely on historical queries")
 
-	// Statistical validation of weighted selection favoring good sync providers
-	// Expected behavior: good providers (better sync) should be selected more than bad providers
-	// Empirical observations show ratio typically ranges from ~0.95 to ~1.40 due to:
-	//   - Weighted scoring (sync is 20% of composite score)
-	//   - Minimum selection chance (1%) ensures even poor providers get some traffic
-	//   - Exploration mechanism adds variance
-	//   - QoS score variance across runs
-	//
-	// For 99.9% pass rate, we use a conservative range that accommodates this variance
-	// while still validating that weighted selection is working correctly
-
-	// Lower bound: good providers should get at least as many selections as bad (ratio >= 0.90)
-	// This allows for cases where variance pushes ratio slightly below 1.0
-	minAcceptableRatio := 0.90
-
-	// Upper bound: ratio shouldn't exceed ~1.50 (would indicate too much bias or bug)
-	maxAcceptableRatio := 1.50
-
-	require.GreaterOrEqual(t, actualRatio, minAcceptableRatio,
-		"good sync providers selection ratio too low (ratio=%.3f, good_avg=%.1f, bad_avg=%.1f) - weighted selection may not be working",
-		actualRatio, avgGoodSync, avgBadSync)
-
-	require.LessOrEqual(t, actualRatio, maxAcceptableRatio,
-		"good sync providers selection ratio too high (ratio=%.3f, good_avg=%.1f, bad_avg=%.1f) - unexpected bias",
-		actualRatio, avgGoodSync, avgBadSync)
-
-	// Log the actual ratio for monitoring test behavior
-	t.Logf("Selection ratio (good/bad): %.3f (good_avg=%.1f, bad_avg=%.1f)", actualRatio, avgGoodSync, avgBadSync)
+	t.Logf("Historical selection: good=%d/%d bad=%d/%d", sumGoodSync, iterations, sumBadSync, iterations)
 }
 
 // TestProviderOptimizerUpdatingLatency tests checks that repeatedly adding better results
@@ -939,7 +912,7 @@ func TestProviderOptimizerChoiceSimulationBasedOnSync(t *testing.T) {
 	}
 	// choose many times and check the better provider is chosen more often (provider 0)
 	iterations := 2000 // Increased iterations for more stable results
-	res := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, int64(p1SyncBlock))
+	res := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, spectypes.LATEST_BLOCK)
 
 	utils.LavaFormatInfo("res", utils.LogAttr("res", res))
 
@@ -1015,81 +988,98 @@ func TestCalculateBlockAvailability(t *testing.T) {
 
 	// Setup optimizer with 10 second average block time
 	providerOptimizer := setupProviderOptimizer(1)
-	cu := uint64(10)
+
+	poissonSurvival := func(distanceRequired uint64, lambda float64) float64 {
+		// P(X >= distanceRequired) for X~Poisson(lambda)
+		// = 1 - e^-λ * sum_{i=0}^{distanceRequired-1} λ^i / i!
+		if distanceRequired == 0 {
+			return 1.0
+		}
+		sum := 0.0
+		pow := 1.0
+		fact := 1.0
+		for i := uint64(0); i < distanceRequired; i++ {
+			if i > 0 {
+				pow *= lambda
+				fact *= float64(i)
+			}
+			sum += pow / fact
+		}
+		return 1.0 - stdmath.Exp(-lambda)*sum
+	}
 
 	tests := []struct {
 		name           string
 		requestedBlock int64
 		syncBlock      uint64
-		expectedMin    float64 // Minimum expected availability
-		expectedMax    float64 // Maximum expected availability
+		timeSinceSync  time.Duration
+		expected       float64
 	}{
 		{
 			name:           "latest block request (requestedBlock <= 0)",
 			requestedBlock: -1,
 			syncBlock:      1000,
-			expectedMin:    1.0,
-			expectedMax:    1.0,
+			timeSinceSync:  0,
+			expected:       1.0,
 		},
 		{
 			name:           "requested block already synced",
 			requestedBlock: 900, // Provider is at 1000
 			syncBlock:      1000,
-			expectedMin:    1.0,
-			expectedMax:    1.0,
+			timeSinceSync:  0,
+			expected:       1.0,
 		},
 		{
 			name:           "requested block equals current sync",
 			requestedBlock: 1000,
 			syncBlock:      1000,
-			expectedMin:    1.0,
-			expectedMax:    1.0,
+			timeSinceSync:  0,
+			expected:       1.0,
 		},
 		{
-			name:           "requested block 1 ahead",
+			name:           "requested block 1 ahead, lambda=1",
 			requestedBlock: 1001,
 			syncBlock:      1000,
-			expectedMin:    0.6, // With 100ms passed on 10s block time, lambda=0.01, high probability
-			expectedMax:    1.0,
+			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
+			expected:       poissonSurvival(1, 1.0),
 		},
 		{
-			name:           "requested block 2 ahead",
+			name:           "requested block 2 ahead, lambda=1",
 			requestedBlock: 1002,
 			syncBlock:      1000,
-			expectedMin:    0.5, // Still good probability with small lambda
-			expectedMax:    1.0,
+			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
+			expected:       poissonSurvival(2, 1.0),
 		},
 		{
-			name:           "requested block 3 ahead",
+			name:           "requested block 3 ahead, lambda=1",
 			requestedBlock: 1003,
 			syncBlock:      1000,
-			expectedMin:    0.0, // Lower probability
-			expectedMax:    1.0,
+			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
+			expected:       poissonSurvival(3, 1.0),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create fresh provider for each test
 			providerAddress := "test_provider_" + tt.name
 
-			// Simulate provider relay at the given sync block
-			providerOptimizer.AppendRelayData(providerAddress, 50*time.Millisecond, cu, tt.syncBlock)
-
-			// Small delay to ensure time has passed
-			time.Sleep(100 * time.Millisecond)
+			// Seed provider data with a controlled sync update time (avoid time.Sleep flakiness)
+			now := time.Now()
+			syncStore, err := score.NewCustomScoreStore(score.SyncScoreType, score.DefaultSyncNum, 1, now.Add(-tt.timeSinceSync))
+			require.NoError(t, err)
+			providerData := ProviderData{
+				Availability: score.NewScoreStore(score.AvailabilityScoreType),
+				Latency:      score.NewScoreStore(score.LatencyScoreType),
+				Sync:         syncStore,
+				SyncBlock:    tt.syncBlock,
+			}
+			set := providerOptimizer.providersStorage.Set(providerAddress, providerData, 1)
+			require.True(t, set, "provider data entry was dropped by cache")
+			// ristretto writes are asynchronous; allow the cache to process the Set
+			time.Sleep(4 * time.Millisecond)
 
 			blockAvail := providerOptimizer.calculateBlockAvailability(providerAddress, tt.requestedBlock)
-
-			require.GreaterOrEqual(t, blockAvail, tt.expectedMin,
-				"Block availability %.3f should be >= %.3f for %s",
-				blockAvail, tt.expectedMin, tt.name)
-			require.LessOrEqual(t, blockAvail, tt.expectedMax,
-				"Block availability %.3f should be <= %.3f for %s",
-				blockAvail, tt.expectedMax, tt.name)
-
-			t.Logf("%s: blockAvail=%.3f (expected range [%.3f, %.3f])",
-				tt.name, blockAvail, tt.expectedMin, tt.expectedMax)
+			require.InDelta(t, tt.expected, blockAvail, 0.03, "unexpected block availability")
 		})
 	}
 }
@@ -1115,9 +1105,8 @@ func TestHistoricalQuerySelectionDistribution(t *testing.T) {
 	for i, addr := range providersGen.providersAddresses {
 		providerOptimizer.AppendRelayData(addr, 50*time.Millisecond, cu, syncBlocks[i])
 	}
-
-	// Wait to establish time since last sync
-	time.Sleep(100 * time.Millisecond)
+	// ristretto writes are asynchronous; allow the cache to process the Set
+	time.Sleep(4 * time.Millisecond)
 
 	// Request block 1000 (historical query)
 	requestedBlock := int64(1000)
@@ -1215,9 +1204,8 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 	for i, p := range providers {
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], p.latency, cu, p.syncBlock)
 	}
-
-	// Wait to simulate time passage
-	time.Sleep(100 * time.Millisecond)
+	// ristretto writes are asynchronous; allow the cache to process the Set
+	time.Sleep(4 * time.Millisecond)
 
 	scenarios := []struct {
 		name              string
@@ -1228,13 +1216,13 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 		{
 			name:              "Request current block",
 			requestedBlock:    int64(currentBlock),
-			expectedPreferred: []int{0, 1}, // Only these have it
+			expectedPreferred: []int{0}, // Only provider 0 has it (others are behind)
 			expectedAvoided:   []int{4},    // Definitely doesn't have it
 		},
 		{
 			name:              "Request slightly old block",
 			requestedBlock:    int64(currentBlock - 10),
-			expectedPreferred: []int{0, 1, 2}, // All but slowest have it
+			expectedPreferred: []int{0, 1}, // Providers 0 and 1 have it; the rest are behind this height
 			expectedAvoided:   []int{4},       // Way too far behind
 		},
 	}
