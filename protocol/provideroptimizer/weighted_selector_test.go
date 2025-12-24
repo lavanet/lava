@@ -61,6 +61,52 @@ func TestWeightNormalization(t *testing.T) {
 	require.InDelta(t, 0.25, ws.stakeWeight, 0.001)
 }
 
+func TestNewWeightedSelectorZeroTotalWeightFallsBackToDefaultWeightsButKeepsOtherConfig(t *testing.T) {
+	config := WeightedSelectorConfig{
+		AvailabilityWeight: 0,
+		LatencyWeight:      0,
+		SyncWeight:         0,
+		StakeWeight:        0,
+		MinSelectionChance: 0.123,
+		Strategy:           StrategyLatency,
+	}
+
+	ws := NewWeightedSelector(config)
+
+	// Falls back to default weights
+	require.InDelta(t, 0.3, ws.availabilityWeight, 0.0001)
+	require.InDelta(t, 0.3, ws.latencyWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.syncWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.stakeWeight, 0.0001)
+
+	// Preserves other config
+	require.InDelta(t, 0.123, ws.minSelectionChance, 0.0000001)
+	require.Equal(t, StrategyLatency, ws.strategy)
+}
+
+func TestNewWeightedSelectorNegativeWeightFallsBackToDefaultWeightsButKeepsOtherConfig(t *testing.T) {
+	config := WeightedSelectorConfig{
+		AvailabilityWeight: -0.1,
+		LatencyWeight:      0.6,
+		SyncWeight:         0.3,
+		StakeWeight:        0.2,
+		MinSelectionChance: 0.222,
+		Strategy:           StrategySyncFreshness,
+	}
+
+	ws := NewWeightedSelector(config)
+
+	// Falls back to default weights
+	require.InDelta(t, 0.3, ws.availabilityWeight, 0.0001)
+	require.InDelta(t, 0.3, ws.latencyWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.syncWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.stakeWeight, 0.0001)
+
+	// Preserves other config
+	require.InDelta(t, 0.222, ws.minSelectionChance, 0.0000001)
+	require.Equal(t, StrategySyncFreshness, ws.strategy)
+}
+
 // TestCalculateScorePerfectProvider tests scoring for a perfect provider
 func TestCalculateScorePerfectProvider(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()

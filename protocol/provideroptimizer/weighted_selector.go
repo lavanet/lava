@@ -102,11 +102,42 @@ func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 // NewWeightedSelector creates a new WeightedSelector with the given configuration
 func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 	// Validate and normalize weights
+	//
+	// Important: we only want to fallback the *weights* if they are invalid, but keep
+	// other user choices (Strategy / MinSelectionChance) intact.
+	validateWeight := func(name string, w float64) bool {
+		if math.IsNaN(w) || math.IsInf(w, 0) || w < 0 {
+			utils.LavaFormatWarning("invalid weighted selector weight, must be finite and >= 0",
+				nil,
+				utils.LogAttr("weightName", name),
+				utils.LogAttr("weight", w),
+			)
+			return false
+		}
+		return true
+	}
+
+	weightsValid := validateWeight("availability", config.AvailabilityWeight) &&
+		validateWeight("latency", config.LatencyWeight) &&
+		validateWeight("sync", config.SyncWeight) &&
+		validateWeight("stake", config.StakeWeight)
+
 	totalWeight := config.AvailabilityWeight + config.LatencyWeight + config.SyncWeight + config.StakeWeight
-	if totalWeight <= 0 {
-		utils.LavaFormatWarning("weighted selector weights sum to zero or negative, using default config", nil)
-		config = DefaultWeightedSelectorConfig()
-		totalWeight = 1.0 // Default sums to 1.0
+	if !weightsValid || math.IsNaN(totalWeight) || math.IsInf(totalWeight, 0) || totalWeight <= 0 {
+		utils.LavaFormatWarning("weighted selector weights sum to zero/negative or contain invalid values, using default weights", nil,
+			utils.LogAttr("totalWeight", totalWeight),
+			utils.LogAttr("availabilityWeight", config.AvailabilityWeight),
+			utils.LogAttr("latencyWeight", config.LatencyWeight),
+			utils.LogAttr("syncWeight", config.SyncWeight),
+			utils.LogAttr("stakeWeight", config.StakeWeight),
+		)
+
+		defaultCfg := DefaultWeightedSelectorConfig()
+		config.AvailabilityWeight = defaultCfg.AvailabilityWeight
+		config.LatencyWeight = defaultCfg.LatencyWeight
+		config.SyncWeight = defaultCfg.SyncWeight
+		config.StakeWeight = defaultCfg.StakeWeight
+		totalWeight = 1.0 // default weights sum to 1.0
 	}
 
 	if math.Abs(totalWeight-1.0) > 0.001 {
