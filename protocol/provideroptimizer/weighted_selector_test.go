@@ -34,7 +34,7 @@ func TestNewWeightedSelector(t *testing.T) {
 	require.Equal(t, 0.3, ws.latencyWeight)
 	require.Equal(t, 0.2, ws.syncWeight)
 	require.Equal(t, 0.2, ws.stakeWeight)
-	require.Equal(t, 0.10, ws.minSelectionChance)
+	require.Equal(t, 0.01, ws.minSelectionChance)
 }
 
 // TestWeightNormalization tests that weights are normalized if they don't sum to 1.0
