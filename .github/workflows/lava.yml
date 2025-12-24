@@ -94,7 +94,7 @@ jobs:
             *-test.log
 
   test-protocol-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
