@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	stdmath "math"
 	"testing"
 	"time"
 
@@ -105,6 +106,54 @@ func TestNewWeightedSelectorNegativeWeightFallsBackToDefaultWeightsButKeepsOther
 	// Preserves other config
 	require.InDelta(t, 0.222, ws.minSelectionChance, 0.0000001)
 	require.Equal(t, StrategySyncFreshness, ws.strategy)
+}
+
+func TestNewWeightedSelectorNaNWeightFallsBackToDefaultWeightsButKeepsOtherConfig(t *testing.T) {
+	config := WeightedSelectorConfig{
+		AvailabilityWeight: 0.3,
+		LatencyWeight:      0.3,
+		SyncWeight:         0.2,
+		StakeWeight:        0.2,
+		MinSelectionChance: 0.333,
+		Strategy:           StrategyAccuracy,
+	}
+	config.LatencyWeight = stdmath.NaN()
+
+	ws := NewWeightedSelector(config)
+
+	// Falls back to default weights
+	require.InDelta(t, 0.3, ws.availabilityWeight, 0.0001)
+	require.InDelta(t, 0.3, ws.latencyWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.syncWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.stakeWeight, 0.0001)
+
+	// Preserves other config
+	require.InDelta(t, 0.333, ws.minSelectionChance, 0.0000001)
+	require.Equal(t, StrategyAccuracy, ws.strategy)
+}
+
+func TestNewWeightedSelectorInfWeightFallsBackToDefaultWeightsButKeepsOtherConfig(t *testing.T) {
+	config := WeightedSelectorConfig{
+		AvailabilityWeight: 0.3,
+		LatencyWeight:      0.3,
+		SyncWeight:         0.2,
+		StakeWeight:        0.2,
+		MinSelectionChance: 0.444,
+		Strategy:           StrategyDistributed,
+	}
+	config.SyncWeight = stdmath.Inf(1)
+
+	ws := NewWeightedSelector(config)
+
+	// Falls back to default weights
+	require.InDelta(t, 0.3, ws.availabilityWeight, 0.0001)
+	require.InDelta(t, 0.3, ws.latencyWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.syncWeight, 0.0001)
+	require.InDelta(t, 0.2, ws.stakeWeight, 0.0001)
+
+	// Preserves other config
+	require.InDelta(t, 0.444, ws.minSelectionChance, 0.0000001)
+	require.Equal(t, StrategyDistributed, ws.strategy)
 }
 
 // TestCalculateScorePerfectProvider tests scoring for a perfect provider
