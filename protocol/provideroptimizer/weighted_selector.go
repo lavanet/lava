@@ -94,7 +94,7 @@ func DefaultWeightedSelectorConfig() WeightedSelectorConfig {
 		LatencyWeight:      0.3,  // Latency shares equal emphasis (30%)
 		SyncWeight:         0.2,  // Sync is third priority (20%)
 		StakeWeight:        0.2,  // Stake provides meaningful influence (20%)
-		MinSelectionChance: 0.10, // 10% minimum chance to ensure fairness
+		MinSelectionChance: 0.01, // 1% minimum chance to prevent starvation
 		Strategy:           StrategyBalanced,
 	}
 }
