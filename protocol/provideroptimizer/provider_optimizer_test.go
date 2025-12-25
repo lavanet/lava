@@ -244,14 +244,21 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
 
 	// damage all the providers scores with failed probe relays but three random ones
-	skipIndex := rand.Intn(providersCount - 3)
+	// Use a fixed index to keep the test deterministic (this package seeds global rand in init()).
+	skipIndex := 10
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
 			// skip 0
 			continue
 		}
-		providerOptimizer.AppendRelayFailure(providersGen.providersAddresses[i])
+		// A single failure isn't necessarily enough to materially lower availability due to
+		// decaying weighted averages (and min selection chance). Apply multiple failures to
+		// create a clear selection gap for this test.
+		for j := 0; j < 8; j++ {
+			providerOptimizer.AppendRelayFailure(providersGen.providersAddresses[i])
+			time.Sleep(time.Microsecond) // ensure monotonic sample times per provider
+		}
 	}
 
 	// pick providers, the three random ones with good availability should be picked more often
