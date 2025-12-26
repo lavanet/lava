@@ -261,6 +261,23 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 		}
 	}
 
+	// Assert the score gap exists (availability score should be worse for failed providers).
+	// Pick one "good" provider (no failures) and one "bad" provider (received failures).
+	goodAddr := providersGen.providersAddresses[skipIndex]
+	badAddr := providersGen.providersAddresses[0]
+	require.NotEqual(t, goodAddr, badAddr)
+
+	goodQoS, _ := providerOptimizer.GetReputationReportForProvider(goodAddr)
+	require.NotNil(t, goodQoS)
+	badQoS, _ := providerOptimizer.GetReputationReportForProvider(badAddr)
+	require.NotNil(t, badQoS)
+
+	goodAvail, err := goodQoS.Availability.Float64()
+	require.NoError(t, err)
+	badAvail, err := badQoS.Availability.Float64()
+	require.NoError(t, err)
+	require.Greater(t, goodAvail, badAvail, "expected good provider availability to be greater than bad provider availability")
+
 	// pick providers, the three random ones with good availability should be picked more often
 	time.Sleep(4 * time.Millisecond)
 	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
