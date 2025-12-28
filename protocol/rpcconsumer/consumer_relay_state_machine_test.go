@@ -318,3 +318,160 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		}
 	})
 }
+
+func TestConsumerStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
+	t.Run("circuit_breaker_triggers_after_2_pairing_errors", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Second pairing error - circuit breaker should trigger
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 2:
+				// Should be done - circuit breaker stopped retries
+				require.True(t, task.IsDone())
+				require.Error(t, task.Err)
+				require.True(t, lavasession.PairingListEmptyError.Is(task.Err))
+				return // Test successful
+			default:
+				require.Fail(t, "Circuit breaker should have stopped retries after 2 pairing errors")
+			}
+			taskNumber++
+		}
+	})
+}
+
+func TestConsumerStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
+	t.Run("pairing_error_counter_resets_on_success", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Success - should reset counter
+				require.False(t, task.IsDone())
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+				relaycore.SendSuccessResp(relayProcessor, "lava@test", time.Millisecond*1)
+			case 2:
+				// Done with success
+				require.True(t, task.IsDone())
+				require.NoError(t, task.Err)
+				return // Test successful - counter was reset, no circuit breaker
+			}
+			taskNumber++
+		}
+	})
+}
+
+func TestConsumerStateMachineCircuitBreakerResetsOnDifferentError(t *testing.T) {
+	t.Run("pairing_error_counter_resets_on_different_error", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Different error (network timeout) - should reset counter
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(fmt.Errorf("network timeout"))
+			case 2:
+				// Another pairing error - counter was reset, so this is #1 again
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 3:
+				// Second consecutive pairing error - circuit breaker triggers
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 4:
+				// Done - circuit breaker triggered
+				require.True(t, task.IsDone())
+				require.Error(t, task.Err)
+				return // Test successful
+			default:
+				require.Fail(t, "Unexpected task number")
+			}
+			taskNumber++
+		}
+	})
+}

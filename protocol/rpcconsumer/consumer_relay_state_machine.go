@@ -42,19 +42,20 @@ type tickerMetricSetterInf interface {
 }
 
 type ConsumerRelayStateMachine struct {
-	ctx                 context.Context // same context as user context.
-	relaySender         ConsumerRelaySender
-	resultsChecker      ResultsCheckerInf
-	analytics           *metrics.RelayMetrics // first relay metrics
-	selection           relaycore.Selection
-	debugRelays         bool
-	tickerMetricSetter  tickerMetricSetterInf
-	batchUpdate         chan error
-	usedProviders       *lavasession.UsedProviders
-	relayRetriesManager *lavaprotocol.RelayRetriesManager
-	relayState          []*relaycore.RelayState
-	protocolMessage     chainlib.ProtocolMessage
-	relayStateLock      sync.RWMutex
+	ctx                      context.Context // same context as user context.
+	relaySender              ConsumerRelaySender
+	resultsChecker           ResultsCheckerInf
+	analytics                *metrics.RelayMetrics // first relay metrics
+	selection                relaycore.Selection
+	debugRelays              bool
+	tickerMetricSetter       tickerMetricSetterInf
+	batchUpdate              chan error
+	usedProviders            *lavasession.UsedProviders
+	relayRetriesManager      *lavaprotocol.RelayRetriesManager
+	relayState               []*relaycore.RelayState
+	protocolMessage          chainlib.ProtocolMessage
+	relayStateLock           sync.RWMutex
+	consecutivePairingErrors int // Track consecutive pairing errors for circuit breaker
 }
 
 func NewRelayStateMachine(
@@ -267,7 +268,36 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				if err != nil { // Error handling
 					utils.LavaFormatTrace("[StateMachine] err := <-crsm.batchUpdate", utils.LogAttr("err", err), utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", crsm.ctx))
 					// Sending a new batch failed (consumer's protocol side), handling the state machine
-					consecutiveBatchErrors++                        // Increase consecutive error counter
+					consecutiveBatchErrors++ // Increase consecutive error counter
+
+					// Circuit breaker: Check if this is a pairing error
+					if lavasession.PairingListEmptyError.Is(err) {
+						crsm.consecutivePairingErrors++
+						utils.LavaFormatDebug("[StateMachine] Detected PairingListEmptyError",
+							utils.LogAttr("GUID", crsm.ctx),
+							utils.LogAttr("consecutivePairingErrors", crsm.consecutivePairingErrors),
+							utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()),
+						)
+
+						// Circuit breaker: If we hit pairing errors 2 times in a row, stop retrying
+						// After first pairing error, all blocked providers are exhausted and added to unwanted list
+						// Second pairing error confirms no providers available - all subsequent attempts will be identical
+						if crsm.consecutivePairingErrors >= 2 {
+							utils.LavaFormatWarning("Circuit breaker triggered: All providers exhausted, stopping retries",
+								nil,
+								utils.LogAttr("GUID", crsm.ctx),
+								utils.LogAttr("consecutivePairingErrors", crsm.consecutivePairingErrors),
+								utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()),
+								utils.LogAttr("timesSaved", "~8 seconds of futile retries avoided"),
+							)
+							go validateReturnCondition(err)
+							continue
+						}
+					} else {
+						// Reset pairing error counter if we got a different error type
+						crsm.consecutivePairingErrors = 0
+					}
+
 					if consecutiveBatchErrors > SendRelayAttempts { // If we failed sending a message more than "SendRelayAttempts" time in a row.
 						if crsm.usedProviders.BatchNumber() == 0 && consecutiveBatchErrors == SendRelayAttempts+1 { // First relay attempt. print on first failure only.
 							utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", consecutiveBatchErrors), utils.LogAttr("GUID", crsm.ctx))
@@ -281,14 +311,17 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 					continue
 				}
 				// Successfully sent message.
-				// Reset consecutiveBatchErrors
+				// Reset consecutiveBatchErrors and pairing error counter
 				consecutiveBatchErrors = 0
+				crsm.consecutivePairingErrors = 0
 			case success := <-gotResults:
 				utils.LavaFormatTrace("[StateMachine] success := <-gotResults", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 				// If we had a successful result return what we currently have
 				// Or we are done sending relays, and we have no other relays pending results.
 				if success { // Check wether we can return the valid results or we need to send another relay
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", crsm.ctx))
+					// Reset pairing error counter on success
+					crsm.consecutivePairingErrors = 0
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
 					return
 				}
