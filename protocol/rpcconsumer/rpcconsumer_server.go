@@ -1494,6 +1494,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 }
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics) (relayLatency time.Duration, err error, needsBackoff bool) {
+	relayInnerEntryTime := time.Now()
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
@@ -1501,8 +1502,17 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	if rpccs.debugRelays {
 		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
 	}
+
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
+		ctxSetupStart := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] relayInner - context setup completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(ctxSetupStart)),
+				utils.LogAttr("provider", providerPublicAddress),
+			)
+		}
 		metadataAdd := metadata.New(map[string]string{
 			common.IP_FORWARDING_HEADER_NAME:  consumerToken,
 			common.LAVA_CONSUMER_PROCESS_GUID: rpccs.consumerProcessGuid,
@@ -1532,6 +1542,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			utils.Attribute{Key: "api_interface", Value: rpccs.listenEndpoint.ApiInterface},
 		)
 
+		metadataSetupStart := time.Now()
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 
@@ -1541,6 +1552,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		if relayResult.ProviderTrailer == nil {
 			// if the provider trailer is nil, we need to initialize it
 			relayResult.ProviderTrailer = metadata.MD{}
+		}
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] relayInner - metadata and metrics setup completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(metadataSetupStart)),
+				utils.LogAttr("totalSetup", time.Since(relayInnerEntryTime)),
+				utils.LogAttr("provider", providerPublicAddress),
+			)
 		}
 
 		relaySentTime := time.Now()
@@ -1554,6 +1573,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		var responseHeader metadata.MD
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
+		postGRPCStart := time.Now()
 		if debugConsumerDetailedLatency {
 			utils.LavaFormatDebug("[Consumer Timing] gRPC Relay call completed",
 				utils.LogAttr("GUID", ctx),
@@ -1565,6 +1585,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 
 		// Check if response is compressed and decompress if needed
+		decompressStart := time.Now()
 		appLevelCompressed := false
 		if lavaCompressionValues := responseHeader.Get(common.LavaCompressionHeader); len(lavaCompressionValues) > 0 {
 			appLevelCompressed = lavaCompressionValues[0] == common.LavaCompressionGzip
@@ -1580,6 +1601,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				return nil, 0, decompressErr, false
 			}
 			reply.Data = decompressedData
+		}
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] relayInner - decompression completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(decompressStart)),
+				utils.LogAttr("wasCompressed", appLevelCompressed),
+				utils.LogAttr("postGRPCTotal", time.Since(postGRPCStart)),
+			)
 		}
 
 		// Log memory and message size after receiving from provider

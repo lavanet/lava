@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -90,14 +91,37 @@ func (cri chainRouterImpl) ExtensionsSupported(internalPath string, extensions [
 }
 
 func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
+	routerStart := time.Now()
+
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
+	getProxyStart := time.Now()
 	selectedChainProxy, err := cri.GetChainProxySupporting(ctx, addon, extensions, chainMessage.GetApi().Name, chainMessage.GetApiCollection().CollectionData.InternalPath)
+	utils.LavaFormatDebug("[Timing] SendNodeMsg - GetChainProxySupporting completed",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("timeTaken", time.Since(getProxyStart)),
+		utils.LogAttr("isError", err != nil),
+	)
 	if err != nil {
 		return nil, "", nil, common.NodeUrl{}, "", err
 	}
+
+	proxyCallStart := time.Now()
 	relayReply, subscriptionID, relayReplyServer, err = selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
+	utils.LavaFormatDebug("[Timing] SendNodeMsg - selectedChainProxy.SendNodeMsg completed",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("timeTaken", time.Since(proxyCallStart)),
+		utils.LogAttr("isError", err != nil),
+	)
+
+	getInfoStart := time.Now()
 	proxyUrl, chainId = selectedChainProxy.GetChainProxyInformation()
+	utils.LavaFormatDebug("[Timing] SendNodeMsg - GetChainProxyInformation completed",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("timeTaken", time.Since(getInfoStart)),
+		utils.LogAttr("totalRouterTime", time.Since(routerStart)),
+	)
+
 	return relayReply, subscriptionID, relayReplyServer, proxyUrl, chainId, err
 }
 

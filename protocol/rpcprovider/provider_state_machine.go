@@ -56,6 +56,14 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 	var errorMessage string
 	emptyTime := 0 * time.Millisecond
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] SendNodeMessage - retry loop iteration start",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("retryAttempt", retryAttempt),
+				utils.LogAttr("timeSinceStart", time.Since(sendNodeMsgStart)),
+			)
+		}
+
 		sendTime := time.Now()
 
 		// Check if this is a test mode request
@@ -72,9 +80,18 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 					utils.LogAttr("timeSinceStart", time.Since(sendNodeMsgStart)),
 				)
 			}
+			actualSendStart := time.Now()
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+			if debugDetailedLatencyPSM {
+				utils.LavaFormatDebug("[Timing] relaySender.SendNodeMsg - actual call duration",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("retryAttempt", retryAttempt),
+					utils.LogAttr("actualDuration", time.Since(actualSendStart)),
+				)
+			}
 		}
 		latency := time.Since(sendTime)
+		postProcessStart := time.Now() // Start timing post-processing
 		if debugDetailedLatencyPSM {
 			utils.LavaFormatDebug("[Timing] relaySender.SendNodeMsg returned",
 				utils.LogAttr("GUID", ctx),
@@ -83,6 +100,8 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 				utils.LogAttr("isError", err != nil),
 			)
 		}
+
+		validationStart := time.Now()
 		if err != nil {
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
@@ -90,22 +109,87 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		if replyWrapper == nil || replyWrapper.RelayReply == nil {
 			return nil, emptyTime, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] SendNodeMessage - reply validation completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(validationStart)),
+				utils.LogAttr("retryAttempt", retryAttempt),
+			)
+		}
 
 		if debugLatency {
 			utils.LavaFormatDebug("node reply received", utils.LogAttr("attempt", retryAttempt), utils.LogAttr("timeTaken", latency), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] SendNodeMessage - about to call CheckResponseError",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeSincePostProcessStart", time.Since(postProcessStart)),
+				utils.LogAttr("timeSinceValidationStart", time.Since(validationStart)),
+				utils.LogAttr("retryAttempt", retryAttempt),
+			)
+		}
+
 		// Check for node errors
+		checkErrorStart := time.Now()
 		isNodeError, errorMessage = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] SendNodeMessage - CheckResponseError completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(checkErrorStart)),
+				utils.LogAttr("isNodeError", isNodeError),
+				utils.LogAttr("dataSize", len(replyWrapper.RelayReply.Data)),
+			)
+		}
 
 		// Failed fetching hash return the reply.
+		hashCheckStart := time.Now()
 		if requestHashString == "" {
 			utils.LavaFormatWarning("Failed to hash request, shouldn't happen", nil, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 			break // We can't perform the retries as we failed fetching the request hash.
 		}
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] SendNodeMessage - hash string check completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(hashCheckStart)),
+				utils.LogAttr("timeFromCheckError", time.Since(checkErrorStart)),
+				utils.LogAttr("hashStringEmpty", requestHashString == ""),
+			)
+		}
+
+		nodeErrorCheckStart := time.Now()
 		if !isNodeError {
+			if debugDetailedLatencyPSM {
+				utils.LavaFormatDebug("[Timing] SendNodeMessage - entering success path (no node error)",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("timeTaken", time.Since(nodeErrorCheckStart)),
+					utils.LogAttr("totalSoFar", time.Since(postProcessStart)),
+				)
+			}
+
 			// Successful relay, remove it from the cache if we have it and return a valid response.
+			beforeCacheRemove := time.Now()
 			go psm.relayRetriesManager.RemoveHashFromCache(requestHashString)
+			if debugDetailedLatencyPSM {
+				utils.LavaFormatDebug("[Timing] SendNodeMessage - cache remove goroutine spawned",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("timeTaken", time.Since(beforeCacheRemove)),
+					utils.LogAttr("totalSoFar", time.Since(postProcessStart)),
+				)
+			}
+
+			beforeFinalReturn := time.Now()
+			if debugDetailedLatencyPSM {
+				totalPostProcessing := time.Since(postProcessStart)
+				utils.LavaFormatDebug("[Timing] SendNodeMessage - total post-processing completed (success path)",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("postProcessingTime", totalPostProcessing),
+					utils.LogAttr("nodeLatency", latency),
+					utils.LogAttr("overhead", totalPostProcessing),
+					utils.LogAttr("retryAttempt", retryAttempt),
+					utils.LogAttr("timeInFinalLogging", time.Since(beforeFinalReturn)),
+				)
+			}
 			return replyWrapper, latency, nil
 		}
 

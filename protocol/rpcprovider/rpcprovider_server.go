@@ -263,6 +263,14 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		defer cancel()
 	}
 
+	relayEntryTime := time.Now() // Track when request enters provider
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] Relay entry point reached",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("sessionId", request.RelaySession.SessionId),
+		)
+	}
+	
 	utils.LavaFormatInfo("Got relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
@@ -287,10 +295,18 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "consumer_address", Value: request.RelaySession.Provider},
 	)
 
+	preInitSetupStart := time.Now()
 	// Check if consumer supports compression via custom header
 	md, _ := metadata.FromIncomingContext(ctx)
 	compressionSupport := md.Get(common.LavaCompressionSupportHeader)
 	consumerSupportsCompression := len(compressionSupport) > 0 && compressionSupport[0] == "true"
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] Pre-initRelay setup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(preInitSetupStart)),
+			utils.LogAttr("timeFromEntry", time.Since(relayEntryTime)),
+		)
+	}
 
 	// Init relay
 	var relaySession *lavasession.SingleProviderSession
@@ -568,7 +584,15 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
 	if !rpcps.StaticProvider {
+		verifySessionStart := time.Now()
 		relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] initRelay - verifyRelaySession completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(verifySessionStart)),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -579,28 +603,76 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 			}
 		}(relaySession) // lock in the session address
 	}
+	
+	extensionParseStart := time.Now()
 	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
 	if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
 		extensionInfo.ExtensionOverride = []string{}
 	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] initRelay - extension info setup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(extensionParseStart)),
+		)
+	}
+	
 	// parse the message to extract the cu and chainMessage for sending it
+	parseMsgStart := time.Now()
 	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] initRelay - ParseMsg completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(parseMsgStart)),
+			utils.LogAttr("isError", err != nil),
+			utils.LogAttr("dataSize", len(request.RelayData.Data)),
+		)
+	}
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	
 	// we only need the chainMessage for a static provider
 	if rpcps.StaticProvider {
 		// extract consumer address from signature
+		extractConsumerStart := time.Now()
 		extractedConsumerAddress, err := rpcps.ExtractConsumerAddress(ctx, request.RelaySession)
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] initRelay - ExtractConsumerAddress completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(extractConsumerStart)),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		if err != nil {
 			return nil, nil, nil, err
 		}
 
 		return nil, extractedConsumerAddress, chainMessage, nil
 	}
+	
 	relayCU := chainMessage.GetApi().ComputeUnits
+	virtualEpochStart := time.Now()
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] initRelay - GetVirtualEpoch completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(virtualEpochStart)),
+			utils.LogAttr("epoch", request.RelaySession.Epoch),
+			utils.LogAttr("virtualEpoch", virtualEpoch),
+		)
+	}
+	
+	prepareSessionStart := time.Now()
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, virtualEpoch)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] initRelay - PrepareSessionForUsage completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(prepareSessionStart)),
+			utils.LogAttr("isError", err != nil),
+			utils.LogAttr("relayCU", relayCU),
+			utils.LogAttr("cuSum", request.RelaySession.CuSum),
+		)
+	}
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
@@ -1269,13 +1341,24 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 
 		goroutineSpawnStart := time.Now()
 		go func() {
+			goroutineStart := time.Now()
 			if hashErr != nil {
 				utils.LavaFormatError("Failed hashing cache request", nil, utils.LogAttr("hashErr", hashErr))
 				return
 			}
+			
+			ctxSetupStart := time.Now()
 			new_ctx := context.Background()
 			new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 			defer cancel()
+			if debugDetailedLatency {
+				utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache goroutine - context setup completed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("timeTaken", time.Since(ctxSetupStart)),
+				)
+			}
+			
+			cacheSetStart := time.Now()
 			err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 				RequestHash:      hashKey,
 				RequestedBlock:   requestedBlock,
@@ -1288,6 +1371,15 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				SeenBlock:        latestBlock,
 				IsNodeError:      isNodeError,
 			})
+			if debugDetailedLatency {
+				utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache goroutine - cache.SetEntry completed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("timeTaken", time.Since(cacheSetStart)),
+					utils.LogAttr("totalGoroutineTime", time.Since(goroutineStart)),
+					utils.LogAttr("isError", err != nil),
+					utils.LogAttr("dataSize", len(cacheReply.Data)),
+				)
+			}
 			if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 			}
@@ -1437,39 +1529,87 @@ func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
 	blockDistanceToFinalization,
 	blocksInFinalizationData uint32,
 ) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
+	funcStart := time.Now()
+	
 	specificBlock := request.RelayData.RequestBlock
+	specificBlockCheckStart := time.Now()
 	if specificBlock < spectypes.LATEST_BLOCK {
 		// cases of EARLIEST, FINALIZED, SAFE
 		// GetLatestBlockData only supports latest relative queries or specific block numbers
 		specificBlock = spectypes.NOT_APPLICABLE
 	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - specific block check completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(specificBlockCheckStart)),
+		)
+	}
 
 	// handle consistency, if the consumer requested information we do not have in the state tracker
-
+	handleConsistencyStart := time.Now()
 	latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, relayTimeout, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - handleConsistency completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(handleConsistencyStart)),
+			utils.LogAttr("isError", err != nil),
+		)
+	}
 	if err != nil {
 		return 0, nil, nil, 0, false, false, err
 	}
 
 	// get specific block data for caching
+	getLatestBlockStart := time.Now()
 	_, specificRequestedHashes, _, getLatestBlockErr := rpcps.reliabilityManager.GetLatestBlockData(spectypes.NOT_APPLICABLE, spectypes.NOT_APPLICABLE, specificBlock)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - GetLatestBlockData completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(getLatestBlockStart)),
+			utils.LogAttr("isError", getLatestBlockErr != nil),
+			utils.LogAttr("hashesCount", len(specificRequestedHashes)),
+		)
+	}
 	if getLatestBlockErr == nil && len(specificRequestedHashes) == 1 {
 		requestedBlockHash = []byte(specificRequestedHashes[0].Hash)
 	}
 
 	// TODO: take latestBlock and lastSeenBlock and put the greater one of them
+	updateChainMsgStart := time.Now()
 	updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - UpdateLatestBlockInMessage completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(updateChainMsgStart)),
+		)
+	}
 
+	replaceBlockStart := time.Now()
 	modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 	if modifiedReqBlock != request.RelayData.RequestBlock {
 		request.RelayData.RequestBlock = modifiedReqBlock
 		updatedChainMessage = true // meaning we can't bring a newer proof
 	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - ReplaceRequestedBlock completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(replaceBlockStart)),
+		)
+	}
+	
 	// requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
+	finalizedCheckStart := time.Now()
 	finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, int64(blockDistanceToFinalization))
 	if !finalized && requestedBlockHash == nil && modifiedReqBlock != spectypes.NOT_APPLICABLE {
 		// avoid using cache, but can still service
 		utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "modifiedReqBlock", Value: modifiedReqBlock}, utils.Attribute{Key: "specificBlock", Value: specificBlock})
+	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability - IsFinalizedBlock completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(finalizedCheckStart)),
+			utils.LogAttr("totalFunctionTime", time.Since(funcStart)),
+		)
 	}
 
 	return latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, nil
