@@ -56,6 +56,9 @@ const (
 	PairingCheckInterval                   = 1 * time.Second
 	BlockGapWarningThreshold               = 1000
 	RelayRetryBackoffDuration              = 2 * time.Millisecond
+
+	// Debug flag for detailed timing logs
+	debugSmartRouterDetailedLatency = true
 )
 
 // NoResponseTimeout is imported from protocolerrors to avoid duplicate error code registration
@@ -379,6 +382,7 @@ func (rpcss *RPCSmartRouterServer) ParseRelay(
 	consumerIp string,
 	metadata []pairingtypes.Metadata,
 ) (protocolMessage chainlib.ProtocolMessage, err error) {
+	parseRelayStart := time.Now()
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
 	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
@@ -406,6 +410,12 @@ func (rpcss *RPCSmartRouterServer) ParseRelay(
 
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpcss.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 	protocolMessage = chainlib.NewProtocolMessage(chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp)
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] ParseRelay completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(parseRelayStart)),
+		)
+	}
 	return protocolMessage, nil
 }
 
@@ -418,9 +428,17 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	// compares the result with other providers if defined so
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
-
+	sendParsedRelayStart := time.Now()
 	relaySentTime := time.Now()
 	relayProcessor, err := rpcss.ProcessRelaySend(ctx, protocolMessage, analytics)
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] ProcessRelaySend completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(relaySentTime)),
+			utils.LogAttr("hasResults", relayProcessor != nil && relayProcessor.HasResults()),
+			utils.LogAttr("isError", err != nil),
+		)
+	}
 	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
@@ -443,7 +461,15 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		go rpcss.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
+	processingResultStart := time.Now()
 	returnedResult, err := relayProcessor.ProcessingResult()
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] ProcessingResult completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(processingResultStart)),
+			utils.LogAttr("isError", err != nil),
+		)
+	}
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
 		// Check if this is an unsupported method error from the error message
@@ -467,6 +493,12 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		analytics.ApiMethod = api.Name
 	}
 	rpcss.relaysMonitor.LogRelay()
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] SendParsedRelay total completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(sendParsedRelayStart)),
+		)
+	}
 	return returnedResult, nil
 }
 
@@ -550,6 +582,7 @@ func (rpcss *RPCSmartRouterServer) cacheUnsupportedMethodErrorResponse(ctx conte
 }
 
 func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
+	processRelaySendStart := time.Now()
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -584,12 +617,38 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	if err != nil {
 		return relayProcessor, err
 	}
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] ProcessRelaySend setup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(processRelaySendStart)),
+		)
+	}
+	taskNumber := 0
 	for task := range relayTaskChannel {
+		taskNumber++
 		if task.IsDone() {
+			if debugSmartRouterDetailedLatency {
+				utils.LavaFormatDebug("[SmartRouter Timing] ProcessRelaySend task loop completed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("totalTime", time.Since(processRelaySendStart)),
+					utils.LogAttr("taskNumber", taskNumber),
+					utils.LogAttr("isDone", true),
+				)
+			}
 			return relayProcessor, task.Err
 		}
+		taskStart := time.Now()
 		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
 		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
+		if debugSmartRouterDetailedLatency {
+			utils.LavaFormatDebug("[SmartRouter Timing] sendRelayToProvider completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(taskStart)),
+				utils.LogAttr("taskNumber", taskNumber),
+				utils.LogAttr("numOfProviders", task.NumOfProviders),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		relayProcessor.UpdateBatch(err)
 	}
 
@@ -824,6 +883,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	relayProcessor *relaycore.RelayProcessor,
 	analytics *metrics.RelayMetrics,
 ) (errRet error) {
+	sendRelayToProviderStart := time.Now()
 	// get a session for the relay from the ConsumerSessionManager
 	// construct a relay message with lavaprotocol package, include QoS and jail providers
 	// sign the relay message with the lavaprotocol package
@@ -880,6 +940,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			utils.LogAttr("reason", "quorum requires fresh provider validation, cache would defeat consensus verification"),
 		)
 	}
+	cacheLookupStart := time.Now()
 	if rpcss.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
 		if !protocolMessage.GetForceCacheRefresh() {
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
@@ -1020,6 +1081,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		}
 	}
 
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] cache lookup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(cacheLookupStart)),
+			utils.LogAttr("cacheHit", cacheError == nil),
+		)
+	}
 	addon := chainlib.GetAddon(protocolMessage)
 	reqBlock = rpcss.resolveRequestedBlock(reqBlock, localRelayData.SeenBlock, latestBlockHashRequested, protocolMessage)
 	// check whether we need a new protocol message with the new earliest block hash requested
@@ -1041,7 +1109,20 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
+	getSessionsStart := time.Now()
 	sessions, err := rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+	if debugSmartRouterDetailedLatency {
+		sessionAddresses := make([]string, 0, len(sessions))
+		for addr := range sessions {
+			sessionAddresses = append(sessionAddresses, addr)
+		}
+		utils.LavaFormatDebug("[SmartRouter Timing] GetSessions completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(getSessionsStart)),
+			utils.LogAttr("numSessions", len(sessions)),
+			utils.LogAttr("providers", sessionAddresses),
+		)
+	}
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
@@ -1207,7 +1288,26 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				}
 			}
 			// send relay
+			relayInnerStart := time.Now()
+			if debugSmartRouterDetailedLatency {
+				utils.LavaFormatDebug("[SmartRouter Timing] relayInner starting",
+					utils.LogAttr("GUID", goroutineCtx),
+					utils.LogAttr("provider", providerPublicAddress),
+					utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+					utils.LogAttr("processingTimeout", processingTimeout),
+				)
+			}
 			relayLatency, errResponse, backoff := rpcss.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
+			if debugSmartRouterDetailedLatency {
+				utils.LavaFormatDebug("[SmartRouter Timing] relayInner completed",
+					utils.LogAttr("GUID", goroutineCtx),
+					utils.LogAttr("provider", providerPublicAddress),
+					utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+					utils.LogAttr("timeTaken", time.Since(relayInnerStart)),
+					utils.LogAttr("relayLatency", relayLatency),
+					utils.LogAttr("isError", errResponse != nil),
+				)
+			}
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
 					backOffDuration := 0 * time.Second
@@ -1233,7 +1333,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			// Skip block gap check for smart router since expectedBH is always MaxInt64
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
+			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
@@ -1364,6 +1464,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		}(providerPublicAddress, sessionInfo, localRelayData)
 	}
 	// finished setting up go routines, can return and wait for responses
+	if debugSmartRouterDetailedLatency {
+		utils.LavaFormatDebug("[SmartRouter Timing] sendRelayToProvider goroutines spawned",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(sendRelayToProviderStart)),
+			utils.LogAttr("numProviders", len(sessions)),
+		)
+	}
 	return nil
 }
 
@@ -1408,9 +1515,25 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 		}
 
 		relaySentTime := time.Now()
+		if debugSmartRouterDetailedLatency {
+			utils.LavaFormatDebug("[SmartRouter Timing] gRPC Relay call starting",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("provider", providerPublicAddress),
+				utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+			)
+		}
 		var responseHeader metadata.MD
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
+		if debugSmartRouterDetailedLatency {
+			utils.LavaFormatDebug("[SmartRouter Timing] gRPC Relay call completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("provider", providerPublicAddress),
+				utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+				utils.LogAttr("timeTaken", relayLatency),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 
 		// Decompress response if compressed
 		if reply != nil && reply.Data != nil {

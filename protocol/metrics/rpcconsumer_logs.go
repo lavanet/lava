@@ -179,7 +179,7 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
 			return nil
 		}
-		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err, "", "")
 
 		jsonResponse, err := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
@@ -192,12 +192,12 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 	return nil
 }
 
-func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, timeTaken time.Duration, err error) {
+func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, timeTaken time.Duration, err error, sessionId string, providerAddress string) {
 	if hasError && err != nil {
-		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}, {Key: "sessionId", Value: sessionId}, {Key: "provider", Value: providerAddress}}...)
 		return
 	}
-	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}, {Key: "sessionId", Value: sessionId}, {Key: "provider", Value: providerAddress}}...)
 }
 
 func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {

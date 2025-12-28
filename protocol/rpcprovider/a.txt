@@ -1,0 +1,240 @@
+2025-12-25 16:48:18	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "1.20136811s",
+  "isError": "false",
+  "time": 1766674098,
+  "message": "[Timing] TryRelay completed"
+}
+2025-12-25 16:48:18	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "278.67µs",
+  "totalTryRelayWithWrapper": "1.201355267s",
+  "time": 1766674098,
+  "message": "[Timing] SignRelayResponse completed"
+}
+2025-12-25 16:48:18	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "54.389µs",
+  "time": 1766674098,
+  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
+}
+2025-12-25 16:48:18	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "300.174079ms",
+  "time": 1766674097,
+  "message": "[Timing] trySetRelayReplyInCache completed"
+}
+2025-12-25 16:48:17	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "20.387µs",
+  "requestDataSize": "63",
+  "time": 1766674097,
+  "message": "[Timing] trySetRelayReplyInCache HashCacheRequest completed"
+}
+2025-12-25 16:48:17	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "7.097µs",
+  "replyDataSize": "45",
+  "isNodeError": "false",
+  "time": 1766674097,
+  "message": "[Timing] trySetRelayReplyInCache CheckResponseError completed"
+}
+2025-12-25 16:48:17	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "1.821µs",
+  "time": 1766674096,
+  "message": "[Timing] HandleHeaders completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "97.128931ms",
+  "isError": "false",
+  "time": 1766674096,
+  "message": "[Timing] sendRelayMessageToNode completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "97.032474ms",
+  "nodeReportedLatency": "95.538057ms",
+  "isError": "false",
+  "apiName": "eth_blockNumber",
+  "time": 1766674096,
+  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "retryAttempt": "0",
+  "latency": "95.538057ms",
+  "isError": "false",
+  "time": 1766674096,
+  "message": "[Timing] relaySender.SendNodeMsg returned"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "retryAttempt": "0",
+  "timeSinceStart": "92.615µs",
+  "time": 1766674096,
+  "message": "[Timing] calling relaySender.SendNodeMsg"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "15.682µs",
+  "time": 1766674096,
+  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "2.017004ms",
+  "cacheHit": "false",
+  "time": 1766674096,
+  "message": "[Timing] cache check completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "2.468µs",
+  "time": 1766674096,
+  "message": "[Timing] GetParametersForRelayDataReliability completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "2.955µs",
+  "time": 1766674096,
+  "message": "[Timing] TryRelayWithWrapper validation completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "waitTime": "2.351µs",
+  "time": 1766674096,
+  "message": "[Timing] resourceLimiter acquired, starting execution"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "debug",
+  "GUID": "4770440672174216215",
+  "timeTaken": "361.535µs",
+  "time": 1766674096,
+  "message": "[Timing] initRelay completed"
+}
+2025-12-25 16:48:16	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+{
+  "severity": "info",
+  "GUID": "4770440672174216215",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.path": "/",
+  "request.SessionId": "2674724951010997204",
+  "request.relayNumber": "3",
+  "request.cu": "50",
+  "relay_timeout": "29.999855504s",
+  "relay addon": "",
+  "relay extensions": "",
+  "seenBlock": "72896035",
+  "requestBlock": "-2",
+  "time": 1766674096,
+  "message": "Got relay request from consumer"
+}

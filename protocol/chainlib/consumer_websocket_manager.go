@@ -365,7 +365,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 			websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
 
-			logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
+			logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil, "", "")
 		}
 	}
 }

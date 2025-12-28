@@ -39,7 +39,10 @@ func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.Re
 	}
 }
 
+const debugDetailedLatencyPSM = true // Enable detailed timing logs for provider state machine
+
 func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, time.Duration, error) {
+	sendNodeMsgStart := time.Now()
 	hash, err := chainMsg.GetRawRequestHash()
 	requestHashString := ""
 	if err != nil {
@@ -62,9 +65,24 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			err = nil // No error in test mode
 		} else {
 			// Original behavior - send to real node
+			if debugDetailedLatencyPSM {
+				utils.LavaFormatDebug("[Timing] calling relaySender.SendNodeMsg",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("retryAttempt", retryAttempt),
+					utils.LogAttr("timeSinceStart", time.Since(sendNodeMsgStart)),
+				)
+			}
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		}
 		latency := time.Since(sendTime)
+		if debugDetailedLatencyPSM {
+			utils.LavaFormatDebug("[Timing] relaySender.SendNodeMsg returned",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("retryAttempt", retryAttempt),
+				utils.LogAttr("latency", latency),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		if err != nil {
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}

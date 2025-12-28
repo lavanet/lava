@@ -330,8 +330,15 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 
 			// Set status to internal error\
 			if relayResult.GetStatusCode() != 0 {
@@ -346,8 +353,15 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
+		// Extract session info for logging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil, sessionId, providerAddress)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
@@ -410,8 +424,15 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -429,8 +450,15 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
+		// Extract session info for logging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil, sessionId, providerAddress)
 
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))

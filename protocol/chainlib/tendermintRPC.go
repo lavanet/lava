@@ -500,8 +500,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -515,8 +522,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
+		// Extract session info for logging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), nil, sessionId, providerAddress)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
@@ -565,8 +579,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", fiberCtx.Request().URI().String(), "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", fiberCtx.Request().URI().String(), "", errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -586,8 +607,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		response := string(reply.Data)
+		// Extract session info for logging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", response, msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", response, msgSeed, time.Since(startTime), nil, sessionId, providerAddress)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}

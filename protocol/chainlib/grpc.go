@@ -312,10 +312,24 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
-			apil.logger.LogRequestAndResponse("grpc in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
+			apil.logger.LogRequestAndResponse("grpc in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf("%s", errMasking))
 		}
-		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
+		// Extract session info for logging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
+		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil, sessionId, providerAddress)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, apil.endpoint.ChainID, apiInterface)
 		apil.logger.SetEndToEndLatency(apil.endpoint.ChainID, apiInterface, time.Since(startTime))
 

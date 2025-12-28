@@ -42,8 +42,9 @@ import (
 )
 
 const (
-	debugConsistency = false
-	debugLatency     = false
+	debugConsistency     = false
+	debugLatency         = false
+	debugDetailedLatency = true // Enable detailed timing logs for debugging slow requests
 )
 
 var (
@@ -295,10 +296,17 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	var relaySession *lavasession.SingleProviderSession
 	var consumerAddress sdk.AccAddress
 	var chainMessage chainlib.ChainMessage
+	initRelayStart := time.Now()
 	relaySession, consumerAddress, chainMessage, err = rpcps.initRelay(ctx, request)
 	if err != nil {
 		utils.LavaFormatDebug("got error from init relay", utils.LogAttr("error", err))
 		return nil, rpcps.handleRelayErrorStatus(err)
+	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] initRelay completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(initRelayStart)),
+		)
 	}
 
 	// Recover from panics to ensure session is unlocked
@@ -358,9 +366,17 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Wrap relay execution in resource limiter
 	var executionStarted bool
+	resourceLimiterStart := time.Now()
 	err = rpcps.resourceLimiter.Acquire(ctx, apiComputeUnits, apiName, func() error {
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] resourceLimiter acquired, starting execution",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("waitTime", time.Since(resourceLimiterStart)),
+			)
+		}
 		executionStarted = true
 		var execErr error
+		tryRelayStart := time.Now()
 		if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 			reply, execErr = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
 			// For unsubscribe, we don't have a replyWrapper, so set to nil
@@ -368,6 +384,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		} else {
 			// Try sending relay
 			reply, replyWrapper, execErr = rpcps.TryRelayWithWrapper(ctx, request, consumerAddress, chainMessage)
+		}
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] TryRelay completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(tryRelayStart)),
+				utils.LogAttr("isError", execErr != nil),
+			)
 		}
 
 		isErroredRelay = execErr != nil || common.ContextOutOfTime(ctx)
@@ -1019,6 +1042,8 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 }
 
 func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, *chainlib.RelayReplyWrapper, error) {
+	tryRelayWrapperStart := time.Now()
+
 	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
 	if errV != nil {
 		return nil, nil, errV
@@ -1029,6 +1054,13 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		return nil, nil, errV
 	}
 
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] TryRelayWithWrapper validation completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(tryRelayWrapperStart)),
+		)
+	}
+
 	var latestBlock int64
 	var requestedBlockHash []byte
 	var requestedHashes []*chaintracker.BlockStore
@@ -1037,15 +1069,30 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	finalized := false
 	updatedChainMessage := false
 
+	chainParserCallsStart := time.Now()
 	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
 	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] chainParser calls (DataReliabilityParams, ChainBlockStats, GetRelayTimeout) completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(chainParserCallsStart)),
+			utils.LogAttr("dataReliabilityEnabled", dataReliabilityEnabled),
+		)
+	}
 
+	dataReliabilityStart := time.Now()
 	if dataReliabilityEnabled {
 		var err error
 		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
 			return nil, nil, err
+		}
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] GetParametersForRelayDataReliability completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(dataReliabilityStart)),
+			)
 		}
 	}
 
@@ -1055,23 +1102,55 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
 
+	cacheCheckStart := time.Now()
+	cacheHit := false
 	if requestedBlockHash != nil || finalized { // try get reply from cache
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
+		cacheHit = reply != nil && err == nil
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] cache check completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(cacheCheckStart)),
+				utils.LogAttr("cacheHit", cacheHit),
+			)
+		}
 	}
 
 	if err != nil || reply == nil {
 		// we need to send relay, cache miss or invalid
+		sendToNodeStart := time.Now()
 		replyWrapper, err = rpcps.sendRelayMessageToNode(ctx, request, chainMsg, consumerAddr)
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] sendRelayMessageToNode completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(sendToNodeStart)),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		if err != nil {
 			return nil, nil, err
 		}
 
 		reply = replyWrapper.RelayReply
 
+		handleHeadersStart := time.Now()
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] HandleHeaders completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(handleHeadersStart)),
+			)
+		}
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if rpcps.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
+			cacheSetStart := time.Now()
 			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
+			if debugDetailedLatency {
+				utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache completed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("timeTaken", time.Since(cacheSetStart)),
+				)
+			}
 		}
 	} else if len(request.RelayData.Extensions) > 0 {
 		// if cached, Add Archive trailer if requested by the consumer.
@@ -1079,16 +1158,31 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	}
 
 	if dataReliabilityEnabled {
+		buildHashesStart := time.Now()
 		err := rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return nil, nil, err
 		}
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] BuildRelayFinalizedBlockHashes completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(buildHashesStart)),
+			)
+		}
 	}
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
+	signingStart := time.Now()
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, nil, err
+	}
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] SignRelayResponse completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(signingStart)),
+			utils.LogAttr("totalTryRelayWithWrapper", time.Since(tryRelayWrapperStart)),
+		)
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
@@ -1134,20 +1228,46 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 	cache := rpcps.cache
 	reply := replyWrapper.RelayReply
 
+	checkErrorStart := time.Now()
 	isNodeError, _ := chainMsg.CheckResponseError(reply.Data, replyWrapper.StatusCode)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache CheckResponseError completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(checkErrorStart)),
+			utils.LogAttr("replyDataSize", len(reply.Data)),
+			utils.LogAttr("isNodeError", isNodeError),
+		)
+	}
 	// in case the error is a node error we don't want to cache
 	if !isNodeError {
 		// Snapshot values that will be modified after this point
-		requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
+		requestedBlock := request.RelayData.RequestBlock // get requested block before removing it from the data
+		hashStart := time.Now()
 		hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache HashCacheRequest completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(hashStart)),
+				utils.LogAttr("requestDataSize", len(request.RelayData.Data)),
+			)
+		}
 
 		// reply.Data is NEVER modified after this point - verified by code review
 		// Only Sig, SigBlocks, LatestBlock, and Metadata are modified later (not needed in cache)
+		cacheReplyStart := time.Now()
 		cacheReply := &pairingtypes.RelayReply{
 			Data:        reply.Data,
 			LatestBlock: reply.LatestBlock,
 		}
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache cacheReply struct created",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(cacheReplyStart)),
+				utils.LogAttr("replyDataSize", len(reply.Data)),
+			)
+		}
 
+		goroutineSpawnStart := time.Now()
 		go func() {
 			if hashErr != nil {
 				utils.LavaFormatError("Failed hashing cache request", nil, utils.LogAttr("hashErr", hashErr))
@@ -1172,10 +1292,17 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 			}
 		}()
+		if debugDetailedLatency {
+			utils.LavaFormatDebug("[Timing] trySetRelayReplyInCache goroutine spawned",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(goroutineSpawnStart)),
+			)
+		}
 	}
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
+	sendRelayStart := time.Now()
 	if debugLatency {
 		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
@@ -1204,8 +1331,25 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 		ctx = context.WithValue(ctx, TestModeContextKey{}, true)
 	}
 
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] sendRelayMessageToNode pre-send setup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(sendRelayStart)),
+		)
+	}
+
 	// use the provider state machine to send the messages
+	nodeCallStart := time.Now()
 	relayReplayWrapper, latency, err := rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
+	if debugDetailedLatency {
+		utils.LavaFormatDebug("[Timing] providerStateMachine.SendNodeMessage completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(nodeCallStart)),
+			utils.LogAttr("nodeReportedLatency", latency),
+			utils.LogAttr("isError", err != nil),
+			utils.LogAttr("apiName", chainMsg.GetApi().Name),
+		)
+	}
 	if latency.Milliseconds() != 0 { // if node error empty time is returned
 		go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
 	}

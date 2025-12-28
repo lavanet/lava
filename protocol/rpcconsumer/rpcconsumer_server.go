@@ -58,8 +58,11 @@ const (
 	SubscriptionCleanupInterval            = 1 * time.Minute
 	PairingInitializationTimeout           = 30 * time.Second
 	PairingCheckInterval                   = 1 * time.Second
-	BlockGapWarningThreshold               = 1000
-	RelayRetryBackoffDuration              = 2 * time.Millisecond
+
+	// Debug flag for detailed timing logs
+	debugConsumerDetailedLatency = true
+	BlockGapWarningThreshold     = 1000
+	RelayRetryBackoffDuration    = 2 * time.Millisecond
 )
 
 // NoResponseTimeout is imported from protocolerrors to avoid duplicate error code registration
@@ -379,12 +382,27 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
+	sendRelayStart := time.Now()
+	parseRelayStart := time.Now()
 	protocolMessage, err := rpccs.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	if err != nil {
 		return nil, err
 	}
+	if debugConsumerDetailedLatency {
+		utils.LavaFormatDebug("[Consumer Timing] ParseRelay completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(parseRelayStart)),
+		)
+	}
 
-	return rpccs.SendParsedRelay(ctx, analytics, protocolMessage)
+	result, err := rpccs.SendParsedRelay(ctx, analytics, protocolMessage)
+	if debugConsumerDetailedLatency {
+		utils.LavaFormatDebug("[Consumer Timing] SendRelay total completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(sendRelayStart)),
+		)
+	}
+	return result, err
 }
 
 func (rpccs *RPCConsumerServer) ParseRelay(
@@ -437,7 +455,16 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	// asynchronously sends data reliability if necessary
 
 	relaySentTime := time.Now()
+	processRelaySendStart := time.Now()
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, analytics)
+	if debugConsumerDetailedLatency {
+		utils.LavaFormatDebug("[Consumer Timing] ProcessRelaySend completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(processRelaySendStart)),
+			utils.LogAttr("hasResults", relayProcessor != nil && relayProcessor.HasResults()),
+			utils.LogAttr("isError", err != nil),
+		)
+	}
 	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
@@ -460,7 +487,15 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
+	processingResultStart := time.Now()
 	returnedResult, err := relayProcessor.ProcessingResult()
+	if debugConsumerDetailedLatency {
+		utils.LavaFormatDebug("[Consumer Timing] ProcessingResult completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(processingResultStart)),
+			utils.LogAttr("isError", err != nil),
+		)
+	}
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
 		// Check if this is an unsupported method error from the error message
@@ -567,6 +602,7 @@ func (rpccs *RPCConsumerServer) cacheUnsupportedMethodErrorResponse(ctx context.
 }
 
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
+	processRelaySendStart := time.Now()
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -597,17 +633,44 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		rpccs.consumerSessionManager.GetQoSManager(),
 	)
 
+	if debugConsumerDetailedLatency {
+		utils.LavaFormatDebug("[Consumer Timing] ProcessRelaySend setup completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(processRelaySendStart)),
+		)
+	}
+
 	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 	if err != nil {
 		return relayProcessor, err
 	}
+	taskNumber := 0
 	for task := range relayTaskChannel {
 		if task.IsDone() {
+			if debugConsumerDetailedLatency {
+				utils.LavaFormatDebug("[Consumer Timing] ProcessRelaySend task loop completed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("totalTime", time.Since(processRelaySendStart)),
+					utils.LogAttr("taskNumber", taskNumber),
+					utils.LogAttr("isDone", true),
+				)
+			}
 			return relayProcessor, task.Err
 		}
+		taskStart := time.Now()
 		utils.LavaFormatTrace("[RPCConsumerServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
 		err := rpccs.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] sendRelayToProvider completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("timeTaken", time.Since(taskStart)),
+				utils.LogAttr("taskNumber", taskNumber),
+				utils.LogAttr("numOfProviders", task.NumOfProviders),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 		relayProcessor.UpdateBatch(err)
+		taskNumber++
 	}
 
 	// shouldn't happen.
@@ -903,6 +966,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
+				cacheLookupStart := time.Now()
 				var cacheReply *pairingtypes.CacheRelayReply
 				hashKey, outputFormatter, err := protocolMessage.HashCacheRequest(chainId)
 				if err != nil {
@@ -988,6 +1052,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
 
+					if debugConsumerDetailedLatency {
+						utils.LavaFormatDebug("[Consumer Timing] cache lookup completed",
+							utils.LogAttr("GUID", ctx),
+							utils.LogAttr("timeTaken", time.Since(cacheLookupStart)),
+							utils.LogAttr("cacheHit", cacheError == nil && reply != nil),
+							utils.LogAttr("cacheError", cacheError),
+						)
+					}
 					// handle cache reply
 					if cacheError == nil && reply != nil {
 						// Info was fetched from cache, so we don't need to change the state
@@ -1059,6 +1131,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
+	getSessionsStart := time.Now()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
@@ -1078,6 +1151,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		} else {
 			return err
 		}
+	}
+	if debugConsumerDetailedLatency {
+		sessionAddresses := make([]string, 0, len(sessions))
+		for addr := range sessions {
+			sessionAddresses = append(sessionAddresses, addr)
+		}
+		utils.LavaFormatDebug("[Consumer Timing] GetSessions completed",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("timeTaken", time.Since(getSessionsStart)),
+			utils.LogAttr("numSessions", len(sessions)),
+			utils.LogAttr("providers", sessionAddresses),
+		)
 	}
 
 	// For stateful APIs, capture all providers that we're sending the relay to
@@ -1225,7 +1310,26 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 			// send relay
+			relayInnerStart := time.Now()
+			if debugConsumerDetailedLatency {
+				utils.LavaFormatDebug("[Consumer Timing] relayInner starting",
+					utils.LogAttr("GUID", goroutineCtx),
+					utils.LogAttr("provider", providerPublicAddress),
+					utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+					utils.LogAttr("processingTimeout", processingTimeout),
+				)
+			}
 			relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
+			if debugConsumerDetailedLatency {
+				utils.LavaFormatDebug("[Consumer Timing] relayInner completed",
+					utils.LogAttr("GUID", goroutineCtx),
+					utils.LogAttr("provider", providerPublicAddress),
+					utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+					utils.LogAttr("timeTaken", time.Since(relayInnerStart)),
+					utils.LogAttr("relayLatency", relayLatency),
+					utils.LogAttr("isError", errResponse != nil),
+				)
+			}
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
 					backOffDuration := 0 * time.Second
@@ -1440,9 +1544,25 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 
 		relaySentTime := time.Now()
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] gRPC Relay call starting",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("provider", providerPublicAddress),
+				utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+			)
+		}
 		var responseHeader metadata.MD
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
+		if debugConsumerDetailedLatency {
+			utils.LavaFormatDebug("[Consumer Timing] gRPC Relay call completed",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("provider", providerPublicAddress),
+				utils.LogAttr("sessionId", singleConsumerSession.SessionId),
+				utils.LogAttr("timeTaken", relayLatency),
+				utils.LogAttr("isError", err != nil),
+			)
+		}
 
 		// Check if response is compressed and decompress if needed
 		appLevelCompressed := false

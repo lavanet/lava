@@ -505,7 +505,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
+			// Extract session info for error logging
+			errSessionId := ""
+			errProviderAddress := ""
+			if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+				errSessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+				errProviderAddress = relayResult.ProviderInfo.ProviderAddress
+			}
+			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err, errSessionId, errProviderAddress)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -529,7 +536,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.Attribute{Key: "dapp_id", Value: dappID},
 		)
 
-		// Log request and response
+		// Log request and response with session ID for debugging
+		sessionId := ""
+		providerAddress := ""
+		if relayResult != nil && relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			sessionId = fmt.Sprintf("%d", relayResult.Request.RelaySession.SessionId)
+			providerAddress = relayResult.ProviderInfo.ProviderAddress
+		}
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
@@ -539,6 +552,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			msgSeed,
 			time.Since(startTime),
 			nil,
+			sessionId,
+			providerAddress,
 		)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
