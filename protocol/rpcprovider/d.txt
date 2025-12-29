@@ -1,0 +1,2556 @@
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.SessionId": "1695973575645834935",
+  "request.relayNumber": "2",
+  "request.cu": "50",
+  "relay_timeout": "59.907391912s",
+  "timeTaken": "91.095458ms",
+  "consumerSupportsCompression": "true",
+  "time": 1766917698,
+  "message": "Done handling relay request from consumer"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "90.097401ms",
+  "isError": "false",
+  "time": 1766917698,
+  "message": "[Timing] TryRelay completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "386.084µs",
+  "totalTryRelayWithWrapper": "90.071894ms",
+  "time": 1766917698,
+  "message": "[Timing] SignRelayResponse completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "1695973575645834935",
+  "timeTaken": "491.511169ms",
+  "relayLatency": "99.965242ms",
+  "isError": "false",
+  "time": 1766917698,
+  "message": "[SmartRouter Timing] relayInner completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "1695973575645834935",
+  "timeTaken": "99.965242ms",
+  "isError": "false",
+  "time": 1766917698,
+  "message": "[SmartRouter Timing] gRPC Relay call completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "16.288µs",
+  "time": 1766917698,
+  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "119.822µs",
+  "time": 1766917698,
+  "message": "[Timing] trySetRelayReplyInCache completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "4.599µs",
+  "time": 1766917698,
+  "message": "[Timing] trySetRelayReplyInCache goroutine spawned"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "357ns",
+  "replyDataSize": "45",
+  "time": 1766917698,
+  "message": "[Timing] trySetRelayReplyInCache cacheReply struct created"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "41.259µs",
+  "requestDataSize": "63",
+  "time": 1766917698,
+  "message": "[Timing] trySetRelayReplyInCache HashCacheRequest completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.359µs",
+  "replyDataSize": "45",
+  "isNodeError": "false",
+  "time": 1766917698,
+  "message": "[Timing] trySetRelayReplyInCache CheckResponseError completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.551µs",
+  "time": 1766917698,
+  "message": "[Timing] HandleHeaders completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "86.014507ms",
+  "isError": "false",
+  "time": 1766917698,
+  "message": "[Timing] sendRelayMessageToNode completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "85.968338ms",
+  "nodeReportedLatency": "85.768365ms",
+  "isError": "false",
+  "apiName": "eth_blockNumber",
+  "time": 1766917698,
+  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "latency": "85.768365ms",
+  "isError": "false",
+  "time": 1766917698,
+  "message": "[Timing] relaySender.SendNodeMsg returned"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "timeSinceStart": "95.637µs",
+  "time": 1766917698,
+  "message": "[Timing] calling relaySender.SendNodeMsg"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "15.235µs",
+  "time": 1766917698,
+  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.41914ms",
+  "cacheHit": "false",
+  "time": 1766917698,
+  "message": "[Timing] cache check completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.952µs",
+  "time": 1766917698,
+  "message": "[Timing] GetParametersForRelayDataReliability completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "900ns",
+  "dataReliabilityEnabled": "true",
+  "time": 1766917698,
+  "message": "[Timing] chainParser calls (DataReliabilityParams, ChainBlockStats, GetRelayTimeout) completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.744µs",
+  "time": 1766917698,
+  "message": "[Timing] TryRelayWithWrapper validation completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "waitTime": "3.081µs",
+  "time": 1766917698,
+  "message": "[Timing] resourceLimiter acquired, starting execution"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "496.748µs",
+  "time": 1766917698,
+  "message": "[Timing] initRelay completed"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.path": "/",
+  "request.SessionId": "1695973575645834935",
+  "request.relayNumber": "2",
+  "request.cu": "50",
+  "relay_timeout": "59.99848743s",
+  "relay addon": "",
+  "relay extensions": "archive",
+  "seenBlock": "73220728",
+  "requestBlock": "-2",
+  "time": 1766917698,
+  "message": "Got relay request from consumer"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "1695973575645834935",
+  "time": 1766917698,
+  "message": "[SmartRouter Timing] gRPC Relay call starting"
+}
+2025-12-28 12:28:18	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "1695973575645834935",
+  "processingTimeout": "1m0s",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] relayInner starting"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "31.707281194s",
+  "request": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+  "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x45d4279\"}",
+  "method": "POST",
+  "path": "http://bsc-mainnet-jsonrpc.hypernative.lavapro.xyz/",
+  "HasError": "false",
+  "sessionId": "6228102011421658069",
+  "provider": "chainstack",
+  "time": 1766917697,
+  "message": "jsonrpc http"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "29.809062957s",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] SendParsedRelay total completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "10.197µs",
+  "isError": "false",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] ProcessingResult completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "29.809018875s",
+  "hasResults": "true",
+  "isError": "false",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] ProcessRelaySend completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "totalTime": "29.809004324s",
+  "taskNumber": "4",
+  "isDone": "true",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] ProcessRelaySend task loop completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "16.009293473s",
+  "taskNumber": "3",
+  "numOfProviders": "1",
+  "isError": "false",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] sendRelayToProvider completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "16.009279807s",
+  "numProviders": "1",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] sendRelayToProvider goroutines spawned"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "15.511076346s",
+  "numSessions": "1",
+  "providers": "blockpi",
+  "time": 1766917697,
+  "message": "[SmartRouter Timing] GetSessions completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "15.511061654s",
+  "numSessions": "1",
+  "time": 1766917697,
+  "message": "[GetSessions Timing] GetSessions total completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.498µs",
+  "time": 1766917697,
+  "message": "[GetSessions Timing] AddUsed completed"
+}
+2025-12-28 12:28:17	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "10.994526844s",
+  "hasError": "false",
+  "time": 1766917697,
+  "message": "[GetSessions Timing] GetConsumerSessionInstanceFromEndpoint completed"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "210.313135ms",
+  "connected": "true",
+  "hasError": "false",
+  "time": 1766917686,
+  "message": "[GetSessions Timing] fetchEndpointConnection completed"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "210.304029ms",
+  "numEndpoints": "1",
+  "time": 1766917686,
+  "message": "[GetSessions Timing] fetchEndpointConnectionFromConsumerSessionWithProvider fast path success"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "endpoint": "bsc-mainnet-blockpi-provider.lava-infra.svc.cluster.local:3000",
+  "time": 1766917686,
+  "message": "[GetSessions Timing] reusing existing connection (RLock fast path)"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "125.152514ms",
+  "time": 1766917686,
+  "message": "[GetSessions Timing] cswp.Lock.RLock acquired in fetchEndpointConnection (fast path)"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.194986792s",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917686,
+  "message": "[GetSessions Timing] getSessionWithProviderOrError completed"
+}
+2025-12-28 12:28:06	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "2.800461678s",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917685,
+  "message": "[GetSessions Timing] getValidConsumerSessionsWithProvider completed"
+}
+2025-12-28 12:28:04	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.500497634s",
+  "numAddresses": "1",
+  "hasError": "false",
+  "time": 1766917684,
+  "message": "[GetSessions Timing] getValidProviderAddresses completed"
+}
+2025-12-28 12:28:04	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "validAddresses": "blockpi",
+  "ignoredProvidersList": "map[]",
+  "chosenProviders": "blockpi",
+  "addon": "",
+  "extensions": "archive",
+  "stateful": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917684,
+  "message": "Choosing providers"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "157ns",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] csm.lock.RLock acquired"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "707.984698ms",
+  "numberOfResets": "3",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] validatePairingListNotEmpty completed"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "addon": "",
+  "extensions": "archive",
+  "validAddressesCount": "1",
+  "validAddresses": "blockpi",
+  "currentlyBlockedCount": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917682,
+  "message": "🔍 VALIDATING PROVIDERS"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "388.986701ms",
+  "validAddressesCount": "1",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] cacheAddonAddresses completed"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "13.564µs",
+  "validAddressesCount": "1",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] cacheAddonAddresses cache hit (RLock path)"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "302ns",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] cacheAddonAddresses RLock acquired"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "110ns",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] atomicReadNumberOfResets completed"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "6.965µs",
+  "hasError": "false",
+  "time": 1766917682,
+  "message": "[GetSessions Timing] TryLockSelection completed"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "498.094324ms",
+  "cacheHit": "false",
+  "time": 1766917682,
+  "message": "[SmartRouter Timing] cache lookup completed"
+}
+2025-12-28 12:28:02	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKeyHex": "116761dcbece008131521d0a8c76da128cf26bcaac1ed8b23be0dbf1f4229d10",
+  "actualLookupCacheKeyHex": "116761dcbece008131521d0a8c76da128cf26bcaac1ed8b23be0dbf1f4229d1079425d0400000000",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220729",
+  "seenBlock": "73220728",
+  "cacheError": "rpc error: code = DeadlineExceeded desc = context deadline exceeded",
+  "replyFound": "false",
+  "time": 1766917681,
+  "message": "Cache lookup result"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220729",
+  "seenBlock": "73220728",
+  "lookupFinalized": "false",
+  "time": 1766917681,
+  "message": "Cache lookup configuration"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKey": "116761dcbece008131521d0a8c76da128cf26bcaac1ed8b23be0dbf1f4229d10",
+  "apiUrl": "/",
+  "time": 1766917681,
+  "message": "Cache lookup hash generated"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "601959333939285275",
+  "timeTaken": "96.560617ms",
+  "relayLatency": "96.30391ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] relayInner completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "601959333939285275",
+  "timeTaken": "96.30391ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] gRPC Relay call completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.SessionId": "601959333939285275",
+  "request.relayNumber": "3",
+  "request.cu": "10",
+  "relay_timeout": "29.944094683s",
+  "timeTaken": "54.154435ms",
+  "consumerSupportsCompression": "true",
+  "time": 1766917681,
+  "message": "Done handling relay request from consumer"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "53.506525ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] TryRelay completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "510.457µs",
+  "totalTryRelayWithWrapper": "53.480816ms",
+  "time": 1766917681,
+  "message": "[Timing] SignRelayResponse completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "14.038µs",
+  "time": 1766917681,
+  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "103.124µs",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.372µs",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache goroutine spawned"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "281ns",
+  "replyDataSize": "45",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache cacheReply struct created"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "50.998µs",
+  "requestDataSize": "63",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache HashCacheRequest completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.316µs",
+  "replyDataSize": "45",
+  "isNodeError": "false",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache CheckResponseError completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.693µs",
+  "time": 1766917681,
+  "message": "[Timing] HandleHeaders completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "49.362304ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] sendRelayMessageToNode completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "49.307333ms",
+  "nodeReportedLatency": "49.185302ms",
+  "isError": "false",
+  "apiName": "eth_blockNumber",
+  "time": 1766917681,
+  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "latency": "49.185302ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] relaySender.SendNodeMsg returned"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "timeSinceStart": "69.663µs",
+  "time": 1766917681,
+  "message": "[Timing] calling relaySender.SendNodeMsg"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "15.485µs",
+  "time": 1766917681,
+  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.301479ms",
+  "cacheHit": "false",
+  "time": 1766917681,
+  "message": "[Timing] cache check completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "4.069µs",
+  "time": 1766917681,
+  "message": "[Timing] GetParametersForRelayDataReliability completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.022µs",
+  "dataReliabilityEnabled": "true",
+  "time": 1766917681,
+  "message": "[Timing] chainParser calls (DataReliabilityParams, ChainBlockStats, GetRelayTimeout) completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "4.07µs",
+  "time": 1766917681,
+  "message": "[Timing] TryRelayWithWrapper validation completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "waitTime": "2.84µs",
+  "time": 1766917681,
+  "message": "[Timing] resourceLimiter acquired, starting execution"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "441.663µs",
+  "time": 1766917681,
+  "message": "[Timing] initRelay completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-blockpi-provider
+provider
+lava-infra/bsc-mainnet-blockpi-provider
+bsc-mainnet-blockpi-provider-67576dd987-j9rh5
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.path": "/",
+  "request.SessionId": "601959333939285275",
+  "request.relayNumber": "3",
+  "request.cu": "10",
+  "relay_timeout": "29.998250014s",
+  "relay addon": "",
+  "relay extensions": "",
+  "seenBlock": "73220708",
+  "requestBlock": "-2",
+  "time": 1766917681,
+  "message": "Got relay request from consumer"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "601959333939285275",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] gRPC Relay call starting"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "sessionId": "601959333939285275",
+  "processingTimeout": "30s",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] relayInner starting"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "cacheActive": "true",
+  "reqBlock": "-2",
+  "forceCacheRefresh": "false",
+  "quorumEnabled": "false",
+  "time": 1766917681,
+  "message": "Cache lookup attempt"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "689.81357ms",
+  "taskNumber": "2",
+  "numOfProviders": "1",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] sendRelayToProvider completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "689.741124ms",
+  "numProviders": "1",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] sendRelayToProvider goroutines spawned"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "591.257178ms",
+  "numSessions": "1",
+  "providers": "blockpi",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] GetSessions completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "591.245329ms",
+  "numSessions": "1",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] GetSessions total completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.231µs",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] AddUsed completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "8.565937ms",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] GetConsumerSessionInstanceFromEndpoint completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.647775ms",
+  "connected": "true",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] fetchEndpointConnection completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.639739ms",
+  "numEndpoints": "1",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] fetchEndpointConnectionFromConsumerSessionWithProvider fast path success"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "endpoint": "bsc-mainnet-blockpi-provider.lava-infra.svc.cluster.local:3000",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] reusing existing connection (RLock fast path)"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.625165ms",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] cswp.Lock.RLock acquired in fetchEndpointConnection (fast path)"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "requiredSuccesses": "1",
+  "selection": "0",
+  "time": 1766917681,
+  "message": "[RelayProcessor] checkEndProcessing - RequiredResults"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "resultsCount": "1",
+  "requiredSuccesses": "1",
+  "GUID": "15078285496289619775",
+  "time": 1766917681,
+  "message": "Reached RequiredResults"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "sessionId": "6228102011421658069",
+  "timeTaken": "295.805951ms",
+  "relayLatency": "195.187403ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] relayInner completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "sessionId": "6228102011421658069",
+  "timeTaken": "195.187403ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] gRPC Relay call completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "94.848358ms",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] getSessionWithProviderOrError completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "94.825862ms",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] getValidConsumerSessionsWithProvider completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.SessionId": "6228102011421658069",
+  "request.relayNumber": "1",
+  "request.cu": "10",
+  "relay_timeout": "29.810629991s",
+  "timeTaken": "174.282838ms",
+  "consumerSupportsCompression": "true",
+  "time": 1766917681,
+  "message": "Done handling relay request from consumer"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "171.866825ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] TryRelay completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "573.278µs",
+  "totalTryRelayWithWrapper": "75.206844ms",
+  "time": 1766917681,
+  "message": "[Timing] SignRelayResponse completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "19.093µs",
+  "time": 1766917681,
+  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "129.331µs",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "7.399µs",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache goroutine spawned"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "740ns",
+  "replyDataSize": "45",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache cacheReply struct created"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "27.684µs",
+  "requestDataSize": "63",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache HashCacheRequest completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "2.189µs",
+  "replyDataSize": "45",
+  "isNodeError": "false",
+  "time": 1766917681,
+  "message": "[Timing] trySetRelayReplyInCache CheckResponseError completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.566µs",
+  "time": 1766917681,
+  "message": "[Timing] HandleHeaders completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "73.451703ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] sendRelayMessageToNode completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "73.398351ms",
+  "nodeReportedLatency": "72.949897ms",
+  "isError": "false",
+  "apiName": "eth_blockNumber",
+  "time": 1766917681,
+  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "90.895µs",
+  "numAddresses": "1",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] getValidProviderAddresses completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "latency": "72.949897ms",
+  "isError": "false",
+  "time": 1766917681,
+  "message": "[Timing] relaySender.SendNodeMsg returned"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "validAddresses": "blockpi",
+  "ignoredProvidersList": "map[chainstack:{}]",
+  "chosenProviders": "blockpi",
+  "addon": "",
+  "extensions": "",
+  "stateful": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917681,
+  "message": "Choosing providers"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "100ns",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] csm.lock.RLock acquired"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "4.822411ms",
+  "numberOfResets": "3",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] validatePairingListNotEmpty completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "addon": "",
+  "extensions": "",
+  "validAddressesCount": "1",
+  "validAddresses": "blockpi",
+  "currentlyBlockedCount": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917681,
+  "message": "🔍 VALIDATING PROVIDERS"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "24.45µs",
+  "validAddressesCount": "1",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] cacheAddonAddresses completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "13.155µs",
+  "validAddressesCount": "1",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] cacheAddonAddresses cache hit (RLock path)"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "282ns",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] cacheAddonAddresses RLock acquired"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "97ns",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] atomicReadNumberOfResets completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "5.257µs",
+  "hasError": "false",
+  "time": 1766917681,
+  "message": "[GetSessions Timing] TryLockSelection completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "retryAttempt": "0",
+  "timeSinceStart": "61.726µs",
+  "time": 1766917681,
+  "message": "[Timing] calling relaySender.SendNodeMsg"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "12.733µs",
+  "time": 1766917681,
+  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "905.855µs",
+  "cacheHit": "false",
+  "time": 1766917681,
+  "message": "[Timing] cache check completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "6.049µs",
+  "time": 1766917681,
+  "message": "[Timing] GetParametersForRelayDataReliability completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.366µs",
+  "dataReliabilityEnabled": "true",
+  "time": 1766917681,
+  "message": "[Timing] chainParser calls (DataReliabilityParams, ChainBlockStats, GetRelayTimeout) completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "5.721µs",
+  "time": 1766917681,
+  "message": "[Timing] TryRelayWithWrapper validation completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "waitTime": "4.555µs",
+  "time": 1766917681,
+  "message": "[Timing] resourceLimiter acquired, starting execution"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "383.021µs",
+  "time": 1766917681,
+  "message": "[Timing] initRelay completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-chainstack-provider
+provider
+lava-infra/bsc-mainnet-chainstack-provider
+bsc-mainnet-chainstack-provider-745dc9cbf-f8w74
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.path": "/",
+  "request.SessionId": "6228102011421658069",
+  "request.relayNumber": "1",
+  "request.cu": "10",
+  "relay_timeout": "29.98491304s",
+  "relay addon": "",
+  "relay extensions": "",
+  "seenBlock": "73220708",
+  "requestBlock": "-2",
+  "time": 1766917681,
+  "message": "Got relay request from consumer"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "98.09401ms",
+  "cacheHit": "true",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] cache lookup completed"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKeyHex": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b7",
+  "actualLookupCacheKeyHex": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b778425d0400000000",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220728",
+  "seenBlock": "73220708",
+  "cacheError": "",
+  "replyFound": "false",
+  "time": 1766917680,
+  "message": "Cache lookup result"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "sessionId": "6228102011421658069",
+  "time": 1766917681,
+  "message": "[SmartRouter Timing] gRPC Relay call starting"
+}
+2025-12-28 12:28:01	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "sessionId": "6228102011421658069",
+  "processingTimeout": "30s",
+  "time": 1766917680,
+  "message": "[SmartRouter Timing] relayInner starting"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "1",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766917680,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "174.149µs",
+  "time": 1766917680,
+  "message": "[SmartRouter Timing] ParseRelay completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220728",
+  "seenBlock": "73220708",
+  "lookupFinalized": "false",
+  "time": 1766917680,
+  "message": "Cache lookup configuration"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKey": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b7",
+  "apiUrl": "/",
+  "time": 1766917680,
+  "message": "Cache lookup hash generated"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "cacheActive": "true",
+  "reqBlock": "-2",
+  "forceCacheRefresh": "false",
+  "quorumEnabled": "false",
+  "time": 1766917680,
+  "message": "Cache lookup attempt"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "13.109775768s",
+  "taskNumber": "1",
+  "numOfProviders": "1",
+  "isError": "false",
+  "time": 1766917680,
+  "message": "[SmartRouter Timing] sendRelayToProvider completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "13.109756634s",
+  "numProviders": "1",
+  "time": 1766917680,
+  "message": "[SmartRouter Timing] sendRelayToProvider goroutines spawned"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "11.202965118s",
+  "numSessions": "1",
+  "providers": "chainstack",
+  "time": 1766917680,
+  "message": "[SmartRouter Timing] GetSessions completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "11.202954986s",
+  "numSessions": "1",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] GetSessions total completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.861µs",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] AddUsed completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "timeTaken": "291.35802ms",
+  "hasError": "false",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] GetConsumerSessionInstanceFromEndpoint completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "timeTaken": "107.618486ms",
+  "connected": "true",
+  "hasError": "false",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] fetchEndpointConnection completed"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "timeTaken": "107.610628ms",
+  "numEndpoints": "1",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] fetchEndpointConnectionFromConsumerSessionWithProvider fast path success"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "endpoint": "bsc-mainnet-chainstack-provider.lava-infra.svc.cluster.local:3000",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] reusing existing connection (RLock fast path)"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "chainstack",
+  "timeTaken": "107.590457ms",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] cswp.Lock.RLock acquired in fetchEndpointConnection (fast path)"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "time": 1766917680,
+  "message": "Successfully got session from backup providers"
+}
+2025-12-28 12:28:00	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "2.795187727s",
+  "hasError": "false",
+  "time": 1766917680,
+  "message": "[GetSessions Timing] getValidConsumerSessionsWithProviderFromBackupProviderList completed"
+}
+2025-12-28 12:27:57	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "time": 1766917677,
+  "message": "No regular providers available, trying backup providers"
+}
+2025-12-28 12:27:57	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "3.404870574s",
+  "numProviders": "0",
+  "hasError": "true",
+  "time": 1766917676,
+  "message": "[GetSessions Timing] getValidConsumerSessionsWithProvider completed"
+}
+2025-12-28 12:27:56	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "error": "No pairings available.",
+  "GUID": "15078285496289619775",
+  "time": 1766917676,
+  "message": "BSC could not get a provider addresses"
+}
+2025-12-28 12:27:56	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.0996484s",
+  "numAddresses": "0",
+  "hasError": "true",
+  "time": 1766917676,
+  "message": "[GetSessions Timing] getValidProviderAddresses completed"
+}
+2025-12-28 12:27:56	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "Provider list": "blockpi",
+  "IgnoredProviderList": "map[blockpi:{}]",
+  "addon": "",
+  "extensions": "",
+  "GUID": "15078285496289619775",
+  "time": 1766917675,
+  "message": "Pairing list empty"
+}
+2025-12-28 12:27:55	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "120ns",
+  "time": 1766917673,
+  "message": "[GetSessions Timing] csm.lock.RLock acquired"
+}
+2025-12-28 12:27:53	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "error",
+  "error": "Provider reached maximum number of active sessions.",
+  "providerAddress": "blockpi",
+  "validAddresses": "blockpi",
+  "Error": "Provider reached maximum number of active sessions.",
+  "GUID": "15078285496289619775",
+  "time": 1766917673,
+  "message": "Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint"
+}
+2025-12-28 12:27:53	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "904.838429ms",
+  "hasError": "true",
+  "time": 1766917673,
+  "message": "[GetSessions Timing] GetConsumerSessionInstanceFromEndpoint completed"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.979585ms",
+  "connected": "true",
+  "hasError": "false",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] fetchEndpointConnection completed"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.971682ms",
+  "numEndpoints": "1",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] fetchEndpointConnectionFromConsumerSessionWithProvider fast path success"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "endpoint": "bsc-mainnet-blockpi-provider.lava-infra.svc.cluster.local:3000",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] reusing existing connection (RLock fast path)"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "provider": "blockpi",
+  "timeTaken": "100.956073ms",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] cswp.Lock.RLock acquired in fetchEndpointConnection (fast path)"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.199024428s",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] getSessionWithProviderOrError completed"
+}
+2025-12-28 12:27:52	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.196923792s",
+  "numProviders": "1",
+  "hasError": "false",
+  "time": 1766917672,
+  "message": "[GetSessions Timing] getValidConsumerSessionsWithProvider completed"
+}
+2025-12-28 12:27:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "397.014706ms",
+  "numAddresses": "1",
+  "hasError": "false",
+  "time": 1766917671,
+  "message": "[GetSessions Timing] getValidProviderAddresses completed"
+}
+2025-12-28 12:27:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "validAddresses": "blockpi",
+  "ignoredProvidersList": "map[]",
+  "chosenProviders": "blockpi",
+  "addon": "",
+  "extensions": "",
+  "stateful": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917671,
+  "message": "Choosing providers"
+}
+2025-12-28 12:27:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "225ns",
+  "time": 1766917671,
+  "message": "[GetSessions Timing] csm.lock.RLock acquired"
+}
+2025-12-28 12:27:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "1.294598339s",
+  "numberOfResets": "3",
+  "time": 1766917671,
+  "message": "[GetSessions Timing] validatePairingListNotEmpty completed"
+}
+2025-12-28 12:27:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "addon": "",
+  "extensions": "",
+  "validAddressesCount": "1",
+  "validAddresses": "blockpi",
+  "currentlyBlockedCount": "0",
+  "GUID": "15078285496289619775",
+  "time": 1766917670,
+  "message": "🔍 VALIDATING PROVIDERS"
+}
+2025-12-28 12:27:50	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "997.453358ms",
+  "validAddressesCount": "1",
+  "time": 1766917670,
+  "message": "[GetSessions Timing] cacheAddonAddresses completed"
+}
+2025-12-28 12:27:50	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "5.917µs",
+  "validAddressesCount": "1",
+  "time": 1766917669,
+  "message": "[GetSessions Timing] cacheAddonAddresses cache hit (RLock path)"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "112ns",
+  "time": 1766917669,
+  "message": "[GetSessions Timing] cacheAddonAddresses RLock acquired"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "169ns",
+  "time": 1766917669,
+  "message": "[GetSessions Timing] atomicReadNumberOfResets completed"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "5.555µs",
+  "hasError": "false",
+  "time": 1766917669,
+  "message": "[GetSessions Timing] TryLockSelection completed"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "308.613527ms",
+  "cacheHit": "true",
+  "time": 1766917669,
+  "message": "[SmartRouter Timing] cache lookup completed"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKeyHex": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b7",
+  "actualLookupCacheKeyHex": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b768425d0400000000",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220712",
+  "seenBlock": "73220708",
+  "cacheError": "",
+  "replyFound": "false",
+  "time": 1766917669,
+  "message": "Cache lookup result"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "reqBlock": "-2",
+  "requestedBlockForCache": "73220712",
+  "seenBlock": "73220708",
+  "lookupFinalized": "false",
+  "time": 1766917669,
+  "message": "Cache lookup configuration"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "hashKey": "1ab3c7c76bd164e408e0e0051f242b2e3d9aeefe01427f0bfe843e821ad570b7",
+  "apiUrl": "/",
+  "time": 1766917669,
+  "message": "Cache lookup hash generated"
+}
+2025-12-28 12:27:49	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "cacheActive": "true",
+  "reqBlock": "-2",
+  "forceCacheRefresh": "false",
+  "quorumEnabled": "false",
+  "time": 1766917667,
+  "message": "Cache lookup attempt"
+}
+2025-12-28 12:27:48	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "0",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766917668,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 12:27:47	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "9.456µs",
+  "time": 1766917667,
+  "message": "[SmartRouter Timing] ProcessRelaySend setup completed"
+}
+2025-12-28 12:27:47	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "debug",
+  "GUID": "15078285496289619775",
+  "timeTaken": "172.235µs",
+  "time": 1766917666,
+  "message": "[SmartRouter Timing] ParseRelay completed"
+}
+2025-12-28 12:27:46	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-8569bd5d5c-szpdr
+{
+  "severity": "info",
+  "GUID": "15078285496289619775",
+  "request_id": "3c60bd2e9bc3908ce2f9da32a8c6ced3",
+  "task_id": "",
+  "tx_id": "",
+  "path": "/",
+  "seed": "15078285496289619775",
+  "body": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+  "dappID": "DefaultDappID",
+  "headers": "[{Name:User-Agent Value:curl/8.7.1} {Name:X-Forwarded-Port Value:80} {Name:X-Forwarded-Scheme Value:http} {Name:X-Scheme Value:http} {Name:Cdn-Loop Value:cloudflare; loops=1} {Name:Cf-Connecting-Ip Value:212.199.155.226} {Name:Cf-Visitor Value:{\"scheme\":\"https\"}} {Name:Host Value:bsc-mainnet-jsonrpc.hypernative.lavapro.xyz} {Name:X-Request-Id Value:3c60bd2e9bc3908ce2f9da32a8c6ced3} {Name:X-Real-Ip Value:172.70.153.156} {Name:X-Forwarded-Host Value:bsc-mainnet-jsonrpc.hypernative.lavapro.xyz} {Name:Cf-Ipcountry Value:IL} {Name:Accept-Encoding Value:gzip, br} {Name:Content-Length Value:63} {Name:X-Forwarded-Proto Value:http} {Name:X-Original-Forwarded-For Value:212.199.155.226} {Name:Cf-Ray Value:9b505df198b11833-TLV} {Name:Content-Type Value:application/json} {Name:X-Forwarded-For Value:172.70.153.156} {Name:Accept Value:*/*}]",
+  "time": 1766917665,
+  "message": "Consumer received a new JSON-RPC with GUID: 15078285496289619775"
+}

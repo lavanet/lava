@@ -1,240 +1,781 @@
-2025-12-25 16:48:18	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
 {
   "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "1.20136811s",
+  "GUID": "6032613082866405319",
+  "timeTaken": "11.009361741s",
+  "request": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+  "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x45d8b2e\"}",
+  "method": "POST",
+  "path": "http://bsc-mainnet-jsonrpc.hypernative.lavapro.xyz/",
+  "HasError": "false",
+  "sessionId": "903946587896540302",
+  "provider": "lava",
+  "time": 1766931651,
+  "message": "jsonrpc http"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "11.008593554s",
+  "time": 1766931651,
+  "message": "[SmartRouter Timing] SendParsedRelay total completed"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "21.01µs",
   "isError": "false",
-  "time": 1766674098,
-  "message": "[Timing] TryRelay completed"
+  "time": 1766931651,
+  "message": "[SmartRouter Timing] ProcessingResult completed"
 }
-2025-12-25 16:48:18	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
 {
   "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "278.67µs",
-  "totalTryRelayWithWrapper": "1.201355267s",
-  "time": 1766674098,
-  "message": "[Timing] SignRelayResponse completed"
-}
-2025-12-25 16:48:18	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "54.389µs",
-  "time": 1766674098,
-  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
-}
-2025-12-25 16:48:18	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "300.174079ms",
-  "time": 1766674097,
-  "message": "[Timing] trySetRelayReplyInCache completed"
-}
-2025-12-25 16:48:17	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "20.387µs",
-  "requestDataSize": "63",
-  "time": 1766674097,
-  "message": "[Timing] trySetRelayReplyInCache HashCacheRequest completed"
-}
-2025-12-25 16:48:17	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "7.097µs",
-  "replyDataSize": "45",
-  "isNodeError": "false",
-  "time": 1766674097,
-  "message": "[Timing] trySetRelayReplyInCache CheckResponseError completed"
-}
-2025-12-25 16:48:17	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "1.821µs",
-  "time": 1766674096,
-  "message": "[Timing] HandleHeaders completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "97.128931ms",
+  "GUID": "6032613082866405319",
+  "timeTaken": "11.008539541s",
+  "hasResults": "true",
   "isError": "false",
-  "time": 1766674096,
-  "message": "[Timing] sendRelayMessageToNode completed"
+  "time": 1766931651,
+  "message": "[SmartRouter Timing] ProcessRelaySend completed"
 }
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
 {
   "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "97.032474ms",
-  "nodeReportedLatency": "95.538057ms",
+  "GUID": "6032613082866405319",
+  "totalTime": "11.008528678s",
+  "taskNumber": "2",
+  "isDone": "true",
+  "time": 1766931651,
+  "message": "[SmartRouter Timing] ProcessRelaySend task loop completed"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeSinceGotResults": "7.244µs",
+  "time": 1766931651,
+  "message": "[StateMachine Timing] Success - sending Done signal"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "success": "true",
+  "batch": "1",
+  "currentlyUsed": "0",
+  "time": 1766931651,
+  "message": "[StateMachine Timing] gotResults received"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "1",
+  "currentlyUsed": "0",
+  "time": 1766931651,
+  "message": "[StateMachine] TICKER WOULD HAVE RETRIED (disabled)"
+}
+2025-12-28 16:20:51	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "1",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766931650,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 16:20:50	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "1",
+  "currentlyUsed": "0",
+  "time": 1766931650,
+  "message": "[StateMachine] TICKER WOULD HAVE RETRIED (disabled)"
+}
+2025-12-28 16:20:50	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "1",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766931645,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "metRequiredNodeResults": "true",
+  "numberOfNodeErrors": "0",
+  "time": 1766931645,
+  "message": "[StateMachine Timing] Sending to gotResults channel"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "5.175759066s",
+  "batch": "1",
+  "time": 1766931645,
+  "message": "[StateMachine Timing] WaitForResults completed"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "totalTime": "4.509479414s",
+  "responsesCount": "1",
+  "handleResponseTime": "302.372273ms",
+  "time": 1766931645,
+  "message": "[RelayProcessor Timing] WaitForResults returning (end processing)"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "requiredSuccesses": "1",
+  "selection": "0",
+  "time": 1766931645,
+  "message": "[RelayProcessor] checkEndProcessing - RequiredResults"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "resultsCount": "1",
+  "requiredSuccesses": "1",
+  "GUID": "6032613082866405319",
+  "time": 1766931645,
+  "message": "Reached RequiredResults"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "responsesCount": "1",
+  "timeSinceWaitStart": "4.207107558s",
+  "provider": "lava",
+  "time": 1766931644,
+  "message": "[RelayProcessor Timing] Response received"
+}
+2025-12-28 16:20:45	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "1",
+  "currentlyUsed": "1",
+  "time": 1766931644,
+  "message": "[StateMachine] TICKER WOULD HAVE RETRIED (disabled)"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "provider": "lava",
+  "sessionId": "903946587896540302",
+  "timeTaken": "2.591255481s",
+  "relayLatency": "2.591142486s",
   "isError": "false",
-  "apiName": "eth_blockNumber",
-  "time": 1766674096,
-  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+  "time": 1766931644,
+  "message": "[SmartRouter Timing] relayInner completed"
 }
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+2025-12-28 16:20:44	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
 {
   "severity": "debug",
-  "GUID": "4770440672174216215",
-  "retryAttempt": "0",
-  "latency": "95.538057ms",
+  "GUID": "6032613082866405319",
+  "provider": "lava",
+  "sessionId": "903946587896540302",
+  "timeTaken": "2.591142486s",
   "isError": "false",
-  "time": 1766674096,
-  "message": "[Timing] relaySender.SendNodeMsg returned"
+  "time": 1766931644,
+  "message": "[SmartRouter Timing] gRPC Relay call completed"
 }
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
 provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "retryAttempt": "0",
-  "timeSinceStart": "92.615µs",
-  "time": 1766674096,
-  "message": "[Timing] calling relaySender.SendNodeMsg"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "15.682µs",
-  "time": 1766674096,
-  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "2.017004ms",
-  "cacheHit": "false",
-  "time": 1766674096,
-  "message": "[Timing] cache check completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "2.468µs",
-  "time": 1766674096,
-  "message": "[Timing] GetParametersForRelayDataReliability completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "2.955µs",
-  "time": 1766674096,
-  "message": "[Timing] TryRelayWithWrapper validation completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "waitTime": "2.351µs",
-  "time": 1766674096,
-  "message": "[Timing] resourceLimiter acquired, starting execution"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
-{
-  "severity": "debug",
-  "GUID": "4770440672174216215",
-  "timeTaken": "361.535µs",
-  "time": 1766674096,
-  "message": "[Timing] initRelay completed"
-}
-2025-12-25 16:48:16	
-bsc-mainnet-chainstack-provider
-provider
-lava-infra/bsc-mainnet-chainstack-provider
-bsc-mainnet-chainstack-provider-745dc9cbf-8m4ps
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
 {
   "severity": "info",
-  "GUID": "4770440672174216215",
+  "GUID": "6032613082866405319",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "request.SessionId": "903946587896540302",
+  "request.relayNumber": "4",
+  "request.cu": "110",
+  "relay_timeout": "27.426051968s",
+  "timeTaken": "173.974505ms",
+  "consumerSupportsCompression": "true",
+  "time": 1766931644,
+  "message": "Done handling relay request from consumer"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "173.417144ms",
+  "isError": "false",
+  "time": 1766931644,
+  "message": "[Timing] TryRelay completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "319.53µs",
+  "totalTryRelayWithWrapper": "173.394928ms",
+  "time": 1766931644,
+  "message": "[Timing] SignRelayResponse completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "14.76µs",
+  "time": 1766931644,
+  "message": "[Timing] BuildRelayFinalizedBlockHashes completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "1.783µs",
+  "time": 1766931644,
+  "message": "[Timing] HandleHeaders completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "172.94189ms",
+  "isError": "false",
+  "time": 1766931644,
+  "message": "[Timing] sendRelayMessageToNode completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "172.812964ms",
+  "nodeReportedLatency": "172.669536ms",
+  "isError": "false",
+  "apiName": "eth_blockNumber",
+  "time": 1766931644,
+  "message": "[Timing] providerStateMachine.SendNodeMessage completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "retryAttempt": "0",
+  "latency": "172.669536ms",
+  "isError": "false",
+  "time": 1766931644,
+  "message": "[Timing] relaySender.SendNodeMsg returned"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "retryAttempt": "0",
+  "timeSinceStart": "77.7µs",
+  "time": 1766931644,
+  "message": "[Timing] calling relaySender.SendNodeMsg"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "provider": "lava",
+  "sessionId": "903946587896540302",
+  "time": 1766931641,
+  "message": "[SmartRouter Timing] gRPC Relay call starting"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "13.259µs",
+  "time": 1766931644,
+  "message": "[Timing] sendRelayMessageToNode pre-send setup completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "49.722µs",
+  "cacheHit": "false",
+  "time": 1766931644,
+  "message": "[Timing] cache check completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "err": "No Connection To grpc server",
+  "GUID": "6032613082866405319",
+  "request_id": "",
+  "task_id": "",
+  "tx_id": "",
+  "time": 1766931644,
+  "message": "cache not connected"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "5.5µs",
+  "time": 1766931644,
+  "message": "[Timing] GetParametersForRelayDataReliability completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "812ns",
+  "dataReliabilityEnabled": "true",
+  "time": 1766931644,
+  "message": "[Timing] chainParser calls (DataReliabilityParams, ChainBlockStats, GetRelayTimeout) completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "4.495µs",
+  "time": 1766931644,
+  "message": "[Timing] TryRelayWithWrapper validation completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "waitTime": "3.174µs",
+  "time": 1766931644,
+  "message": "[Timing] resourceLimiter acquired, starting execution"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "440.064µs",
+  "time": 1766931644,
+  "message": "[Timing] initRelay completed"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-lava-provider
+provider
+lava-infra/bsc-mainnet-lava-provider
+bsc-mainnet-lava-provider-68cd888468-zf6qc
+{
+  "severity": "info",
+  "GUID": "6032613082866405319",
   "request_id": "",
   "task_id": "",
   "tx_id": "",
   "request.path": "/",
-  "request.SessionId": "2674724951010997204",
-  "request.relayNumber": "3",
-  "request.cu": "50",
-  "relay_timeout": "29.999855504s",
+  "request.SessionId": "903946587896540302",
+  "request.relayNumber": "4",
+  "request.cu": "110",
+  "relay_timeout": "27.600028317s",
   "relay addon": "",
   "relay extensions": "",
-  "seenBlock": "72896035",
+  "seenBlock": "73239336",
   "requestBlock": "-2",
-  "time": 1766674096,
+  "time": 1766931644,
   "message": "Got relay request from consumer"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "1",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766931644,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 16:20:44	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "1",
+  "currentlyUsed": "1",
+  "time": 1766931642,
+  "message": "[StateMachine] TICKER WOULD HAVE RETRIED (disabled)"
+}
+2025-12-28 16:20:42	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "1",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766931642,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 16:20:42	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "683.353µs",
+  "time": 1766931642,
+  "message": "[SmartRouter Timing] ParseRelay completed"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "provider": "lava",
+  "sessionId": "903946587896540302",
+  "processingTimeout": "30s",
+  "time": 1766931641,
+  "message": "[SmartRouter Timing] relayInner starting"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "1.30661803s",
+  "taskNumber": "1",
+  "numOfProviders": "1",
+  "isError": "false",
+  "time": 1766931641,
+  "message": "[SmartRouter Timing] sendRelayToProvider completed"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "1.306579854s",
+  "numProviders": "1",
+  "time": 1766931641,
+  "message": "[SmartRouter Timing] sendRelayToProvider goroutines spawned"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "taskNumber": "1",
+  "timeTaken": "1.002930008s",
+  "numSessions": "1",
+  "providers": "lava",
+  "time": 1766931641,
+  "message": "[SmartRouter Timing] GetSessions completed"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "info",
+  "validAddresses": "lava",
+  "ignoredProvidersList": "map[]",
+  "chosenProviders": "lava",
+  "addon": "",
+  "extensions": "",
+  "stateful": "0",
+  "GUID": "6032613082866405319",
+  "time": 1766931641,
+  "message": "Choosing providers"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "0",
+  "currentlyUsed": "0",
+  "time": 1766931641,
+  "message": "[StateMachine] TICKER WOULD HAVE RETRIED (disabled)"
+}
+2025-12-28 16:20:41	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "numberOfNodeErrors": "0",
+  "batchNumber": "0",
+  "selection": "0",
+  "shouldRetry": "true",
+  "time": 1766931641,
+  "message": "[StateMachine] shouldRetry called"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "batch": "0",
+  "time": 1766931640,
+  "message": "[StateMachine Timing] WaitForResults starting"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "info",
+  "addon": "",
+  "extensions": "",
+  "validAddressesCount": "1",
+  "validAddresses": "lava",
+  "currentlyBlockedCount": "0",
+  "GUID": "6032613082866405319",
+  "time": 1766931640,
+  "message": "🔍 VALIDATING PROVIDERS"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "2.238µs",
+  "cacheHit": "true",
+  "time": 1766931640,
+  "message": "[SmartRouter Timing] cache lookup completed"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "8.666104ms",
+  "time": 1766931640,
+  "message": "[SmartRouter Timing] ProcessRelaySend setup completed"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "debug",
+  "GUID": "6032613082866405319",
+  "timeTaken": "267.885µs",
+  "time": 1766931640,
+  "message": "[SmartRouter Timing] ParseRelay completed"
+}
+2025-12-28 16:20:40	
+bsc-mainnet-consumer
+consumer
+lava-infra/bsc-mainnet-consumer
+bsc-mainnet-consumer-7bf9966894-dzhgr
+{
+  "severity": "info",
+  "GUID": "6032613082866405319",
+  "request_id": "2fc454c738b5768c1a5800727861538c",
+  "task_id": "",
+  "tx_id": "",
+  "path": "/",
+  "seed": "6032613082866405319",
+  "body": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+  "dappID": "DefaultDappID",
+  "headers": "[{Name:Host Value:bsc-mainnet-jsonrpc.hypernative.lavapro.xyz} {Name:X-Real-Ip Value:172.70.153.156} {Name:X-Forwarded-For Value:172.70.153.156} {Name:X-Scheme Value:http} {Name:Cdn-Loop Value:cloudflare; loops=1} {Name:Accept-Encoding Value:gzip, br} {Name:Content-Type Value:application/json} {Name:X-Forwarded-Port Value:80} {Name:X-Forwarded-Proto Value:http} {Name:Accept Value:*/*} {Name:Cf-Visitor Value:{\"scheme\":\"https\"}} {Name:Content-Length Value:63} {Name:X-Request-Id Value:2fc454c738b5768c1a5800727861538c} {Name:Cf-Ray Value:9b51b31f7c153562-TLV} {Name:User-Agent Value:curl/8.7.1} {Name:X-Forwarded-Host Value:bsc-mainnet-jsonrpc.hypernative.lavapro.xyz} {Name:X-Forwarded-Scheme Value:http} {Name:X-Original-Forwarded-For Value:212.199.155.226} {Name:Cf-Connecting-Ip Value:212.199.155.226} {Name:Cf-Ipcountry Value:IL}]",
+  "time": 1766931640,
+  "message": "Consumer received a new JSON-RPC with GUID: 6032613082866405319"
 }
