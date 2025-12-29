@@ -1233,7 +1233,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			// Skip block gap check for smart router since expectedBH is always MaxInt64
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
+			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
