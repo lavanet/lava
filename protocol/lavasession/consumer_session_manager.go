@@ -541,14 +541,33 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 }
 
 func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string, ctx context.Context) []string {
-	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
-	defer csm.lock.Unlock()
 	routerKey := NewRouterKey(append(extensions, addon))
 	routerKeyString := routerKey.String()
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
-		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
+
+	// OPTIMIZATION: Double-check locking pattern to reduce contention
+	// First, try with read lock (allows concurrent readers)
+	csm.lock.RLock()
+	if csm.addonAddresses != nil && csm.addonAddresses[routerKeyString] != nil {
+		// Cache hit - return immediately with read lock (fast path)
+		result := csm.addonAddresses[routerKeyString]
+		csm.lock.RUnlock()
+		return result
 	}
+	csm.lock.RUnlock()
+
+	// Cache miss - need to write, acquire write lock
+	csm.lock.Lock()
+	defer csm.lock.Unlock()
+
+	// Double-check: re-verify after acquiring write lock
+	// Another goroutine may have populated the cache while we waited
+	if csm.addonAddresses != nil && csm.addonAddresses[routerKeyString] != nil {
+		return csm.addonAddresses[routerKeyString]
+	}
+
+	// Actually need to populate the cache
+	csm.RemoveAddonAddresses(addon, extensions)
+	csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
 	return csm.addonAddresses[routerKeyString]
 }
 
