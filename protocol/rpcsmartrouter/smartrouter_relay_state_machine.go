@@ -292,6 +292,23 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
 					return
 				}
+
+				// Check if global timeout expired before spawning retry
+				select {
+				case <-processingCtx.Done():
+					// Timeout expired! Stop retrying immediately
+					utils.LavaFormatWarning("[StateMachine] Global timeout expired, stopping retries",
+						nil,
+						utils.LogAttr("GUID", srsm.ctx),
+						utils.LogAttr("processingTimeout", processingTimeout),
+						utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
+					)
+					relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
+					return
+				default:
+					// Timeout not expired yet, safe to continue
+				}
+
 				// If should retry == true, send a new batch. (success == false)
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - srsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
