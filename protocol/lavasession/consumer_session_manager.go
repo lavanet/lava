@@ -645,6 +645,9 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 	wantedSession := len(sessionWithProviderMap)
 	// Save sessions to return
 	sessions := make(ConsumerSessionsMap, wantedSession)
+	// Circuit breaker: prevent infinite retry loop when all providers exhausted
+	const maxGetSessionsRetries = 3
+	retriesSinceLastSuccess := 0
 	for {
 		for providerAddress, sessionWithProvider := range sessionWithProviderMap {
 			// Extract values from session with provider
@@ -763,10 +766,37 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				if len(sessions) == wantedSession {
+					retriesSinceLastSuccess = 0 // Reset circuit breaker on complete success
 					return sessions, nil
 				}
 				continue
 			}
+		}
+
+		// Circuit breaker: track retry attempts and stop if we haven't made progress
+		retriesSinceLastSuccess++
+
+		// Circuit breaker: stop retrying if we've exhausted attempts without making progress
+		if retriesSinceLastSuccess >= maxGetSessionsRetries {
+			utils.LavaFormatWarning("GetSessions circuit breaker triggered: exhausted retries without progress",
+				nil,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("retriesAttempted", retriesSinceLastSuccess),
+				utils.LogAttr("sessionsObtained", len(sessions)),
+				utils.LogAttr("sessionsWanted", wantedSession),
+			)
+
+			// Return partial results if we got any sessions
+			if len(sessions) > 0 {
+				return sessions, nil
+			}
+
+			// No sessions obtained after retries - fail fast
+			return nil, utils.LavaFormatError("GetSessions exhausted retries without obtaining sessions",
+				PairingListEmptyError,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("retriesAttempted", retriesSinceLastSuccess),
+			)
 		}
 
 		// If we do not have enough fetch more
