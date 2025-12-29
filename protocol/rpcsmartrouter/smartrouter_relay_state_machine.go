@@ -299,16 +299,16 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				} else {
 					go validateReturnCondition(nil)
 				}
-				go readResultsFromProcessor()
-			case <-startNewBatchTicker.C:
-				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
-				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
-					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
-					// Add ticker launch metrics
-					go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
-				}
-			case returnErr := <-returnCondition:
+			go readResultsFromProcessor()
+		// case <-startNewBatchTicker.C:
+		// 	// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+		// 	if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
+		// 		utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+		// 		relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
+		// 		// Add ticker launch metrics
+		// 		go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
+		// 	}
+		case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 				// we use this channel because there could be a race condition between us releasing the provider and about to send the return
 				// to an error happening on another relay processor's routine. this can cause an error that returns to the user
