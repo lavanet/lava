@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -380,6 +381,7 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
+	// Hash response for quorum tracking
 	// Only hash successful responses (not errors) for quorum tracking
 	// This prevents error responses from being counted toward quorum
 	if response != nil && nodeError == nil && response.Err == nil {
@@ -391,6 +393,7 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		}
 	}
 
+	// Set consistency
 	if response != nil && response.RelayResult.Reply != nil {
 		if rp.consistency != nil && response.RelayResult.Reply.LatestBlock > 0 {
 			// set consistency when possible
@@ -418,14 +421,28 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	if rp == nil {
 		return utils.LavaFormatError("RelayProcessor.WaitForResults is nil, misuse detected", nil)
 	}
+	waitStart := time.Now()
 	responsesCount := 0
 	for {
 		select {
 		case response := <-rp.responses:
+			responseReceivedAt := time.Now()
 			responsesCount++
+			utils.LavaFormatDebug("[RelayProcessor Timing] Response received",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("responsesCount", responsesCount),
+				utils.LogAttr("timeSinceWaitStart", time.Since(waitStart)),
+				utils.LogAttr("provider", response.RelayResult.ProviderInfo.ProviderAddress),
+			)
 			rp.handleResponse(response)
 			if rp.checkEndProcessing(responsesCount) {
 				// we can finish processing
+				utils.LavaFormatDebug("[RelayProcessor Timing] WaitForResults returning (end processing)",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("totalTime", time.Since(waitStart)),
+					utils.LogAttr("responsesCount", responsesCount),
+					utils.LogAttr("handleResponseTime", time.Since(responseReceivedAt)),
+				)
 				return nil
 			}
 		case <-ctx.Done():

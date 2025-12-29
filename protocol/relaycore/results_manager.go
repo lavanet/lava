@@ -105,8 +105,9 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 		return nil
 	}
 
-	// check response error
+	// Step 2: Check response error
 	foundError, errorMessage := protocolMessage.CheckResponseError(response.RelayResult.Reply.Data, response.RelayResult.StatusCode)
+
 	if foundError {
 		// this is a node error, meaning we still didn't get a good response.
 		// we may choose to wait until there will be a response or timeout happens
