@@ -286,11 +286,11 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil, 0)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+			err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil, 0)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpcss.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpcss.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -624,7 +624,21 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 		)
 	}
 	taskNumber := 0
-	for task := range relayTaskChannel {
+	for {
+		utils.LavaFormatDebug("[SmartRouter Timing] ProcessRelaySend waiting for next task",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("currentTaskNumber", taskNumber),
+		)
+		waitStart := time.Now()
+		task, ok := <-relayTaskChannel
+		if !ok {
+			break // channel closed
+		}
+		utils.LavaFormatDebug("[SmartRouter Timing] ProcessRelaySend received task from channel",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("waitTime", time.Since(waitStart)),
+			utils.LogAttr("isDone", task.IsDone()),
+		)
 		taskNumber++
 		if task.IsDone() {
 			if debugSmartRouterDetailedLatency {
@@ -638,8 +652,8 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 			return relayProcessor, task.Err
 		}
 		taskStart := time.Now()
-		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
-		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
+		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders), utils.LogAttr("taskNumber", taskNumber))
+		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics, taskNumber)
 		if debugSmartRouterDetailedLatency {
 			utils.LavaFormatDebug("[SmartRouter Timing] sendRelayToProvider completed",
 				utils.LogAttr("GUID", ctx),
@@ -882,6 +896,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	relayState *relaycore.RelayState,
 	relayProcessor *relaycore.RelayProcessor,
 	analytics *metrics.RelayMetrics,
+	taskNumber int,
 ) (errRet error) {
 	sendRelayToProviderStart := time.Now()
 	// get a session for the relay from the ConsumerSessionManager
@@ -1118,6 +1133,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		}
 		utils.LavaFormatDebug("[SmartRouter Timing] GetSessions completed",
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("taskNumber", taskNumber),
 			utils.LogAttr("timeTaken", time.Since(getSessionsStart)),
 			utils.LogAttr("numSessions", len(sessions)),
 			utils.LogAttr("providers", sessionAddresses),
@@ -1925,7 +1941,7 @@ func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx cont
 			NewSmartRouterRelayStateMachine(ctx, relayProcessor.GetUsedProviders(), rpcss, dataReliabilityProtocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
 			rpcss.sessionManager.GetQoSManager(),
 		)
-		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil)
+		err = rpcss.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, dataReliabilityProtocolMessage), relayProcessorDataReliability, nil, 0)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}

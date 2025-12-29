@@ -216,6 +216,11 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool, 1)
 		processingTimeout, relayTimeout := srsm.relaySender.getProcessingTimeout(srsm.GetProtocolMessage())
+		utils.LavaFormatDebug("[StateMachine Timing] Timeouts configured",
+			utils.LogAttr("GUID", srsm.ctx),
+			utils.LogAttr("processingTimeout", processingTimeout),
+			utils.LogAttr("relayTimeout (ticker interval)", relayTimeout),
+		)
 		if srsm.debugRelays {
 			utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout), utils.LogAttr("GUID", srsm.ctx))
 		}
@@ -226,22 +231,55 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		numberOfNodeErrorsAtomic := atomic.Uint64{}
 		readResultsFromProcessor := func() {
 			// ProcessResults is reading responses while blocking until the conditions are met
-			utils.LavaFormatTrace("[StateMachine] Waiting for results", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+			waitStart := time.Now()
+			utils.LavaFormatDebug("[StateMachine Timing] WaitForResults starting",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("batch", srsm.usedProviders.BatchNumber()),
+			)
 			srsm.resultsChecker.WaitForResults(processingCtx)
+			utils.LavaFormatDebug("[StateMachine Timing] WaitForResults completed",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("timeTaken", time.Since(waitStart)),
+				utils.LogAttr("batch", srsm.usedProviders.BatchNumber()),
+			)
 			// Decide if we need to resend or not
 			metRequiredNodeResults, numberOfNodeErrors := srsm.resultsChecker.HasRequiredNodeResults(srsm.usedProviders.BatchNumber())
 			numberOfNodeErrorsAtomic.Store(uint64(numberOfNodeErrors))
+			utils.LavaFormatDebug("[StateMachine Timing] Sending to gotResults channel",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("metRequiredNodeResults", metRequiredNodeResults),
+				utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
+			)
 			gotResults <- metRequiredNodeResults
 		}
 		go readResultsFromProcessor()
 		returnCondition := make(chan error, 1)
 		// Used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
 		validateReturnCondition := func(err error) {
+			validateStart := time.Now()
 			batchOnStart := srsm.usedProviders.BatchNumber()
+			utils.LavaFormatDebug("[StateMachine Timing] validateReturnCondition starting",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("batchOnStart", batchOnStart),
+				utils.LogAttr("currentlyUsed", srsm.usedProviders.CurrentlyUsed()),
+			)
 			time.Sleep(15 * time.Millisecond)
-			utils.LavaFormatTrace("[StateMachine] validating return condition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
-			if batchOnStart == srsm.usedProviders.BatchNumber() && srsm.usedProviders.CurrentlyUsed() == 0 {
-				utils.LavaFormatTrace("[StateMachine] return condition triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("err", err), utils.LogAttr("GUID", srsm.ctx))
+			currentBatch := srsm.usedProviders.BatchNumber()
+			currentlyUsed := srsm.usedProviders.CurrentlyUsed()
+			shouldTrigger := batchOnStart == currentBatch && currentlyUsed == 0
+			utils.LavaFormatDebug("[StateMachine Timing] validateReturnCondition after sleep",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("timeTaken", time.Since(validateStart)),
+				utils.LogAttr("batchOnStart", batchOnStart),
+				utils.LogAttr("currentBatch", currentBatch),
+				utils.LogAttr("currentlyUsed", currentlyUsed),
+				utils.LogAttr("shouldTrigger", shouldTrigger),
+			)
+			if shouldTrigger {
+				utils.LavaFormatDebug("[StateMachine Timing] validateReturnCondition TRIGGERED - sending to returnCondition",
+					utils.LogAttr("GUID", srsm.ctx),
+					utils.LogAttr("err", err),
+				)
 				returnCondition <- err
 			}
 		}
@@ -284,12 +322,26 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				// Reset consecutiveBatchErrors
 				consecutiveBatchErrors = 0
 			case success := <-gotResults:
-				utils.LavaFormatTrace("[StateMachine] success := <-gotResults", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+				gotResultsTime := time.Now()
+				utils.LavaFormatDebug("[StateMachine Timing] gotResults received",
+					utils.LogAttr("GUID", srsm.ctx),
+					utils.LogAttr("success", success),
+					utils.LogAttr("batch", srsm.usedProviders.BatchNumber()),
+					utils.LogAttr("currentlyUsed", srsm.usedProviders.CurrentlyUsed()),
+				)
 				// If we had a successful result return what we currently have
 				// Or we are done sending relays, and we have no other relays pending results.
 				if success { // Check wether we can return the valid results or we need to send another relay
-					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", srsm.ctx))
+					utils.LavaFormatDebug("[StateMachine Timing] Success - about to send Done signal to relayTaskChannel",
+						utils.LogAttr("GUID", srsm.ctx),
+						utils.LogAttr("timeSinceGotResults", time.Since(gotResultsTime)),
+					)
+					sendStart := time.Now()
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
+					utils.LavaFormatDebug("[StateMachine Timing] Success - Done signal sent to relayTaskChannel",
+						utils.LogAttr("GUID", srsm.ctx),
+						utils.LogAttr("channelSendTime", time.Since(sendStart)),
+					)
 					return
 				}
 				// If should retry == true, send a new batch. (success == false)
@@ -299,16 +351,16 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				} else {
 					go validateReturnCondition(nil)
 				}
-			go readResultsFromProcessor()
-		// case <-startNewBatchTicker.C:
-		// 	// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
-		// 	if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-		// 		utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
-		// 		relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
-		// 		// Add ticker launch metrics
-		// 		go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
-		// 	}
-		case returnErr := <-returnCondition:
+				go readResultsFromProcessor()
+			// case <-startNewBatchTicker.C:
+			// 	// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+			// 	if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
+			// 		utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+			// 		relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
+			// 		// Add ticker launch metrics
+			// 		go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
+			// 	}
+			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 				// we use this channel because there could be a race condition between us releasing the provider and about to send the return
 				// to an error happening on another relay processor's routine. this can cause an error that returns to the user

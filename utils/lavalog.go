@@ -305,7 +305,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			severity = LAVA_LOG_ERROR
 		}
 	}
-	
+
 	// Check if this log level is enabled before doing expensive work
 	var logLevelEnabled bool
 	switch severity {
@@ -322,7 +322,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	default:
 		logLevelEnabled = true
 	}
-	
+
 	// Early return if log level not enabled - skip all expensive formatting
 	if !logLevelEnabled {
 		if err != nil {
