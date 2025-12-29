@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/keepalive"
 )
 
 const (
@@ -77,6 +78,13 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 	}
 
 	opts = append(opts, grpc.WithBlock(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+
+	// Add keep-alive parameters to prevent idle connection timeouts and detect dead connections
+	opts = append(opts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                10 * time.Second, // Send keep-alive ping every 10 seconds
+		Timeout:             3 * time.Second,  // Wait 3 seconds for ping acknowledgment before considering connection dead
+		PermitWithoutStream: true,             // Send pings even when there are no active RPCs
+	}))
 
 	if strings.HasPrefix(address, unixPrefix) {
 		// Unix socket
