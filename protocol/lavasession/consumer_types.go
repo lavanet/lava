@@ -498,127 +498,233 @@ func (cswp *ConsumerSessionsWithProvider) sortEndpointsByLatency(endpointInfos [
 	}
 }
 
+// endpointNeedingConnection holds info about an endpoint that needs a new connection
+type endpointNeedingConnection struct {
+	endpointIdx    int
+	networkAddress string
+}
+
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
 func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool, addon string, extensionNames []string) (connected bool, endpointsList []*EndpointAndChosenConnection, providerAddress string, err error) {
-	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr []*EndpointAndChosenConnection, allDisabled bool) {
-		endpoints := make([]*EndpointAndChosenConnection, 0)
-		cswp.Lock.Lock()
-		defer cswp.Lock.Unlock()
-		for idx, endpoint := range cswp.Endpoints {
-			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
-			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
-			if !retryDisabledEndpoints && !endpoint.Enabled {
-				continue
-			}
-			if retryDisabledEndpoints {
-				utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
-			}
+	// OPTIMIZATION: 3-phase approach to avoid holding lock during network calls
+	// Phase 1: Try to find existing connections (RLock - allows concurrent readers)
+	// Phase 2: Establish new connections outside any lock (network I/O)
+	// Phase 3: Store new connections (Lock - write)
 
-			// check endpoint supports the requested addons
-			supported := endpoint.CheckSupportForServices(addon, extensionNames)
-			if !supported {
-				continue
-			}
-			// return
-			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
-				for _, endpointConnection := range endpoint.Connections {
-					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
-					// and it didn't disconnect before. Use it.
-					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
-						// Check if the endpoint is not blocked
-						if endpointConnection.blockListed.Load() {
-							utils.LavaFormatDebug("Skipping provider's endpoint as its block listed", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("PublicLavaAddress", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
-							continue
-						}
-						connectionState := endpointConnection.connection.GetState()
-						// Check Disconnections
-						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
-							// We got disconnected, we can't use this connection anymore.
-							endpointConnection.disconnected = true
-							continue
-						}
-						// Check if we can use the connection later.
-						if connectionState == connectivity.TransientFailure || connectionState == connectivity.Connecting {
-							continue
-						}
-						// Check we didn't reach the maximum streams per connection.
-						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
-							return endpointConnection, true
-						}
-					}
-				}
-				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
-				if err != nil {
-					endpoint.ConnectionRefusals++
-					utils.LavaFormatInfo("error connecting to provider",
-						utils.LogAttr("err", err),
-						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
-						utils.LogAttr("providerName", cswp.PublicLavaAddress),
-						utils.LogAttr("endpoint", endpoint),
-						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
-						utils.LogAttr("GUID", ctx),
-					)
-
-					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
-						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
-							utils.LogAttr("Endpoint", endpoint.NetworkAddress),
-							utils.LogAttr("address", cswp.PublicLavaAddress),
-							utils.LogAttr("GUID", ctx),
-						)
-					}
-					return nil, false
-				}
-				endpoint.ConnectionRefusals = 0
-				newConnection := &EndpointConnection{connection: conn, Client: client, lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)}
-				endpoint.Connections = append(endpoint.Connections, newConnection)
-				return newConnection, true
-			}
-
-			endpointConnection, connected_ := connectEndpoint(cswp, ctx, endpoint)
-			if !connected_ {
-				continue
-			}
-			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
-			// successful new connection add to endpoints list
-			endpoints = append(endpoints, &EndpointAndChosenConnection{endpoint: endpoint, chosenEndpointConnection: endpointConnection})
-			if !getAllEndpoints {
-				return true, endpoints, false
-			}
-		}
-
-		// if we managed to get at least one endpoint we can return the list of active endpoints
-		if len(endpoints) > 0 {
-			return true, endpoints, false
-		}
-
-		// checking disabled endpoints, as we can disable an endpoint mid run of the previous loop, we should re test the current endpoint state
-		// before verifying all are Disabled.
-		allDisabled = true
-		for _, endpoint := range cswp.Endpoints {
-			if !endpoint.Enabled {
-				continue
-			}
-			// even one endpoint is enough for us to not purge.
-			allDisabled = false
-		}
-		return false, nil, allDisabled
+	// Phase 1: Check for existing connections with read lock
+	existingConnection, endpoint, _ := cswp.tryGetExistingConnection(ctx, retryDisabledEndpoints, addon, extensionNames)
+	if existingConnection != nil {
+		// Found an existing connection - fast path
+		return true, []*EndpointAndChosenConnection{{endpoint: endpoint, chosenEndpointConnection: existingConnection}}, cswp.PublicLavaAddress, nil
 	}
 
-	var allDisabled bool
-	connected, endpointsList, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
+	// Phase 1b: Identify endpoints that need new connections (still with lock to read state)
+	endpointsNeedingConnection, allDisabled := cswp.identifyEndpointsNeedingConnection(ctx, retryDisabledEndpoints, addon, extensionNames)
+
 	if allDisabled {
 		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
 			utils.LogAttr("provider endpoints", cswp.Endpoints),
 			utils.LogAttr("providerName", cswp.PublicLavaAddress),
 			utils.LogAttr("GUID", ctx),
 		)
-		// report provider.
-		return connected, endpointsList, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
+		return false, nil, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
 
-	return connected, endpointsList, cswp.PublicLavaAddress, nil
+	if len(endpointsNeedingConnection) == 0 {
+		// No endpoints available and not all disabled - temporary state
+		return false, nil, cswp.PublicLavaAddress, nil
+	}
+
+	// Phase 2: Establish connections OUTSIDE the lock (network I/O)
+	// This is where the optimization matters - we don't block other goroutines during network calls
+	endpoints := make([]*EndpointAndChosenConnection, 0)
+	for _, epInfo := range endpointsNeedingConnection {
+		client, conn, connectErr := cswp.ConnectRawClientWithTimeout(ctx, epInfo.networkAddress)
+		if connectErr != nil {
+			// Phase 3a: Update connection refusal count (need lock for write)
+			cswp.handleConnectionFailure(ctx, epInfo.endpointIdx)
+			continue
+		}
+
+		// Phase 3b: Store the new connection (need lock for write)
+		newConnection, storedEndpoint := cswp.storeNewConnection(ctx, epInfo.endpointIdx, client, conn)
+		if newConnection != nil {
+			endpoints = append(endpoints, &EndpointAndChosenConnection{endpoint: storedEndpoint, chosenEndpointConnection: newConnection})
+			if !getAllEndpoints {
+				return true, endpoints, cswp.PublicLavaAddress, nil
+			}
+		}
+	}
+
+	if len(endpoints) > 0 {
+		return true, endpoints, cswp.PublicLavaAddress, nil
+	}
+
+	// Check if all endpoints are now disabled after our connection attempts
+	cswp.Lock.RLock()
+	allDisabled = true
+	for _, ep := range cswp.Endpoints {
+		if ep.Enabled {
+			allDisabled = false
+			break
+		}
+	}
+	cswp.Lock.RUnlock()
+
+	if allDisabled {
+		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
+			utils.LogAttr("provider endpoints", cswp.Endpoints),
+			utils.LogAttr("providerName", cswp.PublicLavaAddress),
+			utils.LogAttr("GUID", ctx),
+		)
+		return false, nil, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
+	}
+
+	return false, nil, cswp.PublicLavaAddress, nil
+}
+
+// tryGetExistingConnection attempts to find an existing usable connection (Phase 1 - fast path)
+func (cswp *ConsumerSessionsWithProvider) tryGetExistingConnection(ctx context.Context, retryDisabledEndpoints bool, addon string, extensionNames []string) (*EndpointConnection, *Endpoint, int) {
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
+
+	for idx, endpoint := range cswp.Endpoints {
+		if !retryDisabledEndpoints && !endpoint.Enabled {
+			continue
+		}
+		if !endpoint.CheckSupportForServices(addon, extensionNames) {
+			continue
+		}
+
+		// Check existing connections
+		for _, endpointConnection := range endpoint.Connections {
+			if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+				if endpointConnection.blockListed.Load() {
+					continue
+				}
+				connectionState := endpointConnection.connection.GetState()
+				if connectionState == connectivity.Shutdown {
+					continue // Will be marked as disconnected in write path
+				}
+				if connectionState == connectivity.TransientFailure || connectionState == connectivity.Connecting {
+					continue
+				}
+				if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
+					return endpointConnection, endpoint, idx
+				}
+			}
+		}
+	}
+	return nil, nil, -1
+}
+
+// identifyEndpointsNeedingConnection identifies which endpoints need new connections
+func (cswp *ConsumerSessionsWithProvider) identifyEndpointsNeedingConnection(ctx context.Context, retryDisabledEndpoints bool, addon string, extensionNames []string) ([]endpointNeedingConnection, bool) {
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
+
+	var endpointsNeedingConnection []endpointNeedingConnection
+	allDisabled := true
+
+	for idx, endpoint := range cswp.Endpoints {
+		if endpoint.Enabled {
+			allDisabled = false
+		}
+
+		if !retryDisabledEndpoints && !endpoint.Enabled {
+			continue
+		}
+		if retryDisabledEndpoints {
+			utils.LavaFormatDebug("retrying to connect to disabled endpoint", utils.LogAttr("endpoint", endpoint.NetworkAddress), utils.LogAttr("provider", cswp.PublicLavaAddress), utils.LogAttr("GUID", ctx))
+		}
+
+		if !endpoint.CheckSupportForServices(addon, extensionNames) {
+			continue
+		}
+
+		// Check if all existing connections are unusable
+		hasUsableConnection := false
+		for _, endpointConnection := range endpoint.Connections {
+			if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+				if endpointConnection.blockListed.Load() {
+					continue
+				}
+				connectionState := endpointConnection.connection.GetState()
+				if connectionState == connectivity.Shutdown || connectionState == connectivity.TransientFailure || connectionState == connectivity.Connecting {
+					continue
+				}
+				if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
+					hasUsableConnection = true
+					break
+				}
+			}
+		}
+
+		if !hasUsableConnection {
+			endpointsNeedingConnection = append(endpointsNeedingConnection, endpointNeedingConnection{
+				endpointIdx:    idx,
+				networkAddress: endpoint.NetworkAddress,
+			})
+		}
+	}
+
+	return endpointsNeedingConnection, allDisabled
+}
+
+// handleConnectionFailure updates the endpoint state after a connection failure
+func (cswp *ConsumerSessionsWithProvider) handleConnectionFailure(ctx context.Context, endpointIdx int) {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+
+	if endpointIdx >= len(cswp.Endpoints) {
+		return // Endpoint list changed, skip
+	}
+
+	endpoint := cswp.Endpoints[endpointIdx]
+	endpoint.ConnectionRefusals++
+	utils.LavaFormatInfo("error connecting to provider",
+		utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
+		utils.LogAttr("providerName", cswp.PublicLavaAddress),
+		utils.LogAttr("refusals", endpoint.ConnectionRefusals),
+		utils.LogAttr("GUID", ctx),
+	)
+
+	if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
+		endpoint.Enabled = false
+		utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
+			utils.LogAttr("Endpoint", endpoint.NetworkAddress),
+			utils.LogAttr("address", cswp.PublicLavaAddress),
+			utils.LogAttr("GUID", ctx),
+		)
+	}
+}
+
+// storeNewConnection stores a newly established connection
+func (cswp *ConsumerSessionsWithProvider) storeNewConnection(ctx context.Context, endpointIdx int, client pairingtypes.RelayerClient, conn *grpc.ClientConn) (*EndpointConnection, *Endpoint) {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+
+	if endpointIdx >= len(cswp.Endpoints) {
+		// Endpoint list changed, close the connection we just created
+		if conn != nil {
+			conn.Close()
+		}
+		return nil, nil
+	}
+
+	endpoint := cswp.Endpoints[endpointIdx]
+	endpoint.ConnectionRefusals = 0
+	endpoint.Enabled = true
+
+	newConnection := &EndpointConnection{
+		connection: conn,
+		Client:     client,
+		lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+	}
+	endpoint.Connections = append(endpoint.Connections, newConnection)
+
+	return newConnection, endpoint
 }
 
 func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
