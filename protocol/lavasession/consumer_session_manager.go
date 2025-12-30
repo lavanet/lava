@@ -541,17 +541,19 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 }
 
 func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string, ctx context.Context) []string {
-	routerKey := NewRouterKey(append(extensions, addon))
+	// Clone extensions to avoid mutating / aliasing the caller's backing array via append.
+	routerKey := NewRouterKey(append(slices.Clone(extensions), addon))
 	routerKeyString := routerKey.String()
 
 	// OPTIMIZATION: Double-check locking pattern to reduce contention
 	// First, try with read lock (allows concurrent readers)
 	csm.lock.RLock()
-	if csm.addonAddresses != nil && csm.addonAddresses[routerKeyString] != nil {
-		// Cache hit - return immediately with read lock (fast path)
-		result := csm.addonAddresses[routerKeyString]
-		csm.lock.RUnlock()
-		return result
+	if csm.addonAddresses != nil {
+		if cached, ok := csm.addonAddresses[routerKeyString]; ok && cached != nil {
+			// Cache hit - return immediately with read lock (fast path)
+			csm.lock.RUnlock()
+			return cached
+		}
 	}
 	csm.lock.RUnlock()
 
@@ -561,14 +563,19 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 
 	// Double-check: re-verify after acquiring write lock
 	// Another goroutine may have populated the cache while we waited
-	if csm.addonAddresses != nil && csm.addonAddresses[routerKeyString] != nil {
-		return csm.addonAddresses[routerKeyString]
+	if csm.addonAddresses != nil {
+		if cached, ok := csm.addonAddresses[routerKeyString]; ok && cached != nil {
+			return cached
+		}
+	} else {
+		csm.addonAddresses = make(map[string][]string)
 	}
 
-	// Actually need to populate the cache
-	csm.RemoveAddonAddresses(addon, extensions)
-	csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
-	return csm.addonAddresses[routerKeyString]
+	// Actually need to populate the cache.
+	// Note: CalculateAddonValidAddresses assumes the CSM is at least RLocked; holding the write lock is fine.
+	result := csm.CalculateAddonValidAddresses(addon, extensions, ctx)
+	csm.addonAddresses[routerKeyString] = result
+	return result
 }
 
 // validating we still have providers, otherwise reset valid addresses list
