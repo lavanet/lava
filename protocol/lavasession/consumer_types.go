@@ -40,15 +40,17 @@ func (list EndpointInfoList) Swap(i, j int) {
 }
 
 const (
-	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
-	AllowGRPCCompressionFlag               = "enable-application-level-compression"
-	maximumStreamsOverASingleConnection    = 100
-	WeightMultiplierForStaticProviders     = 10
+	AllowInsecureConnectionToProvidersFlag     = "allow-insecure-provider-dialing"
+	AllowGRPCCompressionFlag                   = "enable-application-level-compression"
+	MaximumStreamsOverASingleConnectionFlag    = "maximum-streams-per-connection"
+	DefaultMaximumStreamsOverASingleConnection = 100
+	WeightMultiplierForStaticProviders         = 10
 )
 
 var (
 	AllowInsecureConnectionToProviders                   = false
 	AllowGRPCCompressionForConsumerProviderCommunication = false
+	MaximumStreamsOverASingleConnection                  = uint64(DefaultMaximumStreamsOverASingleConnection)
 )
 
 type UsedProvidersInf interface {
@@ -415,7 +417,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
-	maximumBlockedSessionsAllowed := utils.Min(MaxSessionsAllowedPerProvider, MaxAllowedBlockListedSessionPerProvider*(numberOfResets+1)) // +1 as we start from 0
+	maximumBlockedSessionsAllowed := uint64(utils.Min(MaxSessionsAllowedPerProvider, GetMaxAllowedBlockListedSessionPerProvider()*(int(numberOfResets)+1))) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
@@ -543,7 +545,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 							continue
 						}
 						// Check we didn't reach the maximum streams per connection.
-						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
+						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < MaximumStreamsOverASingleConnection {
 							return endpointConnection, true
 						}
 					}
