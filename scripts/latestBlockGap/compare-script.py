@@ -155,5 +155,5 @@ while true; do
         echo ""
     fi
 
-    sleep 3
+    sleep 0
 done
