@@ -183,11 +183,8 @@ type rpcSmartRouterStartOptions struct {
 	clientCtx                client.Context    // Blockchain client context for querying specs
 	privKey                  *btcec.PrivateKey // Private key for signing relay requests
 	lavaChainID              string            // Lava blockchain chain ID
-<<<<<<< HEAD
 	memoryGCThresholdGB      float64
-=======
 	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
->>>>>>> 1b80781ea (Refactor provider optimizer initialization to remove unused parameter)
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
