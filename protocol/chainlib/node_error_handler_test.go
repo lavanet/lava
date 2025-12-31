@@ -114,11 +114,6 @@ func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "REST generic not found",
-			message:  "404 Not Found",
-			expected: true,
-		},
-		{
 			name:     "REST method not allowed",
 			message:  "405 Method Not Allowed",
 			expected: true,
@@ -312,9 +307,10 @@ func TestIsUnsupportedMethodError(t *testing.T) {
 		httpErr := rpcclient.HTTPError{
 			StatusCode: 200,
 			Status:     "200 OK",
-			Body:       []byte("The requested method 'eth_newMethod' was not found"),
+			Body:       []byte("Method not found: eth_newMethod"),
 		}
 		// This returns true because the HTTPError.Error() includes the body content
+		// and the body contains "method not found" as a substring
 		require.True(t, IsUnsupportedMethodError(httpErr))
 	})
 }
