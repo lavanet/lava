@@ -16,9 +16,7 @@ const (
 	DataReliabilityTimeoutIncrease      = 5 * time.Second
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
-	DefaultTimeout                      = 30 * time.Second
-	DefaultTimeoutLongIsh               = 1 * time.Minute
-	DefaultTimeoutLong                  = 3 * time.Minute
+	DefaultTimeoutSeconds               = 30 // default timeout in seconds, can be overridden by flag
 	CacheTimeout                        = 50 * time.Millisecond
 	// On subscriptions we must use context.Background(),
 	// we cant have a context.WithTimeout() context, meaning we can hang for ever.
@@ -26,6 +24,10 @@ const (
 	// if the first reply doesn't return after the specified timeout a timeout error will occur
 	SubscriptionFirstReplyTimeout = 10 * time.Second
 )
+
+// DefaultTimeout is the configurable default timeout for relay processing.
+// It can be overridden via the --default-timeout flag on consumer and smart router commands.
+var DefaultTimeout = time.Duration(DefaultTimeoutSeconds) * time.Second
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
 	return BaseTimePerCU(cu)
@@ -78,11 +80,11 @@ type TimeoutInfo struct {
 
 func GetTimeoutForProcessing(relayTimeout time.Duration, timeoutInfo TimeoutInfo) time.Duration {
 	ctxTimeout := DefaultTimeout
-	if timeoutInfo.CU >= 50 { // for heavyish relays we set longish timeout :)
-		ctxTimeout = DefaultTimeoutLongIsh
+	if timeoutInfo.CU >= 50 {
+		ctxTimeout = DefaultTimeout * 2
 	}
 	if timeoutInfo.Hanging || timeoutInfo.CU >= 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
-		ctxTimeout = DefaultTimeoutLong
+		ctxTimeout = DefaultTimeout * 6
 	}
 	if relayTimeout > ctxTimeout {
 		ctxTimeout = relayTimeout

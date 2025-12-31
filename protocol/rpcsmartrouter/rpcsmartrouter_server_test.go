@@ -2,6 +2,8 @@ package rpcsmartrouter
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -31,6 +33,17 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// getFreePort returns a free port by briefly listening on :0 and then closing
+func getFreePort(t *testing.T) int {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	tcpAddr, ok := listener.Addr().(*net.TCPAddr)
+	require.True(t, ok, "listener address is not a TCP address")
+	port := tcpAddr.Port
+	listener.Close()
+	return port
+}
+
 func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Context, consumeSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress, providerPublicAddress string, relayer pairingtypes.RelayerClient, specId string, apiInterface string, epoch uint64, requiredResponses int, lavaChainID string) (*RPCSmartRouterServer, chainlib.ChainParser) {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
@@ -41,9 +54,11 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 
+	// Use a dynamically allocated free port to avoid "address already in use" errors
+	port := getFreePort(t)
 	rpcSmartRouterServer := &RPCSmartRouterServer{}
 	rpcEndpoint := &lavasession.RPCEndpoint{
-		NetworkAddress:  "127.0.0.1:54321",
+		NetworkAddress:  fmt.Sprintf("127.0.0.1:%d", port),
 		ChainID:         specId,
 		ApiInterface:    apiInterface,
 		TLSEnabled:      false,
@@ -59,7 +74,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 			PublicLavaAddress: providerPublicAddress,
 			PairingEpoch:      epoch,
 			MaxComputeUnits:   10000, // Set a reasonable max compute units for testing
-			Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayer}}}},
+			Endpoints:         []*lavasession.Endpoint{{Enabled: true, Connections: []*lavasession.EndpointConnection{{Client: relayer}}}},
 		},
 	}, nil)
 
@@ -143,7 +158,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		PublicLavaAddress: providerPublicAddress,
 		PairingEpoch:      100,
 		MaxComputeUnits:   10000, // Set a reasonable max compute units for testing
-		Endpoints:         []*lavasession.Endpoint{{Connections: []*lavasession.EndpointConnection{{Client: relayerMock}}}},
+		Endpoints:         []*lavasession.Endpoint{{Enabled: true, Connections: []*lavasession.EndpointConnection{{Client: relayerMock}}}},
 	}
 	// Create RelayResult
 	relayResult := &common.RelayResult{
