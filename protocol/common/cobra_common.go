@@ -65,9 +65,11 @@ const (
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
-	EnableMemoryLogsFlag                  = "enable-memory-logs"         // enable memory tracking logs
-	MemoryGCThresholdGBFlagName           = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
-	DefaultProcessingTimeoutFlagName      = "default-processing-timeout" // default timeout for relay processing
+
+	EnableMemoryLogsFlag             = "enable-memory-logs"         // enable memory tracking logs
+	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
+	MaxSessionsPerProviderFlagName   = "max-sessions-per-provider"  // Max number of sessions allowed per provider
+	DefaultProcessingTimeoutFlagName = "default-processing-timeout" // default timeout for relay processing
 )
 
 const (
