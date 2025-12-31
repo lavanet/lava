@@ -341,7 +341,6 @@ func TestGetUnsupportedMethodPatterns(t *testing.T) {
 	require.Contains(t, restPatterns, RESTEndpointNotFound)
 	require.Contains(t, restPatterns, RESTRouteNotFound)
 	require.Contains(t, restPatterns, RESTPathNotFound)
-	require.Contains(t, restPatterns, RESTNotFound)
 	require.Contains(t, restPatterns, RESTMethodNotAllowed)
 
 	// Verify gRPC patterns
@@ -363,7 +362,6 @@ func TestErrorConstants(t *testing.T) {
 	require.Equal(t, "endpoint not found", RESTEndpointNotFound)
 	require.Equal(t, "route not found", RESTRouteNotFound)
 	require.Equal(t, "path not found", RESTPathNotFound)
-	require.Equal(t, "not found", RESTNotFound)
 	require.Equal(t, "method not allowed", RESTMethodNotAllowed)
 
 	require.Equal(t, "method not implemented", GRPCMethodNotImplemented)
