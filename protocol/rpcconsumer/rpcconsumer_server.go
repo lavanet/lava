@@ -1132,7 +1132,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
 			// to prevent session leaks on early returns
-			sessionHandled := false
+			var sessionHandled atomic.Bool
+			sessionHandled.Store(false)
 			singleConsumerSession := sessionInfo.Session
 
 			defer func() {
@@ -1143,7 +1144,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				// CRITICAL: Ensure session is always freed to prevent session leaks
 				// If session wasn't handled by OnSessionDone/OnSessionFailure, free it now
-				if !sessionHandled && singleConsumerSession != nil {
+				if !sessionHandled.Load() && singleConsumerSession != nil {
 					releaseErr := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, errResponse)
 					if releaseErr != nil {
 						utils.LavaFormatError("failed to release leaked session in defer", releaseErr,
@@ -1212,7 +1213,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				// CRITICAL: Set sessionHandled AFTER relaySubscriptionInner returns to ensure
 				// that if it panics before its internal session cleanup, the defer will free the session
-				sessionHandled = true
+				sessionHandled.Store(true)
 				if errResponse != nil {
 					// Explicit cleanup on error to prevent memory leak
 					rpccs.CancelSubscriptionContext(hashedParams)
@@ -1247,7 +1248,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			relayLatency, errResponse, _ := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
 			if errResponse != nil {
 				// CRITICAL: Release session IMMEDIATELY to prevent session exhaustion
-				sessionHandled = true // Mark session as handled before OnSessionFailure
+				sessionHandled.Store(true) // Mark session as handled before OnSessionFailure
 				errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, errResponse)
 				if errReport != nil {
 					utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
@@ -1296,7 +1297,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if expectedBH != int64(math.MaxInt64) {
 				syncGap = expectedBH - latestBlock
 			}
-			sessionHandled = true                                                                                                                                                                                                                                                                                                                     // Mark session as handled before OnSessionDone
+			sessionHandled.Store(true)                                                                                                                                                                                                                                                                                                                // Mark session as handled before OnSessionDone
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError

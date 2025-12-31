@@ -1114,7 +1114,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
 			// to prevent session leaks on early returns
-			sessionHandled := false
+			var sessionHandled atomic.Bool
+			sessionHandled.Store(false)
 			singleConsumerSession := sessionInfo.Session
 
 			defer func() {
@@ -1125,7 +1126,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 				// CRITICAL: Ensure session is always freed to prevent session leaks
 				// If session wasn't handled by OnSessionDone/OnSessionFailure, free it now
-				if !sessionHandled && singleConsumerSession != nil {
+				if !sessionHandled.Load() && singleConsumerSession != nil {
 					releaseErr := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
 					if releaseErr != nil {
 						utils.LavaFormatError("failed to release leaked session in defer", releaseErr,
@@ -1194,7 +1195,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				errResponse = rpcss.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				// CRITICAL: Set sessionHandled AFTER relaySubscriptionInner returns to ensure
 				// that if it panics before its internal session cleanup, the defer will free the session
-				sessionHandled = true
+				sessionHandled.Store(true)
 				if errResponse != nil {
 					// Explicit cleanup on error to prevent memory leak
 					rpcss.CancelSubscriptionContext(hashedParams)
@@ -1229,7 +1230,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			relayLatency, errResponse, _ := rpcss.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
 			if errResponse != nil {
 				// CRITICAL: Release session IMMEDIATELY to prevent session exhaustion
-				sessionHandled = true // Mark session as handled before OnSessionFailure
+				sessionHandled.Store(true)
 				errReport := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
 				if errReport != nil {
 					utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
@@ -1274,7 +1275,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Smart router uses 0 for syncGap since it doesn't track consensus
 			syncGap := int64(0)
-			sessionHandled = true                                                                                                                                                                                                                                                                                                             // Mark session as handled before OnSessionDone
+			sessionHandled.Store(true)                                                                                                                                                                                                                                                                                                        // Mark session as handled before OnSessionDone
 			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
