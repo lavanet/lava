@@ -207,6 +207,35 @@ func (srsm *SmartRouterRelayStateMachine) GetProtocolMessage() chainlib.Protocol
 // Using RelayStateSendInstructions from relaycore
 type RelayStateSendInstructions = relaycore.RelayStateSendInstructions
 
+// checkAndHandleTimeout checks if processingCtx has expired and handles cleanup if so.
+// Returns true if timeout expired (caller should return), false otherwise.
+func (srsm *SmartRouterRelayStateMachine) checkAndHandleTimeout(
+	processingCtx context.Context,
+	relayTaskChannel chan RelayStateSendInstructions,
+	processingTimeout time.Duration,
+	location string,
+) bool {
+	if processingCtx.Err() == nil {
+		return false // No timeout, continue
+	}
+
+	// Timeout expired - log and send termination instruction
+	userData := srsm.GetProtocolMessage().GetUserData()
+	utils.LavaFormatWarning("Relay processing timeout expired",
+		nil,
+		utils.LogAttr("location", location),
+		utils.LogAttr("processingTimeout", processingTimeout),
+		utils.LogAttr("dappId", userData.DappId),
+		utils.LogAttr("consumerIp", userData.ConsumerIp),
+		utils.LogAttr("api", srsm.GetProtocolMessage().GetApi().Name),
+		utils.LogAttr("GUID", srsm.ctx),
+		utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
+	)
+
+	relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
+	return true // Timeout handled, caller should return
+}
+
 func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendInstructions, error) {
 	if !srsm.Initialized() {
 		return nil, utils.LavaFormatError("SmartRouterRelayStateMachine was not initialized properly", nil)
@@ -261,6 +290,12 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		consecutiveBatchErrors := 0
 		// Start the relay state machine
 		for {
+			// Priority check: Always check if processing timeout expired FIRST
+			// This prevents race conditions where gotResults might be chosen over processingCtx.Done()
+			if srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "priority_check") {
+				return
+			}
+
 			select {
 			// Getting batch update for either errors sending message or successful batches
 			case err := <-srsm.batchUpdate:
@@ -274,6 +309,10 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 						}
 						go validateReturnCondition(err) // Check if we have ongoing messages pending return.
 					} else {
+						// Check if global timeout expired before spawning retry
+						if srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "batchUpdate_error") {
+							return
+						}
 						utils.LavaFormatTrace("[StateMachine] batchUpdate - err != nil - batch fail retry attempt", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", srsm.ctx))
 						// Failed sending message, but we still want to attempt sending more.
 						relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
@@ -292,6 +331,13 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
 					return
 				}
+
+				// Check if global timeout expired before spawning retry
+				// Use direct context error check instead of non-blocking select to avoid race conditions
+				if srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "gotResults_retry") {
+					return
+				}
+
 				// If should retry == true, send a new batch. (success == false)
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - srsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
@@ -301,6 +347,10 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
+				// Check if global timeout expired before spawning retry
+				if srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "ticker_retry") {
+					return
+				}
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
@@ -321,18 +371,8 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				return
 			case <-processingCtx.Done():
 				// In case we got a processing timeout we return context deadline exceeded to the user.
-				userData := srsm.GetProtocolMessage().GetUserData()
-				utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
-					utils.LogAttr("processingTimeout", processingTimeout),
-					utils.LogAttr("dappId", userData.DappId),
-					utils.LogAttr("consumerIp", userData.ConsumerIp),
-					utils.LogAttr("protocolMessage.GetApi().Name", srsm.GetProtocolMessage().GetApi().Name),
-					utils.LogAttr("GUID", srsm.ctx),
-					utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
-					utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
-				)
-				// returning the context error
-				relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
+				// This is a backup case - should rarely trigger due to priority checks above
+				srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "processingCtx_done_backup")
 				return
 			}
 		}
