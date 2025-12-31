@@ -1263,7 +1263,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// consumer Session should be locked here. so we can just apply the session failure here.
 	if consumerSession.BlockListed {
-		// if consumer session is already blocklisted return an error.
+		// if consumer session is already blocklisted, free it and return an error.
+		// CRITICAL: Must call Free() to release the lock even when returning early
+		consumerSession.Free(errorReceived)
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 
