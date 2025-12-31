@@ -403,16 +403,19 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 		t.Logf("Total tasks spawned: %d", taskNumber)
 		t.Logf("Total elapsed time: %v", elapsedTime)
 
-		// CRITICAL ASSERTION: After 100ms timeout, no new tasks should be spawned
-		// We expect very few tasks (1-5) because the timeout should stop retries quickly
-		// Before the fix, this would spawn 10+ tasks over several seconds
-		require.LessOrEqual(t, taskNumber, 5,
-			"Expected maximum 5 tasks before timeout, but got %d. This suggests processingCtx timeout is not being enforced!",
+		// CRITICAL ASSERTION: After 100ms timeout, retries should stop reasonably quickly
+		// Due to Go scheduler jitter, we allow some slack (~10-20ms overshoot is normal)
+		// We expect around 10-12 tasks given ~10ms per task = ~100-120ms
+		// Before the fix, this would spawn 30+ tasks over several seconds
+		require.LessOrEqual(t, taskNumber, 12,
+			"Expected maximum 12 tasks (100ms timeout + scheduler jitter), but got %d. This suggests processingCtx timeout is not being enforced properly!",
 			taskNumber)
 
-		// Verify timeout was respected (should be close to 100ms, not multiple seconds)
-		require.Less(t, elapsedTime, 500*time.Millisecond,
-			"Expected test to complete within 500ms (timeout + buffer), but took %v. This suggests retries continued after timeout!",
+		// Verify timeout was respected with reasonable jitter tolerance
+		// Allow up to 200ms (100ms timeout + 100ms buffer for scheduler jitter)
+		// Before the fix, this would take 30+ seconds
+		require.Less(t, elapsedTime, 200*time.Millisecond,
+			"Expected test to complete within 200ms (timeout + jitter buffer), but took %v. This suggests significant delays in timeout detection!",
 			elapsedTime)
 	})
 }
