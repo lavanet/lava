@@ -36,7 +36,6 @@ const (
 	RESTEndpointNotFound = "endpoint not found"
 	RESTRouteNotFound    = "route not found"
 	RESTPathNotFound     = "path not found"
-	RESTNotFound         = "not found"
 	RESTMethodNotAllowed = "method not allowed"
 
 	// gRPC error patterns
@@ -104,7 +103,6 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 			RESTEndpointNotFound,
 			RESTRouteNotFound,
 			RESTPathNotFound,
-			RESTNotFound,
 			RESTMethodNotAllowed,
 		},
 		"grpc": {
@@ -138,7 +136,6 @@ func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
 	case strings.Contains(errorMsg, RESTEndpointNotFound),
 		strings.Contains(errorMsg, RESTRouteNotFound),
 		strings.Contains(errorMsg, RESTPathNotFound),
-		strings.Contains(errorMsg, RESTNotFound),
 		strings.Contains(errorMsg, RESTMethodNotAllowed):
 		return true
 
