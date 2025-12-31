@@ -328,7 +328,9 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		if err != nil {
 			return err // Return original error without formatting
 		}
-		return nil
+		// Still return an error based on description to maintain the contract
+		// that LavaFormat* functions always return an error when called
+		return fmt.Errorf("%s", description)
 	}
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
