@@ -37,7 +37,9 @@ import (
 func getFreePort(t *testing.T) int {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	port := listener.Addr().(*net.TCPAddr).Port
+	tcpAddr, ok := listener.Addr().(*net.TCPAddr)
+	require.True(t, ok, "listener address is not a TCP address")
+	port := tcpAddr.Port
 	listener.Close()
 	return port
 }
