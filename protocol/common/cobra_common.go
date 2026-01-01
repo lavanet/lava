@@ -31,13 +31,13 @@ const (
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
-	SetRelayCountOnNodeErrorFlag    = "set-retry-count-on-node-error"
-	UseStaticSpecFlag               = "use-static-spec"
-	EnableSelectionStatsHeaderFlag  = "enable-selection-stats" // enable selection stats header for debugging provider selection // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
-	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
-	DefaultEpochDuration         = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
-	StandaloneEpochDuration      = 15 * time.Minute  // default epoch duration for standalone/static provider mode
+	SetRelayCountOnNodeErrorFlag   = "set-retry-count-on-node-error"
+	UseStaticSpecFlag              = "use-static-spec"
+	EnableSelectionStatsHeaderFlag = "enable-selection-stats" // enable selection stats header for debugging provider selection // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	GitHubTokenFlag                = "github-token"           // GitHub personal access token for accessing private repositories and higher API rate limits
+	EpochDurationFlag              = "epoch-duration"         // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration           = 30 * time.Minute         // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration        = 15 * time.Minute         // default epoch duration for standalone/static provider mode
 
 	// weighted selection flags (provider optimizer)
 	ProviderOptimizerAvailabilityWeight = "provider-optimizer-availability-weight"  // weight for availability score (default: 0.4)

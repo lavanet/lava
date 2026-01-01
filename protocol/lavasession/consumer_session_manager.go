@@ -69,7 +69,7 @@ type ConsumerSessionManager struct {
 	reportedProviders *ReportedProviders
 
 	// Latest selection stats for debugging provider selection (thread-safe access)
-	selectionStatsLock sync.RWMutex
+	selectionStatsLock   sync.RWMutex
 	latestSelectionStats *provideroptimizer.SelectionStats
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
