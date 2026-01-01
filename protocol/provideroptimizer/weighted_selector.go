@@ -1,8 +1,10 @@
 package provideroptimizer
 
 import (
+	"fmt"
 	"math"
 	stdrand "math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,6 +77,23 @@ type ProviderScore struct {
 	Address         string  // Provider address
 	CompositeScore  float64 // Normalized 0-1 composite score
 	SelectionWeight float64 // Score adjusted by strategy and stake
+}
+
+// SelectionStats contains detailed information about provider selection for debugging
+type SelectionStats struct {
+	ProviderScores   []ProviderScoreDetails // Scores for all candidates
+	RNGValue         float64                // Random number used for selection
+	SelectedProvider string                 // The provider that was selected
+}
+
+// ProviderScoreDetails contains detailed scoring information for a single provider
+type ProviderScoreDetails struct {
+	Address      string  // Provider address
+	Availability float64 // Availability score (0-1)
+	Latency      float64 // Latency score (0-1)
+	Sync         float64 // Sync score (0-1)
+	Stake        float64 // Stake score (0-1)
+	Composite    float64 // Combined QoS score (0-1)
 }
 
 // WeightedSelectorConfig holds configuration options for creating a WeightedSelector
@@ -333,13 +352,28 @@ func (ws *WeightedSelector) applyStrategyAdjustments(latency, sync float64) (flo
 func (ws *WeightedSelector) SelectProvider(
 	providerScores []ProviderScore,
 ) string {
+	selected, _ := ws.SelectProviderWithStats(providerScores, nil)
+	return selected
+}
+
+// SelectProviderWithStats selects a provider using weighted random selection
+// and returns detailed selection statistics if scoreDetails is provided
+func (ws *WeightedSelector) SelectProviderWithStats(
+	providerScores []ProviderScore,
+	scoreDetails []ProviderScoreDetails,
+) (string, *SelectionStats) {
 	if len(providerScores) == 0 {
-		return ""
+		return "", nil
 	}
 
 	// Handle single provider case
 	if len(providerScores) == 1 {
-		return providerScores[0].Address
+		stats := &SelectionStats{
+			ProviderScores:   scoreDetails,
+			RNGValue:         0.0,
+			SelectedProvider: providerScores[0].Address,
+		}
+		return providerScores[0].Address, stats
 	}
 
 	// Calculate total weighted score
@@ -351,7 +385,13 @@ func (ws *WeightedSelector) SelectProvider(
 	if totalScore <= 0 {
 		// Fallback to uniform random selection if all scores are zero
 		utils.LavaFormatWarning("all provider scores are zero, using uniform selection", nil)
-		return providerScores[ws.rng.Intn(len(providerScores))].Address
+		selected := providerScores[ws.rng.Intn(len(providerScores))].Address
+		stats := &SelectionStats{
+			ProviderScores:   scoreDetails,
+			RNGValue:         0.0,
+			SelectedProvider: selected,
+		}
+		return selected, stats
 	}
 
 	// Generate random value in [0, totalScore)
@@ -368,7 +408,12 @@ func (ws *WeightedSelector) SelectProvider(
 				utils.LogAttr("totalScore", totalScore),
 				utils.LogAttr("randomValue", randomValue),
 			)
-			return ps.Address
+			stats := &SelectionStats{
+				ProviderScores:   scoreDetails,
+				RNGValue:         randomValue,
+				SelectedProvider: ps.Address,
+			}
+			return ps.Address, stats
 		}
 	}
 
@@ -377,7 +422,13 @@ func (ws *WeightedSelector) SelectProvider(
 		utils.LogAttr("totalScore", totalScore),
 		utils.LogAttr("randomValue", randomValue),
 	)
-	return providerScores[len(providerScores)-1].Address
+	selected := providerScores[len(providerScores)-1].Address
+	stats := &SelectionStats{
+		ProviderScores:   scoreDetails,
+		RNGValue:         randomValue,
+		SelectedProvider: selected,
+	}
+	return selected, stats
 }
 
 // CalculateProviderScores computes scores for all providers
@@ -386,9 +437,10 @@ func (ws *WeightedSelector) CalculateProviderScores(
 	ignoredProviders map[string]struct{},
 	providerDataGetter func(string) (*pairingtypes.QualityOfServiceReport, time.Time, bool),
 	stakeGetter func(string) int64,
-) ([]ProviderScore, map[string]*metrics.OptimizerQoSReport) {
+) ([]ProviderScore, map[string]*metrics.OptimizerQoSReport, []ProviderScoreDetails) {
 	providerScores := make([]ProviderScore, 0, len(allAddresses))
 	qosReports := make(map[string]*metrics.OptimizerQoSReport)
+	scoreDetails := make([]ProviderScoreDetails, 0, len(allAddresses))
 
 	// Calculate total stake
 	totalStake := int64(0)
@@ -419,6 +471,15 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		stake := stakeGetter(providerAddress)
 		stakeCoin := sdk.NewCoin("ulava", sdk.NewInt(stake))
 
+		// Extract individual scores for detailed reporting
+		latency, sync, availability := qos.GetScoresFloat64()
+
+		// Calculate normalized scores
+		availabilityScore := availability
+		latencyScore := ws.normalizeLatency(latency)
+		syncScore := ws.normalizeSync(sync)
+		stakeScore := ws.normalizeStake(stakeCoin, totalStakeCoin)
+
 		// Calculate composite score
 		compositeScore := ws.CalculateScore(qos, stakeCoin, totalStakeCoin)
 
@@ -429,8 +490,17 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		}
 		providerScores = append(providerScores, providerScore)
 
+		// Store detailed scores for selection stats
+		scoreDetails = append(scoreDetails, ProviderScoreDetails{
+			Address:      providerAddress,
+			Availability: availabilityScore,
+			Latency:      latencyScore,
+			Sync:         syncScore,
+			Stake:        stakeScore,
+			Composite:    compositeScore,
+		})
+
 		// Create QoS report for metrics
-		latency, sync, availability := qos.GetScoresFloat64()
 		qosReports[providerAddress] = &metrics.OptimizerQoSReport{
 			ProviderAddress:   providerAddress,
 			SyncScore:         sync,
@@ -449,7 +519,7 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		)
 	}
 
-	return providerScores, qosReports
+	return providerScores, qosReports, scoreDetails
 }
 
 // GetConfig returns the current configuration
@@ -467,4 +537,36 @@ func (ws *WeightedSelector) GetConfig() WeightedSelectorConfig {
 // UpdateStrategy changes the strategy and recalculates any strategy-dependent parameters
 func (ws *WeightedSelector) UpdateStrategy(strategy Strategy) {
 	ws.strategy = strategy
+}
+
+// FormatSelectionStats formats selection stats as a string for the header
+// Format: [provider1: availability, latency, sync, stake, composite] [provider2: ...] | RNG: <value> | Selected: <provider>
+func (stats *SelectionStats) FormatSelectionStats() string {
+	if stats == nil {
+		return ""
+	}
+
+	var result strings.Builder
+
+	// Format each provider's scores
+	for i, ps := range stats.ProviderScores {
+		if i > 0 {
+			result.WriteString(" ")
+		}
+		result.WriteString("[")
+		result.WriteString(ps.Address)
+		result.WriteString(": ")
+		result.WriteString(fmt.Sprintf("%.3f, %.3f, %.3f, %.3f, %.3f", ps.Availability, ps.Latency, ps.Sync, ps.Stake, ps.Composite))
+		result.WriteString("]")
+	}
+
+	// Add RNG value
+	result.WriteString(" | RNG: ")
+	result.WriteString(fmt.Sprintf("%.6f", stats.RNGValue))
+
+	// Add selected provider
+	result.WriteString(" | Selected: ")
+	result.WriteString(stats.SelectedProvider)
+
+	return result.String()
 }
