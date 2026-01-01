@@ -21,6 +21,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -1102,4 +1103,98 @@ func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
 
 	_, err = csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
 	require.ErrorIs(t, err, PairingListEmptyError)
+}
+
+// TestDeadConnectionCleanup validates that dead gRPC connections are cleaned up
+// before iterating over endpoint connections to prevent accumulation
+func TestDeadConnectionCleanup(t *testing.T) {
+	ctx := context.Background()
+	csp := &ConsumerSessionsWithProvider{}
+
+	// Create a valid connection (connected to the test grpc server)
+	validClient, validConn, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+	require.NoError(t, err)
+	defer validConn.Close()
+
+	// Create a shutdown connection (by creating and immediately closing it)
+	shutdownClient, shutdownConn, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+	require.NoError(t, err)
+	defer shutdownConn.Close()
+	shutdownConn.Close() // Close to put it in Shutdown state
+	// Wait a bit for the connection to transition to Shutdown state
+	time.Sleep(50 * time.Millisecond)
+	require.Equal(t, connectivity.Shutdown, shutdownConn.GetState())
+
+	// Create another valid connection for the disconnected test case
+	disconnectedClient, disconnectedConn, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+	require.NoError(t, err)
+	defer disconnectedConn.Close()
+
+	// Create endpoint with mixed connections:
+	// 1. Valid connection (should remain)
+	// 2. Nil connection (should be removed)
+	// 3. Shutdown connection (should be removed)
+	// 4. Disconnected connection (should be removed)
+	endpoint := &Endpoint{
+		NetworkAddress: grpcListener,
+		Enabled:        true,
+		Connections: []*EndpointConnection{
+			{
+				Client:       validClient,
+				connection:   validConn,
+				disconnected: false,
+			},
+			{
+				Client:       nil,
+				connection:   nil, // nil connection
+				disconnected: false,
+			},
+			{
+				Client:       shutdownClient,
+				connection:   shutdownConn, // shutdown connection
+				disconnected: false,
+			},
+			{
+				Client:       disconnectedClient,
+				connection:   disconnectedConn,
+				disconnected: true, // disconnected flag set
+			},
+		},
+		ConnectionRefusals: 0,
+	}
+
+	// Verify initial state - should have 4 connections
+	require.Equal(t, 4, len(endpoint.Connections))
+
+	// Create ConsumerSessionsWithProvider with this endpoint
+	cswp := &ConsumerSessionsWithProvider{
+		PublicLavaAddress: "test-provider",
+		Endpoints:         []*Endpoint{endpoint},
+		Sessions:          map[int64]*SingleConsumerSession{},
+		MaxComputeUnits:   200,
+		PairingEpoch:      firstEpochHeight,
+	}
+
+	// Call fetchEndpointConnectionFromConsumerSessionWithProvider which will trigger cleanup
+	// This function will iterate through endpoints and call connectEndpoint, which contains the cleanup logic
+	connected, endpointsList, providerAddress, err := cswp.fetchEndpointConnectionFromConsumerSessionWithProvider(
+		ctx,
+		false, // retryDisabledEndpoints
+		false, // getAllEndpoints
+		"",    // addon
+		nil,   // extensionNames
+	)
+
+	// Should successfully connect (we have one valid connection)
+	require.NoError(t, err)
+	require.True(t, connected)
+	require.NotEmpty(t, endpointsList)
+	require.Equal(t, "test-provider", providerAddress)
+
+	// Verify cleanup happened - should only have 1 connection remaining (the valid one)
+	require.Equal(t, 1, len(endpoint.Connections), "Dead connections should be cleaned up")
+	require.NotNil(t, endpoint.Connections[0].connection, "Remaining connection should not be nil")
+	require.False(t, endpoint.Connections[0].disconnected, "Remaining connection should not be disconnected")
+	require.NotEqual(t, connectivity.Shutdown, endpoint.Connections[0].connection.GetState(), "Remaining connection should not be in Shutdown state")
+	require.Equal(t, validConn, endpoint.Connections[0].connection, "Remaining connection should be the valid one")
 }

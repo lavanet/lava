@@ -69,7 +69,7 @@ type ConsumerSessionManager struct {
 	reportedProviders *ReportedProviders
 
 	// Latest selection stats for debugging provider selection (thread-safe access)
-	selectionStatsLock sync.RWMutex
+	selectionStatsLock   sync.RWMutex
 	latestSelectionStats *provideroptimizer.SelectionStats
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
@@ -545,15 +545,41 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 }
 
 func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string, ctx context.Context) []string {
-	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
-	defer csm.lock.Unlock()
-	routerKey := NewRouterKey(append(extensions, addon))
+	// Clone extensions to avoid mutating / aliasing the caller's backing array via append.
+	routerKey := NewRouterKey(append(slices.Clone(extensions), addon))
 	routerKeyString := routerKey.String()
-	if csm.addonAddresses == nil || csm.addonAddresses[routerKeyString] == nil {
-		csm.RemoveAddonAddresses(addon, extensions)
-		csm.addonAddresses[routerKeyString] = csm.CalculateAddonValidAddresses(addon, extensions, ctx)
+
+	// OPTIMIZATION: Double-check locking pattern to reduce contention
+	// First, try with read lock (allows concurrent readers)
+	csm.lock.RLock()
+	if csm.addonAddresses != nil {
+		if cached, ok := csm.addonAddresses[routerKeyString]; ok && cached != nil {
+			// Cache hit - return immediately with read lock (fast path)
+			csm.lock.RUnlock()
+			return cached
+		}
 	}
-	return csm.addonAddresses[routerKeyString]
+	csm.lock.RUnlock()
+
+	// Cache miss - need to write, acquire write lock
+	csm.lock.Lock()
+	defer csm.lock.Unlock()
+
+	// Double-check: re-verify after acquiring write lock
+	// Another goroutine may have populated the cache while we waited
+	if csm.addonAddresses != nil {
+		if cached, ok := csm.addonAddresses[routerKeyString]; ok && cached != nil {
+			return cached
+		}
+	} else {
+		csm.addonAddresses = make(map[string][]string)
+	}
+
+	// Actually need to populate the cache.
+	// Note: CalculateAddonValidAddresses assumes the CSM is at least RLocked; holding the write lock is fine.
+	result := csm.CalculateAddonValidAddresses(addon, extensions, ctx)
+	csm.addonAddresses[routerKeyString] = result
+	return result
 }
 
 // validating we still have providers, otherwise reset valid addresses list
@@ -1249,7 +1275,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// consumer Session should be locked here. so we can just apply the session failure here.
 	if consumerSession.BlockListed {
-		// if consumer session is already blocklisted return an error.
+		// if consumer session is already blocklisted, free it and return an error.
+		// CRITICAL: Must call Free() to release the lock even when returning early
+		consumerSession.Free(errorReceived)
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 

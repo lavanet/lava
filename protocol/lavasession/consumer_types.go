@@ -40,15 +40,17 @@ func (list EndpointInfoList) Swap(i, j int) {
 }
 
 const (
-	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
-	AllowGRPCCompressionFlag               = "enable-application-level-compression"
-	maximumStreamsOverASingleConnection    = 100
-	WeightMultiplierForStaticProviders     = 10
+	AllowInsecureConnectionToProvidersFlag     = "allow-insecure-provider-dialing"
+	AllowGRPCCompressionFlag                   = "enable-application-level-compression"
+	MaximumStreamsOverASingleConnectionFlag    = "maximum-streams-per-connection"
+	DefaultMaximumStreamsOverASingleConnection = 100
+	WeightMultiplierForStaticProviders         = 10
 )
 
 var (
 	AllowInsecureConnectionToProviders                   = false
 	AllowGRPCCompressionForConsumerProviderCommunication = false
+	MaximumStreamsOverASingleConnection                  = uint64(DefaultMaximumStreamsOverASingleConnection)
 )
 
 type UsedProvidersInf interface {
@@ -417,7 +419,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
-	maximumBlockedSessionsAllowed := utils.Min(MaxSessionsAllowedPerProvider, MaxAllowedBlockListedSessionPerProvider*(numberOfResets+1)) // +1 as we start from 0
+	maximumBlockedSessionsAllowed := uint64(utils.Min(MaxSessionsAllowedPerProvider, GetMaxAllowedBlockListedSessionPerProvider()*(int(numberOfResets)+1))) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
@@ -524,6 +526,48 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			}
 			// return
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
+				// Clean up dead connections before iterating to prevent accumulation
+				cleanedConnections := make([]*EndpointConnection, 0, len(endpoint.Connections))
+				deadConnectionCount := 0
+				for _, conn := range endpoint.Connections {
+					// Only keep connections that are:
+					// 1. Not marked as disconnected
+					// 2. Still have a valid connection object
+					// 3. Not in Shutdown state
+					if conn.connection != nil &&
+						!conn.disconnected &&
+						conn.connection.GetState() != connectivity.Shutdown {
+						cleanedConnections = append(cleanedConnections, conn)
+					} else {
+						deadConnectionCount++
+						// Log cleanup for visibility
+						utils.LavaFormatDebug("Cleaning up dead connection",
+							utils.LogAttr("provider", cswp.PublicLavaAddress),
+							utils.LogAttr("endpoint", endpoint.NetworkAddress),
+							utils.LogAttr("reason", func() string {
+								if conn.disconnected {
+									return "marked disconnected"
+								} else if conn.connection == nil {
+									return "nil connection"
+								} else {
+									return "shutdown state"
+								}
+							}()),
+							utils.LogAttr("GUID", ctx))
+					}
+				}
+
+				// Update endpoint connections with cleaned list
+				if deadConnectionCount > 0 {
+					endpoint.Connections = cleanedConnections
+					utils.LavaFormatDebug("Cleaned up dead connections",
+						utils.LogAttr("provider", cswp.PublicLavaAddress),
+						utils.LogAttr("endpoint", endpoint.NetworkAddress),
+						utils.LogAttr("removedCount", deadConnectionCount),
+						utils.LogAttr("remainingCount", len(cleanedConnections)),
+						utils.LogAttr("GUID", ctx))
+				}
+
 				for _, endpointConnection := range endpoint.Connections {
 					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
 					// and it didn't disconnect before. Use it.
@@ -545,7 +589,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 							continue
 						}
 						// Check we didn't reach the maximum streams per connection.
-						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
+						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < MaximumStreamsOverASingleConnection {
 							return endpointConnection, true
 						}
 					}

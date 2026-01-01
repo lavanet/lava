@@ -55,6 +55,16 @@ func (srsm *SmartRouterRelaySenderMock) getProcessingTimeout(chainMessage chainl
 	return time.Second * 50000, 100 * time.Millisecond
 }
 
+// SmartRouterRelaySenderMockWithTimeout is a mock with configurable processing timeout
+type SmartRouterRelaySenderMockWithTimeout struct {
+	SmartRouterRelaySenderMock
+	processingTimeout time.Duration
+}
+
+func (srsm *SmartRouterRelaySenderMockWithTimeout) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+	return srsm.processingTimeout, 10 * time.Second
+}
+
 func (srsm *SmartRouterRelaySenderMock) GetChainIdAndApiInterface() (string, string) {
 	return "testUno", "testDos"
 }
@@ -316,5 +326,412 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			}
 			taskNumber++
 		}
+	})
+}
+
+func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
+	t.Run("circuit_breaker_triggers_after_2_pairing_errors", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Second pairing error - circuit breaker should trigger
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 2:
+				// Should be done - circuit breaker stopped retries
+				require.True(t, task.IsDone())
+				require.Error(t, task.Err)
+				require.True(t, lavasession.PairingListEmptyError.Is(task.Err))
+				return // Test successful
+			default:
+				require.Fail(t, "Circuit breaker should have stopped retries after 2 pairing errors")
+			}
+			taskNumber++
+		}
+	})
+}
+
+func TestSmartRouterStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
+	t.Run("pairing_error_counter_resets_on_success", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Success - should reset counter
+				require.False(t, task.IsDone())
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+				relaycore.SendSuccessResp(relayProcessor, "lava@test", time.Millisecond*1)
+			case 2:
+				// Done with success
+				require.True(t, task.IsDone())
+				require.NoError(t, task.Err)
+				return // Test successful - counter was reset, no circuit breaker
+			}
+			taskNumber++
+		}
+	})
+}
+
+func TestSmartRouterStateMachineCircuitBreakerResetsOnDifferentError(t *testing.T) {
+	t.Run("pairing_error_counter_resets_on_different_error", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// First pairing error
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 1:
+				// Different error (network timeout) - should reset counter
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(fmt.Errorf("network timeout"))
+			case 2:
+				// Another pairing error - counter was reset, so this is #1 again
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 3:
+				// Second consecutive pairing error - circuit breaker triggers
+				require.False(t, task.IsDone())
+				relayProcessor.UpdateBatch(lavasession.PairingListEmptyError)
+			case 4:
+				// Done - circuit breaker triggered
+				require.True(t, task.IsDone())
+				require.Error(t, task.Err)
+				return // Test successful
+			default:
+				require.Fail(t, "Unexpected task number")
+			}
+			taskNumber++
+		}
+	})
+}
+
+// TestProcessingContextTimeoutEnforcement tests that no new retries are spawned after processingCtx expires
+// This test validates the fix for the bug where processingCtx.Done() case was not being selected,
+// causing 30+ seconds of wasted retries even though the context had expired.
+func TestProcessingContextTimeoutEnforcement(t *testing.T) {
+	t.Run("NoRetriesAfterTimeout", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Create mock with SHORT processing timeout (100ms) to test timeout enforcement
+		mockSender := &SmartRouterRelaySenderMockWithTimeout{
+			processingTimeout: 100 * time.Millisecond, // 100ms processing timeout
+		}
+
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5) // Overall test timeout
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+		startTime := time.Now()
+
+		for task := range relayTaskChannel {
+			elapsed := time.Since(startTime)
+			t.Logf("Task %d received at %v", taskNumber, elapsed)
+
+			if task.IsDone() {
+				t.Logf("Task %d is Done (error: %v), ending test", taskNumber, task.Err)
+				break
+			}
+
+			// Add provider and simulate failure (no results)
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+
+			// Simulate various errors to trigger retries
+			if taskNumber%2 == 0 {
+				relaycore.SendProtocolError(relayProcessor, "lava@test", time.Millisecond*1, fmt.Errorf("simulated protocol error"))
+			} else {
+				relaycore.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			}
+
+			// Sleep slightly to allow WaitForResults to detect the error and return
+			time.Sleep(10 * time.Millisecond)
+			taskNumber++
+		}
+
+		elapsedTime := time.Since(startTime)
+
+		t.Logf("Total tasks spawned: %d", taskNumber)
+		t.Logf("Total elapsed time: %v", elapsedTime)
+
+		// CRITICAL ASSERTION: After 100ms timeout, retries should stop reasonably quickly
+		// Due to Go scheduler jitter, we allow some slack (~10-20ms overshoot is normal)
+		// We expect around 10-12 tasks given ~10ms per task = ~100-120ms
+		// Before the fix, this would spawn 30+ tasks over several seconds
+		require.LessOrEqual(t, taskNumber, 12,
+			"Expected maximum 12 tasks (100ms timeout + scheduler jitter), but got %d. This suggests processingCtx timeout is not being enforced properly!",
+			taskNumber)
+
+		// Verify timeout was respected with reasonable jitter tolerance
+		// Allow up to 200ms (100ms timeout + 100ms buffer for scheduler jitter)
+		// Before the fix, this would take 30+ seconds
+		require.Less(t, elapsedTime, 200*time.Millisecond,
+			"Expected test to complete within 200ms (timeout + jitter buffer), but took %v. This suggests significant delays in timeout detection!",
+			elapsedTime)
+	})
+}
+
+// TestProcessingContextStillValidAllowsRetries tests that retries continue when context is still valid
+// This ensures our fix doesn't break the normal retry mechanism
+func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
+	t.Run("RetriesContinueWhenContextValid", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// LONG processing timeout (10 seconds) - retries should continue
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2) // Test timeout
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+
+		for task := range relayTaskChannel {
+			t.Logf("Task %d received", taskNumber)
+
+			if taskNumber >= 5 {
+				// After 5 retries, send success to end the test
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+				relaycore.SendSuccessResp(relayProcessor, "lava@test", time.Millisecond*1)
+				time.Sleep(20 * time.Millisecond)
+
+				if task.IsDone() {
+					t.Log("Got Done task after success, test complete")
+					break
+				}
+				taskNumber++
+				continue
+			}
+
+			if task.IsDone() {
+				t.Logf("Task %d is Done unexpectedly (error: %v)", taskNumber, task.Err)
+				break
+			}
+
+			// Simulate failure to trigger retry
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			relaycore.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			time.Sleep(10 * time.Millisecond)
+
+			taskNumber++
+		}
+
+		// ASSERTION: With valid context, we should have been able to retry multiple times
+		require.GreaterOrEqual(t, taskNumber, 5,
+			"Expected at least 5 retries when context is valid, but only got %d", taskNumber)
+	})
+}
+
+// TestProcessingContextRaceCondition tests the exact race condition from the bug:
+// When both gotResults and processingCtx.Done() are ready simultaneously,
+// we should respect the timeout and not spawn new retries
+func TestProcessingContextRaceCondition(t *testing.T) {
+	t.Run("TimeoutWinsRaceWithGotResults", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Short timeout (200ms) to create the race condition
+		mockSender := &SmartRouterRelaySenderMockWithTimeout{
+			processingTimeout: 200 * time.Millisecond,
+		}
+
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycore.RelayProcessorMetrics, relaycore.RelayProcessorMetrics, relaycore.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycore.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		startTime := time.Now()
+		taskTimestamps := []time.Duration{}
+		tasksAfterTimeout := 0
+
+		for task := range relayTaskChannel {
+			elapsed := time.Since(startTime)
+			taskTimestamps = append(taskTimestamps, elapsed)
+			taskNum := len(taskTimestamps)
+
+			t.Logf("Task %d at %v", taskNum, elapsed)
+
+			// Count tasks spawned AFTER the 200ms timeout
+			if elapsed > 200*time.Millisecond {
+				tasksAfterTimeout++
+				t.Logf("⚠️  Task %d spawned AFTER timeout! (%v after start)", taskNum, elapsed)
+			}
+
+			if task.IsDone() {
+				t.Logf("Task %d is Done, test ending", taskNum)
+				break
+			}
+
+			// Rapidly fail to create the race condition
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			relaycore.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			// Small sleep to let WaitForResults return
+			time.Sleep(5 * time.Millisecond)
+		}
+
+		t.Logf("Task timeline: %v", taskTimestamps)
+		t.Logf("Tasks spawned after 200ms timeout: %d", tasksAfterTimeout)
+
+		// CRITICAL ASSERTION: No tasks should be spawned after the 200ms timeout
+		// Before the fix, tasks would continue spawning for seconds after timeout
+		require.Equal(t, 0, tasksAfterTimeout,
+			"Expected ZERO tasks after 200ms timeout, but %d tasks were spawned after timeout! This is the bug we're fixing.",
+			tasksAfterTimeout)
 	})
 }

@@ -295,13 +295,9 @@ func StrValue(val interface{}) string {
 }
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	// if JsonFormat {
-	// 	zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
-	// } else {
-	// 	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
-	// }
-
+	// OPTIMIZATION: Early return if log level is not enabled
+	// This prevents expensive string formatting and attribute processing
+	// when logs would be filtered anyway
 	// depending on the build flag, this log function will log either a warning or an error.
 	// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
 	// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
@@ -313,6 +309,38 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			severity = LAVA_LOG_ERROR
 		}
 	}
+
+	// Check if this log level is enabled before doing expensive work
+	var logLevelEnabled bool
+	switch severity {
+	case LAVA_LOG_TRACE:
+		logLevelEnabled = defaultGlobalLogLevel <= zerolog.TraceLevel
+	case LAVA_LOG_DEBUG:
+		logLevelEnabled = defaultGlobalLogLevel <= zerolog.DebugLevel
+	case LAVA_LOG_INFO:
+		logLevelEnabled = defaultGlobalLogLevel <= zerolog.InfoLevel
+	case LAVA_LOG_WARN:
+		logLevelEnabled = defaultGlobalLogLevel <= zerolog.WarnLevel
+	case LAVA_LOG_ERROR, LAVA_LOG_FATAL, LAVA_LOG_PANIC:
+		logLevelEnabled = true // Always process errors, fatal, and panic
+	default:
+		logLevelEnabled = true
+	}
+
+	// Early return if log level not enabled - skip all expensive formatting
+	if !logLevelEnabled {
+		if err != nil {
+			return err // Return original error without formatting
+		}
+		// Still return an error based on description to maintain the contract
+		// that LavaFormat* functions always return an error when called
+		return fmt.Errorf("%s", description)
+	}
+	// if JsonFormat {
+	// 	zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
+	// } else {
+	// 	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+	// }
 
 	var logEvent *zerolog.Event
 	var rollingLoggerEvent *zerolog.Event

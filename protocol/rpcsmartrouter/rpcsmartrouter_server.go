@@ -1114,10 +1114,28 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
 			}
 
+			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
+			// to prevent session leaks on early returns
+			var sessionHandled atomic.Bool
+			sessionHandled.Store(false)
+			singleConsumerSession := sessionInfo.Session
+
 			defer func() {
 				// Recover from any panics to prevent consumer crash
 				if r := recover(); r != nil {
 					errResponse = utils.LavaFormatError("Panic recovered in sendRelayToProvider goroutine", fmt.Errorf("%v", r), utils.LogAttr("provider", providerPublicAddress), utils.LogAttr("GUID", goroutineCtx), utils.LogAttr("stack", string(debug.Stack())))
+				}
+
+				// CRITICAL: Ensure session is always freed to prevent session leaks
+				// If session wasn't handled by OnSessionDone/OnSessionFailure, free it now
+				if !sessionHandled.Load() && singleConsumerSession != nil {
+					releaseErr := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
+					if releaseErr != nil {
+						utils.LavaFormatError("failed to release leaked session in defer", releaseErr,
+							utils.LogAttr("GUID", goroutineCtx),
+							utils.LogAttr("provider", providerPublicAddress),
+							utils.LogAttr("originalError", errResponse))
+					}
 				}
 
 				// Return response
@@ -1138,7 +1156,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			localRelayRequestData := *relayData
 
 			// Extract fields from the sessionInfo
-			singleConsumerSession := sessionInfo.Session
 			epoch := sessionInfo.Epoch
 			reportedProviders := sessionInfo.ReportedProviders
 
@@ -1158,7 +1175,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 				params, err := json.Marshal(protocolMessage.GetRPCMessage().GetParams())
 				if err != nil {
-					utils.LavaFormatError("could not marshal params", err, utils.LogAttr("GUID", ctx))
+					errResponse = utils.LavaFormatError("could not marshal params", err, utils.LogAttr("GUID", ctx))
 					return
 				}
 
@@ -1178,6 +1195,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				}()
 
 				errResponse = rpcss.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
+				// CRITICAL: Set sessionHandled AFTER relaySubscriptionInner returns to ensure
+				// that if it panics before its internal session cleanup, the defer will free the session
+				sessionHandled.Store(true)
 				if errResponse != nil {
 					// Explicit cleanup on error to prevent memory leak
 					rpcss.CancelSubscriptionContext(hashedParams)
@@ -1209,21 +1229,14 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				}
 			}
 			// send relay
-			relayLatency, errResponse, backoff := rpcss.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
+			relayLatency, errResponse, _ := rpcss.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
 			if errResponse != nil {
-				failRelaySession := func(origErr error, backoff_ bool) {
-					backOffDuration := 0 * time.Second
-					if backoff_ {
-						backOffDuration = lavasession.BACKOFF_TIME_ON_FAILURE
-					}
-					time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
-					// relay failed need to fail the session advancement
-					errReport := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, origErr)
-					if errReport != nil {
-						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: origErr.Error()})
-					}
+				// CRITICAL: Release session IMMEDIATELY to prevent session exhaustion
+				sessionHandled.Store(true)
+				errReport := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
+				if errReport != nil {
+					utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
 				}
-				go failRelaySession(errResponse, backoff)
 				go rpcss.rpcSmartRouterLogs.SetProtocolError(chainId, providerPublicAddress)
 				return
 			}
@@ -1235,7 +1248,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			// Skip block gap check for smart router since expectedBH is always MaxInt64
-			if expectedBH-latestBlock > BlockGapWarningThreshold {
+			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
 				utils.LavaFormatWarning("identified block gap", nil,
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
@@ -1264,6 +1277,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Smart router uses 0 for syncGap since it doesn't track consensus
 			syncGap := int64(0)
+			sessionHandled.Store(true)                                                                                                                                                                                                                                                                                                        // Mark session as handled before OnSessionDone
 			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
@@ -1735,6 +1749,17 @@ func (rpcss *RPCSmartRouterServer) sendDataReliabilityRelayIfApplicable(ctx cont
 	if statetracker.DisableDR {
 		return nil
 	}
+
+	// Data reliability requires at least 2 providers to compare results
+	// Skip if we only have 1 provider to avoid "No pairings available" errors
+	numProviders := rpcss.sessionManager.GetNumberOfValidProviders()
+	if numProviders < 2 {
+		utils.LavaFormatTrace("Skipping data reliability - requires at least 2 providers",
+			utils.LogAttr("availableProviders", numProviders),
+			utils.LogAttr("GUID", ctx))
+		return nil
+	}
+
 	processingTimeout, expectedRelayTimeout := rpcss.getProcessingTimeout(protocolMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
 	if relayProcessor.GetUsedProviders().CurrentlyUsed() > 0 {
