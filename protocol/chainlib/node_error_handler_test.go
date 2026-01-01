@@ -114,11 +114,6 @@ func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "REST generic not found",
-			message:  "404 Not Found",
-			expected: true,
-		},
-		{
 			name:     "REST method not allowed",
 			message:  "405 Method Not Allowed",
 			expected: true,
@@ -312,9 +307,10 @@ func TestIsUnsupportedMethodError(t *testing.T) {
 		httpErr := rpcclient.HTTPError{
 			StatusCode: 200,
 			Status:     "200 OK",
-			Body:       []byte("The requested method 'eth_newMethod' was not found"),
+			Body:       []byte("Method not found: eth_newMethod"),
 		}
 		// This returns true because the HTTPError.Error() includes the body content
+		// and the body contains "method not found" as a substring
 		require.True(t, IsUnsupportedMethodError(httpErr))
 	})
 }
@@ -341,7 +337,6 @@ func TestGetUnsupportedMethodPatterns(t *testing.T) {
 	require.Contains(t, restPatterns, RESTEndpointNotFound)
 	require.Contains(t, restPatterns, RESTRouteNotFound)
 	require.Contains(t, restPatterns, RESTPathNotFound)
-	require.Contains(t, restPatterns, RESTNotFound)
 	require.Contains(t, restPatterns, RESTMethodNotAllowed)
 
 	// Verify gRPC patterns
@@ -363,7 +358,6 @@ func TestErrorConstants(t *testing.T) {
 	require.Equal(t, "endpoint not found", RESTEndpointNotFound)
 	require.Equal(t, "route not found", RESTRouteNotFound)
 	require.Equal(t, "path not found", RESTPathNotFound)
-	require.Equal(t, "not found", RESTNotFound)
 	require.Equal(t, "method not allowed", RESTMethodNotAllowed)
 
 	require.Equal(t, "method not implemented", GRPCMethodNotImplemented)
