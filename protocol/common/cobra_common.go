@@ -31,8 +31,9 @@ const (
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
-	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
-	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	SetRelayCountOnNodeErrorFlag    = "set-retry-count-on-node-error"
+	UseStaticSpecFlag               = "use-static-spec"
+	EnableSelectionStatsHeaderFlag  = "enable-selection-stats" // enable selection stats header for debugging provider selection // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
 	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
 	DefaultEpochDuration         = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
@@ -90,6 +91,7 @@ type ConsumerCmdFlags struct {
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
 	EnableMemoryLogs         bool          // enables memory tracking logs
+	EnableSelectionStats     bool          // enables selection stats header for debugging provider selection
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

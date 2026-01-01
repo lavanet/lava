@@ -94,6 +94,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	enableSelectionStats           bool // feature flag to enable selection stats header
 }
 
 type ConsumerTxSender interface {
@@ -136,6 +137,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
+	rpccs.enableSelectionStats = cmdFlags.EnableSelectionStats
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
@@ -2086,6 +2088,19 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			}
 		}
 	}
+	// Add selection stats header if feature is enabled
+	if rpccs.enableSelectionStats {
+		if selectionStats := rpccs.consumerSessionManager.GetSelectionStats(); selectionStats != nil {
+			statsString := selectionStats.FormatSelectionStats()
+			if statsString != "" {
+				metadataReply = append(metadataReply, pairingtypes.Metadata{
+					Name:  common.SELECTION_STATS_HEADER_NAME,
+					Value: statsString,
+				})
+			}
+		}
+	}
+
 	if relayResult.Reply == nil {
 		relayResult.Reply = &pairingtypes.RelayReply{}
 	}

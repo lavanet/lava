@@ -67,6 +67,10 @@ type ConsumerSessionManager struct {
 
 	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
+
+	// Latest selection stats for debugging provider selection (thread-safe access)
+	selectionStatsLock sync.RWMutex
+	latestSelectionStats *provideroptimizer.SelectionStats
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
@@ -846,7 +850,11 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else if stickiness != "" {
-		providers = csm.providerOptimizer.ChooseBestProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		var selectionStats *provideroptimizer.SelectionStats
+		providers, selectionStats = csm.providerOptimizer.ChooseBestProviderWithStats(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		if selectionStats != nil {
+			csm.setSelectionStats(selectionStats)
+		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
 		ignoredProvidersListCopy := make(map[string]struct{}, len(ignoredProvidersList))
@@ -854,9 +862,13 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			ignoredProvidersListCopy[k] = v
 		}
 		for i := 0; i < wantedProviders; i++ {
-			provider := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
+			provider, selectionStats := csm.providerOptimizer.ChooseProviderWithStats(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
+			}
+			// Store the latest selection stats for the first provider selection
+			if i == 0 && selectionStats != nil {
+				csm.setSelectionStats(selectionStats)
 			}
 			for _, provider := range provider {
 				ignoredProvidersListCopy[provider] = struct{}{}
@@ -1420,6 +1432,20 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	go func() {
 		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastReputation, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
+}
+
+// setSelectionStats stores the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) setSelectionStats(stats *provideroptimizer.SelectionStats) {
+	csm.selectionStatsLock.Lock()
+	defer csm.selectionStatsLock.Unlock()
+	csm.latestSelectionStats = stats
+}
+
+// GetSelectionStats retrieves the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) GetSelectionStats() *provideroptimizer.SelectionStats {
+	csm.selectionStatsLock.RLock()
+	defer csm.selectionStatsLock.RUnlock()
+	return csm.latestSelectionStats
 }
 
 // Get the reported providers currently stored in the session manager.

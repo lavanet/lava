@@ -88,6 +88,7 @@ type RPCSmartRouterServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	enableSelectionStats           bool // feature flag to enable selection stats header
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -122,6 +123,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.sharedState = sharedState
 	rpcss.reporter = reporter
 	rpcss.debugRelays = cmdFlags.DebugRelays
+	rpcss.enableSelectionStats = cmdFlags.EnableSelectionStats
 	rpcss.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
@@ -2038,6 +2040,19 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 			}
 		}
 	}
+	// Add selection stats header if feature is enabled
+	if rpcss.enableSelectionStats {
+		if selectionStats := rpcss.sessionManager.GetSelectionStats(); selectionStats != nil {
+			statsString := selectionStats.FormatSelectionStats()
+			if statsString != "" {
+				metadataReply = append(metadataReply, pairingtypes.Metadata{
+					Name:  common.SELECTION_STATS_HEADER_NAME,
+					Value: statsString,
+				})
+			}
+		}
+	}
+
 	if relayResult.Reply == nil {
 		relayResult.Reply = &pairingtypes.RelayReply{}
 	}

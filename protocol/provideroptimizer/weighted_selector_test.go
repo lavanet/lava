@@ -458,7 +458,7 @@ func TestCalculateProviderScores(t *testing.T) {
 		return stakes[addr]
 	}
 
-	scores, qosReports := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
+	scores, qosReports, _ := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
 
 	require.Len(t, scores, 3)
 	require.Len(t, qosReports, 3)
@@ -505,7 +505,7 @@ func TestCalculateProviderScoresWithIgnored(t *testing.T) {
 		return stakes[addr]
 	}
 
-	scores, qosReports := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
+	scores, qosReports, _ := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
 
 	// Should only have 2 providers (provider2 is ignored)
 	require.Len(t, scores, 2)
@@ -657,7 +657,7 @@ func TestQoSReportGeneration(t *testing.T) {
 		return stakes[addr]
 	}
 
-	_, qosReports := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
+	_, qosReports, _ := ws.CalculateProviderScores(allAddresses, ignoredProviders, providerDataGetter, stakeGetter)
 
 	require.Len(t, qosReports, 1)
 	report := qosReports["provider1"]
