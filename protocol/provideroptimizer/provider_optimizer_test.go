@@ -430,7 +430,8 @@ func TestProviderOptimizerExploration(t *testing.T) {
 
 	chosenIndex = rand.Intn(providersCount - 2)
 	// set chosen index with a value in the past so it can be selected for exploration
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[chosenIndex], TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, time.Now().Add(-35*time.Second))
+	now := time.Now()
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[chosenIndex], TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, now.Add(-35*time.Second))
 	// set a basic state for all other provider, with a recent time (so they can't be selected for exploration)
 	for i := 0; i < 10; i++ {
 		for index, address := range providersGen.providersAddresses {
@@ -438,8 +439,9 @@ func TestProviderOptimizerExploration(t *testing.T) {
 				// we set chosenIndex with a past time so it can be selected for exploration
 				continue
 			}
-			// set samples in the future so they are never a candidate for exploration
-			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, time.Now().Add(1*time.Second))
+			// Set samples far in the future so they are never a candidate for exploration.
+			// This avoids flakiness under -race where the test can run long enough that "+1s" is no longer in the future.
+			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, now.Add(24*time.Hour))
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
@@ -462,6 +464,22 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	providerOptimizer.strategy = StrategyPrivacy
 	exploration = testProvidersExploration(iterations)
 	require.Equal(t, exploration, float64(0))
+}
+
+func TestProviderOptimizerUpdateWeightedSelectorStrategyPropagatesToSelector(t *testing.T) {
+	providerOptimizer := setupProviderOptimizer(1)
+
+	// Sanity: default strategy is balanced, and ConfigureWeightedSelector enforces optimizer strategy.
+	cfg := providerOptimizer.GetWeightedSelectorConfig()
+	require.Equal(t, StrategyBalanced, cfg.Strategy)
+
+	// Change optimizer strategy and explicitly propagate to selector.
+	// (This is required because tests sometimes mutate providerOptimizer.strategy directly.)
+	providerOptimizer.strategy = StrategyLatency
+	providerOptimizer.UpdateWeightedSelectorStrategy(providerOptimizer.strategy)
+
+	cfg2 := providerOptimizer.GetWeightedSelectorConfig()
+	require.Equal(t, StrategyLatency, cfg2.Strategy)
 }
 
 func TestProviderOptimizerSyncScore(t *testing.T) {

@@ -298,6 +298,10 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	// OPTIMIZATION: Early return if log level is not enabled
 	// This prevents expensive string formatting and attribute processing
 	// when logs would be filtered anyway
+	// depending on the build flag, this log function will log either a warning or an error.
+	// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
+	// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
+	// in test environment we don't expect to have these errors and if they occur we would like to fail the test.
 	if severity == LAVA_LOG_PRODUCTION {
 		if ExtendedLogLevel == "production" {
 			severity = LAVA_LOG_WARN
@@ -332,8 +336,6 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		// that LavaFormat* functions always return an error when called
 		return fmt.Errorf("%s", description)
 	}
-
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// if JsonFormat {
 	// 	zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
 	// } else {

@@ -2,6 +2,8 @@ package provideroptimizer
 
 import (
 	stdmath "math"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -355,6 +357,94 @@ func TestSelectProviderDistribution(t *testing.T) {
 	t.Logf("  high_score: %.2f%% (expected ~57.1%%)", highScorePct*100)
 	t.Logf("  medium_score: %.2f%% (expected ~28.6%%)", mediumScorePct*100)
 	t.Logf("  low_score: %.2f%% (expected ~14.3%%)", lowScorePct*100)
+}
+
+// TestMinSelectionChanceIsAWeightFloorNotAProbabilityGuarantee documents the intended semantics:
+// minSelectionChance is applied as a minimum *weight* (composite score floor), not a minimum *probability*.
+// Therefore, when there are other large weights, the effective probability can be < minSelectionChance.
+func TestMinSelectionChanceIsAWeightFloorNotAProbabilityGuarantee(t *testing.T) {
+	config := DefaultWeightedSelectorConfig()
+	config.MinSelectionChance = 0.01
+	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567)
+
+	// Simulate one "dominant" provider and one provider that only gets the minimum weight floor.
+	// Effective probability for the min provider is:
+	//   p = 0.01 / (1.0 + 0.01) ≈ 0.00990099 < 0.01
+	providers := []ProviderScore{
+		{Address: "dominant", CompositeScore: 1.0, SelectionWeight: 1.0},
+		{Address: "min_floor", CompositeScore: config.MinSelectionChance, SelectionWeight: config.MinSelectionChance},
+	}
+
+	const iterations = 100000
+	countMin := 0
+	for i := 0; i < iterations; i++ {
+		if ws.SelectProvider(providers) == "min_floor" {
+			countMin++
+		}
+	}
+
+	got := float64(countMin) / float64(iterations)
+	expected := config.MinSelectionChance / (1.0 + config.MinSelectionChance)
+
+	// Statistical tolerance: keep it tight enough to detect regressions, wide enough to be stable.
+	require.InDelta(t, expected, got, 0.002)
+	// And explicitly prove it's not a probability guarantee.
+	require.Less(t, got, config.MinSelectionChance)
+}
+
+func TestNormalizeStakeMaxInt64DoesNotOverflowOrNaN(t *testing.T) {
+	config := DefaultWeightedSelectorConfig()
+	ws := NewWeightedSelector(config)
+
+	max := int64(stdmath.MaxInt64)
+	stake := sdk.NewCoin("ulava", math.NewInt(max))
+	totalStake := sdk.NewCoin("ulava", math.NewInt(max))
+
+	normalized := ws.normalizeStake(stake, totalStake)
+	require.False(t, stdmath.IsNaN(normalized))
+	require.False(t, stdmath.IsInf(normalized, 0))
+	require.InDelta(t, 1.0, normalized, 0.000001)
+}
+
+func TestSelectProviderConcurrentDoesNotPanicAndReturnsValidProvider(t *testing.T) {
+	config := DefaultWeightedSelectorConfig()
+	ws := NewWeightedSelector(config)
+	ws.SetDeterministicSeed(1234567)
+
+	providers := []ProviderScore{
+		{Address: "p1", CompositeScore: 0.8, SelectionWeight: 0.8},
+		{Address: "p2", CompositeScore: 0.4, SelectionWeight: 0.4},
+		{Address: "p3", CompositeScore: 0.2, SelectionWeight: 0.2},
+	}
+
+	const goroutines = 32
+	const perG = 2000
+
+	var total atomic.Int64
+	var invalid atomic.Int64
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func() {
+			defer wg.Done()
+			for i := 0; i < perG; i++ {
+				selected := ws.SelectProvider(providers)
+				total.Add(1)
+				switch selected {
+				case "p1", "p2", "p3":
+					// ok
+				default:
+					invalid.Add(1)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	require.Equal(t, int64(goroutines*perG), total.Load())
+	require.Equal(t, int64(0), invalid.Load())
 }
 
 // TestSelectProviderEqualScores tests selection when all providers have equal scores
