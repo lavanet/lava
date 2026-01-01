@@ -1334,16 +1334,18 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 						blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0)
 
-						var finalizedBlockHashesObj map[int64]string
-						err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
-						if err != nil {
-							utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
-								utils.LogAttr("GUID", ctx),
-								utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
-								utils.LogAttr("providerAddr", providerPublicAddress),
-							)
-						} else {
-							blockHashesToHeights = rpcss.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
+						if len(finalizedBlockHashes) > 0 {
+							var finalizedBlockHashesObj map[int64]string
+							err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
+							if err != nil {
+								utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
+									utils.LogAttr("GUID", ctx),
+									utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
+									utils.LogAttr("providerAddr", providerPublicAddress),
+								)
+							} else {
+								blockHashesToHeights = rpcss.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
+							}
 						}
 						var finalized bool
 						blockHashesToHeights, finalized = rpcss.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
