@@ -244,3 +244,70 @@ func TestTestModeHeadOnFirstRequestThenGapApplied(t *testing.T) {
 	require.NotNil(t, resp2.RelayReply)
 	require.Equal(t, int64(950), resp2.RelayReply.LatestBlock)
 }
+
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
+func TestTestModeAvailabilityZeroAlwaysFailsWithGrpcUnavailable(t *testing.T) {
+	testConfig := &TestModeConfig{
+		TestMode: true,
+		Responses: map[string]TestResponse{
+			"eth_blockNumber": {
+				Availability:       floatPtr(0.0),
+				SuccessReply:       `{"jsonrpc":"2.0","id":1,"result":"0x1"}`,
+				SuccessProbability: 1.0,
+			},
+		},
+	}
+
+	psm := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), nil, 0, testConfig)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	chainMsg := chainlib.NewMockChainMessage(ctrl)
+	chainMsg.EXPECT().GetRawRequestHash().Return([]byte{1, 2, 3}, nil).AnyTimes()
+	api := &spectypes.Api{Name: "eth_blockNumber"}
+	apiCollection := &spectypes.ApiCollection{CollectionData: spectypes.CollectionData{ApiInterface: "jsonrpc"}}
+	chainMsg.EXPECT().GetApi().Return(api).AnyTimes()
+	chainMsg.EXPECT().GetApiCollection().Return(apiCollection).AnyTimes()
+
+	ctx := context.WithValue(context.Background(), TestModeContextKey{}, true)
+	_, _, err := psm.SendNodeMessage(ctx, chainMsg, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "test mode availability failure")
+}
+
+func TestTestModeAvailabilityOneAlwaysReturnsReply(t *testing.T) {
+	testConfig := &TestModeConfig{
+		TestMode: true,
+		Responses: map[string]TestResponse{
+			"eth_blockNumber": {
+				Availability:       floatPtr(1.0),
+				SuccessReply:       `{"jsonrpc":"2.0","id":1,"result":"0x1"}`,
+				SuccessProbability: 1.0,
+			},
+		},
+	}
+
+	psm := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), nil, 0, testConfig)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	chainMsg := chainlib.NewMockChainMessage(ctrl)
+	chainMsg.EXPECT().GetRawRequestHash().Return([]byte{1, 2, 3}, nil).AnyTimes()
+	api := &spectypes.Api{Name: "eth_blockNumber"}
+	apiCollection := &spectypes.ApiCollection{CollectionData: spectypes.CollectionData{ApiInterface: "jsonrpc"}}
+	chainMsg.EXPECT().GetApi().Return(api).AnyTimes()
+	chainMsg.EXPECT().GetApiCollection().Return(apiCollection).AnyTimes()
+	chainMsg.EXPECT().CheckResponseError(gomock.Any(), gomock.Any()).Return(false, "").AnyTimes()
+
+	ctx := context.WithValue(context.Background(), TestModeContextKey{}, true)
+	reply, _, err := psm.SendNodeMessage(ctx, chainMsg, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	require.NoError(t, err)
+	require.NotNil(t, reply)
+	require.NotNil(t, reply.RelayReply)
+	require.Contains(t, string(reply.RelayReply.Data), "\"result\"")
+}

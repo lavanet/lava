@@ -79,6 +79,12 @@ type TestResponse struct {
 	RateLimitProbability   float64 `json:"rate_limit_probability"`
 	UnsupportedProbability float64 `json:"unsupported_probability"`
 
+	// Availability is the probability (0..1) that this provider is "available" for this method.
+	// If the request falls into the unavailable bucket (1-Availability), test mode will return a gRPC-level error
+	// (network-style failure), causing the consumer to update optimizer availability with a failure sample (0).
+	// If nil, defaults to 1.0 (always available).
+	Availability *float64 `json:"availability"`
+
 	// DelayMs is an optional per-method artificial delay added before returning a test response.
 	DelayMs int64 `json:"delay_ms"`
 	// DelayJitterMs is a random additive jitter in [0, DelayJitterMs] applied to DelayMs.
