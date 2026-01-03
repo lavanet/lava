@@ -56,6 +56,16 @@ type TestModeConfig struct {
 	TestMode     bool                    `json:"test_mode"`
 	Responses    map[string]TestResponse `json:"responses"`
 	ResponseFile string                  `json:"response_file"`
+
+	// HeadBlock is an optional synthetic chain head used in test mode when per-method latest_block is not set.
+	// This is intended for deterministic optimizer sync behavior in tests.
+	HeadBlock int64 `json:"head_block"`
+	// GapBlocks is an optional synthetic lag in blocks used in test mode when per-method latest_block is not set.
+	// If HeadOnFirstRequest is true, the first request will use HeadBlock and subsequent requests will use HeadBlock-GapBlocks.
+	GapBlocks int64 `json:"gap_blocks"`
+	// HeadOnFirstRequest controls whether the first relay reply in this provider process should return HeadBlock (seeding consumer latestSync),
+	// and subsequent replies return HeadBlock-GapBlocks. This helps make tests deterministic regardless of which provider is selected first.
+	HeadOnFirstRequest bool `json:"head_on_first_request"`
 }
 
 // TestResponse represents a test response configuration for a specific API method
@@ -68,6 +78,16 @@ type TestResponse struct {
 	ErrorProbability       float64 `json:"error_probability"`
 	RateLimitProbability   float64 `json:"rate_limit_probability"`
 	UnsupportedProbability float64 `json:"unsupported_probability"`
+
+	// DelayMs is an optional per-method artificial delay added before returning a test response.
+	DelayMs int64 `json:"delay_ms"`
+	// DelayJitterMs is a random additive jitter in [0, DelayJitterMs] applied to DelayMs.
+	DelayJitterMs int64 `json:"delay_jitter_ms"`
+
+	// LatestBlock overridesRelayReply.LatestBlock for this method in test mode (if set non-zero).
+	LatestBlock int64 `json:"latest_block"`
+	// LatestBlockJitter is a random additive jitter in [0, LatestBlockJitter] applied to LatestBlock.
+	LatestBlockJitter int64 `json:"latest_block_jitter"`
 }
 
 // TestModeContextKey is used to pass test mode context through the call chain
