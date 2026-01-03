@@ -184,6 +184,7 @@ type rpcSmartRouterStartOptions struct {
 	privKey                  *btcec.PrivateKey // Private key for signing relay requests
 	lavaChainID              string            // Lava blockchain chain ID
 	memoryGCThresholdGB      float64
+	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -452,8 +453,8 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	defer chainMutexes[chainID].Unlock()
 
 	// Create / Use existing optimizer
-	qosSelectionEnabled := viper.GetBool(common.SetProviderOptimizerQosSelectionInTierFlag)
-	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, qosSelectionEnabled)
+	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID)
+	newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 	optimizer, loaded, err := optimizers.LoadOrStore(chainID, newOptimizer)
 	if err != nil {
 		errCh <- err
@@ -856,6 +857,13 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
+			weightedSelectorConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+			weightedSelectorConfig.AvailabilityWeight = viper.GetFloat64(common.ProviderOptimizerAvailabilityWeight)
+			weightedSelectorConfig.LatencyWeight = viper.GetFloat64(common.ProviderOptimizerLatencyWeight)
+			weightedSelectorConfig.SyncWeight = viper.GetFloat64(common.ProviderOptimizerSyncWeight)
+			weightedSelectorConfig.StakeWeight = viper.GetFloat64(common.ProviderOptimizerStakeWeight)
+			weightedSelectorConfig.MinSelectionChance = viper.GetFloat64(common.ProviderOptimizerMinSelectionChance)
+			weightedSelectorConfig.Strategy = strategyFlag.Strategy
 
 			// RPCSmartRouter always runs in standalone mode
 			epochDuration := viper.GetDuration(common.EpochDurationFlag)
@@ -881,6 +889,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				EpochDuration:            epochDuration,
 				EnableMemoryLogs:         enableMemoryLogs,
+				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
 			}
 
 			// Get private key for signing relay requests
@@ -934,6 +943,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				privKey:                  privKey,
 				lavaChainID:              lavaChainID,
 				memoryGCThresholdGB:      memoryGCThresholdGB,
+				weightedSelectorConfig:   weightedSelectorConfig,
 			})
 			return err
 		},
@@ -952,6 +962,27 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCSmartRouter.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCSmartRouter.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
+	defaultWeightedConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+	cmdRPCSmartRouter.Flags().Float64(common.ProviderOptimizerAvailabilityWeight, defaultWeightedConfig.AvailabilityWeight, "weight assigned to provider availability when computing selection scores")
+	cmdRPCSmartRouter.Flags().Float64(common.ProviderOptimizerLatencyWeight, defaultWeightedConfig.LatencyWeight, "weight assigned to provider latency when computing selection scores")
+	cmdRPCSmartRouter.Flags().Float64(common.ProviderOptimizerSyncWeight, defaultWeightedConfig.SyncWeight, "weight assigned to provider sync freshness when computing selection scores")
+	cmdRPCSmartRouter.Flags().Float64(common.ProviderOptimizerStakeWeight, defaultWeightedConfig.StakeWeight, "weight assigned to provider stake when computing selection scores")
+	cmdRPCSmartRouter.Flags().Float64(common.ProviderOptimizerMinSelectionChance, defaultWeightedConfig.MinSelectionChance, "minimum selection probability for any provider regardless of score")
+	if err := viper.BindPFlag(common.ProviderOptimizerAvailabilityWeight, cmdRPCSmartRouter.Flags().Lookup(common.ProviderOptimizerAvailabilityWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding availability weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerLatencyWeight, cmdRPCSmartRouter.Flags().Lookup(common.ProviderOptimizerLatencyWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding latency weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerSyncWeight, cmdRPCSmartRouter.Flags().Lookup(common.ProviderOptimizerSyncWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding sync weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerStakeWeight, cmdRPCSmartRouter.Flags().Lookup(common.ProviderOptimizerStakeWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding stake weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerMinSelectionChance, cmdRPCSmartRouter.Flags().Lookup(common.ProviderOptimizerMinSelectionChance)); err != nil {
+		utils.LavaFormatFatal("failed binding min selection chance flag", err)
+	}
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCSmartRouter.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
@@ -963,6 +994,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Bool(metrics.RelayKafkaTLSEnabledFlagName, false, "enable TLS for kafka connections")
 	cmdRPCSmartRouter.Flags().Bool(metrics.RelayKafkaTLSInsecureFlagName, false, "skip TLS certificate verification for kafka connections")
 	cmdRPCSmartRouter.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
+	cmdRPCSmartRouter.Flags().Bool(common.EnableSelectionStatsHeaderFlag, false, "enable selection stats header for debugging provider selection")
 	// CORS related flags
 	cmdRPCSmartRouter.Flags().String(common.CorsCredentialsFlag, "true", "Set up CORS allowed credentials,default \"true\"")
 	cmdRPCSmartRouter.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")
@@ -981,18 +1013,11 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
-	// optimizer metrics
-	cmdRPCSmartRouter.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
-	cmdRPCSmartRouter.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, provideroptimizer.LastTierChance, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
-	cmdRPCSmartRouter.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, provideroptimizer.OptimizerNumTiers, "set the number of groups to create, default is 4")
-	cmdRPCSmartRouter.Flags().IntVar(&provideroptimizer.MinimumEntries, common.SetProviderOptimizerNumberOfProvidersPerTier, provideroptimizer.MinimumEntries, "set the number of providers to have in each tier, default is 5")
 	// optimizer qos reports
 	cmdRPCSmartRouter.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
 	cmdRPCSmartRouter.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
 	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
-	cmdRPCSmartRouter.Flags().BoolVar(&provideroptimizer.AutoAdjustTiers, common.SetProviderOptimizerAutoAdjustTiers, provideroptimizer.AutoAdjustTiers, "optimizer enable auto adjust tiers, this flag will fix the tiers based on the number of providers in the pairing, defaults to (false)")
-	cmdRPCSmartRouter.Flags().Bool(common.SetProviderOptimizerQosSelectionInTierFlag, false, "enable QoS-based selection within tiers instead of stake-based selection, defaults to (false)")
 	// metrics
 	cmdRPCSmartRouter.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags

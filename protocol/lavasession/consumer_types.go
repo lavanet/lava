@@ -76,8 +76,10 @@ type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
-	ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
+	ChooseBestProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseBestProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)

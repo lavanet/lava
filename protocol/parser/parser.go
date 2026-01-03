@@ -358,10 +358,14 @@ func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.Gener
 	}
 
 	// we didn't find a generic parser that worked
-	return nil, utils.LavaFormatTrace("failed to parse with generic parsers",
+	err := utils.LavaFormatTrace("failed to parse with generic parsers",
 		utils.LogAttr("parsingMap", parsingMap),
 		utils.LogAttr("genericParsers", genericParsers),
 	)
+	if err == nil {
+		err = fmt.Errorf("failed to parse with generic parsers")
+	}
+	return nil, err
 }
 
 func parseRule(rule string, valueInterface interface{}) bool {
