@@ -206,3 +206,41 @@ func TestConfiguredUnsupportedReply(t *testing.T) {
 	require.Equal(t, 500, response.StatusCode,
 		"Should use default 500 status code for custom replies")
 }
+
+func TestTestModeHeadOnFirstRequestThenGapApplied(t *testing.T) {
+	testConfig := &TestModeConfig{
+		TestMode:           true,
+		HeadBlock:          1000,
+		GapBlocks:          50,
+		HeadOnFirstRequest: true,
+		Responses: map[string]TestResponse{
+			"eth_blockNumber": {
+				SuccessReply:       `{"jsonrpc":"2.0","id":1,"result":"0x1"}`,
+				SuccessProbability: 1.0,
+			},
+		},
+	}
+
+	psm := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), nil, 0, testConfig)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	chainMsg := chainlib.NewMockChainMessage(ctrl)
+	api := &spectypes.Api{Name: "eth_blockNumber"}
+	apiCollection := &spectypes.ApiCollection{CollectionData: spectypes.CollectionData{ApiInterface: "jsonrpc"}}
+	chainMsg.EXPECT().GetApi().Return(api).AnyTimes()
+	chainMsg.EXPECT().GetApiCollection().Return(apiCollection).AnyTimes()
+
+	ctx := context.WithValue(context.Background(), TestModeContextKey{}, true)
+
+	resp1 := psm.generateTestResponse(ctx, chainMsg, &types.RelayRequest{RelaySession: &types.RelaySession{Provider: "p"}})
+	require.NotNil(t, resp1)
+	require.NotNil(t, resp1.RelayReply)
+	require.Equal(t, int64(1000), resp1.RelayReply.LatestBlock)
+
+	resp2 := psm.generateTestResponse(ctx, chainMsg, &types.RelayRequest{RelaySession: &types.RelaySession{Provider: "p"}})
+	require.NotNil(t, resp2)
+	require.NotNil(t, resp2.RelayReply)
+	require.Equal(t, int64(950), resp2.RelayReply.LatestBlock)
+}

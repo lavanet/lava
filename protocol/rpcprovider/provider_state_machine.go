@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -27,6 +28,9 @@ type ProviderStateMachine struct {
 	relaySender         ProviderRelaySender
 	numberOfRetries     int
 	testModeConfig      *TestModeConfig
+
+	// used to implement deterministic "head on first request" behavior in test mode
+	headReturned atomic.Bool
 }
 
 func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int, testModeConfig *TestModeConfig) *ProviderStateMachine {
@@ -154,6 +158,27 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 	return replyWrapper, emptyTime, nil
 }
 
+func clampNonNegativeInt64(v int64) int64 {
+	if v < 0 {
+		return 0
+	}
+	return v
+}
+
+func (psm *ProviderStateMachine) sleepWithContext(ctx context.Context, d time.Duration) {
+	if d <= 0 {
+		return
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return
+	case <-timer.C:
+		return
+	}
+}
+
 // generateTestResponse generates a test response based on the configured probabilities
 func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) *chainlib.RelayReplyWrapper {
 	// Get the API method name
@@ -176,6 +201,30 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 			RateLimitProbability:   0.03,
 			UnsupportedProbability: 0.02,
 		}
+	}
+
+	// Apply per-method artificial delay (optional). This influences consumer-measured relay latency.
+	delayMs := testResponse.DelayMs
+	delayJitterMs := testResponse.DelayJitterMs
+	delayMs = clampNonNegativeInt64(delayMs)
+	delayJitterMs = clampNonNegativeInt64(delayJitterMs)
+	if delayMs > 0 || delayJitterMs > 0 {
+		jitter := int64(0)
+		if delayJitterMs > 0 {
+			jitter = rand.Int63n(delayJitterMs + 1)
+		}
+		totalDelay := time.Duration(delayMs+jitter) * time.Millisecond
+		// Clamp delay to remaining time, if a deadline exists, to avoid hanging beyond caller timeout.
+		if deadline, ok := ctx.Deadline(); ok {
+			remaining := time.Until(deadline)
+			if remaining < 0 {
+				remaining = 0
+			}
+			if totalDelay > remaining {
+				totalDelay = remaining
+			}
+		}
+		psm.sleepWithContext(ctx, totalDelay)
 	}
 
 	// Generate response based on probabilities
@@ -215,10 +264,40 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 		utils.LogAttr("statusCode", statusCode),
 		utils.LogAttr("GUID", ctx))
 
+	// Compute LatestBlock; precedence: method-level override if set, else default.
+	latestBlock := int64(12345)
+	latestBlockJitter := int64(0)
+	if testResponse.LatestBlock != 0 || testResponse.LatestBlockJitter != 0 {
+		latestBlock = testResponse.LatestBlock
+		latestBlockJitter = testResponse.LatestBlockJitter
+	} else if psm.testModeConfig != nil && psm.testModeConfig.HeadBlock != 0 {
+		// Provider-level deterministic head/gap behavior (per provider file).
+		head := psm.testModeConfig.HeadBlock
+		gap := psm.testModeConfig.GapBlocks
+		if gap < 0 {
+			gap = 0
+		}
+
+		if psm.testModeConfig.HeadOnFirstRequest && !psm.headReturned.Load() {
+			// Try to mark as returned; if racing, it is OK if a couple of concurrent first requests return head.
+			psm.headReturned.Store(true)
+			latestBlock = head
+		} else {
+			latestBlock = head - gap
+		}
+	}
+	latestBlockJitter = clampNonNegativeInt64(latestBlockJitter)
+	if latestBlockJitter > 0 {
+		latestBlock += rand.Int63n(latestBlockJitter + 1)
+	}
+	if latestBlock < 0 {
+		latestBlock = 0
+	}
+
 	return &chainlib.RelayReplyWrapper{
 		RelayReply: &pairingtypes.RelayReply{
 			Data:        []byte(responseData),
-			LatestBlock: 12345, // Mock block number
+			LatestBlock: latestBlock,
 		},
 		StatusCode: statusCode,
 	}
