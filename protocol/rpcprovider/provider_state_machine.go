@@ -16,6 +16,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	"google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 )
 
 type ProviderRelaySender interface {
@@ -62,14 +64,18 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		// Check if this is a test mode request
 		isTestMode, _ := ctx.Value(TestModeContextKey{}).(bool)
 		if isTestMode && psm.testModeConfig != nil && psm.testModeConfig.TestMode {
-			replyWrapper = psm.generateTestResponse(ctx, chainMsg, request)
-			err = nil // No error in test mode
+			replyWrapper, err = psm.generateTestResponseWithAvailability(ctx, chainMsg, request)
 		} else {
 			// Original behavior - send to real node
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		}
 		latency := time.Since(sendTime)
 		if err != nil {
+			// Preserve gRPC status errors (used by test mode availability failures) without wrapping,
+			// so the consumer can see a stable failure code. Wrap all other errors for logging context.
+			if _, ok := grpcstatus.FromError(err); ok {
+				return nil, emptyTime, err
+			}
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
@@ -156,6 +162,45 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
 	return replyWrapper, emptyTime, nil
+}
+
+func clampProb01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+// generateTestResponseWithAvailability wraps generateTestResponse with an availability gate.
+// If the request falls into the unavailable bucket, it returns a gRPC-level error so the consumer
+// treats it as a relay failure (availability sample = 0).
+func (psm *ProviderStateMachine) generateTestResponseWithAvailability(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, error) {
+	// Resolve method name
+	apiMethod := ""
+	if chainMsg != nil && chainMsg.GetApi() != nil {
+		apiMethod = chainMsg.GetApi().Name
+	}
+
+	// Get test response config (or defaults)
+	testResponse, exists := psm.testModeConfig.Responses[apiMethod]
+	if !exists {
+		// If method isn't configured, behave as always-available by default.
+		return psm.generateTestResponse(ctx, chainMsg, request), nil
+	}
+
+	availability := 1.0
+	if testResponse.Availability != nil {
+		availability = clampProb01(*testResponse.Availability)
+	}
+	// Gate on availability first
+	if rand.Float64() > availability {
+		return nil, grpcstatus.Error(codes.Unavailable, "test mode availability failure")
+	}
+
+	return psm.generateTestResponse(ctx, chainMsg, request), nil
 }
 
 func clampNonNegativeInt64(v int64) int64 {
