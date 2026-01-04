@@ -198,6 +198,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+	
+	// Start periodic selection stats metrics updates
+	if consumerOptimizerQoSClient != nil {
+		consumerMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+	}
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)

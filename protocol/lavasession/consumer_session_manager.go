@@ -881,6 +881,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		if selectionStats != nil {
 			csm.setSelectionStats(selectionStats)
 		}
+		// Track provider selection for metrics
+		if len(providers) > 0 {
+			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0])
+		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
 		ignoredProvidersListCopy := make(map[string]struct{}, len(ignoredProvidersList))
@@ -896,8 +900,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			if i == 0 && selectionStats != nil {
 				csm.setSelectionStats(selectionStats)
 			}
-			for _, provider := range provider {
-				ignoredProvidersListCopy[provider] = struct{}{}
+			for _, providerAddr := range provider {
+				ignoredProvidersListCopy[providerAddr] = struct{}{}
+				// Track provider selection for metrics
+				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr)
 			}
 			providers = append(providers, provider...)
 		}

@@ -507,6 +507,12 @@ func (ws *WeightedSelector) CalculateProviderScores(
 			AvailabilityScore: availability,
 			LatencyScore:      latency,
 			GenericScore:      compositeScore,
+			// Add selection stats - normalized scores used in selection algorithm
+			SelectionAvailability: availabilityScore,
+			SelectionLatency:      latencyScore,
+			SelectionSync:         syncScore,
+			SelectionStake:        stakeScore,
+			SelectionComposite:    compositeScore,
 		}
 
 		utils.LavaFormatTrace("[WeightedSelector] calculated provider score",

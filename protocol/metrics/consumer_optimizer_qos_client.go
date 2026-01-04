@@ -42,6 +42,12 @@ type OptimizerQoSReport struct {
 	LatencyScore      float64
 	GenericScore      float64
 	EntryIndex        int
+	// Selection stats - detailed scores used for provider selection
+	SelectionAvailability float64 // Normalized availability score (0-1)
+	SelectionLatency      float64 // Normalized latency score (0-1)
+	SelectionSync         float64 // Normalized sync score (0-1)
+	SelectionStake        float64 // Normalized stake score (0-1)
+	SelectionComposite    float64 // Combined QoS score (0-1)
 }
 
 type OptimizerQoSReportToSend struct {
@@ -59,6 +65,12 @@ type OptimizerQoSReportToSend struct {
 	ProviderStake     int64     `json:"provider_stake"`
 	EntryIndex        int       `json:"entry_index"`
 	GeoLocation       uint64    `json:"geo_location"`
+	// Selection stats - detailed scores used for provider selection
+	SelectionAvailability float64 `json:"selection_availability"` // Normalized availability score (0-1)
+	SelectionLatency      float64 `json:"selection_latency"`      // Normalized latency score (0-1)
+	SelectionSync         float64 `json:"selection_sync"`         // Normalized sync score (0-1)
+	SelectionStake        float64 `json:"selection_stake"`        // Normalized stake score (0-1)
+	SelectionComposite    float64 `json:"selection_composite"`    // Combined QoS score (0-1)
 }
 
 func (oqosr OptimizerQoSReportToSend) String() string {
@@ -149,6 +161,12 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
 		GeoLocation:       coqc.geoLocation,
+		// Add selection stats
+		SelectionAvailability: report.SelectionAvailability,
+		SelectionLatency:      report.SelectionLatency,
+		SelectionSync:         report.SelectionSync,
+		SelectionStake:        report.SelectionStake,
+		SelectionComposite:    report.SelectionComposite,
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
@@ -204,7 +222,8 @@ func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx 
 				utils.LavaFormatTrace("ConsumerOptimizerQoSClient context done")
 				return
 			case <-time.After(samplingInterval):
-				coqc.SetReportsToSend(coqc.getReportsFromOptimizers())
+				reports := coqc.getReportsFromOptimizers()
+				coqc.SetReportsToSend(reports)
 			}
 		}
 	}()

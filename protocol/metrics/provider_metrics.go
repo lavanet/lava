@@ -12,6 +12,12 @@ const (
 	AvailabilityLabel = "availability"
 	SyncLabel         = "sync/freshness"
 	LatencyLabel      = "latency"
+	// Selection stats labels
+	SelectionAvailabilityLabel = "availability"
+	SelectionLatencyLabel      = "latency"
+	SelectionSyncLabel         = "sync"
+	SelectionStakeLabel        = "stake"
+	SelectionCompositeLabel    = "composite"
 )
 
 type ProviderMetrics struct {

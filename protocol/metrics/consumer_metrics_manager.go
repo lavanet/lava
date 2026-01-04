@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,6 +57,7 @@ type ConsumerMetricsManager struct {
 	endToEndLatencyMetric                          *prometheus.GaugeVec
 	qosMetric                                      *MappedLabelsGaugeVec
 	providerReputationMetric                       *MappedLabelsGaugeVec
+	selectionStatsMetric                           *MappedLabelsGaugeVec
 	LatestBlockMetric                              *MappedLabelsGaugeVec
 	LatestProviderRelay                            *prometheus.GaugeVec
 	virtualEpochMetric                             *prometheus.GaugeVec
@@ -67,6 +69,7 @@ type ConsumerMetricsManager struct {
 	protocolVersionMetric                          *prometheus.GaugeVec
 	requestsPerProviderMetric                      *prometheus.CounterVec
 	protocolErrorsPerProviderMetric                *prometheus.CounterVec
+	providerSelectionsMetric                       *prometheus.CounterVec
 	providerRelays                                 map[string]uint64
 	addMethodsApiGauge                             bool
 	averageLatencyPerChain                         map[string]*LatencyTracker // key == chain Id + api interface
@@ -190,6 +193,16 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: qosMetricLabels,
 	})
 
+	selectionStatsMetricLabels := []string{"spec", "apiInterface", "provider_address", "selection_metric"}
+	if ShowProviderEndpointInMetrics {
+		selectionStatsMetricLabels = append(selectionStatsMetricLabels, "provider_endpoint")
+	}
+	selectionStatsMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:   "lava_consumer_selection_stats",
+		Help:   "The provider selection statistics showing normalized scores used in provider selection algorithm.",
+		Labels: selectionStatsMetricLabels,
+	})
+
 	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
 		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
@@ -286,6 +299,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The number of protocol errors per provider and spec",
 	}, []string{"spec", "provider_address"})
 
+	providerSelectionsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_provider_selections",
+		Help: "The total number of times each provider was selected for relay (before request attempt)",
+	}, []string{"spec", "provider_address"})
+
 	// Register the metrics with the Prometheus registry.
 	// Use a helper function to handle AlreadyRegisteredError gracefully
 	registerMetric := func(c prometheus.Collector) {
@@ -308,6 +326,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(endToEndLatencyMetric)
 	registerMetric(providerLivenessMetric)
 	registerMetric(blockedProviderMetric)
+	registerMetric(selectionStatsMetric)
 	registerMetric(latestProviderRelay)
 	registerMetric(virtualEpochMetric)
 	registerMetric(endpointsHealthChecksOkMetric)
@@ -331,6 +350,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(totalLoLErrorsMetric)
 	registerMetric(requestsPerProviderMetric)
 	registerMetric(protocolErrorsPerProviderMetric)
+	registerMetric(providerSelectionsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                         totalCURequestedMetric,
@@ -346,6 +366,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		endToEndLatencyMetric:                          endToEndLatencyMetric,
 		qosMetric:                                      qosMetric,
 		providerReputationMetric:                       providerReputationMetric,
+		selectionStatsMetric:                           selectionStatsMetric,
 		LatestBlockMetric:                              latestBlockMetric,
 		LatestProviderRelay:                            latestProviderRelay,
 		providerRelays:                                 map[string]uint64{},
@@ -371,6 +392,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		consumerOptimizerQoSClient:                     options.ConsumerOptimizerQoSClient,
 		requestsPerProviderMetric:                      requestsPerProviderMetric,
 		protocolErrorsPerProviderMetric:                protocolErrorsPerProviderMetric,
+		providerSelectionsMetric:                       providerSelectionsMetric,
 		providerLivenessMetric:                         providerLivenessMetric,
 		blockedProviderMetric:                          blockedProviderMetric,
 	}
@@ -413,6 +435,28 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}()
 
 	return consumerMetricsManager
+}
+
+// StartSelectionStatsUpdater starts a background goroutine that periodically updates selection stats metrics
+func (pme *ConsumerMetricsManager) StartSelectionStatsUpdater(ctx context.Context, updateInterval time.Duration) {
+	if pme == nil || pme.consumerOptimizerQoSClient == nil {
+		return
+	}
+
+	go func() {
+		ticker := time.NewTicker(updateInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				utils.LavaFormatTrace("Selection stats updater context done")
+				return
+			case <-ticker.C:
+				pme.UpdateSelectionStatsFromOptimizerReports()
+			}
+		}
+	}()
 }
 
 func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
@@ -594,6 +638,36 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	pme.LatestBlockMetric.WithLabelValues(labels).Set(float64(latestBlock))
 }
 
+// SetSelectionStatsMetrics sets the selection statistics metrics for a provider
+// These metrics show the normalized scores used in the provider selection algorithm
+func (pme *ConsumerMetricsManager) SetSelectionStatsMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, availability, latency, sync, stake, composite float64) {
+	if pme == nil {
+		return
+	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+
+	// Set availability score
+	availabilityLabels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "selection_metric": SelectionAvailabilityLabel, "apiInterface": apiInterface}
+	pme.selectionStatsMetric.WithLabelValues(availabilityLabels).Set(availability)
+
+	// Set latency score
+	latencyLabels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "selection_metric": SelectionLatencyLabel, "apiInterface": apiInterface}
+	pme.selectionStatsMetric.WithLabelValues(latencyLabels).Set(latency)
+
+	// Set sync score
+	syncLabels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "selection_metric": SelectionSyncLabel, "apiInterface": apiInterface}
+	pme.selectionStatsMetric.WithLabelValues(syncLabels).Set(sync)
+
+	// Set stake score
+	stakeLabels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "selection_metric": SelectionStakeLabel, "apiInterface": apiInterface}
+	pme.selectionStatsMetric.WithLabelValues(stakeLabels).Set(stake)
+
+	// Set composite score
+	compositeLabels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "selection_metric": SelectionCompositeLabel, "apiInterface": apiInterface}
+	pme.selectionStatsMetric.WithLabelValues(compositeLabels).Set(composite)
+}
+
 func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 	if pme == nil {
 		return
@@ -633,6 +707,7 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	defer pme.lock.Unlock()
 	pme.qosMetric.Reset()
 	pme.providerReputationMetric.Reset()
+	pme.selectionStatsMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
 }
 
@@ -680,6 +755,13 @@ func (pme *ConsumerMetricsManager) SetRequestPerProvider(chainId string, provide
 		return
 	}
 	pme.requestsPerProviderMetric.WithLabelValues(chainId, providerAddress).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, providerAddress string) {
+	if pme == nil {
+		return
+	}
+	pme.providerSelectionsMetric.WithLabelValues(chainId, providerAddress).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetWsSubscriptionRequestMetric(chainId string, apiInterface string) {
@@ -746,6 +828,67 @@ func (pme *ConsumerMetricsManager) SetBlockedProvider(chainId, apiInterface, pro
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
 	pme.blockedProviderMetric.WithLabelValues(labels).Set(value)
+}
+
+// UpdateSelectionStatsFromOptimizerReports updates the selection stats metrics from the optimizer reports
+func (pme *ConsumerMetricsManager) UpdateSelectionStatsFromOptimizerReports() {
+	if pme == nil || pme.consumerOptimizerQoSClient == nil {
+		return
+	}
+
+	reports := pme.consumerOptimizerQoSClient.GetReportsToSend()
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+
+	for _, report := range reports {
+		providerEndpoint := "" // TODO: Get provider endpoint if needed
+		
+		// Set selection stats metrics
+		availabilityLabels := map[string]string{
+			"spec":             report.ChainId,
+			"provider_address": report.ProviderAddress,
+			"provider_endpoint": providerEndpoint,
+			"selection_metric": SelectionAvailabilityLabel,
+			"apiInterface":     "", // API interface not available in optimizer reports
+		}
+		pme.selectionStatsMetric.WithLabelValues(availabilityLabels).Set(report.SelectionAvailability)
+
+		latencyLabels := map[string]string{
+			"spec":             report.ChainId,
+			"provider_address": report.ProviderAddress,
+			"provider_endpoint": providerEndpoint,
+			"selection_metric": SelectionLatencyLabel,
+			"apiInterface":     "",
+		}
+		pme.selectionStatsMetric.WithLabelValues(latencyLabels).Set(report.SelectionLatency)
+
+		syncLabels := map[string]string{
+			"spec":             report.ChainId,
+			"provider_address": report.ProviderAddress,
+			"provider_endpoint": providerEndpoint,
+			"selection_metric": SelectionSyncLabel,
+			"apiInterface":     "",
+		}
+		pme.selectionStatsMetric.WithLabelValues(syncLabels).Set(report.SelectionSync)
+
+		stakeLabels := map[string]string{
+			"spec":             report.ChainId,
+			"provider_address": report.ProviderAddress,
+			"provider_endpoint": providerEndpoint,
+			"selection_metric": SelectionStakeLabel,
+			"apiInterface":     "",
+		}
+		pme.selectionStatsMetric.WithLabelValues(stakeLabels).Set(report.SelectionStake)
+
+		compositeLabels := map[string]string{
+			"spec":             report.ChainId,
+			"provider_address": report.ProviderAddress,
+			"provider_endpoint": providerEndpoint,
+			"selection_metric": SelectionCompositeLabel,
+			"apiInterface":     "",
+		}
+		pme.selectionStatsMetric.WithLabelValues(compositeLabels).Set(report.SelectionComposite)
+	}
 }
 
 func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {

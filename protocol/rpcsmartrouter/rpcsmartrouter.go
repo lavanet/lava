@@ -241,6 +241,11 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+	
+	// Start periodic selection stats metrics updates
+	if smartRouterOptimizerQoSClient != nil {
+		smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+	}
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
