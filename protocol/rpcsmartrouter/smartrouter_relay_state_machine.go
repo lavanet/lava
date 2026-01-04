@@ -178,6 +178,17 @@ func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachi
 func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
 
+	// CIRCUIT BREAKER: Never retry if we've exhausted all providers
+	// After 2+ consecutive PairingListEmptyError, all providers are in ignored list
+	if srsm.consecutivePairingErrors >= 2 {
+		utils.LavaFormatDebug("[StateMachine] retryCondition: circuit breaker active, no retry",
+			utils.LogAttr("GUID", srsm.ctx),
+			utils.LogAttr("consecutivePairingErrors", srsm.consecutivePairingErrors),
+			utils.LogAttr("batchNumber", numberOfRetriesLaunched),
+		)
+		return false
+	}
+
 	// Never retry if we detect unsupported method errors at state machine level
 	if srsm.hasUnsupportedMethodErrorsInStateMachine() {
 		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
@@ -305,7 +316,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					// Sending a new batch failed (consumer's protocol side), handling the state machine
 					consecutiveBatchErrors++ // Increase consecutive error counter
 
-					// Circuit breaker: Check if this is a pairing error
+					// Circuit breaker: Track consecutive pairing errors
 					if lavasession.PairingListEmptyError.Is(err) {
 						srsm.consecutivePairingErrors++
 						utils.LavaFormatDebug("[StateMachine] Detected PairingListEmptyError",
@@ -314,19 +325,37 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 							utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
 						)
 
-						// Circuit breaker: If we hit pairing errors 2 times in a row, stop retrying
-						// After first pairing error, all blocked providers are exhausted and added to unwanted list
-						// Second pairing error confirms no providers available - all subsequent attempts will be identical
+						// Circuit breaker: Check if we've exhausted all providers
 						if srsm.consecutivePairingErrors >= 2 {
-							utils.LavaFormatWarning("Circuit breaker triggered: All providers exhausted, stopping retries",
-								nil,
-								utils.LogAttr("GUID", srsm.ctx),
-								utils.LogAttr("consecutivePairingErrors", srsm.consecutivePairingErrors),
-								utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
-								utils.LogAttr("timesSaved", "~8 seconds of futile retries avoided"),
-							)
-							go validateReturnCondition(err)
-							continue
+							// Check if there are any in-flight relays to wait for
+							if srsm.usedProviders.CurrentlyUsed() == 0 {
+								// Fast path: No in-flight relays, safe to return immediately
+								// This is the common case when all providers are exhausted from the start
+								utils.LavaFormatWarning("Circuit breaker activated: immediate termination",
+									nil,
+									utils.LogAttr("GUID", srsm.ctx),
+									utils.LogAttr("consecutivePairingErrors", srsm.consecutivePairingErrors),
+									utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
+									utils.LogAttr("currentlyUsed", 0),
+									utils.LogAttr("reason", "No providers available, no in-flight relays"),
+								)
+								relayTaskChannel <- RelayStateSendInstructions{Err: err, Done: true}
+								return
+							} else {
+								// Rare edge case: In-flight relay exists, wait for it to complete
+								// This handles the scenario where a relay was sent successfully but
+								// subsequent attempts hit pairing errors
+								utils.LavaFormatWarning("Circuit breaker activated: waiting for in-flight relay",
+									nil,
+									utils.LogAttr("GUID", srsm.ctx),
+									utils.LogAttr("consecutivePairingErrors", srsm.consecutivePairingErrors),
+									utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
+									utils.LogAttr("currentlyUsed", srsm.usedProviders.CurrentlyUsed()),
+									utils.LogAttr("note", "Waiting for pending relay to complete before returning"),
+								)
+								go validateReturnCondition(err)
+								continue
+							}
 						}
 					} else {
 						// Reset pairing error counter if we got a different error type
