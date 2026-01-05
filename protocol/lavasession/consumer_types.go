@@ -39,6 +39,54 @@ func (list EndpointInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
+// SessionConnection - Base interface for both connection types (provider-relay and direct-RPC)
+// This enables composition-based design where consumer and smart router use different connection types
+type SessionConnection interface {
+	GetQoSManager() *qos.QoSManager
+	IsHealthy() bool
+	GetEndpointAddress() string
+}
+
+// ProviderRelayConnection - For rpcconsumer (decentralized)
+// Wraps the traditional provider-relay connection with QoS management
+type ProviderRelayConnection struct {
+	EndpointConnection *EndpointConnection
+	QoSManager         *qos.QoSManager
+	EndpointAddress    string // Network address of the endpoint
+}
+
+func (prc *ProviderRelayConnection) GetQoSManager() *qos.QoSManager {
+	return prc.QoSManager
+}
+
+func (prc *ProviderRelayConnection) IsHealthy() bool {
+	return prc.EndpointConnection != nil
+}
+
+func (prc *ProviderRelayConnection) GetEndpointAddress() string {
+	return prc.EndpointAddress
+}
+
+// DirectRPCSessionConnection - For rpcsmartrouter (centralized)
+// Wraps a direct RPC connection with QoS management
+type DirectRPCSessionConnection struct {
+	DirectConnection DirectRPCConnection
+	QoSManager       *qos.QoSManager
+	EndpointAddress  string
+}
+
+func (drsc *DirectRPCSessionConnection) GetQoSManager() *qos.QoSManager {
+	return drsc.QoSManager
+}
+
+func (drsc *DirectRPCSessionConnection) IsHealthy() bool {
+	return drsc.DirectConnection != nil && drsc.DirectConnection.IsHealthy()
+}
+
+func (drsc *DirectRPCSessionConnection) GetEndpointAddress() string {
+	return drsc.EndpointAddress
+}
+
 const (
 	AllowInsecureConnectionToProvidersFlag     = "allow-insecure-provider-dialing"
 	AllowGRPCCompressionFlag                   = "enable-application-level-compression"
@@ -143,11 +191,25 @@ type EndpointAndChosenConnection struct {
 type Endpoint struct {
 	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
-	Connections        []*EndpointConnection
+	
+	// Only ONE of these will be populated (determined by binary):
+	Connections        []*EndpointConnection  // For rpcconsumer only (provider-relay)
+	DirectConnections  []DirectRPCConnection  // For rpcsmartrouter only (direct RPC)
+	
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
 	Geolocation        planstypes.Geolocation
+}
+
+// IsDirectRPC returns true if this endpoint uses direct RPC connections (smart router mode)
+func (e *Endpoint) IsDirectRPC() bool {
+	return len(e.DirectConnections) > 0
+}
+
+// IsProviderRelay returns true if this endpoint uses provider-relay connections (consumer mode)
+func (e *Endpoint) IsProviderRelay() bool {
+	return len(e.Connections) > 0
 }
 
 func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (supported bool) {
@@ -413,7 +475,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	return c, conn, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64, qosManager *qos.QoSManager) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64, qosManager *qos.QoSManager, networkAddress string) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
@@ -454,14 +516,23 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	for randomSessionId == 0 { // we don't allow 0
 		randomSessionId = rand.Int63()
 	}
+	
+	// Create ProviderRelayConnection wrapper for composition-based design
+	providerRelayConn := &ProviderRelayConnection{
+		EndpointConnection: endpointConnection,
+		QoSManager:         qosManager,
+		EndpointAddress:    networkAddress,
+	}
+	
 	consumerSession := &SingleConsumerSession{
 		SessionId:          randomSessionId,
 		Parent:             cswp,
-		EndpointConnection: endpointConnection,
+		Connection:         providerRelayConn, // NEW: Use composition-based connection
+		EndpointConnection: endpointConnection, // Legacy field for backward compatibility
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
 		epoch:              cswp.PairingEpoch,
-		QoSManager:         qosManager,
+		QoSManager:         qosManager, // Legacy field for backward compatibility
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
