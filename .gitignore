@@ -36,7 +36,7 @@ rpcconsumer.yml
 .env.local
 provider*_eth.yml
 
-# Generated TLS certs/keys (local/dev) - never commit
+# Local TLS cert/key files (do not commit)
 protocol/rpcprovider/cert.pem
 protocol/rpcprovider/key.pem
 
