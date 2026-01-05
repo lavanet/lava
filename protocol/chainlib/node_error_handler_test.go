@@ -402,3 +402,83 @@ func BenchmarkIsUnsupportedMethodError(b *testing.B) {
 		}
 	}
 }
+
+// NEW TEST: Verifies Issue #1 fix - smart contract errors should NOT be classified as unsupported
+// This is a critical test for preventing false positives on smart contract reverts
+func TestIsUnsupportedMethodErrorMessage_SmartContractErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  string
+		expected bool
+	}{
+		// CRITICAL: Smart contract errors should NOT match (Issue #1 fix)
+		{
+			name:     "Smart contract NFT not found",
+			message:  "execution reverted: NFT not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract User not found",
+			message:  "execution reverted: User not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract Token not found",
+			message:  "execution reverted: Token not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract identity not found",
+			message:  "execution reverted: identity not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract IdentityRegistry specific",
+			message:  "execution reverted: IdentityRegistry: identity not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract Record not found",
+			message:  "execution reverted: Record not found in database",
+			expected: false,
+		},
+		{
+			name:     "Generic not found without execution reverted",
+			message:  "user not found",
+			expected: false,
+		},
+		{
+			name:     "Item not found",
+			message:  "item not found",
+			expected: false,
+		},
+		// Verify actual unsupported methods still work correctly
+		{
+			name:     "Actual method not found",
+			message:  "method not found",
+			expected: true,
+		},
+		{
+			name:     "Actual endpoint not found",
+			message:  "endpoint not found",
+			expected: true,
+		},
+		{
+			name:     "Actual route not found",
+			message:  "route not found",
+			expected: true,
+		},
+		{
+			name:     "JSON-RPC method not supported",
+			message:  "method not supported",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsUnsupportedMethodErrorMessage(tt.message)
+			require.Equal(t, tt.expected, got, "Message: %s", tt.message)
+		})
+	}
+}

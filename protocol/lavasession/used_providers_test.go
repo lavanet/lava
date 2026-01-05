@@ -112,3 +112,77 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 		require.True(t, ContextDoneNoNeedToLockSelectionError.Is(canUseAgain))
 	})
 }
+
+// NEW TEST: Test Issue #1 fix - Smart contract errors should NOT be classified as unsupported
+func TestIsUnsupportedMethodError_SmartContractVsActual(t *testing.T) {
+	t.Run("Smart contract errors should NOT match", func(t *testing.T) {
+		smartContractErrors := []error{
+			fmt.Errorf("execution reverted: NFT not found"),
+			fmt.Errorf("execution reverted: User not found"),
+			fmt.Errorf("execution reverted: Token not found"),
+			fmt.Errorf("execution reverted: identity not found"),
+			fmt.Errorf("execution reverted: IdentityRegistry: identity not found"),
+			fmt.Errorf("user not found"),  // Generic "not found" removed
+			fmt.Errorf("item not found"),  // Generic "not found" removed
+			fmt.Errorf("execution reverted: Record not found in database"),
+		}
+
+		for _, err := range smartContractErrors {
+			result := isUnsupportedMethodError(err)
+			require.False(t, result, "Smart contract error '%s' should NOT be unsupported method", err.Error())
+		}
+	})
+
+	t.Run("Actual unsupported methods should match", func(t *testing.T) {
+		unsupportedErrors := []error{
+			fmt.Errorf("method not found"),
+			fmt.Errorf("endpoint not found"),
+			fmt.Errorf("method not supported"),
+			fmt.Errorf("unknown method"),
+			fmt.Errorf("-32601"),
+			fmt.Errorf("route not found"),
+			fmt.Errorf("method not allowed"),
+			fmt.Errorf("unimplemented"),
+		}
+
+		for _, err := range unsupportedErrors {
+			result := isUnsupportedMethodError(err)
+			require.True(t, result, "Unsupported method error '%s' should be detected", err.Error())
+		}
+	})
+}
+
+// NEW TEST: Verify shouldRetryWithThisError logic with unsupported methods
+func TestShouldRetryWithThisError(t *testing.T) {
+	t.Run("Should NOT retry unsupported methods", func(t *testing.T) {
+		unsupportedErrors := []error{
+			fmt.Errorf("method not found"),
+			fmt.Errorf("endpoint not found"),
+			fmt.Errorf("method not supported"),
+		}
+
+		for _, err := range unsupportedErrors {
+			result := shouldRetryWithThisError(err)
+			require.False(t, result, "Should not retry unsupported method: %s", err.Error())
+		}
+	})
+
+	t.Run("Should retry session sync loss", func(t *testing.T) {
+		err := status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), "session out of sync")
+		result := shouldRetryWithThisError(err)
+		require.True(t, result, "Should retry session sync loss")
+	})
+
+	t.Run("Should NOT retry normal errors", func(t *testing.T) {
+		normalErrors := []error{
+			fmt.Errorf("execution reverted: some error"),
+			fmt.Errorf("internal server error"),
+			fmt.Errorf("timeout"),
+		}
+
+		for _, err := range normalErrors {
+			result := shouldRetryWithThisError(err)
+			require.False(t, result, "Should not retry normal error: %s", err.Error())
+		}
+	})
+}

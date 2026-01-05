@@ -115,44 +115,10 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 }
 
 // IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
-// This is a convenience function that accepts a string directly
+// This is now a wrapper around common.IsUnsupportedMethodMessage for backward compatibility.
+// The pattern matching logic has been moved to protocol/common to serve as a single source of truth.
 func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
-	if errorMessage == "" {
-		return false
-	}
-
-	errorMsg := strings.ToLower(errorMessage)
-
-	switch {
-	// JSON-RPC method not found patterns
-	case strings.Contains(errorMsg, JSONRPCMethodNotFound),
-		strings.Contains(errorMsg, JSONRPCMethodNotSupported),
-		strings.Contains(errorMsg, JSONRPCUnknownMethod),
-		strings.Contains(errorMsg, JSONRPCMethodDoesNotExist),
-		strings.Contains(errorMsg, JSONRPCInvalidMethod):
-		return true
-
-	// REST API patterns
-	case strings.Contains(errorMsg, RESTEndpointNotFound),
-		strings.Contains(errorMsg, RESTRouteNotFound),
-		strings.Contains(errorMsg, RESTPathNotFound),
-		strings.Contains(errorMsg, RESTMethodNotAllowed):
-		return true
-
-	// gRPC patterns
-	case strings.Contains(errorMsg, GRPCMethodNotImplemented),
-		strings.Contains(errorMsg, GRPCUnimplemented),
-		strings.Contains(errorMsg, GRPCNotImplemented),
-		strings.Contains(errorMsg, GRPCServiceNotFound):
-		return true
-
-	// Check for JSON-RPC error code -32601 (Method not found) in the message
-	case strings.Contains(errorMsg, JSONRPCErrorCode):
-		return true
-
-	default:
-		return false
-	}
+	return common.IsUnsupportedMethodMessage(errorMessage)
 }
 
 // IsUnsupportedMethodError checks if an error indicates an unsupported method

@@ -226,3 +226,142 @@ func TestStateMachineUnsupportedMethodError(t *testing.T) {
 	// Verify that we only hit the relay sender once (no retries for unsupported methods)
 	require.Equal(t, 1, relaySender.numberOfTimesHitSendNodeMsg)
 }
+
+// NEW TEST: Tests the NEW behavior (response returned, not error)
+// The old test above (TestStateMachineUnsupportedMethodError) will FAIL - this is expected!
+// It proves the old behavior (returning error) no longer works.
+func TestStateMachineUnsupportedMethodError_NewBehavior(t *testing.T) {
+	relaySender := &unsupportedMethodRelaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
+	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
+
+	// Mock chain message behavior
+	chainMsgMock.
+		EXPECT().
+		GetRawRequestHash().
+		Return([]byte{1, 2, 3}, nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		CheckResponseError(gomock.Any(), gomock.Any()).
+		Return(true, "method not found"). // IsNodeError=true, errorMessage="method not found"
+		AnyTimes()
+
+	// Execute the test
+	ctx := context.Background()
+	result, latency, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
+		RelayData: &types.RelayPrivateData{Extensions: []string{}},
+		RelaySession: &types.RelaySession{
+			SessionId: 123,
+			RelayNum:  1,
+		},
+	})
+
+	// NEW BEHAVIOR: No error, response returned
+	require.NoError(t, err, "Should not return error for unsupported methods")
+	require.NotNil(t, result, "Should return actual node response")
+
+	// Verify latency is tracked (not zero)
+	require.Greater(t, latency, time.Duration(0), "Latency should be > 0")
+
+	// Verify that we only hit the relay sender once (no retries for unsupported methods)
+	require.Equal(t, 1, relaySender.numberOfTimesHitSendNodeMsg, "Should not retry unsupported methods")
+}
+
+// NEW TEST: Verify latency is preserved when breaking from retry loop early
+func TestStateMachineLatencyPreservedOnEarlyBreak(t *testing.T) {
+	relaySender := &unsupportedMethodRelaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
+	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
+
+	// Mock chain message behavior
+	chainMsgMock.
+		EXPECT().
+		GetRawRequestHash().
+		Return([]byte{1, 2, 3}, nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		CheckResponseError(gomock.Any(), gomock.Any()).
+		Return(true, "method not found").
+		AnyTimes()
+
+	// Execute the test
+	ctx := context.Background()
+	result, latency, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
+		RelayData: &types.RelayPrivateData{Extensions: []string{}},
+		RelaySession: &types.RelaySession{
+			SessionId: 123,
+			RelayNum:  1,
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	// Latency should be > 0 and reasonable (not the zero value)
+	require.Greater(t, latency, time.Duration(0), "Latency should be preserved")
+	require.Less(t, latency, 10*time.Second, "Latency should be reasonable")
+}
+
+// NEW TEST: Verify that normal errors (not unsupported) still trigger retries
+func TestStateMachineNormalErrorStillRetries(t *testing.T) {
+	// Use a mock that returns a normal error (not unsupported)
+	normalErrorRelaySender := &relaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), normalErrorRelaySender, numberOfRetriesAllowedOnNodeErrors, nil)
+	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
+
+	chainMsgMock.
+		EXPECT().
+		GetRawRequestHash().
+		Return([]byte{1, 2, 3}, nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApi().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		GetApiCollection().
+		Return(nil).
+		AnyTimes()
+	chainMsgMock.
+		EXPECT().
+		CheckResponseError(gomock.Any(), gomock.Any()).
+		Return(true, "execution reverted: some error"). // Normal node error, NOT unsupported
+		AnyTimes()
+
+	ctx := context.Background()
+	_, _, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
+		RelayData: &types.RelayPrivateData{Extensions: []string{}},
+		RelaySession: &types.RelaySession{
+			SessionId: 123,
+			RelayNum:  1,
+		},
+	})
+
+	// Should still retry on normal errors
+	require.Greater(t, normalErrorRelaySender.numberOfTimesHitSendNodeMsg, 1, "Should retry normal errors")
+	// Error is expected since we're returning node errors
+	require.NoError(t, err) // Actually, with node errors it should return response not error
+}

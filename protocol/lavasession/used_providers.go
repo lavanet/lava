@@ -2,10 +2,10 @@ package lavasession
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 )
 
@@ -289,41 +289,13 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 }
 
 // isUnsupportedMethodError checks if an error indicates an unsupported method
-// This is a local version to avoid import cycles with chainlib
+// Uses shared pattern matching from protocol/common to ensure consistency across the codebase.
+// Previously this was a local duplicate to avoid import cycles with chainlib.
 func isUnsupportedMethodError(err error) bool {
 	if err == nil {
 		return false
 	}
-
-	errMsg := strings.ToLower(err.Error())
-
-	// Check for common unsupported method error patterns
-	unsupportedPatterns := []string{
-		"method not found",
-		"method not supported",
-		"unsupported method", // Added this pattern specifically
-		"unknown method",
-		"method does not exist",
-		"invalid method",
-		"endpoint not found",
-		"route not found",
-		"path not found",
-		// REMOVED: "not found" - Too broad, matches smart contract errors (e.g., "NFT not found")
-		"method not allowed",
-		"method not implemented",
-		"unimplemented",
-		"not implemented",
-		"service not found",
-		"-32601", // JSON-RPC method not found error code
-	}
-
-	for _, pattern := range unsupportedPatterns {
-		if strings.Contains(errMsg, pattern) {
-			return true
-		}
-	}
-
-	return false
+	return common.IsUnsupportedMethodMessage(err.Error())
 }
 
 func shouldRetryWithThisError(err error) bool {
