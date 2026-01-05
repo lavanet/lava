@@ -72,7 +72,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		resp.Header().Set("Access-Control-Allow-Headers", fmt.Sprintf("Content-Type, x-grpc-web, lava-sdk-relay-timeout, %s", common.LAVA_CONSUMER_PROCESS_GUID))
+		resp.Header().Set("Access-Control-Allow-Headers", fmt.Sprintf("Content-Type, x-grpc-web, %s", common.LAVA_CONSUMER_PROCESS_GUID))
 
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
 			resp.WriteHeader(http.StatusOK)

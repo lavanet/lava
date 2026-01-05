@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -51,6 +52,28 @@ const (
 	// JSON-RPC error code for method not found
 	JSONRPCMethodNotFoundCode = -32601
 )
+
+// Pre-computed byte patterns for efficient matching (initialized once at package load)
+// These are the lowercase versions of the pattern constants above
+var unsupportedMethodPatternBytes = [][]byte{
+	// JSON-RPC patterns (most common, ordered by frequency)
+	[]byte(JSONRPCMethodNotFound),     // "method not found"
+	[]byte(JSONRPCMethodNotSupported), // "method not supported"
+	[]byte(JSONRPCUnknownMethod),      // "unknown method"
+	[]byte(JSONRPCMethodDoesNotExist), // "method does not exist"
+	[]byte(JSONRPCInvalidMethod),      // "invalid method"
+	[]byte(JSONRPCErrorCode),          // "-32601"
+	// REST patterns
+	[]byte(RESTEndpointNotFound), // "endpoint not found"
+	[]byte(RESTRouteNotFound),    // "route not found"
+	[]byte(RESTPathNotFound),     // "path not found"
+	[]byte(RESTMethodNotAllowed), // "method not allowed"
+	// gRPC patterns
+	[]byte(GRPCMethodNotImplemented), // "method not implemented"
+	[]byte(GRPCUnimplemented),        // "unimplemented"
+	[]byte(GRPCNotImplemented),       // "not implemented"
+	[]byte(GRPCServiceNotFound),      // "service not found"
+}
 
 type UnsupportedMethodError struct {
 	originalError error
@@ -117,42 +140,25 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 // IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
 // This is a convenience function that accepts a string directly
 func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
-	if errorMessage == "" {
-		return false
+	return IsUnsupportedMethodErrorMessageBytes([]byte(errorMessage))
+}
+
+// IsUnsupportedMethodErrorMessageBytes checks if an error message (as bytes) indicates an unsupported method.
+// This is more efficient than IsUnsupportedMethodErrorMessage when working with []byte data
+// as it avoids string conversions and uses pre-computed byte patterns with a single-pass lowercase conversion.
+func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
+	// Convert to lowercase once (single O(n) pass)
+	errorMsgLower := bytes.ToLower(errorMessage)
+	msgLen := len(errorMsgLower)
+
+	// Check all patterns with early exit on first match
+	for _, pattern := range unsupportedMethodPatternBytes {
+		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
+			return true
+		}
 	}
 
-	errorMsg := strings.ToLower(errorMessage)
-
-	switch {
-	// JSON-RPC method not found patterns
-	case strings.Contains(errorMsg, JSONRPCMethodNotFound),
-		strings.Contains(errorMsg, JSONRPCMethodNotSupported),
-		strings.Contains(errorMsg, JSONRPCUnknownMethod),
-		strings.Contains(errorMsg, JSONRPCMethodDoesNotExist),
-		strings.Contains(errorMsg, JSONRPCInvalidMethod):
-		return true
-
-	// REST API patterns
-	case strings.Contains(errorMsg, RESTEndpointNotFound),
-		strings.Contains(errorMsg, RESTRouteNotFound),
-		strings.Contains(errorMsg, RESTPathNotFound),
-		strings.Contains(errorMsg, RESTMethodNotAllowed):
-		return true
-
-	// gRPC patterns
-	case strings.Contains(errorMsg, GRPCMethodNotImplemented),
-		strings.Contains(errorMsg, GRPCUnimplemented),
-		strings.Contains(errorMsg, GRPCNotImplemented),
-		strings.Contains(errorMsg, GRPCServiceNotFound):
-		return true
-
-	// Check for JSON-RPC error code -32601 (Method not found) in the message
-	case strings.Contains(errorMsg, JSONRPCErrorCode):
-		return true
-
-	default:
-		return false
-	}
+	return false
 }
 
 // IsUnsupportedMethodError checks if an error indicates an unsupported method

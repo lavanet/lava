@@ -55,6 +55,52 @@ func TestUnsupportedMethodError(t *testing.T) {
 	})
 }
 
+func TestIsUnsupportedMethodErrorMessageBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  []byte
+		expected bool
+	}{
+		{
+			name:     "JSON-RPC method not found",
+			message:  []byte("Method not found"),
+			expected: true,
+		},
+		{
+			name:     "Empty message",
+			message:  []byte(""),
+			expected: false,
+		},
+		{
+			name:     "Generic error",
+			message:  []byte("Internal server error"),
+			expected: false,
+		},
+		{
+			name:     "gRPC unimplemented",
+			message:  []byte("UNIMPLEMENTED: unknown service"),
+			expected: true,
+		},
+		{
+			name:     "JSON-RPC error code",
+			message:  []byte(`{"error":{"code":-32601,"message":"Method not found"}}`),
+			expected: true,
+		},
+		{
+			name:     "Nil message",
+			message:  nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsUnsupportedMethodErrorMessageBytes(tt.message)
+			require.Equal(t, tt.expected, result, "Message: %s", string(tt.message))
+		})
+	}
+}
+
 func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -385,6 +431,58 @@ func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
 			_ = IsUnsupportedMethodErrorMessage(msg)
 		}
 	}
+}
+
+func BenchmarkIsUnsupportedMethodErrorMessageBytes(b *testing.B) {
+	testMessages := [][]byte{
+		[]byte("method not found"),
+		[]byte("internal server error"),
+		[]byte("The requested method 'eth_someMethod' does not exist"),
+		[]byte("404 Not Found"),
+		[]byte("Connection timeout"),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, msg := range testMessages {
+			_ = IsUnsupportedMethodErrorMessageBytes(msg)
+		}
+	}
+}
+
+// BenchmarkIsUnsupportedMethodErrorMessageLongString tests performance with realistic response sizes
+func BenchmarkIsUnsupportedMethodErrorMessageLongString(b *testing.B) {
+	// Simulate a realistic JSON-RPC error response
+	longError := `{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"The method eth_someUnsupportedMethod does not exist/is not available. See available methods at https://docs.example.com/api","data":null}}`
+	longErrorBytes := []byte(longError)
+
+	b.Run("String", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessage(longError)
+		}
+	})
+
+	b.Run("Bytes", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessageBytes(longErrorBytes)
+		}
+	})
+
+	// Test with non-matching long string (worst case - checks all patterns)
+	longNonMatch := `{"jsonrpc":"2.0","id":1,"result":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"}`
+	longNonMatchBytes := []byte(longNonMatch)
+
+	b.Run("String_NoMatch", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessage(longNonMatch)
+		}
+	})
+
+	b.Run("Bytes_NoMatch", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessageBytes(longNonMatchBytes)
+		}
+	})
 }
 
 func BenchmarkIsUnsupportedMethodError(b *testing.B) {

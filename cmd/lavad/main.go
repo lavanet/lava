@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	cmdcommon "github.com/lavanet/lava/v5/cmd/common"
 	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
-	"github.com/lavanet/lava/v5/protocol/badgegenerator"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
@@ -31,16 +30,12 @@ func main() {
 	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
-	// badge generator cobra command
-	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 
 	deprecationWarningMessage := "This command will become deprecated on this binary, in the future. Please switch to the 'lavap' binary for this command."
 	// Add RPC Consumer Command
 	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(cmdRPCConsumer, deprecationWarningMessage))
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(cmdRPCProvider, deprecationWarningMessage))
-	// Add Badge Generator Command
-	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(badgeGenerator, deprecationWarningMessage))
 
 	testCmd := &cobra.Command{
 		Use:   "test",

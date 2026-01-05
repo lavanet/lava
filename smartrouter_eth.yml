@@ -1,0 +1,50 @@
+# Smart Router Direct RPC Configuration
+# Testing Phases 1-5: JSON-RPC over HTTP/HTTPS + WebSocket Subscriptions
+# Mode: Direct connections to Ethereum RPC endpoints (no Lava providers!)
+#
+# For Section 3 (Direct Relay Behavior & Retry) testing, the first provider points at
+# a local mock server. Start it with: go run ./scripts/mock_rpc_server
+# Control responses via headers: X-Mock-Status (200|400|429|500), X-Mock-Delay (seconds).
+#
+# CACHE TESTING (Section 4):
+# 1. Start cache server: lavap cache 127.0.0.1:7778 --log_level debug
+# 2. Start smart router with: --cache-be "127.0.0.1:7778"
+# 3. Test quorum bypass: curl -H "lava-quorum-min: 2" ...  (cache bypassed)
+# 4. Stateful APIs (eth_sendRawTransaction) go to ALL providers, not cached
+
+endpoints:
+  - listen-address: "0.0.0.0:3360"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    network-address: "0.0.0.0:3360"  # Simple string format
+  
+  # Note: Ethereum only supports jsonrpc API interface
+  # WebSocket subscriptions are handled via the websocket static-provider below
+  # To test multiple endpoints, use smartrouter_lava.yml (supports jsonrpc, rest, grpc, tendermintrpc)
+
+# Static providers - DIRECT RPC mode (bypasses Lava provider-relay protocol)
+static-providers:
+
+  - name: "mock-eth-mainnet-1"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://g.w.lavanet.xyz:443/gateway/eth/rpc-http/4926f3fd246058892909cdda0c88f8c7"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "publicnode-eth-mainnet-1"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://ethereum-rpc.publicnode.com"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "mock-eth-mainnet-websocket"
+    chain-id: "ETH1"
+    api-interface: "websocket"
+    node-urls:
+      - url: "wss://ethereum-rpc.publicnode.com"

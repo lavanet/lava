@@ -13,11 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/lavanet/lava/v5/protocol/common"
-	finalizationconsensus "github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
-	types "github.com/lavanet/lava/v5/x/conflict/types"
 	types0 "github.com/lavanet/lava/v5/x/plans/types"
 	types1 "github.com/lavanet/lava/v5/x/protocol/types"
 	gomock "go.uber.org/mock/gomock"
@@ -117,18 +114,6 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManage
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterConsumerSessionManagerForPairingUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterConsumerSessionManagerForPairingUpdates), ctx, consumerSessionManager, staticProvidersList, backupProvidersList)
 }
 
-// RegisterFinalizationConsensusForUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *finalizationconsensus.FinalizationConsensus, arg2 bool) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterFinalizationConsensusForUpdates", arg0, arg1, arg2)
-}
-
-// RegisterFinalizationConsensusForUpdates indicates an expected call of RegisterFinalizationConsensusForUpdates.
-func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterFinalizationConsensusForUpdates(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterFinalizationConsensusForUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterFinalizationConsensusForUpdates), arg0, arg1, arg2)
-}
-
 // RegisterForDowntimeParamsUpdates mocks base method.
 func (m *MockConsumerStateTrackerInf) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	m.ctrl.T.Helper()
@@ -167,18 +152,4 @@ func (m *MockConsumerStateTrackerInf) RegisterForVersionUpdates(ctx context.Cont
 func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterForVersionUpdates(ctx, version, versionValidator any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterForVersionUpdates", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).RegisterForVersionUpdates), ctx, version, versionValidator)
-}
-
-// TxConflictDetection mocks base method.
-func (m *MockConsumerStateTrackerInf) TxConflictDetection(ctx context.Context, finalizationConflict *types.FinalizationConflict, responseConflict *types.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TxConflictDetection", ctx, finalizationConflict, responseConflict, conflictHandler)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TxConflictDetection indicates an expected call of TxConflictDetection.
-func (mr *MockConsumerStateTrackerInfMockRecorder) TxConflictDetection(ctx, finalizationConflict, responseConflict, conflictHandler any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxConflictDetection", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).TxConflictDetection), ctx, finalizationConflict, responseConflict, conflictHandler)
 }

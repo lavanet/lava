@@ -33,14 +33,12 @@ type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
 	rpcConsumerLogs               *metrics.RPCConsumerLogs
 	cmdFlags                      common.ConsumerCmdFlags
-	refererMatchString            string
 	relayMsgLogMaxChars           int
 	chainId                       string
 	apiInterface                  string
 	connectionType                string
-	refererData                   *RefererData
 	relaySender                   RelaySender
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	consumerWsSubscriptionManager WSSubscriptionManager
 	WebsocketConnectionUID        string
 	headerRateLimit               uint64
 }
@@ -48,15 +46,13 @@ type ConsumerWebsocketManager struct {
 type ConsumerWebsocketManagerOptions struct {
 	WebsocketConn                 *websocket.Conn
 	RpcConsumerLogs               *metrics.RPCConsumerLogs
-	RefererMatchString            string
 	CmdFlags                      common.ConsumerCmdFlags
 	RelayMsgLogMaxChars           int
 	ChainID                       string
 	ApiInterface                  string
 	ConnectionType                string
-	RefererData                   *RefererData
 	RelaySender                   RelaySender
-	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	ConsumerWsSubscriptionManager WSSubscriptionManager
 	WebsocketConnectionUID        string
 	headerRateLimit               uint64
 }
@@ -67,12 +63,10 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		relaySender:                   options.RelaySender,
 		rpcConsumerLogs:               options.RpcConsumerLogs,
 		cmdFlags:                      options.CmdFlags,
-		refererMatchString:            options.RefererMatchString,
 		relayMsgLogMaxChars:           options.RelayMsgLogMaxChars,
 		chainId:                       options.ChainID,
 		apiInterface:                  options.ApiInterface,
 		connectionType:                options.ConnectionType,
-		refererData:                   options.RefererData,
 		consumerWsSubscriptionManager: options.ConsumerWsSubscriptionManager,
 		WebsocketConnectionUID:        options.WebsocketConnectionUID,
 		headerRateLimit:               options.headerRateLimit,
@@ -258,7 +252,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		// check whether it's a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
 		if !IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, protocolMessage, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
+				responseData, err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, protocolMessage, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 					if err == common.SubscriptionNotFoundError {
@@ -267,7 +261,16 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 							continue
 						}
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
+					} else {
+						// Send formatted error so client gets feedback (e.g. upstream timeout)
+						formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+						if formatterMsg != nil {
+							websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+						}
 					}
+				} else if responseData != nil {
+					// Forward the node's response directly to the end user - no transformation or wrapping.
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: responseData}
 				}
 				continue
 			} else if IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
@@ -351,11 +354,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 				)
 			}()
-		}
-
-		refererMatch, referrerMatchCastedSuccessfully := websocketConn.Locals(cwm.refererMatchString).(string)
-		if referrerMatchCastedSuccessfully && refererMatch != "" && cwm.refererData != nil {
-			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
 		}
 
 		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)

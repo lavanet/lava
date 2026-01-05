@@ -140,8 +140,8 @@ func BenchmarkRelayProcessorQuorumMemory(b *testing.B) {
 			if response != nil && response.Err == nil {
 				hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
 				rp.quorumMap[hash]++
-				if rp.quorumMap[hash] > rp.currentQourumEqualResults {
-					rp.currentQourumEqualResults = rp.quorumMap[hash]
+				if rp.quorumMap[hash] > rp.currentQuorumEqualResults {
+					rp.currentQuorumEqualResults = rp.quorumMap[hash]
 				}
 			}
 		}

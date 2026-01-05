@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -42,8 +43,7 @@ func NewChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
-	refererData *RefererData,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	consumerWsSubscriptionManager WSSubscriptionManager,
 ) (ChainListener, error) {
 	if listenEndpoint.NetworkAddress == INTERNAL_ADDRESS {
 		utils.LavaFormatDebug("skipping chain listener for internal address")
@@ -51,13 +51,13 @@ func NewChainListener(
 	}
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, chainParser, refererData), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, chainParser), nil
 	}
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
@@ -65,7 +65,6 @@ func NewChainListener(
 type ChainParser interface {
 	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error)
 	SetSpec(spec spectypes.Spec)
-	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
 	IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey CollectionKey) bool
@@ -118,6 +117,16 @@ type ChainMessageForSend interface {
 
 type HealthReporter interface {
 	IsHealthy() bool
+}
+
+// GRPCReflectionProvider is an optional interface that can be implemented by RelaySender
+// to provide gRPC reflection support. When implemented, the gRPC listener will register
+// a reflection proxy service that enables tools like grpcurl to discover services.
+type GRPCReflectionProvider interface {
+	// GetGRPCReflectionConnection returns a gRPC connection for reflection requests.
+	// The cleanup function should be called when the connection is no longer needed.
+	// Returns nil if reflection is not supported.
+	GetGRPCReflectionConnection(ctx context.Context) (conn *grpc.ClientConn, cleanup func(), err error)
 }
 
 type RelaySender interface {

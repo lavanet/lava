@@ -7,9 +7,7 @@ import (
 type RelaySource int
 
 const (
-	SdkSource RelaySource = iota + 1
-	GatewaySource
-	BadgesSource
+	GatewaySource RelaySource = iota + 1
 )
 
 type RelayMetrics struct {

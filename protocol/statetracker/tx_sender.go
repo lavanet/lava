@@ -19,11 +19,10 @@ import (
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	commontypes "github.com/lavanet/lava/v5/utils/common/types"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -306,22 +305,7 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
-	if finalizationConflict != nil {
-		msg.SetFinalizationConflict(finalizationConflict)
-	} else if responseConflict != nil {
-		msg.SetResponseConflict(responseConflict)
-	} else {
-		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
-	}
-
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
-	if err != nil {
-		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
+// This function was used to send conflict detection transactions to the blockchain
 
 type ProviderTxSender struct {
 	*TxSender
@@ -437,26 +421,6 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, true, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
-	}
-	return nil
-}
-
-func (pts *ProviderTxSender) SendVoteReveal(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
-	}
-	return nil
-}
-
-func (pts *ProviderTxSender) SendVoteCommitment(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specId string) error {
-	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	feeGranter := pts.getFeeGranterFromVaults(specId)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
-	if err != nil {
-		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }

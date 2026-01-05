@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	common "github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -134,9 +135,9 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("statusCode", response.RelayResult.StatusCode),
 			utils.LogAttr("api", protocolMessage.GetApi().Name),
 			utils.LogAttr("requestUrl", requestUrl),
-			utils.LogAttr("payload", string(response.RelayResult.Reply.Data)),
+			utils.LogAttr("payload", parser.CapStringLen(string(response.RelayResult.Reply.Data))),
 			utils.LogAttr("headers", response.RelayResult.Reply.Metadata),
-			utils.LogAttr("requestPayload", reqPayload),
+			utils.LogAttr("requestPayload", parser.CapStringLen(reqPayload)),
 			utils.LogAttr("requestHeaders", reqHeaders),
 		)
 		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})

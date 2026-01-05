@@ -38,7 +38,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 
 			// Provider Side:
 
-			sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum-skippedRelays, nil)
+			sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum-skippedRelays)
 			// validate expected results
 			require.NotEmpty(t, psm.sessionsWithAllConsumers)
 			require.NotNil(t, sps)
@@ -102,7 +102,7 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 
 		// Provider Side:
 
-		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, nil)
+		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum)
 		// validate expected results
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
 		require.NotNil(t, sps)
@@ -167,14 +167,14 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 
 		// Provider Side:
 
-		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, nil)
+		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum)
 		// validate expected results
 		require.Empty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, sps)
 		require.Error(t, err)
 		require.True(t, ConsumerNotRegisteredYet.Is(err))
 		// expect session to be missing, so we need to register it for the first time
-		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Parent.MaxComputeUnits, pairedProviders, "projectIdTest", nil)
+		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Parent.MaxComputeUnits, pairedProviders, "projectIdTest")
 		// validate session was added
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
 		require.NoError(t, err)

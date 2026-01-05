@@ -393,7 +393,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	overallHealthHandler := func(w http.ResponseWriter, r *http.Request) {
 		statusCode := http.StatusOK
-		message := "Healthy"
+		message := "Health status OK"
 		if atomic.LoadUint64(&consumerMetricsManager.endpointsHealthChecksOk) == 0 {
 			statusCode = http.StatusServiceUnavailable
 			message = "Unhealthy"

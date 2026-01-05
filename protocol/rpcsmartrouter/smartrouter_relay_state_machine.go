@@ -161,28 +161,10 @@ func (srsm *SmartRouterRelayStateMachine) shouldRetry(numberOfNodeErrors uint64)
 	return shouldRetry
 }
 
-// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level
-func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
-	if srsm.resultsChecker == nil {
-		return false
-	}
-
-	// Check if the results checker has unsupported method errors
-	if relayProcessor, ok := srsm.resultsChecker.(*relaycore.RelayProcessor); ok {
-		return relayProcessor.HasUnsupportedMethodErrors()
-	}
-
-	return false
-}
 
 func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
-	if srsm.hasUnsupportedMethodErrorsInStateMachine() {
-		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
-		return false
-	}
 
 	if srsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
 		return false
@@ -361,7 +343,17 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", srsm.ctx))
 					// Reset pairing error counter on success
 					srsm.consecutivePairingErrors = 0
+
+					utils.LavaFormatInfo("STATE MACHINE: ABOUT TO SEND DONE=TRUE",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
+
+					utils.LavaFormatInfo("STATE MACHINE: DONE MESSAGE SENT (BLOCKING SEND COMPLETED)",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					return
 				}
 

@@ -111,7 +111,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -141,7 +141,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfParallelSubscriptions)
@@ -174,7 +174,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			// now we have numberOfParallelSubscriptions subscriptions currently running
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions)
 			// remove one
-			err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], metricsData)
+			_, err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], metricsData)
 			require.NoError(t, err)
 			// now we have numberOfParallelSubscriptions - 1
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-1)
@@ -267,7 +267,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -297,7 +297,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 			metricsData := metrics.NewRelayAnalytics(projectHashTest, chainIdTest, apiTypeTest)
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			wg := sync.WaitGroup{}
 			wg.Add(10)
@@ -518,7 +518,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				},
 			}
 
-			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient1.
@@ -548,7 +548,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -638,7 +638,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				},
 			}
 
-			relayResult2.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult2.Request, ts.Providers[0].SK, relayResult2.Reply, true)
+			relayResult2.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult2.Request, ts.Providers[0].SK, relayResult2.Reply)
 			require.NoError(t, err)
 
 			mockRelayerClient2.
@@ -681,7 +681,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			unsubProtocolMessage := NewProtocolMessage(unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String())
-			err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
+			_, err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			require.NoError(t, err)
 
 			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
