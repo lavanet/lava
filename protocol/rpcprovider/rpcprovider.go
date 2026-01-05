@@ -1065,6 +1065,22 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-provider"
+				}
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
 
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ProviderVersion)
 			rand.InitRandomSeed()
@@ -1206,6 +1222,8 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCProvider.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cmdRPCProvider.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-provider", "pyroscope application name for identifying this service")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")

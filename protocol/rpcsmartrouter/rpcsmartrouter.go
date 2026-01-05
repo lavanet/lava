@@ -743,6 +743,22 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-smartrouter"
+				}
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
 			// Note: VerifyAndHandleUnsupportedFlags is not called here because rpcsmartrouter
 			// doesn't use blockchain transaction flags (--fees, --from, etc.) since it operates
 			// in centralized mode without blockchain interactions
@@ -950,6 +966,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-smartrouter", "pyroscope application name for identifying this service")
 	cmdRPCSmartRouter.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCSmartRouter.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
