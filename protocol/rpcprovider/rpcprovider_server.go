@@ -1080,6 +1080,9 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var ignoredMetadata []pairingtypes.Metadata
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
+	// In test mode we want the test-mode LatestBlock (set by ProviderStateMachine) to reach the consumer optimizer.
+	// DR can overwrite reply.LatestBlock when building finalization proofs, so we snapshot and restore it later.
+	testModeLatestBlockOverride := int64(0)
 
 	if requestedBlockHash != nil || finalized { // try get reply from cache
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
@@ -1093,6 +1096,9 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		}
 
 		reply = replyWrapper.RelayReply
+		if rpcps.testModeConfig != nil && rpcps.testModeConfig.TestMode && reply != nil {
+			testModeLatestBlockOverride = reply.LatestBlock
+		}
 
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
@@ -1109,6 +1115,9 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		if err != nil {
 			return nil, nil, err
 		}
+	}
+	if testModeLatestBlockOverride != 0 {
+		reply.LatestBlock = testModeLatestBlockOverride
 	}
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
