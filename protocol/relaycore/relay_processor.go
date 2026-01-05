@@ -194,10 +194,23 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	}
 
 	// Get actual error data to check for unsupported method errors
-	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
+	successResults, nodeErrorResults, protocolErrors := rp.GetResultsData()
 
-	// Check node errors
+	// NEW: Check success results for IsUnsupportedMethod flag
+	for _, result := range successResults {
+		if result.IsUnsupportedMethod {
+			return true
+		}
+	}
+
+	// Check node errors for IsUnsupportedMethod flag
 	for _, nodeErrorResult := range nodeErrorResults {
+		// NEW: Check flag first (preferred method)
+		if nodeErrorResult.IsUnsupportedMethod {
+			return true
+		}
+
+		// KEEP: Also check reply data as backup (for backward compatibility)
 		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
 			// Check if this is an unsupported method error based on the reply
 			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {

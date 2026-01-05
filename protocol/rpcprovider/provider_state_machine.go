@@ -2,7 +2,6 @@ package rpcprovider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -51,6 +50,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
 	var errorMessage string
+	var finalLatency time.Duration
 	emptyTime := 0 * time.Millisecond
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
@@ -65,6 +65,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		}
 		latency := time.Since(sendTime)
+		finalLatency = latency // Track latency outside loop to preserve it when breaking early
 		if err != nil {
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
@@ -113,7 +114,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			}
 
 			// Comprehensive structured logging
-			logMessage := "unsupported method error detected - returning error to consumer"
+			logMessage := "unsupported method error detected - returning node error to consumer"
 			utils.LavaFormatInfo(logMessage,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", errorMessage),
@@ -134,9 +135,9 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 				utils.LogAttr("status_code", replyWrapper.StatusCode),
 			)
 
-			// Return an UnsupportedMethodError to the consumer so they don't increment their CU counter
-			unsupportedError := chainlib.NewUnsupportedMethodError(errors.New(errorMessage), methodName)
-			return nil, emptyTime, unsupportedError
+			// Break out of retry loop - no point retrying unsupported methods
+			// The response will be returned after the loop with the actual node error
+			break
 		}
 
 		// On the first retry, check if this hash has already failed previously
@@ -151,7 +152,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		utils.LavaFormatTrace("failed all relay retries for message", utils.LogAttr("hash", requestHashString))
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
-	return replyWrapper, emptyTime, nil
+	return replyWrapper, finalLatency, nil
 }
 
 // generateTestResponse generates a test response based on the configured probabilities

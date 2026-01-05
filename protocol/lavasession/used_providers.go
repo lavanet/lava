@@ -308,7 +308,7 @@ func isUnsupportedMethodError(err error) bool {
 		"endpoint not found",
 		"route not found",
 		"path not found",
-		"not found",
+		// REMOVED: "not found" - Too broad, matches smart contract errors (e.g., "NFT not found")
 		"method not allowed",
 		"method not implemented",
 		"unimplemented",
