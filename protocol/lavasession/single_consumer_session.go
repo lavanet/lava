@@ -18,8 +18,15 @@ type SingleConsumerSession struct {
 	lock          utils.LavaMutex
 	RelayNum      uint64
 	LatestBlock   int64
-	// Each session will holds a pointer to a connection, if the connection is lost, this session will be banned (wont be picked)
+	
+	// Connection type - uses composition pattern for type safety
+	// Either ProviderRelayConnection (rpcconsumer) or DirectRPCSessionConnection (rpcsmartrouter)
+	Connection SessionConnection
+	
+	// Legacy field - maintained for backward compatibility
+	// For provider-relay mode, this points to the same connection as Connection.(*ProviderRelayConnection).EndpointConnection
 	EndpointConnection *EndpointConnection
+	
 	BlockListed        bool // if session lost sync we blacklist it.
 	ConsecutiveErrors  []error
 	errorsCount        uint64
@@ -38,7 +45,13 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
 func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
-	lastReputationReport := cs.QoSManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
+	// Use GetSessionQoSManager() to support both connection types
+	qosManager := cs.GetSessionQoSManager()
+	if qosManager == nil {
+		return sdk.ZeroDec()
+	}
+	
+	lastReputationReport := qosManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
 	if lastReputationReport != nil {
 		computedReputation, errComputing := lastReputationReport.ComputeReputation()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
@@ -70,7 +83,12 @@ func (scs *SingleConsumerSession) Free(err error) {
 		scs.usedProviders = nil
 	}
 	scs.routerKey = NewRouterKey(nil)
-	scs.EndpointConnection.decreaseSessionUsingConnection()
+	
+	// Only decrease connection usage for provider-relay sessions
+	// Direct RPC sessions don't have EndpointConnection
+	if scs.EndpointConnection != nil {
+		scs.EndpointConnection.decreaseSessionUsingConnection()
+	}
 	scs.lock.Unlock()
 }
 
@@ -86,7 +104,12 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
-		session.EndpointConnection.addSessionUsingConnection()
+		
+		// Only increase connection usage for provider-relay sessions
+		// Direct RPC sessions don't have EndpointConnection
+		if session.EndpointConnection != nil {
+			session.EndpointConnection.addSessionUsingConnection()
+		}
 		return false, true
 	}
 	return false, false
@@ -121,4 +144,38 @@ func (scs *SingleConsumerSession) VerifyProviderUniqueIdAndStoreIfFirstTime(prov
 
 func (scs *SingleConsumerSession) GetProviderUniqueId() string {
 	return scs.providerUniqueId
+}
+
+// GetDirectConnection returns the DirectRPCConnection if this is a smart router session
+// Returns (connection, true) if this is a direct RPC session, (nil, false) otherwise
+func (scs *SingleConsumerSession) GetDirectConnection() (DirectRPCConnection, bool) {
+	if drsc, ok := scs.Connection.(*DirectRPCSessionConnection); ok {
+		return drsc.DirectConnection, true
+	}
+	return nil, false
+}
+
+// GetProviderConnection returns the EndpointConnection if this is a consumer session
+// Returns (connection, true) if this is a provider-relay session, (nil, false) otherwise
+func (scs *SingleConsumerSession) GetProviderConnection() (*EndpointConnection, bool) {
+	if prc, ok := scs.Connection.(*ProviderRelayConnection); ok {
+		return prc.EndpointConnection, true
+	}
+	return nil, false
+}
+
+// IsDirectRPC returns true if this session uses direct RPC (smart router mode)
+func (scs *SingleConsumerSession) IsDirectRPC() bool {
+	_, ok := scs.Connection.(*DirectRPCSessionConnection)
+	return ok
+}
+
+// GetSessionQoSManager returns the QoS manager from the connection
+// Falls back to the legacy QoSManager field if Connection is nil (backward compatibility)
+func (scs *SingleConsumerSession) GetSessionQoSManager() *qos.QoSManager {
+	if scs.Connection != nil {
+		return scs.Connection.GetQoSManager()
+	}
+	// Fallback for backward compatibility
+	return scs.QoSManager
 }
