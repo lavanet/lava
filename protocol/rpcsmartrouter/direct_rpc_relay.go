@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -19,6 +20,65 @@ import (
 type DirectRPCRelaySender struct {
 	directConnection lavasession.DirectRPCConnection
 	endpointName     string // Sanitized endpoint name (no API keys)
+}
+
+// extractLatestBlockFromResponse attempts to extract the latest block number from RPC response
+// Returns 0 if the method doesn't include block information
+func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
+	// Parse response JSON
+	var jsonResponse struct {
+		Result interface{} `json:"result"`
+	}
+	
+	if err := json.Unmarshal(responseData, &jsonResponse); err != nil {
+		return 0 // Can't parse, return 0
+	}
+	
+	switch method {
+	case "eth_blockNumber":
+		// Response: {"result": "0x12a7b5c"}
+		if hexStr, ok := jsonResponse.Result.(string); ok {
+			if len(hexStr) > 2 && hexStr[:2] == "0x" {
+				if block, err := strconv.ParseInt(hexStr[2:], 16, 64); err == nil {
+					return block
+				}
+			}
+		}
+		
+	case "eth_getBlockByNumber", "eth_getBlockByHash":
+		// Response: {"result": {"number": "0x12a7b5c", ...}}
+		if blockObj, ok := jsonResponse.Result.(map[string]interface{}); ok {
+			if numberHex, ok := blockObj["number"].(string); ok && len(numberHex) > 2 {
+				if block, err := strconv.ParseInt(numberHex[2:], 16, 64); err == nil {
+					return block
+				}
+			}
+		}
+		
+	case "eth_getTransactionReceipt":
+		// Response: {"result": {"blockNumber": "0x12a7b5c", ...}}
+		if receiptObj, ok := jsonResponse.Result.(map[string]interface{}); ok {
+			if blockNumHex, ok := receiptObj["blockNumber"].(string); ok && len(blockNumHex) > 2 {
+				if block, err := strconv.ParseInt(blockNumHex[2:], 16, 64); err == nil {
+					return block
+				}
+			}
+		}
+		
+	case "eth_getLogs":
+		// Response: {"result": [{"blockNumber": "0x12a7b5c"}, ...]}
+		if logsArray, ok := jsonResponse.Result.([]interface{}); ok && len(logsArray) > 0 {
+			if firstLog, ok := logsArray[0].(map[string]interface{}); ok {
+				if blockNumHex, ok := firstLog["blockNumber"].(string); ok && len(blockNumHex) > 2 {
+					if block, err := strconv.ParseInt(blockNumHex[2:], 16, 64); err == nil {
+						return block
+					}
+				}
+			}
+		}
+	}
+	
+	return 0 // Method doesn't return block info or couldn't parse
 }
 
 // sanitizeEndpointURL removes sensitive information (API keys, tokens) from URLs
@@ -150,9 +210,13 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
 	}
 	
+	// Extract latest block from response if possible (for QoS sync tracking)
+	latestBlockFromResponse := extractLatestBlockFromResponse(responseData, chainMessage.GetApi().Name)
+	
 	result := &common.RelayResult{
 		Reply: &pairingtypes.RelayReply{
-			Data: responseData,
+			Data:        responseData,
+			LatestBlock: latestBlockFromResponse, // ✅ Set LatestBlock (provider parity)
 		},
 		Finalized:  true,       // Direct responses don't need consensus
 		StatusCode: statusCode, // Actual HTTP status code (200, 400, 429, 500, etc.)
