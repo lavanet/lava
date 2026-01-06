@@ -1021,9 +1021,12 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		return nil, nil, errV
 	}
 
+	// Calculate cache parameters without DR
 	var latestBlock int64
 	var requestedBlockHash []byte
 	var finalized bool
+	_, averageBlockTime, blockDistanceToFinalization, _ := rpcps.chainParser.ChainBlockStats()
+	latestBlock, requestedBlockHash, finalized = rpcps.GetParametersForCache(ctx, request, chainMsg, blockDistanceToFinalization)
 
 	// currently used when cache hits.
 	var reply *pairingtypes.RelayReply
@@ -1031,11 +1034,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var err error
 	var replyWrapper *chainlib.RelayReplyWrapper
 
-	// TODO: handle cache on fork for dataReliability = false.
-	// Previously, finalized block data was calculated inside the Data Reliability logic.
-	// Since DR is removed, this calculation is missing, so finalizing cache will not work.
-	// This needs to be refactored to support caching without DR.
-	if finalized { // try get reply from cache (requestedBlockHash check removed - always nil)
+	if requestedBlockHash != nil || finalized { // try get reply from cache
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}
 
@@ -1050,8 +1049,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
-		if rpcps.cache.CacheActive() && finalized {
-			_, averageBlockTime, _, _ := rpcps.chainParser.ChainBlockStats() // Get averageBlockTime for cache
+		if rpcps.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
 		}
 	} else if len(request.RelayData.Extensions) > 0 {
@@ -1059,9 +1057,8 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	// Result: reply.FinalizedBlocksHashes will remain empty (cache handles this gracefully)
+	// Result: reply.FinalizedBlocksHashes will remain empty (cache handles this gracefully on consumer side)
 	// Result: reply.LatestBlock will NOT be overwritten - remains as actual node's latest block (more accurate!)
-	// Function BuildRelayFinalizedBlockHashes() still exists but is no longer called
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply)
@@ -1151,6 +1148,32 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 			}
 		}()
 	}
+}
+
+// GetParametersForCache calculates cache parameters without DR overhead
+// This extracts only the cache-relevant logic that was previously inside GetParametersForRelayDataReliability
+func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, blockDistanceToFinalization uint32) (latestBlock int64, requestedBlockHash []byte, finalized bool) {
+	specificBlock := request.RelayData.RequestBlock
+	if specificBlock < spectypes.LATEST_BLOCK {
+		// cases of EARLIEST, FINALIZED, SAFE
+		// GetLatestBlockData only supports latest relative queries or specific block numbers
+		specificBlock = spectypes.NOT_APPLICABLE
+	}
+
+	// Get latest block from chain tracker
+	latestBlock = rpcps.chainTracker.GetAtomicLatestBlockNum()
+
+	// Get specific block data for caching
+	_, specificRequestedHashes, _, getLatestBlockErr := rpcps.chainTracker.GetLatestBlockData(spectypes.NOT_APPLICABLE, spectypes.NOT_APPLICABLE, specificBlock)
+	if getLatestBlockErr == nil && len(specificRequestedHashes) == 1 {
+		requestedBlockHash = []byte(specificRequestedHashes[0].Hash)
+	}
+
+	// Calculate if block is finalized
+	modifiedReqBlock := lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
+	finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, int64(blockDistanceToFinalization))
+
+	return latestBlock, requestedBlockHash, finalized
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
