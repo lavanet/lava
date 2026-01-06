@@ -2,6 +2,7 @@ package rpcsmartrouter
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -27,7 +28,7 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3333",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 1, 1, nil, "LAV1", false)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1")
 
 	chainKey := rpcEndpoint.Key()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage())
