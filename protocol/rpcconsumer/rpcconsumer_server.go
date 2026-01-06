@@ -117,7 +117,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
-	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
 	consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
 ) (err error) {
@@ -139,7 +138,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
-	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
+	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
 	}

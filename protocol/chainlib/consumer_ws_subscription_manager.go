@@ -51,7 +51,6 @@ type ConsumerWSSubscriptionManager struct {
 	relaySender                        RelaySender
 	consumerSessionManager             *lavasession.ConsumerSessionManager
 	chainParser                        ChainParser
-	refererData                        *RefererData
 	connectionType                     string
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
 	currentlyPendingSubscriptions      map[string]*pendingSubscriptionsBroadcastManager
@@ -62,7 +61,6 @@ type ConsumerWSSubscriptionManager struct {
 func NewConsumerWSSubscriptionManager(
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	relaySender RelaySender,
-	refererData *RefererData,
 	connectionType string,
 	chainParser ChainParser,
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage,
@@ -74,7 +72,6 @@ func NewConsumerWSSubscriptionManager(
 		currentlyPendingSubscriptions:      make(map[string]*pendingSubscriptionsBroadcastManager),
 		consumerSessionManager:             consumerSessionManager,
 		chainParser:                        chainParser,
-		refererData:                        refererData,
 		relaySender:                        relaySender,
 		connectionType:                     connectionType,
 		activeSubscriptionProvidersStorage: activeSubscriptionProvidersStorage,
