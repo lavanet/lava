@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
@@ -70,6 +71,7 @@ type CancelableContextHolder struct {
 type RPCSmartRouterServer struct {
 	smartRouterProcessGuid         string
 	chainParser                    chainlib.ChainParser
+	chainTracker                   chaintracker.IChainTracker
 	sessionManager                 *lavasession.ConsumerSessionManager
 	listenEndpoint                 *lavasession.RPCEndpoint
 	rpcSmartRouterLogs             *metrics.RPCConsumerLogs
@@ -94,6 +96,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	chainParser chainlib.ChainParser,
+	chainTracker chaintracker.IChainTracker,
 	sessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -112,6 +115,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.sessionManager = sessionManager
 	rpcss.listenEndpoint = listenEndpoint
 	rpcss.cache = cache
+	rpcss.chainTracker = chainTracker
 	rpcss.requiredResponses = requiredResponses
 	rpcss.lavaChainID = lavaChainID
 	rpcss.rpcSmartRouterLogs = rpcSmartRouterLogs
@@ -443,7 +447,25 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		go rpcss.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
+	utils.LavaFormatInfo("🔍 CALLING ProcessingResult",
+		utils.LogAttr("GUID", ctx),
+	)
+
 	returnedResult, err := relayProcessor.ProcessingResult()
+
+	utils.LavaFormatInfo("📊 ProcessingResult RETURNED",
+		utils.LogAttr("has_result", returnedResult != nil),
+		utils.LogAttr("has_reply", returnedResult != nil && returnedResult.Reply != nil),
+		utils.LogAttr("reply_size", func() int {
+			if returnedResult != nil && returnedResult.Reply != nil {
+				return len(returnedResult.Reply.Data)
+			}
+			return 0
+		}()),
+		utils.LogAttr("error", err),
+		utils.LogAttr("GUID", ctx),
+	)
+
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
 		// Check if this is an unsupported method error from the error message
@@ -584,16 +606,45 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	if err != nil {
 		return relayProcessor, err
 	}
+
+	utils.LavaFormatInfo("🎬 STARTING TASK CHANNEL LOOP",
+		utils.LogAttr("GUID", ctx),
+	)
+
 	for task := range relayTaskChannel {
+		utils.LavaFormatInfo("📨 RECEIVED TASK FROM CHANNEL",
+			utils.LogAttr("is_done", task.IsDone()),
+			utils.LogAttr("has_error", task.Err != nil),
+			utils.LogAttr("num_providers", task.NumOfProviders),
+			utils.LogAttr("GUID", ctx),
+		)
+
 		if task.IsDone() {
+			utils.LavaFormatInfo("🏁 TASK IS DONE - RETURNING FROM ProcessRelaySend",
+				utils.LogAttr("error", task.Err),
+				utils.LogAttr("GUID", ctx),
+			)
 			return relayProcessor, task.Err
 		}
 		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
 		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
+
+		utils.LavaFormatInfo("🔄 UPDATING BATCH",
+			utils.LogAttr("error", err),
+			utils.LogAttr("GUID", ctx),
+		)
+
 		relayProcessor.UpdateBatch(err)
+
+		utils.LavaFormatInfo("🔁 LOOPING BACK TO RECEIVE NEXT TASK",
+			utils.LogAttr("GUID", ctx),
+		)
 	}
 
 	// shouldn't happen.
+	utils.LavaFormatError("❌ CHANNEL CLOSED UNEXPECTEDLY", nil,
+		utils.LogAttr("GUID", ctx),
+	)
 	return relayProcessor, utils.LavaFormatError("ProcessRelaySend channel closed unexpectedly", nil)
 }
 
@@ -815,6 +866,173 @@ func deepCopyRelayPrivateData(original *pairingtypes.RelayPrivateData) *pairingt
 		Extensions:     extensionsCopy,
 		SeenBlock:      original.SeenBlock,
 	}
+}
+
+// getFirstSession returns the first session from the sessions map
+func getFirstSession(sessions lavasession.ConsumerSessionsMap) *lavasession.SingleConsumerSession {
+	for _, sessionInfo := range sessions {
+		return sessionInfo.Session
+	}
+	return nil
+}
+
+// sendRelayToDirectEndpoints handles relay for direct RPC sessions (smart router direct mode)
+func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
+	ctx context.Context,
+	sessions lavasession.ConsumerSessionsMap,
+	protocolMessage chainlib.ProtocolMessage,
+	relayProcessor *relaycore.RelayProcessor,
+	analytics *metrics.RelayMetrics,
+) error {
+	chainMessage := protocolMessage
+
+	// Get relay timeout
+	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
+	relayTimeout := chainlib.GetRelayTimeout(protocolMessage, averageBlockTime)
+
+	utils.LavaFormatDebug("sending direct RPC relay",
+		utils.LogAttr("num_endpoints", len(sessions)),
+		utils.LogAttr("timeout", relayTimeout),
+		utils.LogAttr("method", chainMessage.GetApi().Name),
+		utils.LogAttr("GUID", ctx),
+	)
+
+	// Launch goroutines for each direct RPC endpoint (parallel relay pattern)
+	for endpointAddress, sessionInfo := range sessions {
+		go func(endpointAddress string, sessionInfo *lavasession.SessionInfo) {
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+
+			guid, found := utils.GetUniqueIdentifier(ctx)
+			if found {
+				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
+			}
+
+			singleConsumerSession := sessionInfo.Session
+
+			localRelayResult := &common.RelayResult{
+				ProviderInfo: common.ProviderInfo{ProviderAddress: endpointAddress},
+				Finalized:    true, // Direct responses don't need consensus
+			}
+
+			var errResponse error
+
+			// CRITICAL: Use defer to set response (same as provider-relay pattern)
+			// This ensures all work completes before response is sent
+			defer func() {
+				// 🔍 DEBUG: Log response being set
+				if localRelayResult != nil && localRelayResult.Reply != nil {
+					utils.LavaFormatInfo("🎯 SETTING RESPONSE TO RELAY PROCESSOR",
+						utils.LogAttr("endpoint", endpointAddress),
+						utils.LogAttr("reply_data", string(localRelayResult.Reply.Data)),
+						utils.LogAttr("reply_size", len(localRelayResult.Reply.Data)),
+						utils.LogAttr("error", errResponse),
+						utils.LogAttr("GUID", goroutineCtx),
+					)
+				} else {
+					utils.LavaFormatWarning("⚠️ SETTING NIL/EMPTY RESPONSE", nil,
+						utils.LogAttr("localRelayResult_nil", localRelayResult == nil),
+						utils.LogAttr("reply_nil", localRelayResult == nil || localRelayResult.Reply == nil),
+						utils.LogAttr("error", errResponse),
+					)
+				}
+
+				// Set response for relay processor (MUST be in defer!)
+				relayProcessor.SetResponse(&relaycore.RelayResponse{
+					RelayResult: *localRelayResult,
+					Err:         errResponse,
+				})
+
+				// Close context
+				goroutineCtxCancel()
+			}()
+
+			// Call relayInner which will branch to relayInnerDirect
+			relayLatency, err, _ := rpcss.relayInner(
+				goroutineCtx,
+				singleConsumerSession,
+				localRelayResult,
+				relayTimeout,
+				chainMessage,
+				"", // consumerToken (not used for direct RPC)
+				analytics,
+			)
+
+			// Handle response
+			if err != nil {
+				utils.LavaFormatDebug("direct RPC relay failed in goroutine",
+					utils.LogAttr("endpoint", endpointAddress),
+					utils.LogAttr("error", err.Error()),
+					utils.LogAttr("latency", relayLatency),
+					utils.LogAttr("GUID", goroutineCtx),
+				)
+				errResponse = err
+			} else {
+				utils.LavaFormatDebug("direct RPC relay succeeded in goroutine",
+					utils.LogAttr("endpoint", endpointAddress),
+					utils.LogAttr("latency", relayLatency),
+					utils.LogAttr("GUID", goroutineCtx),
+				)
+			}
+
+			// Update session manager with result
+			if err == nil {
+				// Get latest block from ChainTracker (background poller, same as provider)
+				latestBlock := int64(0)
+				if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
+					// Use ChainTracker (accurate, polled every ~750ms for Ethereum)
+					latestBlock, _ = rpcss.chainTracker.GetLatestBlockNum()
+					utils.LavaFormatTrace("using latest block from chain tracker",
+						utils.LogAttr("latest_block", latestBlock),
+						utils.LogAttr("GUID", goroutineCtx),
+					)
+				} else {
+					// Fallback: try to extract from response (if method returns block info)
+					if localRelayResult.Reply != nil {
+						latestBlock = localRelayResult.Reply.LatestBlock
+					}
+					utils.LavaFormatDebug("chain tracker not available, latest block unknown",
+						utils.LogAttr("latest_block", latestBlock),
+						utils.LogAttr("GUID", goroutineCtx),
+					)
+				}
+
+				// Call OnSessionDone with correct signature
+				numSessions := len(sessions)
+				errSession := rpcss.sessionManager.OnSessionDone(
+					singleConsumerSession,
+					latestBlock, // latestServicedBlock
+					chainlib.GetComputeUnits(protocolMessage), // specComputeUnits
+					relayLatency, // currentLatency
+					singleConsumerSession.CalculateExpectedLatency(relayTimeout), // expectedLatency
+					int64(0),            // syncGap (not applicable for direct RPC)
+					numSessions,         // numOfProviders (int)
+					uint64(numSessions), // providersCount (uint64)
+					protocolMessage.GetApi().Category.HangingApi, // hangingApi
+					protocolMessage.GetExtensions(),              // extensions
+				)
+				if errSession != nil {
+					utils.LavaFormatWarning("OnSessionDone failed for direct RPC", errSession,
+						utils.LogAttr("GUID", goroutineCtx),
+					)
+				}
+			} else {
+				rpcss.sessionManager.OnSessionFailure(singleConsumerSession, err)
+			}
+
+			// NOTE: Don't call Free() here - OnSessionDone/OnSessionFailure already do it!
+		}(endpointAddress, sessionInfo)
+	}
+
+	// NOTE: Don't call WaitForResults here!
+	// The state machine already calls it via readResultsFromProcessor
+	// Calling it twice causes a deadlock
+
+	utils.LavaFormatInfo("✅ GOROUTINES LAUNCHED - RETURNING TO LET STATE MACHINE WAIT",
+		utils.LogAttr("num_endpoints", len(sessions)),
+		utils.LogAttr("GUID", ctx),
+	)
+
+	return nil
 }
 
 func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
@@ -1090,7 +1308,26 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		)
 	}
 
-	// Iterate over the sessions map
+	// Check if these are direct RPC sessions (smart router mode)
+	// If so, use direct RPC flow instead of provider-relay flow
+	if len(sessions) > 0 {
+		// Check first session to determine mode (all sessions should be same mode)
+		firstSession := getFirstSession(sessions)
+		if firstSession != nil && firstSession.IsDirectRPC() {
+			utils.LavaFormatDebug("routing to direct RPC flow (bypassing provider-relay)",
+				utils.LogAttr("num_sessions", len(sessions)),
+				utils.LogAttr("GUID", ctx),
+			)
+			return rpcss.sendRelayToDirectEndpoints(ctx, sessions, protocolMessage, relayProcessor, analytics)
+		}
+	}
+
+	utils.LavaFormatTrace("routing to provider-relay flow",
+		utils.LogAttr("num_sessions", len(sessions)),
+		utils.LogAttr("GUID", ctx),
+	)
+
+	// Iterate over the sessions map (provider-relay path)
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
 		// IMPORTANT: Pass localRelayData by value to isolate each goroutine from future modifications
@@ -1117,6 +1354,21 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 			var sessionHandled atomic.Bool
 			sessionHandled.Store(false)
 			singleConsumerSession := sessionInfo.Session
+
+			// Check if this is a direct RPC session (should not go through provider-relay path)
+			if singleConsumerSession.IsDirectRPC() {
+				utils.LavaFormatError("direct RPC session incorrectly routed to sendRelayToProvider",
+					fmt.Errorf("session should use direct RPC path, not provider-relay"),
+					utils.LogAttr("provider", providerPublicAddress),
+					utils.LogAttr("GUID", goroutineCtx),
+				)
+				errResponse = fmt.Errorf("internal error: direct RPC session in provider-relay path")
+				relayProcessor.SetResponse(&relaycore.RelayResponse{
+					RelayResult: *localRelayResult,
+					Err:         errResponse,
+				})
+				return
+			}
 
 			defer func() {
 				// Recover from any panics to prevent consumer crash
