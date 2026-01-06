@@ -325,7 +325,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -400,7 +400,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
 				utils.LavaFormatError("api method is not supported", err, utils.LogAttr("GUID", ctx))

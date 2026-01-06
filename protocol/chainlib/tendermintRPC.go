@@ -476,7 +476,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
@@ -560,7 +560,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
