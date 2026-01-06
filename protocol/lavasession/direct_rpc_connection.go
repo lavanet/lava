@@ -161,7 +161,31 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 	if err != nil {
 		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
+
+	// Check HTTP status code and return error for non-2xx responses
+	// Note: For JSON-RPC, status 200 with RPC error in body is common and valid
+	// We return the body in both cases - the caller will check for RPC errors
+	if resp.StatusCode >= 400 {
+		// For 4xx/5xx errors, include status code in error
+		return body, &HTTPStatusError{
+			StatusCode: resp.StatusCode,
+			Status:     resp.Status,
+			Body:       body,
+		}
+	}
+
 	return body, nil
+}
+
+// HTTPStatusError represents an HTTP error response (4xx/5xx)
+type HTTPStatusError struct {
+	StatusCode int
+	Status     string
+	Body       []byte
+}
+
+func (e *HTTPStatusError) Error() string {
+	return fmt.Sprintf("HTTP %d %s", e.StatusCode, e.Status)
 }
 
 func (h *HTTPDirectRPCConnection) GetProtocol() DirectRPCProtocol {

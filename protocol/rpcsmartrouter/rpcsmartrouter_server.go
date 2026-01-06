@@ -1383,7 +1383,187 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 	return nil
 }
 
+// relayInnerDirect handles relay requests using direct RPC connections (smart router mode)
+func (rpcss *RPCSmartRouterServer) relayInnerDirect(
+	ctx context.Context,
+	singleConsumerSession *lavasession.SingleConsumerSession,
+	relayResult *common.RelayResult,
+	relayTimeout time.Duration,
+	chainMessage chainlib.ChainMessage,
+	analytics *metrics.RelayMetrics,
+) (relayLatency time.Duration, err error, needsBackoff bool) {
+	// Get direct connection from session
+	directConnection, ok := singleConsumerSession.GetDirectConnection()
+	if !ok {
+		return 0, fmt.Errorf("session does not have direct RPC connection"), false
+	}
+
+	if rpcss.debugRelays {
+		utils.LavaFormatDebug("Sending direct RPC relay",
+			utils.LogAttr("timeout", relayTimeout),
+			utils.LogAttr("method", chainMessage.GetApi().Name),
+			utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+			utils.LogAttr("protocol", directConnection.GetProtocol()),
+			utils.LogAttr("GUID", ctx),
+		)
+	}
+
+	// Create direct RPC relay sender
+	// Use provider name (configured name) instead of raw URL to avoid leaking API keys
+	endpointName := singleConsumerSession.Parent.PublicLavaAddress
+	directSender := &DirectRPCRelaySender{
+		directConnection: directConnection,
+		endpointName:     endpointName,
+	}
+
+	// Add metric for processing latency (compatible with existing metrics)
+	rpcss.rpcSmartRouterLogs.AddMetricForProcessingLatencyBeforeProvider(
+		analytics,
+		rpcss.listenEndpoint.ChainID,
+		rpcss.listenEndpoint.ApiInterface,
+	)
+
+	// Send relay directly to RPC endpoint
+	startTime := time.Now()
+	result, err := directSender.SendDirectRelay(ctx, chainMessage, relayTimeout)
+	relayLatency = time.Since(startTime)
+
+	// Get endpoint for health tracking
+	var targetEndpoint *lavasession.Endpoint
+	endpointAddress := directConnection.GetURL()
+	for _, endpoint := range singleConsumerSession.Parent.Endpoints {
+		if endpoint.NetworkAddress == endpointAddress {
+			targetEndpoint = endpoint
+			break
+		}
+	}
+
+	if err != nil {
+		utils.LavaFormatDebug("direct RPC relay failed",
+			utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+			utils.LogAttr("error", err.Error()),
+			utils.LogAttr("latency", relayLatency),
+			utils.LogAttr("GUID", ctx),
+		)
+
+		// Classify error and decide on health tracking
+		shouldMarkUnhealthy := false
+		needsBackoff = false
+
+		// Check if this is an HTTP status error
+		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+			statusCode := httpErr.StatusCode
+
+			switch {
+			case statusCode >= 500:
+				// 5xx errors indicate server/node issues - mark unhealthy and backoff
+				shouldMarkUnhealthy = true
+				needsBackoff = true
+				utils.LavaFormatDebug("endpoint returned server error",
+					utils.LogAttr("status", statusCode),
+					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+				)
+			case statusCode == 429:
+				// Rate limit - backoff but DON'T mark unhealthy (endpoint is healthy, just busy)
+				needsBackoff = true
+				utils.LavaFormatDebug("endpoint rate limited",
+					utils.LogAttr("status", statusCode),
+					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+				)
+			case statusCode >= 400:
+				// 4xx errors are client errors - don't mark unhealthy, don't backoff
+				utils.LavaFormatDebug("client error",
+					utils.LogAttr("status", statusCode),
+					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+				)
+			}
+		} else {
+			// Non-HTTP errors (timeout, connection refused, network errors)
+			// These indicate endpoint/network issues - mark unhealthy and backoff
+			shouldMarkUnhealthy = true
+			needsBackoff = true
+		}
+
+		// Apply health tracking based on error classification
+		if shouldMarkUnhealthy && targetEndpoint != nil {
+			targetEndpoint.MarkUnhealthy()
+		}
+
+		return relayLatency, err, needsBackoff
+	}
+
+	// Success - reset endpoint health
+	if targetEndpoint != nil && targetEndpoint.ConnectionRefusals > 0 {
+		targetEndpoint.ResetHealth()
+	}
+
+	// Update relayResult with the response
+	relayResult.Reply = result.Reply
+	relayResult.Finalized = result.Finalized
+	relayResult.StatusCode = result.StatusCode
+	relayResult.IsNodeError = result.IsNodeError
+	relayResult.ProviderInfo = result.ProviderInfo
+
+	// Update analytics
+	if analytics != nil {
+		analytics.Success = true
+	}
+
+	utils.LavaFormatTrace("direct RPC relay succeeded",
+		utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+		utils.LogAttr("latency", relayLatency),
+		utils.LogAttr("status_code", result.StatusCode),
+		utils.LogAttr("response_size", len(result.Reply.Data)),
+		utils.LogAttr("GUID", ctx),
+	)
+
+	return relayLatency, nil, false
+}
+
+// shouldBackoff determines if an error warrants trying a different endpoint
+func shouldBackoff(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Connection errors, timeouts, and service unavailable should trigger backoff
+	errStr := err.Error()
+	return contains(errStr, "connection refused") ||
+		contains(errStr, "timeout") ||
+		contains(errStr, "503") ||
+		contains(errStr, "unavailable")
+}
+
+func contains(s, substr string) bool {
+	return len(s) > 0 && len(substr) > 0 && len(s) >= len(substr) &&
+		(s == substr || len(s) > len(substr) &&
+			(findInString(s, substr) >= 0))
+}
+
+func findInString(s, substr string) int {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
+}
+
 func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics) (relayLatency time.Duration, err error, needsBackoff bool) {
+	// Check if this is a direct RPC session (smart router mode)
+	if singleConsumerSession.IsDirectRPC() {
+		// Use direct RPC path (no provider relay)
+		return rpcss.relayInnerDirect(
+			ctx,
+			singleConsumerSession,
+			relayResult,
+			relayTimeout,
+			chainMessage,
+			analytics,
+		)
+	}
+
+	// Provider-relay path (legacy/consumer mode)
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress

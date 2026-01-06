@@ -60,6 +60,7 @@ import (
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -515,12 +516,35 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 					extensions[extension] = struct{}{}
 				}
 
+				// Create DirectRPCConnection for smart router (direct mode)
+				// Use default parallel connections for HTTP connection pooling
+				directConn, err := lavasession.NewDirectRPCConnection(
+					ctx,
+					url,
+					uint(lavasession.DefaultMaximumStreamsOverASingleConnection),
+				)
+				if err != nil {
+					utils.LavaFormatWarning("failed to create direct RPC connection", err,
+						utils.LogAttr("url", url.Url),
+						utils.LogAttr("provider", provider.Name),
+					)
+					continue
+				}
+
+				utils.LavaFormatInfo("created direct RPC connection",
+					utils.LogAttr("url", url.Url),
+					utils.LogAttr("protocol", directConn.GetProtocol()),
+					utils.LogAttr("provider", provider.Name),
+				)
+
 				endpoint := &lavasession.Endpoint{
-					NetworkAddress: url.Url,
-					Enabled:        true,
-					Addons:         extensions,
-					Extensions:     extensions,
-					Connections:    []*lavasession.EndpointConnection{},
+					NetworkAddress:    url.Url,
+					Enabled:           true,
+					Addons:            extensions,
+					Extensions:        extensions,
+					Connections:       nil,                                           // rpcconsumer only - not used in smart router
+					DirectConnections: []lavasession.DirectRPCConnection{directConn}, // Smart router uses direct RPC
+					Geolocation:       planstypes.Geolocation(provider.Geolocation),
 				}
 				endpoints = append(endpoints, endpoint)
 			}
