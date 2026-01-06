@@ -1,4 +1,6 @@
-package relaycore
+// Package relaycoretest provides test utilities for relay processor tests.
+// This package should only be imported by test files.
+package relaycoretest
 
 import (
 	"time"
@@ -8,11 +10,11 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/relaycore"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
-// Testing helpers for relay processor tests
-
+// RelayProcessorMetricsMock is a mock implementation of metrics interfaces for testing
 type RelayProcessorMetricsMock struct{}
 
 func (romm *RelayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
@@ -32,11 +34,14 @@ func (romm *RelayProcessorMetricsMock) GetChainIdAndApiInterface() (string, stri
 }
 
 var (
+	// RelayRetriesManagerInstance is a shared instance for tests
 	RelayRetriesManagerInstance = lavaprotocol.NewRelayRetriesManager()
-	RelayProcessorMetrics       = &RelayProcessorMetricsMock{}
+	// RelayProcessorMetrics is a mock metrics implementation for tests
+	RelayProcessorMetrics = &RelayProcessorMetricsMock{}
 )
 
-func SendSuccessRespJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+// SendSuccessRespJsonRpc sends a successful JSON-RPC response to the relay processor
+func SendSuccessRespJsonRpc(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
 	id, _ := json.Marshal(1)
 	resultBody, _ := json.Marshal(map[string]string{"result": "success"})
@@ -47,7 +52,7 @@ func SendSuccessRespJsonRpc(relayProcessor *RelayProcessor, provider string, del
 	}
 	resBytes, _ := json.Marshal(res)
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &RelayResponse{
+	response := &relaycore.RelayResponse{
 		RelayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
 				RelaySession: &pairingtypes.RelaySession{},
@@ -62,10 +67,11 @@ func SendSuccessRespJsonRpc(relayProcessor *RelayProcessor, provider string, del
 	relayProcessor.SetResponse(response)
 }
 
-func SendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+// SendSuccessResp sends a successful response to the relay processor
+func SendSuccessResp(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &RelayResponse{
+	response := &relaycore.RelayResponse{
 		RelayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
 				RelaySession: &pairingtypes.RelaySession{},
@@ -80,10 +86,11 @@ func SendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 	relayProcessor.SetResponse(response)
 }
 
-func SendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
+// SendProtocolError sends a protocol error response to the relay processor
+func SendProtocolError(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), err)
-	response := &RelayResponse{
+	response := &relaycore.RelayResponse{
 		RelayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
 				RelaySession: &pairingtypes.RelaySession{},
@@ -98,10 +105,11 @@ func SendProtocolError(relayProcessor *RelayProcessor, provider string, delay ti
 	relayProcessor.SetResponse(response)
 }
 
-func SendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+// SendNodeError sends a node error response to the relay processor
+func SendNodeError(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &RelayResponse{
+	response := &relaycore.RelayResponse{
 		RelayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
 				RelaySession: &pairingtypes.RelaySession{},
@@ -116,7 +124,8 @@ func SendNodeError(relayProcessor *RelayProcessor, provider string, delay time.D
 	relayProcessor.SetResponse(response)
 }
 
-func SendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+// SendNodeErrorJsonRpc sends a JSON-RPC node error response to the relay processor
+func SendNodeErrorJsonRpc(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
 	id, _ := json.Marshal(1)
 	res := rpcclient.JsonrpcMessage{
@@ -127,7 +136,7 @@ func SendNodeErrorJsonRpc(relayProcessor *RelayProcessor, provider string, delay
 	resBytes, _ := json.Marshal(res)
 
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
-	response := &RelayResponse{
+	response := &relaycore.RelayResponse{
 		RelayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
 				RelaySession: &pairingtypes.RelaySession{},
