@@ -1057,8 +1057,10 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	// Result: reply.FinalizedBlocksHashes will remain empty (cache handles this gracefully on consumer side)
-	// Result: reply.LatestBlock will NOT be overwritten - remains as actual node's latest block (more accurate!)
+	// Populate reply.LatestBlock with the provider's current latest block
+	// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
+	// Consumers use this for consistency tracking and provider selection
+	reply.LatestBlock = latestBlock
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply)
