@@ -919,23 +919,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			// CRITICAL: Use defer to set response (same as provider-relay pattern)
 			// This ensures all work completes before response is sent
 			defer func() {
-				// 🔍 DEBUG: Log response being set
-				if localRelayResult != nil && localRelayResult.Reply != nil {
-					utils.LavaFormatInfo("🎯 SETTING RESPONSE TO RELAY PROCESSOR",
-						utils.LogAttr("endpoint", endpointAddress),
-						utils.LogAttr("reply_data", string(localRelayResult.Reply.Data)),
-						utils.LogAttr("reply_size", len(localRelayResult.Reply.Data)),
-						utils.LogAttr("error", errResponse),
-						utils.LogAttr("GUID", goroutineCtx),
-					)
-				} else {
-					utils.LavaFormatWarning("⚠️ SETTING NIL/EMPTY RESPONSE", nil,
-						utils.LogAttr("localRelayResult_nil", localRelayResult == nil),
-						utils.LogAttr("reply_nil", localRelayResult == nil || localRelayResult.Reply == nil),
-						utils.LogAttr("error", errResponse),
-					)
-				}
-
 				// Set response for relay processor (MUST be in defer!)
 				relayProcessor.SetResponse(&relaycore.RelayResponse{
 					RelayResult: *localRelayResult,

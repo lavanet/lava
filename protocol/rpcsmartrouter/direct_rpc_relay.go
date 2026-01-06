@@ -29,18 +29,18 @@ func sanitizeEndpointURL(rawURL string) string {
 		// If parsing fails, return a generic identifier
 		return "endpoint"
 	}
-	
+
 	// Return just the hostname (no path, no query params which might contain API keys)
 	host := parsed.Host
 	if host == "" {
 		host = parsed.Hostname()
 	}
-	
+
 	// If hostname is also empty, use scheme + opaque
 	if host == "" {
 		return "endpoint"
 	}
-	
+
 	return host
 }
 
@@ -131,20 +131,12 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 		utils.LogAttr("status_code", statusCode),
 		utils.LogAttr("response_size", len(responseData)),
 	)
-	
-	// 🔍 DEBUG: Log actual response from node
-	utils.LavaFormatInfo("📥 RESPONSE FROM NODE",
-		utils.LogAttr("endpoint", endpointIdentifier),
-		utils.LogAttr("response_data", string(responseData)),
-		utils.LogAttr("response_size", len(responseData)),
-		utils.LogAttr("status_code", statusCode),
-	)
 
 	// STEP 4: Check response for errors using chainMessage (with actual HTTP status)
 	hasError, errorMessage := chainMessage.CheckResponseError(responseData, statusCode)
 	if hasError {
 		utils.LavaFormatDebug("RPC response contains error",
-			utils.LogAttr("url", d.directConnection.GetURL()),
+			utils.LogAttr("endpoint", endpointIdentifier),
 			utils.LogAttr("error", errorMessage),
 		)
 		// Still return the response - the caller will handle the RPC error
@@ -169,16 +161,6 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 		},
 		IsNodeError: hasError, // Mark if response contains RPC error
 	}
-	
-	// 🔍 DEBUG: Log result being returned
-	utils.LavaFormatInfo("📤 RETURNING RELAY RESULT",
-		utils.LogAttr("endpoint", providerAddress),
-		utils.LogAttr("reply_data", string(responseData)),
-		utils.LogAttr("reply_size", len(responseData)),
-		utils.LogAttr("status_code", statusCode),
-		utils.LogAttr("is_node_error", hasError),
-		utils.LogAttr("finalized", true),
-	)
 
 	return result, nil
 }

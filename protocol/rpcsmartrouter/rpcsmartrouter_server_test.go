@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -86,7 +87,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	rpcSmartRouterLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	// Smart router signature: no consumerStateTracker, no finalizationConsensus
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, &chaintracker.DummyChainTracker{}, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser
