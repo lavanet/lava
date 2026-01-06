@@ -355,6 +355,13 @@ func (rpcss *RPCSmartRouterServer) sendCraftedRelays(retries int, initialRelays 
 }
 
 func (rpcss *RPCSmartRouterServer) getLatestBlock() uint64 {
+	// Return latest block from chain tracker (for archive extension routing)
+	if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
+		if block, _ := rpcss.chainTracker.GetLatestBlockNum(); block > 0 {
+			return uint64(block)
+		}
+	}
+
 	if rpcss.latestBlockEstimator != nil {
 		latestKnownBlock, numProviders := rpcss.latestBlockEstimator.Estimate(rpcss.chainParser)
 		if numProviders > 0 && latestKnownBlock > 0 {
@@ -366,7 +373,6 @@ func (rpcss *RPCSmartRouterServer) getLatestBlock() uint64 {
 		return latest
 	}
 
-	utils.LavaFormatWarning("smart router has no information on latest block", nil, utils.Attribute{Key: "latest block", Value: 0})
 	return 0
 }
 
@@ -899,24 +905,59 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 
 			// Update session manager with result
 			if err == nil {
-				// Get latest block from ChainTracker (background poller, same as provider)
+				// Get endpoint reference for per-endpoint tracking
+				var targetEndpoint *lavasession.Endpoint
+				if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
+					targetEndpoint = drsc.Endpoint // ✅ Use stored reference (robust)
+				}
+
+				// Get latest block: prefer response extraction, fallback to ChainTracker
 				latestBlock := int64(0)
-				if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
-					// Use ChainTracker (accurate, polled every ~750ms for Ethereum)
+				if localRelayResult.Reply != nil && localRelayResult.Reply.LatestBlock > 0 {
+					// Block extracted from response (eth_blockNumber, eth_getBlockByNumber, etc.)
+					latestBlock = localRelayResult.Reply.LatestBlock
+
+					// ✅ Update endpoint's latest block (per-endpoint tracking)
+					if targetEndpoint != nil {
+						targetEndpoint.LatestBlock.Store(latestBlock)
+						targetEndpoint.LastBlockUpdate = time.Now()
+						utils.LavaFormatTrace("updated endpoint latest block",
+							utils.LogAttr("endpoint", endpointAddress),
+							utils.LogAttr("latest_block", latestBlock),
+							utils.LogAttr("GUID", goroutineCtx),
+						)
+					}
+				} else if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
+					// Fallback to ChainTracker (global)
 					latestBlock, _ = rpcss.chainTracker.GetLatestBlockNum()
 					utils.LavaFormatTrace("using latest block from chain tracker",
 						utils.LogAttr("latest_block", latestBlock),
 						utils.LogAttr("GUID", goroutineCtx),
 					)
 				} else {
-					// Fallback: try to extract from response (if method returns block info)
-					if localRelayResult.Reply != nil {
-						latestBlock = localRelayResult.Reply.LatestBlock
-					}
-					utils.LavaFormatDebug("chain tracker not available, latest block unknown",
-						utils.LogAttr("latest_block", latestBlock),
+					utils.LavaFormatDebug("no latest block available",
 						utils.LogAttr("GUID", goroutineCtx),
 					)
+				}
+
+				// ✅ Calculate syncGap (detect lagging endpoints)
+				syncGap := int64(0)
+				if targetEndpoint != nil && rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
+					globalLatest, _ := rpcss.chainTracker.GetLatestBlockNum()
+					endpointLatest := targetEndpoint.LatestBlock.Load()
+					if globalLatest > 0 && endpointLatest > 0 {
+						syncGap = globalLatest - endpointLatest
+						if syncGap < 0 {
+							syncGap = 0 // Endpoint ahead is fine
+						}
+						utils.LavaFormatDebug("calculated sync gap",
+							utils.LogAttr("endpoint", endpointAddress),
+							utils.LogAttr("global_latest", globalLatest),
+							utils.LogAttr("endpoint_latest", endpointLatest),
+							utils.LogAttr("sync_gap", syncGap),
+							utils.LogAttr("GUID", goroutineCtx),
+						)
+					}
 				}
 
 				// Call OnSessionDone with correct signature
@@ -927,7 +968,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					chainlib.GetComputeUnits(protocolMessage), // specComputeUnits
 					relayLatency, // currentLatency
 					singleConsumerSession.CalculateExpectedLatency(relayTimeout), // expectedLatency
-					int64(0),            // syncGap (not applicable for direct RPC)
+					syncGap,             // ✅ Real syncGap (detect lagging endpoints)
 					numSessions,         // numOfProviders (int)
 					uint64(numSessions), // providersCount (uint64)
 					protocolMessage.GetApi().Category.HangingApi, // hangingApi
@@ -1627,14 +1668,10 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	result, err := directSender.SendDirectRelay(ctx, chainMessage, relayTimeout)
 	relayLatency = time.Since(startTime)
 
-	// Get endpoint for health tracking
+	// Get endpoint for health tracking (use stored reference, not string lookup)
 	var targetEndpoint *lavasession.Endpoint
-	endpointAddress := directConnection.GetURL()
-	for _, endpoint := range singleConsumerSession.Parent.Endpoints {
-		if endpoint.NetworkAddress == endpointAddress {
-			targetEndpoint = endpoint
-			break
-		}
+	if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
+		targetEndpoint = drsc.Endpoint // ✅ Robust: use stored reference
 	}
 
 	if err != nil {
