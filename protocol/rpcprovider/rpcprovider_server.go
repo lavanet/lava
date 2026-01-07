@@ -79,6 +79,7 @@ const (
 
 type RPCProviderServer struct {
 	cache                           *performance.Cache
+	cacheLatestBlockEnabled         bool
 	chainRouter                     chainlib.ChainRouter
 	privKey                         *btcec.PrivateKey
 	chainTracker                    chaintracker.IChainTracker // Replaced reliabilityManager with chainTracker (reliabilityManager was just a wrapper)
@@ -131,6 +132,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	chainTracker chaintracker.IChainTracker,
 	privKey *btcec.PrivateKey,
 	cache *performance.Cache,
+	cacheLatestBlockEnabled bool,
 	chainRouter chainlib.ChainRouter,
 	stateTracker StateTrackerInf,
 	providerAddress sdk.AccAddress,
@@ -147,6 +149,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	resourceLimiter *ResourceLimiter,
 ) {
 	rpcps.cache = cache
+	rpcps.cacheLatestBlockEnabled = cacheLatestBlockEnabled
 	rpcps.chainRouter = chainRouter
 	rpcps.privKey = privKey
 	rpcps.chainTracker = chainTracker
@@ -1035,6 +1038,14 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var replyWrapper *chainlib.RelayReplyWrapper
 
 	if requestedBlockHash != nil || finalized { // try get reply from cache
+		utils.LavaFormatInfo("[CACHE-TRACE] Attempting cache lookup",
+			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
+			utils.LogAttr("finalized", finalized),
+			utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+			utils.LogAttr("cacheActive", rpcps.cache.CacheActive()),
+			utils.LogAttr("GUID", ctx),
+		)
 		reply, ignoredMetadata, err = rpcps.tryGetRelayReplyFromCache(ctx, request, requestedBlockHash, finalized)
 	}
 
@@ -1060,6 +1071,11 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	// Populate reply.LatestBlock with the provider's current latest block
 	// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
 	// Consumers use this for consistency tracking and provider selection
+	utils.LavaFormatInfo("[METRIC-TRACE] Setting reply.LatestBlock from GetParametersForCache",
+		utils.LogAttr("latestBlock", latestBlock),
+		utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+		utils.LogAttr("GUID", ctx),
+	)
 	reply.LatestBlock = latestBlock
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
@@ -1100,6 +1116,21 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 	reply := cacheReply.GetReply()
 	if reply != nil {
 		reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
+		utils.LavaFormatInfo("[CACHE-TRACE] Cache HIT",
+			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
+			utils.LogAttr("finalized", finalized),
+			utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+			utils.LogAttr("GUID", ctx),
+		)
+	} else if err == nil {
+		utils.LavaFormatInfo("[CACHE-TRACE] Cache MISS (no error, but no reply)",
+			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
+			utils.LogAttr("finalized", finalized),
+			utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+			utils.LogAttr("GUID", ctx),
+		)
 	}
 
 	ignoredMetadata := cacheReply.GetOptionalMetadata()
@@ -1112,11 +1143,32 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 	reply := replyWrapper.RelayReply
 
 	isNodeError, _ := chainMsg.CheckResponseError(reply.Data, replyWrapper.StatusCode)
+	utils.LavaFormatInfo("[CACHE-TRACE] trySetRelayReplyInCache called",
+		utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+		utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
+		utils.LogAttr("finalized", finalized),
+		utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+		utils.LogAttr("isNodeError", isNodeError),
+		utils.LogAttr("latestBlock", latestBlock),
+		utils.LogAttr("GUID", ctx),
+	)
 	// in case the error is a node error we don't want to cache
 	if !isNodeError {
 		// Snapshot values that will be modified after this point
 		requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
 		hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
+
+		// The cache server doesn't accept negative blocks, so convert LATEST_BLOCK to actual block number
+		// This can be disabled via --cache-latest-block=false flag if latest block caching is not desired
+		requestedBlockForCache := requestedBlock
+		if requestedBlock == spectypes.LATEST_BLOCK {
+			if !rpcps.cacheLatestBlockEnabled {
+				// Skip caching for LATEST_BLOCK requests if flag is disabled
+				return
+			}
+			// Use latestBlock which is the actual current block number
+			requestedBlockForCache = latestBlock
+		}
 
 		// reply.Data is NEVER modified after this point - verified by code review
 		// Only Sig, SigBlocks, LatestBlock, and Metadata are modified later (not needed in cache)
@@ -1135,7 +1187,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 			defer cancel()
 			err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 				RequestHash:      hashKey,
-				RequestedBlock:   requestedBlock,
+				RequestedBlock:   requestedBlockForCache,
 				BlockHash:        requestedBlockHash,
 				ChainId:          rpcps.rpcProviderEndpoint.ChainID,
 				Response:         cacheReply,
@@ -1147,6 +1199,16 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 			})
 			if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
+			} else if err == nil {
+				utils.LavaFormatInfo("[CACHE-TRACE] Cache SET successful",
+					utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+					utils.LogAttr("requestedBlock", requestedBlock),
+					utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
+					utils.LogAttr("finalized", finalized),
+					utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+					utils.LogAttr("latestBlock", latestBlock),
+					utils.LogAttr("GUID", ctx),
+				)
 			}
 		}()
 	}

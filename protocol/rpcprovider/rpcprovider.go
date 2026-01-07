@@ -153,6 +153,7 @@ type RPCProvider struct {
 	chainMutexes                 map[string]*sync.Mutex
 	parallelConnections          uint
 	cache                        *performance.Cache
+	cacheLatestBlockEnabled      bool
 	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
 	chainTrackers                *common.SafeSyncMap[string, chaintracker.IChainTracker]
 	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
@@ -817,7 +818,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1094,12 +1095,13 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			rand.InitRandomSeed()
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)
+			cacheLatestBlockEnabled := viper.GetBool(performance.CacheLatestBlockFlagName)
 			if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
 					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{Key: "address", Value: cacheAddr})
 				} else {
-					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
+					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr}, utils.Attribute{Key: "cacheLatestBlockEnabled", Value: cacheLatestBlockEnabled})
 				}
 			}
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
@@ -1210,6 +1212,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				verificationsResponseCache: verificationsResponseCache,
 				testMode:                   testMode,
 				testResponsesFile:          testResponsesFile,
+				cacheLatestBlockEnabled:    cacheLatestBlockEnabled,
 			}
 
 			// Load test mode config if enabled
@@ -1233,6 +1236,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCProvider.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-provider", "pyroscope application name for identifying this service")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdRPCProvider.Flags().Bool(performance.CacheLatestBlockFlagName, false, "enable caching for latest block requests (default: false)")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
