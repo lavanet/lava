@@ -1,4 +1,6 @@
 package performance
 
-const CacheFlagName = "cache-be"
-const CacheLatestBlockFlagName = "cache-latest-block"
+const (
+	CacheFlagName            = "cache-be"
+	CacheLatestBlockFlagName = "cache-latest-block"
+)
