@@ -354,7 +354,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
 	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
+	return err
 }
 
 func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan, modify bool) error {

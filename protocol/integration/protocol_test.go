@@ -1569,7 +1569,6 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 
 	// Get block, this should be cached for next time
 	sendMessage("block", []string{"1000"})
-
 }
 
 func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
