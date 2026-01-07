@@ -707,7 +707,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 			// we get the reported providers here after we try to connect, so if any provider didn't respond he will already be added to the list.
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
-		// Get session from endpoint or create new or continue. if more than 10 connections are open.
+			// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager, endpoint.endpoint.NetworkAddress)
 			if err != nil {
 				utils.LavaFormatError("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", err,
@@ -1287,7 +1287,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		// Block the endpoint and the consumer session from future usages
 		// Only block EndpointConnection for provider-relay sessions
 		if consumerSession.EndpointConnection != nil {
-			consumerSession.EndpointConnection.blockListed.Store(true)
+		consumerSession.EndpointConnection.blockListed.Store(true)
 		}
 		consumerSession.BlockListed = true
 	}

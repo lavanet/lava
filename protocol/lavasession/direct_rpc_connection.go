@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/v5/protocol/common"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 // DirectRPCProtocol represents the transport protocol for direct RPC connections
@@ -43,6 +44,32 @@ type DirectRPCConnection interface {
 
 	// GetURL returns the endpoint URL
 	GetURL() string
+}
+
+// HTTPDirectRPCResponse contains complete HTTP response data (Phase 4 REST support)
+type HTTPDirectRPCResponse struct {
+	StatusCode int                 // HTTP status code (200, 404, 500, etc.)
+	Headers    map[string][]string // Response headers (http.Header compatible)
+	Body       []byte              // Response body
+}
+
+// HTTPRequestParams defines HTTP request parameters for REST support (Phase 4)
+type HTTPRequestParams struct {
+	Method      string                  // HTTP method: GET, POST, PUT, DELETE
+	URL         string                  // Full URL (will be auth-transformed)
+	Body        []byte                  // Request body (nil for GET)
+	Headers     []pairingtypes.Metadata // ✅ Preserves delete semantics (empty value = delete)
+	ContentType string                  // Content-Type (only for requests with body)
+}
+
+// HTTPDirectRPCDoer is an HTTP-only extension interface for REST support (Phase 4)
+// Only HTTPDirectRPCConnection implements this (not WebSocket/gRPC)
+type HTTPDirectRPCDoer interface {
+	DirectRPCConnection // Inherits base interface
+
+	// DoHTTPRequest executes an HTTP request with variable method/URL
+	// Returns: Complete HTTP response (status + headers + body)
+	DoHTTPRequest(ctx context.Context, params HTTPRequestParams) (*HTTPDirectRPCResponse, error)
 }
 
 // HTTPDirectRPCConnection implements DirectRPCConnection for HTTP/HTTPS
@@ -202,6 +229,68 @@ func (h *HTTPDirectRPCConnection) IsHealthy() bool {
 
 func (h *HTTPDirectRPCConnection) GetURL() string {
 	return h.nodeUrl.Url
+}
+
+// DoHTTPRequest implements HTTPDirectRPCDoer for REST support (Phase 4)
+// Executes HTTP request with variable method (GET/POST/PUT/DELETE)
+func (h *HTTPDirectRPCConnection) DoHTTPRequest(
+	ctx context.Context,
+	params HTTPRequestParams,
+) (*HTTPDirectRPCResponse, error) {
+	// Build request body reader
+	var bodyReader io.Reader
+	if params.Body != nil {
+		bodyReader = bytes.NewReader(params.Body)
+	}
+
+	// ✅ Apply auth path transformation (e.g., prepend /api/v1 if configured)
+	fullURL := h.nodeUrl.AuthConfig.AddAuthPath(params.URL)
+
+	req, err := http.NewRequestWithContext(ctx, params.Method, fullURL, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+	}
+
+	// ✅ Apply NodeUrl auth headers (API keys, bearer tokens, etc.)
+	h.nodeUrl.SetAuthHeaders(ctx, req.Header.Set)
+
+	// ✅ Apply IP forwarding if needed
+	h.nodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
+
+	// ✅ Apply per-request headers with delete semantics
+	for _, header := range params.Headers {
+		if header.Value == "" {
+			req.Header.Del(header.Name) // Empty value = delete header
+		} else {
+			req.Header.Set(header.Name, header.Value)
+		}
+	}
+
+	// Set Content-Type for requests with body
+	if params.Body != nil && params.ContentType != "" {
+		req.Header.Set("Content-Type", params.ContentType)
+	}
+
+	// Send request
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading response: %w", err)
+	}
+
+	// ✅ Return complete response (status + headers + body)
+	// Don't return error for 4xx/5xx - client needs the response
+	return &HTTPDirectRPCResponse{
+		StatusCode: resp.StatusCode,
+		Headers:    resp.Header,
+		Body:       body,
+	}, nil
 }
 
 // SendRequest implements DirectRPCConnection for WebSocket/WSS

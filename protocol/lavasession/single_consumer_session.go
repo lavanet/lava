@@ -87,7 +87,7 @@ func (scs *SingleConsumerSession) Free(err error) {
 	// Only decrease connection usage for provider-relay sessions
 	// Direct RPC sessions don't have EndpointConnection
 	if scs.EndpointConnection != nil {
-		scs.EndpointConnection.decreaseSessionUsingConnection()
+	scs.EndpointConnection.decreaseSessionUsingConnection()
 	}
 	scs.lock.Unlock()
 }
@@ -108,7 +108,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 		// Only increase connection usage for provider-relay sessions
 		// Direct RPC sessions don't have EndpointConnection
 		if session.EndpointConnection != nil {
-			session.EndpointConnection.addSessionUsingConnection()
+		session.EndpointConnection.addSessionUsingConnection()
 		}
 		return false, true
 	}
