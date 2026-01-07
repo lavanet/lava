@@ -15,6 +15,15 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
+// HTTPRequestParams defines the contract for HTTP requests with variable methods (REST support)
+type HTTPRequestParams struct {
+	Method      string            // HTTP method: GET, POST, PUT, DELETE
+	URL         string            // Fully qualified URL (base endpoint + path + query)
+	Body        []byte            // Request body (nil for GET)
+	Headers     map[string]string // Request headers (already filtered by chain spec)
+	ContentType string            // Content-Type header (optional, only for requests with body)
+}
+
 // DirectRPCRelaySender handles sending relay requests directly to RPC endpoints
 // (bypassing the Lava provider-relay protocol)
 type DirectRPCRelaySender struct {
@@ -29,11 +38,11 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 	var jsonResponse struct {
 		Result interface{} `json:"result"`
 	}
-	
+
 	if err := json.Unmarshal(responseData, &jsonResponse); err != nil {
 		return 0 // Can't parse, return 0
 	}
-	
+
 	switch method {
 	case "eth_blockNumber":
 		// Response: {"result": "0x12a7b5c"}
@@ -44,7 +53,7 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 				}
 			}
 		}
-		
+
 	case "eth_getBlockByNumber", "eth_getBlockByHash":
 		// Response: {"result": {"number": "0x12a7b5c", ...}}
 		if blockObj, ok := jsonResponse.Result.(map[string]interface{}); ok {
@@ -54,7 +63,7 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 				}
 			}
 		}
-		
+
 	case "eth_getTransactionReceipt":
 		// Response: {"result": {"blockNumber": "0x12a7b5c", ...}}
 		if receiptObj, ok := jsonResponse.Result.(map[string]interface{}); ok {
@@ -64,7 +73,7 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 				}
 			}
 		}
-		
+
 	case "eth_getLogs":
 		// Response: {"result": [{"blockNumber": "0x12a7b5c"}, ...]}
 		if logsArray, ok := jsonResponse.Result.([]interface{}); ok && len(logsArray) > 0 {
@@ -77,7 +86,7 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 			}
 		}
 	}
-	
+
 	return 0 // Method doesn't return block info or couldn't parse
 }
 
@@ -105,7 +114,29 @@ func sanitizeEndpointURL(rawURL string) string {
 }
 
 // SendDirectRelay sends a relay request directly to an RPC endpoint
+// SendDirectRelay routes to the appropriate protocol handler (JSON-RPC or REST)
 func (d *DirectRPCRelaySender) SendDirectRelay(
+	ctx context.Context,
+	chainMessage chainlib.ChainMessage,
+	relayTimeout time.Duration,
+) (*common.RelayResult, error) {
+	// Branch based on API interface
+	apiCollection := chainMessage.GetApiCollection()
+
+	switch apiCollection.CollectionData.ApiInterface {
+	case "jsonrpc", "tendermintrpc":
+		return d.sendJSONRPCRelay(ctx, chainMessage, relayTimeout)
+
+	case "rest":
+		return d.sendRESTRelay(ctx, chainMessage, relayTimeout)
+
+	default:
+		return nil, fmt.Errorf("unsupported API interface for direct RPC: %s", apiCollection.CollectionData.ApiInterface)
+	}
+}
+
+// sendJSONRPCRelay handles JSON-RPC requests (Phase 3 implementation)
+func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	ctx context.Context,
 	chainMessage chainlib.ChainMessage,
 	relayTimeout time.Duration,
@@ -127,7 +158,7 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 	if endpointIdentifier == "" {
 		endpointIdentifier = sanitizeEndpointURL(d.directConnection.GetURL())
 	}
-	
+
 	utils.LavaFormatTrace("sending direct RPC request",
 		utils.LogAttr("endpoint", endpointIdentifier),
 		utils.LogAttr("protocol", d.directConnection.GetProtocol()),
@@ -154,7 +185,7 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
 			statusCode = httpErr.StatusCode
 			responseData = httpErr.Body // Use body from error (may contain error details)
-			
+
 			utils.LavaFormatDebug("direct RPC request returned HTTP error",
 				utils.LogAttr("endpoint", endpointIdentifier),
 				utils.LogAttr("protocol", d.directConnection.GetProtocol()),
@@ -162,7 +193,7 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 				utils.LogAttr("error", err.Error()),
 				utils.LogAttr("latency", latency),
 			)
-			
+
 			// Map error to user-friendly format
 			mappedErr := MapDirectRPCError(err, d.directConnection.GetProtocol())
 			// For 5xx errors, return error immediately (node issue)
@@ -178,7 +209,7 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 				utils.LogAttr("error", err.Error()),
 				utils.LogAttr("latency", latency),
 			)
-			
+
 			// Map error to user-friendly format
 			mappedErr := MapDirectRPCError(err, d.directConnection.GetProtocol())
 			return nil, mappedErr
@@ -209,10 +240,10 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 		// Fallback to sanitized URL if name not provided
 		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
 	}
-	
+
 	// Extract latest block from response if possible (for QoS sync tracking)
 	latestBlockFromResponse := extractLatestBlockFromResponse(responseData, chainMessage.GetApi().Name)
-	
+
 	result := &common.RelayResult{
 		Reply: &pairingtypes.RelayReply{
 			Data:        responseData,
@@ -227,4 +258,154 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 	}
 
 	return result, nil
+}
+
+// sendRESTRelay handles REST API requests (Phase 4 corrected implementation)
+func (d *DirectRPCRelaySender) sendRESTRelay(
+	ctx context.Context,
+	chainMessage chainlib.ChainMessage,
+	relayTimeout time.Duration,
+) (*common.RelayResult, error) {
+	requestCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+
+	// Get RPC message
+	rpcMessage := chainMessage.GetRPCMessage()
+
+	// Extract path from RPC message
+	// For REST, the path is in the message structure
+	restPath := ""
+	if pathGetter, ok := rpcMessage.(interface{ GetPath() string }); ok {
+		restPath = pathGetter.GetPath()
+	} else {
+		return nil, fmt.Errorf("REST message doesn't have GetPath method")
+	}
+
+	// Extract body (Msg field)
+	var restBody []byte
+	if msgGetter, ok := rpcMessage.(interface{ GetMsg() []byte }); ok {
+		restBody = msgGetter.GetMsg()
+	}
+
+	// Get API collection
+	apiCollection := chainMessage.GetApiCollection()
+
+	// ✅ CORRECTION 1: HTTP method from parser (already validated)
+	httpMethod := apiCollection.CollectionData.Type
+	if httpMethod == "" {
+		return nil, fmt.Errorf("HTTP method not set by REST parser")
+	}
+
+	// Extract headers as Metadata (preserves delete semantics)
+	var headers []pairingtypes.Metadata
+	if headerGetter, ok := rpcMessage.(interface {
+		GetHeaders() []pairingtypes.Metadata
+	}); ok {
+		headers = headerGetter.GetHeaders()
+	}
+
+	// ✅ CORRECTION 6: Robust URL joining
+	baseURL := d.directConnection.GetURL()
+	fullURL, err := joinURLPath(baseURL, restPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build REST URL: %w", err)
+	}
+
+	// Type-assert to HTTP doer
+	httpDoer, ok := d.directConnection.(lavasession.HTTPDirectRPCDoer)
+	if !ok {
+		return nil, fmt.Errorf("connection doesn't support REST (HTTP)")
+	}
+
+	// Send request
+	startTime := time.Now()
+	response, err := httpDoer.DoHTTPRequest(requestCtx, lavasession.HTTPRequestParams{
+		Method:      httpMethod,
+		URL:         fullURL,
+		Body:        restBody, // Send body as-is (for POST/PUT)
+		Headers:     headers,  // ✅ CORRECTION 4: Use Metadata (preserves delete semantics)
+		ContentType: "application/json",
+	})
+	latency := time.Since(startTime)
+
+	// Handle transport errors
+	if err != nil {
+		return nil, fmt.Errorf("REST request failed: %w", err)
+	}
+
+	// ✅ CORRECTION 5: Proper error classification (don't treat all 4xx as node errors)
+	var isNodeError bool
+	switch {
+	case response.StatusCode >= 500:
+		isNodeError = true // Server error
+	case response.StatusCode == 429:
+		isNodeError = false // Rate limit (not node issue)
+	case response.StatusCode >= 400:
+		isNodeError = false // Client error
+	default:
+		isNodeError = false // Success
+	}
+
+	// ✅ CORRECTION 2: Convert response headers to metadata
+	responseMetadata := convertHTTPHeadersToMetadata(response.Headers)
+
+	// Build result (include body even for 4xx/5xx!)
+	providerAddress := d.endpointName
+	if providerAddress == "" {
+		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
+	}
+
+	result := &common.RelayResult{
+		Reply: &pairingtypes.RelayReply{
+			Data:     response.Body,    // ✅ Include body even for errors!
+			Metadata: responseMetadata, // ✅ Include headers
+		},
+		Finalized:  true,
+		StatusCode: response.StatusCode,
+		ProviderInfo: common.ProviderInfo{
+			ProviderAddress: providerAddress,
+		},
+		IsNodeError: isNodeError, // ✅ Correct classification
+	}
+
+	utils.LavaFormatTrace("REST request completed",
+		utils.LogAttr("method", httpMethod),
+		utils.LogAttr("status", response.StatusCode),
+		utils.LogAttr("response_size", len(response.Body)),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("is_node_error", isNodeError),
+	)
+
+	return result, nil
+}
+
+// joinURLPath joins base URL and path robustly (handles slashes and query params correctly)
+func joinURLPath(base, path string) (string, error) {
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return "", fmt.Errorf("invalid base URL: %w", err)
+	}
+
+	pathURL, err := url.Parse(path)
+	if err != nil {
+		return "", fmt.Errorf("invalid path: %w", err)
+	}
+
+	// Resolve reference (handles double slashes, missing slashes, query params)
+	return baseURL.ResolveReference(pathURL).String(), nil
+}
+
+// convertHTTPHeadersToMetadata converts http.Header to pairingtypes.Metadata
+func convertHTTPHeadersToMetadata(headers map[string][]string) []pairingtypes.Metadata {
+	metadata := make([]pairingtypes.Metadata, 0, len(headers))
+	for name, values := range headers {
+		if len(values) > 0 {
+			// Use first value (most headers are single-value)
+			metadata = append(metadata, pairingtypes.Metadata{
+				Name:  name,
+				Value: values[0],
+			})
+		}
+	}
+	return metadata
 }
