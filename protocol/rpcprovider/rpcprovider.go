@@ -621,7 +621,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
 	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
-		utils.LavaFormatInfo("[METRIC-TRACE] ChainTracker callback triggered - new blocks detected",
+		utils.LavaFormatDebug("ChainTracker callback triggered - new blocks detected",
 			utils.LogAttr("chainID", chainID),
 			utils.LogAttr("blockFrom", blockFrom),
 			utils.LogAttr("blockTo", blockTo),
@@ -630,14 +630,14 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			utils.LogAttr("num_blocks", blockTo-blockFrom),
 		)
 		for block := blockFrom + 1; block <= blockTo; block++ {
-			utils.LavaFormatInfo("[METRIC-TRACE] ChainTracker calling SetLatestBlock for block",
+			utils.LavaFormatDebug("ChainTracker calling SetLatestBlock for block",
 				utils.LogAttr("chainID", chainID),
 				utils.LogAttr("block", block),
 				utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
 			)
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
-		utils.LavaFormatInfo("[METRIC-TRACE] ChainTracker callback completed",
+		utils.LavaFormatDebug("ChainTracker callback completed",
 			utils.LogAttr("chainID", chainID),
 			utils.LogAttr("blockFrom", blockFrom),
 			utils.LogAttr("blockTo", blockTo),

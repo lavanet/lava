@@ -1038,7 +1038,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var replyWrapper *chainlib.RelayReplyWrapper
 
 	if requestedBlockHash != nil || finalized { // try get reply from cache
-		utils.LavaFormatInfo("[CACHE-TRACE] Attempting cache lookup",
+		utils.LavaFormatDebug("cache: attempting lookup",
 			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
 			utils.LogAttr("finalized", finalized),
@@ -1071,7 +1071,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	// Populate reply.LatestBlock with the provider's current latest block
 	// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
 	// Consumers use this for consistency tracking and provider selection
-	utils.LavaFormatInfo("[METRIC-TRACE] Setting reply.LatestBlock from GetParametersForCache",
+	utils.LavaFormatDebug("setting reply.LatestBlock from cache parameters",
 		utils.LogAttr("latestBlock", latestBlock),
 		utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 		utils.LogAttr("GUID", ctx),
@@ -1116,7 +1116,7 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 	reply := cacheReply.GetReply()
 	if reply != nil {
 		reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
-		utils.LavaFormatInfo("[CACHE-TRACE] Cache HIT",
+		utils.LavaFormatDebug("cache hit",
 			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
 			utils.LogAttr("finalized", finalized),
@@ -1124,7 +1124,7 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 			utils.LogAttr("GUID", ctx),
 		)
 	} else if err == nil {
-		utils.LavaFormatInfo("[CACHE-TRACE] Cache MISS (no error, but no reply)",
+		utils.LavaFormatDebug("cache miss",
 			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 			utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
 			utils.LogAttr("finalized", finalized),
@@ -1143,7 +1143,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 	reply := replyWrapper.RelayReply
 
 	isNodeError, _ := chainMsg.CheckResponseError(reply.Data, replyWrapper.StatusCode)
-	utils.LavaFormatInfo("[CACHE-TRACE] trySetRelayReplyInCache called",
+	utils.LavaFormatDebug("cache: attempting to set entry",
 		utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 		utils.LogAttr("requestedBlock", request.RelayData.RequestBlock),
 		utils.LogAttr("finalized", finalized),
@@ -1197,19 +1197,19 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				SeenBlock:        latestBlock,
 				IsNodeError:      isNodeError,
 			})
-			if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
-				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
-			} else if err == nil {
-				utils.LavaFormatInfo("[CACHE-TRACE] Cache SET successful",
-					utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
-					utils.LogAttr("requestedBlock", requestedBlock),
-					utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-					utils.LogAttr("finalized", finalized),
-					utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
-					utils.LogAttr("latestBlock", latestBlock),
-					utils.LogAttr("GUID", ctx),
-				)
-			}
+		if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+			utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
+		} else if err == nil {
+			utils.LavaFormatDebug("cache: entry set successfully",
+				utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+				utils.LogAttr("requestedBlock", requestedBlock),
+				utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
+				utils.LogAttr("finalized", finalized),
+				utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+				utils.LogAttr("latestBlock", latestBlock),
+				utils.LogAttr("GUID", ctx),
+			)
+		}
 		}()
 	}
 }
