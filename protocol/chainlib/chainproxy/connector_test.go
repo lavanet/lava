@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -111,22 +112,48 @@ func TestConnectorConcurrentAccess(t *testing.T) {
 
 	// Test concurrent access to the shared client
 	const numGoroutines = 50
-	done := make(chan bool, numGoroutines)
+	errCh := make(chan error, numGoroutines)
 
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			client, err := conn.GetRpc(ctx, true)
-			require.NoError(t, err)
-			require.NotNil(t, client)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if client == nil {
+				errCh <- errors.New("client is nil")
+				return
+			}
 			conn.ReturnRpc(client) // no-op but should not panic
-			done <- true
+			errCh <- nil
 		}()
 	}
 
-	// Wait for all goroutines to complete
+	// Wait for all goroutines to complete and check for errors
 	for i := 0; i < numGoroutines; i++ {
-		<-done
+		err := <-errCh
+		require.NoError(t, err)
 	}
+}
+
+func TestConnectorCloseWhileInUse(t *testing.T) {
+	ctx := context.Background()
+	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
+	require.NoError(t, err)
+
+	// Get client
+	client, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	// Close connector while client is "in use"
+	conn.Close()
+
+	// Subsequent GetRpc should return error
+	_, err = conn.GetRpc(ctx, true)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "closed")
 }
 
 func TestConnectorGrpc(t *testing.T) {

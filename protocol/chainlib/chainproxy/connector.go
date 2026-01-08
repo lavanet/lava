@@ -89,7 +89,6 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 	return connector, nil
 }
 
-
 func (connector *Connector) getRpcClient(ctx context.Context, nodeUrl common.NodeUrl) (*rpcclient.Client, error) {
 	authPathNodeUrl := nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url)
 	// origin used for auth header in the websocket case
@@ -132,7 +131,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 
 func (connector *Connector) connectorLoop(ctx context.Context) {
 	<-ctx.Done()
-	log.Println("connectorLoop ctx.Done")
+	utils.LavaFormatDebug("HTTP connector shutting down", utils.Attribute{Key: "url", Value: connector.nodeUrl.String()})
 	connector.Close()
 }
 
