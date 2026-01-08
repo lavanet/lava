@@ -1,7 +1,6 @@
 package rpcprovider
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -10,8 +9,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -331,5 +328,9 @@ type headerPair struct {
 
 type mockChainMessageForProviderHeader struct {
 	headers *[]headerPair
+}
+
+func (m *mockChainMessageForProviderHeader) AppendHeader(name string, value string) {
+	*m.headers = append(*m.headers, headerPair{name: name, value: value})
 }
 
