@@ -1569,6 +1569,25 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 
 	// Get block, this should be cached for next time
 	sendMessage("block", []string{"1000"})
+
+	timesSentMessage := 2
+
+	hitCache := waitForCondition(2*time.Second, 100*time.Millisecond, func() bool {
+		// Get block, at some point it should be from cache
+		sendMessage("block", []string{"1000"})
+		timesSentMessage++
+		return timesSentMessage > nodeRequestsCounter
+	})
+	require.True(t, hitCache)
+
+	// Get block again, this time it should be from cache
+	sendMessage("block", []string{"1000"})
+	timesSentMessage++
+
+	cacheHits := timesSentMessage - nodeRequestsCounter
+
+	// Verify that overall we have 2 cache hits
+	require.Equal(t, 2, cacheHits)
 }
 
 func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
