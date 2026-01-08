@@ -1,6 +1,7 @@
 package rpcprovider
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -9,6 +10,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +19,9 @@ type MockChainTracker struct {
 	*chaintracker.DummyChainTracker // Embed DummyChainTracker to satisfy the interface
 	latestBlock                     int64
 	changeTime                      time.Time
+	blockHashes                     map[int64]string
+	shouldError                     bool
+	errorToReturn                   error
 }
 
 // Test the error handling logic directly without needing a full ProviderSessionManager
@@ -37,11 +43,26 @@ func NewMockChainTracker() *MockChainTracker {
 		DummyChainTracker: &chaintracker.DummyChainTracker{},
 		latestBlock:       0,
 		changeTime:        time.Now(),
+		blockHashes:       make(map[int64]string),
+		shouldError:       false,
 	}
 }
 
 func (mct *MockChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
-	return mct.latestBlock, nil, mct.changeTime, nil
+	if mct.shouldError {
+		return 0, nil, time.Time{}, mct.errorToReturn
+	}
+	
+	var hashes []*chaintracker.BlockStore
+	
+	// If specific block requested, return its hash if available
+	if specificBlock > 0 && specificBlock != -2 { // NOT_APPLICABLE is handled as no specific block
+		if hash, ok := mct.blockHashes[specificBlock]; ok {
+			hashes = []*chaintracker.BlockStore{{Block: specificBlock, Hash: hash}}
+		}
+	}
+	
+	return mct.latestBlock, hashes, mct.changeTime, nil
 }
 
 func (mct *MockChainTracker) GetLatestBlockNum() (int64, time.Time) {
@@ -55,6 +76,20 @@ func (mct *MockChainTracker) GetAtomicLatestBlockNum() int64 {
 func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Time) {
 	mct.latestBlock = newLatest
 	mct.changeTime = changeTime
+}
+
+func (mct *MockChainTracker) SetBlockHash(block int64, hash string) {
+	mct.blockHashes[block] = hash
+}
+
+func (mct *MockChainTracker) SetError(err error) {
+	mct.shouldError = true
+	mct.errorToReturn = err
+}
+
+func (mct *MockChainTracker) ClearError() {
+	mct.shouldError = false
+	mct.errorToReturn = nil
 }
 
 func (mct *MockChainTracker) IsDummy() bool {
@@ -298,6 +333,3 @@ type mockChainMessageForProviderHeader struct {
 	headers *[]headerPair
 }
 
-func (m *mockChainMessageForProviderHeader) AppendHeader(name string, value string) {
-	*m.headers = append(*m.headers, headerPair{name: name, value: value})
-}
