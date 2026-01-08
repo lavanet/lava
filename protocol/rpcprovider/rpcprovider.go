@@ -1250,7 +1250,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=provider-1,region=us-east)")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Bool(performance.CacheLatestBlockFlagName, false, "enable caching for latest block requests (default: false)")
-	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "number of parallel connections to blockchain node (gRPC only, HTTP uses shared connection pool)")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
