@@ -119,20 +119,20 @@ func TestDefaultConstants(t *testing.T) {
 		{
 			name:     "MaxIdleConns",
 			got:      DefaultMaxIdleConns,
-			want:     200,
-			critical: false,
+			want:     1000,
+			critical: true, // Critical for 1000+ req/s throughput
 		},
 		{
 			name:     "MaxIdleConnsPerHost",
 			got:      DefaultMaxIdleConnsPerHost,
-			want:     50,
+			want:     500,
 			critical: true, // Critical: Go's default is only 2!
 		},
 		{
 			name:     "MaxConnsPerHost",
 			got:      DefaultMaxConnsPerHost,
-			want:     100,
-			critical: false,
+			want:     0, // unlimited - let upstream enforce limits
+			critical: true,
 		},
 		{
 			name:     "IdleConnTimeout",
@@ -211,10 +211,16 @@ func TestOptimizedTransportImprovesOverDefaults(t *testing.T) {
 			optimized.MaxIdleConnsPerHost, defaultTransport.MaxIdleConnsPerHost)
 	}
 
-	// Verify our value is significantly higher (at least 10x improvement)
-	if optimized.MaxIdleConnsPerHost < 20 {
-		t.Errorf("MaxIdleConnsPerHost (%d) seems too low for high-concurrency scenarios (200+ requests)",
+	// Verify our value is high enough for 1000+ req/s scenarios
+	if optimized.MaxIdleConnsPerHost < 100 {
+		t.Errorf("MaxIdleConnsPerHost (%d) seems too low for high-throughput scenarios (1000+ req/s)",
 			optimized.MaxIdleConnsPerHost)
+	}
+
+	// Verify MaxIdleConns is high enough
+	if optimized.MaxIdleConns < 500 {
+		t.Errorf("MaxIdleConns (%d) seems too low for high-throughput scenarios (1000+ req/s)",
+			optimized.MaxIdleConns)
 	}
 }
 

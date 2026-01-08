@@ -9,23 +9,26 @@ import (
 )
 
 // HTTP Connection Pool Configuration
-// These values are optimized for high-concurrency scenarios where providers
-// handle many simultaneous requests to blockchain nodes.
+// These values are optimized for high-throughput scenarios (1000+ req/s)
+// where providers handle many simultaneous requests to blockchain nodes.
 const (
 	// MaxIdleConns controls the maximum number of idle (keep-alive) connections across all hosts.
-	// Setting this higher prevents constantly creating new TCP connections.
+	// For 1000 req/s with ~500ms latency, we need ~500 concurrent connections.
+	// Setting higher to allow headroom for spikes.
 	// Go default: 100
-	DefaultMaxIdleConns = 200
+	DefaultMaxIdleConns = 1000
 
 	// MaxIdleConnsPerHost controls the maximum idle (keep-alive) connections to keep per-host.
 	// This is critical for blockchain node connections where we repeatedly connect to the same node.
+	// For 1000 req/s to a single host with ~500ms latency, need ~500 idle connections.
 	// Go default: 2 (way too low for high-concurrency!)
-	DefaultMaxIdleConnsPerHost = 50
+	DefaultMaxIdleConnsPerHost = 500
 
 	// MaxConnsPerHost limits the total number of connections per host, including those in active use.
-	// This prevents overwhelming a single blockchain node with too many connections.
+	// This is the CRITICAL limit - if too low, requests will queue and cause cascading latency.
+	// For 1000 req/s with ~1s worst-case latency, need up to 1000 connections.
 	// Go default: 0 (unlimited - can cause node overload)
-	DefaultMaxConnsPerHost = 100
+	DefaultMaxConnsPerHost = 0 // unlimited - let the upstream node enforce its own limits
 
 	// IdleConnTimeout is the maximum amount of time an idle connection will remain idle before closing.
 	// Keeps connections alive for reuse but eventually closes them to avoid resource leaks.

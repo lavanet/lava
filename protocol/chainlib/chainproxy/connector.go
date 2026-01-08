@@ -89,7 +89,6 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 	return connector, nil
 }
 
-
 func (connector *Connector) getRpcClient(ctx context.Context, nodeUrl common.NodeUrl) (*rpcclient.Client, error) {
 	authPathNodeUrl := nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url)
 	// origin used for auth header in the websocket case
