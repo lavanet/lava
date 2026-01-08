@@ -60,6 +60,13 @@ func TestOptimizedHttpTransport(t *testing.T) {
 	if transport.DialContext == nil {
 		t.Error("DialContext should be configured with dialer settings")
 	}
+
+	// Verify TLS session cache is enabled
+	if transport.TLSClientConfig == nil {
+		t.Error("TLSClientConfig should be configured")
+	} else if transport.TLSClientConfig.ClientSessionCache == nil {
+		t.Error("TLS ClientSessionCache should be enabled for faster reconnections")
+	}
 }
 
 // TestOptimizedHttpClient verifies that the optimized HTTP client
@@ -169,6 +176,12 @@ func TestDefaultConstants(t *testing.T) {
 			want:     5 * time.Minute,
 			critical: false,
 		},
+		{
+			name:     "TLSSessionCacheSize",
+			got:      DefaultTLSSessionCacheSize,
+			want:     1024,
+			critical: true, // Critical: enables TLS session resumption for CPU savings
+		},
 	}
 
 	for _, tt := range tests {
@@ -205,9 +218,10 @@ func TestOptimizedTransportImprovesOverDefaults(t *testing.T) {
 	}
 }
 
-// TestMultipleClientsShareTransportSettings verifies that creating multiple
-// clients produces independent instances with the same configuration
-func TestMultipleClientsShareTransportSettings(t *testing.T) {
+// TestMultipleClientsShareTransport verifies that creating multiple
+// clients produces independent client instances but shares the same transport
+// for maximum connection reuse and TLS session caching benefits.
+func TestMultipleClientsShareTransport(t *testing.T) {
 	client1 := OptimizedHttpClient()
 	client2 := OptimizedHttpClient()
 
@@ -220,7 +234,7 @@ func TestMultipleClientsShareTransportSettings(t *testing.T) {
 		t.Errorf("Client timeouts differ: client1=%v, client2=%v", client1.Timeout, client2.Timeout)
 	}
 
-	// Verify transports are also independent instances
+	// Verify transports are the SAME instance (shared for connection pooling)
 	transport1, ok := client1.Transport.(*http.Transport)
 	if !ok {
 		t.Fatalf("Client1 Transport is not *http.Transport, got %T", client1.Transport)
@@ -230,13 +244,34 @@ func TestMultipleClientsShareTransportSettings(t *testing.T) {
 		t.Fatalf("Client2 Transport is not *http.Transport, got %T", client2.Transport)
 	}
 
-	if transport1 == transport2 {
-		t.Error("OptimizedHttpClient should create new transport instances")
+	if transport1 != transport2 {
+		t.Error("OptimizedHttpClient should share the same transport instance for connection pooling")
+	}
+}
+
+// TestSharedHttpTransportIsSingleton verifies that SharedHttpTransport returns
+// the same instance every time (singleton pattern).
+func TestSharedHttpTransportIsSingleton(t *testing.T) {
+	transport1 := SharedHttpTransport()
+	transport2 := SharedHttpTransport()
+	transport3 := SharedHttpTransport()
+
+	if transport1 != transport2 || transport2 != transport3 {
+		t.Error("SharedHttpTransport should return the same instance (singleton)")
+	}
+}
+
+// TestSharedHttpTransportHasTLSSessionCache verifies that the shared transport
+// has TLS session caching enabled for faster reconnections.
+func TestSharedHttpTransportHasTLSSessionCache(t *testing.T) {
+	transport := SharedHttpTransport()
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig should be configured")
 	}
 
-	// But they should have the same configuration
-	if transport1.MaxIdleConnsPerHost != transport2.MaxIdleConnsPerHost {
-		t.Error("Transport configurations should match across client instances")
+	if transport.TLSClientConfig.ClientSessionCache == nil {
+		t.Error("TLS ClientSessionCache should be configured for session resumption")
 	}
 }
 
