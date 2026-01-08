@@ -38,11 +38,22 @@ func (lbe *LatestBlockEstimator) Record(providerAddress string, latestBlock int6
 	}
 
 	lbe.mu.Lock()
+	defer lbe.mu.Unlock()
+
+	// Cleanup old observations (older than 1 hour) to prevent memory leak
+	const maxObservationAge = time.Hour
+	now := time.Now()
+	for addr, obs := range lbe.observations {
+		if now.Sub(obs.LastUpdated) > maxObservationAge {
+			delete(lbe.observations, addr)
+		}
+	}
+
+	// Add or update the observation for this provider
 	lbe.observations[providerAddress] = providerBlockObservation{
 		LatestBlock: latestBlock,
-		LastUpdated: time.Now(),
+		LastUpdated: now,
 	}
-	lbe.mu.Unlock()
 }
 
 // Estimate expected block height based on time elapsed.
