@@ -49,16 +49,16 @@ func (mct *MockChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, 
 	if mct.shouldError {
 		return 0, nil, time.Time{}, mct.errorToReturn
 	}
-	
+
 	var hashes []*chaintracker.BlockStore
-	
+
 	// If specific block requested, return its hash if available
 	if specificBlock > 0 && specificBlock != -2 { // NOT_APPLICABLE is handled as no specific block
 		if hash, ok := mct.blockHashes[specificBlock]; ok {
 			hashes = []*chaintracker.BlockStore{{Block: specificBlock, Hash: hash}}
 		}
 	}
-	
+
 	return mct.latestBlock, hashes, mct.changeTime, nil
 }
 
@@ -333,4 +333,3 @@ type mockChainMessageForProviderHeader struct {
 func (m *mockChainMessageForProviderHeader) AppendHeader(name string, value string) {
 	*m.headers = append(*m.headers, headerPair{name: name, value: value})
 }
-

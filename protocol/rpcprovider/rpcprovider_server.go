@@ -1197,19 +1197,19 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 				SeenBlock:        latestBlock,
 				IsNodeError:      isNodeError,
 			})
-		if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
-			utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
-		} else if err == nil {
-			utils.LavaFormatDebug("cache: entry set successfully",
-				utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
-				utils.LogAttr("requestedBlock", requestedBlock),
-				utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-				utils.LogAttr("finalized", finalized),
-				utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
-				utils.LogAttr("latestBlock", latestBlock),
-				utils.LogAttr("GUID", ctx),
-			)
-		}
+			if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
+			} else if err == nil {
+				utils.LavaFormatDebug("cache: entry set successfully",
+					utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+					utils.LogAttr("requestedBlock", requestedBlock),
+					utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
+					utils.LogAttr("finalized", finalized),
+					utils.LogAttr("hasBlockHash", requestedBlockHash != nil),
+					utils.LogAttr("latestBlock", latestBlock),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
 		}()
 	}
 }

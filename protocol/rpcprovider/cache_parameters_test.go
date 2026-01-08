@@ -359,7 +359,7 @@ func TestCacheLatestBlockConversion_Disabled(t *testing.T) {
 
 	requestedBlockForCache := requestedBlock
 	shouldSkip := false
-	
+
 	if requestedBlock == spectypes.LATEST_BLOCK {
 		if !cacheLatestBlockEnabled {
 			shouldSkip = true
@@ -380,7 +380,7 @@ func TestCacheLatestBlockConversion_Enabled(t *testing.T) {
 
 	requestedBlockForCache := requestedBlock
 	shouldSkip := false
-	
+
 	if requestedBlock == spectypes.LATEST_BLOCK {
 		if !cacheLatestBlockEnabled {
 			shouldSkip = true
@@ -401,7 +401,7 @@ func TestCacheLatestBlockConversion_SpecificBlock_AlwaysCached(t *testing.T) {
 
 	requestedBlockForCache := requestedBlock
 	shouldSkip := false
-	
+
 	if requestedBlock == spectypes.LATEST_BLOCK {
 		if !cacheLatestBlockEnabled {
 			shouldSkip = true
