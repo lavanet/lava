@@ -70,7 +70,7 @@ func TestGetParametersForCache_LatestBlock(t *testing.T) {
 
 	require.Equal(t, int64(1000), latestBlock, "should return latest block from chain tracker")
 	require.Nil(t, requestedBlockHash, "LATEST_BLOCK should not have a hash")
-	require.True(t, finalized, "LATEST_BLOCK converted to actual block should be finalized if within finalization window")
+	require.False(t, finalized, "LATEST_BLOCK (current block) is not finalized - needs to age by blockDistanceToFinalization")
 }
 
 func TestGetParametersForCache_SpecificBlock_WithHash(t *testing.T) {
