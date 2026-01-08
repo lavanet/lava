@@ -1,17 +1,13 @@
 package lavaprotocol
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/v5/x/conflict/types/construct"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -148,7 +144,7 @@ func UpdateRequestedBlock(request *pairingtypes.RelayPrivateData, response *pair
 	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
 
-// currently used when cache hits. we don't want DR.
+// currently used when cache hits.
 func SetRequestedBlockNotApplicable(request *pairingtypes.RelayPrivateData) {
 	request.RequestBlock = spectypes.NOT_APPLICABLE
 }
@@ -169,77 +165,4 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *common.RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
-	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, *originalResult.Reply, *originalResult.Request, *dataReliabilityResult.Reply, *dataReliabilityResult.Request, apiCollection, headerFilterer)
-	if conflict_now {
-		return detectionMessage
-	}
-	utils.LavaFormatInfo("Reliability verified successfully!", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
-	return nil
-}
-
-func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayReply, request1 pairingtypes.RelayRequest, reply2 pairingtypes.RelayReply, request2 pairingtypes.RelayRequest, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
-	// remove ignored headers so we can compare metadata and also send the signatures properly on chain
-	reply1.Metadata, _, _ = headerFilterer.HandleHeaders(reply1.Metadata, apiCollection, spectypes.Header_pass_reply)
-	reply2.Metadata, _, _ = headerFilterer.HandleHeaders(reply2.Metadata, apiCollection, spectypes.Header_pass_reply)
-	compare_result := bytes.Compare(reply1.Data, reply2.Data)
-	// TODO: compare metadata too
-	if compare_result == 0 {
-		// they have equal data
-		return false, nil
-	}
-
-	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil,
-		utils.LogAttr("GUID", ctx),
-		utils.LogAttr("Request0", request1.RelayData),
-		utils.LogAttr("Data0", string(reply1.Data)),
-		utils.LogAttr("Request1", request2.RelayData),
-		utils.LogAttr("Data1", string(reply2.Data)),
-	)
-
-	responseConflict = &conflicttypes.ResponseConflict{
-		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(&reply1, &request1),
-		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(&reply2, &request2),
-	}
-	if utils.IsTraceLogLevelEnabled() {
-		firstAsString := string(reply1.Data)
-		secondAsString := string(reply2.Data)
-		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
-		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
-			utils.LavaFormatTrace("difference in responses detected",
-				utils.LogAttr("index", idxDiff),
-				utils.LogAttr("first_diff", firstAsString[idxDiff:idxDiff+100]),
-				utils.LogAttr("second_diff", secondAsString[idxDiff:idxDiff+100]),
-			)
-		}
-	}
-	return true, responseConflict
-}
-
-func findFirstDifferentChar(str1, str2 string) (rune, int) {
-	// Find the minimum length between the two strings
-	minLen := len(str1)
-	if len(str2) < minLen {
-		minLen = len(str2)
-	}
-
-	// Iterate over the characters and find the first difference
-	for i := 0; i < minLen; i++ {
-		if str1[i] != str2[i] {
-			return rune(str1[i]), i
-		}
-	}
-
-	// If the loop completes without finding a difference,
-	// return the first extra character from the longer string
-	if len(str1) != len(str2) {
-		if len(str1) < len(str2) {
-			return rune(str2[minLen]), minLen
-		}
-		return rune(str1[minLen]), minLen
-	}
-
-	// Return -1 if the strings are identical
-	return -1, -1
-}
+// These functions were used for conflict detection between provider responses

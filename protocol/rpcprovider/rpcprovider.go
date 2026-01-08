@@ -26,7 +26,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
@@ -84,12 +84,9 @@ type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
-	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
-	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error
-	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
@@ -156,6 +153,7 @@ type RPCProvider struct {
 	chainMutexes                 map[string]*sync.Mutex
 	parallelConnections          uint
 	cache                        *performance.Cache
+	cacheLatestBlockEnabled      bool
 	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
 	chainTrackers                *common.SafeSyncMap[string, chaintracker.IChainTracker]
 	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
@@ -397,7 +395,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 				sessionManager.UpdateEpoch(epoch)
 			})
 
-			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates",
+			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates.",
 				utils.LogAttr("chainKey", chainKey),
 			)
 		}
@@ -623,25 +621,39 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
 	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+		utils.LavaFormatDebug("ChainTracker callback triggered - new blocks detected",
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("blockFrom", blockFrom),
+			utils.LogAttr("blockTo", blockTo),
+			utils.LogAttr("hash", hash),
+			utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+			utils.LogAttr("num_blocks", blockTo-blockFrom),
+		)
 		for block := blockFrom + 1; block <= blockTo; block++ {
+			utils.LavaFormatDebug("ChainTracker calling SetLatestBlock for block",
+				utils.LogAttr("chainID", chainID),
+				utils.LogAttr("block", block),
+				utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+			)
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
-	}
-	var chainFetcher chainlib.IChainFetcher
-	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-		chainFetcher = chainlib.NewChainFetcher(
-			ctx,
-			&chainlib.ChainFetcherOptions{
-				ChainRouter: chainRouter,
-				ChainParser: chainParser,
-				Endpoint:    rpcProviderEndpoint,
-				Cache:       rpcp.cache,
-			},
+		utils.LavaFormatDebug("ChainTracker callback completed",
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("blockFrom", blockFrom),
+			utils.LogAttr("blockTo", blockTo),
+			utils.LogAttr("total_blocks_processed", blockTo-blockFrom),
 		)
-	} else {
-		utils.LavaFormatInfo("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	}
+	utils.LavaFormatInfo("Setting up ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
+	var chainFetcher chainlib.IChainFetcher = chainlib.NewChainFetcher(
+		ctx,
+		&chainlib.ChainFetcherOptions{
+			ChainRouter: chainRouter,
+			ChainParser: chainParser,
+			Endpoint:    rpcProviderEndpoint,
+			Cache:       rpcp.cache,
+		},
+	)
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
@@ -733,9 +745,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
-	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
-	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
-
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
 
@@ -751,7 +760,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatInfo("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
+		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcp.privKey)
 	}
 
 	// Create test mode config if enabled
@@ -809,7 +818,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1096,12 +1105,13 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			rand.InitRandomSeed()
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)
+			cacheLatestBlockEnabled := viper.GetBool(performance.CacheLatestBlockFlagName)
 			if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
 					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{Key: "address", Value: cacheAddr})
 				} else {
-					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
+					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr}, utils.Attribute{Key: "cacheLatestBlockEnabled", Value: cacheLatestBlockEnabled})
 				}
 			}
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
@@ -1212,6 +1222,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				verificationsResponseCache: verificationsResponseCache,
 				testMode:                   testMode,
 				testResponsesFile:          testResponsesFile,
+				cacheLatestBlockEnabled:    cacheLatestBlockEnabled,
 			}
 
 			// Load test mode config if enabled
@@ -1238,6 +1249,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Int(performance.PyroscopeBlockProfileRateFlagName, performance.DefaultBlockProfileRate, "block profile rate in nanoseconds (1 records all blocking events)")
 	cmdRPCProvider.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=provider-1,region=us-east)")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdRPCProvider.Flags().Bool(performance.CacheLatestBlockFlagName, false, "enable caching for latest block requests (default: false)")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")

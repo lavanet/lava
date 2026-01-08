@@ -6,7 +6,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -82,11 +82,6 @@ func (sst *StandaloneStateTracker) RegisterForSpecVerifications(ctx context.Cont
 	return nil
 }
 
-// RegisterReliabilityManagerForVoteUpdates registers reliability manager (no-op in standalone, no voting)
-func (sst *StandaloneStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	utils.LavaFormatDebug("Standalone mode: skipping reliability manager vote updates registration")
-}
-
 // RegisterForEpochUpdates registers for epoch updates using the time-based EpochTimer
 func (sst *StandaloneStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
 	sst.epochUpdatables = append(sst.epochUpdatables, epochUpdatable)
@@ -108,16 +103,6 @@ func (sst *StandaloneStateTracker) RegisterForDowntimeParamsUpdates(ctx context.
 // TxRelayPayment submits relay payment transaction (not supported in standalone mode)
 func (sst *StandaloneStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	return utils.LavaFormatWarning("TxRelayPayment not supported in standalone mode", nil)
-}
-
-// SendVoteReveal sends vote reveal (not supported in standalone mode)
-func (sst *StandaloneStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return utils.LavaFormatWarning("SendVoteReveal not supported in standalone mode", nil)
-}
-
-// SendVoteCommitment sends vote commitment (not supported in standalone mode)
-func (sst *StandaloneStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
-	return utils.LavaFormatWarning("SendVoteCommitment not supported in standalone mode", nil)
 }
 
 // LatestBlock returns the latest block number (returns 0 in standalone mode)

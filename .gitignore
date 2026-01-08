@@ -36,6 +36,10 @@ rpcconsumer.yml
 .env.local
 provider*_eth.yml
 
+# Local TLS cert/key files (do not commit)
+protocol/rpcprovider/cert.pem
+protocol/rpcprovider/key.pem
+
 # Node modules
 **/node_modules
 
