@@ -278,7 +278,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 
 	overallHealthHandler := func(w http.ResponseWriter, r *http.Request) {
 		statusCode := http.StatusOK
-		message := "Healthy"
+		message := "Health status OK"
 		if atomic.LoadUint64(&providerMetricsManager.endpointsHealthChecksOk) == 0 {
 			statusCode = http.StatusServiceUnavailable
 			message = "Unhealthy"
@@ -334,7 +334,7 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface, prov
 				resp.Write([]byte("Unhealthy"))
 			} else {
 				resp.WriteHeader(http.StatusOK)
-				resp.Write([]byte("Healthy"))
+				resp.Write([]byte("Health status OK"))
 			}
 		})
 
