@@ -962,7 +962,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			}
 
 			// Update session manager with result
-			if err == nil {
+			// ✅ CORRECTION: Check status code to determine if session should fail
+			// For REST 5xx/429, err == nil but we still want to fail the session for QoS/retry
+			statusCode := localRelayResult.StatusCode
+			shouldFailSession := err != nil || statusCode >= 500 || statusCode == 429
+
+			if !shouldFailSession {
+				// Success or client error (4xx except 429) - update session as success
 				// Get endpoint reference for per-endpoint tracking
 				var targetEndpoint *lavasession.Endpoint
 				if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
@@ -1038,7 +1044,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					)
 				}
 			} else {
-				rpcss.sessionManager.OnSessionFailure(singleConsumerSession, err)
+				// Failure case: err != nil OR status >= 500 OR status == 429
+				failureErr := err
+				if failureErr == nil {
+					// REST 5xx/429 with err == nil - create descriptive error
+					failureErr = fmt.Errorf("upstream returned HTTP %d", statusCode)
+				}
+				rpcss.sessionManager.OnSessionFailure(singleConsumerSession, failureErr)
 			}
 
 			// NOTE: Don't call Free() here - OnSessionDone/OnSessionFailure already do it!
@@ -1760,6 +1772,30 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		}
 
 		return relayLatency, err, needsBackoff
+	}
+
+	// ✅ CORRECTION: Check status code even when err == nil (for REST 5xx/429)
+	statusCode := result.StatusCode
+	if statusCode >= 500 || statusCode == 429 {
+		// REST returned 5xx or 429 (no transport error, but node issue)
+		shouldMarkUnhealthy := (statusCode >= 500) // Mark unhealthy for 5xx, not 429
+		needsBackoff = true                        // Both should backoff/retry
+
+		if shouldMarkUnhealthy && targetEndpoint != nil {
+			targetEndpoint.MarkUnhealthy()
+			utils.LavaFormatDebug("endpoint returned error status",
+				utils.LogAttr("status", statusCode),
+				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+			)
+		} else if statusCode == 429 {
+			utils.LavaFormatDebug("endpoint rate limited",
+				utils.LogAttr("status", statusCode),
+				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+			)
+		}
+
+		// Return error to trigger backoff (but preserve result for client)
+		return relayLatency, fmt.Errorf("HTTP %d", statusCode), needsBackoff
 	}
 
 	// Success - reset endpoint health
