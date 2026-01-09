@@ -9,20 +9,12 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
-
-// HTTPRequestParams defines the contract for HTTP requests with variable methods (REST support)
-type HTTPRequestParams struct {
-	Method      string            // HTTP method: GET, POST, PUT, DELETE
-	URL         string            // Fully qualified URL (base endpoint + path + query)
-	Body        []byte            // Request body (nil for GET)
-	Headers     map[string]string // Request headers (already filtered by chain spec)
-	ContentType string            // Content-Type header (optional, only for requests with body)
-}
 
 // DirectRPCRelaySender handles sending relay requests directly to RPC endpoints
 // (bypassing the Lava provider-relay protocol)
@@ -272,20 +264,14 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	// Get RPC message
 	rpcMessage := chainMessage.GetRPCMessage()
 
-	// Extract path from RPC message
-	// For REST, the path is in the message structure
-	restPath := ""
-	if pathGetter, ok := rpcMessage.(interface{ GetPath() string }); ok {
-		restPath = pathGetter.GetPath()
-	} else {
-		return nil, fmt.Errorf("REST message doesn't have GetPath method")
+	restMessage, ok := rpcMessage.(*rpcInterfaceMessages.RestMessage)
+	if !ok {
+		return nil, fmt.Errorf("expected RestMessage for REST API, got %T", rpcMessage)
 	}
 
-	// Extract body (Msg field)
-	var restBody []byte
-	if msgGetter, ok := rpcMessage.(interface{ GetMsg() []byte }); ok {
-		restBody = msgGetter.GetMsg()
-	}
+	// REST path (including query string) is stored on the message.
+	restPath := restMessage.Path
+	restBody := restMessage.Msg
 
 	// Get API collection
 	apiCollection := chainMessage.GetApiCollection()
@@ -298,11 +284,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 
 	// Extract headers as Metadata (preserves delete semantics)
 	var headers []pairingtypes.Metadata
-	if headerGetter, ok := rpcMessage.(interface {
-		GetHeaders() []pairingtypes.Metadata
-	}); ok {
-		headers = headerGetter.GetHeaders()
-	}
+	headers = restMessage.GetHeaders()
 
 	// ✅ CORRECTION 6: Robust URL joining
 	baseURL := d.directConnection.GetURL()
@@ -330,7 +312,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 
 	// Handle transport errors
 	if err != nil {
-		return nil, fmt.Errorf("REST request failed: %w", err)
+		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
 	}
 
 	// ✅ CORRECTION 5: Proper error classification (don't treat all 4xx as node errors)
@@ -344,6 +326,16 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		isNodeError = false // Client error
 	default:
 		isNodeError = false // Success
+	}
+
+	// Let the chain message parse domain-specific REST errors (e.g. Cosmos tx errors on HTTP 200).
+	// NOTE: This should NOT be treated as "node error" by default; it is typically a request/application error.
+	hasError, errorMessage := chainMessage.CheckResponseError(response.Body, response.StatusCode)
+	if hasError && errorMessage != "" {
+		utils.LavaFormatDebug("REST response contains error",
+			utils.LogAttr("endpoint", d.endpointName),
+			utils.LogAttr("error", errorMessage),
+		)
 	}
 
 	// ✅ CORRECTION 2: Convert response headers to metadata
@@ -365,7 +357,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		ProviderInfo: common.ProviderInfo{
 			ProviderAddress: providerAddress,
 		},
-		IsNodeError: isNodeError, // ✅ Correct classification
+		IsNodeError: isNodeError, // ✅ Correct transport-level classification
 	}
 
 	utils.LavaFormatTrace("REST request completed",
