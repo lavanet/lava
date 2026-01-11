@@ -42,6 +42,7 @@ require (
 	github.com/gogo/status v1.1.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
+	github.com/grafana/pyroscope-go v1.2.7
 	github.com/itchyny/gojq v0.12.16
 	github.com/jhump/protoreflect v1.15.1
 	github.com/joho/godotenv v1.3.0
@@ -106,6 +107,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.9 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.7.5 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
@@ -208,7 +210,7 @@ require (
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

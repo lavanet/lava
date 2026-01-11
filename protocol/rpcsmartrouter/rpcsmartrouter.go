@@ -57,7 +57,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -185,7 +184,6 @@ type rpcSmartRouterStartOptions struct {
 	clientCtx                client.Context    // Blockchain client context for querying specs
 	privKey                  *btcec.PrivateKey // Private key for signing relay requests
 	lavaChainID              string            // Lava blockchain chain ID
-	memoryGCThresholdGB      float64
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -292,9 +290,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 
 	// Start the epoch timer
 	rpsr.epochTimer.Start(ctx)
-
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
@@ -856,6 +851,32 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-smartrouter"
+				}
+				mutexProfileFraction, err := cmd.Flags().GetInt(performance.PyroscopeMutexProfileFractionFlagName)
+				if err != nil {
+					mutexProfileFraction = performance.DefaultMutexProfileFraction
+				}
+				blockProfileRate, err := cmd.Flags().GetInt(performance.PyroscopeBlockProfileRateFlagName)
+				if err != nil {
+					blockProfileRate = performance.DefaultBlockProfileRate
+				}
+				tagsStr, _ := cmd.Flags().GetString(performance.PyroscopeTagsFlagName)
+				tags := performance.ParseTags(tagsStr)
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress, mutexProfileFraction, blockProfileRate, tags)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
 			// Note: VerifyAndHandleUnsupportedFlags is not called here because rpcsmartrouter
 			// doesn't use blockchain transaction flags (--fees, --from, etc.) since it operates
 			// in centralized mode without blockchain interactions
@@ -979,8 +1000,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				)
 			}
 
-			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
-			memoryutils.EnableMemoryLogs(enableMemoryLogs)
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -993,7 +1012,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				EpochDuration:            epochDuration,
-				EnableMemoryLogs:         enableMemoryLogs,
 			}
 
 			// Get private key for signing relay requests
@@ -1024,12 +1042,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			lavaChainID := clientCtx.ChainID
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
-			}
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
 				requiredResponses:        requiredResponses,
@@ -1046,7 +1058,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				clientCtx:                clientCtx,
 				privKey:                  privKey,
 				lavaChainID:              lavaChainID,
-				memoryGCThresholdGB:      memoryGCThresholdGB,
 			})
 			return err
 		},
@@ -1055,14 +1066,17 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// RPCSmartRouter command flags - no blockchain flags needed
 	cmdRPCSmartRouter.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
-	cmdRPCSmartRouter.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
-	cmdRPCSmartRouter.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-smartrouter", "pyroscope application name for identifying this service")
+	cmdRPCSmartRouter.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
+	cmdRPCSmartRouter.Flags().Int(performance.PyroscopeBlockProfileRateFlagName, performance.DefaultBlockProfileRate, "block profile rate in nanoseconds (1 records all blocking events)")
+	cmdRPCSmartRouter.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=router-1,region=us-east)")
 	cmdRPCSmartRouter.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCSmartRouter.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
@@ -1117,7 +1131,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
 	cmdRPCSmartRouter.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
-	cmdRPCSmartRouter.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
 
 	cmdRPCSmartRouter.Flags().DurationVar(&common.DefaultTimeout, common.DefaultProcessingTimeoutFlagName, common.DefaultTimeout, "default timeout for relay processing (e.g., 30s, 1m)")
 	cmdRPCSmartRouter.Flags().IntVar(&lavasession.MaxSessionsAllowedPerProvider, common.MaxSessionsPerProviderFlagName, lavasession.MaxSessionsAllowedPerProvider, "max number of sessions allowed per provider")

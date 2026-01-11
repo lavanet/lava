@@ -138,13 +138,6 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type DataReliabilitySession struct {
-	SingleConsumerSession *SingleConsumerSession
-	Epoch                 uint64
-	ProviderPublicAddress string
-	UniqueIdentifier      bool
-}
-
 type EndpointConnection struct {
 	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
@@ -518,11 +511,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
-	for sessionID, session := range cswp.Sessions {
-		if sessionID == DataReliabilitySessionId {
-			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
-		}
-
+	for _, session := range cswp.Sessions {
 		// Match session to connection (different logic for provider-relay vs direct RPC)
 		matchesConnection := false
 		if isProviderRelay {
@@ -577,7 +566,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 			if endpoint.NetworkAddress == networkAddress && endpoint.IsDirectRPC() {
 				if len(endpoint.DirectConnections) > 0 {
 					directConn = endpoint.DirectConnections[0]
-					selectedEndpoint = endpoint  // ✅ Store endpoint reference
+					selectedEndpoint = endpoint // Store endpoint reference
 					break
 				}
 			}
@@ -591,7 +580,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 			DirectConnection: directConn,
 			QoSManager:       qosManager,
 			EndpointAddress:  networkAddress,
-			Endpoint:         selectedEndpoint,  // ✅ Store for per-endpoint tracking
+			Endpoint:         selectedEndpoint, // Store for per-endpoint tracking
 		}
 	}
 

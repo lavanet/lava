@@ -23,7 +23,7 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 	testkeeper.Randomizer.Inc()
 	coins := sdk.NewCoins(sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
-	return
+	return acc
 }
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc sigs.Account, spec spectypes.Spec, stake int64, validator sigs.Account) {

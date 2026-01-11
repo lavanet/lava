@@ -20,7 +20,6 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -30,10 +29,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -94,9 +91,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCStaticProviderEndpoint, backupProvidersList []*lavasession.RPCStaticProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
-	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus, bool)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 	GetLatestVirtualEpoch() uint64
@@ -135,7 +130,6 @@ type rpcConsumerStartOptions struct {
 	stateShare               bool
 	refererData              *chainlib.RefererData
 	geoLocation              uint64
-	memoryGCThresholdGB      float64
 }
 
 func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
@@ -218,7 +212,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
 	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
-	finalizationConsensuses := &common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus]{}
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -237,17 +230,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
-
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := &common.SafeSyncMap[string, *updaters.PolicyUpdater]{}
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
-				policyUpdaters, optimizers, consumerConsistencies, finalizationConsensuses, chainMutexes,
+				policyUpdaters, optimizers, consumerConsistencies, chainMutexes,
 				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
 			return err
@@ -295,7 +284,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
 	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
-	finalizationConsensuses *common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
 	privKey *secp256k1.PrivateKey,
@@ -338,7 +326,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var consumerConsistency relaycore.Consistency
-	var finalizationConsensus *finalizationconsensus.FinalizationConsensus
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
 		chainMutexes[chainID].Lock()
@@ -366,15 +353,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 		}
 
-		// Create / Use existing FinalizationConsensus
-		newFinalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
-		finalizationConsensus, loaded, err = finalizationConsensuses.LoadOrStore(chainID, newFinalizationConsensus)
-		if err != nil {
-			return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-		}
-		if !loaded { // when creating new finalization consensus instance we need to register it to updates
-			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, false)
-		}
 		return nil
 	}
 	err = getOrCreateChainAssets()
@@ -383,7 +361,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 
-	if finalizationConsensus == nil || optimizer == nil || consumerConsistency == nil {
+	if optimizer == nil || consumerConsistency == nil {
 		err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 		errCh <- err
 		return nil, err
@@ -420,8 +398,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -574,6 +551,32 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-consumer"
+				}
+				mutexProfileFraction, err := cmd.Flags().GetInt(performance.PyroscopeMutexProfileFractionFlagName)
+				if err != nil {
+					mutexProfileFraction = performance.DefaultMutexProfileFraction
+				}
+				blockProfileRate, err := cmd.Flags().GetInt(performance.PyroscopeBlockProfileRateFlagName)
+				if err != nil {
+					blockProfileRate = performance.DefaultBlockProfileRate
+				}
+				tagsStr, _ := cmd.Flags().GetString(performance.PyroscopeTagsFlagName)
+				tags := performance.ParseTags(tagsStr)
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress, mutexProfileFraction, blockProfileRate, tags)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			err = common.VerifyAndHandleUnsupportedFlags(cmd.Flags())
 			if err != nil {
@@ -639,8 +642,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
-			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
-			memoryutils.EnableMemoryLogs(enableMemoryLogs)
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -652,16 +653,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
-				EnableMemoryLogs:         enableMemoryLogs,
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
-			}
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
 				txFactory,
 				clientCtx,
@@ -675,7 +669,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				rpcConsumerSharedState,
 				refererData,
 				geolocation,
-				memoryGCThresholdGB,
 			})
 			return err
 		},
@@ -685,15 +678,18 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	cmdRPCConsumer.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
-	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCConsumer.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCConsumer.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cmdRPCConsumer.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-consumer", "pyroscope application name for identifying this service")
+	cmdRPCConsumer.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
+	cmdRPCConsumer.Flags().Int(performance.PyroscopeBlockProfileRateFlagName, performance.DefaultBlockProfileRate, "block profile rate in nanoseconds (1 records all blocking events)")
+	cmdRPCConsumer.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=consumer-1,region=us-east)")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
@@ -721,8 +717,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
-	cmdRPCConsumer.Flags().BoolVar(&statetracker.DisableDR, common.DisableConflictTransactionsFlag, statetracker.DisableDR, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
-	cmdRPCConsumer.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")

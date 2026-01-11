@@ -133,11 +133,6 @@ export interface ChainBlockStats {
   blocksInFinalizationProof: number;
 }
 
-interface DataReliabilityParams {
-  enabled: boolean;
-  dataReliabilityThreshold: number;
-}
-
 export abstract class BaseChainParser {
   protected taggedApis: Map<number, TaggedContainer>;
   protected spec: Spec | undefined;
@@ -189,18 +184,6 @@ export abstract class BaseChainParser {
       throw Logger.fatal("API disabled in spec", collectionKey);
     }
     return collection;
-  }
-
-  public dataReliabilityParams(): DataReliabilityParams {
-    // TODO: implement this
-    const spec = this.spec;
-    if (spec == undefined) {
-      throw new Error("spec undefined can't get stats");
-    }
-    return {
-      enabled: spec.getDataReliabilityEnabled(),
-      dataReliabilityThreshold: spec.getReliabilityThreshold(),
-    };
   }
 
   // initialize the base chain parser with the spec information

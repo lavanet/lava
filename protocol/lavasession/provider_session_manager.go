@@ -130,7 +130,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer.sessionMap[projectId]
 	if !foundAddressInMap {
 		epochData := &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, notDataReliabilityPSWC, pairedProviders)
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, pairedProviders)
 		mapOfProviderSessionsWithConsumer.sessionMap[projectId] = providerSessionWithConsumer
 	}
 
@@ -250,15 +250,11 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	if epoch < psm.blockedEpochHeight || epoch < psm.currentEpoch {
+	if epoch < psm.blockedEpochHeight || epoch <= psm.currentEpoch {
 		// Reject truly old epochs (going backwards in time)
 		return
 	}
-	// Allow same-epoch updates (idempotent) - this can happen when multiple callbacks trigger
-	if epoch == psm.currentEpoch {
-		// Already on this epoch, nothing to update
-		return
-	}
+
 	if epoch > psm.blockDistanceForEpochValidity {
 		psm.blockedEpochHeight = epoch - psm.blockDistanceForEpochValidity
 	} else {

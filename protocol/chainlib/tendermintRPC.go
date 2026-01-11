@@ -313,21 +313,6 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *TendermintChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the TendermintChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
-}
-
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData, spec.BlocksInFinalizationProof)
 func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
@@ -476,7 +461,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
@@ -560,7 +545,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)

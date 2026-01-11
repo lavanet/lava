@@ -206,21 +206,6 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the RestChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
-}
-
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
 func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
@@ -325,7 +310,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -400,7 +385,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
 				utils.LavaFormatError("api method is not supported", err, utils.LogAttr("GUID", ctx))

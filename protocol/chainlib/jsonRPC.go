@@ -25,7 +25,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -292,21 +291,6 @@ func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
 	return internalPaths
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the JsonRPCChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
-}
-
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
 func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
@@ -461,21 +445,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-
-		// Log memory and message size at consumer entry point
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_request_entry", len(msg),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
@@ -521,14 +497,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		response := checkBTCResponseAndFixReply(chainID, reply.Data)
-
-		// Log memory and message size before sending to user
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_pre_user_send", len(response),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
@@ -545,14 +513,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 		// Return json response and add metric for after provider processing
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-
-		// Log memory and message size after sending to user
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_post_user_send", len(response),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
