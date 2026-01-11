@@ -460,7 +460,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
