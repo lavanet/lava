@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 
+	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -31,6 +32,33 @@ longer DefaultExpirationForNonFinalized will reduce sync QoS for "latest" reques
 			}
 			utils.SetGlobalLoggingLevel(logLevel)
 
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-cache"
+				}
+				mutexProfileFraction, err := cmd.Flags().GetInt(performance.PyroscopeMutexProfileFractionFlagName)
+				if err != nil {
+					mutexProfileFraction = performance.DefaultMutexProfileFraction
+				}
+				blockProfileRate, err := cmd.Flags().GetInt(performance.PyroscopeBlockProfileRateFlagName)
+				if err != nil {
+					blockProfileRate = performance.DefaultBlockProfileRate
+				}
+				tagsStr, _ := cmd.Flags().GetString(performance.PyroscopeTagsFlagName)
+				tags := performance.ParseTags(tagsStr)
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress, mutexProfileFraction, blockProfileRate, tags)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
+
 			metricsAddress, err := cmd.Flags().GetString(FlagMetricsAddress)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read metrics address flag", err)
@@ -48,5 +76,10 @@ longer DefaultExpirationForNonFinalized will reduce sync QoS for "latest" reques
 	cacheCmd.Flags().Duration(ExpirationNodeErrorsOnFinalizedFlagName, DefaultExpirationNodeErrors, "how long does a cache entry lasts in the cache for a finalized node error entry")
 	cacheCmd.Flags().String(FlagMetricsAddress, DisabledFlagOption, "address to listen to prometheus metrics 127.0.0.1:5555, later you can curl http://127.0.0.1:5555/metrics")
 	cacheCmd.Flags().Int64(FlagCacheSizeName, 2*1024*1024*1024, "the maximal amount of entries to save")
+	cacheCmd.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cacheCmd.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-cache", "pyroscope application name for identifying this service")
+	cacheCmd.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
+	cacheCmd.Flags().Int(performance.PyroscopeBlockProfileRateFlagName, performance.DefaultBlockProfileRate, "block profile rate in nanoseconds (1 records all blocking events)")
+	cacheCmd.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=cache-1,region=us-east)")
 	return cacheCmd
 }
