@@ -29,7 +29,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
@@ -131,7 +130,6 @@ type rpcConsumerStartOptions struct {
 	stateShare               bool
 	refererData              *chainlib.RefererData
 	geoLocation              uint64
-	memoryGCThresholdGB      float64
 }
 
 func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
@@ -232,10 +230,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
-
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := &common.SafeSyncMap[string, *updaters.PolicyUpdater]{}
 	for _, rpcEndpoint := range options.rpcEndpoints {
@@ -648,8 +642,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
-			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
-			memoryutils.EnableMemoryLogs(enableMemoryLogs)
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -661,16 +653,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
 				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
-				EnableMemoryLogs:         enableMemoryLogs,
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
-			}
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
 				txFactory,
 				clientCtx,
@@ -684,7 +669,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				rpcConsumerSharedState,
 				refererData,
 				geolocation,
-				memoryGCThresholdGB,
 			})
 			return err
 		},
@@ -694,7 +678,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	cmdRPCConsumer.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
@@ -734,7 +717,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
-	cmdRPCConsumer.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
