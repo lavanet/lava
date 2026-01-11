@@ -50,14 +50,19 @@ sleep 2
 # Use local loopback addresses (0.0.0.0 is a bind address; as a client target prefer 127.0.0.1)
 LAVA_REST_LOCAL="${LAVA_REST/0.0.0.0/127.0.0.1}"
 
-# Static spec (offline) - used for routing/parsing in smart router
-# Note: the chain-id verifications in public specs won't match the local dev chain-id ("lava"),
+# Static specs (offline) - used for routing/parsing in smart router.
+# IMPORTANT: Lava spec imports COSMOSSDK (and related deps), so we must provide the full bundle.
+# Note: chain-id verifications in public specs won't match the local dev chain-id ("lava"),
 # so we explicitly skip those verifications in node-urls below.
-SPECS_DIR="$PROJECT_ROOT/specs/testnet-2/specs/lava.json"
-if [ ! -f "$SPECS_DIR" ]; then
-	echo "✗ ERROR: Spec file not found: $SPECS_DIR"
-	exit 1
-fi
+SPECS_DIR="$PROJECT_ROOT/specs/mainnet-1/specs/tendermint.json,$PROJECT_ROOT/specs/mainnet-1/specs/ibc.json,$PROJECT_ROOT/specs/mainnet-1/specs/cosmossdk.json,$PROJECT_ROOT/specs/testnet-2/specs/lava.json"
+
+IFS=',' read -r -a SPEC_FILES <<< "$SPECS_DIR"
+for spec_file in "${SPEC_FILES[@]}"; do
+	if [ ! -f "$spec_file" ]; then
+		echo "✗ ERROR: Spec file not found: $spec_file"
+		exit 1
+	fi
+done
 
 # Generate smart router config (3 upstream REST endpoints -> local node LCD)
 CONFIG_FILE="$PROJECT_ROOT/smartrouter_lava.yml"
