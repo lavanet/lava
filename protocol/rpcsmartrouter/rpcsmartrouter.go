@@ -183,7 +183,6 @@ type rpcSmartRouterStartOptions struct {
 	clientCtx                client.Context    // Blockchain client context for querying specs
 	privKey                  *btcec.PrivateKey // Private key for signing relay requests
 	lavaChainID              string            // Lava blockchain chain ID
-	memoryGCThresholdGB      float64
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -290,9 +289,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 
 	// Start the epoch timer
 	rpsr.epochTimer.Start(ctx)
-
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
@@ -937,12 +933,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			lavaChainID := clientCtx.ChainID
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
-			}
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
 				requiredResponses:        requiredResponses,
@@ -959,7 +949,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				clientCtx:                clientCtx,
 				privKey:                  privKey,
 				lavaChainID:              lavaChainID,
-				memoryGCThresholdGB:      memoryGCThresholdGB,
 			})
 			return err
 		},
@@ -968,7 +957,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// RPCSmartRouter command flags - no blockchain flags needed
 	cmdRPCSmartRouter.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
-	cmdRPCSmartRouter.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
