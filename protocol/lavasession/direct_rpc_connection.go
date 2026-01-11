@@ -44,6 +44,9 @@ type DirectRPCConnection interface {
 
 	// GetURL returns the endpoint URL
 	GetURL() string
+
+	// GetNodeUrl returns the NodeUrl configuration (for timeout overrides, auth, etc.)
+	GetNodeUrl() *common.NodeUrl
 }
 
 // HTTPDirectRPCResponse contains complete HTTP response data (Phase 4 REST support)
@@ -231,6 +234,10 @@ func (h *HTTPDirectRPCConnection) GetURL() string {
 	return h.nodeUrl.Url
 }
 
+func (h *HTTPDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
+	return &h.nodeUrl
+}
+
 // DoHTTPRequest implements HTTPDirectRPCDoer for REST support (Phase 4)
 // Executes HTTP request with variable method (GET/POST/PUT/DELETE)
 func (h *HTTPDirectRPCConnection) DoHTTPRequest(
@@ -318,6 +325,10 @@ func (w *WebSocketDirectRPCConnection) GetURL() string {
 	return w.nodeUrl.Url
 }
 
+func (w *WebSocketDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
+	return &w.nodeUrl
+}
+
 // SendRequest implements DirectRPCConnection for gRPC
 func (g *GRPCDirectRPCConnection) SendRequest(
 	ctx context.Context,
@@ -343,4 +354,8 @@ func (g *GRPCDirectRPCConnection) IsHealthy() bool {
 
 func (g *GRPCDirectRPCConnection) GetURL() string {
 	return g.nodeUrl.Url
+}
+
+func (g *GRPCDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
+	return &g.nodeUrl
 }

@@ -128,13 +128,16 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 }
 
 // sendJSONRPCRelay handles JSON-RPC requests (Phase 3 implementation)
+// Fixed to address gaps: header semantics, timeout overrides, response headers
 func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	ctx context.Context,
 	chainMessage chainlib.ChainMessage,
 	relayTimeout time.Duration,
 ) (*common.RelayResult, error) {
-	// Create context with timeout
-	requestCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	// ✅ FIX Gap 2: Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
+	// This allows operators to configure extended timeouts for heavy RPCs (debug_traceTransaction, etc.)
+	nodeUrl := d.directConnection.GetNodeUrl()
+	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
 	defer cancel()
 
 	// STEP 1: Get the RPC message and marshal to JSON bytes
@@ -158,54 +161,52 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		utils.LogAttr("timeout", relayTimeout),
 	)
 
-	// STEP 2: Extract headers from RPC message
-	headers := rpcMessage.GetHeaders()
-	headerMap := make(map[string]string)
-	for _, header := range headers {
-		headerMap[header.Name] = header.Value
+	// ✅ FIX Gap 1: Use DoHTTPRequest with []Metadata (preserves duplicates, supports delete semantics)
+	// Instead of map[string]string which loses duplicates and doesn't support delete (empty = delete)
+	httpDoer, ok := d.directConnection.(lavasession.HTTPDirectRPCDoer)
+	if !ok {
+		return nil, fmt.Errorf("connection does not support HTTP requests (protocol: %s)", d.directConnection.GetProtocol())
 	}
 
-	// STEP 3: Send request (protocol-agnostic transport)
+	// Build HTTP request params (same as REST path for consistency)
+	httpParams := lavasession.HTTPRequestParams{
+		Method:      "POST",
+		URL:         nodeUrl.Url,
+		Body:        requestData,
+		Headers:     rpcMessage.GetHeaders(), // ✅ Preserves duplicates, empty value = delete
+		ContentType: "application/json",
+	}
+
+	// STEP 3: Send request using DoHTTPRequest (returns headers + body)
 	startTime := time.Now()
-	responseData, err := d.directConnection.SendRequest(requestCtx, requestData, headerMap)
+	response, err := httpDoer.DoHTTPRequest(requestCtx, httpParams)
 	latency := time.Since(startTime)
 
-	// Extract HTTP status code from error if present
-	statusCode := 200
 	if err != nil {
-		// Check if this is an HTTP status error
-		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			statusCode = httpErr.StatusCode
-			responseData = httpErr.Body // Use body from error (may contain error details)
+		utils.LavaFormatDebug("direct RPC request failed",
+			utils.LogAttr("endpoint", endpointIdentifier),
+			utils.LogAttr("protocol", d.directConnection.GetProtocol()),
+			utils.LogAttr("error", err.Error()),
+			utils.LogAttr("latency", latency),
+		)
+		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+	}
 
-			utils.LavaFormatDebug("direct RPC request returned HTTP error",
-				utils.LogAttr("endpoint", endpointIdentifier),
-				utils.LogAttr("protocol", d.directConnection.GetProtocol()),
-				utils.LogAttr("status", statusCode),
-				utils.LogAttr("error", err.Error()),
-				utils.LogAttr("latency", latency),
-			)
+	statusCode := response.StatusCode
+	responseData := response.Body
 
-			// Map error to user-friendly format
-			mappedErr := MapDirectRPCError(err, d.directConnection.GetProtocol())
-			// For 5xx errors, return error immediately (node issue)
-			if statusCode >= 500 {
-				return nil, mappedErr
-			}
-			// For 4xx errors, continue to check RPC error (might be valid RPC error response)
-		} else {
-			// Non-HTTP error (timeout, connection refused, etc.)
-			utils.LavaFormatDebug("direct RPC request failed",
-				utils.LogAttr("endpoint", endpointIdentifier),
-				utils.LogAttr("protocol", d.directConnection.GetProtocol()),
-				utils.LogAttr("error", err.Error()),
-				utils.LogAttr("latency", latency),
-			)
-
-			// Map error to user-friendly format
-			mappedErr := MapDirectRPCError(err, d.directConnection.GetProtocol())
-			return nil, mappedErr
-		}
+	// Handle HTTP error status codes
+	if statusCode >= 500 {
+		utils.LavaFormatDebug("direct RPC request returned server error",
+			utils.LogAttr("endpoint", endpointIdentifier),
+			utils.LogAttr("status", statusCode),
+			utils.LogAttr("latency", latency),
+		)
+		return nil, MapDirectRPCError(&lavasession.HTTPStatusError{
+			StatusCode: statusCode,
+			Status:     fmt.Sprintf("%d", statusCode),
+			Body:       responseData,
+		}, d.directConnection.GetProtocol())
 	}
 
 	utils.LavaFormatTrace("direct RPC request succeeded",
@@ -226,27 +227,30 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	}
 
 	// STEP 5: Build RelayResult compatible with existing smart router flow
-	// Use configured endpoint name (not full URL) to avoid leaking API keys
 	providerAddress := d.endpointName
 	if providerAddress == "" {
-		// Fallback to sanitized URL if name not provided
 		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
 	}
 
 	// Extract latest block from response if possible (for QoS sync tracking)
 	latestBlockFromResponse := extractLatestBlockFromResponse(responseData, chainMessage.GetApi().Name)
 
+	// ✅ FIX Gap 3: Convert response headers to metadata (same as REST path)
+	// This enables Provider-Latest-Block, lava-identified-node-error, and upstream hints
+	responseMetadata := convertHTTPHeadersToMetadata(response.Headers)
+
 	result := &common.RelayResult{
 		Reply: &pairingtypes.RelayReply{
 			Data:        responseData,
-			LatestBlock: latestBlockFromResponse, // ✅ Set LatestBlock (provider parity)
+			LatestBlock: latestBlockFromResponse,
+			Metadata:    responseMetadata, // ✅ Response headers now included
 		},
-		Finalized:  true,       // Direct responses don't need consensus
-		StatusCode: statusCode, // Actual HTTP status code (200, 400, 429, 500, etc.)
+		Finalized:  true,
+		StatusCode: statusCode,
 		ProviderInfo: common.ProviderInfo{
-			ProviderAddress: providerAddress, // Use configured name (no API keys)
+			ProviderAddress: providerAddress,
 		},
-		IsNodeError: hasError, // Mark if response contains RPC error
+		IsNodeError: hasError,
 	}
 
 	return result, nil
@@ -258,7 +262,9 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	chainMessage chainlib.ChainMessage,
 	relayTimeout time.Duration,
 ) (*common.RelayResult, error) {
-	requestCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	// ✅ FIX Gap 2: Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
+	nodeUrl := d.directConnection.GetNodeUrl()
+	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
 	defer cancel()
 
 	// Get RPC message
