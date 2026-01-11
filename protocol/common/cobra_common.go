@@ -65,7 +65,6 @@ const (
 
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 
-	EnableMemoryLogsFlag             = "enable-memory-logs"         // enable memory tracking logs
 	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
 	MaxSessionsPerProviderFlagName   = "max-sessions-per-provider"  // Max number of sessions allowed per provider
 	DefaultProcessingTimeoutFlagName = "default-processing-timeout" // default timeout for relay processing
@@ -93,7 +92,6 @@ type ConsumerCmdFlags struct {
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
-	EnableMemoryLogs         bool          // enables memory tracking logs
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
