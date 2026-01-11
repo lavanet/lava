@@ -52,6 +52,11 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
 
+	// Skip signing when configured (e.g., smart router mode) to save CPU/memory
+	if SkipRelaySigning {
+		return reply, nil
+	}
+
 	// Update signature,
 	relayExchange := pairingtypes.NewRelayExchange(request, *reply)
 	sig, err := sigs.Sign(pkey, relayExchange)
