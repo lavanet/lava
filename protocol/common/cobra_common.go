@@ -59,6 +59,7 @@ const (
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
+	SkipRelaySigningFlag                         = "skip-relay-signing" // skip signing relay requests/responses (for static providers to save CPU/memory)
 	// specification default flags
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
