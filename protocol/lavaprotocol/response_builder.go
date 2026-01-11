@@ -72,6 +72,11 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 }
 
 func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+	// Skip verification when signing is disabled (no signature to verify)
+	if SkipRelaySigning {
+		return nil
+	}
+
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {

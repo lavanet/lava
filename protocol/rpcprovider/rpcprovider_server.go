@@ -849,6 +849,18 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 }
 
 func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, relaySession *pairingtypes.RelaySession) (extractedConsumerAddress sdk.AccAddress, err error) {
+	// When signing is skipped, we cannot extract address from signature
+	// For static providers, use a placeholder address (only used for metrics/logging, not rewards)
+	if lavaprotocol.SkipRelaySigning {
+		// Use a placeholder address when signing is skipped
+		// This is safe for static providers since they don't claim rewards
+		placeholderAddr, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
+		if err != nil {
+			return nil, utils.LavaFormatError("failed to create placeholder address", err, utils.LogAttr("GUID", ctx))
+		}
+		return placeholderAddr, nil
+	}
+
 	if relaySession.Badge != nil {
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(*relaySession.Badge)
 		if err != nil {

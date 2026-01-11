@@ -846,7 +846,18 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			// This saves CPU and memory since rewards are not claimed in smart router mode
 			if !viper.IsSet(common.SkipRelaySigningFlag) {
 				lavaprotocol.SkipRelaySigning = true
-				utils.LavaFormatInfo("Smart router mode: automatically enabling skip-relay-signing for performance")
+				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: automatically enabling skip-relay-signing for performance",
+					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+					utils.Attribute{Key: "reason", Value: "auto-enabled for smart router mode"},
+				)
+			} else {
+				// Flag was explicitly set, log the value
+				explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
+				lavaprotocol.SkipRelaySigning = explicitValue
+				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: using explicit flag value",
+					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+					utils.Attribute{Key: "source", Value: "command-line/config file"},
+				)
 			}
 
 			var cache *performance.Cache = nil

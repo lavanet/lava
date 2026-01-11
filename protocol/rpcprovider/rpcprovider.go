@@ -1151,7 +1151,18 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				// This saves CPU and memory since rewards are not claimed in standalone mode
 				if !viper.IsSet(common.SkipRelaySigningFlag) {
 					lavaprotocol.SkipRelaySigning = true
-					utils.LavaFormatInfo("Static provider mode: automatically enabling skip-relay-signing for performance")
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: automatically enabling skip-relay-signing for performance",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "reason", Value: "auto-enabled for static provider mode"},
+					)
+				} else {
+					// Flag was explicitly set, log the value
+					explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
+					lavaprotocol.SkipRelaySigning = explicitValue
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: using explicit flag value",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "source", Value: "command-line/config file"},
+					)
 				}
 			}
 
