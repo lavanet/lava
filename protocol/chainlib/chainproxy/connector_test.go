@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -76,25 +77,83 @@ func TestConnector(t *testing.T) {
 	ctx := context.Background()
 	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	require.NoError(t, err)
-	for { // wait for the routine to finish connecting
-		if len(conn.freeClients) == numberOfClients {
-			break
-		}
+	defer conn.Close()
+
+	// With shared client design, we always get the same client
+	require.NotNil(t, conn.client)
+
+	// Test that GetRpc always returns the same shared client
+	client1, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.NotNil(t, client1)
+
+	client2, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.NotNil(t, client2)
+
+	// Both should be the same client (shared)
+	require.Same(t, client1, client2, "GetRpc should return the same shared client")
+
+	// ReturnRpc is a no-op for HTTP connections, but should not panic
+	conn.ReturnRpc(client1)
+	conn.ReturnRpc(client2)
+
+	// After "returning", we can still get the client
+	client3, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.Same(t, client1, client3, "Client should still be available after ReturnRpc")
+}
+
+func TestConnectorConcurrentAccess(t *testing.T) {
+	ctx := context.Background()
+	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Test concurrent access to the shared client
+	const numGoroutines = 50
+	errCh := make(chan error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			client, err := conn.GetRpc(ctx, true)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if client == nil {
+				errCh <- errors.New("client is nil")
+				return
+			}
+			conn.ReturnRpc(client) // no-op but should not panic
+			errCh <- nil
+		}()
 	}
-	require.Equal(t, len(conn.freeClients), numberOfClients)
-	increasedClients := numberOfClients * 2 // increase to double the number of clients
-	rpcList := make([]*rpcclient.Client, increasedClients)
-	for i := 0; i < increasedClients; i++ {
-		rpc, err := conn.GetRpc(ctx, true)
+
+	// Wait for all goroutines to complete and check for errors
+	for i := 0; i < numGoroutines; i++ {
+		err := <-errCh
 		require.NoError(t, err)
-		rpcList[i] = rpc
 	}
-	require.Equal(t, conn.usedClients, int64(increasedClients)) // checking we have used clients
-	for i := 0; i < increasedClients; i++ {
-		conn.ReturnRpc(rpcList[i])
-	}
-	require.Equal(t, conn.usedClients, int64(0))                 // checking we dont have clients used
-	require.Greater(t, len(conn.freeClients), numberOfClients+1) // checking we cleaned clients before disconnecting
+}
+
+func TestConnectorCloseWhileInUse(t *testing.T) {
+	ctx := context.Background()
+	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
+	require.NoError(t, err)
+
+	// Get client
+	client, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	// Close connector while client is "in use"
+	conn.Close()
+
+	// Subsequent GetRpc should return error
+	_, err = conn.GetRpc(ctx, true)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "closed")
 }
 
 func TestConnectorGrpc(t *testing.T) {
@@ -260,17 +319,13 @@ func TestConnectorWebsocket(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	// Wait for connections to be established
-	for {
-		if len(conn.freeClients) == numberOfClients {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+	// With shared client design, the client should be available immediately
+	require.NotNil(t, conn.client)
 
 	// Get a client and test the connection
 	client, err := conn.GetRpc(ctx, true)
 	require.NoError(t, err)
+	require.NotNil(t, client)
 
 	// Test sending a message using CallContext
 	params := map[string]interface{}{
@@ -280,10 +335,11 @@ func TestConnectorWebsocket(t *testing.T) {
 	_, err = client.CallContext(ctx, id, "test_method", params, true, true)
 	require.NoError(t, err)
 
-	// Return the client
+	// Return the client (no-op for shared client)
 	conn.ReturnRpc(client)
 
-	// Verify connection pool state
-	require.Equal(t, int64(0), conn.usedClients)
-	require.Equal(t, numberOfClients, len(conn.freeClients))
+	// Client should still be the same
+	client2, err := conn.GetRpc(ctx, true)
+	require.NoError(t, err)
+	require.Same(t, client, client2)
 }

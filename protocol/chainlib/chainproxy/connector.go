@@ -38,12 +38,15 @@ const (
 
 var NumberOfParallelConnections uint = 10
 
+// Connector manages HTTP/JSON-RPC connections to blockchain nodes.
+// For HTTP connections, a single shared rpcclient.Client is used since
+// http.Client is goroutine-safe and handles connection pooling internally.
+// This design eliminates lock contention and maximizes connection reuse.
 type Connector struct {
-	lock          sync.RWMutex
-	freeClients   []*rpcclient.Client
-	usedClients   int64
+	client        *rpcclient.Client // Single shared client - goroutine safe
 	nodeUrl       common.NodeUrl
 	hashedNodeUrl string
+	closed        int32 // atomic flag to track if connector is closed
 }
 
 func HashURL(url string) string {
@@ -57,54 +60,33 @@ func HashURL(url string) string {
 	return hex.EncodeToString(hashedBytes)
 }
 
+// NewConnector creates a new HTTP/JSON-RPC connector.
+// Note: The nConns parameter is ignored for HTTP connections since a single
+// shared client is used (http.Client is goroutine-safe and handles connection
+// pooling internally). The parameter is kept for API compatibility with
+// gRPC connector which still uses connection pooling.
 func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Connector, error) {
-	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
+	NumberOfParallelConnections = nConns // used by gRPC connector, ignored for HTTP
 	connector := &Connector{
-		freeClients:   make([]*rpcclient.Client, 0, nConns),
 		nodeUrl:       nodeUrl,
 		hashedNodeUrl: HashURL(nodeUrl.Url),
 	}
 
-	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
+	// Create a single shared client - it's goroutine-safe and handles
+	// connection pooling via the shared http.Transport
+	rpcClient, err := connector.createConnection(ctx, nodeUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the first connection: %w, url: %s", err, nodeUrl.UrlStr())
+		return nil, fmt.Errorf("failed to create connection: %w, url: %s", err, nodeUrl.UrlStr())
 	}
 
-	connector.addClient(rpcClient)
-	go addClientsAsynchronously(ctx, connector, nConns-1, nodeUrl)
+	connector.client = rpcClient
+	utils.LavaFormatInfo("Created HTTP connector with shared client",
+		utils.Attribute{Key: "url", Value: connector.nodeUrl.String()})
+
+	// Start the connector loop to handle graceful shutdown
+	go connector.connectorLoop(ctx)
 
 	return connector, nil
-}
-
-func addClientsAsynchronously(ctx context.Context, connector *Connector, nConns uint, nodeUrl common.NodeUrl) {
-	for i := uint(0); i < nConns; i++ {
-		rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
-		if err != nil {
-			break
-		}
-		connector.addClient(rpcClient)
-	}
-	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
-		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
-	}
-	utils.LavaFormatInfo("Finished adding Clients Asynchronously", utils.Attribute{Key: "free clients", Value: len(connector.freeClients)}, utils.Attribute{Key: "url", Value: connector.nodeUrl.String()})
-	go connector.connectorLoop(ctx)
-}
-
-func (connector *Connector) addClient(client *rpcclient.Client) {
-	connector.lock.Lock()
-	defer connector.lock.Unlock()
-	connector.freeClients = append(connector.freeClients, client)
-}
-
-func (connector *Connector) numberOfFreeClients() int {
-	connector.lock.RLock()
-	defer connector.lock.RUnlock()
-	return len(connector.freeClients)
-}
-
-func (connector *Connector) numberOfUsedClients() int {
-	return int(atomic.LoadInt64(&connector.usedClients))
 }
 
 func (connector *Connector) getRpcClient(ctx context.Context, nodeUrl common.NodeUrl) (*rpcclient.Client, error) {
@@ -119,86 +101,50 @@ func (connector *Connector) getRpcClient(ctx context.Context, nodeUrl common.Nod
 	return rpcClient, nil
 }
 
-func (connector *Connector) createConnection(ctx context.Context, nodeUrl common.NodeUrl, currentNumberOfConnections int) (*rpcclient.Client, error) {
+func (connector *Connector) createConnection(ctx context.Context, nodeUrl common.NodeUrl) (*rpcclient.Client, error) {
 	var rpcClient *rpcclient.Client
 	var err error
-	numberOfConnectionAttempts := 0
-	for {
-		numberOfConnectionAttempts += 1
-		if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
-			err = utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
-				nil, utils.Attribute{Key: "Currently Connected", Value: currentNumberOfConnections})
-			break
-		}
+
+	for attempt := 1; attempt <= MaximumNumberOfParallelConnectionsAttempts; attempt++ {
 		if ctx.Err() != nil {
-			connector.Close()
 			return nil, ctx.Err()
 		}
-		timeout := common.AverageWorldLatency * (1 + time.Duration(numberOfConnectionAttempts))
+
+		timeout := common.AverageWorldLatency * (1 + time.Duration(attempt))
 		nctx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, timeout)
-		// get rpcClient
 		rpcClient, err = connector.getRpcClient(nctx, nodeUrl)
-		if err != nil {
-			cancel()
-			continue
-		}
 		cancel()
-		break
+
+		if err == nil {
+			return rpcClient, nil
+		}
+
+		utils.LavaFormatDebug("Failed to create connection, retrying",
+			utils.Attribute{Key: "attempt", Value: attempt},
+			utils.Attribute{Key: "error", Value: err.Error()},
+			utils.Attribute{Key: "url", Value: nodeUrl.UrlStr()})
 	}
 
-	return rpcClient, err
+	return nil, utils.LavaFormatError("Failed to create connection after max attempts",
+		err, utils.Attribute{Key: "url", Value: nodeUrl.UrlStr()})
 }
 
 func (connector *Connector) connectorLoop(ctx context.Context) {
 	<-ctx.Done()
-	log.Println("connectorLoop ctx.Done")
+	utils.LavaFormatDebug("HTTP connector shutting down", utils.Attribute{Key: "url", Value: connector.nodeUrl.String()})
 	connector.Close()
 }
 
+// Close closes the connector and its underlying client.
 func (connector *Connector) Close() {
-	for i := 0; ; i++ {
-		connector.lock.Lock()
-		for i := 0; i < len(connector.freeClients); i++ {
-			connector.freeClients[i].Close()
-		}
-		connector.freeClients = []*rpcclient.Client{}
-
-		if connector.usedClients > 0 {
-			if i > 10 {
-				utils.LavaFormatError("stuck while closing connector", nil, utils.LogAttr("freeClients", connector.freeClients), utils.LogAttr("usedClients", connector.usedClients))
-			}
-			connector.lock.Unlock()
-			time.Sleep(100 * time.Millisecond)
-		} else {
-			connector.lock.Unlock()
-			break
-		}
+	// Use atomic to ensure we only close once
+	if !atomic.CompareAndSwapInt32(&connector.closed, 0, 1) {
+		return // Already closed
 	}
-}
 
-func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
-	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients}, utils.Attribute{Key: "url", Value: connector.nodeUrl.UrlStr()})
-	var rpcClient *rpcclient.Client
-	var err error
-	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
-		// get rpcClient
-		rpcClient, err = connector.getRpcClient(nctx, connector.nodeUrl)
-		if err != nil {
-			utils.LavaFormatDebug(
-				"could no increase number of connections to the node jsonrpc connector, retrying",
-				[]utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
-			cancel()
-			continue
-		}
-		cancel()
-
-		connector.lock.Lock() // add connection to free list.
-		defer connector.lock.Unlock()
-		connector.freeClients = append(connector.freeClients, rpcClient)
-		return
+	if connector.client != nil {
+		connector.client.Close()
 	}
-	utils.LavaFormatDebug("Failed increasing number of clients")
 }
 
 // getting hashed url from connection. this is never changed. so its not locked.
@@ -206,50 +152,23 @@ func (connector *Connector) GetUrlHash() string {
 	return connector.hashedNodeUrl
 }
 
+// GetRpc returns the shared RPC client.
+// The client is goroutine-safe and handles connection pooling internally,
+// so no locking or pool management is needed.
+// The 'block' parameter is kept for API compatibility but is not used.
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
-	connector.lock.Lock()
-	defer connector.lock.Unlock()
-	numberOfFreeClients := len(connector.freeClients)
-	if numberOfFreeClients <= int(connector.usedClients) { // if we reached half of the free clients start creating new connections
-		go connector.increaseNumberOfClients(ctx, numberOfFreeClients) // increase asynchronously the free list.
+	if atomic.LoadInt32(&connector.closed) == 1 {
+		return nil, errors.New("connector is closed")
 	}
-
-	if numberOfFreeClients == 0 {
-		if !block {
-			return nil, errors.New("out of clients")
-		} else {
-			for {
-				connector.lock.Unlock()
-				// if we reached 0 connections we need to create more connections
-				// before sleeping, increase asynchronously the free list.
-				go connector.increaseNumberOfClients(ctx, numberOfFreeClients)
-				time.Sleep(50 * time.Millisecond)
-				connector.lock.Lock()
-				numberOfFreeClients = len(connector.freeClients)
-				if numberOfFreeClients != 0 {
-					break
-				}
-			}
-		}
-	}
-
-	ret := connector.freeClients[0]
-	connector.freeClients = connector.freeClients[1:]
-	connector.usedClients++
-
-	return ret, nil
+	return connector.client, nil
 }
 
+// ReturnRpc is a no-op for HTTP connections.
+// The shared client is goroutine-safe and doesn't need to be "returned".
+// This method exists for API compatibility.
 func (connector *Connector) ReturnRpc(rpc *rpcclient.Client) {
-	connector.lock.Lock()
-	defer connector.lock.Unlock()
-
-	connector.usedClients--
-	if len(connector.freeClients) > (int(connector.usedClients) + int(NumberOfParallelConnections) /* the number we started with */) {
-		rpc.Close() // close connection
-		return      // return without appending back to decrease idle connections
-	}
-	connector.freeClients = append(connector.freeClients, rpc)
+	// No-op: HTTP clients are goroutine-safe and shared.
+	// Connection pooling is handled by the underlying http.Transport.
 }
 
 type GRPCConnector struct {
