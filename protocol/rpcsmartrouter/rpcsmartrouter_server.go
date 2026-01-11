@@ -1004,6 +1004,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 							utils.LogAttr("GUID", goroutineCtx),
 						)
 					}
+
+					// ✅ Update global latest block height and estimator (for getLatestBlock fallback)
+					rpcss.updateLatestBlockHeight(uint64(latestBlock), endpointAddress)
 				} else if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
 					// Fallback to ChainTracker (global)
 					latestBlock, _ = rpcss.chainTracker.GetLatestBlockNum()
