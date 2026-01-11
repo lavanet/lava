@@ -626,27 +626,33 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	var chainTracker chaintracker.IChainTracker
 	if len(relevantStaticProviderList) > 0 {
 		firstProvider := relevantStaticProviderList[0]
-
-		// Convert RPCStaticProviderEndpoint to RPCProviderEndpoint for ChainTracker
-		providerEndpoint := &lavasession.RPCProviderEndpoint{
+		
+		// ✅ FIX: Create minimal endpoint for ChainTracker (no addons needed)
+		// ChainTracker only polls eth_blockNumber (latest block) - doesn't need archive/debug
+		chainTrackerEndpoint := &lavasession.RPCProviderEndpoint{
 			NetworkAddress: firstProvider.NetworkAddress,
 			ChainID:        firstProvider.ChainID,
 			ApiInterface:   firstProvider.ApiInterface,
 			Geolocation:    firstProvider.Geolocation,
-			NodeUrls:       firstProvider.NodeUrls,
+			NodeUrls: []common.NodeUrl{
+				{
+					Url:        firstProvider.NodeUrls[0].Url,
+					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,  // Preserve auth
+					Addons:     []string{},  // ✅ No addons - ChainTracker only needs latest block!
+				},
+			},
 		}
 
-		// Create chain router (same as provider)
-		// Use default parallel connections for ChainTracker
+		// Create chain router with minimal endpoint (same as provider)
 		parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
-		chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, providerEndpoint, chainParser)
+		chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, chainTrackerEndpoint, chainParser)
 		if err != nil {
 			utils.LavaFormatWarning("Failed to create chain router for chain tracker", err,
 				utils.LogAttr("chain", rpcEndpoint.ChainID),
 			)
 		} else {
 			// Create chain fetcher (same as provider - verifications only mode)
-			chainFetcher := chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, providerEndpoint)
+			chainFetcher := chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, chainTrackerEndpoint)
 
 			// Validate chain fetcher
 			if err := chainFetcher.Validate(ctx); err != nil {
