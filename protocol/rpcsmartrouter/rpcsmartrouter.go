@@ -609,12 +609,65 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	rpcSmartRouterServer := &RPCSmartRouterServer{}
 
-	var wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
-	var specMethodType string
-	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-		specMethodType = http.MethodPost
+	// Create WebSocket subscription manager
+	// Uses interface type to support both provider-based (ConsumerWSSubscriptionManager)
+	// and direct RPC (DirectWSSubscriptionManager) implementations
+	var wsSubscriptionManager chainlib.WSSubscriptionManager
+
+	// Collect ALL WebSocket-capable endpoints from static providers for direct subscriptions
+	// WebSocket URLs are identified by ws:// or wss:// prefix
+	var wsEndpoints []*common.NodeUrl
+	for _, provider := range relevantStaticProviderList {
+		for i := range provider.NodeUrls {
+			url := strings.ToLower(provider.NodeUrls[i].Url)
+			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
+				wsEndpoints = append(wsEndpoints, &provider.NodeUrls[i])
+				utils.LavaFormatInfo("Found WebSocket endpoint for direct subscriptions",
+					utils.LogAttr("url", provider.NodeUrls[i].Url),
+					utils.LogAttr("provider", provider.Name),
+					utils.LogAttr("chainID", provider.ChainID),
+				)
+			}
+		}
 	}
-	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
+
+	// Create DirectWSSubscriptionManager if WebSocket endpoints are available
+	// Otherwise fall back to provider-based subscription manager
+	if len(wsEndpoints) > 0 {
+		directWSManager := NewDirectWSSubscriptionManager(
+			smartRouterMetricsManager,
+			spectypes.APIInterfaceJsonRPC, // WebSocket subscriptions use JSON-RPC
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			wsEndpoints,
+			optimizer, // Pass optimizer for endpoint selection
+			nil,       // Use default WebSocket config (configurable via CLI flags later)
+		)
+		// Start background cleanup goroutine
+		directWSManager.Start(ctx)
+		wsSubscriptionManager = directWSManager
+		utils.LavaFormatInfo("Using DirectWSSubscriptionManager for direct WebSocket subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("wsEndpointCount", len(wsEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	} else {
+		// Fall back to provider-based subscription manager (requires Lava providers)
+		var specMethodType string
+		if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
+			specMethodType = http.MethodPost
+		}
+		wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(
+			sessionManager, rpcSmartRouterServer, options.refererData, specMethodType,
+			chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager,
+		)
+		utils.LavaFormatWarning("No WebSocket endpoint found in static providers, using provider-based subscriptions",
+			nil,
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+		)
+	}
 
 	// Create ChainTracker for latest block tracking (reuse provider's implementation)
 	// Use first static provider endpoint for ChainTracker
@@ -1128,6 +1181,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCSmartRouter.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
+	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, chainlib.SkipWebsocketVerification, "skip websocket verification for chains that require ws/wss endpoints")
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
 	cmdRPCSmartRouter.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")

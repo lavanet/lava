@@ -111,7 +111,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	sharedState bool,
 	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
-	wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
+	wsSubscriptionManager chainlib.WSSubscriptionManager,
 ) (err error) {
 	rpcss.sessionManager = sessionManager
 	rpcss.listenEndpoint = listenEndpoint

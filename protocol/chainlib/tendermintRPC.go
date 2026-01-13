@@ -333,14 +333,14 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 }
 
 type TendermintRpcChainListener struct {
-	endpoint                      *lavasession.RPCEndpoint
-	relaySender                   RelaySender
-	healthReporter                HealthReporter
-	logger                        *metrics.RPCConsumerLogs
-	refererData                   *RefererData
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
-	listeningAddress              string
-	websocketConnectionLimiter    *WebsocketConnectionLimiter
+	endpoint                   *lavasession.RPCEndpoint
+	relaySender                RelaySender
+	healthReporter             HealthReporter
+	logger                     *metrics.RPCConsumerLogs
+	refererData                *RefererData
+	wsSubscriptionManager      WSSubscriptionManager
+	listeningAddress           string
+	websocketConnectionLimiter *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -348,17 +348,17 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	wsSubscriptionManager WSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
-	// Create a new instance of JsonRPCChainListener
+	// Create a new instance of TendermintRpcChainListener
 	chainListener = &TendermintRpcChainListener{
-		endpoint:                      listenEndpoint,
-		relaySender:                   relaySender,
-		healthReporter:                healthReporter,
-		logger:                        rpcConsumerLogs,
-		refererData:                   refererData,
-		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
-		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
+		endpoint:                   listenEndpoint,
+		relaySender:                relaySender,
+		healthReporter:             healthReporter,
+		logger:                     rpcConsumerLogs,
+		refererData:                refererData,
+		wsSubscriptionManager:      wsSubscriptionManager,
+		websocketConnectionLimiter: &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -403,19 +403,19 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
-			WebsocketConn:                 websocketConn,
-			RpcConsumerLogs:               apil.logger,
-			RefererMatchString:            refererMatchString,
-			CmdFlags:                      cmdFlags,
-			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
-			ChainID:                       chainID,
-			ApiInterface:                  apiInterface,
-			ConnectionType:                "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RefererData:                   apil.refererData,
-			RelaySender:                   apil.relaySender,
-			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
-			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
-			headerRateLimit:               uint64(rateLimit),
+			WebsocketConn:          websocketConn,
+			RpcConsumerLogs:        apil.logger,
+			RefererMatchString:     refererMatchString,
+			CmdFlags:               cmdFlags,
+			RelayMsgLogMaxChars:    relayMsgLogMaxChars,
+			ChainID:                chainID,
+			ApiInterface:           apiInterface,
+			ConnectionType:         "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:            apil.refererData,
+			RelaySender:            apil.relaySender,
+			WsSubscriptionManager:  apil.wsSubscriptionManager,
+			WebsocketConnectionUID: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:        uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

@@ -222,7 +222,11 @@ func (m *mockChainMessage) CheckResponseError(data []byte, httpStatusCode int) (
 }
 
 func (m *mockChainMessage) GetApiCollection() *spectypes.ApiCollection {
-	return &spectypes.ApiCollection{}
+	return &spectypes.ApiCollection{
+		CollectionData: spectypes.CollectionData{
+			ApiInterface: "jsonrpc",
+		},
+	}
 }
 
 // Implement remaining ChainMessage interface methods (stubs for testing)
