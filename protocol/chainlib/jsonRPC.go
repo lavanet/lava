@@ -496,6 +496,52 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 
+		// Check if this is a passthrough method (e.g., debug_traceTransaction)
+		// Passthrough mode skips string conversion and response body logging to reduce memory allocations
+		requestMethod := extractJSONRPCMethodFromRequest(fiberCtx.Body())
+		if isPassthroughMethod(requestMethod) {
+			// Passthrough mode: skip string conversion and response body logging
+			utils.LavaFormatDebug("Passthrough mode: skipping response body logging for large response method",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("method", requestMethod),
+				utils.LogAttr("response_size_bytes", len(reply.Data)),
+			)
+			if relayResult.GetStatusCode() != 0 {
+				fiberCtx.Status(relayResult.StatusCode)
+			}
+			// Ensure Content-Encoding header is set if data is compressed
+			// Check if it's already in metadata (set by relayInner when skipping decompression)
+			hasContentEncoding := false
+			for _, meta := range reply.GetMetadata() {
+				if strings.EqualFold(meta.Name, "Content-Encoding") {
+					hasContentEncoding = true
+					utils.LavaFormatDebug("Found Content-Encoding in reply metadata",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("value", meta.Value),
+					)
+					break
+				}
+			}
+			// Set Content-Encoding header explicitly BEFORE setting other headers
+			// This ensures Fiber's compression middleware sees it and skips compression
+			// For passthrough methods, the data is compressed (we skipped decompression)
+			// So we always set the header, even if it's not in metadata (defensive)
+			fiberCtx.Set("Content-Encoding", "gzip")
+			if !hasContentEncoding {
+				utils.LavaFormatWarning("Content-Encoding not found in metadata for passthrough method, setting it explicitly", nil,
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("method", requestMethod),
+				)
+			}
+			// Send bytes directly without string conversion
+			// addHeadersAndSendBytes will set all metadata headers
+			err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), reply.Data)
+			apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+			apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
+			return err
+		}
+
+		// Normal mode: process response with string conversion and logging
 		response := checkBTCResponseAndFixReply(chainID, reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",

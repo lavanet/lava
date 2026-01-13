@@ -193,6 +193,66 @@ func TestCompressData_ExactThreshold(t *testing.T) {
 	require.Equal(t, exactData, result, "Uncompressed data should be unchanged")
 }
 
+func TestGetUncompressedSizeFromGzip_ValidGzip(t *testing.T) {
+	// Create test data and compress it
+	originalData := []byte(strings.Repeat("This is test data. ", 100))
+	compressed, _, err := CompressData(originalData, 0) // Force compression regardless of size
+	require.NoError(t, err, "Compression should succeed")
+
+	// Get uncompressed size from ISIZE field
+	uncompressedSize, err := GetUncompressedSizeFromGzip(compressed)
+
+	require.NoError(t, err, "GetUncompressedSizeFromGzip should not error on valid gzip")
+	require.Equal(t, uint32(len(originalData)), uncompressedSize, "ISIZE should match original data size")
+}
+
+func TestGetUncompressedSizeFromGzip_LargePayload(t *testing.T) {
+	// Test with large payload (similar to debug_traceTransaction responses)
+	largePayload := []byte(strings.Repeat("0x", 2000000)) // ~4MB
+	compressed, _, err := CompressData(largePayload, CompressionThreshold)
+	require.NoError(t, err, "Compression should succeed")
+
+	// Get uncompressed size from ISIZE field
+	uncompressedSize, err := GetUncompressedSizeFromGzip(compressed)
+
+	require.NoError(t, err, "GetUncompressedSizeFromGzip should not error on large gzip")
+	require.Equal(t, uint32(len(largePayload)), uncompressedSize, "ISIZE should match original large data size")
+}
+
+func TestGetUncompressedSizeFromGzip_TooShort(t *testing.T) {
+	// Test with data too short to contain ISIZE field
+	shortData := []byte{0x1f, 0x8b} // Only 2 bytes (gzip magic number)
+
+	uncompressedSize, err := GetUncompressedSizeFromGzip(shortData)
+
+	require.Error(t, err, "GetUncompressedSizeFromGzip should error on data too short")
+	require.Contains(t, err.Error(), "too short", "Error message should mention data is too short")
+	require.Equal(t, uint32(0), uncompressedSize, "Uncompressed size should be 0 on error")
+}
+
+func TestGetUncompressedSizeFromGzip_EmptyData(t *testing.T) {
+	// Test with empty data
+	emptyData := []byte{}
+
+	uncompressedSize, err := GetUncompressedSizeFromGzip(emptyData)
+
+	require.Error(t, err, "GetUncompressedSizeFromGzip should error on empty data")
+	require.Equal(t, uint32(0), uncompressedSize, "Uncompressed size should be 0 on error")
+}
+
+func TestGetUncompressedSizeFromGzip_InvalidGzip(t *testing.T) {
+	// Test with invalid gzip data (but long enough to have 4 bytes)
+	invalidData := []byte{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+	// This should still read the ISIZE field (last 4 bytes) even if gzip is invalid
+	// The function doesn't validate gzip format, just reads the footer
+	uncompressedSize, err := GetUncompressedSizeFromGzip(invalidData)
+
+	require.NoError(t, err, "GetUncompressedSizeFromGzip should not error on invalid gzip (it just reads footer)")
+	// The value might not be meaningful, but the function should not error
+	require.GreaterOrEqual(t, uncompressedSize, uint32(0), "ISIZE should be a valid uint32")
+}
+
 func TestCompressData_OneByteAboveThreshold(t *testing.T) {
 	// Test data one byte above threshold
 	data := []byte(strings.Repeat("a", CompressionThreshold+1))
