@@ -318,29 +318,32 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 }
 
 type JsonRPCChainListener struct {
-	endpoint                      *lavasession.RPCEndpoint
-	relaySender                   RelaySender
-	healthReporter                HealthReporter
-	logger                        *metrics.RPCConsumerLogs
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
-	listeningAddress              string
-	websocketConnectionLimiter    *WebsocketConnectionLimiter
+	endpoint                   *lavasession.RPCEndpoint
+	relaySender                RelaySender
+	healthReporter             HealthReporter
+	logger                     *metrics.RPCConsumerLogs
+	refererData                *RefererData
+	wsSubscriptionManager      WSSubscriptionManager
+	listeningAddress           string
+	websocketConnectionLimiter *WebsocketConnectionLimiter
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
 func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	refererData *RefererData,
+	wsSubscriptionManager WSSubscriptionManager,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
-		endpoint:                      listenEndpoint,
-		relaySender:                   relaySender,
-		healthReporter:                healthReporter,
-		logger:                        rpcConsumerLogs,
-		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
-		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
+		endpoint:                   listenEndpoint,
+		relaySender:                relaySender,
+		healthReporter:             healthReporter,
+		logger:                     rpcConsumerLogs,
+		refererData:                refererData,
+		wsSubscriptionManager:      wsSubscriptionManager,
+		websocketConnectionLimiter: &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -387,17 +390,19 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
-			WebsocketConn:                 websocketConn,
-			RpcConsumerLogs:               apil.logger,
-			CmdFlags:                      cmdFlags,
-			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
-			ChainID:                       chainID,
-			ApiInterface:                  apiInterface,
-			ConnectionType:                fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RelaySender:                   apil.relaySender,
-			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
-			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
-			headerRateLimit:               uint64(rateLimit),
+			WebsocketConn:           websocketConn,
+			RpcConsumerLogs:         apil.logger,
+			RefererMatchString:      refererMatchString,
+			CmdFlags:                cmdFlags,
+			RelayMsgLogMaxChars:     relayMsgLogMaxChars,
+			ChainID:                 chainID,
+			ApiInterface:            apiInterface,
+			ConnectionType:          fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:             apil.refererData,
+			RelaySender:             apil.relaySender,
+			WsSubscriptionManager:   apil.wsSubscriptionManager,
+			WebsocketConnectionUID:  strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:         uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

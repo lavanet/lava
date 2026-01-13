@@ -42,7 +42,8 @@ func NewChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	refererData *RefererData,
+	wsSubscriptionManager WSSubscriptionManager,
 ) (ChainListener, error) {
 	if listenEndpoint.NetworkAddress == INTERNAL_ADDRESS {
 		utils.LavaFormatDebug("skipping chain listener for internal address")
@@ -50,9 +51,9 @@ func NewChainListener(
 	}
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, consumerWsSubscriptionManager), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, wsSubscriptionManager), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, consumerWsSubscriptionManager), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, wsSubscriptionManager), nil
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
