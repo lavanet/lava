@@ -333,12 +333,12 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponseBytes("http in/out", false, http.MethodPost, path, requestBody, reply.Data, msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response and add metric for after provider processing
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		err = addHeadersAndSend(fiberCtx, reply.GetMetadata(), reply.Data)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
@@ -417,10 +417,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponseBytes("http in/out", false, http.MethodGet, path, "", reply.Data, msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		err = addHeadersAndSend(fiberCtx, reply.GetMetadata(), reply.Data)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err

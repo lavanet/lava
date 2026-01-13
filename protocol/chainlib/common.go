@@ -202,7 +202,23 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 		c.Set(value.Name, value.Value)
 	}
 
-	return c.SendString(data)
+	// Use fasthttp's SetBodyString which is more efficient than Fiber's SendString
+	c.Response().SetBodyString(data)
+	return nil
+}
+
+// addHeadersAndSend sends bytes directly without copying to internal buffer.
+// Uses fasthttp's SetBodyRaw to avoid allocation overhead.
+// IMPORTANT: The data slice must remain valid until the response is sent.
+func addHeadersAndSend(c *fiber.Ctx, metaData []pairingtypes.Metadata, data []byte) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	// Use SetBodyRaw to avoid copying data to internal buffer
+	// This is safe because the reply.Data is valid for the duration of the request
+	c.Response().SetBodyRaw(data)
+	return nil
 }
 
 func convertToJsonError(errorMsg string) string {

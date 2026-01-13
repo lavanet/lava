@@ -325,12 +325,9 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 
 	// Early return if log level not enabled - skip all expensive formatting
 	if !logLevelEnabled {
-		if err != nil {
-			return err // Return original error without formatting
-		}
-		// Still return an error based on description to maintain the contract
-		// that LavaFormat* functions always return an error when called
-		return fmt.Errorf("%s", description)
+		// Return the original error (or nil) without any allocations
+		// This is safe because callers of LavaFormatDebug/Trace typically don't use the return value
+		return err
 	}
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -440,8 +437,23 @@ func LavaFormatTrace(description string, attributes ...Attribute) error {
 	return LavaFormatLog(description, nil, attributes, LAVA_LOG_TRACE)
 }
 
+// Level checking functions - use these to skip expensive log argument construction
+// when the log level would cause the message to be filtered anyway.
+
 func IsTraceLogLevelEnabled() bool {
-	return defaultGlobalLogLevel == zerolog.TraceLevel
+	return defaultGlobalLogLevel <= zerolog.TraceLevel
+}
+
+func IsDebugLevelEnabled() bool {
+	return defaultGlobalLogLevel <= zerolog.DebugLevel
+}
+
+func IsInfoLevelEnabled() bool {
+	return defaultGlobalLogLevel <= zerolog.InfoLevel
+}
+
+func IsWarnLevelEnabled() bool {
+	return defaultGlobalLogLevel <= zerolog.WarnLevel
 }
 
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {

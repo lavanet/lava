@@ -502,13 +502,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponseBytes("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, reply.Data, msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		response := string(reply.Data)
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSend(fiberCtx, reply.GetMetadata(), reply.Data)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
@@ -572,14 +571,13 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			// Return error json response
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
-		response := string(reply.Data)
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", response, msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponseBytes("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", reply.Data, msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSend(fiberCtx, reply.GetMetadata(), reply.Data)
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err

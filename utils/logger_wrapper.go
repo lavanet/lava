@@ -27,9 +27,17 @@ func (lw LoggerWrapper) Warningf(msg string, extraInfo ...interface{}) {
 }
 
 func (lw LoggerWrapper) Infof(msg string, extraInfo ...interface{}) {
+	// Check level before constructing attributes to avoid allocations
+	if !IsInfoLevelEnabled() {
+		return
+	}
 	LavaFormatInfo(lw.LoggerName+msg, lw.getAttributes(extraInfo)...)
 }
 
 func (lw LoggerWrapper) Debugf(msg string, extraInfo ...interface{}) {
+	// Check level before constructing attributes to avoid allocations
+	if !IsDebugLevelEnabled() {
+		return
+	}
 	LavaFormatDebug(lw.LoggerName+msg, lw.getAttributes(extraInfo)...)
 }
