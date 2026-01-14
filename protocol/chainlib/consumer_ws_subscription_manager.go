@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -362,7 +363,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
-			utils.LogAttr("reply", string(reply.Data)),
+			utils.LogAttr("reply", parser.CapStringLen(string(reply.Data))),
 		)
 	}
 
