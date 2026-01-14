@@ -39,9 +39,12 @@ type directActiveSubscription struct {
 	upstreamSubscription *rpcclient.ClientSubscription
 	upstreamID           string // ID returned by upstream node
 
-	// Router-generated info
-	routerID     string // ID returned to clients
-	hashedParams string // Hash of subscription parameters
+	// Router-generated info - each client gets their own router ID
+	// that maps to the shared upstream ID. This enables proper deduplication
+	// where multiple clients can share one upstream subscription while each
+	// having their own unique subscription ID for unsubscribe operations.
+	clientRouterIDs map[string]string // clientKey -> routerID
+	hashedParams    string            // Hash of subscription parameters
 
 	// Subscription params for restoration after reconnect
 	subscriptionParams []byte // Original subscription params (JSON)
@@ -405,6 +408,10 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		return nil, nil, utils.LavaFormatError("could not marshal params", err)
 	}
 
+	// Extract the request ID from the client's message - required for JSON-RPC 2.0 compliance
+	// The response ID must match the request ID exactly
+	requestID := extractRequestID(protocolMessage.RelayPrivateData().Data)
+
 	clientKey := dwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	utils.LavaFormatTrace("DirectWS: request to start subscription",
@@ -475,7 +482,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	go dwsm.metricsManager.SetWsSubscriptionRequestMetric(dwsm.chainID, dwsm.apiInterface)
 
 	// Check for existing active subscription
-	existingReply, joined := dwsm.checkForActiveSubscriptionAndConnect(ctx, hashedParams, clientKey, safeChannelSender)
+	existingReply, joined := dwsm.checkForActiveSubscriptionAndConnect(ctx, hashedParams, clientKey, safeChannelSender, requestID)
 	if existingReply != nil {
 		if joined {
 			go dwsm.metricsManager.SetDuplicatedWsSubscriptionRequestMetric(dwsm.chainID, dwsm.apiInterface)
@@ -493,7 +500,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 			utils.LavaFormatTrace("DirectWS: waiting for pending subscription")
 			success := <-pendingChan
 			if success {
-				existingReply, joined := dwsm.checkForActiveSubscriptionAndConnect(ctx, hashedParams, clientKey, safeChannelSender)
+				existingReply, joined := dwsm.checkForActiveSubscriptionAndConnect(ctx, hashedParams, clientKey, safeChannelSender, requestID)
 				if existingReply != nil {
 					if joined {
 						return existingReply, repliesChannel, nil
@@ -600,7 +607,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		upstreamConnection:   conn, // Track which connection this subscription uses
 		upstreamSubscription: upstreamSub,
 		upstreamID:           upstreamID,
-		routerID:             routerID,
+		clientRouterIDs:      make(map[string]string),
 		hashedParams:         hashedParams,
 		subscriptionParams:   subscriptionParams, // Store for restoration after reconnect
 		connectedClients:     make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
@@ -611,6 +618,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		messagesChan:         msgChan, // Use the channel from upstream subscription
 	}
 	activeSub.connectedClients[clientKey] = safeChannelSender
+	activeSub.clientRouterIDs[clientKey] = routerID
 
 	dwsm.lock.Lock()
 	dwsm.activeSubscriptions[hashedParams] = activeSub
@@ -653,6 +661,16 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 ) error {
 	clientKey := dwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
+	// Check unsubscribe rate limiting
+	if !dwsm.rateLimiter.AllowUnsubscribe(clientKey) {
+		utils.LavaFormatWarning("DirectWS: client unsubscribe rate limit exceeded", nil,
+			utils.LogAttr("clientKey", clientKey),
+			utils.LogAttr("limit", dwsm.config.UnsubscribesPerMinutePerClient),
+		)
+		return fmt.Errorf("unsubscribe rate limit exceeded: max %d unsubscribes per minute",
+			dwsm.config.UnsubscribesPerMinutePerClient)
+	}
+
 	// Extract subscription ID from the unsubscribe message
 	// The params contain the subscription ID to unsubscribe from
 	routerSubID, err := dwsm.extractSubscriptionIDFromUnsubscribe(protocolMessage)
@@ -665,34 +683,52 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 		utils.LogAttr("clientKey", clientKey),
 	)
 
-	upstreamID, lastClient := dwsm.idMapper.RemoveMapping(routerSubID)
-	if upstreamID == "" {
-		return common.SubscriptionNotFoundError
-	}
-
+	// SECURITY: Validate that the router ID belongs to the calling client BEFORE removing it.
+	// This prevents a malicious client from unsubscribing using another user's router ID.
 	dwsm.lock.Lock()
 	defer dwsm.lock.Unlock()
 
-	// Find the active subscription by upstream ID
+	// First, find the subscription this client is connected to and verify ownership
 	var activeSub *directActiveSubscription
 	var hashedParams string
+	var clientOwnsRouterID bool
+
 	for hp, sub := range dwsm.activeSubscriptions {
-		if sub.upstreamID == upstreamID {
-			activeSub = sub
-			hashedParams = hp
-			break
+		if ownedRouterID, exists := sub.clientRouterIDs[clientKey]; exists {
+			// Found a subscription this client is connected to
+			if ownedRouterID == routerSubID {
+				// Client is trying to unsubscribe from their own router ID - valid
+				activeSub = sub
+				hashedParams = hp
+				clientOwnsRouterID = true
+				break
+			}
 		}
 	}
 
-	if activeSub == nil {
-		return nil // Already cleaned up
+	if !clientOwnsRouterID {
+		// Either the subscription doesn't exist or the client is trying to unsubscribe
+		// using someone else's router ID - reject the request
+		utils.LavaFormatWarning("DirectWS: unsubscribe rejected - client does not own router ID", nil,
+			utils.LogAttr("routerSubID", routerSubID),
+			utils.LogAttr("clientKey", clientKey),
+		)
+		return common.SubscriptionNotFoundError
 	}
 
-	// Remove this client
+	if activeSub == nil {
+		return common.SubscriptionNotFoundError
+	}
+
+	// Now that ownership is verified, remove the mapping
+	_, lastClient := dwsm.idMapper.RemoveMapping(routerSubID)
+
+	// Remove this client and their router ID
 	if sender, ok := activeSub.connectedClients[clientKey]; ok {
 		sender.Close()
 		delete(activeSub.connectedClients, clientKey)
 	}
+	delete(activeSub.clientRouterIDs, clientKey)
 
 	if clientSubs, ok := dwsm.connectedClients[clientKey]; ok {
 		delete(clientSubs, hashedParams)
@@ -728,6 +764,12 @@ func (dwsm *DirectWSSubscriptionManager) UnsubscribeAll(
 ) error {
 	clientKey := dwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
+	// Note: UnsubscribeAll is NOT rate limited because:
+	// 1. It's a cleanup/teardown operation called when a WebSocket connection closes
+	// 2. Rate limiting could leave orphaned subscriptions consuming resources
+	// 3. It's a single batch operation, not a repeated action like individual unsubscribes
+	// The rate limiter's AllowUnsubscribe is designed for individual eth_unsubscribe calls.
+
 	utils.LavaFormatTrace("DirectWS: unsubscribe all request",
 		utils.LogAttr("clientKey", clientKey),
 	)
@@ -747,14 +789,22 @@ func (dwsm *DirectWSSubscriptionManager) UnsubscribeAll(
 			continue
 		}
 
+		// Get this client's router ID before removing
+		clientRouterID := activeSub.clientRouterIDs[clientKey]
+
 		// Close the client's channel
 		if sender, ok := activeSub.connectedClients[clientKey]; ok {
 			sender.Close()
 			delete(activeSub.connectedClients, clientKey)
 		}
 
-		// Remove router ID mapping
-		dwsm.idMapper.RemoveMapping(activeSub.routerID)
+		// Remove client's router ID from subscription
+		delete(activeSub.clientRouterIDs, clientKey)
+
+		// Remove this client's router ID mapping
+		if clientRouterID != "" {
+			dwsm.idMapper.RemoveMapping(clientRouterID)
+		}
 
 		// If no more clients, close upstream subscription
 		if len(activeSub.connectedClients) == 0 {
@@ -824,12 +874,18 @@ func (dwsm *DirectWSSubscriptionManager) extractSubscriptionIDFromUnsubscribe(pr
 	return "", fmt.Errorf("could not extract subscription ID from params: %v", params)
 }
 
-// checkForActiveSubscriptionAndConnect checks if there's an active subscription and connects the client
+// checkForActiveSubscriptionAndConnect checks if there's an active subscription and connects the client.
+// If joining an existing subscription, generates a unique router ID for this client and registers it
+// with the ID mapper. This ensures each client has their own subscription ID that maps to the
+// shared upstream subscription, enabling proper unsubscribe behavior with deduplication.
+// The requestID parameter is the client's original JSON-RPC request ID, which must be included
+// in the response per JSON-RPC 2.0 spec.
 func (dwsm *DirectWSSubscriptionManager) checkForActiveSubscriptionAndConnect(
 	ctx context.Context,
 	hashedParams string,
 	clientKey string,
 	safeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply],
+	requestID json.RawMessage,
 ) (*pairingtypes.RelayReply, bool) {
 	dwsm.lock.Lock()
 	defer dwsm.lock.Unlock()
@@ -839,24 +895,46 @@ func (dwsm *DirectWSSubscriptionManager) checkForActiveSubscriptionAndConnect(
 		return nil, false
 	}
 
-	// Check if client is already connected
-	if _, exists := activeSub.connectedClients[clientKey]; exists {
-		return activeSub.firstReply, false // Already connected, no new channel needed
+	// Check if client is already connected - return their existing router ID's reply
+	if existingRouterID, exists := activeSub.clientRouterIDs[clientKey]; exists {
+		// Create reply with client's existing router ID and their request ID
+		replyData, err := createSubscriptionReplyFromRouterID(existingRouterID, requestID)
+		if err != nil {
+			utils.LavaFormatWarning("DirectWS: failed to create reply for existing client", err)
+			return activeSub.firstReply, false
+		}
+		return &pairingtypes.RelayReply{Data: replyData}, false
 	}
 
-	// Add client to existing subscription
+	// Generate a unique router ID for this joining client
+	clientRouterID := dwsm.idMapper.GenerateRouterID(clientKey)
+
+	// Register the mapping: this client's router ID -> shared upstream ID
+	dwsm.idMapper.RegisterMapping(clientRouterID, activeSub.upstreamID)
+
+	// Add client to existing subscription with their unique router ID
 	activeSub.connectedClients[clientKey] = safeChannelSender
+	activeSub.clientRouterIDs[clientKey] = clientRouterID
 	if dwsm.connectedClients[clientKey] == nil {
 		dwsm.connectedClients[clientKey] = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
 	}
 	dwsm.connectedClients[clientKey][hashedParams] = safeChannelSender
 
-	utils.LavaFormatTrace("DirectWS: client joined existing subscription",
+	utils.LavaFormatTrace("DirectWS: client joined existing subscription with unique router ID",
 		utils.LogAttr("clientKey", clientKey),
+		utils.LogAttr("clientRouterID", clientRouterID),
+		utils.LogAttr("upstreamID", activeSub.upstreamID),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
-	return activeSub.firstReply, true // Joined existing subscription
+	// Create first reply with this client's unique router ID and their request ID
+	replyData, err := createSubscriptionReplyFromRouterID(clientRouterID, requestID)
+	if err != nil {
+		utils.LavaFormatWarning("DirectWS: failed to create reply for joining client", err)
+		return activeSub.firstReply, true // Fallback to original reply
+	}
+
+	return &pairingtypes.RelayReply{Data: replyData}, true // Joined existing subscription
 }
 
 // checkAndAddPendingSubscription checks for pending subscriptions
@@ -976,34 +1054,47 @@ func (dwsm *DirectWSSubscriptionManager) listenForUpstreamMessages(
 	}
 }
 
-// routeMessageToClients routes an upstream message to all connected clients
+// routeMessageToClients routes an upstream message to all connected clients.
+// Each client receives the message with their unique subscription ID (router ID)
+// rewritten in the notification params. This enables proper deduplication where
+// clients can unsubscribe individually without affecting other clients.
 func (dwsm *DirectWSSubscriptionManager) routeMessageToClients(
 	hashedParams string,
 	activeSub *directActiveSubscription,
 	msg *rpcclient.JsonrpcMessage,
 ) {
 	dwsm.lock.RLock()
-	clients := make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
-	for k, v := range activeSub.connectedClients {
-		clients[k] = v
+	// Copy client channels and their router IDs
+	type clientInfo struct {
+		sender   *common.SafeChannelSender[*pairingtypes.RelayReply]
+		routerID string
+	}
+	clients := make(map[string]clientInfo)
+	for clientKey, sender := range activeSub.connectedClients {
+		routerID := activeSub.clientRouterIDs[clientKey]
+		clients[clientKey] = clientInfo{sender: sender, routerID: routerID}
 	}
 	dwsm.lock.RUnlock()
 
-	// Rewrite subscription ID in the message
-	rewrittenMsg, err := rewriteSubscriptionID(msg, activeSub.routerID)
-	if err != nil {
-		utils.LavaFormatWarning("DirectWS: failed to rewrite subscription ID", err)
-		return
-	}
+	// Rewrite subscription ID per-client and send
+	for clientKey, info := range clients {
+		// Rewrite the message with this client's unique router ID
+		rewrittenMsg, err := rewriteSubscriptionID(msg, info.routerID)
+		if err != nil {
+			utils.LavaFormatWarning("DirectWS: failed to rewrite subscription ID for client", err,
+				utils.LogAttr("clientKey", clientKey),
+			)
+			continue
+		}
 
-	reply := &pairingtypes.RelayReply{
-		Data: rewrittenMsg,
-	}
+		reply := &pairingtypes.RelayReply{
+			Data: rewrittenMsg,
+		}
 
-	for clientKey, sender := range clients {
-		sender.Send(reply)
-		utils.LavaFormatTrace("DirectWS: sent message to client",
+		info.sender.Send(reply)
+		utils.LavaFormatTrace("DirectWS: sent message to client with unique router ID",
 			utils.LogAttr("clientKey", clientKey),
+			utils.LogAttr("routerID", info.routerID),
 		)
 	}
 }
@@ -1025,7 +1116,7 @@ func (dwsm *DirectWSSubscriptionManager) handleUpstreamDisconnect(
 
 	utils.LavaFormatInfo("DirectWS: handling upstream disconnect",
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		utils.LogAttr("routerID", activeSub.routerID),
+		utils.LogAttr("connectedClients", len(activeSub.clientRouterIDs)),
 	)
 
 	// Try to reconnect the WebSocket connection
@@ -1066,31 +1157,52 @@ func (dwsm *DirectWSSubscriptionManager) handleUpstreamDisconnect(
 	// Extract new upstream subscription ID
 	newUpstreamID := extractSubscriptionID(firstMsg)
 
-	// Update the ID mapping and message channel
+	// Increment subscription count on the NEW connection (matching initial creation behavior)
+	conn.IncrementSubscriptions()
+
+	// Update the ID mapping, message channel, and connection bookkeeping
 	dwsm.lock.Lock()
 	oldUpstreamID := activeSub.upstreamID
+	oldConnection := activeSub.upstreamConnection // Keep reference to old connection for cleanup
+
 	activeSub.upstreamSubscription = newUpstreamSub
 	activeSub.upstreamID = newUpstreamID
-	activeSub.messagesChan = newMsgChan // Update to new channel from upstream
+	activeSub.upstreamConnection = conn    // Update to new connection
+	activeSub.messagesChan = newMsgChan    // Update to new channel from upstream
+
+	// Collect all client router IDs to re-register
+	clientRouterIDs := make([]string, 0, len(activeSub.clientRouterIDs))
+	for _, routerID := range activeSub.clientRouterIDs {
+		clientRouterIDs = append(clientRouterIDs, routerID)
+	}
 	dwsm.lock.Unlock()
 
-	// Update the ID mapper - remove old mapping and add new one
+	// Notify the pool that the OLD connection no longer has this subscription
+	// This decrements the subscription count on the stale connection
+	if oldConnection != nil && oldConnection != conn {
+		activeSub.upstreamPool.NotifySubscriptionRemoved(oldConnection)
+	}
+
+	// Update the ID mapper - remove old mappings and re-register all client router IDs
+	// to the new upstream ID
 	dwsm.idMapper.RemoveAllForUpstream(oldUpstreamID)
-	dwsm.idMapper.RegisterMapping(activeSub.routerID, newUpstreamID)
+	for _, routerID := range clientRouterIDs {
+		dwsm.idMapper.RegisterMapping(routerID, newUpstreamID)
+	}
 
 	utils.LavaFormatInfo("DirectWS: subscription restored successfully",
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		utils.LogAttr("routerID", activeSub.routerID),
 		utils.LogAttr("oldUpstreamID", oldUpstreamID),
 		utils.LogAttr("newUpstreamID", newUpstreamID),
-		utils.LogAttr("connectedClients", len(activeSub.connectedClients)),
+		utils.LogAttr("connectedClients", len(clientRouterIDs)),
 	)
 
 	// Start listening for messages on the new subscription
 	go dwsm.listenForUpstreamMessages(activeSub.ctx, hashedParams, activeSub, newUpstreamSub)
 }
 
-// handleClientDisconnect handles client WebSocket disconnection
+// handleClientDisconnect handles client WebSocket disconnection.
+// It removes the client's router ID mapping and cleans up the subscription if this was the last client.
 func (dwsm *DirectWSSubscriptionManager) handleClientDisconnect(
 	ctx context.Context,
 	clientKey string,
@@ -1112,7 +1224,18 @@ func (dwsm *DirectWSSubscriptionManager) handleClientDisconnect(
 		return
 	}
 
+	// Get the client's router ID before removing
+	clientRouterID := activeSub.clientRouterIDs[clientKey]
+
+	// Remove client from connected clients and router IDs
 	delete(activeSub.connectedClients, clientKey)
+	delete(activeSub.clientRouterIDs, clientKey)
+
+	// Remove the client's router ID mapping from the ID mapper
+	if clientRouterID != "" {
+		dwsm.idMapper.RemoveMapping(clientRouterID)
+	}
+
 	if clientSubs, ok := dwsm.connectedClients[clientKey]; ok {
 		delete(clientSubs, hashedParams)
 		if len(clientSubs) == 0 {
@@ -1216,6 +1339,23 @@ func (dwsm *DirectWSSubscriptionManager) Close() {
 
 // Helper functions
 
+// extractRequestID extracts the JSON-RPC request ID from raw request data.
+// This is needed because GenericMessage interface doesn't expose GetID().
+// Returns the raw JSON representation of the ID to preserve its type (string, number, null).
+func extractRequestID(data []byte) json.RawMessage {
+	if len(data) == 0 {
+		return json.RawMessage("1") // Default fallback
+	}
+
+	var req struct {
+		ID json.RawMessage `json:"id"`
+	}
+	if err := json.Unmarshal(data, &req); err != nil || req.ID == nil {
+		return json.RawMessage("1") // Default fallback
+	}
+	return req.ID
+}
+
 // extractSubscriptionID extracts the subscription ID from the first response
 func extractSubscriptionID(msg *rpcclient.JsonrpcMessage) string {
 	if msg == nil || msg.Result == nil {
@@ -1238,6 +1378,21 @@ func createSubscriptionReply(routerID string, originalMsg *rpcclient.JsonrpcMess
 	response := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"id":      originalMsg.ID,
+		"result":  routerID,
+	}
+
+	return json.Marshal(response)
+}
+
+// createSubscriptionReplyFromRouterID creates a subscription reply with the router ID and matching request ID.
+// Used when a client joins an existing subscription and needs their unique router ID in the response.
+// The requestID must match the client's original eth_subscribe request per JSON-RPC 2.0 spec.
+func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMessage) ([]byte, error) {
+	// Create response with the client's unique router ID and their original request ID
+	// JSON-RPC 2.0 requires the response ID to match the request ID exactly
+	response := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      json.RawMessage(requestID), // Use client's actual request ID
 		"result":  routerID,
 	}
 
