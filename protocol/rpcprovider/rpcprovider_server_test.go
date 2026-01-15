@@ -1,6 +1,7 @@
 package rpcprovider
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -8,7 +9,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -332,4 +336,97 @@ type mockChainMessageForProviderHeader struct {
 
 func (m *mockChainMessageForProviderHeader) AppendHeader(name string, value string) {
 	*m.headers = append(*m.headers, headerPair{name: name, value: value})
+}
+
+func TestExtractConsumerAddressWithSkipSigning(t *testing.T) {
+	ctx := context.Background()
+	rpcps := &RPCProviderServer{}
+
+	// Create a valid relay session with signature
+	consumer_sk, consumer_address := sigs.GenerateFloatingKey()
+	relaySession := &pairingtypes.RelaySession{
+		SpecId:      "LAV1",
+		ContentHash: []byte("test_hash"),
+		SessionId:   123,
+		CuSum:       100,
+		Provider:    "lava@test_provider",
+		RelayNum:    1,
+		QosReport:   &pairingtypes.QualityOfServiceReport{},
+		Epoch:       100,
+	}
+
+	// Sign the relay session
+	sig, err := sigs.Sign(consumer_sk, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	// Test with SkipRelaySigning disabled (normal behavior)
+	originalSkipRelaySigning := lavaprotocol.SkipRelaySigning
+	lavaprotocol.SkipRelaySigning = false
+	defer func() { lavaprotocol.SkipRelaySigning = originalSkipRelaySigning }()
+
+	extractedAddress, err := rpcps.ExtractConsumerAddress(ctx, relaySession)
+	require.NoError(t, err)
+	require.Equal(t, consumer_address, extractedAddress, "Should extract correct consumer address from signed session")
+
+	// Test with SkipRelaySigning enabled
+	lavaprotocol.SkipRelaySigning = true
+
+	extractedAddress, err = rpcps.ExtractConsumerAddress(ctx, relaySession)
+	require.NoError(t, err)
+	// Should return placeholder address when SkipRelaySigning is enabled
+	expectedPlaceholder, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
+	require.NoError(t, err)
+	require.Equal(t, expectedPlaceholder, extractedAddress, "Should return placeholder address when SkipRelaySigning is enabled")
+}
+
+func TestExtractConsumerAddressWithBadge(t *testing.T) {
+	ctx := context.Background()
+	rpcps := &RPCProviderServer{}
+
+	// Create a relay session with badge
+	badge_sk, badge_address := sigs.GenerateFloatingKey()
+	badge := &pairingtypes.Badge{
+		CuAllocation: 1000,
+		Epoch:        100,
+		Address:      badge_address.String(),
+		LavaChainId:  "lava",
+	}
+
+	// Sign the badge (Badge uses ProjectSig field, not Sig)
+	badgeSig, err := sigs.Sign(badge_sk, *badge)
+	require.NoError(t, err)
+	badge.ProjectSig = badgeSig
+
+	// Create a signed relay session with the badge
+	relaySession := &pairingtypes.RelaySession{
+		SpecId:      "LAV1",
+		SessionId:   123,
+		Badge:       badge,
+		LavaChainId: "lava",
+		Epoch:       100,
+	}
+
+	// Sign the relay session itself (needed for ExtractSignerAddress to work)
+	relaySessionSig, err := sigs.Sign(badge_sk, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = relaySessionSig
+
+	// Test with SkipRelaySigning disabled (normal behavior)
+	originalSkipRelaySigning := lavaprotocol.SkipRelaySigning
+	lavaprotocol.SkipRelaySigning = false
+	defer func() { lavaprotocol.SkipRelaySigning = originalSkipRelaySigning }()
+
+	extractedAddress, err := rpcps.ExtractConsumerAddress(ctx, relaySession)
+	require.NoError(t, err)
+	require.Equal(t, badge_address, extractedAddress, "Should extract badge address when badge is present")
+
+	// Test with SkipRelaySigning enabled (should still return placeholder)
+	lavaprotocol.SkipRelaySigning = true
+
+	extractedAddress, err = rpcps.ExtractConsumerAddress(ctx, relaySession)
+	require.NoError(t, err)
+	expectedPlaceholder, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
+	require.NoError(t, err)
+	require.Equal(t, expectedPlaceholder, extractedAddress, "Should return placeholder address when SkipRelaySigning is enabled, even with badge")
 }
