@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -82,6 +83,40 @@ func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
 	return 0 // Method doesn't return block info or couldn't parse
 }
 
+// extractBlockHeightFromGRPCResponse extracts block height from gRPC response using spec-driven parsing.
+// This follows the same pattern as ChainFetcher.FetchLatestBlockNum() for consistency.
+// Returns 0 if parsing fails or no block height is available in the response.
+func extractBlockHeightFromGRPCResponse(
+	responseData []byte,
+	chainMessage chainlib.ChainMessage,
+) int64 {
+	// Get parse directive from chain message (contains spec-defined parsing rules)
+	parseDirective := chainMessage.GetParseDirective()
+	if parseDirective == nil {
+		return 0
+	}
+
+	// Format response for parsing using the chainMessage's RPC type
+	parserInput, err := chainlib.FormatResponseForParsing(
+		&pairingtypes.RelayReply{Data: responseData},
+		chainMessage,
+	)
+	if err != nil {
+		utils.LavaFormatTrace("failed to format gRPC response for block parsing",
+			utils.LogAttr("error", err))
+		return 0
+	}
+
+	// Parse block height using spec-driven rules (same as ChainFetcher)
+	parsedInput := parser.ParseBlockFromReply(
+		parserInput,
+		parseDirective.ResultParsing,
+		parseDirective.Parsers,
+	)
+
+	return parsedInput.GetBlock()
+}
+
 // sanitizeEndpointURL removes sensitive information (API keys, tokens) from URLs
 // Returns just the hostname, or a configured name if available
 func sanitizeEndpointURL(rawURL string) string {
@@ -121,6 +156,9 @@ func (d *DirectRPCRelaySender) SendDirectRelay(
 
 	case "rest":
 		return d.sendRESTRelay(ctx, chainMessage, relayTimeout)
+
+	case "grpc":
+		return d.sendGRPCRelay(ctx, chainMessage, relayTimeout)
 
 	default:
 		return nil, fmt.Errorf("unsupported API interface for direct RPC: %s", apiCollection.CollectionData.ApiInterface)
@@ -373,6 +411,140 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		utils.LogAttr("latency", latency),
 		utils.LogAttr("is_node_error", isNodeError),
 	)
+
+	return result, nil
+}
+
+// sendGRPCRelay handles gRPC requests (Phase 6 implementation)
+// Supports Cosmos SDK, Solana Geyser, Sui, Aptos, Flow, and other gRPC-based chains
+func (d *DirectRPCRelaySender) sendGRPCRelay(
+	ctx context.Context,
+	chainMessage chainlib.ChainMessage,
+	relayTimeout time.Duration,
+) (*common.RelayResult, error) {
+	// Apply per-endpoint timeout override
+	nodeUrl := d.directConnection.GetNodeUrl()
+	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
+	defer cancel()
+
+	// Get RPC message (contains the gRPC method path and request data)
+	rpcMessage := chainMessage.GetRPCMessage()
+
+	// For gRPC, cast to GrpcMessage to access the Msg field
+	grpcMessage, ok := rpcMessage.(*rpcInterfaceMessages.GrpcMessage)
+	if !ok {
+		return nil, fmt.Errorf("expected GrpcMessage for gRPC API, got %T", rpcMessage)
+	}
+
+	// For gRPC, the API name or GrpcMessage.Path contains the full method path
+	methodPath := grpcMessage.Path
+	if methodPath == "" {
+		methodPath = chainMessage.GetApi().Name
+	}
+	if methodPath == "" {
+		return nil, fmt.Errorf("gRPC method path not set")
+	}
+
+	// Get request data (can be JSON or binary proto)
+	requestData := grpcMessage.Msg
+
+	// Build headers with required gRPC method header
+	headers := make(map[string]string)
+	headers[lavasession.GRPCMethodHeader] = methodPath
+
+	// Add any additional headers from the RPC message
+	for _, meta := range grpcMessage.GetHeaders() {
+		if meta.Value != "" { // Empty value means delete (not applicable for gRPC)
+			headers[meta.Name] = meta.Value
+		}
+	}
+
+	// Use sanitized endpoint identifier for logging
+	endpointIdentifier := d.endpointName
+	if endpointIdentifier == "" {
+		endpointIdentifier = sanitizeEndpointURL(d.directConnection.GetURL())
+	}
+
+	utils.LavaFormatTrace("sending direct gRPC request",
+		utils.LogAttr("endpoint", endpointIdentifier),
+		utils.LogAttr("method", methodPath),
+		utils.LogAttr("timeout", relayTimeout),
+	)
+
+	// Send gRPC request via DirectRPCConnection
+	startTime := time.Now()
+	responseData, err := d.directConnection.SendRequest(requestCtx, requestData, headers)
+	latency := time.Since(startTime)
+
+	if err != nil {
+		utils.LavaFormatDebug("direct gRPC request failed",
+			utils.LogAttr("endpoint", endpointIdentifier),
+			utils.LogAttr("method", methodPath),
+			utils.LogAttr("error", err.Error()),
+			utils.LogAttr("latency", latency),
+		)
+
+		// Check if it's a gRPC status error
+		var grpcErr *lavasession.GRPCStatusError
+		if ok := err.(*lavasession.GRPCStatusError); ok != nil {
+			grpcErr = ok
+		}
+
+		if grpcErr != nil {
+			// gRPC error with status code - might contain valid error response
+			// The responseData may contain the error details in JSON format
+			return &common.RelayResult{
+				Reply: &pairingtypes.RelayReply{
+					Data: responseData, // Error response in JSON format
+				},
+				Finalized: true,
+				ProviderInfo: common.ProviderInfo{
+					ProviderAddress: endpointIdentifier,
+				},
+				IsNodeError: grpcErr.Code >= 13, // INTERNAL and above are node errors
+			}, nil
+		}
+
+		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+	}
+
+	utils.LavaFormatTrace("direct gRPC request succeeded",
+		utils.LogAttr("endpoint", endpointIdentifier),
+		utils.LogAttr("method", methodPath),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("response_size", len(responseData)),
+	)
+
+	// Check for errors in response using chainMessage
+	hasError, errorMessage := chainMessage.CheckResponseError(responseData, 200)
+	if hasError {
+		utils.LavaFormatDebug("gRPC response contains error",
+			utils.LogAttr("endpoint", endpointIdentifier),
+			utils.LogAttr("method", methodPath),
+			utils.LogAttr("error", errorMessage),
+		)
+	}
+
+	// Extract block height from gRPC response using spec-driven parsing (for QoS sync tracking)
+	latestBlockFromResponse := extractBlockHeightFromGRPCResponse(responseData, chainMessage)
+
+	// Build result
+	providerAddress := d.endpointName
+	if providerAddress == "" {
+		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
+	}
+
+	result := &common.RelayResult{
+		Reply: &pairingtypes.RelayReply{
+			Data:        responseData,
+			LatestBlock: latestBlockFromResponse,
+		},
+		Finalized: true,
+		ProviderInfo: common.ProviderInfo{
+			ProviderAddress: providerAddress,
+		},
+		IsNodeError: hasError,
+	}
 
 	return result, nil
 }

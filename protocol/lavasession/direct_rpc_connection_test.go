@@ -3,6 +3,7 @@ package lavasession
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/assert"
@@ -137,7 +138,8 @@ func TestWebSocketConnectionCreation(t *testing.T) {
 
 func TestGRPCConnectionCreation(t *testing.T) {
 	ctx := context.Background()
-	nodeUrl := common.NodeUrl{Url: "grpc://localhost:9090"}
+	// Use grpcs:// (secure) to avoid the allow-insecure requirement
+	nodeUrl := common.NodeUrl{Url: "grpcs://localhost:9090"}
 
 	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
 	require.NoError(t, err)
@@ -145,7 +147,28 @@ func TestGRPCConnectionCreation(t *testing.T) {
 
 	assert.Equal(t, DirectRPCProtocolGRPC, conn.GetProtocol())
 	assert.True(t, conn.IsHealthy())
-	assert.Equal(t, "grpc://localhost:9090", conn.GetURL())
+	assert.Equal(t, "grpcs://localhost:9090", conn.GetURL())
+
+	err = conn.Close()
+	assert.NoError(t, err)
+}
+
+func TestGRPCConnectionCreationInsecure(t *testing.T) {
+	ctx := context.Background()
+	// grpc:// (insecure) requires AllowInsecure: true
+	nodeUrl := common.NodeUrl{
+		Url: "grpc://localhost:9090",
+		GrpcConfig: common.GrpcConfig{
+			AllowInsecure: true,
+		},
+	}
+
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+
+	assert.Equal(t, DirectRPCProtocolGRPC, conn.GetProtocol())
+	assert.True(t, conn.IsHealthy())
 
 	err = conn.Close()
 	assert.NoError(t, err)
@@ -201,15 +224,103 @@ func TestWebSocketSendRequestNotImplemented(t *testing.T) {
 	assert.Contains(t, err.Error(), "WebSocket SendRequest not implemented")
 }
 
-func TestGRPCSendRequestNotImplemented(t *testing.T) {
+func TestGRPCConnectionURLValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		url           string
+		allowInsecure bool
+		wantErr       bool
+	}{
+		{
+			name:          "Valid grpcs URL",
+			url:           "grpcs://cosmos-grpc.polkachu.com:14990",
+			allowInsecure: false,
+			wantErr:       false,
+		},
+		{
+			name:          "gRPC URL with path",
+			url:           "grpcs://example.com:443/some/path",
+			allowInsecure: false,
+			wantErr:       false,
+		},
+		{
+			name:          "Insecure grpc with allow-insecure",
+			url:           "grpc://localhost:9090",
+			allowInsecure: true,
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			nodeUrl := common.NodeUrl{
+				Url: tt.url,
+				GrpcConfig: common.GrpcConfig{
+					AllowInsecure: tt.allowInsecure,
+				},
+			}
+
+			conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, conn)
+
+				grpcConn, ok := conn.(*GRPCDirectRPCConnection)
+				require.True(t, ok, "expected GRPCDirectRPCConnection type")
+				assert.Equal(t, DirectRPCProtocolGRPC, grpcConn.GetProtocol())
+				assert.True(t, grpcConn.IsHealthy())
+
+				err = conn.Close()
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGRPCConnectionSendRequestRequiresMethodHeader(t *testing.T) {
 	ctx := context.Background()
-	nodeUrl := common.NodeUrl{Url: "grpc://test.example.com"}
+	nodeUrl := common.NodeUrl{
+		Url: "grpcs://localhost:9090",
+	}
 
 	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
 	require.NoError(t, err)
 
-	// gRPC SendRequest should return not implemented error
-	_, err = conn.SendRequest(ctx, []byte("test"), nil)
+	// SendRequest without x-grpc-method header should fail
+	_, err = conn.SendRequest(ctx, []byte("{}"), nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "gRPC direct connections not yet implemented")
+	assert.Contains(t, err.Error(), GRPCMethodHeader)
+}
+
+func TestGRPCStatusError(t *testing.T) {
+	err := &GRPCStatusError{
+		Code:    14,
+		Message: "unavailable",
+	}
+
+	assert.Equal(t, "gRPC error 14: unavailable", err.Error())
+}
+
+func TestGRPCConnectionWithGrpcConfig(t *testing.T) {
+	ctx := context.Background()
+	nodeUrl := common.NodeUrl{
+		Url: "grpcs://cosmos-grpc.publicnode.com:443",
+		GrpcConfig: common.GrpcConfig{
+			DescriptorSource:  common.GrpcDescriptorSourceReflection,
+			ReflectionTimeout: 2 * time.Second,
+		},
+	}
+
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+
+	assert.Equal(t, DirectRPCProtocolGRPC, conn.GetProtocol())
+
+	err = conn.Close()
+	assert.NoError(t, err)
 }
