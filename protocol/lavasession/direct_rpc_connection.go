@@ -40,14 +40,33 @@ const (
 	DirectRPCProtocolGRPC  DirectRPCProtocol = "grpc"
 )
 
+// DirectRPCResponse contains the response from a direct RPC request.
+// This unified response type captures both data and metadata from all protocols
+// (HTTP headers, gRPC metadata, etc.) for consistent handling.
+type DirectRPCResponse struct {
+	// Data contains the raw response bytes (JSON, protobuf, etc.)
+	Data []byte
+
+	// Metadata contains response headers/metadata from the underlying protocol.
+	// For HTTP: response headers (Content-Type, X-Request-Id, etc.)
+	// For gRPC: response metadata (trailers and headers)
+	// For WebSocket: typically empty (metadata is per-message)
+	Metadata map[string][]string
+
+	// StatusCode contains the HTTP status code (for HTTP/REST) or gRPC status code.
+	// For successful gRPC calls, this will be 200 (OK equivalent).
+	StatusCode int
+}
+
 // DirectRPCConnection represents a direct connection to an RPC endpoint
 // (no Lava provider-relay protocol involved)
 type DirectRPCConnection interface {
-	// SendRequest sends the already-built raw request bytes and returns raw response bytes.
+	// SendRequest sends the already-built raw request bytes and returns a response
+	// containing both data and metadata.
 	//
 	// IMPORTANT: DirectRPCConnection is transport-only. It must not need to interpret JSON-RPC
 	// method/params or chain semantics. Those remain in chainParser + chainMessage.
-	SendRequest(ctx context.Context, data []byte, headers map[string]string) ([]byte, error)
+	SendRequest(ctx context.Context, data []byte, headers map[string]string) (*DirectRPCResponse, error)
 
 	// GetProtocol returns the transport protocol being used
 	GetProtocol() DirectRPCProtocol
@@ -226,7 +245,7 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 	ctx context.Context,
 	data []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) (*DirectRPCResponse, error) {
 	// NOTE: for JSON-RPC we use POST with a JSON body.
 	// For REST-style APIs (e.g. Cosmos LCD), the chain parser must provide the correct URL path and HTTP method
 	// (GET/POST/etc.). This transport layer sends bytes and returns bytes; method selection is driven by chain spec.
@@ -255,19 +274,26 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
 
+	// Build response with metadata (HTTP headers)
+	response := &DirectRPCResponse{
+		Data:       body,
+		Metadata:   resp.Header, // http.Header is map[string][]string
+		StatusCode: resp.StatusCode,
+	}
+
 	// Check HTTP status code and return error for non-2xx responses
 	// Note: For JSON-RPC, status 200 with RPC error in body is common and valid
-	// We return the body in both cases - the caller will check for RPC errors
+	// We return the response in both cases - the caller will check for RPC errors
 	if resp.StatusCode >= 400 {
-		// For 4xx/5xx errors, include status code in error
-		return body, &HTTPStatusError{
+		// For 4xx/5xx errors, include status code in error but also return the response
+		return response, &HTTPStatusError{
 			StatusCode: resp.StatusCode,
 			Status:     resp.Status,
 			Body:       body,
 		}
 	}
 
-	return body, nil
+	return response, nil
 }
 
 // HTTPStatusError represents an HTTP error response (4xx/5xx)
@@ -368,7 +394,7 @@ func (w *WebSocketDirectRPCConnection) SendRequest(
 	ctx context.Context,
 	data []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) (*DirectRPCResponse, error) {
 	return nil, fmt.Errorf("WebSocket SendRequest not implemented; use subscription/streaming flow")
 }
 
@@ -399,7 +425,7 @@ func (g *GRPCDirectRPCConnection) SendRequest(
 	ctx context.Context,
 	data []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) (*DirectRPCResponse, error) {
 	// Validate required headers before initialization
 	// This allows early validation without connecting to the server
 	methodPath, ok := headers[GRPCMethodHeader]
@@ -464,12 +490,12 @@ func (g *GRPCDirectRPCConnection) SendRequest(
 	// Create output message
 	outputMsg := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 
-	// Invoke gRPC method
+	// Invoke gRPC method - capture response headers/metadata
 	var respHeaders metadata.MD
 	err = conn.Invoke(ctx, "/"+methodPath, inputMsg, outputMsg, grpc.Header(&respHeaders))
 	if err != nil {
-		// Handle gRPC error
-		return g.handleGRPCError(ctx, err)
+		// Handle gRPC error - pass respHeaders for metadata in error response
+		return g.handleGRPCError(ctx, err, respHeaders)
 	}
 
 	// Marshal response to binary proto
@@ -480,7 +506,13 @@ func (g *GRPCDirectRPCConnection) SendRequest(
 	}
 
 	g.healthy.Store(true)
-	return respBytes, nil
+
+	// Return response with metadata from gRPC headers
+	return &DirectRPCResponse{
+		Data:       respBytes,
+		Metadata:   respHeaders, // gRPC metadata.MD is map[string][]string
+		StatusCode: http.StatusOK,
+	}, nil
 }
 
 // ensureInitialized performs lazy initialization of the gRPC connection.
@@ -707,7 +739,7 @@ func (g *GRPCDirectRPCConnection) parseInputMessage(
 }
 
 // handleGRPCError handles gRPC errors and returns an appropriate response
-func (g *GRPCDirectRPCConnection) handleGRPCError(ctx context.Context, err error) ([]byte, error) {
+func (g *GRPCDirectRPCConnection) handleGRPCError(ctx context.Context, err error, respHeaders metadata.MD) (*DirectRPCResponse, error) {
 	var errorCode uint32 = GRPCStatusCodeOnFailedMessages
 	var errorMessage string
 
@@ -738,9 +770,13 @@ func (g *GRPCDirectRPCConnection) handleGRPCError(ctx context.Context, err error
 		return nil, utils.LavaFormatError("failed to marshal gRPC error response", marshalErr)
 	}
 
-	// Return the error response bytes along with nil error
+	// Return the error response with metadata
 	// The caller can inspect the response to determine if it's an error
-	return respBytes, &GRPCStatusError{
+	return &DirectRPCResponse{
+		Data:       respBytes,
+		Metadata:   respHeaders, // Include any headers received before the error
+		StatusCode: int(errorCode),
+	}, &GRPCStatusError{
 		Code:    errorCode,
 		Message: errorMessage,
 	}

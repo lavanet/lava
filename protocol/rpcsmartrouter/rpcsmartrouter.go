@@ -669,6 +669,46 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		)
 	}
 
+	// Create gRPC streaming subscription manager for gRPC server-streaming methods
+	// This supports Cosmos Event Streaming, Solana Geyser, and other gRPC streaming protocols
+	var grpcEndpoints []*common.NodeUrl
+	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceGrpc {
+		// Collect gRPC endpoints from static providers
+		for _, provider := range relevantStaticProviderList {
+			if provider.ApiInterface == spectypes.APIInterfaceGrpc {
+				for i := range provider.NodeUrls {
+					grpcEndpoints = append(grpcEndpoints, &provider.NodeUrls[i])
+					utils.LavaFormatInfo("Found gRPC endpoint for streaming subscriptions",
+						utils.LogAttr("url", provider.NodeUrls[i].Url),
+						utils.LogAttr("provider", provider.Name),
+						utils.LogAttr("chainID", provider.ChainID),
+					)
+				}
+			}
+		}
+	}
+
+	// Initialize DirectGRPCSubscriptionManager if gRPC endpoints are available
+	if len(grpcEndpoints) > 0 {
+		grpcSubManager := NewDirectGRPCSubscriptionManager(
+			smartRouterMetricsManager, // Metrics manager for tracking
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			grpcEndpoints,
+			optimizer, // Pass optimizer for endpoint selection (same as WS manager)
+			nil,       // Use default GRPCStreamingConfig
+		)
+		// Start background cleanup goroutine
+		grpcSubManager.Start(ctx)
+		rpcSmartRouterServer.grpcSubscriptionManager = grpcSubManager
+		utils.LavaFormatInfo("Using DirectGRPCSubscriptionManager for gRPC streaming subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("grpcEndpointCount", len(grpcEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	}
+
 	// Create ChainTracker for latest block tracking (reuse provider's implementation)
 	// Use first static provider endpoint for ChainTracker
 	var chainTracker chaintracker.IChainTracker

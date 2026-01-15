@@ -91,6 +91,9 @@ type RPCSmartRouterServer struct {
 	initialized                    atomic.Bool
 	latestBlockHeight              atomic.Uint64
 	latestBlockEstimator           *relaycore.LatestBlockEstimator
+
+	// gRPC streaming subscription manager (nil if not configured)
+	grpcSubscriptionManager *DirectGRPCSubscriptionManager
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -1717,6 +1720,53 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 			utils.LogAttr("protocol", directConnection.GetProtocol()),
 			utils.LogAttr("GUID", ctx),
 		)
+	}
+
+	// Check for gRPC streaming method - route to subscription manager if available
+	if rpcss.grpcSubscriptionManager != nil && directConnection.GetProtocol() == "grpc" {
+		methodPath := chainMessage.GetApi().Name
+		isStreaming, _, streamErr := rpcss.grpcSubscriptionManager.IsStreamingMethod(ctx, methodPath)
+		if streamErr == nil && isStreaming {
+			// Route streaming request to gRPC subscription manager
+			startTime := time.Now()
+			// Use connection unique ID for routing (generate from session)
+			connectionUniqueId := fmt.Sprintf("direct-%s-%d", singleConsumerSession.Parent.PublicLavaAddress, time.Now().UnixNano())
+			firstReply, repliesChan, err := rpcss.grpcSubscriptionManager.StartSubscription(
+				ctx,
+				chainMessage,
+				"", // dappID - not used in direct mode
+				"", // consumerIp - not used in direct mode
+				connectionUniqueId,
+				analytics,
+			)
+			relayLatency = time.Since(startTime)
+
+			if err != nil {
+				utils.LavaFormatDebug("gRPC streaming subscription failed",
+					utils.LogAttr("method", methodPath),
+					utils.LogAttr("error", err.Error()),
+				)
+				return relayLatency, err, false
+			}
+
+			// Return first reply in the result
+			// Note: Subsequent messages from repliesChan would be handled by a streaming response mechanism
+			// For now, we just return the first reply. Full streaming support requires ChainListener changes.
+			_ = repliesChan // Channel will be handled by caller or streaming infrastructure
+
+			relayResult.Reply = firstReply
+			relayResult.Finalized = true
+			relayResult.ProviderInfo = common.ProviderInfo{
+				ProviderAddress: singleConsumerSession.Parent.PublicLavaAddress,
+			}
+
+			utils.LavaFormatDebug("gRPC streaming subscription started",
+				utils.LogAttr("method", methodPath),
+				utils.LogAttr("connectionId", connectionUniqueId),
+				utils.LogAttr("latency", relayLatency),
+			)
+			return relayLatency, nil, false
+		}
 	}
 
 	// Create direct RPC relay sender
