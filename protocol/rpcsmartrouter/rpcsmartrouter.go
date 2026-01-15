@@ -47,6 +47,7 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -836,6 +837,24 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
 
+			// Smart router automatically enables skip-relay-signing for performance unless explicitly disabled
+			// This saves CPU and memory since rewards are not claimed in smart router mode
+			if !viper.IsSet(common.SkipRelaySigningFlag) {
+				lavaprotocol.SkipRelaySigning = true
+				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: automatically enabling skip-relay-signing for performance",
+					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+					utils.Attribute{Key: "reason", Value: "auto-enabled for smart router mode"},
+				)
+			} else {
+				// Flag was explicitly set, log the value
+				explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
+				lavaprotocol.SkipRelaySigning = explicitValue
+				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: using explicit flag value",
+					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+					utils.Attribute{Key: "source", Value: "command-line/config file"},
+				)
+			}
+
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
@@ -1015,6 +1034,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCSmartRouter.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
+	cmdRPCSmartRouter.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay requests/responses to reduce CPU and memory usage (use only with static providers)")
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
 	cmdRPCSmartRouter.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
