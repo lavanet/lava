@@ -473,7 +473,7 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 
 	// Send gRPC request via DirectRPCConnection
 	startTime := time.Now()
-	responseData, err := d.directConnection.SendRequest(requestCtx, requestData, headers)
+	response, err := d.directConnection.SendRequest(requestCtx, requestData, headers)
 	latency := time.Since(startTime)
 
 	if err != nil {
@@ -490,12 +490,13 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			grpcErr = ok
 		}
 
-		if grpcErr != nil {
+		if grpcErr != nil && response != nil {
 			// gRPC error with status code - might contain valid error response
-			// The responseData may contain the error details in JSON format
+			// The response.Data contains the error details in JSON format
 			return &common.RelayResult{
 				Reply: &pairingtypes.RelayReply{
-					Data: responseData, // Error response in JSON format
+					Data:     response.Data,                                  // Error response in JSON format
+					Metadata: convertHTTPHeadersToMetadata(response.Metadata), // Include metadata even for errors
 				},
 				Finalized: true,
 				ProviderInfo: common.ProviderInfo{
@@ -512,11 +513,11 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 		utils.LogAttr("endpoint", endpointIdentifier),
 		utils.LogAttr("method", methodPath),
 		utils.LogAttr("latency", latency),
-		utils.LogAttr("response_size", len(responseData)),
+		utils.LogAttr("response_size", len(response.Data)),
 	)
 
 	// Check for errors in response using chainMessage
-	hasError, errorMessage := chainMessage.CheckResponseError(responseData, 200)
+	hasError, errorMessage := chainMessage.CheckResponseError(response.Data, response.StatusCode)
 	if hasError {
 		utils.LavaFormatDebug("gRPC response contains error",
 			utils.LogAttr("endpoint", endpointIdentifier),
@@ -526,9 +527,9 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 	}
 
 	// Extract block height from gRPC response using spec-driven parsing (for QoS sync tracking)
-	latestBlockFromResponse := extractBlockHeightFromGRPCResponse(responseData, chainMessage)
+	latestBlockFromResponse := extractBlockHeightFromGRPCResponse(response.Data, chainMessage)
 
-	// Build result
+	// Build result with response metadata
 	providerAddress := d.endpointName
 	if providerAddress == "" {
 		providerAddress = sanitizeEndpointURL(d.directConnection.GetURL())
@@ -536,10 +537,12 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 
 	result := &common.RelayResult{
 		Reply: &pairingtypes.RelayReply{
-			Data:        responseData,
+			Data:        response.Data,
 			LatestBlock: latestBlockFromResponse,
+			Metadata:    convertHTTPHeadersToMetadata(response.Metadata), // Include gRPC response metadata
 		},
-		Finalized: true,
+		Finalized:  true,
+		StatusCode: response.StatusCode,
 		ProviderInfo: common.ProviderInfo{
 			ProviderAddress: providerAddress,
 		},
