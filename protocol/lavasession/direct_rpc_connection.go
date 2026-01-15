@@ -3,14 +3,30 @@ package lavasession
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"sync/atomic"
 
+	"github.com/fullstorydev/grpcurl"
+	"github.com/golang/protobuf/proto"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
+	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"google.golang.org/grpc/status"
 )
 
 // DirectRPCProtocol represents the transport protocol for direct RPC connections
@@ -88,10 +104,54 @@ type WebSocketDirectRPCConnection struct {
 	protocol DirectRPCProtocol
 }
 
-// GRPCDirectRPCConnection implements DirectRPCConnection for gRPC
+// GRPCDirectRPCConnection implements DirectRPCConnection for gRPC.
+// It provides direct gRPC connections to RPC endpoints with:
+//   - Connection pooling via GRPCConnector
+//   - Dynamic protobuf handling via reflection or file descriptors
+//   - Method descriptor caching for performance
+//   - Proper error handling with gRPC status codes
 type GRPCDirectRPCConnection struct {
 	nodeUrl common.NodeUrl
+
+	// Connection pooling
+	connector grpcConnectorInterface
+	connMu    sync.RWMutex
+
+	// Descriptor handling
+	registry         *dyncodec.Registry
+	codec            *dyncodec.Codec
+	descriptorsCache *common.SafeSyncMap[string, *desc.MethodDescriptor]
+
+	// Health tracking
+	healthy atomic.Bool
+
+	// Initialization state
+	initialized atomic.Bool
+	initMu      sync.Mutex
+	initErr     error
 }
+
+// grpcConnectorInterface abstracts GRPCConnector for testing
+type grpcConnectorInterface interface {
+	GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error)
+	ReturnRpc(rpc *grpc.ClientConn)
+	Close()
+}
+
+// GRPCMethodHeader is the header key for the gRPC method path
+const GRPCMethodHeader = "x-grpc-method"
+
+// GRPCContentTypeHeader is the header key for content type (proto or json)
+const GRPCContentTypeHeader = "x-grpc-content-type"
+
+// GRPCNodeErrorResponse represents a gRPC error returned as JSON
+type GRPCNodeErrorResponse struct {
+	ErrorMessage string `json:"error_message"`
+	ErrorCode    uint32 `json:"error_code"`
+}
+
+// Default gRPC error code when status cannot be determined
+const GRPCStatusCodeOnFailedMessages = 32
 
 // NewDirectRPCConnection creates a new direct RPC connection based on URL protocol
 func NewDirectRPCConnection(
@@ -121,9 +181,12 @@ func NewDirectRPCConnection(
 		}, nil
 
 	case DirectRPCProtocolGRPC:
-		return &GRPCDirectRPCConnection{
-			nodeUrl: nodeUrl,
-		}, nil
+		conn := &GRPCDirectRPCConnection{
+			nodeUrl:          nodeUrl,
+			descriptorsCache: &common.SafeSyncMap[string, *desc.MethodDescriptor]{},
+		}
+		conn.healthy.Store(true) // Start as healthy until proven otherwise
+		return conn, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported protocol: %s", protocol)
@@ -329,15 +392,368 @@ func (w *WebSocketDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
 	return &w.nodeUrl
 }
 
-// SendRequest implements DirectRPCConnection for gRPC
+// SendRequest implements DirectRPCConnection for gRPC.
+// The method path should be provided in headers via GRPCMethodHeader ("x-grpc-method").
+// The data can be either JSON or binary protobuf format.
 func (g *GRPCDirectRPCConnection) SendRequest(
 	ctx context.Context,
 	data []byte,
 	headers map[string]string,
 ) ([]byte, error) {
-	// TODO: Implement gRPC request sending
-	// This will depend on the specific gRPC service definition
-	return nil, fmt.Errorf("gRPC direct connections not yet implemented")
+	// Validate required headers before initialization
+	// This allows early validation without connecting to the server
+	methodPath, ok := headers[GRPCMethodHeader]
+	if !ok || methodPath == "" {
+		return nil, fmt.Errorf("gRPC method path not provided in headers (expected %s header)", GRPCMethodHeader)
+	}
+
+	// Lazy initialization on first request
+	if err := g.ensureInitialized(ctx); err != nil {
+		return nil, err
+	}
+
+	// Get gRPC connection from pool
+	conn, err := g.connector.GetRpc(ctx, true)
+	if err != nil {
+		g.healthy.Store(false)
+		return nil, utils.LavaFormatError("gRPC get connection failed", err,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+	defer g.connector.ReturnRpc(conn)
+
+	// Build metadata context from headers
+	metadataMap := make(map[string]string)
+	for k, v := range headers {
+		// Skip internal headers
+		if k == GRPCMethodHeader || k == GRPCContentTypeHeader {
+			continue
+		}
+		if v != "" {
+			metadataMap[k] = v
+		}
+	}
+	if len(metadataMap) > 0 {
+		md := metadata.New(metadataMap)
+		ctx = metadata.NewOutgoingContext(ctx, md)
+	}
+
+	// Parse service and method name
+	svc, methodName := rpcInterfaceMessages.ParseSymbol(methodPath)
+
+	// Get method descriptor (with caching)
+	methodDescriptor, err := g.getMethodDescriptor(ctx, conn, svc, methodName)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to get method descriptor", err,
+			utils.LogAttr("method", methodPath))
+	}
+
+	// Create dynamic message factory
+	msgFactory := dynamic.NewMessageFactoryWithDefaults()
+
+	// Create input message
+	inputMsg := msgFactory.NewMessage(methodDescriptor.GetInputType())
+
+	// Parse input data (JSON or binary proto)
+	if len(data) > 0 {
+		if err := g.parseInputMessage(ctx, data, inputMsg, methodDescriptor, conn); err != nil {
+			return nil, utils.LavaFormatError("failed to parse input message", err,
+				utils.LogAttr("method", methodPath))
+		}
+	}
+
+	// Create output message
+	outputMsg := msgFactory.NewMessage(methodDescriptor.GetOutputType())
+
+	// Invoke gRPC method
+	var respHeaders metadata.MD
+	err = conn.Invoke(ctx, "/"+methodPath, inputMsg, outputMsg, grpc.Header(&respHeaders))
+	if err != nil {
+		// Handle gRPC error
+		return g.handleGRPCError(ctx, err)
+	}
+
+	// Marshal response to binary proto
+	respBytes, err := proto.Marshal(outputMsg)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to marshal gRPC response", err,
+			utils.LogAttr("method", methodPath))
+	}
+
+	g.healthy.Store(true)
+	return respBytes, nil
+}
+
+// ensureInitialized performs lazy initialization of the gRPC connection.
+// This includes creating the connection pool and setting up descriptor sources.
+func (g *GRPCDirectRPCConnection) ensureInitialized(ctx context.Context) error {
+	if g.initialized.Load() {
+		return g.initErr
+	}
+
+	g.initMu.Lock()
+	defer g.initMu.Unlock()
+
+	// Double-check after acquiring lock
+	if g.initialized.Load() {
+		return g.initErr
+	}
+
+	g.initErr = g.initialize(ctx)
+	g.initialized.Store(true)
+	return g.initErr
+}
+
+// initialize performs the actual initialization
+func (g *GRPCDirectRPCConnection) initialize(ctx context.Context) error {
+	// Validate gRPC URL
+	if err := g.validateURL(); err != nil {
+		return err
+	}
+
+	// Create connection pool
+	// Extract host from URL for GRPCConnector (it expects host:port without scheme)
+	parsedURL, err := url.Parse(g.nodeUrl.Url)
+	if err != nil {
+		return utils.LavaFormatError("failed to parse gRPC URL", err,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+
+	// GRPCConnector expects URL without scheme prefix for internal handling
+	connectorNodeUrl := g.nodeUrl
+	connectorNodeUrl.Url = parsedURL.Host
+	if parsedURL.Path != "" && parsedURL.Path != "/" {
+		connectorNodeUrl.Url += parsedURL.Path
+	}
+
+	// Determine TLS based on scheme
+	if parsedURL.Scheme == "grpcs" {
+		connectorNodeUrl.AuthConfig.UseTLS = true
+	}
+
+	connector, err := chainproxy.NewGRPCConnector(ctx, 10, connectorNodeUrl)
+	if err != nil {
+		return utils.LavaFormatError("failed to create gRPC connector", err,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+	g.connector = connector
+
+	// Initialize descriptor cache
+	g.descriptorsCache = &common.SafeSyncMap[string, *desc.MethodDescriptor]{}
+
+	// Initialize descriptor source based on config
+	if err := g.initializeDescriptorSource(ctx); err != nil {
+		// Log warning but don't fail - we'll try reflection on first request
+		utils.LavaFormatWarning("failed to initialize descriptor source, will use reflection", err,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+
+	g.healthy.Store(true)
+	utils.LavaFormatInfo("gRPC direct connection initialized",
+		utils.LogAttr("url", g.nodeUrl.Url),
+		utils.LogAttr("tls", parsedURL.Scheme == "grpcs"))
+
+	return nil
+}
+
+// validateURL checks if the gRPC URL is valid
+func (g *GRPCDirectRPCConnection) validateURL() error {
+	parsedURL, err := url.Parse(g.nodeUrl.Url)
+	if err != nil {
+		return utils.LavaFormatError("invalid gRPC URL", err,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+
+	scheme := strings.ToLower(parsedURL.Scheme)
+	if scheme != "grpc" && scheme != "grpcs" {
+		return utils.LavaFormatError("invalid gRPC URL scheme", nil,
+			utils.LogAttr("url", g.nodeUrl.Url),
+			utils.LogAttr("scheme", scheme),
+			utils.LogAttr("expected", "grpc:// or grpcs://"))
+	}
+
+	// Check insecure connections
+	if scheme == "grpc" && !g.nodeUrl.GrpcConfig.AllowInsecure {
+		return utils.LavaFormatError("insecure gRPC (grpc://) not allowed without allow-insecure: true", nil,
+			utils.LogAttr("url", g.nodeUrl.Url))
+	}
+
+	return nil
+}
+
+// initializeDescriptorSource sets up the descriptor source based on config
+func (g *GRPCDirectRPCConnection) initializeDescriptorSource(ctx context.Context) error {
+	grpcConfig := &g.nodeUrl.GrpcConfig
+	source := grpcConfig.GetDescriptorSource()
+
+	switch source {
+	case common.GrpcDescriptorSourceFile:
+		if grpcConfig.DescriptorSetPath == "" {
+			return fmt.Errorf("descriptor-set-path required for file descriptor source")
+		}
+		fileReg, err := dyncodec.NewFileDescriptorSetRegistryFromPath(grpcConfig.DescriptorSetPath)
+		if err != nil {
+			return err
+		}
+		g.registry = dyncodec.NewRegistry(fileReg)
+		g.codec = dyncodec.NewCodec(g.registry)
+
+	case common.GrpcDescriptorSourceHybrid:
+		// Will be set up on first connection with hybrid source
+		// For now, try to load file if available
+		if grpcConfig.DescriptorSetPath != "" {
+			fileReg, err := dyncodec.NewFileDescriptorSetRegistryFromPath(grpcConfig.DescriptorSetPath)
+			if err != nil {
+				utils.LavaFormatWarning("failed to load file descriptors for hybrid mode", err,
+					utils.LogAttr("path", grpcConfig.DescriptorSetPath))
+			} else {
+				g.registry = dyncodec.NewRegistry(fileReg)
+				g.codec = dyncodec.NewCodec(g.registry)
+			}
+		}
+
+	case common.GrpcDescriptorSourceReflection, "":
+		// Reflection will be used on first request
+		// No initialization needed here
+	}
+
+	return nil
+}
+
+// getMethodDescriptor retrieves the method descriptor, using cache or reflection
+func (g *GRPCDirectRPCConnection) getMethodDescriptor(
+	ctx context.Context,
+	conn *grpc.ClientConn,
+	service, methodName string,
+) (*desc.MethodDescriptor, error) {
+	fullMethodName := service + "." + methodName
+
+	// Check cache first
+	if methodDesc, found, _ := g.descriptorsCache.Load(fullMethodName); found {
+		return methodDesc, nil
+	}
+
+	// Use reflection to get descriptor
+	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
+	defer cl.Reset()
+
+	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
+
+	descriptor, err := descriptorSource.FindSymbol(service)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to find service via reflection", err,
+			utils.LogAttr("service", service))
+	}
+
+	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
+	if !ok {
+		return nil, utils.LavaFormatError("descriptor is not a ServiceDescriptor", nil,
+			utils.LogAttr("service", service))
+	}
+
+	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	if methodDescriptor == nil {
+		return nil, utils.LavaFormatError("method not found in service", nil,
+			utils.LogAttr("service", service),
+			utils.LogAttr("method", methodName))
+	}
+
+	// Cache the descriptor
+	g.descriptorsCache.Store(fullMethodName, methodDescriptor)
+
+	return methodDescriptor, nil
+}
+
+// parseInputMessage parses the input data into the dynamic message.
+// The msg parameter must be a proto.Message that was created via dynamic.NewMessage().
+func (g *GRPCDirectRPCConnection) parseInputMessage(
+	ctx context.Context,
+	data []byte,
+	msg proto.Message,
+	methodDesc *desc.MethodDescriptor,
+	conn *grpc.ClientConn,
+) error {
+	// Detect if input is JSON or binary proto
+	if len(data) > 0 && (data[0] == '{' || data[0] == '[') {
+		// JSON input - use grpcurl parser
+		cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
+		defer cl.Reset()
+		descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
+
+		rp, _, err := grpcurl.RequestParserAndFormatter(
+			grpcurl.FormatJSON,
+			descriptorSource,
+			bytes.NewReader(data),
+			grpcurl.FormatOptions{
+				EmitJSONDefaultFields: false,
+				IncludeTextSeparator:  false,
+				AllowUnknownFields:    true,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create JSON parser: %w", err)
+		}
+
+		if err := rp.Next(msg); err != nil {
+			return fmt.Errorf("failed to parse JSON input: %w", err)
+		}
+	} else {
+		// Binary proto input
+		if err := proto.Unmarshal(data, msg); err != nil {
+			return fmt.Errorf("failed to unmarshal proto input: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// handleGRPCError handles gRPC errors and returns an appropriate response
+func (g *GRPCDirectRPCConnection) handleGRPCError(ctx context.Context, err error) ([]byte, error) {
+	var errorCode uint32 = GRPCStatusCodeOnFailedMessages
+	var errorMessage string
+
+	if statusErr, ok := status.FromError(err); ok {
+		errorCode = uint32(statusErr.Code())
+		errorMessage = statusErr.Message()
+
+		// Mark as unhealthy for certain error codes
+		switch statusErr.Code() {
+		case 14: // UNAVAILABLE
+			g.healthy.Store(false)
+		case 13: // INTERNAL
+			g.healthy.Store(false)
+		}
+	} else {
+		errorMessage = err.Error()
+		g.healthy.Store(false)
+	}
+
+	// Return error as JSON response
+	resp := GRPCNodeErrorResponse{
+		ErrorMessage: errorMessage,
+		ErrorCode:    errorCode,
+	}
+
+	respBytes, marshalErr := json.Marshal(resp)
+	if marshalErr != nil {
+		return nil, utils.LavaFormatError("failed to marshal gRPC error response", marshalErr)
+	}
+
+	// Return the error response bytes along with nil error
+	// The caller can inspect the response to determine if it's an error
+	return respBytes, &GRPCStatusError{
+		Code:    errorCode,
+		Message: errorMessage,
+	}
+}
+
+// GRPCStatusError represents a gRPC status error
+type GRPCStatusError struct {
+	Code    uint32
+	Message string
+}
+
+func (e *GRPCStatusError) Error() string {
+	return fmt.Sprintf("gRPC error %d: %s", e.Code, e.Message)
 }
 
 func (g *GRPCDirectRPCConnection) GetProtocol() DirectRPCProtocol {
@@ -345,11 +761,24 @@ func (g *GRPCDirectRPCConnection) GetProtocol() DirectRPCProtocol {
 }
 
 func (g *GRPCDirectRPCConnection) Close() error {
+	g.connMu.Lock()
+	defer g.connMu.Unlock()
+
+	if g.connector != nil {
+		g.connector.Close()
+		g.connector = nil
+	}
+
+	if g.registry != nil {
+		// Registry cleanup if needed
+		g.registry = nil
+	}
+
 	return nil
 }
 
 func (g *GRPCDirectRPCConnection) IsHealthy() bool {
-	return true // health tracking is done at the endpoint/QoS layer
+	return g.healthy.Load()
 }
 
 func (g *GRPCDirectRPCConnection) GetURL() string {
