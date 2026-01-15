@@ -197,7 +197,26 @@ func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool
 		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
 	}
+	// Early return if debug level is not enabled - the caller already converted to string
+	// but at least we avoid the LavaFormatDebug overhead
+	if !utils.IsDebugLevelEnabled() {
+		return
+	}
 	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+}
+
+// LogRequestAndResponseBytes is like LogRequestAndResponse but accepts []byte for the response
+// to avoid string conversion when debug logging is disabled.
+func (rpccl *RPCConsumerLogs) LogRequestAndResponseBytes(module string, hasError bool, method, path, req string, resp []byte, msgSeed string, timeTaken time.Duration, err error) {
+	if hasError && err != nil {
+		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(string(resp))}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+		return
+	}
+	// Early return if debug level is not enabled - avoids string conversion entirely
+	if !utils.IsDebugLevelEnabled() {
+		return
+	}
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(string(resp))}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
 func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {

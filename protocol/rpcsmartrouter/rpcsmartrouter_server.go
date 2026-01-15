@@ -903,11 +903,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				if err != nil {
 					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
 				} else {
-					utils.LavaFormatDebug("Cache lookup hash generated",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("hashKey", fmt.Sprintf("%x", hashKey)),
-						utils.LogAttr("apiUrl", localRelayData.ApiUrl),
-					)
+					if utils.IsDebugLevelEnabled() {
+						utils.LavaFormatDebug("Cache lookup hash generated",
+							utils.LogAttr("GUID", ctx),
+							utils.LogAttr("hashKey", fmt.Sprintf("%x", hashKey)),
+							utils.LogAttr("apiUrl", localRelayData.ApiUrl),
+						)
+					}
 
 					// Resolve the requested block for cache lookup
 					// The cache server doesn't accept negative blocks
@@ -955,21 +957,23 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
 
-					// Generate the actual cache key that will be used for lookup
-					actualLookupCacheKey := make([]byte, len(hashKey))
-					copy(actualLookupCacheKey, hashKey)
-					actualLookupCacheKey = binary.LittleEndian.AppendUint64(actualLookupCacheKey, uint64(requestedBlockForCache))
+					if utils.IsDebugLevelEnabled() {
+						// Generate the actual cache key that will be used for lookup (only for debugging)
+						actualLookupCacheKey := make([]byte, len(hashKey))
+						copy(actualLookupCacheKey, hashKey)
+						actualLookupCacheKey = binary.LittleEndian.AppendUint64(actualLookupCacheKey, uint64(requestedBlockForCache))
 
-					utils.LavaFormatDebug("Cache lookup result",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("hashKeyHex", fmt.Sprintf("%x", hashKey)),
-						utils.LogAttr("actualLookupCacheKeyHex", fmt.Sprintf("%x", actualLookupCacheKey)),
-						utils.LogAttr("reqBlock", reqBlock),
-						utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
-						utils.LogAttr("seenBlock", localRelayData.SeenBlock),
-						utils.LogAttr("cacheError", cacheError),
-						utils.LogAttr("replyFound", cacheReply != nil && cacheReply.GetReply() != nil),
-					)
+						utils.LavaFormatDebug("Cache lookup result",
+							utils.LogAttr("GUID", ctx),
+							utils.LogAttr("hashKeyHex", fmt.Sprintf("%x", hashKey)),
+							utils.LogAttr("actualLookupCacheKeyHex", fmt.Sprintf("%x", actualLookupCacheKey)),
+							utils.LogAttr("reqBlock", reqBlock),
+							utils.LogAttr("requestedBlockForCache", requestedBlockForCache),
+							utils.LogAttr("seenBlock", localRelayData.SeenBlock),
+							utils.LogAttr("cacheError", cacheError),
+							utils.LogAttr("replyFound", cacheReply != nil && cacheReply.GetReply() != nil),
+						)
+					}
 					reply := cacheReply.GetReply()
 
 					// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
