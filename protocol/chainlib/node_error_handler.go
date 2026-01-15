@@ -115,10 +115,13 @@ func GetUnsupportedMethodPatterns() map[string][]string {
 }
 
 // IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
-// This is now a wrapper around common.IsUnsupportedMethodMessage for backward compatibility.
-// The pattern matching logic has been moved to protocol/common to serve as a single source of truth.
+// This is a convenience function that accepts a string directly
 func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
-	return common.IsUnsupportedMethodMessage(errorMessage)
+	return IsUnsupportedMethodErrorMessageBytes([]byte(errorMessage))
+}
+
+func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
+	return common.IsUnsupportedMethodErrorMessageBytes(errorMessage)
 }
 
 // IsUnsupportedMethodError checks if an error indicates an unsupported method
