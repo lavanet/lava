@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  main:
+  pr_title:
     permissions:
       pull-requests: write # for amannn/action-semantic-pull-request to analyze PRs
       statuses: write # for amannn/action-semantic-pull-request to mark status of analyzed PR
@@ -45,3 +45,19 @@ jobs:
         with:
           header: pr-title-lint-error
           delete: true
+
+  commit_messages:
+    # Lints commit messages in the PR. (PR title linting is handled by pr_title above.)
+    permissions:
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          commitDepth: ${{ github.event.pull_request.commits }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
