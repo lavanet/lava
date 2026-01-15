@@ -370,8 +370,9 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	// Only hash successful responses (not errors) for quorum tracking
 	// This prevents error responses from being counted toward quorum
 	if response != nil && nodeError == nil && response.Err == nil {
-		// Hash the response data instead of creating canonical form - much more efficient
+		// Hash the response data once and cache it in the RelayResult
 		hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
+		response.RelayResult.ResponseHash = hash // Cache the hash for later reuse
 		rp.quorumMap[hash]++
 		if rp.quorumMap[hash] > rp.currentQourumEqualResults {
 			rp.currentQourumEqualResults = rp.quorumMap[hash]
@@ -464,9 +465,13 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil && isValidResponse(result.Reply.Data) {
-			// Hash the response data for comparison - much faster and more memory efficient
-			// than creating canonical forms. SHA256 ensures reliable comparison for quorum.
-			hash := sha256.Sum256(result.Reply.Data)
+			// Use cached hash if available (set in handleResponse), otherwise compute it
+			// This eliminates redundant SHA256 computation for responses already hashed
+			hash := result.ResponseHash
+			if hash == [32]byte{} {
+				// Fallback: hash not cached (e.g., for old code paths or error cases)
+				hash = sha256.Sum256(result.Reply.Data)
+			}
 
 			if count, exists := countMap[hash]; exists {
 				count.count++

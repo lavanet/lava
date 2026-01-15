@@ -34,7 +34,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstorage "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -123,7 +122,6 @@ type rpcProviderStartOptions struct {
 	testResponsesFile         string
 	epochDuration             time.Duration
 	resourceLimiterOptions    *resourceLimiterOptions
-	memoryGCThresholdGB       float64
 }
 
 type resourceLimiterOptions struct {
@@ -285,9 +283,6 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
 
 	// single reward server
 	if !options.staticProvider {
@@ -1139,8 +1134,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
 			epochDuration := viper.GetDuration(common.EpochDurationFlag)
-			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
-			memoryutils.EnableMemoryLogs(enableMemoryLogs)
 
 			// If running with --static-providers, enable standalone mode
 			if staticProvider {
@@ -1189,13 +1182,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				normalMaxConcurrent: normalMaxConcurrent,
 			}
 
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
-			}
-
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,
@@ -1224,7 +1210,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testResponsesFile,
 				epochDuration,
 				resourceLimiterOptions,
-				memoryGCThresholdGB,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -1269,7 +1254,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=provider-1,region=us-east)")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Bool(performance.CacheLatestBlockFlagName, false, "enable caching for latest block requests (default: false)")
-	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "number of parallel connections to blockchain node (gRPC only, HTTP uses shared connection pool)")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
@@ -1300,8 +1285,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Int64("heavy-max-concurrent", 2, "Max concurrent heavy (high-CU/debug/trace) method calls")
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
 	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
-	cmdRPCProvider.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
-	cmdRPCProvider.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

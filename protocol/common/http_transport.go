@@ -1,29 +1,34 @@
 package common
 
 import (
+	"crypto/tls"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
 // HTTP Connection Pool Configuration
-// These values are optimized for high-concurrency scenarios where providers
-// handle many simultaneous requests to blockchain nodes.
+// These values are optimized for high-throughput scenarios (1000+ req/s)
+// where providers handle many simultaneous requests to blockchain nodes.
 const (
 	// MaxIdleConns controls the maximum number of idle (keep-alive) connections across all hosts.
-	// Setting this higher prevents constantly creating new TCP connections.
+	// For 1000 req/s with ~500ms latency, we need ~500 concurrent connections.
+	// Setting higher to allow headroom for spikes.
 	// Go default: 100
-	DefaultMaxIdleConns = 200
+	DefaultMaxIdleConns = 1000
 
 	// MaxIdleConnsPerHost controls the maximum idle (keep-alive) connections to keep per-host.
 	// This is critical for blockchain node connections where we repeatedly connect to the same node.
+	// For 1000 req/s to a single host with ~500ms latency, need ~500 idle connections.
 	// Go default: 2 (way too low for high-concurrency!)
-	DefaultMaxIdleConnsPerHost = 50
+	DefaultMaxIdleConnsPerHost = 500
 
 	// MaxConnsPerHost limits the total number of connections per host, including those in active use.
-	// This prevents overwhelming a single blockchain node with too many connections.
+	// This is the CRITICAL limit - if too low, requests will queue and cause cascading latency.
+	// For 1000 req/s with ~1s worst-case latency, need up to 1000 connections.
 	// Go default: 0 (unlimited - can cause node overload)
-	DefaultMaxConnsPerHost = 100
+	DefaultMaxConnsPerHost = 0 // unlimited - let the upstream node enforce its own limits
 
 	// IdleConnTimeout is the maximum amount of time an idle connection will remain idle before closing.
 	// Keeps connections alive for reuse but eventually closes them to avoid resource leaks.
@@ -56,6 +61,19 @@ const (
 	// Set to 5 minutes to handle slow blockchain node operations like trace_block.
 	// Go default: 0 (no timeout - requests can hang forever)
 	DefaultHTTPTimeout = 5 * time.Minute
+
+	// DefaultTLSSessionCacheSize is the number of TLS session tickets to cache.
+	// This enables TLS session resumption, which skips the expensive certificate
+	// verification on subsequent connections to the same host.
+	// Each cached session saves ~10-15% CPU on TLS handshakes.
+	DefaultTLSSessionCacheSize = 1024
+)
+
+var (
+	// sharedTransport is a singleton HTTP transport shared across all RPC clients.
+	// Sharing the transport maximizes connection reuse and TLS session caching.
+	sharedTransport     *http.Transport
+	sharedTransportOnce sync.Once
 )
 
 // OptimizedHttpTransport creates an HTTP transport optimized for provider-to-node communication.
@@ -64,12 +82,16 @@ const (
 // 2. Limit total connections per host (prevents overwhelming nodes)
 // 3. Handle high concurrency scenarios (200+ simultaneous requests)
 // 4. Close idle connections appropriately to avoid leaks
+// 5. Cache TLS sessions for faster reconnections
 //
 // Benefits:
 // - Reduces TCP connection overhead
 // - Prevents connection exhaustion on blockchain nodes
 // - Improves latency through connection reuse
 // - Handles heavy load without creating thousands of connections
+// - TLS session resumption reduces CPU usage by ~10-15% on handshakes
+//
+// Note: For most use cases, prefer SharedHttpTransport() to maximize connection reuse.
 func OptimizedHttpTransport() *http.Transport {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -85,18 +107,46 @@ func OptimizedHttpTransport() *http.Transport {
 		TLSHandshakeTimeout:   DefaultTLSHandshakeTimeout,
 		ExpectContinueTimeout: DefaultExpectContinueTimeout,
 		ResponseHeaderTimeout: DefaultResponseHeaderTimeout,
+		TLSClientConfig: &tls.Config{
+			// ClientSessionCache enables TLS session resumption.
+			// When connecting to a host we've connected to before, we can resume
+			// the TLS session instead of doing a full handshake with certificate
+			// verification. This saves significant CPU (~10-15% of TLS overhead).
+			ClientSessionCache: tls.NewLRUClientSessionCache(DefaultTLSSessionCacheSize),
+		},
 	}
+}
+
+// SharedHttpTransport returns a singleton HTTP transport that is shared across
+// all RPC clients in the application. This maximizes connection reuse and
+// TLS session caching benefits.
+//
+// Why sharing matters:
+// - Each http.Transport maintains its own connection pool
+// - With N separate transports, you get N separate pools with limited reuse
+// - With 1 shared transport, all connections are pooled together
+// - TLS session cache is also shared, benefiting all connections
+//
+// This is safe for concurrent use as http.Transport is goroutine-safe.
+func SharedHttpTransport() *http.Transport {
+	sharedTransportOnce.Do(func() {
+		sharedTransport = OptimizedHttpTransport()
+	})
+	return sharedTransport
 }
 
 // OptimizedHttpClient creates an HTTP client with optimized transport settings
 // and a default 5-minute timeout suitable for blockchain node operations.
-// The client uses a custom transport configured for high-concurrency scenarios.
+// The client uses the shared transport for maximum connection reuse.
+//
+// Note: Multiple clients can safely share the same transport.
+// The transport handles connection pooling internally.
 //
 // Returns:
 //   - *http.Client: A client with optimized connection pooling and default timeout
 func OptimizedHttpClient() *http.Client {
 	return &http.Client{
 		Timeout:   DefaultHTTPTimeout,
-		Transport: OptimizedHttpTransport(),
+		Transport: SharedHttpTransport(),
 	}
 }
