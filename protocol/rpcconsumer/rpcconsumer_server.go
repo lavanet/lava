@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 
@@ -1746,7 +1747,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	utils.LavaFormatTrace("successfully got first reply",
 		utils.LogAttr("GUID", ctx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		utils.LogAttr("reply", string(reply.Data)),
+		utils.LogAttr("reply", parser.CapStringLen(string(reply.Data))),
 	)
 
 	// Make sure we can parse the reply
