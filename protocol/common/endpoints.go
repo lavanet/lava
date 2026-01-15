@@ -205,8 +205,10 @@ func ValidateEndpoint(endpoint, apiInterface string) error {
 		switch parsedUrl.Scheme {
 		case "http", "https":
 			return nil
+		case "ws", "wss":
+			return nil
 		default:
-			return utils.LavaFormatError("URL scheme should be (http/https), got: "+parsedUrl.Scheme, nil,
+			return utils.LavaFormatError("URL scheme should be (http/https) or websocket (ws/wss), got: "+parsedUrl.Scheme, nil,
 				utils.LogAttr("url", endpoint),
 				utils.LogAttr("apiInterface", apiInterface),
 			)
