@@ -65,7 +65,7 @@ func TestDirectRPCSessionConnection_InterfaceCompliance(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://eth-mainnet.g.alchemy.com/v2/test"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	
 	qosManager := &qos.QoSManager{}
@@ -89,7 +89,7 @@ func TestDirectRPCSessionConnection_IsHealthy(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -126,7 +126,7 @@ func TestSingleConsumerSession_GetDirectConnection(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Test with DirectRPCSessionConnection
@@ -164,7 +164,7 @@ func TestSingleConsumerSession_IsDirectRPC(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -239,7 +239,7 @@ func TestEndpoint_IsDirectRPC(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -279,7 +279,7 @@ func TestEndpoint_IsProviderRelay(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -320,7 +320,7 @@ func TestSessionConnection_TypeSafety(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Create a session with DirectRPCSessionConnection

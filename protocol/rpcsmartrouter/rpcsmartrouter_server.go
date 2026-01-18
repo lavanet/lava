@@ -171,6 +171,17 @@ func (rpcss *RPCSmartRouterServer) GetListeningAddress() string {
 	return rpcss.chainListener.GetListeningAddress()
 }
 
+// GetGRPCReflectionConnection implements chainlib.GRPCReflectionProvider.
+// This enables gRPC reflection for tools like grpcurl when using Direct RPC mode.
+// Returns a connection to the upstream gRPC server for reflection requests.
+func (rpcss *RPCSmartRouterServer) GetGRPCReflectionConnection(ctx context.Context) (*grpc.ClientConn, func(), error) {
+	if rpcss.grpcSubscriptionManager == nil {
+		return nil, nil, fmt.Errorf("gRPC reflection not available: no gRPC subscription manager configured")
+	}
+
+	return rpcss.grpcSubscriptionManager.GetReflectionConnection(ctx)
+}
+
 func (rpcss *RPCSmartRouterServer) sendCraftedRelaysWrapper(ctx context.Context, initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
@@ -1722,50 +1733,20 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		)
 	}
 
-	// Check for gRPC streaming method - route to subscription manager if available
+	// Check for gRPC streaming method - currently not supported in Direct RPC mode
+	// TODO: Full streaming support requires ChainListener changes to maintain client connections
+	// and route repliesChan messages back to the client. For now, we refuse streaming RPCs
+	// to avoid resource leaks (upstream subscriptions left running without consumers).
 	if rpcss.grpcSubscriptionManager != nil && directConnection.GetProtocol() == "grpc" {
 		methodPath := chainMessage.GetApi().Name
 		isStreaming, _, streamErr := rpcss.grpcSubscriptionManager.IsStreamingMethod(ctx, methodPath)
 		if streamErr == nil && isStreaming {
-			// Route streaming request to gRPC subscription manager
-			startTime := time.Now()
-			// Use connection unique ID for routing (generate from session)
-			connectionUniqueId := fmt.Sprintf("direct-%s-%d", singleConsumerSession.Parent.PublicLavaAddress, time.Now().UnixNano())
-			firstReply, repliesChan, err := rpcss.grpcSubscriptionManager.StartSubscription(
-				ctx,
-				chainMessage,
-				"", // dappID - not used in direct mode
-				"", // consumerIp - not used in direct mode
-				connectionUniqueId,
-				analytics,
-			)
-			relayLatency = time.Since(startTime)
-
-			if err != nil {
-				utils.LavaFormatDebug("gRPC streaming subscription failed",
-					utils.LogAttr("method", methodPath),
-					utils.LogAttr("error", err.Error()),
-				)
-				return relayLatency, err, false
-			}
-
-			// Return first reply in the result
-			// Note: Subsequent messages from repliesChan would be handled by a streaming response mechanism
-			// For now, we just return the first reply. Full streaming support requires ChainListener changes.
-			_ = repliesChan // Channel will be handled by caller or streaming infrastructure
-
-			relayResult.Reply = firstReply
-			relayResult.Finalized = true
-			relayResult.ProviderInfo = common.ProviderInfo{
-				ProviderAddress: singleConsumerSession.Parent.PublicLavaAddress,
-			}
-
-			utils.LavaFormatDebug("gRPC streaming subscription started",
+			utils.LavaFormatWarning("gRPC streaming methods not yet supported in Direct RPC mode",
+				nil,
 				utils.LogAttr("method", methodPath),
-				utils.LogAttr("connectionId", connectionUniqueId),
-				utils.LogAttr("latency", relayLatency),
+				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
 			)
-			return relayLatency, nil, false
+			return 0, fmt.Errorf("gRPC streaming method %q not supported in Direct RPC mode; use provider-based relay for streaming", methodPath), false
 		}
 	}
 

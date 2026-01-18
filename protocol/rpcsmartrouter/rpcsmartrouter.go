@@ -514,10 +514,12 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 				// Create DirectRPCConnection for smart router (direct mode)
 				// Use default parallel connections for HTTP connection pooling
+				// Pass ApiInterface for proper protocol detection (bare host:port → gRPC when interface is gRPC)
 				directConn, err := lavasession.NewDirectRPCConnection(
 					ctx,
 					url,
 					uint(lavasession.DefaultMaximumStreamsOverASingleConnection),
+					provider.ApiInterface, // Used for protocol detection when URL has no scheme
 				)
 				if err != nil {
 					utils.LavaFormatWarning("failed to create direct RPC connection", err,

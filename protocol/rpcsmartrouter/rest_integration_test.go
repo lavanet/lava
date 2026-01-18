@@ -46,7 +46,7 @@ func TestRESTRelay_GET_PathParameters(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -98,7 +98,7 @@ func TestRESTRelay_GET_QueryParameters(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -147,7 +147,7 @@ func TestRESTRelay_POST_JSONBody(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -192,7 +192,7 @@ func TestRESTRelay_404_NotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -238,7 +238,7 @@ func TestRESTRelay_429_RateLimit(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -283,7 +283,7 @@ func TestRESTRelay_503_ServiceUnavailable(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{
@@ -330,7 +330,7 @@ func TestRESTRelay_ResponseHeaders(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeUrl := endpoint.NodeUrls[0]
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	sender := &DirectRPCRelaySender{

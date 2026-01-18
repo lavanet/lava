@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -117,6 +118,16 @@ type ChainMessageForSend interface {
 
 type HealthReporter interface {
 	IsHealthy() bool
+}
+
+// GRPCReflectionProvider is an optional interface that can be implemented by RelaySender
+// to provide gRPC reflection support. When implemented, the gRPC listener will register
+// a reflection proxy service that enables tools like grpcurl to discover services.
+type GRPCReflectionProvider interface {
+	// GetGRPCReflectionConnection returns a gRPC connection for reflection requests.
+	// The cleanup function should be called when the connection is no longer needed.
+	// Returns nil if reflection is not supported.
+	GetGRPCReflectionConnection(ctx context.Context) (conn *grpc.ClientConn, cleanup func(), err error)
 }
 
 type RelaySender interface {

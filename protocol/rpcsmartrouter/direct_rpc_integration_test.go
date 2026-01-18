@@ -37,7 +37,7 @@ func TestDirectRPCRelaySender_SendDirectRelay(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: mockServer.URL}
 
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, directConn)
 
@@ -80,7 +80,7 @@ func TestDirectRPCRelaySender_SendDirectRelay_Timeout(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: mockServer.URL}
 
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Create sender
@@ -113,7 +113,7 @@ func TestDirectRPCRelaySender_SendDirectRelay_ServerError(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: mockServer.URL}
 
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Create sender
@@ -150,7 +150,7 @@ func TestRelayInner_DirectRPCBranching(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: mockServer.URL}
 
-	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Create parent ConsumerSessionsWithProvider with endpoint

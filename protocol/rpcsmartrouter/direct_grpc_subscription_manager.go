@@ -228,6 +228,34 @@ func (dgm *DirectGRPCSubscriptionManager) cleanupStaleSubscriptions() {
 	}
 }
 
+// GetReflectionConnection returns a gRPC connection for reflection requests.
+// This enables tools like grpcurl to discover services through the smart router.
+// The cleanup function should be called when the connection is no longer needed.
+func (dgm *DirectGRPCSubscriptionManager) GetReflectionConnection(ctx context.Context) (*grpc.ClientConn, func(), error) {
+	if len(dgm.grpcEndpoints) == 0 {
+		return nil, nil, fmt.Errorf("no gRPC endpoints available for reflection")
+	}
+
+	// Get a pool/connection for reflection
+	pool, err := dgm.getOrCreatePool(ctx, dgm.grpcEndpoints[0])
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get pool for reflection: %w", err)
+	}
+
+	conn, err := pool.GetConnectionForStream(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get connection for reflection: %w", err)
+	}
+
+	// Return the underlying gRPC connection
+	// The cleanup function doesn't need to do anything special since we're using the pool
+	cleanup := func() {
+		// Connection is managed by the pool - no cleanup needed
+	}
+
+	return conn.GetConn(), cleanup, nil
+}
+
 // IsStreamingMethod checks if a gRPC method is server-streaming
 func (dgm *DirectGRPCSubscriptionManager) IsStreamingMethod(ctx context.Context, methodPath string) (bool, *desc.MethodDescriptor, error) {
 	// Parse service and method name

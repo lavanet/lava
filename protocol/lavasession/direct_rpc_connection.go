@@ -84,6 +84,16 @@ type DirectRPCConnection interface {
 	GetNodeUrl() *common.NodeUrl
 }
 
+// GRPCDescriptorProvider is an optional interface that gRPC connections can implement
+// to provide access to method descriptors. This is used for parsing gRPC responses
+// to extract block heights for QoS sync tracking.
+type GRPCDescriptorProvider interface {
+	// GetCachedMethodDescriptor returns a cached method descriptor for the given method path.
+	// Returns nil if no descriptor is cached for this method.
+	// The methodPath should be in the format "service/method" (e.g., "cosmos.bank.v1beta1.Query/TotalSupply")
+	GetCachedMethodDescriptor(methodPath string) *desc.MethodDescriptor
+}
+
 // HTTPDirectRPCResponse contains complete HTTP response data (Phase 4 REST support)
 type HTTPDirectRPCResponse struct {
 	StatusCode int                 // HTTP status code (200, 404, 500, etc.)
@@ -172,13 +182,16 @@ type GRPCNodeErrorResponse struct {
 // Default gRPC error code when status cannot be determined
 const GRPCStatusCodeOnFailedMessages = 32
 
-// NewDirectRPCConnection creates a new direct RPC connection based on URL protocol
+// NewDirectRPCConnection creates a new direct RPC connection based on URL protocol.
+// The apiInterface parameter provides context for protocol detection when URL has no scheme
+// (e.g., bare "host:port" should be treated as gRPC when apiInterface is "grpc").
 func NewDirectRPCConnection(
 	ctx context.Context,
 	nodeUrl common.NodeUrl,
 	parallelConnections uint,
+	apiInterface string, // Optional: used for protocol detection hint (e.g., "grpc", "rest", "jsonrpc")
 ) (DirectRPCConnection, error) {
-	protocol, err := DetectProtocol(nodeUrl.Url)
+	protocol, err := DetectProtocol(nodeUrl.Url, apiInterface)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect protocol: %w", err)
 	}
@@ -212,8 +225,13 @@ func NewDirectRPCConnection(
 	}
 }
 
-// DetectProtocol detects the RPC protocol from URL scheme
-func DetectProtocol(urlStr string) (DirectRPCProtocol, error) {
+// DetectProtocol detects the RPC protocol from URL scheme.
+// The apiInterface parameter provides a hint when the URL has no explicit scheme:
+//   - For "grpc" interface: bare "host:port" → gRPC
+//   - For other interfaces: bare "host:port" → HTTPS (default)
+//
+// This matches the behavior of rpcconsumer/provider which accept bare host:port for gRPC.
+func DetectProtocol(urlStr string, apiInterface string) (DirectRPCProtocol, error) {
 	parsed, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
@@ -232,8 +250,15 @@ func DetectProtocol(urlStr string) (DirectRPCProtocol, error) {
 	case "grpc", "grpcs":
 		return DirectRPCProtocolGRPC, nil
 	default:
-		// Default to HTTPS for URLs without explicit scheme
+		// Handle URLs without explicit scheme (bare "host:port")
 		if scheme == "" {
+			// If API interface is gRPC, treat bare host:port as gRPC
+			// This matches rpcconsumer/provider behavior where gRPC endpoints
+			// are commonly specified as "127.0.0.1:9090" without scheme
+			if strings.ToLower(apiInterface) == "grpc" {
+				return DirectRPCProtocolGRPC, nil
+			}
+			// Default to HTTPS for other interfaces
 			return DirectRPCProtocolHTTPS, nil
 		}
 		return "", fmt.Errorf("unsupported URL scheme: %s", scheme)
@@ -693,6 +718,21 @@ func (g *GRPCDirectRPCConnection) getMethodDescriptor(
 	g.descriptorsCache.Store(fullMethodName, methodDescriptor)
 
 	return methodDescriptor, nil
+}
+
+// GetCachedMethodDescriptor returns a cached method descriptor for the given method path.
+// This implements the GRPCDescriptorProvider interface.
+// The methodPath should be in format "service/method" (e.g., "cosmos.bank.v1beta1.Query/TotalSupply")
+// Returns nil if no descriptor is cached (call SendRequest first to populate cache).
+func (g *GRPCDirectRPCConnection) GetCachedMethodDescriptor(methodPath string) *desc.MethodDescriptor {
+	// Parse the method path to get the full name used in cache
+	svc, methodName := rpcInterfaceMessages.ParseSymbol(methodPath)
+	fullMethodName := svc + "." + methodName
+
+	if methodDesc, found, _ := g.descriptorsCache.Load(fullMethodName); found {
+		return methodDesc
+	}
+	return nil
 }
 
 // parseInputMessage parses the input data into the dynamic message.

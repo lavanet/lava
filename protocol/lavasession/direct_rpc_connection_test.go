@@ -75,7 +75,7 @@ func TestDetectProtocol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			protocol, err := DetectProtocol(tt.url)
+			protocol, err := DetectProtocol(tt.url, "")
 			
 			if tt.wantErr {
 				require.Error(t, err)
@@ -92,7 +92,7 @@ func TestHTTPConnectionCreation(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "http://localhost:8545"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
@@ -108,7 +108,7 @@ func TestHTTPSConnectionCreation(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://eth-mainnet.g.alchemy.com/v2/test"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
@@ -124,7 +124,7 @@ func TestWebSocketConnectionCreation(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "wss://eth-mainnet.g.alchemy.com/v2/test"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
@@ -141,7 +141,7 @@ func TestGRPCConnectionCreation(t *testing.T) {
 	// Use grpcs:// (secure) to avoid the allow-insecure requirement
 	nodeUrl := common.NodeUrl{Url: "grpcs://localhost:9090"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
@@ -163,7 +163,7 @@ func TestGRPCConnectionCreationInsecure(t *testing.T) {
 		},
 	}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
@@ -178,7 +178,7 @@ func TestConnectionCreationWithInvalidURL(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "://invalid"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.Error(t, err)
 	assert.Nil(t, conn)
 	assert.Contains(t, err.Error(), "failed to detect protocol")
@@ -188,7 +188,7 @@ func TestConnectionCreationWithUnsupportedProtocol(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "ftp://example.com"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.Error(t, err)
 	assert.Nil(t, conn)
 	assert.Contains(t, err.Error(), "failed to detect protocol")
@@ -198,7 +198,7 @@ func TestHTTPConnectionInterface(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// Verify it implements DirectRPCConnection interface
@@ -215,7 +215,7 @@ func TestWebSocketSendRequestNotImplemented(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "wss://test.example.com"}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// WebSocket SendRequest should return not implemented error
@@ -261,7 +261,7 @@ func TestGRPCConnectionURLValidation(t *testing.T) {
 				},
 			}
 
-			conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+			conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -287,7 +287,7 @@ func TestGRPCConnectionSendRequestRequiresMethodHeader(t *testing.T) {
 		Url: "grpcs://localhost:9090",
 	}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
 	// SendRequest without x-grpc-method header should fail
@@ -315,7 +315,7 @@ func TestGRPCConnectionWithGrpcConfig(t *testing.T) {
 		},
 	}
 
-	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	conn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
