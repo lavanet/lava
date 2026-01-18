@@ -8,8 +8,12 @@ endpoints:
     chain-id: "LAV1"
     api-interface: "rest"
 
+  - network-address: "0.0.0.0:3361"
+    chain-id: "LAV1"
+    api-interface: "grpc"
+
 static-providers:
-  # 3 upstream endpoints (all pointing at the same local node by default)
+  # 3 upstream REST endpoints (all pointing at the same local node by default)
   # This matches the ETH direct-RPC scripts pattern and is useful for testing selection/failover logic.
   - name: "lava-local-rest-1"
     chain-id: "LAV1"
@@ -34,6 +38,41 @@ static-providers:
     api-interface: "rest"
     node-urls:
       - url: "http://127.0.0.1:1317"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  # 3 upstream gRPC endpoints (all pointing at the same local node by default)
+  # grpc-config.allow-insecure: true is required for grpc:// (non-TLS) connections
+  - name: "lava-local-grpc-1"
+    chain-id: "LAV1"
+    api-interface: "grpc"
+    node-urls:
+      - url: "grpc://127.0.0.1:9090"
+        grpc-config:
+          allow-insecure: true
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "lava-local-grpc-2"
+    chain-id: "LAV1"
+    api-interface: "grpc"
+    node-urls:
+      - url: "grpc://127.0.0.1:9090"
+        grpc-config:
+          allow-insecure: true
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "lava-local-grpc-3"
+    chain-id: "LAV1"
+    api-interface: "grpc"
+    node-urls:
+      - url: "grpc://127.0.0.1:9090"
+        grpc-config:
+          allow-insecure: true
         skip-verifications:
           - chain-id
           - pruning

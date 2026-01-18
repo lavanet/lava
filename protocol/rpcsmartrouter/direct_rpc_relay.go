@@ -7,7 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/fullstorydev/grpcurl"
 	"github.com/goccy/go-json"
+	"github.com/golang/protobuf/proto"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -115,6 +119,31 @@ func extractBlockHeightFromGRPCResponse(
 	)
 
 	return parsedInput.GetBlock()
+}
+
+// createGRPCFormatter creates a grpcurl.Formatter for converting protobuf messages to JSON.
+// This is needed for parsing gRPC responses to extract block heights.
+// The formatter uses the method descriptor's output type to properly format the response.
+func createGRPCFormatter(methodDesc *desc.MethodDescriptor) grpcurl.Formatter {
+	return func(msg proto.Message) (string, error) {
+		// The message should be a dynamic.Message from protoreflect
+		dynMsg, ok := msg.(*dynamic.Message)
+		if !ok {
+			// Try to marshal using standard JSON for other proto types
+			jsonBytes, err := json.Marshal(msg)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal proto message: %w", err)
+			}
+			return string(jsonBytes), nil
+		}
+
+		// Use dynamic message's JSON marshaling (matches grpcurl behavior)
+		jsonBytes, err := dynMsg.MarshalJSON()
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal dynamic message to JSON: %w", err)
+		}
+		return string(jsonBytes), nil
+	}
 }
 
 // sanitizeEndpointURL removes sensitive information (API keys, tokens) from URLs
@@ -484,13 +513,10 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			utils.LogAttr("latency", latency),
 		)
 
-		// Check if it's a gRPC status error
-		var grpcErr *lavasession.GRPCStatusError
-		if ok := err.(*lavasession.GRPCStatusError); ok != nil {
-			grpcErr = ok
-		}
+		// Check if it's a gRPC status error (use comma-ok idiom to avoid panic)
+		grpcErr, isGRPCErr := err.(*lavasession.GRPCStatusError)
 
-		if grpcErr != nil && response != nil {
+		if isGRPCErr && response != nil {
 			// gRPC error with status code - might contain valid error response
 			// The response.Data contains the error details in JSON format
 			return &common.RelayResult{
@@ -524,6 +550,17 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			utils.LogAttr("method", methodPath),
 			utils.LogAttr("error", errorMessage),
 		)
+	}
+
+	// Set parsing data on grpcMessage for block height extraction (QoS sync tracking)
+	// This is required because FormatResponseForParsing needs the method descriptor and formatter
+	// to properly parse the binary protobuf response into JSON for block extraction.
+	// The descriptor is cached by GRPCDirectRPCConnection during SendRequest.
+	if descriptorProvider, ok := d.directConnection.(lavasession.GRPCDescriptorProvider); ok {
+		if methodDesc := descriptorProvider.GetCachedMethodDescriptor(methodPath); methodDesc != nil {
+			formatter := createGRPCFormatter(methodDesc)
+			grpcMessage.SetParsingData(methodDesc, formatter)
+		}
 	}
 
 	// Extract block height from gRPC response using spec-driven parsing (for QoS sync tracking)

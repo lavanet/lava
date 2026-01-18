@@ -21,7 +21,7 @@ func TestGetConsumerSessionInstanceFromEndpoint_DirectRPC(t *testing.T) {
 	nodeUrl := common.NodeUrl{Url: "https://eth-mainnet.g.alchemy.com/v2/test-key"}
 	
 	// Create direct RPC connection
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	
 	// Create endpoint with DirectConnections (smart router mode)
@@ -143,7 +143,7 @@ func TestFetchEndpointConnection_DirectRPC(t *testing.T) {
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
 	
 	// Create direct RPC connection
-	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5)
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 	
 	// Create endpoint with DirectConnections
