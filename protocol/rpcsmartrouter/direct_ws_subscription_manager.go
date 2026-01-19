@@ -56,6 +56,10 @@ type directActiveSubscription struct {
 	// First reply cached for deduplication
 	firstReply *pairingtypes.RelayReply
 
+	// Original result from upstream for Tendermint (stores {"query":"..."} format)
+	// Used when joining clients need the original response format
+	originalResult json.RawMessage
+
 	// Lifecycle
 	ctx          context.Context
 	cancel       context.CancelFunc
@@ -583,7 +587,9 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		utils.LogAttr("endpoint", sanitizeEndpointURL(selectedEndpoint.Url)),
 	)
 
-	// Generate router subscription ID
+	// Generate router subscription ID (for EVM deduplication)
+	// For Tendermint, the query string is the identifier, but we still generate
+	// router IDs for internal tracking (not exposed to clients)
 	routerID := dwsm.idMapper.GenerateRouterID(clientKey)
 
 	// Extract upstream subscription ID based on API interface
@@ -592,8 +598,14 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	upstreamID := getSubscriptionID(dwsm.apiInterface, firstMsg, subscriptionParams)
 	dwsm.idMapper.RegisterMapping(routerID, upstreamID)
 
-	// Create first reply with router ID
-	firstReplyData, err := createSubscriptionReply(routerID, firstMsg)
+	// Store original result for Tendermint (needed when joining clients need the response)
+	var originalResult json.RawMessage
+	if firstMsg != nil && firstMsg.Result != nil {
+		originalResult = firstMsg.Result
+	}
+
+	// Create first reply - preserves original format for Tendermint, uses router ID for EVM
+	firstReplyData, err := createSubscriptionReply(routerID, firstMsg, dwsm.apiInterface)
 	if err != nil {
 		upstreamSub.Unsubscribe()
 		dwsm.failPendingSubscription(hashedParams)
@@ -623,6 +635,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		subscribeMethod:      subscribeMethod,    // Store for restoration (eth_subscribe, subscribe, etc.)
 		connectedClients:     make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
 		firstReply:           firstReply,
+		originalResult:       originalResult, // Store for Tendermint joining clients
 		ctx:                  subCtx,
 		cancel:               cancel,
 		closeSubChan:         make(chan struct{}),
@@ -938,7 +951,8 @@ func (dwsm *DirectWSSubscriptionManager) checkForActiveSubscriptionAndConnect(
 	// Check if client is already connected - return their existing router ID's reply
 	if existingRouterID, exists := activeSub.clientRouterIDs[clientKey]; exists {
 		// Create reply with client's existing router ID and their request ID
-		replyData, err := createSubscriptionReplyFromRouterID(existingRouterID, requestID)
+		// For Tendermint: uses originalResult to preserve {"query":"..."} format
+		replyData, err := createSubscriptionReplyFromRouterID(existingRouterID, requestID, dwsm.apiInterface, activeSub.originalResult)
 		if err != nil {
 			utils.LavaFormatWarning("DirectWS: failed to create reply for existing client", err)
 			return activeSub.firstReply, false
@@ -946,7 +960,8 @@ func (dwsm *DirectWSSubscriptionManager) checkForActiveSubscriptionAndConnect(
 		return &pairingtypes.RelayReply{Data: replyData}, false
 	}
 
-	// Generate a unique router ID for this joining client
+	// Generate a unique router ID for this joining client (for EVM deduplication)
+	// For Tendermint, we still generate IDs for internal tracking but don't expose them
 	clientRouterID := dwsm.idMapper.GenerateRouterID(clientKey)
 
 	// Register the mapping: this client's router ID -> shared upstream ID
@@ -968,7 +983,8 @@ func (dwsm *DirectWSSubscriptionManager) checkForActiveSubscriptionAndConnect(
 	)
 
 	// Create first reply with this client's unique router ID and their request ID
-	replyData, err := createSubscriptionReplyFromRouterID(clientRouterID, requestID)
+	// For Tendermint: uses originalResult to preserve {"query":"..."} format
+	replyData, err := createSubscriptionReplyFromRouterID(clientRouterID, requestID, dwsm.apiInterface, activeSub.originalResult)
 	if err != nil {
 		utils.LavaFormatWarning("DirectWS: failed to create reply for joining client", err)
 		return activeSub.firstReply, true // Fallback to original reply
@@ -1446,12 +1462,19 @@ func getSubscriptionID(apiInterface string, responseMsg *rpcclient.JsonrpcMessag
 }
 
 // createSubscriptionReply creates the first reply with the router subscription ID
-func createSubscriptionReply(routerID string, originalMsg *rpcclient.JsonrpcMessage) ([]byte, error) {
+func createSubscriptionReply(routerID string, originalMsg *rpcclient.JsonrpcMessage, apiInterface string) ([]byte, error) {
 	if originalMsg == nil {
 		return nil, fmt.Errorf("original message is nil")
 	}
 
-	// Create response with router ID instead of upstream ID
+	// For Tendermint: preserve the original response format {"result":{"query":"..."}}
+	// Tendermint clients expect the query object back, not a router ID
+	if apiInterface == "tendermintrpc" {
+		// Return original message as-is - it already has the correct format
+		return json.Marshal(originalMsg)
+	}
+
+	// For EVM: create response with router ID instead of upstream ID
 	response := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"id":      originalMsg.ID,
@@ -1464,8 +1487,20 @@ func createSubscriptionReply(routerID string, originalMsg *rpcclient.JsonrpcMess
 // createSubscriptionReplyFromRouterID creates a subscription reply with the router ID and matching request ID.
 // Used when a client joins an existing subscription and needs their unique router ID in the response.
 // The requestID must match the client's original eth_subscribe request per JSON-RPC 2.0 spec.
-func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMessage) ([]byte, error) {
-	// Create response with the client's unique router ID and their original request ID
+// For Tendermint, originalResult contains the query object that must be preserved.
+func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMessage, apiInterface string, originalResult json.RawMessage) ([]byte, error) {
+	// For Tendermint: preserve the original result format {"query":"..."}
+	// Tendermint clients expect the query object back, not a router ID
+	if apiInterface == "tendermintrpc" && originalResult != nil {
+		response := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      json.RawMessage(requestID),
+			"result":  json.RawMessage(originalResult), // Preserve {"query":"..."} format
+		}
+		return json.Marshal(response)
+	}
+
+	// For EVM: create response with the client's unique router ID and their original request ID
 	// JSON-RPC 2.0 requires the response ID to match the request ID exactly
 	response := map[string]interface{}{
 		"jsonrpc": "2.0",

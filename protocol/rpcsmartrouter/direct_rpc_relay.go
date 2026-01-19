@@ -28,9 +28,40 @@ type DirectRPCRelaySender struct {
 	endpointName     string // Sanitized endpoint name (no API keys)
 }
 
-// extractLatestBlockFromResponse attempts to extract the latest block number from RPC response
-// Returns 0 if the method doesn't include block information
-func extractLatestBlockFromResponse(responseData []byte, method string) int64 {
+// extractBlockHeightFromJSONResponse extracts block height using spec-driven parsing.
+// This works for any API interface (EVM, Tendermint, etc.) by using the chain's
+// parse directives defined in the spec. Falls back to EVM-specific parsing for
+// backwards compatibility when parse directive is not available.
+func extractBlockHeightFromJSONResponse(
+	responseData []byte,
+	chainMessage chainlib.ChainMessage,
+) int64 {
+	// First try spec-driven parsing (works for all API interfaces including Tendermint)
+	parseDirective := chainMessage.GetParseDirective()
+	if parseDirective != nil {
+		parserInput, err := chainlib.FormatResponseForParsing(
+			&pairingtypes.RelayReply{Data: responseData},
+			chainMessage,
+		)
+		if err == nil {
+			parsedInput := parser.ParseBlockFromReply(
+				parserInput,
+				parseDirective.ResultParsing,
+				parseDirective.Parsers,
+			)
+			if block := parsedInput.GetBlock(); block > 0 {
+				return block
+			}
+		}
+	}
+
+	// Fallback to EVM-specific parsing for backwards compatibility
+	return extractLatestBlockFromEVMResponse(responseData, chainMessage.GetApi().Name)
+}
+
+// extractLatestBlockFromEVMResponse extracts block height from EVM JSON-RPC responses.
+// This is a fallback for EVM chains when spec-driven parsing doesn't yield results.
+func extractLatestBlockFromEVMResponse(responseData []byte, method string) int64 {
 	// Parse response JSON
 	var jsonResponse struct {
 		Result interface{} `json:"result"`
@@ -300,7 +331,8 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	}
 
 	// Extract latest block from response if possible (for QoS sync tracking)
-	latestBlockFromResponse := extractLatestBlockFromResponse(responseData, chainMessage.GetApi().Name)
+	// Uses spec-driven parsing for all API interfaces (EVM, Tendermint, etc.)
+	latestBlockFromResponse := extractBlockHeightFromJSONResponse(responseData, chainMessage)
 
 	// ✅ FIX Gap 3: Convert response headers to metadata (same as REST path)
 	// This enables Provider-Latest-Block, lava-identified-node-error, and upstream hints

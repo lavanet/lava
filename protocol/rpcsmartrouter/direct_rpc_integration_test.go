@@ -263,3 +263,104 @@ func (m *mockGenericMessage) DisableErrorHandling() {}
 func (m *mockGenericMessage) GetParams() interface{} {
 	return nil
 }
+
+// ==================== Block Extraction Tests ====================
+
+// TestExtractLatestBlockFromEVMResponse tests EVM-specific block extraction
+func TestExtractLatestBlockFromEVMResponse(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseData []byte
+		method       string
+		expected     int64
+	}{
+		{
+			name:         "eth_blockNumber - hex string",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":"0x12a7b5c"}`),
+			method:       "eth_blockNumber",
+			expected:     19561308, // 0x12a7b5c in decimal
+		},
+		{
+			name:         "eth_getBlockByNumber - block object",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":{"number":"0x100","hash":"0xabc"}}`),
+			method:       "eth_getBlockByNumber",
+			expected:     256, // 0x100 in decimal
+		},
+		{
+			name:         "eth_getBlockByHash - block object",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":{"number":"0xff","hash":"0xdef"}}`),
+			method:       "eth_getBlockByHash",
+			expected:     255, // 0xff in decimal
+		},
+		{
+			name:         "eth_getTransactionReceipt - receipt object",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x200","transactionHash":"0x123"}}`),
+			method:       "eth_getTransactionReceipt",
+			expected:     512, // 0x200 in decimal
+		},
+		{
+			name:         "eth_getLogs - logs array",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":[{"blockNumber":"0x300","logIndex":"0x0"}]}`),
+			method:       "eth_getLogs",
+			expected:     768, // 0x300 in decimal
+		},
+		{
+			name:         "unknown method - returns 0",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":"0x12345"}`),
+			method:       "eth_call",
+			expected:     0,
+		},
+		{
+			name:         "invalid JSON - returns 0",
+			responseData: []byte(`not json`),
+			method:       "eth_blockNumber",
+			expected:     0,
+		},
+		{
+			name:         "null result - returns 0",
+			responseData: []byte(`{"jsonrpc":"2.0","id":1,"result":null}`),
+			method:       "eth_getBlockByNumber",
+			expected:     0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractLatestBlockFromEVMResponse(tt.responseData, tt.method)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestExtractBlockHeightFromJSONResponse_Tendermint tests Tendermint-specific block extraction
+// Note: This tests the fallback behavior when parse directive is nil
+func TestExtractBlockHeightFromJSONResponse_WithoutParseDirective(t *testing.T) {
+	// Create a mock chain message without parse directive (simulating Tendermint without spec)
+	mockMsg := &mockChainMessage{
+		api: &spectypes.Api{Name: "status"},
+	}
+
+	// Tendermint status response - without spec-driven parsing, returns 0 (fallback)
+	// This is expected behavior - Tendermint methods need spec parsing to extract blocks
+	responseData := []byte(`{"jsonrpc":"2.0","id":1,"result":{"sync_info":{"latest_block_height":"12345"}}}`)
+	result := extractBlockHeightFromJSONResponse(responseData, mockMsg)
+
+	// Without parse directive, Tendermint methods will return 0 (needs spec for proper parsing)
+	// This test verifies the fallback behavior doesn't crash
+	assert.Equal(t, int64(0), result, "Without parse directive, Tendermint should fallback gracefully")
+}
+
+// TestExtractBlockHeightFromJSONResponse_EVMFallback tests EVM fallback when no parse directive
+func TestExtractBlockHeightFromJSONResponse_EVMFallback(t *testing.T) {
+	// Create mock chain message without parse directive but with EVM method
+	mockMsg := &mockChainMessage{
+		api: &spectypes.Api{Name: "eth_blockNumber"},
+	}
+
+	// EVM eth_blockNumber response
+	responseData := []byte(`{"jsonrpc":"2.0","id":1,"result":"0x1000"}`)
+	result := extractBlockHeightFromJSONResponse(responseData, mockMsg)
+
+	// Should fallback to EVM-specific parsing
+	assert.Equal(t, int64(4096), result, "EVM methods should work via fallback parsing")
+}
