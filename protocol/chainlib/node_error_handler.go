@@ -149,10 +149,11 @@ func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
 func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
 	// Convert to lowercase once (single O(n) pass)
 	errorMsgLower := bytes.ToLower(errorMessage)
+	msgLen := len(errorMsgLower)
 
 	// Check all patterns with early exit on first match
 	for _, pattern := range unsupportedMethodPatternBytes {
-		if bytes.Contains(errorMsgLower, pattern) {
+		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
 			return true
 		}
 	}
