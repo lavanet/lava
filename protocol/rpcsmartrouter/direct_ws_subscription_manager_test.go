@@ -1254,3 +1254,172 @@ func TestUnsubscribeRouterIDOwnershipValidation(t *testing.T) {
 	assert.True(t, client2StillConnected, "Client 2 should still be connected")
 	assert.True(t, client2RouterStillExists, "Client 2's router ID should still exist")
 }
+
+// ==================== Tendermint RPC Subscription Tests ====================
+
+// TestExtractTendermintSubscriptionID tests extraction of subscription ID from Tendermint params
+func TestExtractTendermintSubscriptionID(t *testing.T) {
+	tests := []struct {
+		name     string
+		params   []byte
+		expected string
+	}{
+		{
+			name:     "valid query param",
+			params:   []byte(`{"query":"tm.event='NewBlock'"}`),
+			expected: "tm.event='NewBlock'",
+		},
+		{
+			name:     "valid query with spaces",
+			params:   []byte(`{"query": "tm.event = 'NewBlock'"}`),
+			expected: "tm.event = 'NewBlock'",
+		},
+		{
+			name:     "empty params",
+			params:   nil,
+			expected: "",
+		},
+		{
+			name:     "missing query field",
+			params:   []byte(`{"foo":"bar"}`),
+			expected: "",
+		},
+		{
+			name:     "invalid json",
+			params:   []byte(`{invalid}`),
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractTendermintSubscriptionID(tt.params)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestGetSubscriptionID tests the protocol-aware subscription ID extraction
+func TestGetSubscriptionID(t *testing.T) {
+	// Test EVM (eth_subscribe) - subscription ID from response result
+	t.Run("EVM subscription ID from result", func(t *testing.T) {
+		msg := &rpcclient.JsonrpcMessage{
+			Result: json.RawMessage(`"0x1a2b3c4d"`),
+		}
+		result := getSubscriptionID("jsonrpc", msg, nil)
+		assert.Equal(t, "0x1a2b3c4d", result)
+	})
+
+	// Test Tendermint - subscription ID from request params (query)
+	t.Run("Tendermint subscription ID from params query", func(t *testing.T) {
+		params := []byte(`{"query":"tm.event='NewBlock'"}`)
+		result := getSubscriptionID("tendermintrpc", nil, params)
+		assert.Equal(t, "tm.event='NewBlock'", result)
+	})
+
+	// Test Tendermint with nil response - should still get ID from params
+	t.Run("Tendermint with nil response", func(t *testing.T) {
+		params := []byte(`{"query":"tm.event='Tx'"}`)
+		msg := &rpcclient.JsonrpcMessage{
+			Result: json.RawMessage(`{}`), // Empty result (typical for Tendermint)
+		}
+		result := getSubscriptionID("tendermintrpc", msg, params)
+		assert.Equal(t, "tm.event='Tx'", result)
+	})
+}
+
+// TestRewriteSubscriptionID_Tendermint tests that Tendermint notifications are passed through
+func TestRewriteSubscriptionID_Tendermint(t *testing.T) {
+	// Tendermint notification format
+	tendermintMsg := &rpcclient.JsonrpcMessage{
+		Result: json.RawMessage(`{"query":"tm.event='NewBlock'","data":{"block":{"height":"12345"}}}`),
+	}
+
+	// Should pass through unchanged (Tendermint doesn't need ID rewriting)
+	result, err := rewriteSubscriptionID(tendermintMsg, "router-id-123")
+	require.NoError(t, err)
+
+	var parsed map[string]json.RawMessage
+	err = json.Unmarshal(result, &parsed)
+	require.NoError(t, err)
+
+	// Verify the result contains the original query (not rewritten)
+	var resultData struct {
+		Query string `json:"query"`
+	}
+	err = json.Unmarshal(parsed["result"], &resultData)
+	require.NoError(t, err)
+	assert.Equal(t, "tm.event='NewBlock'", resultData.Query)
+}
+
+// TestRewriteSubscriptionID_EVM tests that EVM notifications are properly rewritten
+func TestRewriteSubscriptionID_EVM(t *testing.T) {
+	// EVM notification format
+	evmMsg := &rpcclient.JsonrpcMessage{
+		Method: "eth_subscription",
+		Params: json.RawMessage(`{"subscription":"0xoriginal","result":{"blockNumber":"0x1234"}}`),
+	}
+
+	result, err := rewriteSubscriptionID(evmMsg, "0xrouter123")
+	require.NoError(t, err)
+
+	var parsed struct {
+		Method string `json:"method"`
+		Params struct {
+			Subscription string          `json:"subscription"`
+			Result       json.RawMessage `json:"result"`
+		} `json:"params"`
+	}
+	err = json.Unmarshal(result, &parsed)
+	require.NoError(t, err)
+
+	assert.Equal(t, "eth_subscription", parsed.Method)
+	assert.Equal(t, "0xrouter123", parsed.Params.Subscription) // Should be rewritten
+}
+
+// TestDirectWSSubscriptionManager_TendermintAPIInterface tests manager with Tendermint API interface
+func TestDirectWSSubscriptionManager_TendermintAPIInterface(t *testing.T) {
+	// Use nil for metricsManager to avoid Prometheus registration conflicts in tests
+	wsEndpoints := []*common.NodeUrl{{Url: "ws://localhost:26657/websocket"}}
+
+	manager := NewDirectWSSubscriptionManager(
+		nil, // No metrics manager for this test
+		"",
+		"COSMOSHUB",
+		"tendermintrpc", // Tendermint API interface
+		wsEndpoints,
+		nil,
+		nil,
+	)
+
+	assert.Equal(t, "tendermintrpc", manager.apiInterface)
+	assert.Equal(t, "COSMOSHUB", manager.chainID)
+}
+
+// TestUnsubscribeParamsExtraction_Tendermint tests extraction of subscription ID from Tendermint unsubscribe params
+func TestUnsubscribeParamsExtraction_Tendermint(t *testing.T) {
+	// Tendermint unsubscribe format: {"query": "tm.event='NewBlock'"}
+	params := []byte(`{"query":"tm.event='NewBlock'"}`)
+
+	// Parse params and extract query
+	var paramsMap map[string]any
+	err := json.Unmarshal(params, &paramsMap)
+	require.NoError(t, err)
+
+	query, ok := paramsMap["query"].(string)
+	require.True(t, ok)
+	assert.Equal(t, "tm.event='NewBlock'", query)
+}
+
+// TestUnsubscribeParamsExtraction_EVM tests extraction of subscription ID from EVM unsubscribe params
+func TestUnsubscribeParamsExtraction_EVM(t *testing.T) {
+	// EVM unsubscribe format: ["0x1a2b3c4d"]
+	params := []byte(`["0x1a2b3c4d"]`)
+
+	// Parse params and extract subscription ID
+	var paramsArray []string
+	err := json.Unmarshal(params, &paramsArray)
+	require.NoError(t, err)
+	require.Len(t, paramsArray, 1)
+	assert.Equal(t, "0x1a2b3c4d", paramsArray[0])
+}

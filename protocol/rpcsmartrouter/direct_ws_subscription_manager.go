@@ -47,7 +47,8 @@ type directActiveSubscription struct {
 	hashedParams    string            // Hash of subscription parameters
 
 	// Subscription params for restoration after reconnect
-	subscriptionParams []byte // Original subscription params (JSON)
+	subscriptionParams []byte  // Original subscription params (JSON)
+	subscribeMethod    string  // Method name (e.g., "eth_subscribe", "subscribe")
 
 	// Client tracking - multiple clients can share one upstream subscription
 	connectedClients map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]
@@ -408,6 +409,11 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		return nil, nil, utils.LavaFormatError("could not marshal params", err)
 	}
 
+	// Extract the subscription method from the API definition
+	// - EVM chains use "eth_subscribe"
+	// - Tendermint uses "subscribe"
+	subscribeMethod := protocolMessage.GetApi().Name
+
 	// Extract the request ID from the client's message - required for JSON-RPC 2.0 compliance
 	// The response ID must match the request ID exactly
 	requestID := extractRequestID(protocolMessage.RelayPrivateData().Data)
@@ -417,6 +423,8 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	utils.LavaFormatTrace("DirectWS: request to start subscription",
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("clientKey", clientKey),
+		utils.LogAttr("subscribeMethod", subscribeMethod),
+		utils.LogAttr("apiInterface", dwsm.apiInterface),
 	)
 
 	// Check rate limiting (subscriptions per minute per client)
@@ -547,7 +555,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	}
 
 	// Create upstream subscription
-	upstreamSub, firstMsg, msgChan, err := dwsm.createUpstreamSubscription(ctx, conn, subscriptionParams)
+	upstreamSub, firstMsg, msgChan, err := dwsm.createUpstreamSubscription(ctx, conn, subscriptionParams, subscribeMethod)
 	if err != nil {
 		// Report failure to optimizer
 		if dwsm.optimizer != nil {
@@ -578,8 +586,10 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	// Generate router subscription ID
 	routerID := dwsm.idMapper.GenerateRouterID(clientKey)
 
-	// Extract upstream subscription ID from first message
-	upstreamID := extractSubscriptionID(firstMsg)
+	// Extract upstream subscription ID based on API interface
+	// - EVM chains: subscription ID is in the response result (hex string)
+	// - Tendermint: subscription ID is the query parameter from the request
+	upstreamID := getSubscriptionID(dwsm.apiInterface, firstMsg, subscriptionParams)
 	dwsm.idMapper.RegisterMapping(routerID, upstreamID)
 
 	// Create first reply with router ID
@@ -610,6 +620,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 		clientRouterIDs:      make(map[string]string),
 		hashedParams:         hashedParams,
 		subscriptionParams:   subscriptionParams, // Store for restoration after reconnect
+		subscribeMethod:      subscribeMethod,    // Store for restoration (eth_subscribe, subscribe, etc.)
 		connectedClients:     make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
 		firstReply:           firstReply,
 		ctx:                  subCtx,
@@ -672,45 +683,60 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	}
 
 	// Extract subscription ID from the unsubscribe message
-	// The params contain the subscription ID to unsubscribe from
-	routerSubID, err := dwsm.extractSubscriptionIDFromUnsubscribe(protocolMessage)
+	// - EVM: Router ID (hex string we generated)
+	// - Tendermint: Query string (the actual query used to subscribe)
+	subIDFromRequest, err := dwsm.extractSubscriptionIDFromUnsubscribe(protocolMessage)
 	if err != nil {
 		return fmt.Errorf("failed to extract subscription ID: %w", err)
 	}
 
 	utils.LavaFormatTrace("DirectWS: unsubscribe request",
-		utils.LogAttr("routerSubID", routerSubID),
+		utils.LogAttr("subIDFromRequest", subIDFromRequest),
 		utils.LogAttr("clientKey", clientKey),
+		utils.LogAttr("apiInterface", dwsm.apiInterface),
 	)
 
-	// SECURITY: Validate that the router ID belongs to the calling client BEFORE removing it.
-	// This prevents a malicious client from unsubscribing using another user's router ID.
+	// SECURITY: Validate that the subscription belongs to the calling client BEFORE removing it.
 	dwsm.lock.Lock()
 	defer dwsm.lock.Unlock()
 
-	// First, find the subscription this client is connected to and verify ownership
+	// Find the subscription this client is connected to and verify ownership
 	var activeSub *directActiveSubscription
 	var hashedParams string
-	var clientOwnsRouterID bool
+	var routerSubID string // The router ID for this client (needed for ID mapper cleanup)
+	var clientOwnsSubscription bool
 
 	for hp, sub := range dwsm.activeSubscriptions {
 		if ownedRouterID, exists := sub.clientRouterIDs[clientKey]; exists {
-			// Found a subscription this client is connected to
-			if ownedRouterID == routerSubID {
-				// Client is trying to unsubscribe from their own router ID - valid
-				activeSub = sub
-				hashedParams = hp
-				clientOwnsRouterID = true
-				break
+			// For Tendermint: client unsubscribes using the query (which is also the upstream ID)
+			// For EVM: client unsubscribes using the router ID we gave them
+			if dwsm.apiInterface == "tendermintrpc" {
+				// Tendermint: match by upstream ID (query string)
+				if sub.upstreamID == subIDFromRequest {
+					activeSub = sub
+					hashedParams = hp
+					routerSubID = ownedRouterID
+					clientOwnsSubscription = true
+					break
+				}
+			} else {
+				// EVM: match by router ID
+				if ownedRouterID == subIDFromRequest {
+					activeSub = sub
+					hashedParams = hp
+					routerSubID = ownedRouterID
+					clientOwnsSubscription = true
+					break
+				}
 			}
 		}
 	}
 
-	if !clientOwnsRouterID {
+	if !clientOwnsSubscription {
 		// Either the subscription doesn't exist or the client is trying to unsubscribe
-		// using someone else's router ID - reject the request
-		utils.LavaFormatWarning("DirectWS: unsubscribe rejected - client does not own router ID", nil,
-			utils.LogAttr("routerSubID", routerSubID),
+		// from a subscription they don't own
+		utils.LavaFormatWarning("DirectWS: unsubscribe rejected - client does not own subscription", nil,
+			utils.LogAttr("subIDFromRequest", subIDFromRequest),
 			utils.LogAttr("clientKey", clientKey),
 		)
 		return common.SubscriptionNotFoundError
@@ -847,19 +873,33 @@ func (dwsm *DirectWSSubscriptionManager) getHashedParams(protocolMessage chainli
 }
 
 // extractSubscriptionIDFromUnsubscribe extracts the subscription ID from an unsubscribe message
+// Handles both EVM and Tendermint formats:
+// - EVM (eth_unsubscribe): params is ["0x..."] (array with hex subscription ID)
+// - Tendermint (unsubscribe): params is {"query": "tm.event='NewBlock'"} (object with query field)
 func (dwsm *DirectWSSubscriptionManager) extractSubscriptionIDFromUnsubscribe(protocolMessage chainlib.ProtocolMessage) (string, error) {
 	params := protocolMessage.GetRPCMessage().GetParams()
 	if params == nil {
 		return "", fmt.Errorf("no params in unsubscribe message")
 	}
 
-	// Try to extract as array (JSON-RPC style: ["subscription_id"])
 	paramsBytes, err := gojson.Marshal(params)
 	if err != nil {
 		return "", err
 	}
 
-	var paramsArray []interface{}
+	// For Tendermint: try to extract from object with "query" field
+	// Format: {"query": "tm.event='NewBlock'"}
+	if dwsm.apiInterface == "tendermintrpc" {
+		var paramsMap map[string]any
+		if err := gojson.Unmarshal(paramsBytes, &paramsMap); err == nil {
+			if query, ok := paramsMap["query"].(string); ok && query != "" {
+				return query, nil
+			}
+		}
+	}
+
+	// For EVM: try to extract as array (JSON-RPC style: ["subscription_id"])
+	var paramsArray []any
 	if err := gojson.Unmarshal(paramsBytes, &paramsArray); err == nil && len(paramsArray) > 0 {
 		if id, ok := paramsArray[0].(string); ok {
 			return id, nil
@@ -981,10 +1021,14 @@ func (dwsm *DirectWSSubscriptionManager) successPendingSubscription(hashedParams
 
 // createUpstreamSubscription creates a subscription on the upstream WebSocket
 // Returns the subscription, first message, message channel, and error
+// The subscribeMethod parameter allows using different subscription methods for different protocols:
+// - EVM chains: "eth_subscribe"
+// - Tendermint: "subscribe"
 func (dwsm *DirectWSSubscriptionManager) createUpstreamSubscription(
 	ctx context.Context,
 	conn *UpstreamWSConnection,
 	params []byte,
+	subscribeMethod string,
 ) (*rpcclient.ClientSubscription, *rpcclient.JsonrpcMessage, chan *rpcclient.JsonrpcMessage, error) {
 	client := conn.GetClient()
 	if client == nil {
@@ -1000,8 +1044,13 @@ func (dwsm *DirectWSSubscriptionManager) createUpstreamSubscription(
 		return nil, nil, nil, fmt.Errorf("failed to unmarshal params: %w", err)
 	}
 
-	// Subscribe using rpcclient
-	sub, firstMsg, err := client.Subscribe(ctx, nil, "eth_subscribe", msgChan, subscriptionParams)
+	utils.LavaFormatTrace("DirectWS: creating upstream subscription",
+		utils.LogAttr("method", subscribeMethod),
+		utils.LogAttr("apiInterface", dwsm.apiInterface),
+	)
+
+	// Subscribe using rpcclient with the appropriate method for the protocol
+	sub, firstMsg, err := client.Subscribe(ctx, nil, subscribeMethod, msgChan, subscriptionParams)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("upstream subscribe failed: %w", err)
 	}
@@ -1144,8 +1193,8 @@ func (dwsm *DirectWSSubscriptionManager) handleUpstreamDisconnect(
 		return
 	}
 
-	// Re-subscribe using the stored params
-	newUpstreamSub, firstMsg, newMsgChan, err := dwsm.createUpstreamSubscription(ctx, conn, activeSub.subscriptionParams)
+	// Re-subscribe using the stored params and method
+	newUpstreamSub, firstMsg, newMsgChan, err := dwsm.createUpstreamSubscription(ctx, conn, activeSub.subscriptionParams, activeSub.subscribeMethod)
 	if err != nil {
 		utils.LavaFormatError("DirectWS: failed to restore subscription", err,
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
@@ -1154,8 +1203,8 @@ func (dwsm *DirectWSSubscriptionManager) handleUpstreamDisconnect(
 		return
 	}
 
-	// Extract new upstream subscription ID
-	newUpstreamID := extractSubscriptionID(firstMsg)
+	// Extract new upstream subscription ID based on API interface
+	newUpstreamID := getSubscriptionID(dwsm.apiInterface, firstMsg, activeSub.subscriptionParams)
 
 	// Increment subscription count on the NEW connection (matching initial creation behavior)
 	conn.IncrementSubscriptions()
@@ -1356,7 +1405,8 @@ func extractRequestID(data []byte) json.RawMessage {
 	return req.ID
 }
 
-// extractSubscriptionID extracts the subscription ID from the first response
+// extractSubscriptionID extracts the subscription ID from the first response (EVM style)
+// For EVM chains: the subscription ID is returned as a hex string in the result field
 func extractSubscriptionID(msg *rpcclient.JsonrpcMessage) string {
 	if msg == nil || msg.Result == nil {
 		return ""
@@ -1366,6 +1416,33 @@ func extractSubscriptionID(msg *rpcclient.JsonrpcMessage) string {
 		return ""
 	}
 	return id
+}
+
+// extractTendermintSubscriptionID extracts the subscription ID from Tendermint request params
+// For Tendermint: the subscription ID is the "query" parameter from the request
+// Example: {"query": "tm.event='NewBlock'"} -> subscription ID is "tm.event='NewBlock'"
+func extractTendermintSubscriptionID(params []byte) string {
+	if params == nil {
+		return ""
+	}
+	var paramsMap map[string]interface{}
+	if err := json.Unmarshal(params, &paramsMap); err != nil {
+		return ""
+	}
+	if query, ok := paramsMap["query"].(string); ok {
+		return query
+	}
+	return ""
+}
+
+// getSubscriptionID returns the appropriate subscription ID based on the protocol
+// For EVM chains: extracts from response result (hex string)
+// For Tendermint: extracts from request params (query field)
+func getSubscriptionID(apiInterface string, responseMsg *rpcclient.JsonrpcMessage, requestParams []byte) string {
+	if apiInterface == "tendermintrpc" {
+		return extractTendermintSubscriptionID(requestParams)
+	}
+	return extractSubscriptionID(responseMsg)
 }
 
 // createSubscriptionReply creates the first reply with the router subscription ID
@@ -1400,12 +1477,14 @@ func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMess
 }
 
 // rewriteSubscriptionID rewrites the subscription ID in a notification message
+// For EVM (eth_subscription): rewrites params.subscription with router ID
+// For Tendermint: notifications contain query in result, passed through as-is
 func rewriteSubscriptionID(msg *rpcclient.JsonrpcMessage, routerID string) ([]byte, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("message is nil")
 	}
 
-	// For subscription notifications, the format is:
+	// EVM subscription notifications format:
 	// {"jsonrpc":"2.0","method":"eth_subscription","params":{"subscription":"0x...","result":{...}}}
 	if msg.Method == "eth_subscription" && msg.Params != nil {
 		var params struct {
@@ -1417,7 +1496,7 @@ func rewriteSubscriptionID(msg *rpcclient.JsonrpcMessage, routerID string) ([]by
 		}
 
 		// Rewrite with router ID
-		newParams := map[string]interface{}{
+		newParams := map[string]any{
 			"subscription": routerID,
 			"result":       params.Result,
 		}
@@ -1426,12 +1505,27 @@ func rewriteSubscriptionID(msg *rpcclient.JsonrpcMessage, routerID string) ([]by
 			return nil, err
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"jsonrpc": "2.0",
 			"method":  "eth_subscription",
 			"params":  json.RawMessage(paramsBytes),
 		}
 		return json.Marshal(response)
+	}
+
+	// Tendermint subscription notifications format:
+	// {"jsonrpc":"2.0","id":null,"result":{"query":"tm.event='NewBlock'","data":{...}}}
+	// The query field identifies the subscription - we pass through as-is since:
+	// 1. Clients expect to see their actual query in notifications
+	// 2. The router ID is only used for unsubscribe operations
+	if msg.Result != nil {
+		var result struct {
+			Query string `json:"query"`
+		}
+		if err := json.Unmarshal(msg.Result, &result); err == nil && result.Query != "" {
+			// This is a Tendermint notification - pass through unchanged
+			return json.Marshal(msg)
+		}
 	}
 
 	// For other messages, return as-is
