@@ -14,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
-	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -28,7 +27,6 @@ const (
 	ContextUserValueKeyDappID  = "dappID"
 	RetryListeningInterval     = 10 // seconds
 	debug                      = false
-	refererMatchString         = "refererMatch"
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
 	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
@@ -152,26 +150,6 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
 			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
 		}
-		return webSocketCallback(c) // uses external dappID
-	}
-	return handler
-}
-
-func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
-	webSocketCallback := callbackToBeCalled
-	handler := func(c *fiber.Ctx) error {
-		// Extract dappID from headers
-		dappID := extractDappIDFromFiberContext(c)
-
-		// Store dappID in the local context
-		c.Locals("dapp-id", dappID)
-
-		if isMetricEnabled {
-			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
-			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
-			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
-		}
-		c.Locals(refererMatchString, c.Params(refererMatchString, ""))
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -430,43 +408,6 @@ func ValidateNilResponse(responseString string) error {
 	// 	return fmt.Errorf("response returned an empty value: %s", responseString)
 	// }
 	// return nil
-}
-
-type RefererData struct {
-	Address        string
-	Marker         string
-	ReferrerClient *metrics.ConsumerReferrerClient
-}
-
-func (rd *RefererData) SendReferer(refererMatchString string, chainId string, msg string, userIp string, headers map[string][]string, c *websocket.Conn) error {
-	if rd == nil || rd.Address == "" {
-		return nil
-	}
-	if rd.ReferrerClient == nil {
-		return nil
-	}
-
-	if c == nil && headers == nil {
-		return nil
-	}
-
-	referer := ""
-	origin := ""
-	userAgent := ""
-
-	if headers != nil {
-		referer = strings.Join(headers[metrics.RefererHeaderKey], ", ")
-		origin = strings.Join(headers[metrics.OriginHeaderKey], ", ")
-		userAgent = strings.Join(headers[metrics.UserAgentHeaderKey], ", ")
-	} else if c != nil {
-		referer, _ = c.Locals(metrics.RefererHeaderKey).(string)
-		origin, _ = c.Locals(metrics.OriginHeaderKey).(string)
-		userAgent, _ = c.Locals(metrics.UserAgentHeaderKey).(string)
-	}
-
-	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString), utils.LogAttr("ip", userIp), utils.LogAttr("msg", msg), utils.LogAttr("origin", origin), utils.LogAttr("userAgent", userAgent))
-	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent, userIp))
-	return nil
 }
 
 func GetTimeoutInfo(chainMessage ChainMessageForSend) common.TimeoutInfo {
