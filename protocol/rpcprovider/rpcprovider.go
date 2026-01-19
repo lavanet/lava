@@ -23,6 +23,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -1138,6 +1139,24 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if staticProvider {
 				utils.LavaFormatWarning("Running in static provider mode (standalone, no Lava blockchain connection)", nil)
 				// Note: Epoch duration will default to 15 minutes (StandaloneEpochDuration) if not specified
+
+				// Automatically skip relay signing in static provider mode unless explicitly set
+				// This saves CPU and memory since rewards are not claimed in standalone mode
+				if !viper.IsSet(common.SkipRelaySigningFlag) {
+					lavaprotocol.SkipRelaySigning = true
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: automatically enabling skip-relay-signing for performance",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "reason", Value: "auto-enabled for static provider mode"},
+					)
+				} else {
+					// Flag was explicitly set, log the value
+					explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
+					lavaprotocol.SkipRelaySigning = explicitValue
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: using explicit flag value",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "source", Value: "command-line/config file"},
+					)
+				}
 			}
 
 			// Load test mode configuration
@@ -1259,6 +1278,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
+	cmdRPCProvider.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay responses to reduce CPU and memory usage (use only with static providers)")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	cmdRPCProvider.Flags().Bool("enable-resource-limiter", false, "Enable method-specific resource limiting to prevent OOM from high-CU requests")
 	cmdRPCProvider.Flags().Uint64("resource-limiter-cu-threshold", 100, "CU threshold above which methods are considered 'heavy' (default: 100)")

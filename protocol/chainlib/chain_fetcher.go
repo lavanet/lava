@@ -290,7 +290,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
-			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+			utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 		)
 	}
 
@@ -301,7 +301,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
-			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+			utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 		)
 	}
 	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
@@ -311,7 +311,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
-				utils.LogAttr("Response", string(reply.RelayReply.Data)),
+				utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 				utils.LogAttr("rawParsedData", parsedInput.GetRawParsedData()),
 			)
 		}
@@ -421,7 +421,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -432,7 +432,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -485,7 +485,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 		}...)
 	}
 
@@ -496,7 +496,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 		}...)
 	}
 	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()

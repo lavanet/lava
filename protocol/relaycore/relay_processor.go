@@ -186,8 +186,8 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	// Check node errors
 	for _, nodeErrorResult := range nodeErrorResults {
 		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
-			// Check if this is an unsupported method error based on the reply
-			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {
+			// Check if this is an unsupported method error based on the reply (use bytes variant to avoid string conversion)
+			if chainlib.IsUnsupportedMethodErrorMessageBytes(nodeErrorResult.Reply.Data) {
 				return true
 			}
 		}
