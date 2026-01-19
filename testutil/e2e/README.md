@@ -8,48 +8,9 @@ If you wish you can also run E2E tests independently
 go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
 ```
 
-## Lava SDK E2E
-
-If this is the first time you run the e2e after fetching a branch and you didn't compile the protobufs first run:
-
-(Make sure that GOPATH is defined in your environment)
-
-Init and build the SDK:
+## Run all our E2E using the following command (from the root)
 
 ```bash
-cd ecosystem/lava-sdk
-./scripts/init_sdk.sh -s
-yarn build
-cd -
-```
-
-Build lavajs:
-
-```bash
-cd ./ecosystem/lavajs
-yarn e2e-setup
-cd -
-```
-
-Now you can run the test running:
-
-```bash
-go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
-```
-
-Or, In one line: 
-```bash 
-yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup; go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s -test.count=1
-```
-
-notice test.count is added to prevent cache from forming
-
----
-
-## Run all our E2E using the following command (from the root) {NOT STABLE}
-
-```bash
-yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -v -timeout 1200s
 ```
 

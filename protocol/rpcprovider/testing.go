@@ -94,7 +94,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	}
 
 	// Headers that must be present in "Access-Control-Allow-Headers"
-	requiredHeaders := []string{"x-grpc-web", "lava-sdk-relay-timeout"}
+	requiredHeaders := []string{"x-grpc-web"}
 
 	corsHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
 	for _, requiredHeader := range requiredHeaders {

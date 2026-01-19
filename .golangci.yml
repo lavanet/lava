@@ -39,8 +39,6 @@ issues:
     - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
     - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
     - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
-    - "ecosystem/lavajs/*"
-    - "ecosystem/lava-sdk/*"
   exclude-rules:
     - text: "singleCaseSwitch"
       linters:

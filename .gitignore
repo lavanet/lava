@@ -22,7 +22,6 @@ vue/dist
 # Logs and debug
 scripts/automation_scripts/automation_results*
 testutil/e2e/protocolLogs/
-testutil/e2e/sdkLogs/
 testutil/debugging/
 testutil/e2e/logs/
 
@@ -46,61 +45,10 @@ protocol/rpcprovider/key.pem
 # Pairing lsit
 **/pairingList.json
 
-# Lava SDK ignores 
-ecosystem/lava-sdk/node_modules/*
-ecosystem/lava-sdk/src/js/*
-ecosystem/lava-sdk/dist/main.js
-ecosystem/lava-sdk/thirdparty_protobufs/*
-ecosystem/lava-sdk/.dccache
-ecosystem/lava-sdk/.idea
-ecosystem/lava-sdk/.vscode
-ecosystem/lava-sdk/.npmrc
-ecosystem/lava-sdk/package-lock.json
-ecosystem/lava-sdk/examples/jsonRPC_test.ts
-ecosystem/lava-sdk/examples/jsonRPC_badge_test.ts
-ecosystem/lava-sdk/examples/restAPI_test.ts
-ecosystem/lava-sdk/examples/restAPI_badge_test.ts
-ecosystem/lava-sdk/examples/tendermintRPC_test.ts
-ecosystem/lava-sdk/examples/tendermintRPC_badge_test.ts
-ecosystem/lava-sdk/pairingList.json
-ecosystem/lava-sdk/proto
-ecosystem/lava-sdk/src/grpc_web_services
-ecosystem/lava-sdk/src/codec
-ecosystem/lava-sdk/proto/lavanet
-
-
-# Ignore the bin and dist folders and their content
-ecosystem/lava-sdk/bin/*
-ecosystem/lava-sdk/dist/*
-
-# But don't ignore the specific folder inside the bin folder
-
 # Reward server ignores
 .storage/
 badger_test
 
-# lavaJS ignores
-ecosystem/lavajs/main
-ecosystem/lavajs/module
-ecosystem/lavajs/.npmrc
-ecosystem/lavajs/src
-ecosystem/lavajs/types
-ecosystem/lavajs/dist
-ecosystem/lavajs/mjs
-# protobufs lavajs
-ecosystem/lavajs/proto/lavanet
-ecosystem/lavajs/proto/amino
-ecosystem/lavajs/proto/cosmos
-ecosystem/lavajs/proto/gogoproto
-ecosystem/lavajs/proto/google
-ecosystem/lavajs/proto/tendermint
-ecosystem/lavajs/proto/cosmos_proto/LICENSE
-ecosystem/lavajs/proto/cosmos_proto/README.md
-
-
-
-testutil/e2e/sdk/tests/package-lock.json
-testutil/e2e/sdk/tests/node_modules.json
 config/health_examples/health_template_gen.yml
 # Yarn
 .yarn/

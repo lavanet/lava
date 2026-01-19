@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -244,17 +243,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		ctx = utils.AppendTxId(ctx, txId)
 	}
 	startTime := time.Now()
-	// This is for the SDK, since the timeout is not automatically added to the request like in Go
-	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if timeoutFound {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
 
 	utils.LavaFormatInfo("Got relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
@@ -583,8 +571,6 @@ func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extension
 }
 
 func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
-	// TODO: remove this if case, the reason its here is because lava-sdk does't have data reliability + block parsing.
-	// this is a temporary solution until we have a working block parsing in lava-sdk
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
@@ -1506,30 +1492,6 @@ func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.
 	}
 	utils.LavaFormatDebug("incoming meta data does not contain process guid", utils.LogAttr("incoming_meta_data", incomingMetaData))
 	return "", false
-}
-
-func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (time.Duration, bool, error) {
-	incomingMetaData, found := metadata.FromIncomingContext(ctx)
-	if !found {
-		return 0, false, nil
-	}
-	for key, listOfMetaDataValues := range incomingMetaData {
-		if key == "lava-sdk-relay-timeout" {
-			var timeout int64
-			var err error
-			for _, metaDataValue := range listOfMetaDataValues {
-				timeout, err = strconv.ParseInt(metaDataValue, 10, 64)
-			}
-			if err != nil {
-				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is not a number", utils.Attribute{Key: "error", Value: err})
-			}
-			if timeout < 0 {
-				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is negative", utils.Attribute{Key: "error", Value: err})
-			}
-			return time.Duration(timeout) * time.Millisecond, true, nil
-		}
-	}
-	return 0, false, nil
 }
 
 func (rpcps *RPCProviderServer) IsHealthy() bool {

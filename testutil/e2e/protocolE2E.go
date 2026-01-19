@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
 	commonconsts "github.com/lavanet/lava/v5/testutil/common/consts"
-	"github.com/lavanet/lava/v5/testutil/e2e/sdk"
 	"github.com/lavanet/lava/v5/utils"
 	epochStorageTypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -44,6 +43,36 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+// SafeBuffer is a thread-safe buffer for capturing logs
+type SafeBuffer struct {
+	buffer bytes.Buffer
+	mu     sync.Mutex
+}
+
+func (sb *SafeBuffer) WriteString(s string) (int, error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.WriteString(s)
+}
+
+func (sb *SafeBuffer) String() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.String()
+}
+
+func (sb *SafeBuffer) Write(p []byte) (int, error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.Write(p)
+}
+
+func (sb *SafeBuffer) Bytes() []byte {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.Bytes()
+}
 
 const (
 	protocolLogsFolder         = "./testutil/e2e/protocolLogs/"
@@ -81,7 +110,7 @@ type lavaTest struct {
 	protocolPath         string
 	lavadArgs            string
 	consumerArgs         string
-	logs                 map[string]*sdk.SafeBuffer
+	logs                 map[string]*SafeBuffer
 	commands             map[string]*exec.Cmd
 	expectedCommandExit  map[string]bool
 	providerType         map[string][]epochStorageTypes.Endpoint
@@ -146,7 +175,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 
 	utils.LavaFormatDebug("Executing command " + command)
 	lt.logsMu.Lock()
-	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logs[logName] = &SafeBuffer{}
 	lt.logsMu.Unlock()
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -210,7 +239,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	}()
 
 	lt.logsMu.Lock()
-	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logs[logName] = &SafeBuffer{}
 	lt.logsMu.Unlock()
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -1275,7 +1304,7 @@ func (lt *lavaTest) saveLogs() {
 
 	// Create a copy of logs to avoid holding the lock for too long
 	lt.logsMu.RLock()
-	logsCopy := make(map[string]*sdk.SafeBuffer)
+	logsCopy := make(map[string]*SafeBuffer)
 	for k, v := range lt.logs {
 		logsCopy[k] = v
 	}
@@ -1398,7 +1427,7 @@ func (lt *lavaTest) checkQoS() error {
 	for provider := range providerCU {
 		// Get sequence number of provider
 		logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
-		lt.logs[logNameAcc] = &sdk.SafeBuffer{}
+		lt.logs[logNameAcc] = &SafeBuffer{}
 
 		fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
 		cmdAcc := exec.CommandContext(context.Background(), "", "")
@@ -1435,7 +1464,7 @@ func (lt *lavaTest) checkQoS() error {
 
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
 		lt.logsMu.Lock()
-		lt.logs[logName] = &sdk.SafeBuffer{}
+		lt.logs[logName] = &SafeBuffer{}
 		lt.logsMu.Unlock()
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
@@ -1495,7 +1524,7 @@ func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit 
 	// Keep the emergency script and its children in their own process group for clean kills
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	lt.logsMu.Lock()
-	lt.logs[logName] = &sdk.SafeBuffer{}
+	lt.logs[logName] = &SafeBuffer{}
 	lt.logsMu.Unlock()
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
@@ -1556,7 +1585,7 @@ func (lt *lavaTest) sleepUntilNextEpoch() {
 func (lt *lavaTest) markEmergencyModeLogsStart() {
 	// Create a copy of logs to avoid holding the lock for too long
 	lt.logsMu.RLock()
-	logsCopy := make(map[string]*sdk.SafeBuffer)
+	logsCopy := make(map[string]*SafeBuffer)
 	for k, v := range lt.logs {
 		logsCopy[k] = v
 	}
@@ -1599,7 +1628,7 @@ func (lt *lavaTest) markEmergencyModeLogsEnd() {
 	// Create a copy of logs to avoid holding the lock for too long
 	lt.logsMu.RLock()
 
-	logsCopy := make(map[string]*sdk.SafeBuffer)
+	logsCopy := make(map[string]*SafeBuffer)
 	for k, v := range lt.logs {
 		logsCopy[k] = v
 	}
@@ -1963,7 +1992,7 @@ func runProtocolE2E(timeout time.Duration) {
 		protocolPath:         gopath + "/bin/lavap",
 		lavadArgs:            "--geolocation 1 --log_level debug",
 		consumerArgs:         " --allow-insecure-provider-dialing",
-		logs:                 make(map[string]*sdk.SafeBuffer),
+		logs:                 make(map[string]*SafeBuffer),
 		commands:             make(map[string]*exec.Cmd),
 		expectedCommandExit:  make(map[string]bool),
 		providerType:         make(map[string][]epochStorageTypes.Endpoint),
