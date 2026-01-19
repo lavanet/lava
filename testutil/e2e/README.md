@@ -8,12 +8,6 @@ If you wish you can also run E2E tests independently
 go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
 ```
 
-## Run all our E2E using the following command (from the root)
-
-```bash
-go test ./testutil/e2e/ -v -timeout 1200s
-```
-
 This E2E performs the steps below to test if the system is working as expected.
 
 1. Start lava in developer mode (equivalent to running the command "ignite chain serve" ).

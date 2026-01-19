@@ -44,34 +44,34 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// SafeBuffer is a thread-safe buffer for capturing logs
+// SafeBuffer is a thread-safe buffer for capturing command output
 type SafeBuffer struct {
-	buffer bytes.Buffer
-	mu     sync.Mutex
+	buf bytes.Buffer
+	mu  sync.Mutex
 }
 
-func (sb *SafeBuffer) WriteString(s string) (int, error) {
+func (sb *SafeBuffer) WriteString(s string) (n int, err error) {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
-	return sb.buffer.WriteString(s)
+	return sb.buf.WriteString(s)
 }
 
 func (sb *SafeBuffer) String() string {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
-	return sb.buffer.String()
+	return sb.buf.String()
 }
 
-func (sb *SafeBuffer) Write(p []byte) (int, error) {
+func (sb *SafeBuffer) Write(p []byte) (n int, err error) {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
-	return sb.buffer.Write(p)
+	return sb.buf.Write(p)
 }
 
 func (sb *SafeBuffer) Bytes() []byte {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
-	return sb.buffer.Bytes()
+	return sb.buf.Bytes()
 }
 
 const (
@@ -80,7 +80,6 @@ const (
 	providerConfigsFolder      = configFolder + "provider"
 	consumerConfigsFolder      = configFolder + "consumer"
 	policiesFolder             = configFolder + "policies"
-	badgeserverConfigFolder    = configFolder + "badgeserver"
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
 	NumberOfSpecsExpectedInE2E = 10
@@ -538,45 +537,6 @@ func (lt *lavaTest) checkStakeLava(
 		}
 	}
 	utils.LavaFormatInfo(successMessage)
-}
-
-func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerAddr string, timeout time.Duration) {
-	// Use exponential backoff for more efficient waiting
-	initialDelay := 500 * time.Millisecond
-	maxDelay := 5 * time.Second
-	currentDelay := initialDelay
-
-	deadline := time.Now().Add(timeout)
-	attemptCount := 0
-
-	for time.Now().Before(deadline) {
-		attemptCount++
-		if attemptCount%5 == 0 { // Log every 5th attempt to reduce noise
-			utils.LavaFormatInfo("Waiting for Badge Server "+badgeServerAddr,
-				utils.LogAttr("attempt", attemptCount),
-				utils.LogAttr("remaining", time.Until(deadline).Round(time.Second)))
-		}
-
-		nctx, cancel := context.WithTimeout(ctx, 2*time.Second) // Increased from 1s to 2s
-		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		cancel()
-
-		if err == nil {
-			grpcClient.Close()
-			utils.LavaFormatInfo("Badge Server is responsive "+badgeServerAddr,
-				utils.LogAttr("attempts", attemptCount))
-			return
-		}
-
-		// Exponential backoff with cap
-		time.Sleep(currentDelay)
-		currentDelay = time.Duration(float64(currentDelay) * 1.5)
-		if currentDelay > maxDelay {
-			currentDelay = maxDelay
-		}
-	}
-
-	panic(fmt.Sprintf("checkBadgeServerResponsive: Badge server didn't respond after %d attempts: %s", attemptCount, badgeServerAddr))
 }
 
 func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
