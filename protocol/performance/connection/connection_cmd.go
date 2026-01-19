@@ -54,7 +54,7 @@ func CreateTestConnectionServerCobraCommand() *cobra.Command {
 			handler := func(resp http.ResponseWriter, req *http.Request) {
 				// Set CORS headers
 				resp.Header().Set("Access-Control-Allow-Origin", "*")
-				resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
+				resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web")
 
 				wrappedServer.ServeHTTP(resp, req)
 			}
