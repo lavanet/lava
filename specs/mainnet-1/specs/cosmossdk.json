@@ -2269,6 +2269,88 @@
                                 "parse_directive": {
                                     "function_tag": "GET_BLOCK_BY_NUM"
                                 }
+                            },
+                            {
+                                "name": "validator-query",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "validators"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/staking/v1beta1/validators"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "supply-query",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/bank/v1beta1/supply",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "supply"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/bank/v1beta1/supply"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "staking-params",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/staking/v1beta1/params",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "params"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/staking/v1beta1/params"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "latest-block",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "block",
+                                            "header",
+                                            "height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/base/tendermint/v1beta1/blocks/latest"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -4793,6 +4875,88 @@
                                 "parse_directive": {
                                     "function_tag": "GET_BLOCK_BY_NUM"
                                 }
+                            },
+                            {
+                                "name": "validator-query",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "validators"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.staking.v1beta1.Query/Validators"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "supply-query",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "supply"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.bank.v1beta1.Query/TotalSupply"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "staking-params",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "params"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.staking.v1beta1.Query/Params"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "latest-block",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "block",
+                                            "header",
+                                            "height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
                             }
                         ]
                     }
