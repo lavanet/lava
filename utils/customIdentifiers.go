@@ -2,24 +2,7 @@ package utils
 
 import (
 	"context"
-
-	"github.com/gofiber/fiber/v2"
 )
-
-func UpdateAllCustomContextFields(originCtx context.Context, ctx context.Context) context.Context {
-	resCtx := ctx
-	if taskId, found := GetTaskId(originCtx); found {
-		resCtx = AppendTaskId(resCtx, taskId)
-	}
-	if reqId, found := GetRequestId(originCtx); found {
-		resCtx = AppendRequestId(resCtx, reqId)
-	}
-	if txId, found := GetTxId(originCtx); found {
-		resCtx = AppendTxId(resCtx, txId)
-	}
-
-	return resCtx
-}
 
 type request_id_ctx_key struct{}
 
@@ -75,22 +58,29 @@ func GetTxId(ctx context.Context) (txId string, found bool) {
 	return txId, found
 }
 
-func ExtractWantedHeadersAndUpdateContext(fiberCtx *fiber.Ctx, ctx context.Context) context.Context {
-	reqId := fiberCtx.Get("x-request-id", "")
-	taskId := fiberCtx.Get("x-task-id", "")
-	txId := fiberCtx.Get("x-tx-id", "")
-
-	if reqId != "" {
+// ExtractWantedHeadersFromCachedMap extracts specific headers from a pre-cached headers map
+// and adds them to the Go context. This avoids repeated header lookups when headers
+// are already cached via GetReqHeaders().
+func ExtractWantedHeadersFromCachedMap(headers map[string][]string, ctx context.Context) context.Context {
+	if reqId := getHeaderValue(headers, "X-Request-Id"); reqId != "" {
 		ctx = WithRequestId(ctx, reqId)
 	}
 
-	if taskId != "" {
+	if taskId := getHeaderValue(headers, "X-Task-Id"); taskId != "" {
 		ctx = WithTaskId(ctx, taskId)
 	}
 
-	if txId != "" {
+	if txId := getHeaderValue(headers, "X-Tx-Id"); txId != "" {
 		ctx = WithTxId(ctx, txId)
 	}
 
 	return ctx
+}
+
+// getHeaderValue extracts the first value for a header key from a cached headers map.
+func getHeaderValue(headers map[string][]string, key string) string {
+	if values, ok := headers[key]; ok && len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }

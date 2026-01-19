@@ -255,6 +255,16 @@ func GetListenerWithRetryGrpc(protocol, addr string) net.Listener {
 	}
 }
 
+// GetHeaderFromCachedMap extracts a header value from a cached headers map.
+// Returns the first value if present, or the defaultValue if not found.
+// This avoids repeated calls to fiberCtx.Get() which has overhead.
+func GetHeaderFromCachedMap(headers map[string][]string, key string, defaultValue string) string {
+	if values, ok := headers[key]; ok && len(values) > 0 {
+		return values[0]
+	}
+	return defaultValue
+}
+
 // rest request headers are formatted like map[string]string
 func convertToMetadataMap(md map[string][]string) []pairingtypes.Metadata {
 	metadata := make([]pairingtypes.Metadata, len(md))
