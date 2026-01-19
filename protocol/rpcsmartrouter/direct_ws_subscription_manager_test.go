@@ -1423,3 +1423,161 @@ func TestUnsubscribeParamsExtraction_EVM(t *testing.T) {
 	require.Len(t, paramsArray, 1)
 	assert.Equal(t, "0x1a2b3c4d", paramsArray[0])
 }
+
+// TestCreateSubscriptionReply_Tendermint verifies that Tendermint subscription responses
+// preserve the original {"result":{"query":"..."}} format instead of using router IDs
+func TestCreateSubscriptionReply_Tendermint(t *testing.T) {
+	// Simulated Tendermint subscribe response from upstream
+	originalMsg := &rpcclient.JsonrpcMessage{
+		Version: "2.0",
+		ID:      json.RawMessage(`1`),
+		Result:  json.RawMessage(`{"query":"tm.event='NewBlock'"}`),
+	}
+
+	// For Tendermint, should return original format (not router ID)
+	replyData, err := createSubscriptionReply("router-id-ignored", originalMsg, "tendermintrpc")
+	require.NoError(t, err)
+
+	// Parse the response
+	var response struct {
+		Jsonrpc string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Result  json.RawMessage `json:"result"`
+	}
+	err = json.Unmarshal(replyData, &response)
+	require.NoError(t, err)
+
+	// Verify the result contains the query object, NOT a router ID
+	var result struct {
+		Query string `json:"query"`
+	}
+	err = json.Unmarshal(response.Result, &result)
+	require.NoError(t, err)
+	assert.Equal(t, "tm.event='NewBlock'", result.Query, "Tendermint response should preserve query object")
+}
+
+// TestCreateSubscriptionReply_EVM verifies that EVM subscription responses use router IDs
+func TestCreateSubscriptionReply_EVM(t *testing.T) {
+	// Simulated EVM eth_subscribe response from upstream
+	originalMsg := &rpcclient.JsonrpcMessage{
+		Version: "2.0",
+		ID:      json.RawMessage(`1`),
+		Result:  json.RawMessage(`"0xupstream123"`),
+	}
+
+	routerID := "0xrouter456"
+
+	// For EVM, should replace upstream ID with router ID
+	replyData, err := createSubscriptionReply(routerID, originalMsg, "jsonrpc")
+	require.NoError(t, err)
+
+	// Parse the response
+	var response struct {
+		Jsonrpc string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Result  string          `json:"result"`
+	}
+	err = json.Unmarshal(replyData, &response)
+	require.NoError(t, err)
+
+	// Verify the result is the router ID
+	assert.Equal(t, routerID, response.Result, "EVM response should use router ID")
+}
+
+// TestCreateSubscriptionReplyFromRouterID_Tendermint verifies that joining clients
+// receive the correct Tendermint response format with their request ID
+func TestCreateSubscriptionReplyFromRouterID_Tendermint(t *testing.T) {
+	// Original result from the first subscription
+	originalResult := json.RawMessage(`{"query":"tm.event='NewBlock'"}`)
+
+	// Client's request ID (different from original)
+	clientRequestID := json.RawMessage(`42`)
+
+	// For Tendermint, should return query format with client's request ID
+	replyData, err := createSubscriptionReplyFromRouterID("router-id-ignored", clientRequestID, "tendermintrpc", originalResult)
+	require.NoError(t, err)
+
+	// Parse the response
+	var response struct {
+		Jsonrpc string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Result  json.RawMessage `json:"result"`
+	}
+	err = json.Unmarshal(replyData, &response)
+	require.NoError(t, err)
+
+	// Verify the ID is the client's request ID
+	assert.Equal(t, "42", string(response.ID), "Response should use client's request ID")
+
+	// Verify the result contains the query object
+	var result struct {
+		Query string `json:"query"`
+	}
+	err = json.Unmarshal(response.Result, &result)
+	require.NoError(t, err)
+	assert.Equal(t, "tm.event='NewBlock'", result.Query, "Joining client should receive query format")
+}
+
+// TestCreateSubscriptionReplyFromRouterID_EVM verifies that joining clients
+// receive router IDs for EVM subscriptions
+func TestCreateSubscriptionReplyFromRouterID_EVM(t *testing.T) {
+	clientRequestID := json.RawMessage(`99`)
+	clientRouterID := "0xclient-router-id"
+
+	// For EVM, should return router ID (originalResult not used)
+	replyData, err := createSubscriptionReplyFromRouterID(clientRouterID, clientRequestID, "jsonrpc", nil)
+	require.NoError(t, err)
+
+	// Parse the response
+	var response struct {
+		Jsonrpc string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Result  string          `json:"result"`
+	}
+	err = json.Unmarshal(replyData, &response)
+	require.NoError(t, err)
+
+	// Verify the ID and result
+	assert.Equal(t, "99", string(response.ID), "Response should use client's request ID")
+	assert.Equal(t, clientRouterID, response.Result, "EVM joining client should receive router ID")
+}
+
+// TestTendermintSubscriptionEndToEnd tests the full subscription flow for Tendermint
+// to ensure responses and notifications have the correct format
+func TestTendermintSubscriptionEndToEnd(t *testing.T) {
+	t.Run("subscribe response preserves query format", func(t *testing.T) {
+		// Simulated upstream response
+		upstreamResponse := &rpcclient.JsonrpcMessage{
+			Version: "2.0",
+			ID:      json.RawMessage(`1`),
+			Result:  json.RawMessage(`{"query":"tm.event='Tx'"}`),
+		}
+
+		// Create reply for Tendermint
+		reply, err := createSubscriptionReply("any-router-id", upstreamResponse, "tendermintrpc")
+		require.NoError(t, err)
+
+		// Client should see the query format, not a router ID
+		assert.Contains(t, string(reply), `"query":"tm.event='Tx'"`)
+		assert.NotContains(t, string(reply), "any-router-id")
+	})
+
+	t.Run("notification passthrough for Tendermint", func(t *testing.T) {
+		// Simulated Tendermint notification
+		notification := &rpcclient.JsonrpcMessage{
+			Version: "2.0",
+			ID:      nil,
+			Result:  json.RawMessage(`{"query":"tm.event='NewBlock'","data":{"type":"tendermint/event/NewBlock","value":{}}}`),
+		}
+
+		// Rewrite should pass through unchanged for Tendermint
+		rewritten, err := rewriteSubscriptionID(notification, "some-router-id")
+		require.NoError(t, err)
+
+		// Should still contain the query and data
+		assert.Contains(t, string(rewritten), `"query":"tm.event='NewBlock'"`)
+		assert.Contains(t, string(rewritten), `"data"`)
+		// Should NOT have the router ID injected
+		assert.NotContains(t, string(rewritten), "some-router-id")
+	})
+}
