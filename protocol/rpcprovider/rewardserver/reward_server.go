@@ -174,10 +174,6 @@ func (rws *RewardServer) saveProofInMemory(ctx context.Context, consumerRewardsK
 		return cuSumStored, false
 	}
 
-	if relayProof.Badge != nil && proof.Badge == nil {
-		proof.Badge = relayProof.Badge
-	}
-
 	consumerRewards.proofs[proof.SessionId] = proof
 	return 0, true
 }

@@ -56,14 +56,14 @@ func MockDescription() stakingtypes.Description {
 }
 
 func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {
-	return BuildRelayRequestWithBadge(ctx, provider, contentHash, uint64(1), cuSum, spec, qos, nil)
+	return BuildRelayRequestInternal(ctx, provider, contentHash, uint64(1), cuSum, spec, qos)
 }
 
 func BuildRelayRequestWithSession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {
-	return BuildRelayRequestWithBadge(ctx, provider, contentHash, sessionId, cuSum, spec, qos, nil)
+	return BuildRelayRequestInternal(ctx, provider, contentHash, sessionId, cuSum, spec, qos)
 }
 
-func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport, badge *pairingtypes.Badge) *pairingtypes.RelaySession {
+func BuildRelayRequestInternal(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {
 	relaySession := &pairingtypes.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
@@ -74,7 +74,6 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 		RelayNum:    0,
 		QosReport:   qos,
 		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
-		Badge:       badge,
 	}
 	if qos != nil {
 		qos.ComputeQoS()
