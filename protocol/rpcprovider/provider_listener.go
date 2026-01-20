@@ -17,9 +17,13 @@ import (
 	"github.com/soheilhy/cmux"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/encoding/gzip" // Register gzip compressor
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 )
+
+// Ensure gzip compressor is registered
+var _ = gzip.Name
 
 const (
 	HealthCheckURLPathFlagName    = "health-check-url-path"
