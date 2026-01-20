@@ -11,6 +11,11 @@ on:
       - smart-router-v1.1
   workflow_dispatch:
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -35,17 +40,17 @@ jobs:
       - name: Run Utils Tests
         run: |
           set -o pipefail
-          go test -v ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
+          go test -v -coverprofile=utils-coverage.out ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
 
       - name: Run Common Tests
         run: |
           set -o pipefail
-          go test -v ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
+          go test -v -coverprofile=common-coverage.out ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
 
       - name: Run X Tests
         run: |
           set -o pipefail
-          go test -v ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
+          go test -v -coverprofile=x-coverage.out ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
 
       - name: Upload Test Results
         if: always()
@@ -55,6 +60,17 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: lavanet/lava
+          files: ./utils-coverage.out,./common-coverage.out,./x-coverage.out
+          flags: consensus
+          fail_ci_if_error: false
+          verbose: true
 
   test-protocol:
     runs-on: ubuntu-latest
@@ -76,13 +92,13 @@ jobs:
         timeout-minutes: 20
         run: |
           set -o pipefail
-          go test -v -timeout 15m ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+          go test -v -timeout 15m -coverprofile=protocol-coverage.out ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
 
       - name: Run Cache Tests
         timeout-minutes: 10
         run: |
           set -o pipefail
-          go test -v ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+          go test -v -coverprofile=cache-coverage.out ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
 
       - name: Upload Test Results
         if: always()
@@ -92,6 +108,17 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: lavanet/lava
+          files: ./protocol-coverage.out,./cache-coverage.out
+          flags: protocol
+          fail_ci_if_error: false
+          verbose: true
 
   test-protocol-e2e:
     runs-on: ubuntu-latest
