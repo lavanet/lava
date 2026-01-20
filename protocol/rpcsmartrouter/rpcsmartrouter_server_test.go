@@ -87,7 +87,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	rpcSmartRouterLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	// Smart router signature: no consumerStateTracker, no finalizationConsensus
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, &chaintracker.DummyChainTracker{}, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, &chaintracker.DummyChainTracker{}, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser

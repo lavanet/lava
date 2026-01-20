@@ -43,7 +43,7 @@ func NewChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	consumerWsSubscriptionManager WSSubscriptionManager,
 ) (ChainListener, error) {
 	if listenEndpoint.NetworkAddress == INTERNAL_ADDRESS {
 		utils.LavaFormatDebug("skipping chain listener for internal address")

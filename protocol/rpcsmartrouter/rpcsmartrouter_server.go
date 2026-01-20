@@ -134,6 +134,9 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpcss.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
+	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
+	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
+	// DirectWSSubscriptionManager (direct RPC mode for smart router).
 	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, wsSubscriptionManager)
 	if err != nil {
 		return err
