@@ -64,6 +64,10 @@ const (
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 
+	// batch request size limit
+	MaxBatchRequestSizeFlag        = "max-batch-request-size"
+	DefaultMaxBatchRequestSize int = 0 // 0 means unlimited
+
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 
 	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)

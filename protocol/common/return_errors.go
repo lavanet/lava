@@ -36,6 +36,15 @@ var JsonRpcRateLimitError = JsonRPCErrorMessage{
 	},
 }
 
+var JsonRpcBatchSizeExceededError = JsonRPCErrorMessage{
+	JsonRPC: "2.0",
+	Id:      1,
+	Error: JsonRPCError{
+		Code:    429,
+		Message: "Batch request size exceeded",
+	},
+}
+
 var JsonRpcParseError = JsonRPCErrorMessage{
 	JsonRPC: "2.0",
 	Id:      -1,

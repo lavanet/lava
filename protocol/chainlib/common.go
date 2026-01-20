@@ -40,6 +40,8 @@ var (
 	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
 	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
 	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
+	MaxBatchRequestSize                = 0 // configured via --max-batch-request-size flag, 0 means unlimited
+	ErrBatchRequestSizeExceeded        = sdkerrors.New("batch request size exceeded", 1017, "batch request size exceeded the configured limit")
 )
 
 type RelayReplyWrapper struct {
