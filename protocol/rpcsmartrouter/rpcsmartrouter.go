@@ -659,7 +659,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			specMethodType = http.MethodPost
 		}
 		wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(
-			sessionManager, rpcSmartRouterServer, options.refererData, specMethodType,
+			sessionManager, rpcSmartRouterServer, specMethodType,
 			chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager,
 		)
 		utils.LavaFormatWarning("No WebSocket endpoint found in static providers, using provider-based subscriptions",
@@ -800,7 +800,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
 	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, smartRouterReportsManager, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
