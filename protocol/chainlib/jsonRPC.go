@@ -734,10 +734,17 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
+		// When there's a response error (e.g., "Apikey is expired"), the node may return
+		// an empty/invalid ID, causing ID mismatch. Include the response error to clarify the root cause.
+		responseError := ""
+		if replyMsg.Error != nil {
+			responseError = replyMsg.Error.Message
+		}
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
 			utils.Attribute{Key: "nodeMessageRequestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+			utils.Attribute{Key: "responseError", Value: responseError},
 			utils.Attribute{Key: "reply", Value: replyMsg},
 			utils.Attribute{Key: "request", Value: nodeMessage},
 		)
