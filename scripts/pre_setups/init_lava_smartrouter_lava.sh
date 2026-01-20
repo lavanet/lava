@@ -16,7 +16,7 @@ echo "============================================"
 echo "Smart Router Direct RPC (Lava Local Node)"
 echo "============================================"
 echo "Mode: DIRECT RPC (no Lava providers)"
-echo "Upstream: Local lavad REST (LCD) + gRPC"
+echo "Upstream: Local lavad REST + gRPC + Tendermint RPC"
 echo "============================================"
 echo ""
 
@@ -51,6 +51,9 @@ sleep 2
 LAVA_REST_LOCAL="${LAVA_REST/0.0.0.0/127.0.0.1}"
 # gRPC URLs need grpc:// prefix for protocol detection (grpcs:// for TLS)
 LAVA_GRPC_LOCAL="grpc://${LAVA_GRPC/0.0.0.0/127.0.0.1}"
+# Tendermint RPC (HTTP for queries, WebSocket for subscriptions at /websocket)
+LAVA_TENDERMINTRPC_LOCAL="${LAVA_RPC/0.0.0.0/127.0.0.1}"
+LAVA_TENDERMINTRPC_WS_LOCAL="${LAVA_RPC_WS/0.0.0.0/127.0.0.1}"
 
 # Static specs (offline) - used for routing/parsing in smart router.
 # IMPORTANT: Lava spec imports COSMOSSDK (and related deps), so we must provide the full bundle.
@@ -66,12 +69,14 @@ for spec_file in "${SPEC_FILES[@]}"; do
 	fi
 done
 
-# Generate smart router config (3 upstream REST + 3 gRPC endpoints -> local node)
+# Generate smart router config (3 upstream REST + 3 gRPC + 3 Tendermint RPC endpoints -> local node)
 CONFIG_FILE="$PROJECT_ROOT/smartrouter_lava.yml"
 echo ""
 echo "Generating smart router config: $CONFIG_FILE"
-echo "Upstream REST (LCD): $LAVA_REST_LOCAL"
-echo "Upstream gRPC:       $LAVA_GRPC_LOCAL"
+echo "Upstream REST (LCD):     $LAVA_REST_LOCAL"
+echo "Upstream gRPC:           $LAVA_GRPC_LOCAL"
+echo "Upstream Tendermint RPC: $LAVA_TENDERMINTRPC_LOCAL"
+echo "Upstream Tendermint WS:  $LAVA_TENDERMINTRPC_WS_LOCAL"
 echo ""
 
 # Clean up any old generated config in project root
@@ -91,6 +96,10 @@ endpoints:
   - network-address: "0.0.0.0:3361"
     chain-id: "LAV1"
     api-interface: "grpc"
+
+  - network-address: "0.0.0.0:3362"
+    chain-id: "LAV1"
+    api-interface: "tendermintrpc"
 
 static-providers:
   # 3 upstream REST endpoints (all pointing at the same local node by default)
@@ -156,6 +165,47 @@ static-providers:
         skip-verifications:
           - chain-id
           - pruning
+
+  # 3 upstream Tendermint RPC endpoints (all pointing at the same local node by default)
+  # Tendermint RPC supports both HTTP queries and WebSocket subscriptions
+  - name: "lava-local-tendermintrpc-1"
+    chain-id: "LAV1"
+    api-interface: "tendermintrpc"
+    node-urls:
+      - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
+      - url: "$LAVA_TENDERMINTRPC_WS_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "lava-local-tendermintrpc-2"
+    chain-id: "LAV1"
+    api-interface: "tendermintrpc"
+    node-urls:
+      - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
+      - url: "$LAVA_TENDERMINTRPC_WS_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  - name: "lava-local-tendermintrpc-3"
+    chain-id: "LAV1"
+    api-interface: "tendermintrpc"
+    node-urls:
+      - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
+      - url: "$LAVA_TENDERMINTRPC_WS_LOCAL"
+        skip-verifications:
+          - chain-id
+          - pruning
 EOF
 
 # Verify config file was created
@@ -169,7 +219,7 @@ else
 fi
 
 echo ""
-echo "[Test Setup] starting Smart Router (DIRECT RPC mode, REST + gRPC)"
+echo "[Test Setup] starting Smart Router (DIRECT RPC mode, REST + gRPC + Tendermint RPC)"
 screen -d -m -S smartrouter bash -c "cd \"$PROJECT_ROOT\" && source ~/.bashrc; lavap rpcsmartrouter \
 smartrouter_lava.yml \
 --geolocation 1 \
@@ -197,11 +247,14 @@ echo ""
 echo "============================================"
 echo "Smart Router (Lava local node) Setup Complete!"
 echo "============================================"
-echo "Local Lava REST:     $LAVA_REST_LOCAL"
-echo "Local Lava gRPC:     $LAVA_GRPC_LOCAL"
-echo "Cache:               127.0.0.1:20100 (metrics: 20200)"
-echo "Smart Router REST:   http://127.0.0.1:3360 (metrics: 7779)"
-echo "Smart Router gRPC:   127.0.0.1:3361"
+echo "Local Lava REST:          $LAVA_REST_LOCAL"
+echo "Local Lava gRPC:          $LAVA_GRPC_LOCAL"
+echo "Local Lava Tendermint:    $LAVA_TENDERMINTRPC_LOCAL"
+echo "Local Lava Tendermint WS: $LAVA_TENDERMINTRPC_WS_LOCAL"
+echo "Cache:                    127.0.0.1:20100 (metrics: 20200)"
+echo "Smart Router REST:        http://127.0.0.1:3360 (metrics: 7779)"
+echo "Smart Router gRPC:        127.0.0.1:3361"
+echo "Smart Router Tendermint:  http://127.0.0.1:3362"
 echo ""
 echo "🔬 Test Commands (REST):"
 echo "  # Health check (router process)"
@@ -222,6 +275,20 @@ echo "  grpcurl -plaintext 127.0.0.1:3361 cosmos.base.tendermint.v1beta1.Service
 echo ""
 echo "  # Query bank params via gRPC"
 echo "  grpcurl -plaintext 127.0.0.1:3361 cosmos.bank.v1beta1.Query/Params"
+echo ""
+echo "🔬 Test Commands (Tendermint RPC):"
+echo "  # Query node status"
+echo "  curl http://127.0.0.1:3362/status | jq '.result.sync_info.latest_block_height'"
+echo ""
+echo "  # Query latest block"
+echo "  curl http://127.0.0.1:3362/block | jq '.result.block.header.height'"
+echo ""
+echo "  # Query validators"
+echo "  curl http://127.0.0.1:3362/validators | jq '.result.validators | length'"
+echo ""
+echo "  # WebSocket subscription (requires wscat: npm install -g wscat)"
+echo "  wscat -c ws://127.0.0.1:3362/websocket"
+echo "  # Then send: {\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"subscribe\",\"params\":{\"query\":\"tm.event='NewBlock'\"}}"
 echo ""
 echo "📊 Monitor Logs:"
 echo "  tail -f $LOGS_DIR/SMARTROUTER_LAVA.log"
