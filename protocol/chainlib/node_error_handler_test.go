@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -499,4 +500,55 @@ func BenchmarkIsUnsupportedMethodError(b *testing.B) {
 			_ = IsUnsupportedMethodError(err)
 		}
 	}
+}
+
+func TestValidateRequestAndResponseIds(t *testing.T) {
+	handler := &genericErrorHandler{}
+
+	t.Run("matching IDs - success", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`1`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.NoError(t, err)
+	})
+
+	t.Run("matching string IDs - success", func(t *testing.T) {
+		reqID := json.RawMessage(`"abc-123"`)
+		respID := json.RawMessage(`"abc-123"`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.NoError(t, err)
+	})
+
+	t.Run("mismatched IDs - error", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`2`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "ID mismatch")
+	})
+
+	t.Run("empty response ID - error with parsing failure", func(t *testing.T) {
+		// This simulates the case where a node returns an error (e.g., "Apikey is expired")
+		// with an empty/invalid ID in the response
+		reqID := json.RawMessage(`49`)
+		respID := json.RawMessage(`[]`) // Empty array - invalid ID
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed parsing ID")
+	})
+
+	t.Run("null response ID - error", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`null`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid JSON in request ID - error", func(t *testing.T) {
+		reqID := json.RawMessage(`invalid`)
+		respID := json.RawMessage(`1`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed parsing ID")
+	})
 }

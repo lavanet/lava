@@ -813,6 +813,12 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	}
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
 	if err != nil {
+		// When there's a response error, the node may return an empty/invalid ID,
+		// causing ID mismatch. Include the response error to clarify the root cause.
+		responseError := ""
+		if replyMsg.Error != nil {
+			responseError = replyMsg.Error.Message
+		}
 		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
@@ -820,6 +826,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
 			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+			utils.Attribute{Key: "responseError", Value: responseError},
 		)
 	}
 
