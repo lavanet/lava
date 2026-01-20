@@ -124,14 +124,17 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 
 	// Create HTTP server for health checks
 	httpMux := http.NewServeMux()
-	httpMux.HandleFunc(healthCheckPath, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Healthy"))
-		} else {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-		}
-	})
+	// Only register health check handler if path is provided
+	if healthCheckPath != "" {
+		httpMux.HandleFunc(healthCheckPath, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("Healthy"))
+			} else {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+		})
+	}
 	httpServer := &http.Server{Handler: httpMux}
 	pl.httpServer = httpServer
 
