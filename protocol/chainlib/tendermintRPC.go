@@ -333,32 +333,29 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 }
 
 type TendermintRpcChainListener struct {
-	endpoint                   *lavasession.RPCEndpoint
-	relaySender                RelaySender
-	healthReporter             HealthReporter
-	logger                     *metrics.RPCConsumerLogs
-	refererData                *RefererData
-	wsSubscriptionManager      WSSubscriptionManager
-	listeningAddress           string
-	websocketConnectionLimiter *WebsocketConnectionLimiter
+	endpoint                      *lavasession.RPCEndpoint
+	relaySender                   RelaySender
+	healthReporter                HealthReporter
+	logger                        *metrics.RPCConsumerLogs
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	listeningAddress              string
+	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	refererData *RefererData,
-	wsSubscriptionManager WSSubscriptionManager,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of TendermintRpcChainListener
 	chainListener = &TendermintRpcChainListener{
-		endpoint:                   listenEndpoint,
-		relaySender:                relaySender,
-		healthReporter:             healthReporter,
-		logger:                     rpcConsumerLogs,
-		refererData:                refererData,
-		wsSubscriptionManager:      wsSubscriptionManager,
-		websocketConnectionLimiter: &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
+		endpoint:                      listenEndpoint,
+		relaySender:                   relaySender,
+		healthReporter:                healthReporter,
+		logger:                        rpcConsumerLogs,
+		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
+		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
 
 	return chainListener
@@ -403,19 +400,17 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
-			WebsocketConn:          websocketConn,
-			RpcConsumerLogs:        apil.logger,
-			RefererMatchString:     refererMatchString,
-			CmdFlags:               cmdFlags,
-			RelayMsgLogMaxChars:    relayMsgLogMaxChars,
-			ChainID:                chainID,
-			ApiInterface:           apiInterface,
-			ConnectionType:         "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RefererData:            apil.refererData,
-			RelaySender:            apil.relaySender,
-			WsSubscriptionManager:  apil.wsSubscriptionManager,
-			WebsocketConnectionUID: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
-			headerRateLimit:        uint64(rateLimit),
+			WebsocketConn:                 websocketConn,
+			RpcConsumerLogs:               apil.logger,
+			CmdFlags:                      cmdFlags,
+			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
+			ChainID:                       chainID,
+			ApiInterface:                  apiInterface,
+			ConnectionType:                "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RelaySender:                   apil.relaySender,
+			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:               uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
@@ -438,8 +433,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		msgSeed := strconv.FormatUint(guid, 10)
+		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
+		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 
 		msg := string(fiberCtx.Body())
 		logFormattedMsg := msg
@@ -454,12 +451,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		refererMatch := fiberCtx.Params(refererMatchString, "")
-		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 
@@ -529,20 +521,17 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		metricsData.SetProcessingTimestampBeforeRelay(startTime)
+		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
+		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		utils.LavaFormatDebug("urirpc in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("_msg", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
-		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
@@ -581,21 +570,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
-	}
-
-	if apil.refererData != nil && apil.refererData.Marker != "" {
-		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
-			if websocket.IsWebSocketUpgrade(c) {
-				c.Locals("allowed", true)
-				return c.Next()
-			}
-			return fiber.ErrUpgradeRequired
-		})
-		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
-		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerGet)
 	}
 
 	app.Post("/*", handlerPost)

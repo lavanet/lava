@@ -43,29 +43,16 @@ func StartTestServerWithOriginHeader() {
 	}
 }
 
-func StartTestServerWithXGrpcWeb() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web")
-		fmt.Fprint(w, "Hello, this server sets Access-Control-Allow-Origin and x-grpc-web but not lava-sdk-relay-timeout!")
-	})
-	err := http.ListenAndServeTLS(":8082", "cert.pem", "key.pem", mux)
-	if err != nil {
-		log.Fatalf("Failed to start server 8082: %s", err.Error())
-	}
-}
-
 func StartTestServerWithAllHeaders() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web")
 		fmt.Fprint(w, "Hello, this server sets all required headers!")
 	})
-	err := http.ListenAndServeTLS(":8083", "cert.pem", "key.pem", mux)
+	err := http.ListenAndServeTLS(":8082", "cert.pem", "key.pem", mux)
 	if err != nil {
-		log.Fatalf("Failed to start server 8083: %s", err.Error())
+		log.Fatalf("Failed to start server 8082: %s", err.Error())
 	}
 }
 
@@ -77,7 +64,6 @@ func TestMain(m *testing.M) {
 
 	go StartTestServer()
 	go StartTestServerWithOriginHeader()
-	go StartTestServerWithXGrpcWeb()
 	go StartTestServerWithAllHeaders()
 	time.Sleep(10 * time.Millisecond) // allow the servers to finish starting
 	code := m.Run()
@@ -105,19 +91,9 @@ func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), "x-grpc-web"), "Expected error to relate to x-grpc-web")
 }
 
-func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
-	endpoint := epochstoragetypes.Endpoint{
-		IPPORT: "localhost:8082",
-	}
-
-	err := PerformCORSCheck(endpoint)
-	require.Error(t, err, "Expected CORS check to fail but it passed")
-	require.True(t, strings.Contains(err.Error(), "lava-sdk-relay-timeout"), "Expected error to relate to lava-sdk-relay-timeout")
-}
-
 func TestPerformCORSCheckSuccess(t *testing.T) {
 	endpoint := epochstoragetypes.Endpoint{
-		IPPORT: "localhost:8083", // pointing to the server with all headers
+		IPPORT: "localhost:8082", // pointing to the server with all headers
 	}
 
 	err := PerformCORSCheck(endpoint)

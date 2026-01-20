@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -244,17 +243,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		ctx = utils.AppendTxId(ctx, txId)
 	}
 	startTime := time.Now()
-	// This is for the SDK, since the timeout is not automatically added to the request like in Go
-	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if timeoutFound {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
 
 	utils.LavaFormatInfo("Got relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
@@ -583,8 +571,6 @@ func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extension
 }
 
 func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
-	// TODO: remove this if case, the reason its here is because lava-sdk does't have data reliability + block parsing.
-	// this is a temporary solution until we have a working block parsing in lava-sdk
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
@@ -822,69 +808,33 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	}
 	consumerAddressString := extractedConsumerAddress.String()
 
-	// validate & fetch badge to send into provider session manager
-	err = rpcps.validateBadgeSession(ctx, request.RelaySession)
-	if err != nil {
-		return nil, nil, utils.LavaFormatWarning("badge validation err", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
-	}
-
 	singleProviderSession, err = rpcps.getSingleProviderSession(ctx, request.RelaySession, consumerAddressString)
 	return singleProviderSession, extractedConsumerAddress, err
 }
 
 func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, relaySession *pairingtypes.RelaySession) (extractedConsumerAddress sdk.AccAddress, err error) {
-	if relaySession.Badge != nil {
-		extractedConsumerAddress, err = sigs.ExtractSignerAddress(*relaySession.Badge)
+	// When signing is skipped, we cannot extract address from signature
+	// For static providers, use a placeholder address (only used for metrics/logging, not rewards)
+	if lavaprotocol.SkipRelaySigning {
+		// Use a placeholder address when signing is skipped
+		// This is safe for static providers since they don't claim rewards
+		placeholderAddr, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
 		if err != nil {
-			return nil, err
+			return nil, utils.LavaFormatError("failed to create placeholder address", err, utils.LogAttr("GUID", ctx))
 		}
-	} else {
-		extractedConsumerAddress, err = sigs.ExtractSignerAddress(relaySession)
-		if err != nil {
-			return nil, utils.LavaFormatWarning("failed to extract signer address from relay session", err, utils.LogAttr("GUID", ctx))
-		}
+		return placeholderAddr, nil
+	}
+
+	extractedConsumerAddress, err = sigs.ExtractSignerAddress(relaySession)
+	if err != nil {
+		return nil, utils.LavaFormatWarning("failed to extract signer address from relay session", err, utils.LogAttr("GUID", ctx))
 	}
 	return extractedConsumerAddress, nil
 }
 
-func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relaySession *pairingtypes.RelaySession) error {
-	if relaySession.Badge == nil { // not a badge session
-		return nil
-	}
-
-	// validating badge signer
-	badgeUserSigner, err := sigs.ExtractSignerAddress(relaySession)
-	if err != nil {
-		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.LogAttr("GUID", ctx))
-	}
-
-	// validating badge signer
-	if badgeUserSigner.String() != relaySession.Badge.Address {
-		return utils.LavaFormatWarning("did not pass badge signer validation", nil, utils.LogAttr("GUID", ctx))
-	}
-
-	// validating badge lavaChainId
-	if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
-		return utils.LavaFormatWarning("mismatch in badge lavaChainId", nil, utils.LogAttr("GUID", ctx))
-	}
-
-	// validating badge epoch
-	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
-		return utils.LavaFormatWarning("Badge epoch validation failed", nil,
-			utils.LogAttr("badgeEpoch", relaySession.Badge.Epoch),
-			utils.LogAttr("relayEpoch", relaySession.Epoch),
-		)
-	}
-
-	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
-		return utils.LavaFormatWarning("Badge epoch validation failed", nil, utils.LogAttr("badge_epoch", relaySession.Badge.Epoch), utils.LogAttr("relay_epoch", relaySession.Epoch))
-	}
-	return nil
-}
-
 func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, request *pairingtypes.RelaySession, consumerAddressString string) (*lavasession.SingleProviderSession, error) {
 	// regular session, verifies pairing epoch and relay number
-	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, request.Badge)
+	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, projectId, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
@@ -930,7 +880,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				)
 			}
 			// After validating the consumer we can register it with provider session manager.
-			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, pairedProviders, projectId, request.Badge)
+			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, pairedProviders, projectId)
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err,
 					utils.Attribute{Key: "GUID", Value: ctx},
@@ -1494,30 +1444,6 @@ func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.
 	}
 	utils.LavaFormatDebug("incoming meta data does not contain process guid", utils.LogAttr("incoming_meta_data", incomingMetaData))
 	return "", false
-}
-
-func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (time.Duration, bool, error) {
-	incomingMetaData, found := metadata.FromIncomingContext(ctx)
-	if !found {
-		return 0, false, nil
-	}
-	for key, listOfMetaDataValues := range incomingMetaData {
-		if key == "lava-sdk-relay-timeout" {
-			var timeout int64
-			var err error
-			for _, metaDataValue := range listOfMetaDataValues {
-				timeout, err = strconv.ParseInt(metaDataValue, 10, 64)
-			}
-			if err != nil {
-				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is not a number", utils.Attribute{Key: "error", Value: err})
-			}
-			if timeout < 0 {
-				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is negative", utils.Attribute{Key: "error", Value: err})
-			}
-			return time.Duration(timeout) * time.Millisecond, true, nil
-		}
-	}
-	return 0, false, nil
 }
 
 func (rpcps *RPCProviderServer) IsHealthy() bool {

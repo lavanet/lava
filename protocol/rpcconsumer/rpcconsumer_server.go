@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 
@@ -113,7 +114,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
-	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
 	consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
 ) (err error) {
@@ -135,7 +135,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpccs.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
-	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
+	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
 	}
@@ -1315,9 +1315,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// Check if this is an unsupported method error
-				replyDataStr := string(localRelayResult.Reply.Data)
-				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessage(replyDataStr)
+				// Check if this is an unsupported method error (use bytes variant to avoid string conversion)
+				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessageBytes(localRelayResult.Reply.Data)
 
 				// Determine if we should cache this response
 				// - Always cache unsupported method errors (treat like regular API responses based on block)
@@ -1747,7 +1746,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	utils.LavaFormatTrace("successfully got first reply",
 		utils.LogAttr("GUID", ctx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		utils.LogAttr("reply", string(reply.Data)),
+		utils.LogAttr("reply", parser.CapStringLen(string(reply.Data))),
 	)
 
 	// Make sure we can parse the reply

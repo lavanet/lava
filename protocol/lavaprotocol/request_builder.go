@@ -126,10 +126,19 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	}
 }
 
+// SkipRelaySigning when true, skips cryptographic signing of relay requests/responses.
+// This is useful for static providers (smart router) where signatures are not needed
+// for blockchain reward claiming, and skipping them reduces CPU and memory usage.
+var SkipRelaySigning = false
+
 func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider) (*pairingtypes.RelayRequest, error) {
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:    relayRequestData,
 		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
+	}
+	// Skip signing when configured (e.g., smart router mode) to save CPU/memory
+	if SkipRelaySigning {
+		return relayRequest, nil
 	}
 	sig, err := sigs.Sign(privKey, *relayRequest.RelaySession)
 	if err != nil {

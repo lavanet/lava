@@ -190,51 +190,6 @@ func TestSendNewProof(t *testing.T) {
 	}
 }
 
-func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
-	rand.InitRandomSeed()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	rewardDB, err := createInMemoryRewardDb([]string{"specId"})
-	require.NoError(t, err)
-
-	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardDB, "badger_test", 1, 10, nil)
-
-	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
-	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(42), "specId", nil)
-	newProof.Epoch = int64(1)
-
-	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
-	_, updated := rws.SendNewProof(ctx, newProof, uint64(1), "consumer", "apiinterface")
-
-	require.NotNil(t, newProof.Badge)
-	require.True(t, updated)
-}
-
-func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
-	rand.InitRandomSeed()
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := NewMemoryDB("specId")
-	rewardStore := NewRewardDB()
-	err := rewardStore.AddDB(db)
-	require.NoError(t, err)
-
-	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardStore, "badger_test", 1, 10, nil)
-
-	const providerAddr = "providerAddr"
-	specId := "specId"
-	prevProof := common.BuildRelayRequestWithBadge(ctx, providerAddr, []byte{}, uint64(1), uint64(0), specId, nil, &pairingtypes.Badge{LavaChainId: "43"})
-	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelayRequestWithBadge(ctx, providerAddr, []byte{}, uint64(1), uint64(42), specId, nil, &pairingtypes.Badge{LavaChainId: "42"})
-	newProof.Epoch = int64(1)
-
-	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
-	_, updated := rws.SendNewProof(ctx, newProof, uint64(1), "consumer", "apiinterface")
-
-	require.NotNil(t, newProof.Badge)
-	require.Equal(t, "42", newProof.Badge.LavaChainId)
-	require.True(t, updated)
-}
-
 func TestUpdateEpoch(t *testing.T) {
 	rand.InitRandomSeed()
 	setupRewardsServer := func() (*RewardServer, *rewardsTxSenderMock, *RewardDB) {

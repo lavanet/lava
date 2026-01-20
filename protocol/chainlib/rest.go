@@ -230,7 +230,6 @@ type RestChainListener struct {
 	relaySender      RelaySender
 	healthReporter   HealthReporter
 	logger           *metrics.RPCConsumerLogs
-	refererData      *RefererData
 	listeningAddress string
 }
 
@@ -238,7 +237,6 @@ type RestChainListener struct {
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	refererData *RefererData,
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
@@ -246,7 +244,6 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender:    relaySender,
 		healthReporter: healthReporter,
 		logger:         rpcConsumerLogs,
-		refererData:    refererData,
 	}
 
 	return chainListener
@@ -276,11 +273,12 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := "/" + fiberCtx.Params("*")
 
+		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
+		ctx = utils.ExtractWantedHeadersFromCachedMap(metadataValues, ctx)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
@@ -291,8 +289,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		analytics.SetProcessingTimestampBeforeRelay(startTime)
-		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		refererMatch := fiberCtx.Params(refererMatchString, "")
+		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		requestBody := string(fiberCtx.Body())
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST POST with GUID: %d for path: %s", guid, path),
 			utils.LogAttr("GUID", ctx),
@@ -306,9 +303,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", restHeaders),
 		)
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, userIp, analytics, restHeaders)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, requestBody, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
@@ -357,16 +351,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		analytics.SetProcessingTimestampBeforeRelay(startTime)
 
+		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
+		ctx = utils.ExtractWantedHeadersFromCachedMap(metadataValues, ctx)
 		guid, found := utils.GetUniqueIdentifier(ctx)
 		if found {
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
+		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new REST non-POST with GUID: %d", guid),
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr(utils.KEY_REQUEST_ID, ctx),
@@ -378,12 +374,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", restHeaders),
 		)
 
-		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
-		}
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, userIp, analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, metadataValues)
 		if err != nil {
@@ -422,11 +413,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
-	}
-
-	if apil.refererData != nil && apil.refererData.Marker != "" {
-		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
-		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerUse)
 	}
 
 	app.Post("/*", handlerPost)
