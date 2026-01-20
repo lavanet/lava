@@ -41,7 +41,7 @@ func (list EndpointInfoList) Swap(i, j int) {
 
 const (
 	AllowInsecureConnectionToProvidersFlag     = "allow-insecure-provider-dialing"
-	AllowGRPCCompressionFlag                   = "enable-application-level-compression"
+	AllowGRPCCompressionFlag                   = "enable-grpc-compression"
 	MaximumStreamsOverASingleConnectionFlag    = "maximum-streams-per-connection"
 	DefaultMaximumStreamsOverASingleConnection = 100
 	WeightMultiplierForStaticProviders         = 10
