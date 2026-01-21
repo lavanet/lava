@@ -278,6 +278,7 @@ type RelayResult struct {
 	ProviderTrailer     metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 	IsNodeError         bool
 	IsUnsupportedMethod bool // Indicates this node error is an unsupported method
+	ResponseHash        [32]byte
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
