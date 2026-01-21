@@ -57,7 +57,6 @@ func NewUnsupportedMethodError(originalError error, methodName string) *Unsuppor
 	}
 }
 
-
 // IsUnsupportedMethodError checks if an error indicates an unsupported method
 // This is the comprehensive check that handles:
 // - Error message pattern matching (via common.IsUnsupportedMethodMessage)

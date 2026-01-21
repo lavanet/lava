@@ -267,18 +267,18 @@ type ProviderInfo struct {
 }
 
 type RelayResult struct {
-	Request         *pairingtypes.RelayRequest
-	Reply           *pairingtypes.RelayReply
-	ProviderInfo    ProviderInfo
-	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
-	Finalized       bool
-	ConflictHandler ConflictHandlerInterface
-	StatusCode      int
-	Quorum          int
-	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
-	IsNodeError     bool
-	ResponseHash    [32]byte // cached SHA256 hash of Reply.Data for quorum comparison, zero-value if not computed
-	IsUnsupportedMethod bool // Indicates this node error is an unsupported method
+	Request             *pairingtypes.RelayRequest
+	Reply               *pairingtypes.RelayReply
+	ProviderInfo        ProviderInfo
+	ReplyServer         pairingtypes.Relayer_RelaySubscribeClient
+	Finalized           bool
+	ConflictHandler     ConflictHandlerInterface
+	StatusCode          int
+	Quorum              int
+	ProviderTrailer     metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError         bool
+	ResponseHash        [32]byte // cached SHA256 hash of Reply.Data for quorum comparison, zero-value if not computed
+	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
