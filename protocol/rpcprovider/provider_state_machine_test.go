@@ -2,7 +2,6 @@ package rpcprovider
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -177,60 +176,9 @@ func (rs *unsupportedMethodRelaySenderMock) SendNodeMsg(ctx context.Context, ch 
 	}, "", nil, common.NodeUrl{}, "", nil
 }
 
+// TestStateMachineUnsupportedMethodError tests that unsupported method errors are returned as responses to the consumer
+// (not as errors from the function). This prevents retries and allows the consumer to handle the error appropriately.
 func TestStateMachineUnsupportedMethodError(t *testing.T) {
-	relaySender := &unsupportedMethodRelaySenderMock{}
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
-	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
-
-	// Mock chain message behavior
-	chainMsgMock.
-		EXPECT().
-		GetRawRequestHash().
-		Return([]byte{1, 2, 3}, nil).
-		AnyTimes()
-	chainMsgMock.
-		EXPECT().
-		GetApi().
-		Return(nil).
-		AnyTimes()
-	chainMsgMock.
-		EXPECT().
-		GetApiCollection().
-		Return(nil).
-		AnyTimes()
-	chainMsgMock.
-		EXPECT().
-		CheckResponseError(gomock.Any(), gomock.Any()).
-		Return(true, "method not found").
-		AnyTimes()
-
-	// Execute the test
-	ctx := context.Background()
-	result, _, err := stateMachine.SendNodeMessage(ctx, chainMsgMock, &types.RelayRequest{
-		RelayData: &types.RelayPrivateData{Extensions: []string{}},
-		RelaySession: &types.RelaySession{
-			SessionId: 123,
-			RelayNum:  1,
-		},
-	})
-
-	// Verify that an error is returned for unsupported methods
-	require.Error(t, err)
-	require.Nil(t, result)
-
-	// Verify that the error is an UnsupportedMethodError
-	var unsupportedError *chainlib.UnsupportedMethodError
-	require.True(t, errors.As(err, &unsupportedError))
-	require.Contains(t, err.Error(), "unsupported method")
-
-	// Verify that we only hit the relay sender once (no retries for unsupported methods)
-	require.Equal(t, 1, relaySender.numberOfTimesHitSendNodeMsg)
-}
-
-// NEW TEST: Tests the NEW behavior (response returned, not error)
-// The old test above (TestStateMachineUnsupportedMethodError) will FAIL - this is expected!
-// It proves the old behavior (returning error) no longer works.
-func TestStateMachineUnsupportedMethodError_NewBehavior(t *testing.T) {
 	relaySender := &unsupportedMethodRelaySenderMock{}
 	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender, numberOfRetriesAllowedOnNodeErrors, nil)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
@@ -267,7 +215,7 @@ func TestStateMachineUnsupportedMethodError_NewBehavior(t *testing.T) {
 		},
 	})
 
-	// NEW BEHAVIOR: No error, response returned
+	// Verify no error is returned (response is returned instead)
 	require.NoError(t, err, "Should not return error for unsupported methods")
 	require.NotNil(t, result, "Should return actual node response")
 
