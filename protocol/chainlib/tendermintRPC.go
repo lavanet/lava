@@ -139,6 +139,13 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	if msgsLength == 0 {
 		return nil, errors.New("empty unmarshaled json")
 	}
+	// Check batch size limit
+	if MaxBatchRequestSize > 0 && msgsLength > MaxBatchRequestSize {
+		return nil, utils.LavaFormatWarning("batch request size exceeded", ErrBatchRequestSizeExceeded,
+			utils.LogAttr("batchSize", msgsLength),
+			utils.LogAttr("maxAllowed", MaxBatchRequestSize),
+		)
+	}
 
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
@@ -456,6 +463,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 
 		if err != nil {
+			// Check if batch size limit exceeded - return 429 rate limit error
+			if ErrBatchRequestSizeExceeded.Is(err) {
+				errorResponse, _ := json.Marshal(common.JsonRpcBatchSizeExceededError)
+				return fiberCtx.Status(fiber.StatusTooManyRequests).SendString(string(errorResponse))
+			}
+
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)

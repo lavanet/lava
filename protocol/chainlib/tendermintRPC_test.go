@@ -163,6 +163,48 @@ func TestTendermintRpcChainProxy(t *testing.T) {
 	}
 }
 
+func TestTendermintRpcBatchSizeLimit(t *testing.T) {
+	ctx := context.Background()
+
+	// Set a batch size limit of 2
+	originalLimit := MaxBatchRequestSize
+	MaxBatchRequestSize = 2
+	defer func() { MaxBatchRequestSize = originalLimit }()
+
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":{"block_id":{},"block":{}}}`)
+	})
+
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	// Test: batch within limit should succeed
+	batchWithinLimit := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}}]`
+	_, err = chainParser.ParseMsg("", []byte(batchWithinLimit), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Test: batch exceeding limit should fail
+	batchExceedingLimit := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}},{"jsonrpc":"2.0","id":3,"method":"block","params":{"height":"101"}}]`
+	_, err = chainParser.ParseMsg("", []byte(batchExceedingLimit), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.Error(t, err)
+	require.True(t, ErrBatchRequestSizeExceeded.Is(err))
+
+	// Test: single request should always succeed regardless of limit
+	singleRequest := `{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}}`
+	_, err = chainParser.ParseMsg("", []byte(singleRequest), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Test: when limit is 0 (unlimited), large batches should succeed
+	MaxBatchRequestSize = 0
+	largeBatch := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}},{"jsonrpc":"2.0","id":3,"method":"block","params":{"height":"101"}},{"jsonrpc":"2.0","id":4,"method":"block","params":{"height":"102"}},{"jsonrpc":"2.0","id":5,"method":"block","params":{"height":"103"}}]`
+	_, err = chainParser.ParseMsg("", []byte(largeBatch), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+}
+
 func TestTendermintRpcBatchCall(t *testing.T) {
 	ctx := context.Background()
 	gotCalled := false
