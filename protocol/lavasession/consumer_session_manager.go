@@ -260,7 +260,7 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 				utils.LogAttr("GUID", ctx))
 		}
 	}
-	utils.LavaFormatInfo("✅ CALCULATION RESULT", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("supportingProviderCount", len(supportingProviderAddresses)), utils.LogAttr("supportingProviders", supportingProviderAddresses), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("CALCULATION RESULT", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("supportingProviderCount", len(supportingProviderAddresses)), utils.LogAttr("supportingProviders", supportingProviderAddresses), utils.LogAttr("GUID", ctx))
 	return supportingProviderAddresses
 }
 
@@ -672,11 +672,11 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string, ctx context.Context) uint64 {
 	numberOfResets := csm.atomicReadNumberOfResets()
 	validAddresses := csm.cacheAddonAddresses(addon, extensions, ctx)
-	utils.LavaFormatInfo("🔍 VALIDATING PROVIDERS", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("validAddressesCount", len(validAddresses)), utils.LogAttr("validAddresses", validAddresses), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("VALIDATING PROVIDERS", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("validAddressesCount", len(validAddresses)), utils.LogAttr("validAddresses", validAddresses), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
 	if len(validAddresses) == 0 {
-		utils.LavaFormatWarning("🚨 NO VALID PROVIDERS - TRIGGERING RESET", nil, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatWarning("NO VALID PROVIDERS - TRIGGERING RESET", nil, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 		numberOfResets = csm.resetValidAddresses(addon, extensions)
-		utils.LavaFormatInfo("🔄 RESET COMPLETED", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("newValidAddressesCount", len(csm.cacheAddonAddresses(addon, extensions, ctx))), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatInfo("RESET COMPLETED", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("newValidAddressesCount", len(csm.cacheAddonAddresses(addon, extensions, ctx))), utils.LogAttr("GUID", ctx))
 	}
 	return numberOfResets
 }

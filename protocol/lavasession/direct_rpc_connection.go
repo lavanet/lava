@@ -106,7 +106,7 @@ type HTTPRequestParams struct {
 	Method      string                  // HTTP method: GET, POST, PUT, DELETE
 	URL         string                  // Full URL (will be auth-transformed)
 	Body        []byte                  // Request body (nil for GET)
-	Headers     []pairingtypes.Metadata // ✅ Preserves delete semantics (empty value = delete)
+	Headers     []pairingtypes.Metadata // Preserves delete semantics (empty value = delete)
 	ContentType string                  // Content-Type (only for requests with body)
 }
 
@@ -364,7 +364,7 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 		bodyReader = bytes.NewReader(params.Body)
 	}
 
-	// ✅ Apply auth path transformation (e.g., prepend /api/v1 if configured)
+	// Apply auth path transformation (e.g., prepend /api/v1 if configured)
 	fullURL := h.nodeUrl.AuthConfig.AddAuthPath(params.URL)
 
 	req, err := http.NewRequestWithContext(ctx, params.Method, fullURL, bodyReader)
@@ -372,13 +372,13 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 		return nil, fmt.Errorf("failed to build HTTP request: %w", err)
 	}
 
-	// ✅ Apply NodeUrl auth headers (API keys, bearer tokens, etc.)
+	// Apply NodeUrl auth headers (API keys, bearer tokens, etc.)
 	h.nodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
-	// ✅ Apply IP forwarding if needed
+	// Apply IP forwarding if needed
 	h.nodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	// ✅ Apply per-request headers with delete semantics
+	// Apply per-request headers with delete semantics
 	for _, header := range params.Headers {
 		if header.Value == "" {
 			req.Header.Del(header.Name) // Empty value = delete header
@@ -405,7 +405,7 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 		return nil, fmt.Errorf("failed reading response: %w", err)
 	}
 
-	// ✅ Return complete response (status + headers + body)
+	// Return complete response (status + headers + body)
 	// Don't return error for 4xx/5xx - client needs the response
 	return &HTTPDirectRPCResponse{
 		StatusCode: resp.StatusCode,

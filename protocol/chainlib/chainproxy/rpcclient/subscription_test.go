@@ -42,7 +42,7 @@ func TestClientSubscription_UnsubscribeBeforeRun(t *testing.T) {
 	select {
 	case <-done:
 		// Success - Unsubscribe completed without blocking
-		t.Log("✓ Unsubscribe completed without deadlock")
+		t.Log("[PASS] Unsubscribe completed without deadlock")
 	case <-time.After(1 * time.Second):
 		t.Fatal("Unsubscribe deadlocked when called before run() started")
 	}
@@ -87,7 +87,7 @@ func TestClientSubscription_UnsubscribeRace(t *testing.T) {
 
 	select {
 	case <-done:
-		t.Log("✓ Concurrent Unsubscribe calls completed safely")
+		t.Log("[PASS] Concurrent Unsubscribe calls completed safely")
 	case <-time.After(2 * time.Second):
 		t.Fatal("Concurrent Unsubscribe calls deadlocked")
 	}
@@ -127,7 +127,7 @@ func TestClientSubscription_UnsubscribeWithRunning(t *testing.T) {
 
 	select {
 	case <-done:
-		t.Log("✓ Subscription run() completed after Unsubscribe")
+		t.Log("[PASS] Subscription run() completed after Unsubscribe")
 	case <-time.After(2 * time.Second):
 		t.Fatal("Subscription run() didn't exit after Unsubscribe")
 	}
@@ -168,7 +168,7 @@ func TestClientSubscription_BufferedQuitChannelPreventsDeadlock(t *testing.T) {
 	// This is the key test: with buffered channel, this should succeed
 	select {
 	case <-unsubscribeComplete:
-		t.Log("✓ Buffered quit channel prevented deadlock")
+		t.Log("[PASS] Buffered quit channel prevented deadlock")
 
 		// Now verify the quit signal is still available if run() starts later
 		select {

@@ -74,7 +74,7 @@ type DirectRPCSessionConnection struct {
 	DirectConnection DirectRPCConnection
 	QoSManager       *qos.QoSManager
 	EndpointAddress  string
-	Endpoint         *Endpoint  // ✅ Direct reference to endpoint for per-endpoint tracking
+	Endpoint         *Endpoint  // Direct reference to endpoint for per-endpoint tracking
 }
 
 func (drsc *DirectRPCSessionConnection) GetQoSManager() *qos.QoSManager {

@@ -710,7 +710,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 			// Count tasks spawned AFTER the 200ms timeout
 			if elapsed > 200*time.Millisecond {
 				tasksAfterTimeout++
-				t.Logf("⚠️  Task %d spawned AFTER timeout! (%v after start)", taskNum, elapsed)
+				t.Logf("[WARN] Task %d spawned AFTER timeout! (%v after start)", taskNum, elapsed)
 			}
 
 			if task.IsDone() {

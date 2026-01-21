@@ -109,11 +109,11 @@ func validateCORSHeaders(resp *http.Response) error {
 	return nil
 }
 
-func getEmojiForVerificationStatus(passed bool) string {
+func getStatusIndicator(passed bool) string {
 	if passed {
-		return "✅"
+		return "[PASS]"
 	}
-	return "❌"
+	return "[FAIL]"
 }
 
 func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChainId string, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
@@ -275,7 +275,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 			for _, endpointService := range endpointServices {
 				probeResp, probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				for _, verification := range probeResp.GetVerifications() {
-					verifications["["+getEmojiForVerificationStatus(verification.Passed)+"] "+verification.Name] = struct{}{}
+					verifications[getStatusIndicator(verification.Passed)+" "+verification.Name] = struct{}{}
 				}
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
@@ -300,10 +300,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 		}
 	}
 	if len(badChains) == 0 {
-		badChains = []string{"None 🎉! all tests passed ✅"}
+		badChains = []string{"None! All tests passed."}
 	}
 	if len(portValidation) == 0 {
-		portValidation = []string{"✅ All Ports are valid! ✅"}
+		portValidation = []string{"All ports are valid."}
 	} else {
 		portValidation = append([]string{
 			"Some provider ports may not be set to 443, which can lead to connection issues with your provider, as some routers might block other ports.",

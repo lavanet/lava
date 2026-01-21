@@ -120,7 +120,7 @@ func TestConsumerEndToEndLatency(t *testing.T) {
 			if tc.latency.Milliseconds() != tc.expectedMs {
 				t.Errorf("%s: Expected %dms, got %dms", tc.name, tc.expectedMs, tc.latency.Milliseconds())
 			}
-			fmt.Printf("✓ %s: %dms\n", tc.name, tc.expectedMs)
+			fmt.Printf("[PASS] %s: %dms\n", tc.name, tc.expectedMs)
 		}
 	})
 
@@ -143,7 +143,7 @@ func TestConsumerEndToEndLatency(t *testing.T) {
 
 		// The final value should be the last one set (25ms)
 		// Since this is a Gauge metric, it should reflect the most recent value
-		fmt.Printf("✓ Multiple updates completed successfully\n")
+		fmt.Printf("[PASS] Multiple updates completed successfully\n")
 	})
 
 	t.Run("NilManager", func(t *testing.T) {
@@ -153,7 +153,7 @@ func TestConsumerEndToEndLatency(t *testing.T) {
 		// This should not panic due to nil check in the method
 		nilManager.SetEndToEndLatency("LAV1", "rest", 50*time.Millisecond)
 
-		fmt.Printf("✓ Nil manager handled gracefully\n")
+		fmt.Printf("[PASS] Nil manager handled gracefully\n")
 	})
 
 	t.Run("DifferentInterfacesSameChain", func(t *testing.T) {
@@ -169,11 +169,11 @@ func TestConsumerEndToEndLatency(t *testing.T) {
 
 		for apiInterface, latency := range interfaces {
 			cmm.SetEndToEndLatency(chainID, apiInterface, latency)
-			fmt.Printf("  ✓ Set %s interface: %dms\n", apiInterface, latency.Milliseconds())
+			fmt.Printf("  [PASS] Set %s interface: %dms\n", apiInterface, latency.Milliseconds())
 		}
 
 		// Verify all interfaces can coexist with different values
 		// Each should be tracked independently via Prometheus labels
-		fmt.Printf("✓ All %d interfaces set successfully with independent values\n", len(interfaces))
+		fmt.Printf("[PASS] All %d interfaces set successfully with independent values\n", len(interfaces))
 	})
 }

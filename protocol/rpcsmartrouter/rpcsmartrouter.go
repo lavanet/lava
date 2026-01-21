@@ -709,7 +709,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	if len(relevantStaticProviderList) > 0 {
 		firstProvider := relevantStaticProviderList[0]
 		
-		// ✅ FIX: Create minimal endpoint for ChainTracker (no addons needed)
+		// Create minimal endpoint for ChainTracker (no addons needed)
 		// ChainTracker only polls eth_blockNumber (latest block) - doesn't need archive/debug
 		chainTrackerEndpoint := &lavasession.RPCProviderEndpoint{
 			NetworkAddress: firstProvider.NetworkAddress,
@@ -720,7 +720,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				{
 					Url:        firstProvider.NodeUrls[0].Url,
 					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,  // Preserve auth
-					Addons:     []string{},  // ✅ No addons - ChainTracker only needs latest block!
+					Addons:     []string{},  // No addons - ChainTracker only needs latest block!
 				},
 			},
 		}
