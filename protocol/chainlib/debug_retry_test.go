@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,12 +12,6 @@ import (
 func TestSpecificErrorFromUser(t *testing.T) {
 	// Test the specific error pattern from the user
 	errorMsg := "rpc error: code = Unknown desc = unsupported method 'Default-/cosmos/base/tendermint/v1beta1/blocks1/2': Not Implemented"
-
-	// Test message detection
-	t.Run("Message pattern detection", func(t *testing.T) {
-		result := common.IsUnsupportedMethodMessage(errorMsg)
-		require.True(t, result, "Should detect 'unsupported method' in the error message")
-	})
 
 	// Test with actual error
 	t.Run("Error object detection", func(t *testing.T) {

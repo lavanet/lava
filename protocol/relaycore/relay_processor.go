@@ -174,50 +174,34 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
+// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors.
+// Note: We only check nodeErrors and protocolErrors, not successResults, because:
+// - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer/smartrouter)
+// - If it's a node error, it goes to nodeErrors, never to successResults
 func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	if rp == nil {
 		return false
 	}
 
-	// Get actual error data to check for unsupported method errors
-	successResults, nodeErrorResults, protocolErrors := rp.GetResultsData()
-
-	// NEW: Check success results for IsUnsupportedMethod flag
-	for _, result := range successResults {
-		if result.IsUnsupportedMethod {
-			return true
-		}
-	}
+	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
 
 	// Check node errors for IsUnsupportedMethod flag
 	for _, nodeErrorResult := range nodeErrorResults {
-		// NEW: Check flag first (preferred method)
 		if nodeErrorResult.IsUnsupportedMethod {
 			return true
 		}
-
-		// KEEP: Also check reply data as backup (for backward compatibility)
-		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
-			// Check if this is an unsupported method error based on the reply
-			if common.IsUnsupportedMethodErrorMessageBytes(nodeErrorResult.Reply.Data) {
-				return true
-			}
-		}
 	}
 
-	// Check protocol errors
+	// Check protocol errors (for backward compatibility with old providers that may return gRPC errors)
 	for _, protocolError := range protocolErrors {
-		// Check if this is an unsupported method error
 		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
 			return true
 		}
-		// Check for epoch mismatch errors that should be retried
+		// Epoch mismatch errors should be retried, not treated as unsupported
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
-			// Epoch mismatch errors should be retried, not treated as unsupported
 			continue
 		}
-		// Also check if we shouldn't retry this error
+		// Check if this is a non-retryable error (indicates unsupported or permanent failure)
 		if !chainlib.ShouldRetryError(protocolError.GetError()) {
 			return true
 		}
