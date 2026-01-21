@@ -5,9 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,7 +32,6 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/protocopy"
 
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -1136,9 +1133,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		sharedStateId = rpcss.smartRouterConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
 	}
 
-	privKey := rpcss.privKey
-	chainId, apiInterface := rpcss.GetChainIdAndApiInterface()
-	lavaChainID := rpcss.lavaChainID
+	chainId, _ := rpcss.GetChainIdAndApiInterface()
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := protocolMessage.RequestedBlock()
@@ -1377,337 +1372,24 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		)
 	}
 
-	// Check if these are direct RPC sessions (smart router mode)
-	// If so, use direct RPC flow instead of provider-relay flow
-	if len(sessions) > 0 {
-		// Check first session to determine mode (all sessions should be same mode)
-		firstSession := getFirstSession(sessions)
-		if firstSession != nil && firstSession.IsDirectRPC() {
-			utils.LavaFormatDebug("routing to direct RPC flow (bypassing provider-relay)",
-				utils.LogAttr("num_sessions", len(sessions)),
+	// Smart router supports direct RPC sessions only.
+	if len(sessions) == 0 {
+		return utils.LavaFormatError("no sessions available for direct RPC", nil, utils.LogAttr("GUID", ctx))
+	}
+	for providerPublicAddress, sessionInfo := range sessions {
+		if sessionInfo == nil || sessionInfo.Session == nil || !sessionInfo.Session.IsDirectRPC() {
+			return utils.LavaFormatError("rpcsmartrouter only supports direct RPC sessions", nil,
+				utils.LogAttr("provider", providerPublicAddress),
 				utils.LogAttr("GUID", ctx),
 			)
-			return rpcss.sendRelayToDirectEndpoints(ctx, sessions, protocolMessage, relayProcessor, analytics)
 		}
 	}
 
-	utils.LavaFormatTrace("routing to provider-relay flow",
+	utils.LavaFormatDebug("routing to direct RPC flow (direct-only)",
 		utils.LogAttr("num_sessions", len(sessions)),
 		utils.LogAttr("GUID", ctx),
 	)
-
-	// Iterate over the sessions map (provider-relay path)
-	for providerPublicAddress, sessionInfo := range sessions {
-		// Launch a separate goroutine for each session
-		// IMPORTANT: Pass localRelayData by value to isolate each goroutine from future modifications
-		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo, relayData *pairingtypes.RelayPrivateData) {
-			// add ticker launch metrics
-			localRelayResult := &common.RelayResult{
-				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderReputationSummary: sessionInfo.QoSSummaryResult},
-				Finalized:    false,
-				// setting the single consumer session as the conflict handler.
-				//  to be able to validate if we need to report this provider or not.
-				// holding the pointer is ok because the session is locked atm,
-				// and later after its unlocked we only atomic read / write to it.
-				ConflictHandler: sessionInfo.Session.Parent,
-			}
-			var errResponse error
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
-			guid, found := utils.GetUniqueIdentifier(ctx)
-			if found {
-				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
-			}
-
-			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
-			// to prevent session leaks on early returns
-			var sessionHandled atomic.Bool
-			sessionHandled.Store(false)
-			singleConsumerSession := sessionInfo.Session
-
-			// Check if this is a direct RPC session (should not go through provider-relay path)
-			if singleConsumerSession.IsDirectRPC() {
-				utils.LavaFormatError("direct RPC session incorrectly routed to sendRelayToProvider",
-					fmt.Errorf("session should use direct RPC path, not provider-relay"),
-					utils.LogAttr("provider", providerPublicAddress),
-					utils.LogAttr("GUID", goroutineCtx),
-				)
-				errResponse = fmt.Errorf("internal error: direct RPC session in provider-relay path")
-				relayProcessor.SetResponse(&relaycore.RelayResponse{
-					RelayResult: *localRelayResult,
-					Err:         errResponse,
-				})
-				return
-			}
-
-			defer func() {
-				// Recover from any panics to prevent consumer crash
-				if r := recover(); r != nil {
-					errResponse = utils.LavaFormatError("Panic recovered in sendRelayToProvider goroutine", fmt.Errorf("%v", r), utils.LogAttr("provider", providerPublicAddress), utils.LogAttr("GUID", goroutineCtx), utils.LogAttr("stack", string(debug.Stack())))
-				}
-
-				// CRITICAL: Ensure session is always freed to prevent session leaks
-				// If session wasn't handled by OnSessionDone/OnSessionFailure, free it now
-				if !sessionHandled.Load() && singleConsumerSession != nil {
-					releaseErr := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
-					if releaseErr != nil {
-						utils.LavaFormatError("failed to release leaked session in defer", releaseErr,
-							utils.LogAttr("GUID", goroutineCtx),
-							utils.LogAttr("provider", providerPublicAddress),
-							utils.LogAttr("originalError", errResponse))
-					}
-				}
-
-				// Return response
-				relayProcessor.SetResponse(&relaycore.RelayResponse{
-					RelayResult: *localRelayResult,
-					Err:         errResponse,
-				})
-
-				// Close context
-				goroutineCtxCancel()
-			}()
-
-			// Use the relayData parameter which is isolated for this goroutine
-			if relayData == nil {
-				errResponse = utils.LavaFormatError("RelayPrivateData is nil", nil, utils.LogAttr("GUID", goroutineCtx))
-				return
-			}
-			localRelayRequestData := *relayData
-
-			// Extract fields from the sessionInfo
-			epoch := sessionInfo.Epoch
-			reportedProviders := sessionInfo.ReportedProviders
-
-			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
-			if errResponse != nil {
-				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData), utils.LogAttr("GUID", ctx))
-				return
-			}
-			localRelayResult.Request = relayRequest
-			endpointClient := singleConsumerSession.EndpointConnection.Client
-
-			// set relay sent metric
-			go rpcss.rpcSmartRouterLogs.SetRelaySentToProviderMetric(providerPublicAddress, chainId, apiInterface)
-
-			if chainlib.IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data), utils.LogAttr("GUID", ctx))
-
-				params, err := json.Marshal(protocolMessage.GetRPCMessage().GetParams())
-				if err != nil {
-					errResponse = utils.LavaFormatError("could not marshal params", err, utils.LogAttr("GUID", ctx))
-					return
-				}
-
-				hashedParams := rpcclient.CreateHashFromParams(params)
-				cancellableCtx, cancelFunc := context.WithCancel(utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()))
-
-				ctxHolder := func() *CancelableContextHolder {
-					rpcss.connectedSubscriptionsLock.Lock()
-					defer rpcss.connectedSubscriptionsLock.Unlock()
-
-					ctxHolder := &CancelableContextHolder{
-						Ctx:        cancellableCtx,
-						CancelFunc: cancelFunc,
-					}
-					rpcss.connectedSubscriptionsContexts[hashedParams] = ctxHolder
-					return ctxHolder
-				}()
-
-				errResponse = rpcss.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
-				// CRITICAL: Set sessionHandled AFTER relaySubscriptionInner returns to ensure
-				// that if it panics before its internal session cleanup, the defer will free the session
-				sessionHandled.Store(true)
-				if errResponse != nil {
-					// Explicit cleanup on error to prevent memory leak
-					rpcss.CancelSubscriptionContext(hashedParams)
-
-					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
-						utils.LogAttr("Request", localRelayRequestData),
-						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
-						utils.LogAttr("Provider", providerPublicAddress),
-						utils.LogAttr("GUID", ctx),
-					)
-				}
-				return
-			}
-
-			// unique per dappId and ip
-			consumerToken := common.GetUniqueToken(userData)
-			processingTimeout, expectedRelayTimeoutForQOS := rpcss.getProcessingTimeout(protocolMessage)
-			deadline, ok := ctx.Deadline()
-			if ok { // we have ctx deadline. we cant go past it.
-				processingTimeout = time.Until(deadline)
-				if processingTimeout <= 0 {
-					// no need to send we are out of time
-					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl), utils.LogAttr("GUID", ctx))
-					return
-				}
-				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
-				if processingTimeout < expectedRelayTimeoutForQOS {
-					processingTimeout = expectedRelayTimeoutForQOS
-				}
-			}
-			// send relay
-			relayLatency, errResponse, _ := rpcss.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
-			if errResponse != nil {
-				// CRITICAL: Release session IMMEDIATELY to prevent session exhaustion
-				sessionHandled.Store(true)
-				errReport := rpcss.sessionManager.OnSessionFailure(singleConsumerSession, errResponse)
-				if errReport != nil {
-					utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
-				}
-				go rpcss.rpcSmartRouterLogs.SetProtocolError(chainId, providerPublicAddress)
-				return
-			}
-
-			// get here only if performed a regular relay successfully
-			// Smart router doesn't track expected block height
-			expectedBH := int64(math.MaxInt64)
-			numOfProviders := 1 // Smart router always has static providers
-			pairingAddressesLen := rpcss.sessionManager.GetAtomicPairingAddressesLength()
-			latestBlock := localRelayResult.Reply.LatestBlock
-			if latestBlock > 0 {
-				providerAddr := providerPublicAddress
-				if singleConsumerSession != nil && singleConsumerSession.Parent != nil && singleConsumerSession.Parent.PublicLavaAddress != "" {
-					providerAddr = singleConsumerSession.Parent.PublicLavaAddress
-				}
-				rpcss.updateLatestBlockHeight(uint64(latestBlock), providerAddr)
-			}
-			// Skip block gap check for smart router since expectedBH is always MaxInt64
-			if expectedBH != int64(math.MaxInt64) && expectedBH-latestBlock > BlockGapWarningThreshold {
-				utils.LavaFormatWarning("identified block gap", nil,
-					utils.Attribute{Key: "expectedBH", Value: expectedBH},
-					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
-					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
-					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
-					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-					utils.LogAttr("GUID", ctx),
-				)
-			}
-
-			if rpcss.debugRelays {
-				lastQoSReport := singleConsumerSession.QoSManager.GetLastQoSReport(epoch, singleConsumerSession.SessionId)
-				if lastQoSReport != nil && lastQoSReport.Sync.BigInt() != nil &&
-					lastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
-					utils.LavaFormatDebug("identified QoS mismatch",
-						utils.Attribute{Key: "expectedBH", Value: expectedBH},
-						utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
-						utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
-						utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
-						utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-						utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSManager},
-						utils.LogAttr("GUID", ctx),
-					)
-				}
-			}
-
-			// Smart router uses 0 for syncGap since it doesn't track consensus
-			syncGap := int64(0)
-			sessionHandled.Store(true)                                                                                                                                                                                                                                                                                                        // Mark session as handled before OnSessionDone
-			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
-			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
-			localRelayResult.IsNodeError = isNodeError
-			if rpcss.debugRelays {
-				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
-			}
-			if rpcss.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// Check if this is an unsupported method error (use bytes variant to avoid string conversion)
-				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessageBytes(localRelayResult.Reply.Data)
-
-				// Determine if we should cache this response
-				// - Always cache unsupported method errors (treat like regular API responses based on block)
-				// - Only cache successful responses when quorum is disabled
-				shouldCache := false
-				if isUnsupportedMethodError {
-					// Cache unsupported method errors like regular responses
-					// This allows latest block errors to use tempCache and historical to use finalizedCache
-					shouldCache = true
-				} else if !quorumParams.Enabled() {
-					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
-				} else {
-					// Quorum is enabled and this is not an unsupported method error
-					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("quorumEnabled", true),
-						utils.LogAttr("isNodeError", isNodeError),
-						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
-					)
-				}
-
-				if shouldCache {
-					// copy reply data so if it changes it doesn't panic mid async send
-					copyReply := &pairingtypes.RelayReply{}
-					copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
-					// set cache in a non blocking call
-					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
-					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
-					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
-					finalizedBlockHashes := localRelayResult.Reply.FinalizedBlocksHashes
-
-					go func() {
-						// deal with copying error.
-						if copyReplyErr != nil || hashErr != nil {
-							utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
-								utils.LogAttr("copyReplyErr", copyReplyErr),
-								utils.LogAttr("hashErr", hashErr),
-								utils.LogAttr("GUID", ctx),
-							)
-							return
-						}
-						chainMessageRequestedBlock, _ := protocolMessage.RequestedBlock()
-						if chainMessageRequestedBlock == spectypes.NOT_APPLICABLE {
-							return
-						}
-
-						blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0)
-
-						if len(finalizedBlockHashes) > 0 {
-							var finalizedBlockHashesObj map[int64]string
-							err := json.Unmarshal(finalizedBlockHashes, &finalizedBlockHashesObj)
-							if err != nil {
-								utils.LavaFormatError("failed unmarshalling finalizedBlockHashes", err,
-									utils.LogAttr("GUID", ctx),
-									utils.LogAttr("finalizedBlockHashes", finalizedBlockHashes),
-									utils.LogAttr("providerAddr", providerPublicAddress),
-								)
-							} else {
-								blockHashesToHeights = rpcss.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
-							}
-						}
-						var finalized bool
-						blockHashesToHeights, finalized = rpcss.updateBlocksHashesToHeightsIfNeeded(extensions, protocolMessage, blockHashesToHeights, latestBlock, localRelayResult.Finalized, relayState)
-						utils.LavaFormatTrace("[Archive Debug] Adding HASH TO CACHE", utils.LogAttr("blockHashesToHeights", blockHashesToHeights), utils.LogAttr("GUID", ctx))
-
-						new_ctx := context.Background()
-						new_ctx, cancel := context.WithTimeout(new_ctx, common.CacheWriteTimeout)
-						defer cancel()
-						_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
-
-						err2 := rpcss.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
-							RequestHash:           hashKey,
-							ChainId:               chainId,
-							RequestedBlock:        requestedBlock,
-							SeenBlock:             seenBlock,
-							BlockHash:             nil, // consumer cache doesn't care about block hashes
-							Response:              copyReply,
-							Finalized:             finalized,
-							OptionalMetadata:      nil,
-							SharedStateId:         sharedStateId,
-							AverageBlockTime:      int64(averageBlockTime),
-							IsNodeError:           isNodeError,
-							BlocksHashesToHeights: blockHashesToHeights,
-						})
-						if err2 != nil {
-							utils.LavaFormatWarning("error updating cache with new entry", err2, utils.LogAttr("GUID", ctx))
-						}
-					}()
-				}
-			}
-			// localRelayResult is being sent on the relayProcessor by a deferred function
-		}(providerPublicAddress, sessionInfo, localRelayData)
-	}
-	// finished setting up go routines, can return and wait for responses
-	return nil
+	return rpcss.sendRelayToDirectEndpoints(ctx, sessions, protocolMessage, relayProcessor, analytics)
 }
 
 // relayInnerDirect handles relay requests using direct RPC connections (smart router mode)
@@ -1867,6 +1549,12 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	relayResult.StatusCode = result.StatusCode
 	relayResult.IsNodeError = result.IsNodeError
 	relayResult.ProviderInfo = result.ProviderInfo
+	if relayResult.Reply != nil {
+		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, pairingtypes.Metadata{
+			Name:  common.LAVA_RELAY_PROTOCOL_HEADER_NAME,
+			Value: string(directConnection.GetProtocol()),
+		})
+	}
 
 	// Update analytics
 	if analytics != nil {
